@@ -1,0 +1,9 @@
+:toc: left
+:toclevels: 4
+
+[[createPrompt]]
+== Creating a Prompt
+
+include::attributes.adoc[]
+
+TBD

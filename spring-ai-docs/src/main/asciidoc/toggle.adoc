@@ -1,0 +1,15 @@
+ifdef::backend-spring-html[]
++++
+<div>
+  <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="js/js.cookie.js"></script>
+  <script type="text/javascript" src="js/DocumentToggle.js"></script>
+  <script type="text/javascript" src="js/Redirect.js"></script>
+  <div class="docToggle-button">
+    <input id="xmlButton" type="radio" name="docToggle" value="XML"><label for="xmlButton">XML</label>
+    <input id="javaButton" type="radio" name="docToggle" value="Java" checked><label for="javaButton">Java</label>
+    <input id="bothButton" type="radio" name="docToggle" value="Both" checked><label for="bothButton">Both</label>
+  </div>
+</div>
++++
+endif::backend-spring-html[]
