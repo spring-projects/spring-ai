@@ -54,7 +54,11 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>17</java.version>
+
+
+		<!-- prodution dependencies -->
 		<spring-boot.version>3.1.2</spring-boot.version>
+		<stringtemplate.version>4.0.2</stringtemplate.version>
 
         <!-- documentation dependencies -->
 		<asciidoctorj-pdf.version>1.6.2</asciidoctorj-pdf.version> <!-- FIXME build failure with version 2.3.9 -->
@@ -239,7 +243,7 @@
 		</plugins>
 	</build>
 
-    	<profiles>
+   	<profiles>
 		<profile>
 			<id>test-coverage</id>
 			<build>
@@ -291,7 +295,6 @@
 			</distributionManagement>
 		</profile>
 	</profiles>
-
 
 	<dependencyManagement>
 		<dependencies>
