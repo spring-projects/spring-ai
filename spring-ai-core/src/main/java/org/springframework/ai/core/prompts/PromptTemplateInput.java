@@ -22,4 +22,6 @@ public interface PromptTemplateInput extends PromptInput {
 
 	TemplateFormat getTemplateFormat();
 
+	// *Validation*
+	void validate();
 }

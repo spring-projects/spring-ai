@@ -16,6 +16,8 @@
 
 package org.springframework.ai.core.prompts;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -59,7 +61,8 @@ class PromptTests {
 	void testBadTemplateString() {
 		String template = "This is a {foo test";
 		Assertions.assertThatThrownBy(() -> {
-			PromptTemplate promptTemplate = new PromptTemplate(template, true);
+			PromptTemplate promptTemplate = new PromptTemplate(template);
+			promptTemplate.validate();
 		}).isInstanceOf(IllegalArgumentException.class).hasMessage("The template string is not valid.");
 	}
 

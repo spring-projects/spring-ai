@@ -16,14 +16,26 @@
 
 package org.springframework.ai.core.prompts;
 
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public interface PromptInput {
 
-	Set<String> getInputVariables();
+	// *Output*
 
 	Optional<OutputParser> getOutputParser();
+
+
+	// *Input*
+
+	// This is the handoff point.  These methods provide the "input", then the
+	// "Template" is "rendered" and the output is then used to construct a "Message" that gets sent to the "LLM" model.
+
+	// Maybe should be called String renderAsString()  and renderAsPrompt
+	// View in spring mvc has render(Map<String,?> model, HttpServletRequest request, HttpServletResponse response) method.
+	String formatAsString(Map<String, Object> inputVariables);
+
+	PromptValue formatAsPrompt(Map<String, Object> inputVariables);
 
 	// Leave out Partial Input Variables for now
 

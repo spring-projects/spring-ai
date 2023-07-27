@@ -23,8 +23,12 @@ public abstract class AbstractPromptTemplate implements PromptInput {
 
 	private Optional<OutputParser> outputParser = Optional.empty();
 
-	public AbstractPromptTemplate(Optional<OutputParser> outputParser) {
-		this.outputParser = outputParser;
+	public AbstractPromptTemplate() {
+		this.outputParser = Optional.empty();
+	}
+
+	public AbstractPromptTemplate(OutputParser outputParser) {
+		this.outputParser = Optional.of(outputParser);
 	}
 
 	@Override
@@ -32,8 +36,9 @@ public abstract class AbstractPromptTemplate implements PromptInput {
 		return this.outputParser;
 	}
 
-	public abstract String formatAsString(Map<String, Object> inputVariables);
-
-	public abstract PromptValue formatAsPrompt(Map<String, Object> inputVariables);
+	public PromptValue formatAsPrompt(Map<String, Object> inputVariables) {
+		String formattedPrompt = formatAsString(inputVariables);
+		return new StringPromptValue(formattedPrompt);
+	}
 
 }

@@ -28,63 +28,38 @@ import org.antlr.runtime.TokenStream;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
-public class PromptTemplate extends AbstractStringPromptTemplate implements PromptTemplateInput {
+public class PromptTemplate extends AbstractPromptTemplate implements PromptTemplateInput {
 
 	private String template;
 
 	private TemplateFormat templateFormat = TemplateFormat.FSTRING;
 
 	public PromptTemplate(String template) {
-		super(Optional.empty());
-		this.template = template;
-	}
-
-	public PromptTemplate(String template, boolean validate) {
-		super(Optional.empty());
-		validateTemplate(validate);
+		super();
 		this.template = template;
 	}
 
 	public PromptTemplate(String template, TemplateFormat templateFormat) {
-		super(Optional.empty());
+		super();
 		this.template = template;
 		this.templateFormat = templateFormat;
 	}
 
-	public PromptTemplate(String template, TemplateFormat templateFormat, boolean validate) {
-		super(Optional.empty());
-		validateTemplate(validate);
-		this.template = template;
-		this.templateFormat = templateFormat;
-	}
 
-	public PromptTemplate(String template, Optional<OutputParser> outputParser) {
+	public PromptTemplate(String template, OutputParser outputParser) {
 		super(outputParser);
 		this.template = template;
 	}
 
-	public PromptTemplate(String template, Optional<OutputParser> outputParser, boolean validate) {
+	public PromptTemplate(String template, OutputParser outputParser, TemplateFormat templateFormat) {
 		super(outputParser);
-		validateTemplate(validate);
-		this.template = template;
-	}
-
-	public PromptTemplate(String template, Optional<OutputParser> outputParser, TemplateFormat templateFormat) {
-		super(outputParser);
-		this.template = template;
-		this.templateFormat = templateFormat;
-	}
-
-	public PromptTemplate(String template, Optional<OutputParser> outputParser, TemplateFormat templateFormat,
-			boolean validate) {
-		super(outputParser);
-		validateTemplate(validate);
 		this.template = template;
 		this.templateFormat = templateFormat;
 	}
 
 	@Override
 	public String formatAsString(Map<String, Object> inputVariables) {
+		validate();
 		// Only "F-String" for now
 		ST st = new ST(this.template, '{', '}');
 		for (Entry<String, Object> stringObjectEntry : inputVariables.entrySet()) {
@@ -103,8 +78,7 @@ public class PromptTemplate extends AbstractStringPromptTemplate implements Prom
 		return this.templateFormat;
 	}
 
-	@Override
-	public Set<String> getInputVariables() {
+	protected Set<String> getInputVariables() {
 		ST st = new ST(this.template, '{', '}');
 		TokenStream tokens = st.impl.tokens;
 		return IntStream.range(0, tokens.range())
@@ -114,12 +88,10 @@ public class PromptTemplate extends AbstractStringPromptTemplate implements Prom
 			.collect(Collectors.toSet());
 	}
 
-	private void validateTemplate(boolean validate) {
-		if (!validate) {
-			return;
-		}
+	public void validate() {
 		try {
 			ST st = new ST(this.template, '{', '}');
+			// TODO is doing this test even necessary, if it parsed correctly in the ctor, there should be no issues.
 			Set<String> inputVariables = getInputVariables();
 			for (String inputVariable : inputVariables) {
 				st.add(inputVariable, "foo");
