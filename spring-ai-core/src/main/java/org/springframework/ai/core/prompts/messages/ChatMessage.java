@@ -27,7 +27,7 @@ public class ChatMessage extends AbstractMessage {
 		this.role = role;
 	}
 
-	public ChatMessage(String content, Map<String, Object> properties, String role) {
+	public ChatMessage(String content, String role, Map<String, Object> properties) {
 		super(MessageType.SYSTEM, content, properties);
 		this.role = role;
 	}

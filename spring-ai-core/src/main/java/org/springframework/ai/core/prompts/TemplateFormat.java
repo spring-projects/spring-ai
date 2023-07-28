@@ -18,7 +18,7 @@ package org.springframework.ai.core.prompts;
 
 public enum TemplateFormat {
 
-	FSTRING("f-string");
+	ST("ST");
 
 	private final String value;
 

@@ -16,14 +16,20 @@
 
 package org.springframework.ai.core.prompts;
 
-import java.util.List;
+import java.util.Map;
 
-import org.springframework.ai.core.prompts.messages.Message;
+public interface PromptOperations {
 
-public interface PromptValue {
+	String getTemplate();
 
-	String toStringValue();
+	TemplateFormat getTemplateFormat();
 
-	List<Message> toMessages();
+	void add(String name, Object value);
+
+	String render();
+
+	String render(Map<String, Object> model);
+
+	PromptBuilder prompt();
 
 }

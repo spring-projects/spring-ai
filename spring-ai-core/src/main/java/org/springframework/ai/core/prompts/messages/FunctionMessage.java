@@ -27,7 +27,7 @@ public class FunctionMessage extends AbstractMessage {
 		this.functionName = functionName;
 	}
 
-	public FunctionMessage(String content, Map<String, Object> properties, String functionName) {
+	public FunctionMessage(String content, String functionName, Map<String, Object> properties) {
 		super(MessageType.SYSTEM, content, properties);
 		this.functionName = functionName;
 	}

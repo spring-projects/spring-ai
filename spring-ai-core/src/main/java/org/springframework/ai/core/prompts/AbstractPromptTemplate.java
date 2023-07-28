@@ -16,29 +16,24 @@
 
 package org.springframework.ai.core.prompts;
 
-import java.util.Map;
-import java.util.Optional;
+public abstract class AbstractPromptTemplate implements PromptOperations {
 
-public abstract class AbstractPromptTemplate implements PromptInput {
+	protected String template;
 
-	private Optional<OutputParser> outputParser = Optional.empty();
+	protected TemplateFormat templateFormat = TemplateFormat.ST;
 
-	public AbstractPromptTemplate() {
-		this.outputParser = Optional.empty();
-	}
-
-	public AbstractPromptTemplate(OutputParser outputParser) {
-		this.outputParser = Optional.of(outputParser);
+	public AbstractPromptTemplate(String template) {
+		this.template = template;
 	}
 
 	@Override
-	public Optional<OutputParser> getOutputParser() {
-		return this.outputParser;
+	public String getTemplate() {
+		return this.template;
 	}
 
-	public PromptValue formatAsPrompt(Map<String, Object> inputVariables) {
-		String formattedPrompt = formatAsString(inputVariables);
-		return new StringPromptValue(formattedPrompt);
+	@Override
+	public TemplateFormat getTemplateFormat() {
+		return this.templateFormat;
 	}
 
 }

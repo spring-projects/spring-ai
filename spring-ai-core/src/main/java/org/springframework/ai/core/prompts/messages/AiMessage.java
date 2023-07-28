@@ -20,12 +20,24 @@ import java.util.Map;
 
 public class AiMessage extends AbstractMessage {
 
+	private boolean example = false;
+
 	public AiMessage(String content) {
 		super(MessageType.AI, content);
 	}
 
-	public AiMessage(String content, Map<String, Object> properties) {
+	public AiMessage(String content, boolean example) {
+		super(MessageType.AI, content);
+		this.example = example;
+	}
+
+	public AiMessage(String content, boolean example, Map<String, Object> properties) {
 		super(MessageType.AI, content, properties);
+		this.example = example;
+	}
+
+	public boolean isExample() {
+		return example;
 	}
 
 }

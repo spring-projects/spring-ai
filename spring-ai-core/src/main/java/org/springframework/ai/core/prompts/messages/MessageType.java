@@ -21,7 +21,7 @@ public enum MessageType {
 
 	AI("ai"),
 
-	GENERIC("generic"),
+	CHAT("chat"),
 
 	SYSTEM("system"),
 

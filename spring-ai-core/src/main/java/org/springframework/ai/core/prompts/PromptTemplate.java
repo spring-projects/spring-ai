@@ -16,9 +16,11 @@
 
 package org.springframework.ai.core.prompts;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -28,59 +30,55 @@ import org.antlr.runtime.TokenStream;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
-public class PromptTemplate extends AbstractPromptTemplate implements PromptTemplateInput {
+import org.springframework.ai.core.prompts.messages.AiMessage;
+import org.springframework.ai.core.prompts.messages.ChatMessage;
+import org.springframework.ai.core.prompts.messages.FunctionMessage;
+import org.springframework.ai.core.prompts.messages.HumanMessage;
+import org.springframework.ai.core.prompts.messages.Message;
+import org.springframework.ai.core.prompts.messages.MessageType;
+import org.springframework.ai.core.prompts.messages.SystemMessage;
 
-	private String template;
+public class PromptTemplate extends AbstractPromptTemplate {
 
-	private TemplateFormat templateFormat = TemplateFormat.FSTRING;
+	private ST st;
+
+	private Map<String, Object> dynamicModel = new HashMap<>();
 
 	public PromptTemplate(String template) {
-		super();
-		this.template = template;
-	}
-
-	public PromptTemplate(String template, TemplateFormat templateFormat) {
-		super();
-		this.template = template;
-		this.templateFormat = templateFormat;
-	}
-
-
-	public PromptTemplate(String template, OutputParser outputParser) {
-		super(outputParser);
-		this.template = template;
-	}
-
-	public PromptTemplate(String template, OutputParser outputParser, TemplateFormat templateFormat) {
-		super(outputParser);
-		this.template = template;
-		this.templateFormat = templateFormat;
+		super(template);
+		// If the template string is not valid, an exception will be thrown
+		try {
+			this.st = new ST(this.template, '{', '}');
+		}
+		catch (Exception ex) {
+			throw new IllegalArgumentException("The template string is not valid.", ex);
+		}
 	}
 
 	@Override
-	public String formatAsString(Map<String, Object> inputVariables) {
-		validate();
-		// Only "F-String" for now
-		ST st = new ST(this.template, '{', '}');
-		for (Entry<String, Object> stringObjectEntry : inputVariables.entrySet()) {
-			st.add(stringObjectEntry.getKey(), stringObjectEntry.getValue());
-		}
+	public void add(String name, Object value) {
+		this.st.add(name, value);
+		this.dynamicModel.put(name, value);
+	}
+
+	// Render Methods
+	public String render() {
 		return st.render();
 	}
 
 	@Override
-	public String getTemplate() {
-		return this.template;
-	}
-
-	@Override
-	public TemplateFormat getTemplateFormat() {
-		return this.templateFormat;
+	public String render(Map<String, Object> model) {
+		validate(model);
+		for (Entry<String, Object> stringObjectEntry : model.entrySet()) {
+			if (st.getAttribute(stringObjectEntry.getKey()) == null) {
+				st.add(stringObjectEntry.getKey(), stringObjectEntry.getValue());
+			}
+		}
+		return st.render().trim();
 	}
 
 	protected Set<String> getInputVariables() {
-		ST st = new ST(this.template, '{', '}');
-		TokenStream tokens = st.impl.tokens;
+		TokenStream tokens = this.st.impl.tokens;
 		return IntStream.range(0, tokens.range())
 			.mapToObj(tokens::get)
 			.filter(token -> token.getType() == STLexer.ID)
@@ -88,19 +86,105 @@ public class PromptTemplate extends AbstractPromptTemplate implements PromptTemp
 			.collect(Collectors.toSet());
 	}
 
-	public void validate() {
-		try {
-			ST st = new ST(this.template, '{', '}');
-			// TODO is doing this test even necessary, if it parsed correctly in the ctor, there should be no issues.
-			Set<String> inputVariables = getInputVariables();
-			for (String inputVariable : inputVariables) {
-				st.add(inputVariable, "foo");
+	protected void validate(Map<String, Object> model) {
+		Set<String> dynamicVariableNames = new HashSet<>(this.dynamicModel.keySet());
+		Set<String> modelVariables = new HashSet<>(model.keySet());
+		modelVariables.addAll(dynamicVariableNames);
+		Set<String> missingEntries = new HashSet<>(getInputVariables());
+		missingEntries.removeAll(modelVariables);
+		if (!missingEntries.isEmpty()) {
+			throw new IllegalStateException(
+					"All template variables were not replaced. Missing variable names are " + missingEntries);
+		}
+	}
+
+	@Override
+	public PromptBuilder prompt() {
+		return new PromptTemplatePromptBuilder();
+	}
+
+	public class PromptTemplatePromptBuilder implements PromptBuilder {
+
+		private MessageType messageType = MessageType.HUMAN;
+
+		private Map<String, Object> model = new HashMap<>();
+
+		private Map<String, Object> properties = new HashMap<>();
+
+		private boolean containsExample;
+
+		private String chatRole;
+
+		private String functionName;
+
+		@Override
+		public PromptBuilder system() {
+			this.messageType = MessageType.SYSTEM;
+			return this;
+		}
+
+		@Override
+		public PromptBuilder human() {
+			this.messageType = MessageType.HUMAN;
+			return this;
+		}
+
+		@Override
+		public PromptBuilder ai(boolean containsExample) {
+			this.messageType = MessageType.AI;
+			this.containsExample = containsExample;
+			return this;
+		}
+
+		@Override
+		public PromptBuilder chat(String chatRole) {
+			this.messageType = MessageType.CHAT;
+			this.chatRole = chatRole;
+			return this;
+		}
+
+		@Override
+		public PromptBuilder function(String functionName) {
+			this.messageType = MessageType.FUNCTION;
+			this.functionName = functionName;
+			return this;
+		}
+
+		@Override
+		public PromptBuilder usingModel(Map<String, Object> model) {
+			this.model = model;
+			return this;
+		}
+
+		@Override
+		public PromptBuilder withProperties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		@Override
+		public Prompt create() {
+
+			switch (messageType) {
+				case HUMAN:
+					return newPrompt(new HumanMessage(render(model), properties));
+				case AI:
+					return newPrompt(new AiMessage(render(model), containsExample, properties));
+				case CHAT:
+					return newPrompt(new ChatMessage(render(model), chatRole, properties));
+				case SYSTEM:
+					return newPrompt(new SystemMessage(render(model), properties));
+				case FUNCTION:
+					return newPrompt(new FunctionMessage(render(model), functionName, properties));
+				default:
+					throw new IllegalArgumentException("Invalid MessageType: " + messageType);
 			}
-			st.render();
 		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
+
+		private Prompt newPrompt(Message message) {
+			return new Prompt(Collections.singletonList(message));
 		}
+
 	}
 
 }

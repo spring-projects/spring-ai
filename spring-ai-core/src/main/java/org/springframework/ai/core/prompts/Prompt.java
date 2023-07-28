@@ -22,22 +22,28 @@ import java.util.List;
 import org.springframework.ai.core.prompts.messages.HumanMessage;
 import org.springframework.ai.core.prompts.messages.Message;
 
-public class StringPromptValue implements PromptValue {
+public class Prompt {
 
-	private String value;
+	private List<Message> messages;
 
-	public StringPromptValue(String formattedPrompt) {
-		this.value = formattedPrompt;
+	public Prompt(String contents) {
+		this.messages = Collections.singletonList(new HumanMessage(contents));
 	}
 
-	@Override
-	public String toStringValue() {
-		return this.value;
+	public Prompt(List<Message> messages) {
+		this.messages = messages;
 	}
 
-	@Override
-	public List<Message> toMessages() {
-		return Collections.singletonList(new HumanMessage(this.value));
+	public String getContents() {
+		StringBuilder sb = new StringBuilder();
+		for (Message message : messages) {
+			sb.append(message.getContent());
+		}
+		return sb.toString();
+	}
+
+	public List<Message> getMessages() {
+		return this.messages;
 	}
 
 }
