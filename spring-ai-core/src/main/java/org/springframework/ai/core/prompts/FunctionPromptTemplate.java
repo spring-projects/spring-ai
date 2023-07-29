@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package org.springframework.ai.core.prompts;
 
 public class FunctionPromptTemplate extends PromptTemplate {
@@ -24,6 +23,5 @@ public class FunctionPromptTemplate extends PromptTemplate {
 	public FunctionPromptTemplate(String template) {
 		super(template);
 	}
-
 
 }

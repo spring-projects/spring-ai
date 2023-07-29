@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package org.springframework.ai.core.prompts;
 
 import java.util.Map;
@@ -43,6 +42,5 @@ public class ChatPromptTemplate extends PromptTemplate {
 	public Prompt create(Map<String, Object> model) {
 		return new Prompt(new ChatMessage(render(model), this.role));
 	}
-
 
 }

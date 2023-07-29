@@ -107,4 +107,5 @@ public class PromptTemplate extends AbstractPromptTemplate {
 					"All template variables were not replaced. Missing variable names are " + missingEntries);
 		}
 	}
+
 }

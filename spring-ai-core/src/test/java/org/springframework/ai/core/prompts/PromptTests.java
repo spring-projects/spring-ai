@@ -56,8 +56,6 @@ class PromptTests {
 		assertThat(prompt.getMessages()).isNotEmpty().hasSize(1);
 		System.out.println(prompt.getContents());
 
-
-
 		String systemTemplate = "You are a helpful assistant that translates {input_language} to {output_language}.";
 		// system_message_prompt = SystemMessagePromptTemplate.from_template(template)
 
@@ -81,7 +79,8 @@ class PromptTests {
 		PromptTemplate promptTemplate = new SystemPromptTemplate(systemTemplate);
 		Prompt systemPrompt = promptTemplate.create(systemModel);
 
-		promptTemplate = new PromptTemplate(humanTemplate);  // creates a Prompt with HumanMessage
+		promptTemplate = new PromptTemplate(humanTemplate); // creates a Prompt with
+															// HumanMessage
 		Prompt humanPrompt = promptTemplate.create(humanModel);
 
 		// ChatPromptTemplate chatPromptTemplate = new ChatPromptTemplate(systemPrompt,

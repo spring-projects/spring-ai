@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package org.springframework.ai.core.prompts;
 
 import java.util.Map;
