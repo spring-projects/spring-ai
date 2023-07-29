@@ -14,26 +14,34 @@
  * limitations under the License.
  */
 
+
 package org.springframework.ai.core.prompts;
 
 import java.util.Map;
 
-import org.springframework.ai.core.prompts.messages.MessageType;
+import org.springframework.ai.core.prompts.messages.AiMessage;
 
-public interface PromptOperations {
+public class AiPromptTemplate extends PromptTemplate {
 
-	String getTemplate();
+	private boolean example = false;
 
-	TemplateFormat getTemplateFormat();
+	public AiPromptTemplate(String template) {
+		super(template);
+	}
 
-	void add(String name, Object value);
+	public AiPromptTemplate(String template, boolean example) {
+		super(template);
+		this.example = example;
+	}
 
-	String render();
+	@Override
+	public Prompt create() {
+		return new Prompt(new AiMessage(render()));
+	}
 
-	String render(Map<String, Object> model);
-
-	Prompt create();
-
-	Prompt create(Map<String, Object> model);
+	@Override
+	public Prompt create(Map<String, Object> model) {
+		return new Prompt(new AiMessage(render(model), this.example));
+	}
 
 }

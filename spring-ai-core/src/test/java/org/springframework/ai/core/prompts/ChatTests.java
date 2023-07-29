@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
+
 package org.springframework.ai.core.prompts;
 
-import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.core.prompts.messages.MessageType;
+public class ChatTests {
 
-public interface PromptOperations {
-
-	String getTemplate();
-
-	TemplateFormat getTemplateFormat();
-
-	void add(String name, Object value);
-
-	String render();
-
-	String render(Map<String, Object> model);
-
-	Prompt create();
-
-	Prompt create(Map<String, Object> model);
-
+//	@Test
+//	void testChat() {
+//
+//		String customerStyle = "American English in a calm and respectful tone";
+//		String customerEmail = "Arrr, I be fuming that me blender lid "
+//				+ "flew off and splattered me kitchen walls "
+//				+ "with smoothie! And to make matters worse, "
+//				+ "the warranty don't cover the cost of "
+//				+ "cleaning up me kitchen. I need yer help "
+//				+ "right now, matey!";
+//		ChatOpenAi chatOpenAi = new ChatOpenAi();
+//		chatOpenAi
+//
+//	}
 }

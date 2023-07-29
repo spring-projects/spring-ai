@@ -30,6 +30,10 @@ public class Prompt {
 		this.messages = Collections.singletonList(new HumanMessage(contents));
 	}
 
+	public Prompt(Message message) {
+		this.messages = Collections.singletonList(message);
+	}
+
 	public Prompt(List<Message> messages) {
 		this.messages = messages;
 	}

@@ -77,6 +77,16 @@ public class PromptTemplate extends AbstractPromptTemplate {
 		return st.render().trim();
 	}
 
+	@Override
+	public Prompt create() {
+		return new Prompt(render(new HashMap<>()));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model) {
+		return new Prompt(render(model));
+	}
+
 	protected Set<String> getInputVariables() {
 		TokenStream tokens = this.st.impl.tokens;
 		return IntStream.range(0, tokens.range())
@@ -97,94 +107,4 @@ public class PromptTemplate extends AbstractPromptTemplate {
 					"All template variables were not replaced. Missing variable names are " + missingEntries);
 		}
 	}
-
-	@Override
-	public PromptBuilder prompt() {
-		return new PromptTemplatePromptBuilder();
-	}
-
-	public class PromptTemplatePromptBuilder implements PromptBuilder {
-
-		private MessageType messageType = MessageType.HUMAN;
-
-		private Map<String, Object> model = new HashMap<>();
-
-		private Map<String, Object> properties = new HashMap<>();
-
-		private boolean containsExample;
-
-		private String chatRole;
-
-		private String functionName;
-
-		@Override
-		public PromptBuilder system() {
-			this.messageType = MessageType.SYSTEM;
-			return this;
-		}
-
-		@Override
-		public PromptBuilder human() {
-			this.messageType = MessageType.HUMAN;
-			return this;
-		}
-
-		@Override
-		public PromptBuilder ai(boolean containsExample) {
-			this.messageType = MessageType.AI;
-			this.containsExample = containsExample;
-			return this;
-		}
-
-		@Override
-		public PromptBuilder chat(String chatRole) {
-			this.messageType = MessageType.CHAT;
-			this.chatRole = chatRole;
-			return this;
-		}
-
-		@Override
-		public PromptBuilder function(String functionName) {
-			this.messageType = MessageType.FUNCTION;
-			this.functionName = functionName;
-			return this;
-		}
-
-		@Override
-		public PromptBuilder usingModel(Map<String, Object> model) {
-			this.model = model;
-			return this;
-		}
-
-		@Override
-		public PromptBuilder withProperties(Map<String, Object> properties) {
-			this.properties = properties;
-			return this;
-		}
-
-		@Override
-		public Prompt create() {
-
-			switch (messageType) {
-				case HUMAN:
-					return newPrompt(new HumanMessage(render(model), properties));
-				case AI:
-					return newPrompt(new AiMessage(render(model), containsExample, properties));
-				case CHAT:
-					return newPrompt(new ChatMessage(render(model), chatRole, properties));
-				case SYSTEM:
-					return newPrompt(new SystemMessage(render(model), properties));
-				case FUNCTION:
-					return newPrompt(new FunctionMessage(render(model), functionName, properties));
-				default:
-					throw new IllegalArgumentException("Invalid MessageType: " + messageType);
-			}
-		}
-
-		private Prompt newPrompt(Message message) {
-			return new Prompt(Collections.singletonList(message));
-		}
-
-	}
-
 }

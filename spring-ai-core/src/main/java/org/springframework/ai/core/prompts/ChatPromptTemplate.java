@@ -14,26 +14,35 @@
  * limitations under the License.
  */
 
+
 package org.springframework.ai.core.prompts;
 
 import java.util.Map;
 
-import org.springframework.ai.core.prompts.messages.MessageType;
+import org.springframework.ai.core.prompts.messages.ChatMessage;
 
-public interface PromptOperations {
+public class ChatPromptTemplate extends PromptTemplate {
 
-	String getTemplate();
+	private String role;
 
-	TemplateFormat getTemplateFormat();
+	public ChatPromptTemplate(String template) {
+		super(template);
+	}
 
-	void add(String name, Object value);
+	public ChatPromptTemplate(String template, String role) {
+		super(template);
+		this.role = role;
+	}
 
-	String render();
+	@Override
+	public Prompt create() {
+		return new Prompt(new ChatMessage(render(), this.role));
+	}
 
-	String render(Map<String, Object> model);
+	@Override
+	public Prompt create(Map<String, Object> model) {
+		return new Prompt(new ChatMessage(render(model), this.role));
+	}
 
-	Prompt create();
-
-	Prompt create(Map<String, Object> model);
 
 }

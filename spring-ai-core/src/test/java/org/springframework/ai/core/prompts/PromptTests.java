@@ -17,14 +17,11 @@
 package org.springframework.ai.core.prompts;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.core.prompts.messages.Message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,20 +51,12 @@ class PromptTests {
 		assertThat(promptString).isEqualTo("Hello 'Nick' 'Park' from Unix");
 
 		// to have access to Messages
-		Prompt prompt = pt.prompt().system().usingModel(model).create();
+		Prompt prompt = pt.create(model);
+		assertThat(prompt.getContents()).isNotNull();
+		assertThat(prompt.getMessages()).isNotEmpty().hasSize(1);
 		System.out.println(prompt.getContents());
-		// -> Hello Nick Park
-		List<Message> messages = prompt.getMessages();
 
-		prompt = pt.prompt().ai(true).usingModel(model).create();
-		System.out.println("Contents: " + prompt.getContents());
-		System.out.println("Messages: " + prompt.getMessages());
 
-		prompt = pt.prompt().system().usingModel(model).create(); // Can use this for
-																	// MessageType that
-																	// don't take
-																	// additional
-																	// arguments.
 
 		String systemTemplate = "You are a helpful assistant that translates {input_language} to {output_language}.";
 		// system_message_prompt = SystemMessagePromptTemplate.from_template(template)
@@ -89,11 +78,11 @@ class PromptTests {
 		 * chat_prompt.format_prompt(input_language="English", output_language="French",
 		 * text="I love programming.").to_messages()
 		 */
-		PromptTemplate promptTemplate = new PromptTemplate(systemTemplate);
-		Prompt systemPrompt = promptTemplate.prompt().system().usingModel(systemModel).create();
+		PromptTemplate promptTemplate = new SystemPromptTemplate(systemTemplate);
+		Prompt systemPrompt = promptTemplate.create(systemModel);
 
-		promptTemplate = new PromptTemplate(humanTemplate);
-		Prompt humanPrompt = promptTemplate.prompt().human().usingModel(humanModel).create();
+		promptTemplate = new PromptTemplate(humanTemplate);  // creates a Prompt with HumanMessage
+		Prompt humanPrompt = promptTemplate.create(humanModel);
 
 		// ChatPromptTemplate chatPromptTemplate = new ChatPromptTemplate(systemPrompt,
 		// humanPrompt);

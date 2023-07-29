@@ -22,6 +22,7 @@ public interface Message {
 
 	String getContent();
 
+	//TODO investigate use of "function_name" and "name" - maybe cna be first class representation vs. map.
 	Map<String, Object> getProperties();
 
 	MessageType getMessageType();
