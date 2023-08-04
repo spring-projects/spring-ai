@@ -1,0 +1,81 @@
+name: Maven Central Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: "Release version"
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Capture release version
+        run: echo RELEASE_VERSION=${{ github.event.inputs.releaseVersion }} >> $GITHUB_ENV
+
+      - name: Prepare directory structure
+        run: |
+          mkdir -p nexus/org/springframework/batch/spring-batch-bom/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/batch/spring-batch-infrastructure/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/batch/spring-batch-core/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/batch/spring-batch-test/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/batch/spring-batch-integration/$RELEASE_VERSION
+
+      - name: Download release files from Artifactory
+        env:
+          ARTIFACTORY_URL: "https://repo.spring.io/libs-staging-local/org/springframework/batch"
+        run: |
+          echo "Downloading BOM artifacts"
+          cd nexus/org/springframework/batch/spring-batch-bom/$RELEASE_VERSION
+          wget $ARTIFACTORY_URL/spring-batch-bom/$RELEASE_VERSION/spring-batch-bom-$RELEASE_VERSION.pom
+          
+          echo "Downloading infrastructure artifacts"
+          cd ../../../../../..
+          cd nexus/org/springframework/batch/spring-batch-infrastructure/$RELEASE_VERSION
+          wget $ARTIFACTORY_URL/spring-batch-infrastructure/$RELEASE_VERSION/spring-batch-infrastructure-$RELEASE_VERSION.pom
+          wget $ARTIFACTORY_URL/spring-batch-infrastructure/$RELEASE_VERSION/spring-batch-infrastructure-$RELEASE_VERSION.jar
+          wget $ARTIFACTORY_URL/spring-batch-infrastructure/$RELEASE_VERSION/spring-batch-infrastructure-$RELEASE_VERSION-javadoc.jar
+          wget $ARTIFACTORY_URL/spring-batch-infrastructure/$RELEASE_VERSION/spring-batch-infrastructure-$RELEASE_VERSION-sources.jar
+
+          echo "Downloading core artifacts"
+          cd ../../../../../..
+          cd nexus/org/springframework/batch/spring-batch-core/$RELEASE_VERSION
+          wget $ARTIFACTORY_URL/spring-batch-core/$RELEASE_VERSION/spring-batch-core-$RELEASE_VERSION.pom
+          wget $ARTIFACTORY_URL/spring-batch-core/$RELEASE_VERSION/spring-batch-core-$RELEASE_VERSION.jar
+          wget $ARTIFACTORY_URL/spring-batch-core/$RELEASE_VERSION/spring-batch-core-$RELEASE_VERSION-javadoc.jar
+          wget $ARTIFACTORY_URL/spring-batch-core/$RELEASE_VERSION/spring-batch-core-$RELEASE_VERSION-sources.jar
+
+          echo "Downloading test artifacts"
+          cd ../../../../../..
+          cd nexus/org/springframework/batch/spring-batch-test/$RELEASE_VERSION
+          wget $ARTIFACTORY_URL/spring-batch-test/$RELEASE_VERSION/spring-batch-test-$RELEASE_VERSION.pom
+          wget $ARTIFACTORY_URL/spring-batch-test/$RELEASE_VERSION/spring-batch-test-$RELEASE_VERSION.jar
+          wget $ARTIFACTORY_URL/spring-batch-test/$RELEASE_VERSION/spring-batch-test-$RELEASE_VERSION-javadoc.jar
+          wget $ARTIFACTORY_URL/spring-batch-test/$RELEASE_VERSION/spring-batch-test-$RELEASE_VERSION-sources.jar
+
+          echo "Downloading integration artifacts"
+          cd ../../../../../..
+          cd nexus/org/springframework/batch/spring-batch-integration/$RELEASE_VERSION
+          wget $ARTIFACTORY_URL/spring-batch-integration/$RELEASE_VERSION/spring-batch-integration-$RELEASE_VERSION.pom
+          wget $ARTIFACTORY_URL/spring-batch-integration/$RELEASE_VERSION/spring-batch-integration-$RELEASE_VERSION.jar
+          wget $ARTIFACTORY_URL/spring-batch-integration/$RELEASE_VERSION/spring-batch-integration-$RELEASE_VERSION-javadoc.jar
+          wget $ARTIFACTORY_URL/spring-batch-integration/$RELEASE_VERSION/spring-batch-integration-$RELEASE_VERSION-sources.jar
+
+      - name: Sign artifacts and release them to Maven Central
+        uses: jvalkeal/nexus-sync@v0
+        id: nexus
+        with:
+          url: ${{ secrets.OSSRH_URL }}
+          username: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
+          password: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
+          staging-profile-name: ${{ secrets.OSSRH_STAGING_PROFILE_NAME }}
+          create: true
+          upload: true
+          close: true
+          release: true
+          generate-checksums: true
+          pgp-sign: true
+          pgp-sign-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          pgp-sign-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
