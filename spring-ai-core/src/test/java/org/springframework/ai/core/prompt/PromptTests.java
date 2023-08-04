@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
 import java.util.HashMap;
 import java.util.Map;

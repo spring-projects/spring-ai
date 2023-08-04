@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,14 +28,6 @@ import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
-
-import org.springframework.ai.core.prompts.messages.AiMessage;
-import org.springframework.ai.core.prompts.messages.ChatMessage;
-import org.springframework.ai.core.prompts.messages.FunctionMessage;
-import org.springframework.ai.core.prompts.messages.HumanMessage;
-import org.springframework.ai.core.prompts.messages.Message;
-import org.springframework.ai.core.prompts.messages.MessageType;
-import org.springframework.ai.core.prompts.messages.SystemMessage;
 
 public class PromptTemplate extends AbstractPromptTemplate {
 

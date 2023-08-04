@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
-import java.util.Map;
+public abstract class AbstractPromptTemplate implements PromptOperations {
 
-import org.springframework.ai.core.prompts.messages.SystemMessage;
+	protected String template;
 
-public class SystemPromptTemplate extends PromptTemplate {
+	protected TemplateFormat templateFormat = TemplateFormat.ST;
 
-	public SystemPromptTemplate(String template) {
-		super(template);
+	public AbstractPromptTemplate(String template) {
+		this.template = template;
 	}
 
 	@Override
-	public Prompt create() {
-		return new Prompt(new SystemMessage(render()));
+	public String getTemplate() {
+		return this.template;
 	}
 
 	@Override
-	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new SystemMessage(render(model)));
+	public TemplateFormat getTemplateFormat() {
+		return this.templateFormat;
 	}
 
 }

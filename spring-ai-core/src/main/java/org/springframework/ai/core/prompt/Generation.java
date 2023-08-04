@@ -14,30 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.prompt;
 
 import java.util.Map;
 
-public class AiMessage extends AbstractMessage {
+public class Generation {
 
-	private boolean example = false;
+	private final String text;
 
-	public AiMessage(String content) {
-		super(MessageType.AI, content);
-	}
+	private Map<String, Object> info;
 
-	public AiMessage(String content, boolean example) {
-		super(MessageType.AI, content);
-		this.example = example;
-	}
-
-	public AiMessage(String content, boolean example, Map<String, Object> properties) {
-		super(MessageType.AI, content, properties);
-		this.example = example;
-	}
-
-	public boolean isExample() {
-		return example;
+	public Generation(String text) {
+		this.text = text;
 	}
 
 }

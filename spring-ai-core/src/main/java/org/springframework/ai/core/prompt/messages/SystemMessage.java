@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.prompt.messages;
 
 import java.util.Map;
 
-public interface Message {
+public class SystemMessage extends AbstractMessage {
 
-	String getContent();
+	public SystemMessage(String content) {
+		super(MessageType.SYSTEM, content);
+	}
 
-	// TODO investigate use of "function_name" and "name" - maybe cna be first class
-	// representation vs. map.
-	Map<String, Object> getProperties();
-
-	MessageType getMessageType();
+	public SystemMessage(String content, Map<String, Object> properties) {
+		super(MessageType.SYSTEM, content, properties);
+	}
 
 }

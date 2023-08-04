@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt.messages;
 
-import java.util.List;
+import java.util.Map;
 
-public interface OutputParser {
+public class HumanMessage extends AbstractMessage {
 
-	Object parseResut(List<Generation> generations);
+	public HumanMessage(String content) {
+		super(MessageType.HUMAN, content);
+	}
+
+	public HumanMessage(String content, Map<String, Object> properties) {
+		super(MessageType.HUMAN, content, properties);
+	}
 
 }

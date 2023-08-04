@@ -14,29 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
-public enum TemplateFormat {
+import java.util.List;
 
-	ST("ST");
+public interface OutputParser {
 
-	private final String value;
-
-	TemplateFormat(String value) {
-		this.value = value;
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public static TemplateFormat fromValue(String value) {
-		for (TemplateFormat templateFormat : TemplateFormat.values()) {
-			if (templateFormat.getValue().equals(value)) {
-				return templateFormat;
-			}
-		}
-		throw new IllegalArgumentException("Invalid TemplateFormat value: " + value);
-	}
+	Object parseResut(List<Generation> generations);
 
 }

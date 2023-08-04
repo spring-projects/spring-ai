@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.prompt;
 
 import java.util.Map;
 
-public class ChatMessage extends AbstractMessage {
+public interface PromptOperations {
 
-	private String role;
+	String getTemplate();
 
-	public ChatMessage(String content, String role) {
-		super(MessageType.SYSTEM, content);
-		this.role = role;
-	}
+	TemplateFormat getTemplateFormat();
 
-	public ChatMessage(String content, String role, Map<String, Object> properties) {
-		super(MessageType.SYSTEM, content, properties);
-		this.role = role;
-	}
+	void add(String name, Object value);
 
-	public String getRole() {
-		return role;
-	}
+	String render();
+
+	String render(Map<String, Object> model);
+
+	Prompt create();
+
+	Prompt create(Map<String, Object> model);
 
 }

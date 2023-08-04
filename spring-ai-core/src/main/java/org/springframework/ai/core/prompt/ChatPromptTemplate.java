@@ -14,25 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
-import org.junit.jupiter.api.Test;
+import java.util.Map;
 
-public class ChatTests {
+import org.springframework.ai.core.prompt.messages.ChatMessage;
 
-	// @Test
-	// void testChat() {
-	//
-	// String customerStyle = "American English in a calm and respectful tone";
-	// String customerEmail = "Arrr, I be fuming that me blender lid "
-	// + "flew off and splattered me kitchen walls "
-	// + "with smoothie! And to make matters worse, "
-	// + "the warranty don't cover the cost of "
-	// + "cleaning up me kitchen. I need yer help "
-	// + "right now, matey!";
-	// ChatOpenAi chatOpenAi = new ChatOpenAi();
-	// chatOpenAi
-	//
-	// }
+public class ChatPromptTemplate extends PromptTemplate {
+
+	private String role;
+
+	public ChatPromptTemplate(String template) {
+		super(template);
+	}
+
+	public ChatPromptTemplate(String template, String role) {
+		super(template);
+		this.role = role;
+	}
+
+	@Override
+	public Prompt create() {
+		return new Prompt(new ChatMessage(render(), this.role));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model) {
+		return new Prompt(new ChatMessage(render(model), this.role));
+	}
 
 }

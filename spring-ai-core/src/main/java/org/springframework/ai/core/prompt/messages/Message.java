@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt.messages;
 
 import java.util.Map;
 
-public class Generation {
+public interface Message {
 
-	private final String text;
+	String getContent();
 
-	private Map<String, Object> info;
+	// TODO investigate use of "function_name" and "name" - maybe cna be first class
+	// representation vs. map.
+	Map<String, Object> getProperties();
 
-	public Generation(String text) {
-		this.text = text;
-	}
+	MessageType getMessageType();
 
 }

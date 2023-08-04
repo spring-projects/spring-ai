@@ -14,18 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.prompt;
 
 import java.util.Map;
 
-public class SystemMessage extends AbstractMessage {
+import org.springframework.ai.core.prompt.messages.AiMessage;
 
-	public SystemMessage(String content) {
-		super(MessageType.SYSTEM, content);
+public class AiPromptTemplate extends PromptTemplate {
+
+	private boolean example = false;
+
+	public AiPromptTemplate(String template) {
+		super(template);
 	}
 
-	public SystemMessage(String content, Map<String, Object> properties) {
-		super(MessageType.SYSTEM, content, properties);
+	public AiPromptTemplate(String template, boolean example) {
+		super(template);
+		this.example = example;
+	}
+
+	@Override
+	public Prompt create() {
+		return new Prompt(new AiMessage(render()));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model) {
+		return new Prompt(new AiMessage(render(model), this.example));
 	}
 
 }

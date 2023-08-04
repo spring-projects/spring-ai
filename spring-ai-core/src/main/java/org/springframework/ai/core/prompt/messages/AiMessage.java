@@ -14,26 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt.messages;
 
-public abstract class AbstractPromptTemplate implements PromptOperations {
+import java.util.Map;
 
-	protected String template;
+public class AiMessage extends AbstractMessage {
 
-	protected TemplateFormat templateFormat = TemplateFormat.ST;
+	private boolean example = false;
 
-	public AbstractPromptTemplate(String template) {
-		this.template = template;
+	public AiMessage(String content) {
+		super(MessageType.AI, content);
 	}
 
-	@Override
-	public String getTemplate() {
-		return this.template;
+	public AiMessage(String content, boolean example) {
+		super(MessageType.AI, content);
+		this.example = example;
 	}
 
-	@Override
-	public TemplateFormat getTemplateFormat() {
-		return this.templateFormat;
+	public AiMessage(String content, boolean example, Map<String, Object> properties) {
+		super(MessageType.AI, content, properties);
+		this.example = example;
+	}
+
+	public boolean isExample() {
+		return example;
 	}
 
 }

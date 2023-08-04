@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.ai.core.prompts.messages.HumanMessage;
-import org.springframework.ai.core.prompts.messages.Message;
+import org.springframework.ai.core.prompt.messages.HumanMessage;
+import org.springframework.ai.core.prompt.messages.Message;
 
 public class Prompt {
 

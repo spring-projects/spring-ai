@@ -14,26 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
-import java.util.Map;
+public class FunctionPromptTemplate extends PromptTemplate {
 
-import org.springframework.ai.core.prompts.messages.MessageType;
+	private String name;
 
-public interface PromptOperations {
-
-	String getTemplate();
-
-	TemplateFormat getTemplateFormat();
-
-	void add(String name, Object value);
-
-	String render();
-
-	String render(Map<String, Object> model);
-
-	Prompt create();
-
-	Prompt create(Map<String, Object> model);
+	public FunctionPromptTemplate(String template) {
+		super(template);
+	}
 
 }

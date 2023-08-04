@@ -14,14 +14,29 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt;
 
-public class FunctionPromptTemplate extends PromptTemplate {
+public enum TemplateFormat {
 
-	private String name;
+	ST("ST");
 
-	public FunctionPromptTemplate(String template) {
-		super(template);
+	private final String value;
+
+	TemplateFormat(String value) {
+		this.value = value;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public static TemplateFormat fromValue(String value) {
+		for (TemplateFormat templateFormat : TemplateFormat.values()) {
+			if (templateFormat.getValue().equals(value)) {
+				return templateFormat;
+			}
+		}
+		throw new IllegalArgumentException("Invalid TemplateFormat value: " + value);
 	}
 
 }

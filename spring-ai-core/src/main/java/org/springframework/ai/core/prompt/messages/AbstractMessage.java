@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.prompt.messages;
 
 import java.util.HashMap;
 import java.util.Map;

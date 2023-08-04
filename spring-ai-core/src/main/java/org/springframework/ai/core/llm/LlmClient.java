@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.llm;
 
-import java.util.Map;
+import org.springframework.ai.core.prompt.Prompt;
 
-public class HumanMessage extends AbstractMessage {
+public interface LlmClient {
 
-	public HumanMessage(String content) {
-		super(MessageType.HUMAN, content);
-	}
+	String generate(String text);
 
-	public HumanMessage(String content, Map<String, Object> properties) {
-		super(MessageType.HUMAN, content, properties);
-	}
+	LLMResult generate(Prompt... prompts);
 
 }

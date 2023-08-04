@@ -14,33 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts;
+package org.springframework.ai.core.prompt.messages;
 
 import java.util.Map;
 
-import org.springframework.ai.core.prompts.messages.AiMessage;
+public class FunctionMessage extends AbstractMessage {
 
-public class AiPromptTemplate extends PromptTemplate {
+	private String functionName;
 
-	private boolean example = false;
-
-	public AiPromptTemplate(String template) {
-		super(template);
+	public FunctionMessage(String content, String functionName) {
+		super(MessageType.SYSTEM, content);
+		this.functionName = functionName;
 	}
 
-	public AiPromptTemplate(String template, boolean example) {
-		super(template);
-		this.example = example;
+	public FunctionMessage(String content, String functionName, Map<String, Object> properties) {
+		super(MessageType.SYSTEM, content, properties);
+		this.functionName = functionName;
 	}
 
-	@Override
-	public Prompt create() {
-		return new Prompt(new AiMessage(render()));
-	}
-
-	@Override
-	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new AiMessage(render(model), this.example));
+	public String getFunctionName() {
+		return functionName;
 	}
 
 }

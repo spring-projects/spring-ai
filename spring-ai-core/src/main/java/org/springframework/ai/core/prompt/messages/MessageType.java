@@ -13,34 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.ai.core.prompt.messages;
 
-package org.springframework.ai.core.prompts;
+public enum MessageType {
 
-import java.util.Map;
+	HUMAN("human"),
 
-import org.springframework.ai.core.prompts.messages.ChatMessage;
+	AI("ai"),
 
-public class ChatPromptTemplate extends PromptTemplate {
+	CHAT("chat"),
 
-	private String role;
+	SYSTEM("system"),
 
-	public ChatPromptTemplate(String template) {
-		super(template);
+	FUNCTION("function");
+
+	private final String value;
+
+	MessageType(String value) {
+		this.value = value;
 	}
 
-	public ChatPromptTemplate(String template, String role) {
-		super(template);
-		this.role = role;
+	public String getValue() {
+		return value;
 	}
 
-	@Override
-	public Prompt create() {
-		return new Prompt(new ChatMessage(render(), this.role));
-	}
-
-	@Override
-	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new ChatMessage(render(model), this.role));
+	public static MessageType fromValue(String value) {
+		for (MessageType messageType : MessageType.values()) {
+			if (messageType.getValue().equals(value)) {
+				return messageType;
+			}
+		}
+		throw new IllegalArgumentException("Invalid MessageType value: " + value);
 	}
 
 }

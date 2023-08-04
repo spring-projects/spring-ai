@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompts.messages;
+package org.springframework.ai.core.prompt;
 
-import java.util.Map;
+public class ChatTests {
 
-public class FunctionMessage extends AbstractMessage {
-
-	private String functionName;
-
-	public FunctionMessage(String content, String functionName) {
-		super(MessageType.SYSTEM, content);
-		this.functionName = functionName;
-	}
-
-	public FunctionMessage(String content, String functionName, Map<String, Object> properties) {
-		super(MessageType.SYSTEM, content, properties);
-		this.functionName = functionName;
-	}
-
-	public String getFunctionName() {
-		return functionName;
-	}
+	// @Test
+	// void testChat() {
+	//
+	// String customerStyle = "American English in a calm and respectful tone";
+	// String customerEmail = "Arrr, I be fuming that me blender lid "
+	// + "flew off and splattered me kitchen walls "
+	// + "with smoothie! And to make matters worse, "
+	// + "the warranty don't cover the cost of "
+	// + "cleaning up me kitchen. I need yer help "
+	// + "right now, matey!";
+	// ChatOpenAi chatOpenAi = new ChatOpenAi();
+	// chatOpenAi
+	//
+	// }
 
 }
