@@ -1,1 +1,2 @@
 org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration

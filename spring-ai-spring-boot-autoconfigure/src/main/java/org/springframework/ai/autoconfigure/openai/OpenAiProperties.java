@@ -18,10 +18,18 @@ package org.springframework.ai.autoconfigure.openai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "spring.ai.openai")
+import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
+
+@ConfigurationProperties(CONFIG_PREFIX)
 public class OpenAiProperties {
 
+	public static final String CONFIG_PREFIX = "spring.ai.openai";
+
 	private String apiKey;
+
+	private Double temperature = 0.5;
+
+	private String model = "gpt-3.5-turbo";
 
 	public String getApiKey() {
 		return apiKey;
@@ -29,6 +37,22 @@ public class OpenAiProperties {
 
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public Double getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
 	}
 
 }

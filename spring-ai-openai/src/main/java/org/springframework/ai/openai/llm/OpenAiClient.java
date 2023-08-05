@@ -39,8 +39,9 @@ public class OpenAiClient implements LlmClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiClient.class);
 
+	// TODO how to set default options for the entire client
 	// TODO expose request options into Prompt API via PromptOptions
-	private Double temperature = 0.3;
+	private Double temperature = 0.5;
 
 	private String model = "gpt-3.5-turbo";
 
@@ -49,6 +50,22 @@ public class OpenAiClient implements LlmClient {
 	public OpenAiClient(OpenAiService openAiService) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
 		this.openAiService = openAiService;
+	}
+
+	public Double getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
 	}
 
 	@Override

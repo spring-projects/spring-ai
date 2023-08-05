@@ -8,8 +8,8 @@
 	</parent>
 	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Starters</name>
-	<description>Spring AI Auto Configuration</description>
+	<name>Spring AI Starter - OpenAI</name>
+	<description>Spring AI Open AI Auto Configuration</description>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
 
 	<scm>

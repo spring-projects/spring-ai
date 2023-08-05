@@ -25,6 +25,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
+import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
+
 @AutoConfiguration
 @ConditionalOnClass(OpenAiService.class)
 @EnableConfigurationProperties(OpenAiProperties.class)
@@ -40,10 +42,13 @@ public class OpenAiAutoConfiguration {
 	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
 		if (!StringUtils.hasText(openAiProperties.getApiKey())) {
 			throw new IllegalArgumentException(
-					"You must provide an API key with the property name spring.ai.openai.api-key");
+					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
 		}
-		OpenAiService openAiService = new OpenAiService(openAiProperties.getApiKey());
-		return new OpenAiClient(openAiService);
+		OpenAiService theoOpenAiService = new OpenAiService(openAiProperties.getApiKey());
+		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService);
+		openAiClient.setTemperature(openAiProperties.getTemperature());
+		openAiClient.setModel(openAiProperties.getModel());
+		return openAiClient;
 	}
 
 }

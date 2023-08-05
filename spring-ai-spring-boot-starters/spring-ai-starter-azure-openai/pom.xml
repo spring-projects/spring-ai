@@ -6,10 +6,10 @@
 		<artifactId>spring-ai</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+	<artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Auto Configuration</name>
-	<description>Spring AI Auto Configuration</description>
+	<name>Spring AI Starter - Azure OpenAI</name>
+	<description>Spring AI Azure OpenAI Auto Configuration</description>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
 
 	<scm>
@@ -29,16 +29,14 @@
 
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
-			<artifactId>spring-ai-openai</artifactId>
+			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
 			<artifactId>spring-ai-azure-openai</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<!-- test dependencies -->
