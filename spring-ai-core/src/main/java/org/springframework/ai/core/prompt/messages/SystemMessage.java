@@ -18,6 +18,12 @@ package org.springframework.ai.core.prompt.messages;
 
 import java.util.Map;
 
+/**
+ * A message of the type 'system' passed as input. The system message gives high level
+ * instructions for the conversation. This role typically provides high-level instructions
+ * for the conversation. For example, you might use a system message to instruct the model
+ * to behave like a certain character or to provide answers in a specific format.
+ */
 public class SystemMessage extends AbstractMessage {
 
 	public SystemMessage(String content) {

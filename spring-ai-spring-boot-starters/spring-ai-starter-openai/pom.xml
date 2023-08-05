@@ -6,10 +6,10 @@
 		<artifactId>spring-ai</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>spring-ai-core</artifactId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Core</name>
-	<description>Core domain for AI programming</description>
+	<name>Spring AI Starters</name>
+	<description>Spring AI Auto Configuration</description>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
 
 	<scm>
@@ -21,10 +21,22 @@
 	<dependencies>
 
 		<!-- production dependencies -->
+
 		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>stringtemplate</artifactId>
-			<version>${stringtemplate.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-openai</artifactId>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<!-- test dependencies -->

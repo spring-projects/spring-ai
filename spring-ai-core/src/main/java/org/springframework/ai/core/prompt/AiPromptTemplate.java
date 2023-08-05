@@ -18,7 +18,7 @@ package org.springframework.ai.core.prompt;
 
 import java.util.Map;
 
-import org.springframework.ai.core.prompt.messages.AiMessage;
+import org.springframework.ai.core.prompt.messages.AssistantMessage;
 
 public class AiPromptTemplate extends PromptTemplate {
 
@@ -35,12 +35,12 @@ public class AiPromptTemplate extends PromptTemplate {
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new AiMessage(render()));
+		return new Prompt(new AssistantMessage(render()));
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new AiMessage(render(model), this.example));
+		return new Prompt(new AssistantMessage(render(model), this.example));
 	}
 
 }

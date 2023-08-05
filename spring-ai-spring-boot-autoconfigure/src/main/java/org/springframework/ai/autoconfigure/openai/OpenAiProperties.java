@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompt.messages;
+package org.springframework.ai.autoconfigure.openai;
 
-import java.util.Map;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-public class HumanMessage extends AbstractMessage {
+@ConfigurationProperties(prefix = "spring.ai.openai")
+public class OpenAiProperties {
 
-	public HumanMessage(String content) {
-		super(MessageType.HUMAN, content);
+	private String apiKey;
+
+	public String getApiKey() {
+		return apiKey;
 	}
 
-	public HumanMessage(String content, Map<String, Object> properties) {
-		super(MessageType.HUMAN, content, properties);
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
 }

@@ -6,10 +6,10 @@
 		<artifactId>spring-ai</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>spring-ai-core</artifactId>
+	<artifactId>spring-ai-openai</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Core</name>
-	<description>Core domain for AI programming</description>
+	<name>Spring AI OpenAI</name>
+	<description>OpenAI support</description>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
 
 	<scm>
@@ -22,9 +22,26 @@
 
 		<!-- production dependencies -->
 		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>stringtemplate</artifactId>
-			<version>${stringtemplate.version}</version>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-core</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.theokanning.openai-gpt3-java</groupId>
+			<artifactId>service</artifactId>
+			<version>${open-ai-client.version}</version>
+		</dependency>
+
+		<!-- Spring Framework -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context-support</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-logging</artifactId>
 		</dependency>
 
 		<!-- test dependencies -->

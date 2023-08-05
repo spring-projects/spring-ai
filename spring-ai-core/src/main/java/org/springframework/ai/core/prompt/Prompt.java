@@ -19,7 +19,7 @@ package org.springframework.ai.core.prompt;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.ai.core.prompt.messages.HumanMessage;
+import org.springframework.ai.core.prompt.messages.UserMessage;
 import org.springframework.ai.core.prompt.messages.Message;
 
 public class Prompt {
@@ -27,7 +27,7 @@ public class Prompt {
 	private List<Message> messages;
 
 	public Prompt(String contents) {
-		this.messages = Collections.singletonList(new HumanMessage(contents));
+		this.messages = Collections.singletonList(new UserMessage(contents));
 	}
 
 	public Prompt(Message message) {

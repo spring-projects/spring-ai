@@ -18,26 +18,19 @@ package org.springframework.ai.core.prompt.messages;
 
 import java.util.Map;
 
-public class AiMessage extends AbstractMessage {
+/**
+ * A message of the type 'user' passed as input Messages with the user role are from the
+ * end-user or developer. They represent questions, prompts, or any input that you want
+ * the model to respond to.
+ */
+public class UserMessage extends AbstractMessage {
 
-	private boolean example = false;
-
-	public AiMessage(String content) {
-		super(MessageType.AI, content);
+	public UserMessage(String content) {
+		super(MessageType.USER, content);
 	}
 
-	public AiMessage(String content, boolean example) {
-		super(MessageType.AI, content);
-		this.example = example;
-	}
-
-	public AiMessage(String content, boolean example, Map<String, Object> properties) {
-		super(MessageType.AI, content, properties);
-		this.example = example;
-	}
-
-	public boolean isExample() {
-		return example;
+	public UserMessage(String content, Map<String, Object> properties) {
+		super(MessageType.USER, content, properties);
 	}
 
 }

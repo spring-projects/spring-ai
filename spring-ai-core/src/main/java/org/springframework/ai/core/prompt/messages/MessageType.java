@@ -17,11 +17,9 @@ package org.springframework.ai.core.prompt.messages;
 
 public enum MessageType {
 
-	HUMAN("human"),
+	USER("user"),
 
-	AI("ai"),
-
-	CHAT("chat"),
+	ASSISTANT("assistant"),
 
 	SYSTEM("system"),
 
