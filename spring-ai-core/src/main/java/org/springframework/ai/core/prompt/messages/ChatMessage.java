@@ -20,20 +20,23 @@ import java.util.Map;
 
 public class ChatMessage extends AbstractMessage {
 
-	private String role;
-
-	public ChatMessage(String content, String role) {
-		super(MessageType.SYSTEM, content);
-		this.role = role;
+	public ChatMessage(String role, String content) {
+		this.messageType = MessageType.valueOf(role);
+		this.content = content;
 	}
 
-	public ChatMessage(String content, String role, Map<String, Object> properties) {
-		super(MessageType.SYSTEM, content, properties);
-		this.role = role;
+	public ChatMessage(String role, String content, Map<String, Object> properties) {
+		this.messageType = MessageType.valueOf(role);
+		this.content = content;
+		this.properties = properties;
 	}
 
-	public String getRole() {
-		return role;
+	public ChatMessage(MessageType messageType, String content) {
+		super(messageType, content);
+	}
+
+	public ChatMessage(MessageType messageType, String content, Map<String, Object> properties) {
+		super(messageType, content, properties);
 	}
 
 }

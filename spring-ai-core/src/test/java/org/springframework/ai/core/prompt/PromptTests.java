@@ -16,12 +16,12 @@
 
 package org.springframework.ai.core.prompt;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

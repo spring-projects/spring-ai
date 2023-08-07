@@ -21,11 +21,15 @@ import java.util.Map;
 
 public abstract class AbstractMessage implements Message {
 
-	private String content;
+	protected String content;
 
-	private Map<String, Object> properties = new HashMap<>();
+	protected Map<String, Object> properties = new HashMap<>();
 
-	private MessageType messageType;
+	protected MessageType messageType;
+
+	protected AbstractMessage() {
+
+	}
 
 	protected AbstractMessage(MessageType messageType, String content) {
 		this.messageType = messageType;

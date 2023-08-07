@@ -16,32 +16,31 @@
 
 package org.springframework.ai.core.prompt;
 
-import org.springframework.ai.core.prompt.messages.ChatMessage;
-import org.springframework.ai.core.prompt.messages.MessageType;
+import org.springframework.ai.core.prompt.messages.AssistantMessage;
 
 import java.util.Map;
 
-/**
- * A PromptTemplate that lets you specify the role as a string should the current
- * implementations and their roles not suffice for your needs.
- */
-public class ChatPromptTemplate extends PromptTemplate {
+public class AssistantPromptTemplate extends PromptTemplate {
 
-	private MessageType messageType;
+	private boolean example = false;
 
-	public ChatPromptTemplate(MessageType messageType, String template) {
+	public AssistantPromptTemplate(String template) {
 		super(template);
-		this.messageType = messageType;
+	}
+
+	public AssistantPromptTemplate(String template, boolean example) {
+		super(template);
+		this.example = example;
 	}
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new ChatMessage(this.messageType, render()));
+		return new Prompt(new AssistantMessage(render()));
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new ChatMessage(this.messageType, render(model)));
+		return new Prompt(new AssistantMessage(render(model), this.example));
 	}
 
 }

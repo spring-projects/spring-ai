@@ -16,31 +16,25 @@
 
 package org.springframework.ai.core.prompt;
 
+import org.springframework.ai.core.prompt.messages.SystemMessage;
+import org.springframework.ai.core.prompt.messages.UserMessage;
+
 import java.util.Map;
 
-import org.springframework.ai.core.prompt.messages.AssistantMessage;
+public class UserPromptTemplate extends PromptTemplate {
 
-public class AiPromptTemplate extends PromptTemplate {
-
-	private boolean example = false;
-
-	public AiPromptTemplate(String template) {
+	public UserPromptTemplate(String template) {
 		super(template);
-	}
-
-	public AiPromptTemplate(String template, boolean example) {
-		super(template);
-		this.example = example;
 	}
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new AssistantMessage(render()));
+		return new Prompt(new SystemMessage(render()));
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new AssistantMessage(render(model), this.example));
+		return new Prompt(new UserMessage(render(model)));
 	}
 
 }
