@@ -20,20 +20,12 @@ import java.util.Map;
 
 public class FunctionMessage extends AbstractMessage {
 
-	private String functionName;
-
-	public FunctionMessage(String content, String functionName) {
+	public FunctionMessage(String content) {
 		super(MessageType.SYSTEM, content);
-		this.functionName = functionName;
 	}
 
-	public FunctionMessage(String content, String functionName, Map<String, Object> properties) {
+	public FunctionMessage(String content, Map<String, Object> properties) {
 		super(MessageType.SYSTEM, content, properties);
-		this.functionName = functionName;
-	}
-
-	public String getFunctionName() {
-		return functionName;
 	}
 
 }

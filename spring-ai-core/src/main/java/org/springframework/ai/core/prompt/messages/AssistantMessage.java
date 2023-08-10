@@ -26,24 +26,12 @@ import java.util.Map;
  */
 public class AssistantMessage extends AbstractMessage {
 
-	private boolean example = false;
-
 	public AssistantMessage(String content) {
 		super(MessageType.ASSISTANT, content);
 	}
 
-	public AssistantMessage(String content, boolean example) {
-		super(MessageType.ASSISTANT, content);
-		this.example = example;
-	}
-
-	public AssistantMessage(String content, boolean example, Map<String, Object> properties) {
+	public AssistantMessage(String content, Map<String, Object> properties) {
 		super(MessageType.ASSISTANT, content, properties);
-		this.example = example;
-	}
-
-	public boolean isExample() {
-		return example;
 	}
 
 }

@@ -22,15 +22,8 @@ import java.util.Map;
 
 public class AssistantPromptTemplate extends PromptTemplate {
 
-	private boolean example = false;
-
 	public AssistantPromptTemplate(String template) {
 		super(template);
-	}
-
-	public AssistantPromptTemplate(String template, boolean example) {
-		super(template);
-		this.example = example;
 	}
 
 	@Override
@@ -40,7 +33,7 @@ public class AssistantPromptTemplate extends PromptTemplate {
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new AssistantMessage(render(model), this.example));
+		return new Prompt(new AssistantMessage(render(model)));
 	}
 
 }
