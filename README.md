@@ -2,7 +2,7 @@
 
 Welcome to the Spring AI project!
 
-The Spring AI provides a Spring-friendly API and abstractions for developing AI applications.
+The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
 
 Let's make your `@Beans` intelligent!
 
