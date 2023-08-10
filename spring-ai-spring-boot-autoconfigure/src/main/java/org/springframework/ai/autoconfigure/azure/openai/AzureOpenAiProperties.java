@@ -31,7 +31,7 @@ public class AzureOpenAiProperties {
 
 	private String endpoint;
 
-	private Double temperature = 0.5;
+	private Double temperature = 0.7;
 
 	private String model = "gpt-35-turbo";
 

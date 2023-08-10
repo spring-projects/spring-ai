@@ -39,7 +39,7 @@ public class AzureOpenAiClient implements LlmClient {
 
 	private final OpenAIClient msoftOpenAiClient;
 
-	private Double temperature = 0.5;
+	private Double temperature = 0.7;
 
 	private String model = "gpt-35-turbo";
 
