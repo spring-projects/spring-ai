@@ -9,7 +9,7 @@ Let's make your `@Beans` intelligent!
 ## Overview
 
 Despite the extensive history of AI, Java's role in this domain has been relatively minor.
-This is mainly due to the historical reliance on efficient algorithms developed in languages such as C/C++, with Python services as bridges to access these libraries.
+This is mainly due to the historical reliance on efficient algorithms developed in languages such as C/C++, with Python serving as a bridge to access these libraries.
 The majority of ML/AI tools were built around the Python ecosystem.
 However, recent progress in Generative AI, spurred by innovations like OpenAI's ChatGPT, has popularized the interaction with pre-trained models via HTTP.
 This eliminates much of the dependency on C/C++/Python libraries and opens the door to the use of programming languages such as Java.
@@ -23,7 +23,7 @@ These Python libraries share foundational themes with Spring projects, such as:
 * Extensibility
 * Reduction of boilerplate code
 * Integration with diverse data sources
-* Prebuilt solutions for common use cases such as Question-Answering, Text Generation, and Summarization.
+* Prebuilt solutions for common use cases 
 
 Taking inspiration from these libraries, the Spring AI project aims to provide a similar experience for Spring developers in the AI domain.
 
@@ -40,16 +40,15 @@ Features without links are part of our future roadmap.
 A common API enables you to develop an application targeting OpenAI's ChatGPT HTTP interface and easily switch to Azure's OpenAI service, as an example.
 
 **Prompts:** At the center of LLM interaction is the Prompt - a set of instructions for the LLM to respond to.
-Creating an effective part is part art and part science, giving rise to the discipline of Prompt Engineering.
+Creating an effective Prompt is part art and part science, giving rise to the discipline of Prompt Engineering.
 Prompts utilize a templating engine, enabling easy replacement of data within prompt text placeholders.
 
-**Output Parsers:**  LLM responses are typically a raw `java.lang.String`.  
-Output Parsers transform the raw String into structured formats like CSV or JSON, to make the output usable in a programming environment.
-Output Parser may also do additional post-processing on the response String.
+**Output Parsers:**  LLM responses are typically a raw `java.lang.String`. Output Parsers transform the raw String into structured formats like CSV or JSON, to make the output usable in a programming environment.
+Output Parsers may also do additional post-processing on the response String.
 
 ### Incorporating your data
 
-**Data Management:** A significant innovation in Generative AI involves enabling LLMs to understand your proprietary data without having to retrain the model's weights.  Retraining a model is a complex and compute-intensive task.  
+**Data Management:** A significant innovation in Generative AI involves enabling LLMs to understand your proprietary data without having to retrain the model's weights.  Retraining a model is a complex and compute-intensive task.
 Recent Generative AI models have billions of parameters that require specialized hard-to-find hardware making it practically impossible to retrain the largest of models.
 Instead, the 'In-context' learning technique lets you more easily incorporate your data into the pre-trained model.
 This data can be from text files, HTML, database results, etc.
@@ -65,6 +64,7 @@ Spring IO abstracts these databases, allowing easy swapping of implementations.
 **Chains:** Many AI solutions require multiple LLM interactions to respond to a single user input.
 "Chains" organize these interactions, offering modular AI workflows that promote reusability.
 While you can create custom Chains tailored to your specific use case, pre-configured use-case-specific Chains are provided to accelerate your development.
+Use-cases such as Question-Answering, Text Generation, and Summarization are examples.
 
 ### Memory
 
