@@ -16,32 +16,70 @@
 
 package org.springframework.ai.core.prompt;
 
-import org.springframework.ai.core.prompt.messages.ChatMessage;
-import org.springframework.ai.core.prompt.messages.MessageType;
+import org.springframework.ai.core.prompt.messages.Message;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
  * A PromptTemplate that lets you specify the role as a string should the current
  * implementations and their roles not suffice for your needs.
  */
-public class ChatPromptTemplate extends PromptTemplate {
+public class ChatPromptTemplate implements PromptTemplateActions {
 
-	private MessageType messageType;
+	private final List<PromptTemplate> promptTemplates;
 
-	public ChatPromptTemplate(MessageType messageType, String template) {
-		super(template);
-		this.messageType = messageType;
+	public ChatPromptTemplate(List<PromptTemplate> promptTemplates) {
+		this.promptTemplates = promptTemplates;
+	}
+
+	@Override
+	public String render() {
+		StringBuilder sb = new StringBuilder();
+		for (PromptTemplate promptTemplate : promptTemplates) {
+			sb.append(promptTemplate.render());
+		}
+		return sb.toString();
+	}
+
+	@Override
+	public String render(Map<String, Object> model) {
+		StringBuilder sb = new StringBuilder();
+		for (PromptTemplate promptTemplate : promptTemplates) {
+			sb.append(promptTemplate.render(model));
+		}
+		return sb.toString();
+	}
+
+	@Override
+	public List<Message> createMessages() {
+		List<Message> messages = new ArrayList<>();
+		for (PromptTemplate promptTemplate : promptTemplates) {
+			messages.addAll(promptTemplate.createMessages());
+		}
+		return messages;
+	}
+
+	@Override
+	public List<Message> createMessages(Map<String, Object> model) {
+		List<Message> messages = new ArrayList<>();
+		for (PromptTemplate promptTemplate : promptTemplates) {
+			messages.addAll(promptTemplate.createMessages(model));
+		}
+		return messages;
 	}
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new ChatMessage(this.messageType, render()));
+		List<Message> messages = createMessages();
+		return new Prompt(messages);
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new ChatMessage(this.messageType, render(model)));
+		List<Message> messages = createMessages(model);
+		return new Prompt(messages);
 	}
 
 }

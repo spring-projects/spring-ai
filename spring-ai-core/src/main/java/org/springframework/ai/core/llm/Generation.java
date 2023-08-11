@@ -14,27 +14,32 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.core.prompt;
+package org.springframework.ai.core.llm;
 
-import org.springframework.ai.core.prompt.messages.SystemMessage;
-import org.springframework.ai.core.prompt.messages.UserMessage;
-
+import java.util.HashMap;
 import java.util.Map;
 
-public class UserPromptTemplate extends PromptTemplate {
+public class Generation {
 
-	public UserPromptTemplate(String template) {
-		super(template);
+	private final String text;
+
+	private Map<String, Object> info = new HashMap<>();
+
+	public Generation(String text) {
+		this.text = text;
 	}
 
-	@Override
-	public Prompt create() {
-		return new Prompt(new SystemMessage(render()));
+	public Generation(String text, Map<String, Object> info) {
+		this.text = text;
+		this.info = info;
 	}
 
-	@Override
-	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new UserMessage(render(model)));
+	public String getText() {
+		return text;
+	}
+
+	public Map<String, Object> getInfo() {
+		return info;
 	}
 
 }

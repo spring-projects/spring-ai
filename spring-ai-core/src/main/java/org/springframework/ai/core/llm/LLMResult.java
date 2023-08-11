@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.core.llm;
 
-import org.springframework.ai.core.prompt.Generation;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

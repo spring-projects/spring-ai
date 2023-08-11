@@ -27,7 +27,7 @@ public class OpenAiProperties {
 
 	private String apiKey;
 
-	private Double temperature = 0.5;
+	private Double temperature = 0.7;
 
 	private String model = "gpt-3.5-turbo";
 

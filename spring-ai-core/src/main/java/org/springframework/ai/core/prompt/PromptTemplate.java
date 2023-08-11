@@ -18,25 +18,30 @@ package org.springframework.ai.core.prompt;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
+import org.springframework.ai.core.prompt.messages.Message;
+import org.springframework.ai.core.prompt.messages.UserMessage;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class PromptTemplate extends AbstractPromptTemplate {
+public class PromptTemplate implements PromptTemplateActions {
 
 	private ST st;
 
 	private Map<String, Object> dynamicModel = new HashMap<>();
 
+	protected String template;
+
+	protected TemplateFormat templateFormat = TemplateFormat.ST;
+
+	private OutputParser outputParser;
+
 	public PromptTemplate(String template) {
-		super(template);
+		this.template = template;
 		// If the template string is not valid, an exception will be thrown
 		try {
 			this.st = new ST(this.template, '{', '}');
@@ -46,10 +51,40 @@ public class PromptTemplate extends AbstractPromptTemplate {
 		}
 	}
 
-	@Override
+	public PromptTemplate(String template, Map<String, Object> model) {
+		this.template = template;
+		// If the template string is not valid, an exception will be thrown
+		try {
+			this.st = new ST(this.template, '{', '}');
+			for (Entry<String, Object> entry : model.entrySet()) {
+				add(entry.getKey(), entry.getValue());
+			}
+		}
+		catch (Exception ex) {
+			throw new IllegalArgumentException("The template string is not valid.", ex);
+		}
+	}
+
+	public OutputParser getOutputParser() {
+		return outputParser;
+	}
+
+	public void setOutputParser(OutputParser outputParser) {
+		Objects.requireNonNull(outputParser, "Output Parser can not be null");
+		this.outputParser = outputParser;
+	}
+
 	public void add(String name, Object value) {
 		this.st.add(name, value);
 		this.dynamicModel.put(name, value);
+	}
+
+	public String getTemplate() {
+		return this.template;
+	}
+
+	public TemplateFormat getTemplateFormat() {
+		return this.templateFormat;
 	}
 
 	// Render Methods
@@ -66,6 +101,16 @@ public class PromptTemplate extends AbstractPromptTemplate {
 			}
 		}
 		return st.render().trim();
+	}
+
+	@Override
+	public List<Message> createMessages() {
+		return List.of(new UserMessage(render()));
+	}
+
+	@Override
+	public List<Message> createMessages(Map<String, Object> model) {
+		return List.of(new UserMessage(render(model)));
 	}
 
 	@Override

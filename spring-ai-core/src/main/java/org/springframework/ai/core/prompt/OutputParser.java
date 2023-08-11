@@ -16,6 +16,8 @@
 
 package org.springframework.ai.core.prompt;
 
+import org.springframework.ai.core.llm.Generation;
+
 import java.util.List;
 
 public interface OutputParser {

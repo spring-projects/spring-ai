@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.core.llm.LLMResult;
 import org.springframework.ai.core.llm.LlmClient;
-import org.springframework.ai.core.prompt.Generation;
+import org.springframework.ai.core.llm.Generation;
 import org.springframework.ai.core.prompt.Prompt;
 import org.springframework.ai.core.prompt.messages.Message;
 import org.springframework.util.Assert;
