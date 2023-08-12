@@ -27,20 +27,22 @@ public abstract class AbstractChain implements Chain {
 
 	@Override
 	public Map<String, Object> apply(Map<String, Object> inputMap) {
-		Map<String, Object> inputMapToUse = processBeforeApply(inputMap);
+		Map<String, Object> inputMapToUse = preProcess(inputMap);
 		Map<String, Object> outputMap = doApply(inputMapToUse);
-		Map<String, Object> outputMapToUse = processAfterApply(inputMapToUse, outputMap);
+		Map<String, Object> outputMapToUse = postProcess(inputMapToUse, outputMap);
 		return outputMapToUse;
 	}
 
-	protected Map<String, Object> processBeforeApply(Map<String, Object> inputMap) {
+	@Override
+	public Map<String, Object> preProcess(Map<String, Object> inputMap) {
 		validateInputs(inputMap);
 		return inputMap;
 	}
 
 	protected abstract Map<String, Object> doApply(Map<String, Object> inputMap);
 
-	private Map<String, Object> processAfterApply(Map<String, Object> inputMap, Map<String, Object> outputMap) {
+	@Override
+	public Map<String, Object> postProcess(Map<String, Object> inputMap, Map<String, Object> outputMap) {
 		validateOutputs(outputMap);
 		Map<String, Object> combindedMap = new HashMap<>();
 		combindedMap.putAll(inputMap);

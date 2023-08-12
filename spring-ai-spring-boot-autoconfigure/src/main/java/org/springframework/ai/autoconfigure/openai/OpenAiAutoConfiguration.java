@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import com.theokanning.openai.service.OpenAiService;
 
+import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.llm.OpenAiClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -39,16 +40,25 @@ public class OpenAiAutoConfiguration {
 	}
 
 	@Bean
-	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
+	public OpenAiService theoOpenAiService(OpenAiProperties openAiProperties) {
 		if (!StringUtils.hasText(openAiProperties.getApiKey())) {
 			throw new IllegalArgumentException(
 					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
 		}
-		OpenAiService theoOpenAiService = new OpenAiService(openAiProperties.getApiKey());
+		return new OpenAiService(openAiProperties.getApiKey());
+	}
+
+	@Bean
+	public OpenAiClient openAiClient(OpenAiProperties openAiProperties, OpenAiService theoOpenAiService) {
 		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService);
 		openAiClient.setTemperature(openAiProperties.getTemperature());
 		openAiClient.setModel(openAiProperties.getModel());
 		return openAiClient;
+	}
+
+	@Bean
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
+		return new OpenAiEmbeddingClient(theoOpenAiService);
 	}
 
 }

@@ -10,4 +10,8 @@ public interface Chain extends Function<Map<String, Object>, Map<String, Object>
 
 	List<String> getOutputKeys();
 
+	Map<String, Object> preProcess(Map<String, Object> inputMap);
+
+	Map<String, Object> postProcess(Map<String, Object> inputMap, Map<String, Object> outputMap);
+
 }
