@@ -25,7 +25,7 @@ import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.core.llm.LLMResult;
+import org.springframework.ai.core.llm.LLMResponse;
 import org.springframework.ai.core.llm.LlmClient;
 import org.springframework.ai.core.prompt.Prompt;
 
@@ -75,8 +75,8 @@ public class OpenAiClient implements LlmClient {
 	}
 
 	@Override
-	public LLMResult generate(Prompt... prompts) {
-		List<ChatCompletionRequest> chatCompletionRequests = getChatCompletionRequest(prompts);
+	public LLMResponse generate(Prompt prompt) {
+		List<ChatCompletionRequest> chatCompletionRequests = getChatCompletionRequest(prompt);
 		return getLLMResult(chatCompletionRequests);
 	}
 
@@ -99,22 +99,22 @@ public class OpenAiClient implements LlmClient {
 		return response;
 	}
 
-	private LLMResult getLLMResult(List<ChatCompletionRequest> chatCompletionRequest) {
+	private LLMResponse getLLMResult(List<ChatCompletionRequest> chatCompletionRequest) {
 		// TODO
 		throw new RuntimeException("LLMResult getLLMResult not yet implemented");
 	}
 
-	private List<ChatCompletionRequest> getChatCompletionRequest(Prompt[] prompts) {
+	private List<ChatCompletionRequest> getChatCompletionRequest(Prompt prompt) {
 		List<ChatCompletionRequest> chatCompletionRequests = new ArrayList<>();
-		for (Prompt prompt : prompts) {
-			List<ChatMessage> chatMessages = convertToChatMessages(prompt.getMessages());
-			ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-				.model(this.model)
-				.temperature(this.temperature)
-				.messages(chatMessages)
-				.build();
-			chatCompletionRequests.add(chatCompletionRequest);
-		}
+
+		List<ChatMessage> chatMessages = convertToChatMessages(prompt.getMessages());
+		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
+			.model(this.model)
+			.temperature(this.temperature)
+			.messages(chatMessages)
+			.build();
+		chatCompletionRequests.add(chatCompletionRequest);
+
 		return chatCompletionRequests;
 	}
 

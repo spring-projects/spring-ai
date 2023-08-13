@@ -22,6 +22,9 @@ public interface LlmClient {
 
 	String generate(String text);
 
-	LLMResult generate(Prompt... prompts);
+	// TODO Change to LLMResponse, maybe get rid of the varargs to simplify the response
+	// object, convenience of batch query isn't worth adding the complexity to the
+	// response object signature
+	LLMResponse generate(Prompt prompt);
 
 }

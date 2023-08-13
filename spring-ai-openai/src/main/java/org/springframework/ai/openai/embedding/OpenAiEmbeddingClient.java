@@ -7,13 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.core.embedding.Embedding;
 import org.springframework.ai.core.embedding.EmbeddingClient;
-import org.springframework.ai.core.embedding.EmbeddingResult;
+import org.springframework.ai.core.embedding.EmbeddingResponse;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OpenAiEmbeddingClient implements EmbeddingClient {
 
@@ -29,27 +30,32 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 	}
 
 	@Override
-	public EmbeddingResult embed(List<String> texts) {
-		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(texts).model(this.model).build();
-		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
-			.createEmbeddings(embeddingRequest);
-		return generateEmbeddingResult(nativeEmbeddingResult);
-	}
-
-	@Override
-	public List<Double> embed(String text) {
+	public List<Double> createEmbedding(String text) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(List.of(text)).model(this.model).build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
 		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
 	}
 
-	private EmbeddingResult generateEmbeddingResult(
+	public List<List<Double>> createEmbedding(List<String> texts) {
+		EmbeddingResponse embeddingResponse = createEmbeddingResult(texts);
+		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).collect(Collectors.toList());
+	}
+
+	@Override
+	public EmbeddingResponse createEmbeddingResult(List<String> texts) {
+		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(texts).model(this.model).build();
+		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
+			.createEmbeddings(embeddingRequest);
+		return generateEmbeddingResult(nativeEmbeddingResult);
+	}
+
+	private EmbeddingResponse generateEmbeddingResult(
 			com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult) {
 		List<Embedding> data = generateEmbeddingList(nativeEmbeddingResult.getData());
 		Map<String, Object> metadata = generateMetadata(nativeEmbeddingResult.getModel(),
 				nativeEmbeddingResult.getUsage());
-		return new EmbeddingResult(data, metadata);
+		return new EmbeddingResponse(data, metadata);
 	}
 
 	private Map<String, Object> generateMetadata(String model, Usage usage) {

@@ -4,8 +4,10 @@ import java.util.List;
 
 public interface EmbeddingClient {
 
-	List<Double> embed(String text);
+	List<Double> createEmbedding(String text);
 
-	EmbeddingResult embed(List<String> texts);
+	List<List<Double>> createEmbedding(List<String> texts);
+
+	EmbeddingResponse createEmbeddingResult(List<String> texts);
 
 }

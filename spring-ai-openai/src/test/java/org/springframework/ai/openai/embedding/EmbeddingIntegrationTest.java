@@ -1,7 +1,7 @@
 package org.springframework.ai.openai.embedding;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.core.embedding.EmbeddingResult;
+import org.springframework.ai.core.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -19,14 +19,14 @@ class EmbeddingIntegrationTest {
 	void simpleEmbedding() {
 		assertThat(embeddingClient).isNotNull();
 
-		EmbeddingResult embeddingResult = embeddingClient.embed(List.of("Hello World"));
-		System.out.println(embeddingResult);
-		assertThat(embeddingResult.getData()).hasSize(1);
-		assertThat(embeddingResult.getData().get(0).getEmbedding()).isNotEmpty();
-		assertThat(embeddingResult.getMetadata()).containsEntry("model", "text-embedding-ada-002-v2");
-		assertThat(embeddingResult.getMetadata()).containsEntry("completion-tokens", 0L);
-		assertThat(embeddingResult.getMetadata()).containsEntry("total-tokens", 2L);
-		assertThat(embeddingResult.getMetadata()).containsEntry("prompt-tokens", 2L);
+		EmbeddingResponse embeddingResponse = embeddingClient.createEmbeddingResult(List.of("Hello World"));
+		System.out.println(embeddingResponse);
+		assertThat(embeddingResponse.getData()).hasSize(1);
+		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-ada-002-v2");
+		assertThat(embeddingResponse.getMetadata()).containsEntry("completion-tokens", 0L);
+		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2L);
+		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2L);
 
 	}
 

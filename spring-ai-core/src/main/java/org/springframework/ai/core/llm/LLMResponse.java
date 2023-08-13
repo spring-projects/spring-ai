@@ -19,36 +19,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LLMResult {
+public class LLMResponse {
 
-	private final List<List<Generation>> generations;
+	private final List<Generation> generations;
 
 	private Map<String, Object> providerOutput = new HashMap<>();
 
 	private Map<String, Object> runInfo = new HashMap<>();
 
-	public LLMResult(List<List<Generation>> generations) {
+	public LLMResponse(List<Generation> generations) {
 		this.generations = generations;
 	}
 
-	public LLMResult(List<List<Generation>> generations, Map<String, Object> providerOutput) {
+	public LLMResponse(List<Generation> generations, Map<String, Object> providerOutput) {
 		this.generations = generations;
 		this.providerOutput = providerOutput;
 	}
 
-	public LLMResult(List<List<Generation>> generations, Map<String, Object> providerOutput,
-			Map<String, Object> runInfo) {
+	public LLMResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
 		this.generations = generations;
 		this.providerOutput = providerOutput;
 		this.runInfo = runInfo;
 	}
 
 	/**
-	 * The list of generated outputs. It iss a list of lists because a single input could
-	 * have multiple outputs, and multiple inputs could be passed in.
+	 * The list of generated outputs. It is a list of lists because a single input could
+	 * have multiple outputs.
 	 * @return
 	 */
-	public List<List<Generation>> getGenerations() {
+	public List<Generation> getGenerations() {
 		return this.generations;
 	}
 

@@ -20,7 +20,7 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.core.llm.LLMResult;
+import org.springframework.ai.core.llm.LLMResponse;
 import org.springframework.ai.core.llm.LlmClient;
 import org.springframework.ai.core.llm.Generation;
 import org.springframework.ai.core.prompt.Prompt;
@@ -67,32 +67,27 @@ public class AzureOpenAiClient implements LlmClient {
 	}
 
 	@Override
-	public LLMResult generate(Prompt... prompts) {
-		List<List<Generation>> generationsList = new ArrayList<>();
-		for (Prompt prompt : prompts) {
-
-			List<Message> messages = prompt.getMessages();
-			List<ChatMessage> azureMessages = new ArrayList<>();
-			for (Message message : messages) {
-				String messageType = message.getMessageType().getValue();
-				ChatRole chatRole = ChatRole.fromString(messageType);
-				azureMessages.add(new ChatMessage(chatRole, message.getContent()));
-			}
-			ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
-			options.setTemperature(this.getTemperature());
-			options.setModel(this.getModel());
-			ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
-			List<Generation> generations = new ArrayList<>();
-			for (ChatChoice choice : chatCompletions.getChoices()) {
-				ChatMessage choiceMessage = choice.getMessage();
-				// TODO investigate mapping of additional metadata/runtime info to the
-				// general model.
-				Generation generation = new Generation(choiceMessage.getContent());
-				generations.add(generation);
-			}
-			generationsList.add(generations);
+	public LLMResponse generate(Prompt prompt) {
+		List<Message> messages = prompt.getMessages();
+		List<ChatMessage> azureMessages = new ArrayList<>();
+		for (Message message : messages) {
+			String messageType = message.getMessageType().getValue();
+			ChatRole chatRole = ChatRole.fromString(messageType);
+			azureMessages.add(new ChatMessage(chatRole, message.getContent()));
 		}
-		return new LLMResult(generationsList);
+		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
+		options.setTemperature(this.getTemperature());
+		options.setModel(this.getModel());
+		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		List<Generation> generations = new ArrayList<>();
+		for (ChatChoice choice : chatCompletions.getChoices()) {
+			ChatMessage choiceMessage = choice.getMessage();
+			// TODO investigate mapping of additional metadata/runtime info to the
+			// general model.
+			Generation generation = new Generation(choiceMessage.getContent());
+			generations.add(generation);
+		}
+		return new LLMResponse(generations);
 	}
 
 	public Double getTemperature() {

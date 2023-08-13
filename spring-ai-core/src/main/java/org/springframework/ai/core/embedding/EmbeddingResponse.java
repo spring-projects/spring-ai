@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class EmbeddingResult {
+public class EmbeddingResponse {
 
 	private List<Embedding> data;
 
 	private Map<String, Object> metadata = new HashMap<>();
 
-	public EmbeddingResult(List<Embedding> data, Map<String, Object> metadata) {
+	public EmbeddingResponse(List<Embedding> data, Map<String, Object> metadata) {
 		this.data = data;
 		this.metadata = metadata;
 	}
@@ -30,7 +30,7 @@ public class EmbeddingResult {
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		EmbeddingResult that = (EmbeddingResult) o;
+		EmbeddingResponse that = (EmbeddingResponse) o;
 		return Objects.equals(data, that.data) && Objects.equals(metadata, that.metadata);
 	}
 
