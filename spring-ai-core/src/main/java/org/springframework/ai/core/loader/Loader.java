@@ -1,6 +1,7 @@
 package org.springframework.ai.core.loader;
 
-import org.springframework.ai.core.loader.splitter.TextSplitter;
+import org.springframework.ai.core.document.Document;
+import org.springframework.ai.core.splitter.TextSplitter;
 
 import java.util.List;
 

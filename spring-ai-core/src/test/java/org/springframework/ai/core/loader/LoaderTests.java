@@ -1,6 +1,7 @@
 package org.springframework.ai.core.loader;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.core.document.Document;
 import org.springframework.ai.core.loader.impl.JsonLoader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +24,7 @@ public class LoaderTests {
 		List<Document> documents = jsonLoader.load();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
-			System.out.println(document);
+			assertThat(document.getText()).isNotEmpty();
 		}
 	}
 

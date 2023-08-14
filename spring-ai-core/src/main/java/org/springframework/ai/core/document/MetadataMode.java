@@ -1,4 +1,4 @@
-package org.springframework.ai.core.loader;
+package org.springframework.ai.core.document;
 
 public enum MetadataMode {
 

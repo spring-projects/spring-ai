@@ -2,10 +2,10 @@ package org.springframework.ai.core.loader.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.core.loader.Document;
+import org.springframework.ai.core.document.Document;
 import org.springframework.ai.core.loader.Loader;
-import org.springframework.ai.core.loader.splitter.TextSplitter;
-import org.springframework.ai.core.loader.splitter.TokenTextSplitter;
+import org.springframework.ai.core.splitter.TextSplitter;
+import org.springframework.ai.core.splitter.TokenTextSplitter;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;

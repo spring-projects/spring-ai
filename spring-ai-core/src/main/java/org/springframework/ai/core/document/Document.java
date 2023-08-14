@@ -1,4 +1,4 @@
-package org.springframework.ai.core.loader;
+package org.springframework.ai.core.document;
 
 import org.springframework.util.StringUtils;
 
@@ -11,11 +11,11 @@ public class Document {
 	private static String DEFAULT_METADATA_TEMPLATE = "{key}: {value}";
 
 	/**
-	 * Unique ID, creates UUID by default
+	 * Unique ID
 	 */
-	private String id;
+	private String id = UUID.randomUUID().toString();
 
-	// Embedding List<Float>
+	private List<Double> embedding = new ArrayList<>();
 
 	/**
 	 * Metadata for the document. It should not be nested and values should be restricted
@@ -51,8 +51,16 @@ public class Document {
 		this.metadata = metadata;
 	}
 
+	public String getId() {
+		return id;
+	}
+
 	public String getText() {
 		return this.text;
+	}
+
+	public String getContent() {
+		return getContent(MetadataMode.ALL);
 	}
 
 	public String getContent(MetadataMode metadataMode) {
@@ -109,6 +117,14 @@ public class Document {
 
 	public Map<String, Object> getMetadata() {
 		return metadata;
+	}
+
+	public List<Double> getEmbedding() {
+		return embedding;
+	}
+
+	public void setEmbedding(List<Double> embedding) {
+		this.embedding = embedding;
 	}
 
 	@Override

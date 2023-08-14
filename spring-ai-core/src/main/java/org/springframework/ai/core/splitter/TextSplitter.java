@@ -1,9 +1,9 @@
-package org.springframework.ai.core.loader.splitter;
+package org.springframework.ai.core.splitter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.core.loader.Document;
-import org.springframework.ai.core.loader.DocumentTransformer;
+import org.springframework.ai.core.document.Document;
+import org.springframework.ai.core.document.DocumentTransformer;
 
 import java.util.ArrayList;
 import java.util.HashMap;

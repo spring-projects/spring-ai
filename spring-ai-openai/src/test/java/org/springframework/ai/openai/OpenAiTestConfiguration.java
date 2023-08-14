@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.util.Properties;
 
 @SpringBootConfiguration
 public class OpenAiTestConfiguration {

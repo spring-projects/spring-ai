@@ -1,4 +1,4 @@
-package org.springframework.ai.core.loader;
+package org.springframework.ai.core.document;
 
 import java.util.List;
 import java.util.function.Function;

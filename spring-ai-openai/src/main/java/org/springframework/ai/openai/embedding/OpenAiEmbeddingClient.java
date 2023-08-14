@@ -5,6 +5,7 @@ import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.core.document.Document;
 import org.springframework.ai.core.embedding.Embedding;
 import org.springframework.ai.core.embedding.EmbeddingClient;
 import org.springframework.ai.core.embedding.EmbeddingResponse;
@@ -32,6 +33,16 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 	@Override
 	public List<Double> createEmbedding(String text) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(List.of(text)).model(this.model).build();
+		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
+			.createEmbeddings(embeddingRequest);
+		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
+	}
+
+	public List<Double> createEmbedding(Document document) {
+		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
+			.input(List.of(document.getContent()))
+			.model(this.model)
+			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
 		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
