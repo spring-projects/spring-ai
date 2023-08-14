@@ -77,7 +77,8 @@ public class AcmeIntegrationTest {
 		LLMResponse response = llmClient.generate(prompt);
 
 		// Chain
-		// qa = new ConversationalRetrievalChain(llmClient, vectorStore, QueryOptions)
+		// qa = new ConversationalRetrievalChain(llmClient, userPromptTemplate,
+		// vectorStoreRetriever, )
 	}
 
 	private SystemMessage getSystemMessage(List<Document> similarDocuments) {
