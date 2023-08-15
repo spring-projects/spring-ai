@@ -44,6 +44,7 @@ public class JsonLoader implements Loader {
 		TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
 		};
 
+
 		List<Document> documents = new ArrayList<>();
 		try {
 			// TODO, not all json will be an array
