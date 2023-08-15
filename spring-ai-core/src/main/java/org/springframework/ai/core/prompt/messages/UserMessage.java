@@ -25,12 +25,12 @@ import java.util.Map;
  */
 public class UserMessage extends AbstractMessage {
 
-	public UserMessage(String content) {
-		super(MessageType.USER, content);
+	public UserMessage(String message) {
+		super(MessageType.USER, message);
 	}
 
-	public UserMessage(String content, Map<String, Object> properties) {
-		super(MessageType.USER, content, properties);
+	public UserMessage(String message, Map<String, Object> properties) {
+		super(MessageType.USER, message, properties);
 	}
 
 }

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.core.llm;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,10 +24,10 @@ public class Generation {
 
 	private final String text;
 
-	private Map<String, Object> info = new HashMap<>();
+	private Map<String, Object> info;
 
 	public Generation(String text) {
-		this.text = text;
+		this(text, Collections.emptyMap());
 	}
 
 	public Generation(String text, Map<String, Object> info) {
@@ -35,11 +36,11 @@ public class Generation {
 	}
 
 	public String getText() {
-		return text;
+		return this.text;
 	}
 
 	public Map<String, Object> getInfo() {
-		return info;
+		return Collections.unmodifiableMap(this.info);
 	}
 
 }

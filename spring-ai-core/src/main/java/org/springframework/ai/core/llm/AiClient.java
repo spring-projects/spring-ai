@@ -17,14 +17,16 @@
 package org.springframework.ai.core.llm;
 
 import org.springframework.ai.core.prompt.Prompt;
+import org.springframework.ai.core.prompt.messages.UserMessage;
 
-public interface LlmClient {
+@FunctionalInterface
+public interface AiClient {
 
-	String generate(String text);
+	default String generate(String message) {
+		Prompt prompt = new Prompt(new UserMessage(message));
+		return generate(prompt).getGenerations().get(0).getText();
+	}
 
-	// TODO Change to LLMResponse, maybe get rid of the varargs to simplify the response
-	// object, convenience of batch query isn't worth adding the complexity to the
-	// response object signature
-	LLMResponse generate(Prompt prompt);
+	AiResponse generate(Prompt prompt);
 
 }

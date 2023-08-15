@@ -2,13 +2,10 @@ package org.springframework.ai.openai.acme;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.core.document.Document;
-import org.springframework.ai.core.llm.LLMResponse;
-import org.springframework.ai.core.llm.LlmClient;
+import org.springframework.ai.core.llm.AiResponse;
+import org.springframework.ai.core.llm.AiClient;
 import org.springframework.ai.core.loader.impl.JsonLoader;
-import org.springframework.ai.core.prompt.ChatPromptTemplate;
 import org.springframework.ai.core.prompt.Prompt;
-import org.springframework.ai.core.prompt.PromptTemplate;
-import org.springframework.ai.core.prompt.messages.ChatMessage;
 import org.springframework.ai.core.prompt.messages.SystemMessage;
 import org.springframework.ai.core.prompt.messages.UserMessage;
 import org.springframework.ai.core.retriever.impl.VectorStoreRetriever;
@@ -35,13 +32,13 @@ public class AcmeIntegrationTest {
 	private OpenAiEmbeddingClient embeddingClient;
 
 	@Autowired
-	private LlmClient llmClient;
+	private AiClient aiClient;
 
 	@Test
 	void beanTest() {
 		assertThat(resource).isNotNull();
 		assertThat(embeddingClient).isNotNull();
-		assertThat(llmClient).isNotNull();
+		assertThat(aiClient).isNotNull();
 	}
 
 	void acmeChain() {
@@ -74,7 +71,7 @@ public class AcmeIntegrationTest {
 		// Create the prompt ad-hoc for now, need to put in system message and user
 		// message via ChatPromptTemplate or some other message building mechanic
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		LLMResponse response = llmClient.generate(prompt);
+		AiResponse response = aiClient.generate(prompt);
 
 		// Chain
 		// qa = new ConversationalRetrievalChain(llmClient, userPromptTemplate,

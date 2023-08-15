@@ -15,54 +15,58 @@
  */
 package org.springframework.ai.core.llm;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LLMResponse {
+public class AiResponse {
 
 	private final List<Generation> generations;
 
-	private Map<String, Object> providerOutput = new HashMap<>();
+	private Map<String, Object> providerOutput;
 
-	private Map<String, Object> runInfo = new HashMap<>();
+	private Map<String, Object> runInfo;
 
-	public LLMResponse(List<Generation> generations) {
-		this.generations = generations;
+	public AiResponse(List<Generation> generations) {
+		this(generations, Collections.emptyMap(), Collections.emptyMap());
 	}
 
-	public LLMResponse(List<Generation> generations, Map<String, Object> providerOutput) {
-		this.generations = generations;
-		this.providerOutput = providerOutput;
+	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput) {
+		this(generations, providerOutput, Collections.emptyMap());
 	}
 
-	public LLMResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
-		this.generations = generations;
-		this.providerOutput = providerOutput;
-		this.runInfo = runInfo;
+	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
+		this.generations = List.copyOf(generations);
+		this.providerOutput = Map.copyOf(providerOutput);
+		this.runInfo = Map.copyOf(runInfo);
 	}
 
 	/**
-	 * The list of generated outputs. It is a list of lists because a single input could
-	 * have multiple outputs.
+	 * The list of generated outputs. It is a list of lists because the Prompt could
+	 * request multiple output generations.
 	 * @return
 	 */
 	public List<Generation> getGenerations() {
-		return this.generations;
+		return Collections.unmodifiableList(generations);
+	}
+
+	public Generation getGeneration() {
+		return this.generations.get(0);
 	}
 
 	/**
 	 * Arbitrary LLM-provider specific output
 	 */
 	public Map<String, Object> getProviderOutput() {
-		return null;
+		return Collections.unmodifiableMap(providerOutput);
 	}
 
 	/**
 	 * The run metadata information
 	 */
 	public Map<String, Object> getRunInfo() {
-		return null;
+		return Collections.unmodifiableMap(runInfo);
 	}
 
 }

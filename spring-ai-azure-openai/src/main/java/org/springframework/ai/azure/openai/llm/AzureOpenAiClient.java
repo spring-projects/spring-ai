@@ -20,8 +20,8 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.core.llm.LLMResponse;
-import org.springframework.ai.core.llm.LlmClient;
+import org.springframework.ai.core.llm.AiClient;
+import org.springframework.ai.core.llm.AiResponse;
 import org.springframework.ai.core.llm.Generation;
 import org.springframework.ai.core.prompt.Prompt;
 import org.springframework.ai.core.prompt.messages.Message;
@@ -31,9 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementation of {@link LlmClient} backed by an OpenAiService
+ * Implementation of {@link AiClient} backed by an OpenAiService
  */
-public class AzureOpenAiClient implements LlmClient {
+public class AzureOpenAiClient implements AiClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiClient.class);
 
@@ -67,7 +67,7 @@ public class AzureOpenAiClient implements LlmClient {
 	}
 
 	@Override
-	public LLMResponse generate(Prompt prompt) {
+	public AiResponse generate(Prompt prompt) {
 		List<Message> messages = prompt.getMessages();
 		List<ChatMessage> azureMessages = new ArrayList<>();
 		for (Message message : messages) {
@@ -87,7 +87,7 @@ public class AzureOpenAiClient implements LlmClient {
 			Generation generation = new Generation(choiceMessage.getContent());
 			generations.add(generation);
 		}
-		return new LLMResponse(generations);
+		return new AiResponse(generations);
 	}
 
 	public Double getTemperature() {

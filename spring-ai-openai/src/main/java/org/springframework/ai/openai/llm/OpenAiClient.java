@@ -25,17 +25,17 @@ import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.core.llm.LLMResponse;
-import org.springframework.ai.core.llm.LlmClient;
+import org.springframework.ai.core.llm.AiClient;
+import org.springframework.ai.core.llm.AiResponse;
 import org.springframework.ai.core.prompt.Prompt;
 
 import org.springframework.ai.core.prompt.messages.Message;
 import org.springframework.util.Assert;
 
 /**
- * Implementation of {@link LlmClient} backed by an OpenAiService
+ * Implementation of {@link AiClient} backed by an OpenAiService
  */
-public class OpenAiClient implements LlmClient {
+public class OpenAiClient implements AiClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiClient.class);
 
@@ -75,7 +75,7 @@ public class OpenAiClient implements LlmClient {
 	}
 
 	@Override
-	public LLMResponse generate(Prompt prompt) {
+	public AiResponse generate(Prompt prompt) {
 		List<ChatCompletionRequest> chatCompletionRequests = getChatCompletionRequest(prompt);
 		return getLLMResult(chatCompletionRequests);
 	}
@@ -99,7 +99,7 @@ public class OpenAiClient implements LlmClient {
 		return response;
 	}
 
-	private LLMResponse getLLMResult(List<ChatCompletionRequest> chatCompletionRequest) {
+	private AiResponse getLLMResult(List<ChatCompletionRequest> chatCompletionRequest) {
 		// TODO
 		throw new RuntimeException("LLMResult getLLMResult not yet implemented");
 	}
