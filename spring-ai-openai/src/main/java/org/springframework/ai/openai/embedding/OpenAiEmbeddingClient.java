@@ -5,10 +5,10 @@ import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.core.document.Document;
-import org.springframework.ai.core.embedding.Embedding;
-import org.springframework.ai.core.embedding.EmbeddingClient;
-import org.springframework.ai.core.embedding.EmbeddingResponse;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;

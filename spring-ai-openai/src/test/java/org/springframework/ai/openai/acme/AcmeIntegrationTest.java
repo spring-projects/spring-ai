@@ -1,16 +1,16 @@
 package org.springframework.ai.openai.acme;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.core.document.Document;
-import org.springframework.ai.core.llm.AiResponse;
-import org.springframework.ai.core.llm.AiClient;
-import org.springframework.ai.core.loader.impl.JsonLoader;
-import org.springframework.ai.core.prompt.Prompt;
-import org.springframework.ai.core.prompt.messages.SystemMessage;
-import org.springframework.ai.core.prompt.messages.UserMessage;
-import org.springframework.ai.core.retriever.impl.VectorStoreRetriever;
-import org.springframework.ai.core.vectorstore.VectorStore;
-import org.springframework.ai.core.vectorstore.impl.InMemoryVectorStore;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.client.AiClient;
+import org.springframework.ai.loader.impl.JsonLoader;
+import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.prompt.messages.SystemMessage;
+import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.retriever.impl.VectorStoreRetriever;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.impl.InMemoryVectorStore;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

@@ -20,11 +20,11 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.core.llm.AiClient;
-import org.springframework.ai.core.llm.AiResponse;
-import org.springframework.ai.core.llm.Generation;
-import org.springframework.ai.core.prompt.Prompt;
-import org.springframework.ai.core.prompt.messages.Message;
+import org.springframework.ai.client.AiClient;
+import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.client.Generation;
+import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.prompt.messages.Message;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
