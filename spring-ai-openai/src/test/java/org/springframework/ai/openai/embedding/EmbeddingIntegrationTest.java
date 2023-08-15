@@ -19,7 +19,7 @@ class EmbeddingIntegrationTest {
 	void simpleEmbedding() {
 		assertThat(embeddingClient).isNotNull();
 
-		EmbeddingResponse embeddingResponse = embeddingClient.createEmbeddingResult(List.of("Hello World"));
+		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
 		System.out.println(embeddingResponse);
 		assertThat(embeddingResponse.getData()).hasSize(1);
 		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();

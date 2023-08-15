@@ -26,7 +26,7 @@ public class InMemoryVectorStore implements VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingClient.createEmbedding(document);
+			List<Double> embedding = this.embeddingClient.embed(document);
 			document.setEmbedding(embedding);
 			this.store.put(document.getId(), document);
 		}
@@ -75,7 +75,7 @@ public class InMemoryVectorStore implements VectorStore {
 	}
 
 	private List<Double> getUserQueryEmbedding(String query) {
-		List<Double> userQueryEmbedding = this.embeddingClient.createEmbedding(query);
+		List<Double> userQueryEmbedding = this.embeddingClient.embed(query);
 		return userQueryEmbedding;
 	}
 

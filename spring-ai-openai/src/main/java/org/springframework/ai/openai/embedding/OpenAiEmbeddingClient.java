@@ -31,14 +31,14 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 	}
 
 	@Override
-	public List<Double> createEmbedding(String text) {
+	public List<Double> embed(String text) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(List.of(text)).model(this.model).build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
 		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
 	}
 
-	public List<Double> createEmbedding(Document document) {
+	public List<Double> embed(Document document) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
 			.input(List.of(document.getContent()))
 			.model(this.model)
@@ -48,13 +48,13 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
 	}
 
-	public List<List<Double>> createEmbedding(List<String> texts) {
-		EmbeddingResponse embeddingResponse = createEmbeddingResult(texts);
+	public List<List<Double>> embed(List<String> texts) {
+		EmbeddingResponse embeddingResponse = embedForResponse(texts);
 		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).collect(Collectors.toList());
 	}
 
 	@Override
-	public EmbeddingResponse createEmbeddingResult(List<String> texts) {
+	public EmbeddingResponse embedForResponse(List<String> texts) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(texts).model(this.model).build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
