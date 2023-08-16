@@ -16,11 +16,11 @@
 
 package org.springframework.ai.prompt;
 
+import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.prompt.messages.UserMessage;
+
 import java.util.Collections;
 import java.util.List;
-
-import org.springframework.ai.prompt.messages.UserMessage;
-import org.springframework.ai.prompt.messages.Message;
 
 public class Prompt {
 
@@ -48,6 +48,11 @@ public class Prompt {
 
 	public List<Message> getMessages() {
 		return this.messages;
+	}
+
+	@Override
+	public String toString() {
+		return "Prompt{" + "messages=" + messages + '}';
 	}
 
 }

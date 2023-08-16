@@ -28,4 +28,10 @@ public class FunctionMessage extends AbstractMessage {
 		super(MessageType.SYSTEM, content, properties);
 	}
 
+	@Override
+	public String toString() {
+		return "FunctionMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+				+ messageType + '}';
+	}
+
 }

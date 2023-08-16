@@ -34,4 +34,10 @@ public class SystemMessage extends AbstractMessage {
 		super(MessageType.SYSTEM, content, properties);
 	}
 
+	@Override
+	public String toString() {
+		return "SystemMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+				+ messageType + '}';
+	}
+
 }

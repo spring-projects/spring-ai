@@ -20,9 +20,14 @@ import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -39,6 +44,21 @@ public class PromptTemplate implements PromptTemplateActions {
 	protected TemplateFormat templateFormat = TemplateFormat.ST;
 
 	private OutputParser outputParser;
+
+	public PromptTemplate(Resource resource) {
+		try (InputStream inputStream = resource.getInputStream()) {
+			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
+		try {
+			this.st = new ST(this.template, '{', '}');
+		}
+		catch (Exception ex) {
+			throw new IllegalArgumentException("The template string is not valid.", ex);
+		}
+	}
 
 	public PromptTemplate(String template) {
 		this.template = template;
@@ -95,12 +115,26 @@ public class PromptTemplate implements PromptTemplateActions {
 	@Override
 	public String render(Map<String, Object> model) {
 		validate(model);
-		for (Entry<String, Object> stringObjectEntry : model.entrySet()) {
-			if (st.getAttribute(stringObjectEntry.getKey()) == null) {
-				st.add(stringObjectEntry.getKey(), stringObjectEntry.getValue());
+		for (Entry<String, Object> entry : model.entrySet()) {
+			if (st.getAttribute(entry.getKey()) == null) {
+				if (entry.getValue() instanceof Resource) {
+					st.add(entry.getKey(), renderResource((Resource) entry.getValue()));
+				}
+				else {
+					st.add(entry.getKey(), entry.getValue());
+				}
 			}
 		}
-		return st.render().trim();
+		return st.render();
+	}
+
+	private String renderResource(Resource resource) {
+		try (InputStream inputStream = resource.getInputStream()) {
+			return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		}
+		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 	@Override

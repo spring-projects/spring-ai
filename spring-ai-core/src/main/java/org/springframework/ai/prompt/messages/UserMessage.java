@@ -33,4 +33,10 @@ public class UserMessage extends AbstractMessage {
 		super(MessageType.USER, message, properties);
 	}
 
+	@Override
+	public String toString() {
+		return "UserMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+				+ messageType + '}';
+	}
+
 }
