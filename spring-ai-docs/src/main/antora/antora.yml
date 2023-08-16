@@ -9,4 +9,4 @@ ext:
         command: mvnw process-resources
         local: true
       scan:
-        dir: target/classes/antora-resources
+        dir: spring-ai-docs/target/classes/antora-resources
