@@ -1,0 +1,2 @@
+version: ${antora-component.version}
+prerelease: ${antora-component.prerelease}
