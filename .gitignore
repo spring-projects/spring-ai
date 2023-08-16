@@ -25,3 +25,8 @@ out
 
 /.gradletasknamecache
 **/*.flattened-pom.xml
+
+node
+node_modules
+package-lock.json
+package.json

@@ -12,6 +12,27 @@
 
     <build>
         <plugins>
+			<plugin>
+				<groupId>io.spring.maven.antora</groupId>
+				<artifactId>antora-maven-plugin</artifactId>
+				<version>${io.spring.maven.antora-version}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<playbook>src/main/antora/antora-playbook.yml</playbook>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>io.spring.maven.antora</groupId>
+				<artifactId>antora-component-version-maven-plugin</artifactId>
+				<version>${io.spring.maven.antora-version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>antora-component-version</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
             <plugin>
                 <groupId>org.asciidoctor</groupId>
                 <artifactId>asciidoctor-maven-plugin</artifactId>
