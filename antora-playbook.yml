@@ -1,0 +1,43 @@
+antora:
+  extensions:
+  - '@springio/antora-extensions/partial-build-extension'
+  - require: '@springio/antora-extensions/latest-version-extension'
+  - require: '@springio/antora-extensions/inject-collector-cache-config-extension'
+  - '@antora/collector-extension'
+  - '@antora/atlas-extension'
+  - require: '@springio/antora-extensions/root-component-extension'
+    root_component_name: 'ai'
+site:
+  title: Spring AI Reference
+  url: https://docs.spring.io/spring-ai/reference
+  robots: allow
+git:
+  ensure_git_suffix: false
+content:
+  sources:
+  - url: https://github.com/spring-projects-experimental/spring-ai
+    # Refname matching:
+    # https://docs.antora.org/antora/latest/playbook/content-refname-matching/
+    branches: [main]
+    start_path: spring-ai-docs/src/main/antora
+asciidoc:
+  attributes:
+    page-stackoverflow-url: https://stackoverflow.com/questions/tagged/spring
+    page-pagination: ''
+    hide-uri-scheme: '@'
+    tabs-sync-option: '@'
+  extensions:
+  - '@asciidoctor/tabs'
+  - '@springio/asciidoctor-extensions'
+urls:
+  latest_version_segment_strategy: redirect:to
+  latest_version_segment: ''
+  redirect_facility: httpd
+ui:
+  bundle:
+    url: https://github.com/spring-io/antora-ui-spring/releases/download/v0.3.3/ui-bundle.zip
+    snapshot: true
+runtime:
+  log:
+    failure_level: warn
+    format: pretty

@@ -1,0 +1,54 @@
+name: Deploy Docs
+run-name: ${{ format('{0} ({1})', github.workflow, github.event.inputs.build-refname || 'all') }}
+on:
+  workflow_dispatch:
+    inputs:
+      build-refname:
+        description: Enter git refname to build (e.g., main).
+        required: false
+  push:
+    branches: docs-build
+# env:
+#   GRADLE_ENTERPRISE_SECRET_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_SECRET_ACCESS_KEY }}
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.repository_owner == 'spring-projects-experimental'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 5
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    - name: Set up refname build
+      if: github.event.inputs.build-refname
+      run: |
+        git fetch --depth 1 https://github.com/$GITHUB_REPOSITORY ${{ github.event.inputs.build-refname }}
+        export BUILD_REFNAME=${{ github.event.inputs.build-refname }}
+        echo "BUILD_REFNAME=$BUILD_REFNAME" >> $GITHUB_ENV
+        export BUILD_VERSION=$(git cat-file --textconv FETCH_HEAD:pom.xml | python3 -c "import xml.etree.ElementTree as xml; from sys import stdin; print(xml.parse(stdin).getroot().find('{http://maven.apache.org/POM/4.0.0}version').text)")
+        echo BUILD_VERSION=$BUILD_VERSION >> $GITHUB_ENV
+    - name: Run Antora
+      run: |
+        ./mvnw antora
+    - name: Publish Docs
+      uses: spring-io/spring-doc-actions/rsync-antora-reference@v0.0.11
+      with:
+        docs-username: ${{ secrets.DOCS_USERNAME }}
+        docs-host: ${{ secrets.DOCS_HOST }}
+        docs-ssh-key: ${{ secrets.DOCS_SSH_KEY }}
+        docs-ssh-host-key: ${{ secrets.DOCS_SSH_HOST_KEY }}
+        site-path: target/antora/site
+        dry-run: true
+    # - name: Bust Cloudflare Cache
+    #   uses: spring-io/spring-doc-actions/bust-cloudflare-antora-cache@v0.0.11
+    #   with:
+    #     context-root: spring-ai
+    #     cloudflare-zone-id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+    #     cloudflare-cache-token: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}

@@ -1,0 +1,23 @@
+= Spring AI Docs Build
+
+You're currently viewing the Antora playbook branch.
+The playbook branch hosts the docs build that is used to build and publish the production docs site.
+
+The Spring AI reference docs are built using https://antora.org[Antora].
+This README covers how to build the docs in a software branch as well as how to build the production docs site locally.
+
+== Building the Site
+
+You can build the entire site by invoking the following on the docs-build branch and then viewing the site at `target/site/index.html`
+
+[source,bash]
+----
+mvn exec:exec@antora
+----
+
+== Building a Specific Branch
+
+[source,bash]
+----
+mvn exec:exec@antora
+----
