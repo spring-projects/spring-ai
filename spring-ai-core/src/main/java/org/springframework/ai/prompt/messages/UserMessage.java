@@ -16,6 +16,8 @@
 
 package org.springframework.ai.prompt.messages;
 
+import org.springframework.core.io.Resource;
+
 import java.util.Map;
 
 /**
@@ -29,8 +31,8 @@ public class UserMessage extends AbstractMessage {
 		super(MessageType.USER, message);
 	}
 
-	public UserMessage(String message, Map<String, Object> properties) {
-		super(MessageType.USER, message, properties);
+	public UserMessage(Resource resource) {
+		super(MessageType.USER, resource);
 	}
 
 	@Override

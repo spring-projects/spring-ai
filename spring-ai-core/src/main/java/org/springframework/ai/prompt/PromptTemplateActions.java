@@ -16,20 +16,9 @@
 
 package org.springframework.ai.prompt;
 
-import org.springframework.ai.prompt.messages.Message;
-
-import java.util.List;
 import java.util.Map;
 
-public interface PromptTemplateActions {
-
-	String render();
-
-	String render(Map<String, Object> model);
-
-	List<Message> createMessages();
-
-	List<Message> createMessages(Map<String, Object> model);
+public interface PromptTemplateActions extends PromptTemplateStringActions {
 
 	Prompt create();
 

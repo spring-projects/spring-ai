@@ -16,15 +16,12 @@
 
 package org.springframework.ai.prompt;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.SystemMessage;
 import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
-import org.stringtemplate.v4.ST;
 
 public class SystemPromptTemplate extends PromptTemplate {
 
@@ -36,7 +33,13 @@ public class SystemPromptTemplate extends PromptTemplate {
 		super(resource);
 	}
 
-	public SystemMessage createMessage(Map<String, Object> model) {
+	@Override
+	public Message createMessage() {
+		return new SystemMessage(render());
+	}
+
+	@Override
+	public Message createMessage(Map<String, Object> model) {
 		return new SystemMessage(render(model));
 	}
 

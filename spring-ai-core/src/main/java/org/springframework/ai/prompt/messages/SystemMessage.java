@@ -16,6 +16,8 @@
 
 package org.springframework.ai.prompt.messages;
 
+import org.springframework.core.io.Resource;
+
 import java.util.Map;
 
 /**
@@ -30,8 +32,8 @@ public class SystemMessage extends AbstractMessage {
 		super(MessageType.SYSTEM, content);
 	}
 
-	public SystemMessage(String content, Map<String, Object> properties) {
-		super(MessageType.SYSTEM, content, properties);
+	public SystemMessage(Resource resource) {
+		super(MessageType.SYSTEM, resource);
 	}
 
 	@Override

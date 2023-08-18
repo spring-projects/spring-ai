@@ -43,4 +43,9 @@ public class Generation {
 		return Collections.unmodifiableMap(this.info);
 	}
 
+	@Override
+	public String toString() {
+		return "Generation{" + "text='" + text + '\'' + ", info=" + info + '}';
+	}
+
 }

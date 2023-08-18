@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai.llm;
+package org.springframework.ai.azure.openai.client;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.*;
@@ -56,7 +56,9 @@ public class AzureOpenAiClient implements AiClient {
 		options.setTemperature(this.getTemperature());
 		options.setModel(this.getModel());
 
+		logger.trace("Azure Chat Message: ", azureChatMessage);
 		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		logger.trace("Azure ChatCompletions: ", chatCompletions);
 		StringBuilder sb = new StringBuilder();
 		for (ChatChoice choice : chatCompletions.getChoices()) {
 			if (choice.getMessage() != null && choice.getMessage().getContent() != null) {
@@ -78,7 +80,9 @@ public class AzureOpenAiClient implements AiClient {
 		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
 		options.setTemperature(this.getTemperature());
 		options.setModel(this.getModel());
+		logger.trace("Azure ChatCompletionsOptions: ", options);
 		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		logger.trace("Azure ChatCompletions: ", chatCompletions);
 		List<Generation> generations = new ArrayList<>();
 		for (ChatChoice choice : chatCompletions.getChoices()) {
 			ChatMessage choiceMessage = choice.getMessage();

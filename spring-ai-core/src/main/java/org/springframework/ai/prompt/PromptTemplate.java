@@ -33,7 +33,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class PromptTemplate implements PromptTemplateActions {
+public class PromptTemplate implements PromptTemplateActions, PromptTemplateStringActions, PromptTemplateMessageActions {
 
 	private ST st;
 
@@ -85,6 +85,25 @@ public class PromptTemplate implements PromptTemplateActions {
 		}
 	}
 
+	public PromptTemplate(Resource resource, Map<String, Object> model) {
+		try (InputStream inputStream = resource.getInputStream()) {
+			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
+		// If the template string is not valid, an exception will be thrown
+		try {
+			this.st = new ST(this.template, '{', '}');
+			for (Entry<String, Object> entry : model.entrySet()) {
+				add(entry.getKey(), entry.getValue());
+			}
+		}
+		catch (Exception ex) {
+			throw new IllegalArgumentException("The template string is not valid.", ex);
+		}
+	}
+
 	public OutputParser getOutputParser() {
 		return outputParser;
 	}
@@ -108,6 +127,7 @@ public class PromptTemplate implements PromptTemplateActions {
 	}
 
 	// Render Methods
+	@Override
 	public String render() {
 		return st.render();
 	}
@@ -138,13 +158,13 @@ public class PromptTemplate implements PromptTemplateActions {
 	}
 
 	@Override
-	public List<Message> createMessages() {
-		return List.of(new UserMessage(render()));
+	public Message createMessage() {
+		return new UserMessage(render());
 	}
 
 	@Override
-	public List<Message> createMessages(Map<String, Object> model) {
-		return List.of(new UserMessage(render(model)));
+	public Message createMessage(Map<String, Object> model) {
+		return new UserMessage(render(model));
 	}
 
 	@Override

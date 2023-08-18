@@ -2,26 +2,26 @@ package org.springframework.ai.openai;
 
 import com.theokanning.openai.service.OpenAiService;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.llm.OpenAiClient;
+import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @SpringBootConfiguration
 public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiService theoOpenAiService() throws IOException {
-		// get api token in file ~/.openai
 		String apiKey = System.getenv("OPENAI_API_KEY");
-
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 		}
-		return new OpenAiService(apiKey);
+		OpenAiService openAiService = new OpenAiService(apiKey, Duration.ofSeconds(60));
+		return openAiService;
 	}
 
 	@Bean

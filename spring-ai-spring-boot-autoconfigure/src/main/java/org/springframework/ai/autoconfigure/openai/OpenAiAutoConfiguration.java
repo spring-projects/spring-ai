@@ -19,7 +19,7 @@ package org.springframework.ai.autoconfigure.openai;
 import com.theokanning.openai.service.OpenAiService;
 
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.llm.OpenAiClient;
+import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

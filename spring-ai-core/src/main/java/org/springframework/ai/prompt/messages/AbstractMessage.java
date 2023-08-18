@@ -16,6 +16,12 @@
 
 package org.springframework.ai.prompt.messages;
 
+import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +29,9 @@ public abstract class AbstractMessage implements Message {
 
 	protected String content;
 
+	/**
+	 * Additional options for the message to influence the response, not a model map.
+	 */
 	protected Map<String, Object> properties = new HashMap<>();
 
 	protected MessageType messageType;
@@ -36,10 +45,31 @@ public abstract class AbstractMessage implements Message {
 		this.content = content;
 	}
 
-	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> properties) {
+	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> messageProperties) {
 		this.messageType = messageType;
 		this.content = content;
-		this.properties = properties;
+		this.properties = messageProperties;
+	}
+
+	protected AbstractMessage(MessageType messageType, Resource resource) {
+		this.messageType = messageType;
+		try (InputStream inputStream = resource.getInputStream()) {
+			this.content = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
+	}
+
+	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> messagePropertiets) {
+		this.messageType = messageType;
+		this.properties = messagePropertiets;
+		try (InputStream inputStream = resource.getInputStream()) {
+			this.content = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to read resource", ex);
+		}
 	}
 
 	@Override

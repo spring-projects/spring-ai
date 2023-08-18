@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.llm;
+package org.springframework.ai.openai.client;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.theokanning.openai.completion.chat.ChatCompletionChoice;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.client.Generation;
 import org.springframework.ai.prompt.Prompt;
-
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.util.Assert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of {@link AiClient} backed by an OpenAiService
@@ -76,17 +76,47 @@ public class OpenAiClient implements AiClient {
 
 	@Override
 	public AiResponse generate(Prompt prompt) {
-		List<ChatCompletionRequest> chatCompletionRequests = getChatCompletionRequest(prompt);
-		return getLLMResult(chatCompletionRequests);
+		List<Message> messages = prompt.getMessages();
+		List<ChatMessage> theoMessages = new ArrayList<>();
+		for (Message message : messages) {
+			String messageType = message.getMessageType().getValue();
+			theoMessages.add(new ChatMessage(messageType, message.getContent()));
+		}
+		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
+			.model(this.model)
+			.temperature(this.temperature)
+			.messages(theoMessages)
+			.build();
+		return getAiResponse(chatCompletionRequest);
 	}
 
 	private ChatCompletionRequest getChatCompletionRequest(String text) {
+		List<ChatMessage> chatMessages = List.of(new ChatMessage("user", text));
+		logger.trace("ChatMessages: ", chatMessages);
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
 			.model(this.model)
 			.temperature(this.temperature)
 			.messages(List.of(new ChatMessage("user", text)))
 			.build();
+		logger.trace("ChatCompletionRequest: ", chatCompletionRequest);
 		return chatCompletionRequest;
+	}
+
+	private AiResponse getAiResponse(ChatCompletionRequest chatCompletionRequest) {
+		List<Generation> generations = new ArrayList<>();
+		logger.trace("ChatMessages: ", chatCompletionRequest.getMessages());
+		List<ChatCompletionChoice> chatCompletionChoices = this.openAiService
+			.createChatCompletion(chatCompletionRequest)
+			.getChoices();
+		logger.trace("ChatCompletionChoice: ", chatCompletionChoices);
+		for (ChatCompletionChoice chatCompletionChoice : chatCompletionChoices) {
+			ChatMessage chatMessage = chatCompletionChoice.getMessage();
+			// TODO investigate mapping of additional metadata/runtime info to the
+			// general model.
+			Generation generation = new Generation(chatMessage.getContent());
+			generations.add(generation);
+		}
+		return new AiResponse(generations);
 	}
 
 	private String getResponse(ChatCompletionRequest chatCompletionRequest) {
@@ -97,11 +127,6 @@ public class OpenAiClient implements AiClient {
 
 		String response = builder.toString();
 		return response;
-	}
-
-	private AiResponse getLLMResult(List<ChatCompletionRequest> chatCompletionRequest) {
-		// TODO
-		throw new RuntimeException("LLMResult getLLMResult not yet implemented");
 	}
 
 	private List<ChatCompletionRequest> getChatCompletionRequest(Prompt prompt) {

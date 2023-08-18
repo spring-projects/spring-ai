@@ -26,7 +26,7 @@ import java.util.Map;
  * A PromptTemplate that lets you specify the role as a string should the current
  * implementations and their roles not suffice for your needs.
  */
-public class ChatPromptTemplate implements PromptTemplateActions {
+public class ChatPromptTemplate implements PromptTemplateActions, PromptTemplateChatActions {
 
 	private final List<PromptTemplate> promptTemplates;
 
@@ -56,7 +56,7 @@ public class ChatPromptTemplate implements PromptTemplateActions {
 	public List<Message> createMessages() {
 		List<Message> messages = new ArrayList<>();
 		for (PromptTemplate promptTemplate : promptTemplates) {
-			messages.addAll(promptTemplate.createMessages());
+			messages.add(promptTemplate.createMessage());
 		}
 		return messages;
 	}
@@ -65,7 +65,7 @@ public class ChatPromptTemplate implements PromptTemplateActions {
 	public List<Message> createMessages(Map<String, Object> model) {
 		List<Message> messages = new ArrayList<>();
 		for (PromptTemplate promptTemplate : promptTemplates) {
-			messages.addAll(promptTemplate.createMessages(model));
+			messages.add(promptTemplate.createMessage(model));
 		}
 		return messages;
 	}
