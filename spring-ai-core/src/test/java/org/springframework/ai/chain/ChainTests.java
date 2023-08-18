@@ -14,15 +14,17 @@ class ChainTests {
 	@Test
 	void badInputs() {
 		Chain chain = new FakeChain();
-		assertThatThrownBy(() -> chain.apply(Map.of("foobar", "baz"))).isInstanceOf(IllegalArgumentException.class)
+		AiInput aiInput = new AiInput(Map.of("foobar", "baz"));
+		assertThatThrownBy(() -> chain.apply(aiInput)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Missing some input keys");
 	}
 
 	@Test
 	void correctInputs() {
 		Chain chain = new FakeChain();
-		Map<String, Object> output = chain.apply(Map.of("foo", "bar"));
-		assertThat(output).containsEntry("foo", "bar").containsEntry("bar", "baz");
+		AiInput aiInput = new AiInput(Map.of("foo", "bar"));
+		AiOutput aiOutput = chain.apply(aiInput);
+		assertThat(aiOutput.getOutputData()).containsEntry("foo", "bar").containsEntry("bar", "baz");
 	}
 
 	class FakeChain extends AbstractChain {
@@ -53,12 +55,12 @@ class ChainTests {
 		}
 
 		@Override
-		protected Map<String, Object> doApply(Map<String, Object> inputMap) {
+		protected AiOutput doApply(AiInput aiInput) {
 			if (beCorrect) {
-				return Map.of("bar", "baz");
+				return new AiOutput(Map.of("bar", "baz"));
 			}
 			else {
-				return Map.of("baz", "bar");
+				return new AiOutput(Map.of("baz", "bar"));
 			}
 		}
 

@@ -26,27 +26,27 @@ public abstract class AbstractChain implements Chain {
 	// TODO validation of input/outputs
 
 	@Override
-	public Map<String, Object> apply(Map<String, Object> inputMap) {
-		Map<String, Object> inputMapToUse = preProcess(inputMap);
-		Map<String, Object> outputMap = doApply(inputMapToUse);
-		Map<String, Object> outputMapToUse = postProcess(inputMapToUse, outputMap);
-		return outputMapToUse;
+	public AiOutput apply(AiInput aiInput) {
+		AiInput aiInputToUse = preProcess(aiInput);
+		AiOutput aiOutput = doApply(aiInputToUse);
+		Map<String, Object> outputMapToUse = postProcess(aiInput, aiOutput);
+		return new AiOutput(outputMapToUse);
 	}
 
 	@Override
-	public Map<String, Object> preProcess(Map<String, Object> inputMap) {
-		validateInputs(inputMap);
-		return inputMap;
+	public AiInput preProcess(AiInput aiInput) {
+		validateInputs(aiInput.getInputData());
+		return aiInput;
 	}
 
-	protected abstract Map<String, Object> doApply(Map<String, Object> inputMap);
+	protected abstract AiOutput doApply(AiInput aiInput);
 
 	@Override
-	public Map<String, Object> postProcess(Map<String, Object> inputMap, Map<String, Object> outputMap) {
-		validateOutputs(outputMap);
+	public Map<String, Object> postProcess(AiInput aiInput, AiOutput aiOutput) {
+		validateOutputs(aiOutput.getOutputData());
 		Map<String, Object> combindedMap = new HashMap<>();
-		combindedMap.putAll(inputMap);
-		combindedMap.putAll(outputMap);
+		combindedMap.putAll(aiInput.getInputData());
+		combindedMap.putAll(aiOutput.getOutputData());
 		return combindedMap;
 	}
 
