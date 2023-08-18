@@ -1,9 +1,8 @@
 package org.springframework.ai.openai.client;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.Generation;
-import org.springframework.ai.parser.OutputParser;
+import org.springframework.ai.parser.JsonOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
@@ -17,6 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,6 +83,27 @@ class ClientIntegrationTests {
 		List<String> list = outputParser.parse(generation.getText());
 		System.out.println(list);
 		assertThat(list).hasSize(5);
+
+	}
+
+	@Test
+	void jsonOutputParser() {
+		JsonOutputParser outputParser = new JsonOutputParser(HashMap.class);
+
+		String format = outputParser.getFormat();
+		String template = """
+				Provide me a List of {subject}
+				{format}
+				""";
+		PromptTemplate promptTemplate = new PromptTemplate(template,
+				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Generation generation = openAiClient.generate(prompt).getGeneration();
+
+		Object result = outputParser.parse(generation.getText());
+		System.out.println(result);
+		assertThat(result).isNotNull();
+		assertThat(((Map) result).get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
 
