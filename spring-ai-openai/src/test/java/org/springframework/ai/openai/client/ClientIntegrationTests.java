@@ -1,7 +1,10 @@
 package org.springframework.ai.openai.client;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.Generation;
+import org.springframework.ai.parser.OutputParser;
+import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.SystemPromptTemplate;
@@ -11,6 +14,7 @@ import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
 import java.util.List;
@@ -47,7 +51,6 @@ class ClientIntegrationTests {
 		assertThat(response).isNotNull();
 
 		evaluateQuestionAndAnswer(request, response.getText());
-
 	}
 
 	private void evaluateQuestionAndAnswer(String question, String answer) {
@@ -59,6 +62,27 @@ class ClientIntegrationTests {
 		Generation response = openAiClient.generate(prompt).getGeneration();
 		System.out.println(response);
 		assertThat(response.getText()).isEqualTo("YES");
+	}
+
+	@Test
+	void outputParser() {
+		DefaultConversionService conversionService = new DefaultConversionService();
+		ListOutputParser outputParser = new ListOutputParser(conversionService);
+
+		String format = outputParser.getFormat();
+		String template = """
+				List five {subject}
+				{format}
+				""";
+		PromptTemplate promptTemplate = new PromptTemplate(template,
+				Map.of("subject", "ice cream flavors", "format", format));
+		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Generation generation = openAiClient.generate(prompt).getGeneration();
+
+		List<String> list = outputParser.parse(generation.getText());
+		System.out.println(list);
+		assertThat(list).hasSize(5);
+
 	}
 
 }

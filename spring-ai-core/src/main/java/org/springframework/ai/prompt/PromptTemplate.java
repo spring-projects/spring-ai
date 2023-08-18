@@ -18,6 +18,7 @@ package org.springframework.ai.prompt;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
+import org.springframework.ai.parser.OutputParser;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.core.io.Resource;
