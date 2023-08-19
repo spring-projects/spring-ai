@@ -16,19 +16,19 @@ public class JsonLoader implements Loader {
 	/**
 	 * The key from the JSON that we will use as the text to parse into the Document text
 	 */
-	private String textKey = "text";
+	private List<String> jsonKeysToUse = new ArrayList<>();
 
 	private Resource resource;
 
 	public JsonLoader(Resource resource) {
-		Objects.requireNonNull(this.resource, "The Spring Resource must not be null");
+		Objects.requireNonNull(resource, "The Spring Resource must not be null");
 		this.resource = resource;
 	}
 
-	public JsonLoader(String textKey, Resource resource) {
-		Objects.requireNonNull(textKey, "textKey must not be null");
+	public JsonLoader(Resource resource, String... jsonKeysToUse) {
+		Objects.requireNonNull(jsonKeysToUse, "keys must not be null");
 		Objects.requireNonNull(resource, "The Spring Resource must not be null");
-		this.textKey = textKey;
+		this.jsonKeysToUse = List.of(jsonKeysToUse);
 		this.resource = resource;
 	}
 
@@ -51,8 +51,22 @@ public class JsonLoader implements Loader {
 					new TypeReference<List<Map<String, Object>>>() {
 					});
 			for (Map<String, Object> item : jsonData) {
-				if (item.containsKey(this.textKey)) {
-					Document document = new Document(item.get(this.textKey).toString());
+				StringBuilder sb = new StringBuilder();
+				for (String key : jsonKeysToUse) {
+					if (item.containsKey(key)) {
+						sb.append(key);
+						sb.append(": ");
+						sb.append(item.get(key));
+						sb.append(System.lineSeparator());
+					}
+				}
+
+				if (!sb.isEmpty()) {
+					Document document = new Document(sb.toString());
+					documents.add(document);
+				}
+				else {
+					Document document = new Document(item.toString());
 					documents.add(document);
 				}
 			}

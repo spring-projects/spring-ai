@@ -39,7 +39,7 @@ public class Document {
 
 	private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
 
-	private String metadataSeperator;
+	private String metadataSeperator = "\n";
 
 	public Document(String text) {
 		this.text = text;
@@ -130,6 +130,18 @@ public class Document {
 	@Override
 	public String toString() {
 		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", text='" + text + '\'' + '}';
+	}
+
+	public void setTextTemplate(String textTemplate) {
+		this.textTemplate = textTemplate;
+	}
+
+	public void setMetadataTemplate(String metadataTemplate) {
+		this.metadataTemplate = metadataTemplate;
+	}
+
+	public void setMetadataSeperator(String metadataSeperator) {
+		this.metadataSeperator = metadataSeperator;
 	}
 
 }

@@ -27,6 +27,7 @@ public class OpenAiTestConfiguration {
 	@Bean
 	public OpenAiClient openAiClient(OpenAiService theoOpenAiService) {
 		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService);
+		openAiClient.setTemperature(0.3);
 		return openAiClient;
 	}
 
