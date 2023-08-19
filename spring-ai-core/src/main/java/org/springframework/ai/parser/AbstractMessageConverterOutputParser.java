@@ -2,7 +2,7 @@ package org.springframework.ai.parser;
 
 import org.springframework.messaging.converter.MessageConverter;
 
-public abstract class AbstractMessageConverterOutputParser implements OutputParser<Object> {
+public abstract class AbstractMessageConverterOutputParser<T> implements OutputParser<T> {
 
 	private MessageConverter messageConverter;
 

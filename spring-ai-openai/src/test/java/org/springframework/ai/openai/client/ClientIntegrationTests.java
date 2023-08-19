@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
 import org.springframework.ai.openai.testutils.AbstractIntegrationTest;
-import org.springframework.ai.parser.JsonOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
+import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.SystemPromptTemplate;
@@ -17,7 +17,6 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,8 +63,8 @@ class ClientIntegrationTests extends AbstractIntegrationTest {
 	}
 
 	@Test
-	void jsonOutputParser() {
-		JsonOutputParser outputParser = new JsonOutputParser(HashMap.class);
+	void mapOutputParser() {
+		MapOutputParser outputParser = new MapOutputParser();
 
 		String format = outputParser.getFormat();
 		String template = """
@@ -77,10 +76,8 @@ class ClientIntegrationTests extends AbstractIntegrationTest {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = openAiClient.generate(prompt).getGeneration();
 
-		Object result = outputParser.parse(generation.getText());
-		System.out.println(result);
-		assertThat(result).isNotNull();
-		assertThat(((Map) result).get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
+		Map<String, Object> result = outputParser.parse(generation.getText());
+		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
 
