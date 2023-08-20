@@ -35,6 +35,8 @@ public class AzureOpenAiProperties {
 
 	private String model = "gpt-35-turbo";
 
+	private String embeddingModel = "text-embedding-ada-002";
+
 	public String getEndpoint() {
 		return endpoint;
 	}
@@ -69,6 +71,14 @@ public class AzureOpenAiProperties {
 
 	public String getApiKey() {
 		return apiKey;
+	}
+
+	public String getEmbeddingModel() {
+		return embeddingModel;
+	}
+
+	public void setEmbeddingModel(String embeddingModel) {
+		this.embeddingModel = embeddingModel;
 	}
 
 }

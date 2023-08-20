@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import com.theokanning.openai.service.OpenAiService;
 
+import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -57,7 +58,7 @@ public class OpenAiAutoConfiguration {
 	}
 
 	@Bean
-	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
+	public EmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
 		return new OpenAiEmbeddingClient(theoOpenAiService);
 	}
 

@@ -44,7 +44,7 @@ public class AzureOpenAiClient implements AiClient {
 	private String model = "gpt-35-turbo";
 
 	public AzureOpenAiClient(OpenAIClient msoftOpenAiClient) {
-		Assert.notNull(msoftOpenAiClient, "OpenAiClient must not be null");
+		Assert.notNull(msoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		this.msoftOpenAiClient = msoftOpenAiClient;
 	}
 

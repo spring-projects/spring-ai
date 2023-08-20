@@ -71,10 +71,12 @@ public class AcmeIntegrationTest extends AbstractIntegrationTest {
 		VectorStoreRetriever vectorStoreRetriever = new VectorStoreRetriever(vectorStore);
 
 		logger.info("Retrieving relevant documents");
-		String userQuery = "How much does the SonicRide 8S cost?";
-		// "Tell me about the bike 'The SonicRide 8S'" ;
+		String userQuery = "What bike is good for city commuting?";
 
-		// "What bike is good for city commuting?";
+		// "Tell me more about the bike 'The SonicRide 8S'" ;
+		// "How much does the SonicRide 8S cost?";
+
+		// Eventually include metadata in query.
 		List<Document> similarDocuments = vectorStoreRetriever.retrieve(userQuery);
 		logger.info(String.format("Found %s relevant documents.", similarDocuments.size()));
 
@@ -99,9 +101,6 @@ public class AcmeIntegrationTest extends AbstractIntegrationTest {
 	}
 
 	private Message getSystemMessage(List<Document> similarDocuments) {
-
-		// Would need to figure out which of the documenta metadata fields to add, from
-		// the loader, now just the 'full description.'
 
 		String documents = similarDocuments.stream().map(entry -> entry.getContent()).collect(Collectors.joining("\n"));
 

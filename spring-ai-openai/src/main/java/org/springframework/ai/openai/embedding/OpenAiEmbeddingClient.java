@@ -35,7 +35,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(List.of(text)).model(this.model).build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
-		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
+		return generateEmbeddingResponse(nativeEmbeddingResult).getData().get(0).getEmbedding();
 	}
 
 	public List<Double> embed(Document document) {
@@ -45,7 +45,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
-		return generateEmbeddingResult(nativeEmbeddingResult).getData().get(0).getEmbedding();
+		return generateEmbeddingResponse(nativeEmbeddingResult).getData().get(0).getEmbedding();
 	}
 
 	public List<List<Double>> embed(List<String> texts) {
@@ -58,24 +58,15 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(texts).model(this.model).build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
-		return generateEmbeddingResult(nativeEmbeddingResult);
+		return generateEmbeddingResponse(nativeEmbeddingResult);
 	}
 
-	private EmbeddingResponse generateEmbeddingResult(
+	private EmbeddingResponse generateEmbeddingResponse(
 			com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult) {
 		List<Embedding> data = generateEmbeddingList(nativeEmbeddingResult.getData());
 		Map<String, Object> metadata = generateMetadata(nativeEmbeddingResult.getModel(),
 				nativeEmbeddingResult.getUsage());
 		return new EmbeddingResponse(data, metadata);
-	}
-
-	private Map<String, Object> generateMetadata(String model, Usage usage) {
-		Map<String, Object> metadata = new HashMap<>();
-		metadata.put("model", model);
-		metadata.put("prompt-tokens", usage.getPromptTokens());
-		metadata.put("completion-tokens", usage.getCompletionTokens());
-		metadata.put("total-tokens", usage.getTotalTokens());
-		return metadata;
 	}
 
 	private List<Embedding> generateEmbeddingList(List<com.theokanning.openai.embedding.Embedding> nativeData) {
@@ -87,6 +78,15 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 			data.add(embedding);
 		}
 		return data;
+	}
+
+	private Map<String, Object> generateMetadata(String model, Usage usage) {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("model", model);
+		metadata.put("prompt-tokens", usage.getPromptTokens());
+		metadata.put("completion-tokens", usage.getCompletionTokens());
+		metadata.put("total-tokens", usage.getTotalTokens());
+		return metadata;
 	}
 
 }
