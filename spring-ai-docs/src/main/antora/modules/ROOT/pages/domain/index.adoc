@@ -1,3 +1,0 @@
-= The Domain Language of AI
-
-TBD

@@ -1,6 +1,6 @@
 * xref:index.adoc[Overview]
-* xref:domain/index.adoc[]
-** xref:domain/prompt.adoc[]
+* xref:concepts.adoc[AI Concepts]
+* xref:getting-started.adoc[Getting Started]
 * xref:prompt/index.adoc[]
 * xref:client/index.adoc[]
 ** xref:client/usage.adoc[]
