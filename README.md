@@ -31,8 +31,11 @@ Taking inspiration from these libraries, the Spring AI project aims to provide a
 
 The following is a feature list resembling those found in the LangChain documentation.
 The initial features lay the foundation, with subsequent, more complex features building upon them.
-Implemented features are linked to the Spring AI documentation.
-Features without links are part of our future roadmap.
+
+You can find more details in the [Reference Documentation](https://docs.spring.io/spring-ai/reference/)
+
+Not all features listed here are implemented yet, but a good amount are :)
+
 
 ### Model I/O
 
@@ -82,7 +85,7 @@ It's getting a bit funky, isn't it?
 ## Project Links
 
 * [Issues](https://github.com/spring-projects-experimental/spring-ai/issues)
-* Documentation
+* [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
 
 ## Building

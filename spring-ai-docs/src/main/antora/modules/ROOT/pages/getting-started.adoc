@@ -28,6 +28,84 @@ export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
 
+== Spring CLI
+
+Download the latest https://github.com/spring-projects-experimental/spring-cli/releases[Spring CLI Release]
+
+and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[instructions] to add `spring` to your `PATH`.
+
+Create a simple AI application
+
+* For OpenAI
+
+```shell
+spring boot new ai
+```
+
+or
+
+*  For Azure OpenAI
+
+```shell
+spring boot new ai-azure
+```
+
+You can also `ADD` the same simple AI application to your current project using
+
+*  For OpenAI
+```shell
+spring boot add ai
+```
+
+or
+
+*  For Azure OpenAI
+```shell
+spring boot add ai-azure
+```
+
+There is a project catalog available for Azure OpenAI that covers more functionality.
+Add the catalog by running the command
+
+* For Azure Open AI
+
+```shell
+spring project-catalog add ai-azure
+```
+
+Now you have the following projects that you can use to create a new project using the `spring boot new` command or add to your existing project using the `spring boot add` command.
+
+```shell
+spring project list
+
+├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
+│ai-azure-hello-world      │AI - Hello,    │https://github.com/rd-1-2022/ai-azure-openai-helloworld             │ai-azure│[java-17,      │
+│                          │World          │                                                                    │        │boot-3.1.x, ai,│
+│                          │               │                                                                    │        │azure, web]    │
+├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
+│ai-azure-prompt-templating│AI - Prompt    │https://github.com/rd-1-2022/ai-azure-prompt-template               │ai-azure│[java-17,      │
+│                          │Templating     │                                                                    │        │boot-3.1.x, ai,│
+│                          │               │                                                                    │        │azure, prompt  │
+│                          │               │                                                                    │        │templating]    │
+├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
+│ai-azure-prompt-roles     │AI - Prompt    │https://github.com/rd-1-2022/ai-azure-openai-prompt-roles           │ai-azure│[java-17,      │
+│                          │Templating     │                                                                    │        │boot-3.1.x, ai,│
+│                          │               │                                                                    │        │azure, prompt  │
+│                          │               │                                                                    │        │roles]         │
+├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
+│ai-azure-stuff-prompt     │AI - Stuff the │https://github.com/rd-1-2022/ai-azure-stuff-prompt                  │ai-azure│[java-17,      │
+│                          │prompt         │                                                                    │        │boot-3.1.x, ai,│
+│                          │               │                                                                    │        │azure, prompt  │
+│                          │               │                                                                    │        │stuff]         │
+├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
+│ai-azure-prompt-rag       │AI - Retrieval │https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation│ai-azure│[java-17,      │
+│                          │Augmented      │                                                                    │        │boot-3.1.x, ai,│
+│                          │Generation     │                                                                    │        │azure,         │
+│                          │               │                                                                    │        │retrieval]     │
+└──────────────────────────┴───────────────┴────────────────────────────────────────────────────────────────────┴────────┴───────────────┘
+```
+
+
 == Sample Projects
 
 You can clone these projects on GitHub to get started.

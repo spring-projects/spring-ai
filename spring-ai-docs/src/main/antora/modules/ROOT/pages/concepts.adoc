@@ -152,9 +152,13 @@ Data Loaders and Vector Database are the fundamental building blocks for solving
 
 === Data Loaders
 
-TBD
+=== Splitters
+
+=== Embeddings
 
 === Vector Databases
+
+TBD
 
 == Evaluating AI responses
 
