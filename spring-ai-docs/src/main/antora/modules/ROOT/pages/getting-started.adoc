@@ -1,2 +1,46 @@
 = Getting Started
 
+== API Keys
+
+=== OpenAI
+
+Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from `openai.com`.
+
+Exporting an environment variable is one way to set that configuration property.
+
+[source,shell]
+----
+export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
+----
+
+=== Azure OpenAI
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on link:https://portal.azure.com[Azure Portal].
+
+The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
+
+Exporting environment variables is one way to set these configuration properties.
+
+[source,shell]
+----
+export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+----
+
+== Sample Projects
+
+You can clone these projects on GitHub to get started.
+
+=== OpenAI
+
+* https://github.com/rd-1-2022/ai-openai-helloworld
+
+=== Azure OpenAI
+
+* https://github.com/rd-1-2022/ai-azure-openai-helloworld
+* https://github.com/rd-1-2022/ai-azure-stuff-prompt
+* https://github.com/rd-1-2022/ai-azure-prompt-template
+* https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
+* https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
+
