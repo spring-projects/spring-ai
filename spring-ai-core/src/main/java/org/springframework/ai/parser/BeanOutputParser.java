@@ -19,7 +19,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 
 	private Class clazz;
 
-	public BeanOutputParser(Class clazz) {
+	public BeanOutputParser(Class<T> clazz) {
 		Objects.requireNonNull(clazz, "Java Class can not be null;");
 		this.clazz = clazz;
 		generateSchema();

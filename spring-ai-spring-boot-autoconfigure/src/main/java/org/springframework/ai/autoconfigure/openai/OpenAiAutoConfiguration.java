@@ -46,7 +46,7 @@ public class OpenAiAutoConfiguration {
 			throw new IllegalArgumentException(
 					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
 		}
-		return new OpenAiService(openAiProperties.getApiKey());
+		return new OpenAiService(openAiProperties.getApiKey(), openAiProperties.getDuration());
 	}
 
 	@Bean

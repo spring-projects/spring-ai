@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.openai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
+
 import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
 
 @ConfigurationProperties(CONFIG_PREFIX)
@@ -28,6 +30,8 @@ public class OpenAiProperties {
 	private String apiKey;
 
 	private Double temperature = 0.7;
+
+	private Duration duration = Duration.ofSeconds(60);
 
 	private String model = "gpt-3.5-turbo";
 
@@ -53,6 +57,14 @@ public class OpenAiProperties {
 
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
+	}
+
+	public Duration getDuration() {
+		return duration;
+	}
+
+	public void setDuration(Duration duration) {
+		this.duration = duration;
 	}
 
 }
