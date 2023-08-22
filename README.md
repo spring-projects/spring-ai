@@ -6,6 +6,26 @@ The Spring AI project provides a Spring-friendly API and abstractions for develo
 
 Let's make your `@Beans` intelligent!
 
+
+## Project Links
+
+* [Issues](https://github.com/spring-projects-experimental/spring-ai/issues)
+* [Documentation](https://docs.spring.io/spring-ai/reference/)
+* [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
+
+## Workshop
+
+* You can try out the features of Spring AI by following the [workshop material for Azure OpenAI](https://github.com/markpollack/spring-ai-azure-workshop)
+* To use the workshop material with OpenAI (not Azure's offering) you will need to *replace* the Azure Open AI Boot Starter in the `pom.xml` with the Open AI Boot Starter.
+```xml
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+        <version>0.2.0-SNAPSHOT</version>
+    </dependency>
+```
+
+
 ## Overview
 
 Despite the extensive history of AI, Java's role in this domain has been relatively minor.
@@ -82,11 +102,6 @@ Agents might even dynamically access external data sources to retrieve informati
 It's getting a bit funky, isn't it?
 
 
-## Project Links
-
-* [Issues](https://github.com/spring-projects-experimental/spring-ai/issues)
-* [Documentation](https://docs.spring.io/spring-ai/reference/)
-* [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
 
 ## Building
 
