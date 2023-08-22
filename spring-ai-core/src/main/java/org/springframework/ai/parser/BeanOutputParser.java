@@ -51,10 +51,8 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 		String raw = """
 				Your response should be in JSON format.
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
-				Here is the JSON Schema instance your output must adhere to in the enclosed markdown codeblock:
-				```json
-				{jsonSchema}
-				```
+				Here is the JSON Schema instance your output must adhere to:
+				```{jsonSchema}```
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(raw);
 		return promptTemplate.render(Map.of("jsonSchema", this.jsonSchema));
