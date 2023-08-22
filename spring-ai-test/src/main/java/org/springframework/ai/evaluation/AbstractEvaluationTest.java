@@ -1,4 +1,4 @@
-package org.springframework.ai.openai.testutils;
+package org.springframework.ai.evaluation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,23 +18,23 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public abstract class AbstractIT {
+public class AbstractEvaluationTest {
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(AbstractEvaluationTest.class);
 
 	@Autowired
 	protected AiClient openAiClient;
 
-	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
+	@Value("classpath:/prompts/spring/test/evaluation/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
 
-	@Value("classpath:/prompts/eval/qa-evaluator-not-related-message.st")
+	@Value("classpath:/prompts/spring/test/evaluation/qa-evaluator-not-related-message.st")
 	protected Resource qaEvaluatorNotRelatedResource;
 
-	@Value("classpath:/prompts/eval/qa-evaluator-fact-based-answer.st")
+	@Value("classpath:/prompts/spring/test/evaluation/qa-evaluator-fact-based-answer.st")
 	protected Resource qaEvalutaorFactBasedAnswerResource;
 
-	@Value("classpath:/prompts/eval/user-evaluator-message.st")
+	@Value("classpath:/prompts/spring/test/evaluation/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
 
 	protected void evaluateQuestionAndAnswer(String question, AiResponse response, boolean factBased) {
