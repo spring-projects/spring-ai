@@ -57,10 +57,5 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 		PromptTemplate promptTemplate = new PromptTemplate(raw);
 		return promptTemplate.render(Map.of("jsonSchema", this.jsonSchema));
 	}
-	// {"type":"object","properties":{"answer":{"type":"string","description":"answer to
-	// the user's question"},"source":{"type":"string","description":"source used to
-	// answer the user's question, should be a
-	// website."}},"required":["answer","source"],"additionalProperties":false,"$schema":"http://json-schema.org/draft-07/schema#"}
-	//
 
 }
