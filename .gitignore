@@ -26,6 +26,9 @@ out
 /.gradletasknamecache
 **/*.flattened-pom.xml
 
+vscode 
+settings.json
+
 node
 node_modules
 package-lock.json
