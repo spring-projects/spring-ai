@@ -206,6 +206,7 @@ To build with only unit tests
 To build including integration tests.
 Set API key environment variables for OpenAI and Azure OpenAI before running.
 
+
 ```shell
 ./mvnw clean verify -Pintegration-tests
 ```
