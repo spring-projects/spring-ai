@@ -33,6 +33,18 @@
 			<version>${open-ai-client.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.victools</groupId>
+			<artifactId>jsonschema-generator</artifactId>
+			<version>${victools.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.victools</groupId>
+			<artifactId>jsonschema-module-jackson</artifactId>
+			<version>${victools.version}</version>
+		</dependency>
+
 		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
 import org.springframework.ai.openai.testutils.AbstractIntegrationTest;
+import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.ai.prompt.Prompt;
@@ -79,6 +80,24 @@ class ClientIntegrationTests extends AbstractIntegrationTest {
 		Map<String, Object> result = outputParser.parse(generation.getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
+	}
+
+	@Test
+	void beanOutputParser() {
+
+		BeanOutputParser<ActorsFilms> outputParser = new BeanOutputParser<>(ActorsFilms.class);
+
+		String format = outputParser.getFormat();
+		String template = """
+				Generate the filmography for a random actor.
+				{format}
+				""";
+		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Generation generation = openAiClient.generate(prompt).getGeneration();
+
+		ActorsFilms actorsFilms = outputParser.parse(generation.getText());
+		System.out.println(actorsFilms);
 	}
 
 }

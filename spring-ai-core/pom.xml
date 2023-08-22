@@ -43,6 +43,24 @@
 			<version>${jtokkit.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.victools</groupId>
+			<artifactId>jsonschema-generator</artifactId>
+			<version>4.31.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.victools</groupId>
+			<artifactId>jsonschema-module-jackson</artifactId>
+			<version>4.31.1</version>
+		</dependency>
+
+<!--		<dependency>-->
+<!--			<groupId>com.kjetland</groupId>-->
+<!--			<artifactId>mbknor-jackson-jsonschema_2.13</artifactId>-->
+<!--			<version>1.0.39</version>-->
+<!--		</dependency>-->
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
