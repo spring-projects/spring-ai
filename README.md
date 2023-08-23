@@ -13,6 +13,44 @@ Let's make your `@Beans` intelligent!
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
 
+## Dependencies
+
+Check out the workshop below but if you want to add the necessary goodies by hand, you will need to add the snapshot repository
+
+```xml
+  <repositories>
+    <repository>
+      <id>spring-snapshots</id>
+      <name>Spring Snapshots</name>
+      <url>https://repo.spring.io/snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+```
+
+And the Spring Boot Starter depending on if you are using Azure Open AI or Open AI.
+
+* Azure OpenAI
+```xml
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+        <version>0.2.0-SNAPSHOT</version>
+    </dependency>
+```
+
+* OpenAI
+
+```xml
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+        <version>0.2.0-SNAPSHOT</version>
+    </dependency>
+```
+
 ## Workshop
 
 * You can try out the features of Spring AI by following the [workshop material for Azure OpenAI](https://github.com/markpollack/spring-ai-azure-workshop)
