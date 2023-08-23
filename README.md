@@ -24,8 +24,6 @@ Let's make your `@Beans` intelligent!
         <version>0.2.0-SNAPSHOT</version>
     </dependency>
 ```
-
-
 ## Overview
 
 Despite the extensive history of AI, Java's role in this domain has been relatively minor.
