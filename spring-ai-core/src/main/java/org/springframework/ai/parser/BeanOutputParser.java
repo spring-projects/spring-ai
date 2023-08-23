@@ -1,6 +1,7 @@
 package org.springframework.ai.parser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -19,9 +20,20 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 
 	private Class clazz;
 
+	private ObjectMapper objectMapper;
+
 	public BeanOutputParser(Class<T> clazz) {
 		Objects.requireNonNull(clazz, "Java Class can not be null;");
 		this.clazz = clazz;
+		this.objectMapper = getObjectMapper();
+		generateSchema();
+	}
+
+	public BeanOutputParser(Class<T> clazz, ObjectMapper objectMapper) {
+		Objects.requireNonNull(clazz, "Java Class can not be null;");
+		Objects.requireNonNull(objectMapper, "ObjectMapper can not be null;");
+		this.clazz = clazz;
+		this.objectMapper = objectMapper;
 		generateSchema();
 	}
 
@@ -36,13 +48,18 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 
 	@Override
 	public T parse(String text) {
-		ObjectMapper objectMapper = new ObjectMapper();
 		try {
-			return (T) objectMapper.readValue(text, this.clazz);
+			return (T) this.objectMapper.readValue(text, this.clazz);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	protected ObjectMapper getObjectMapper() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		return objectMapper;
 	}
 
 	@Override

@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import com.theokanning.openai.service.OpenAiService;
 
+import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.client.OpenAiClient;
@@ -25,6 +26,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.StringUtils;
 
 import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
@@ -32,6 +34,7 @@ import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFI
 @AutoConfiguration
 @ConditionalOnClass(OpenAiService.class)
 @EnableConfigurationProperties(OpenAiProperties.class)
+@ImportRuntimeHints(NativeHints.class)
 public class OpenAiAutoConfiguration {
 
 	private final OpenAiProperties openAiProperties;
