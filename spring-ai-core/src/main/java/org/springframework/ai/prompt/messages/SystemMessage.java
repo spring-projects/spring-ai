@@ -18,8 +18,6 @@ package org.springframework.ai.prompt.messages;
 
 import org.springframework.core.io.Resource;
 
-import java.util.Map;
-
 /**
  * A message of the type 'system' passed as input. The system message gives high level
  * instructions for the conversation. This role typically provides high-level instructions

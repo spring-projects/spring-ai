@@ -16,12 +16,11 @@
 
 package org.springframework.ai.prompt;
 
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.SystemMessage;
 import org.springframework.core.io.Resource;
+
+import java.util.Map;
 
 public class SystemPromptTemplate extends PromptTemplate {
 

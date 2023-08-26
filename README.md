@@ -62,6 +62,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
         <version>0.2.0-SNAPSHOT</version>
     </dependency>
 ```
+
 ## Overview
 
 Despite the extensive history of AI, Java's role in this domain has been relatively minor.
@@ -79,7 +80,7 @@ These Python libraries share foundational themes with Spring projects, such as:
 * Extensibility
 * Reduction of boilerplate code
 * Integration with diverse data sources
-* Prebuilt solutions for common use cases 
+* Prebuilt solutions for common use cases
 
 Taking inspiration from these libraries, the Spring AI project aims to provide a similar experience for Spring developers in the AI domain.
 
@@ -113,7 +114,7 @@ Instead, the 'In-context' learning technique lets you more easily incorporate yo
 This data can be from text files, HTML, database results, etc.
 Effectively incorporating your data in an AI model requires specific techniques critical for developing successful solutions.
 
-**Vector Stores:**  A widely used technique to incorporate your data in a AI model is using Vector Databases.
+**Vector Stores:**  A widely used technique to incorporate your data in an AI model is using Vector Databases.
 Vector Databases help to classify which part of your documents are most relevant for the AI model to use in creating a response.
 Examples of Vector Databases are Chroma, Pinecone, Weaviate, Mongo Atlas, and RediSearch.
 Spring IO abstracts these databases, allowing easy swapping of implementations.
@@ -123,7 +124,7 @@ Spring IO abstracts these databases, allowing easy swapping of implementations.
 **Chains:** Many AI solutions require multiple AI interactions to respond to a single user input.
 "Chains" organize these interactions, offering modular AI workflows that promote reusability.
 While you can create custom Chains tailored to your specific use case, pre-configured use-case-specific Chains are provided to accelerate your development.
-Use-cases such as Question-Answering, Text Generation, and Summarization are examples.
+Use cases such as Question-Answering, Text Generation, and Summarization are examples.
 
 ### Memory
 
@@ -151,7 +152,7 @@ To build including integration tests.
 You will need to set environment variables for API keys to OpenAI
 
 ```shell
-./mvww clean package -Pintegration-tests
+./mvnw clean package -Pintegration-tests
 ```
 
 To build the docs
