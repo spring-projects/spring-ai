@@ -19,10 +19,8 @@ package org.springframework.ai.autoconfigure.azure.openai;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
-
 import org.springframework.ai.azure.openai.client.AzureOpenAiClient;
 import org.springframework.ai.azure.openai.embedding.AzureOpenAiEmbeddingClient;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

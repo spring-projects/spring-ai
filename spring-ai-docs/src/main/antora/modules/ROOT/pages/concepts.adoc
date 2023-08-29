@@ -3,7 +3,7 @@
 == Models
 
 AI models are algorithms designed to process and generate information, often mimicking human cognitive functions.
-By learning patterns and insights from large datasets, these models can make predictions, generate text, images, or other outputs, enhancing various applications across industries.
+By learning patterns and insights from large datasets, these models can make predictions, text, images, or other outputs, enhancing various applications across industries.
 
 There are many different types of AI models, each suited for a specific use case.
 While ChatGPT and its generative AI capabilities have captivated users through text input and output, many models and companies offer diverse inputs and outputs.
@@ -18,7 +18,7 @@ The following table categorizes several models based on their input and output t
 |Output
 |Examples
 
-|Language/Code/Images (Multi Modal)
+|Language/Code/Images (Multi-Modal)
 |Language/Code
 |GPT4 - OpenAI
 
@@ -41,7 +41,7 @@ The following table categorizes several models based on their input and output t
 
 The initial focus of Spring AI is on models that process language input and provide language output, initially OpenAI + Azure OpenAI.
 The last row in the previous table, which accepts text as input and output numbers, is more commonly known as Embedding text and represents the internal data structures used in an AI model.
-Spring AI has support for Embeddings to support more advanced use-cases.
+Spring AI has support for Embeddings to support more advanced use cases.
 
 What sets models like GPT apart is their pre-trained nature, as indicated by the "P" in GPT—Chat Generative Pre-Trained Transformer.
 This pre-training feature transforms AI into a general developer tool that doesn't necessitate an extensive machine learning or model training background.
@@ -51,7 +51,7 @@ This pre-training feature transforms AI into a general developer tool that doesn
 
 Prompts serve as the foundation for language-based inputs that guide an AI model to produce specific outputs.
 While this might seem intuitive considering our interactions with ChatGPT, crafting effective prompts involves both an art and a science.
-The wording of the language utilized significantly impacts the AI model's responses, and there specific patters and words are recognized by the model to guide responses in the intended direction.
+The wording of the language utilized significantly impacts the AI model's responses, and their specific patterns and words are recognized by the model to guide responses in the intended direction.
 
 The importance of this skill has led to the emergence of "Prompt Engineering."
 When an effective prompt for a particular use case is identified, it is often shared within the community.
@@ -71,7 +71,7 @@ Tell me a {adjective} joke about {content}.
 ```
 
 In Spring AI, Prompt Templates can be likened to the 'View' in Spring MVC architecture.
-A model object, typically a java.util.Map, is provided to populate placeholders within the template.
+A model object, typically a `java.util.Map`, is provided to populate placeholders within the template.
 The 'rendered' string becomes the content of the Prompt supplied to the AI model.
 
 There is considerable variability in the specific data format of the Prompt sent to the model.
@@ -112,17 +112,17 @@ This challenge has prompted OpenAI to introduce 'OpenAI Functions' as a means to
 
 == Chaining Calls
 
-A Chain is the concept that represents a series of calls to a AI model.
+A Chain is a concept that represents a series of calls to an AI model.
 It uses the output from one call as the input to another.
 
-By chaining calls together, you can support complex use-cases by composing pipelines of multiple chains.
+By chaining calls together, you can support complex use cases by composing pipelines of multiple chains.
 
 ==  Customizing Models: Integrating Your Data
 
 How can you equip the AI model with information it hasn't been trained on?
 
 It's important to note that the GPT 3.5/4.0 dataset extends only until September 2021.
-Consequently, the model will say that it doesn't know the answer for questions that require knowledge beyond that date.
+Consequently, the model will say that it doesn't know the answer to questions that require knowledge beyond that date.
 An interesting bit of trivia is that this dataset is around ~650GB.
 
 Two techniques exist for customizing the AI model to incorporate your data:
@@ -162,8 +162,8 @@ TBD
 
 == Evaluating AI responses
 
-Effectively evaluating the output of an AI system in response to user requests is very important to ensuring accuracy and usefulness of the final application.
-Several emerging techniques enable the use of the pretrained model itself for this purpose.
+Effectively evaluating the output of an AI system in response to user requests is very important to ensuring the accuracy and usefulness of the final application.
+Several emerging techniques enable the use of the pre-trained model itself for this purpose.
 
 This evaluation process involves analyzing whether the generated response aligns with the user's intent and the context of the query. Metrics such as relevance, coherence, and factual correctness are used to gauge the quality of the AI-generated response.
 

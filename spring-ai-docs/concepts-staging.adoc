@@ -3,7 +3,7 @@
 
 Prompts serve as the foundation for language-based inputs that guide an AI model to produce specific outputs.
 While this might seem intuitive considering our interactions with ChatGPT, crafting effective prompts involves both an art and a science.
-The wording of the language utilized significantly impacts the AI model's responses, and there specific patters and words are recognized by the model to guide responses in the intended direction.
+The wording of the language utilized significantly impacts the AI model's responses, and their specific patterns and words are recognized by the model to guide responses in the intended direction.
 
 The importance of this skill has led to the emergence of "Prompt Engineering."
 When an effective prompt for a particular use case is identified, it is often shared within the community.
@@ -18,7 +18,7 @@ Spring AI employs the OSS library, StringTemplate, for this purpose.
 For instance, consider the simple prompt template: Tell me a {adjective} joke about {content}.
 
 In Spring AI, Prompt Templates can be likened to the 'View' in Spring MVC architecture.
-A model object, typically a java.util.Map, is provided to populate placeholders within the template.
+A model object, typically a `java.util.Map`, is provided to populate placeholders within the template.
 The 'rendered' string becomes the content of the Prompt supplied to the AI model.
 
 There is considerable variability in the specific data format of the Prompt sent to the model.
@@ -58,17 +58,17 @@ This challenge has prompted OpenAI to introduce 'OpenAI Functions' as a means to
 
 == Chaining Calls
 
-A Chain is the concept that represents a series of calls to a AI model.
+A Chain is a concept that represents a series of calls to an AI model.
 It uses the output from one call as the input to another.
 
-By chaining calls together, you can support complex use-cases by composing pipelines of multiple chains.
+By chaining calls together, you can support complex use cases by composing pipelines of multiple chains.
 
 ==  Customizing Models: Integrating Your Data
 
 How can you equip the AI model with information it hasn't been trained on?
 
 It's important to note that the GPT 3.5/4.0 dataset extends only until September 2021.
-Consequently, the model will say that it doesn't know the answer for questions that require knowledge beyond that date.
+Consequently, the model will say that it doesn't know the answer to questions that require knowledge beyond that date.
 An interesting bit of trivia is that this dataset is around ~650GB.
 
 Two techniques exist for customizing the AI model to incorporate your data:
