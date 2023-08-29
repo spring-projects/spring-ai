@@ -149,7 +149,7 @@ To build with only unit tests
 ```
 
 To build including integration tests.
-You will need to set environment variables for API keys to OpenAI
+Set API key environment variables for OpenAI and Azure OpenAI before running.  
 
 ```shell
 ./mvnw clean package -Pintegration-tests
