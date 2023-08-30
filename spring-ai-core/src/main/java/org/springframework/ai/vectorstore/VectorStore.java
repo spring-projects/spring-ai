@@ -21,7 +21,7 @@ public interface VectorStore {
 	List<Document> similaritySearch(String query, int k);
 
 	/**
-	 * @param query The query to send, it will be converted to an embeddeing based on the
+	 * @param query The query to send, it will be converted to an embedding based on the
 	 * configuration of the vector store.
 	 * @param k the top 'k' similar results
 	 * @param threshold the lower bound of the similarity score

@@ -81,7 +81,7 @@ public class AcmeIntegrationTest extends AbstractIntegrationTest {
 		logger.info(String.format("Found %s relevant documents.", similarDocuments.size()));
 
 		// Try the case where not product was specified, so query over whatever docs might
-		// be releveant.
+		// be relevant.
 
 		Message systemMessage = getSystemMessage(similarDocuments);
 		UserMessage userMessage = new UserMessage(userQuery);

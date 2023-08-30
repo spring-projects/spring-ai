@@ -39,7 +39,7 @@ public class Document {
 
 	private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
 
-	private String metadataSeperator = "\n";
+	private String metadataSeparator = "\n";
 
 	public Document(String text) {
 		this.text = text;
@@ -100,7 +100,7 @@ public class Document {
 					.add(getMetadataTemplate().replace("{key}", key).replace("{value}", value.toString()));
 			}
 		}
-		return String.join(getMetadataSeperator(), metadataStringList);
+		return String.join(getMetadataSeparator(), metadataStringList);
 	}
 
 	public String getTextTemplate() {
@@ -111,8 +111,8 @@ public class Document {
 		return metadataTemplate;
 	}
 
-	public String getMetadataSeperator() {
-		return metadataSeperator;
+	public String getMetadataSeparator() {
+		return metadataSeparator;
 	}
 
 	public Map<String, Object> getMetadata() {
@@ -140,8 +140,8 @@ public class Document {
 		this.metadataTemplate = metadataTemplate;
 	}
 
-	public void setMetadataSeperator(String metadataSeperator) {
-		this.metadataSeperator = metadataSeperator;
+	public void setMetadataSeparator(String metadataSeparator) {
+		this.metadataSeparator = metadataSeparator;
 	}
 
 }

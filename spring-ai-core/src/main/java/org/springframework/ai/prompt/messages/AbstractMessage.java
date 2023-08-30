@@ -61,9 +61,9 @@ public abstract class AbstractMessage implements Message {
 		}
 	}
 
-	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> messagePropertiets) {
+	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> messageProperties) {
 		this.messageType = messageType;
-		this.properties = messagePropertiets;
+		this.properties = messageProperties;
 		try (InputStream inputStream = resource.getInputStream()) {
 			this.content = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 		}

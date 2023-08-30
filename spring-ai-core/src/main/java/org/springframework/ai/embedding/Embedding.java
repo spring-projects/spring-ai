@@ -39,8 +39,8 @@ public class Embedding {
 
 	@Override
 	public String toString() {
-		String messsage = this.embedding.size() == 0 ? "<empty>" : "<has data>";
-		return "Embedding{" + "embedding=" + messsage + ", index=" + index + '}';
+		String message = this.embedding.size() == 0 ? "<empty>" : "<has data>";
+		return "Embedding{" + "embedding=" + message + ", index=" + index + '}';
 	}
 
 }
