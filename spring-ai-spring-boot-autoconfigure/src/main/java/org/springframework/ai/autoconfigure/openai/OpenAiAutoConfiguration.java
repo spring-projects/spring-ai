@@ -16,7 +16,14 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.theokanning.openai.OpenAiApi;
 import com.theokanning.openai.service.OpenAiService;
+
+import okhttp3.OkHttpClient;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -49,7 +56,19 @@ public class OpenAiAutoConfiguration {
 			throw new IllegalArgumentException(
 					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
 		}
-		return new OpenAiService(openAiProperties.getApiKey(), openAiProperties.getDuration());
+
+		ObjectMapper mapper = OpenAiService.defaultObjectMapper();
+		OkHttpClient client = OpenAiService.defaultClient(openAiProperties.getApiKey(), openAiProperties.getDuration());
+
+		Retrofit retrofit = new Retrofit.Builder().baseUrl(openAiProperties.getBaseUrl())
+			.client(client)
+			.addConverterFactory(JacksonConverterFactory.create(mapper))
+			.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+			.build();
+
+		OpenAiApi api = retrofit.create(OpenAiApi.class);
+
+		return new OpenAiService(api);
 	}
 
 	@Bean

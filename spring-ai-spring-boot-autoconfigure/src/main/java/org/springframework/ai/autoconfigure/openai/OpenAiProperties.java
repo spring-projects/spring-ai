@@ -35,6 +35,8 @@ public class OpenAiProperties {
 
 	private String model = "gpt-3.5-turbo";
 
+	private String baseUrl = "https://api.openai.com";
+
 	public String getApiKey() {
 		return apiKey;
 	}
@@ -65,6 +67,14 @@ public class OpenAiProperties {
 
 	public void setDuration(Duration duration) {
 		this.duration = duration;
+	}
+
+	public String getBaseUrl() {
+		return baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 }
