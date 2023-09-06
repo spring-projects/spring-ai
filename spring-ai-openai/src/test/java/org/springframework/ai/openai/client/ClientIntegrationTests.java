@@ -1,8 +1,11 @@
 package org.springframework.ai.openai.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.testutils.AbstractIntegrationTest;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -98,6 +101,21 @@ class ClientIntegrationTests extends AbstractIntegrationTest {
 
 		ActorsFilms actorsFilms = outputParser.parse(generation.getText());
 		System.out.println(actorsFilms);
+	}
+
+	@Test
+	void functionTest() {
+		String request = "Give me the weather for winston";
+
+		UserMessage userMessage = new UserMessage(request);
+		Prompt prompt = new Prompt(List.of(userMessage));
+		var response = openAiClient.generate(prompt);
+		Assertions.assertDoesNotThrow(() -> {
+			var weather = new ObjectMapper().readValue(response.getGeneration().getText(),
+					OpenAiTestConfiguration.Weather.class);
+			Assertions.assertEquals("winston", weather.name());
+			Assertions.assertEquals("90f", weather.temp());
+		});
 	}
 
 }

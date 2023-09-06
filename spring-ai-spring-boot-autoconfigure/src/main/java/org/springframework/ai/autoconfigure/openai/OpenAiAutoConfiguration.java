@@ -27,6 +27,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.client.OpenAiFunctionManager;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -76,8 +77,9 @@ public class OpenAiAutoConfiguration {
 	}
 
 	@Bean
-	public OpenAiClient openAiClient(OpenAiProperties openAiProperties, OpenAiService theoOpenAiService) {
-		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService);
+	public OpenAiClient openAiClient(OpenAiProperties openAiProperties, OpenAiService theoOpenAiService,
+			OpenAiFunctionManager openAiFunctionManager) {
+		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService, openAiFunctionManager);
 		openAiClient.setTemperature(openAiProperties.getTemperature());
 		openAiClient.setModel(openAiProperties.getModel());
 		return openAiClient;
@@ -86,6 +88,11 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	public EmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
 		return new OpenAiEmbeddingClient(theoOpenAiService);
+	}
+
+	@Bean
+	public OpenAiFunctionManager openAiFunctionManager() {
+		return new OpenAiFunctionManager();
 	}
 
 }

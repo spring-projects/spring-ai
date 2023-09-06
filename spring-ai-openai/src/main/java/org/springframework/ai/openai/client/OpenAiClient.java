@@ -18,6 +18,7 @@ package org.springframework.ai.openai.client;
 
 import com.theokanning.openai.completion.chat.ChatCompletionChoice;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatFunction;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
@@ -47,9 +48,12 @@ public class OpenAiClient implements AiClient {
 
 	private final OpenAiService openAiService;
 
-	public OpenAiClient(OpenAiService openAiService) {
+	private final OpenAiFunctionManager functionManager;
+
+	public OpenAiClient(OpenAiService openAiService, OpenAiFunctionManager functionManager) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
 		this.openAiService = openAiService;
+		this.functionManager = functionManager;
 	}
 
 	public Double getTemperature() {
@@ -86,6 +90,7 @@ public class OpenAiClient implements AiClient {
 			.model(this.model)
 			.temperature(this.temperature)
 			.messages(theoMessages)
+			.functions(this.functionManager.getFunctionExecutor().getFunctions())
 			.build();
 		return getAiResponse(chatCompletionRequest);
 	}
@@ -95,6 +100,7 @@ public class OpenAiClient implements AiClient {
 		logger.trace("ChatMessages: ", chatMessages);
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
 			.model(this.model)
+			.functions(this.functionManager.getFunctionExecutor().getFunctions())
 			.temperature(this.temperature)
 			.messages(List.of(new ChatMessage("user", text)))
 			.build();
@@ -111,6 +117,13 @@ public class OpenAiClient implements AiClient {
 		logger.trace("ChatCompletionChoice: ", chatCompletionChoices);
 		for (ChatCompletionChoice chatCompletionChoice : chatCompletionChoices) {
 			ChatMessage chatMessage = chatCompletionChoice.getMessage();
+			if (chatMessage.getFunctionCall() != null) {
+				var chatMessageResp = this.functionManager.getFunctionExecutor()
+					.executeAndConvertToMessage(chatMessage.getFunctionCall());
+				Generation generation = new Generation(chatMessageResp.getContent());
+				generations.add(generation);
+				return new AiResponse(generations);
+			}
 			// TODO investigate mapping of additional metadata/runtime info to the
 			// general model.
 			Generation generation = new Generation(chatMessage.getContent());
@@ -122,7 +135,15 @@ public class OpenAiClient implements AiClient {
 	private String getResponse(ChatCompletionRequest chatCompletionRequest) {
 		StringBuilder builder = new StringBuilder();
 		this.openAiService.createChatCompletion(chatCompletionRequest).getChoices().forEach(choice -> {
-			builder.append(choice.getMessage().getContent());
+
+			if (choice.getMessage().getFunctionCall() != null) {
+				var chatMessageResp = this.functionManager.getFunctionExecutor()
+					.executeAndConvertToMessage(choice.getMessage().getFunctionCall());
+				builder.append(chatMessageResp.getContent());
+			}
+			else {
+				builder.append(choice.getMessage().getContent());
+			}
 		});
 
 		String response = builder.toString();
@@ -158,8 +179,8 @@ public class OpenAiClient implements AiClient {
 					chatMessages.add(new ChatMessage("system", promptMessage.getContent()));
 					break;
 				case FUNCTION:
-					logger.error(
-							"Can not send a Spring AI Function MessageType to the ChatGPT API, use 'system', 'user' or 'ai' message types.");
+					chatMessages.add(new ChatMessage("function", promptMessage.getContent()));
+					logger.info("in progress implementation");
 					break;
 				default:
 					logger.error("Unknown Spring AI Chat MessageType.  Use 'system', 'human' or 'ai' message types.");
