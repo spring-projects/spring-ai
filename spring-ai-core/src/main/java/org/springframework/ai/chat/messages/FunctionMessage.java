@@ -21,11 +21,11 @@ import java.util.Map;
 public class FunctionMessage extends AbstractMessage {
 
 	public FunctionMessage(String content) {
-		super(MessageType.FUNCTION, content);
+		super(MessageType.SYSTEM, content);
 	}
 
 	public FunctionMessage(String content, Map<String, Object> properties) {
-		super(MessageType.FUNCTION, content, properties);
+		super(MessageType.SYSTEM, content, properties);
 	}
 
 	@Override

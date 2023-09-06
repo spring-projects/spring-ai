@@ -64,16 +64,16 @@ The Spring AI auto-generates the JSON Scheme for the `MockWeatherService.Request
 
 If you enable the link:../openai-chat.html#_auto_configuration[OpenAiChatClient Auto-Configuration], the easiest way to register a function is to created it as a bean in the Spring context:
 
-[source,java,linenums]
+[source,java]
 ----
 @Configuration
 static class Config {
 	@Bean
 	public WeatherFunctionCallback weatherFunctionInfo() {
 		return new WeatherFunctionCallback(
-			"CurrentWeather", // (1) name
-			"Get the weather in location", // (2) description
-			MockWeatherService.Request.class); // (3) signature
+			"CurrentWeather", // (1) function name
+			"Get the weather in location", // (2) function description
+			MockWeatherService.Request.class); // (3) function input signature
 	}
 	...
 }
@@ -105,6 +105,35 @@ Here is the current weather for the requested cities:
 ----
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/ToolCallWithBeanFunctionRegistrationIT.java[ToolCallWithBeanFunctionRegistrationIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatClient` using the auto-configuration.
+
+==== @SpringAiFunction
+
+You can use the `SpringAiFunction` annotation cam be used  to register a `java.util.Function<I,O>` as a `ToolFunctionCallback` bean:
+
+[source,java]
+----
+@Configuration
+static class Config {
+
+	@SpringAiFunction(
+		name = "CurrentWeather", // (1)
+		description = "Get the weather in location", // (2)
+		classType = MockWeatherService.Request.class) // (3)
+	public Function<Request, Response> weatherFunction() {
+		MockWeatherService weatherService = new MockWeatherService();
+		return (weatherService::apply);
+	}
+
+	...
+}
+----
+
+The `@SpringAiFunction` annotation defines the function name (1), description (2), and input signature (3) and registers the function as a bean in the Spring context.
+
+NOTE: The `SpringAiFunction` annotation supported only if the auto-configuration is enabled.
+
+NOTE: The Function<I, O> implementation is responsible to convert the response into a text as expected by the model.
+By default, the `AbstractToolFunctionCallback` provides a default converter that returns the `toString()` of the response object.
 
 === Register/Call Functions with Prompt Options
 
