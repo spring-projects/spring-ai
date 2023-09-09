@@ -7,6 +7,7 @@ import org.springframework.ai.splitter.TokenTextSplitter;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -22,7 +23,6 @@ public class TextLoader implements Loader {
         this.resource = resource;
     }
 
-
     @Override
     public List<Document> load() {
         return load(new TokenTextSplitter());
@@ -34,10 +34,9 @@ public class TextLoader implements Loader {
             InputStream inputStream = resource.getInputStream();
             String doc = StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
             return textSplitter.apply(Collections.singletonList(new Document(doc)));
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
 }
