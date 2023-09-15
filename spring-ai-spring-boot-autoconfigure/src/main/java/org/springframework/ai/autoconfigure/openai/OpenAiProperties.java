@@ -35,6 +35,8 @@ public class OpenAiProperties {
 
 	private String model = "gpt-3.5-turbo";
 
+	private String embeddingModel = "text-embedding-ada-002";
+
 	private String baseUrl = "https://api.openai.com";
 
 	public String getApiKey() {
@@ -51,6 +53,14 @@ public class OpenAiProperties {
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	public String getEmbeddingModel() {
+		return embeddingModel;
+	}
+
+	public void setEmbeddingModel(String embeddingModel) {
+		this.embeddingModel = embeddingModel;
 	}
 
 	public Double getTemperature() {

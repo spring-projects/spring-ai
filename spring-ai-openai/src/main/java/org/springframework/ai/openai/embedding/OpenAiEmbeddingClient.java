@@ -23,11 +23,17 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final OpenAiService openAiService;
 
-	private String model = "text-embedding-ada-002";
+	private final String model;
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
+		this(openAiService, "text-embedding-ada-002");
+	}
+
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
+		Assert.notNull(model, "Model must not be null");
 		this.openAiService = openAiService;
+		this.model = model;
 	}
 
 	@Override
