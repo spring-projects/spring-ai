@@ -19,6 +19,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-docs</module>
+		<module>spring-ai-it</module>
 	</modules>
 
     <organization>
