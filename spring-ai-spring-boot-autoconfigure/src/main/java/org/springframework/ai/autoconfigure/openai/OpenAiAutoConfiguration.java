@@ -85,7 +85,7 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	public EmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
-		return new OpenAiEmbeddingClient(theoOpenAiService);
+		return new OpenAiEmbeddingClient(theoOpenAiService, openAiProperties.getEmbeddingModel());
 	}
 
 }
