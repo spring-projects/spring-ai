@@ -6,14 +6,10 @@ import java.util.*;
 
 public class Document {
 
-	private static String DEFAULT_TEXT_TEMPLATE = "{metadata_string}\n\n{text}";
-
-	private static String DEFAULT_METADATA_TEMPLATE = "{key}: {value}";
-
 	/**
 	 * Unique ID
 	 */
-	private String id = UUID.randomUUID().toString();
+	private final String id;
 
 	private List<Double> embedding = new ArrayList<>();
 
@@ -25,28 +21,24 @@ public class Document {
 
 	// Type; introduce when support images, now only text.
 
+	// TODO: Rename to `content` instead.
 	private String text;
 
-	private MetadataMode metadataMode = MetadataMode.NONE;
-
-	private List<String> excludedMetadataKeysForEmbedding;
-
-	private List<String> excludedMetadataKeysForLlm;
-
-	private List<String> relatedIds;
-
-	private String textTemplate = DEFAULT_TEXT_TEMPLATE;
-
-	private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
-
-	private String metadataSeparator = "\n";
-
 	public Document(String text) {
+		this(UUID.randomUUID().toString(), text);
+	}
+
+	public Document(String id, String text) {
+		this.id = id;
 		this.text = text;
-		this.metadata = metadata;
 	}
 
 	public Document(String text, Map<String, Object> metadata) {
+		this(UUID.randomUUID().toString(), text, metadata);
+	}
+
+	public Document(String id, String text, Map<String, Object> metadata) {
+		this.id = id;
 		this.text = text;
 		this.metadata = metadata;
 	}
@@ -58,6 +50,43 @@ public class Document {
 	public String getText() {
 		return this.text;
 	}
+
+	public Map<String, Object> getMetadata() {
+		return metadata;
+	}
+
+	public List<Double> getEmbedding() {
+		return embedding;
+	}
+
+	public void setEmbedding(List<Double> embedding) {
+		this.embedding = embedding;
+	}
+
+	@Override
+	public String toString() {
+		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", text='" + text + '\'' + '}';
+	}
+
+	// TODO: Consider moving the following methods & fields in a seprarate
+	// dedicated class. (e.g. DocumentService, DocumentUtil or alike)¬
+
+	// private List<String> excludedMetadataKeysForEmbedding;
+	// private List<String> relatedIds;
+
+	private static String DEFAULT_TEXT_TEMPLATE = "{metadata_string}\n\n{text}";
+
+	private static String DEFAULT_METADATA_TEMPLATE = "{key}: {value}";
+
+	private final String textTemplate = DEFAULT_TEXT_TEMPLATE;
+
+	private final String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
+
+	private final String metadataSeparator = "\n";
+
+	private MetadataMode metadataMode = MetadataMode.NONE;
+
+	private List<String> excludedMetadataKeysForLlm;
 
 	public String getContent() {
 		return getContent(MetadataMode.ALL);
@@ -103,45 +132,28 @@ public class Document {
 		return String.join(getMetadataSeparator(), metadataStringList);
 	}
 
-	public String getTextTemplate() {
+	private String getTextTemplate() {
 		return textTemplate;
 	}
 
-	public String getMetadataTemplate() {
+	private String getMetadataTemplate() {
 		return metadataTemplate;
 	}
 
-	public String getMetadataSeparator() {
+	private String getMetadataSeparator() {
 		return metadataSeparator;
 	}
 
-	public Map<String, Object> getMetadata() {
-		return metadata;
-	}
+	// public void setTextTemplate(String textTemplate) {
+	// this.textTemplate = textTemplate;
+	// }
 
-	public List<Double> getEmbedding() {
-		return embedding;
-	}
+	// public void setMetadataTemplate(String metadataTemplate) {
+	// this.metadataTemplate = metadataTemplate;
+	// }
 
-	public void setEmbedding(List<Double> embedding) {
-		this.embedding = embedding;
-	}
-
-	@Override
-	public String toString() {
-		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", text='" + text + '\'' + '}';
-	}
-
-	public void setTextTemplate(String textTemplate) {
-		this.textTemplate = textTemplate;
-	}
-
-	public void setMetadataTemplate(String metadataTemplate) {
-		this.metadataTemplate = metadataTemplate;
-	}
-
-	public void setMetadataSeparator(String metadataSeparator) {
-		this.metadataSeparator = metadataSeparator;
-	}
+	// public void setMetadataSeparator(String metadataSeparator) {
+	// this.metadataSeparator = metadataSeparator;
+	// }
 
 }

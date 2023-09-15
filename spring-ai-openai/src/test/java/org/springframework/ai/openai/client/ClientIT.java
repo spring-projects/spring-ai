@@ -3,7 +3,7 @@ package org.springframework.ai.openai.client;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
-import org.springframework.ai.openai.testutils.AbstractIntegrationTest;
+import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
@@ -24,7 +24,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class ClientIntegrationTests extends AbstractIntegrationTest {
+class ClientIT extends AbstractIT {
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;

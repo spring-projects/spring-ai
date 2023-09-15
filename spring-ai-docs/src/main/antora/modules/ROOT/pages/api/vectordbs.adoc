@@ -1,1 +1,202 @@
 = Vector Databases
+
+== Introduction
+Vector Databases are a specialized type of database that plays an essential role in AI applications.
+
+In Vector Databases, queries differ from traditional relational databases.
+Instead of exact matches, they perform similarity searches.
+When given a vector as a query, a Vector Database returns vectors that are "similar" to the query vector.
+Further details on how this similarity is calculated at a high level in provided in a later section.
+
+Vector Databases are used to integrate your data with AI Models.
+The first step in their usage is to load your data into a Vector Database.
+Then, when a user query is to be sent to the AI model, a set of similar documents is retrieved first.
+These documents then serve as the context for the user's question and are sent to the AI model along with the user's query.
+This technique is known as Retrieval Augmented Generation.
+
+In the following sections, we will describe the Spring AI interface for using multiple Vector Database implementations and some high-level sample usage.
+
+The last section attempts to demystify the underlying approach of similarity search of Vector Databases.
+
+== Spring AI Vector Database Support
+
+Spring AI provides an abstract API over Vector Databases using the interface `VectorStore`.
+
+The API of the Vector store is shown below
+
+```java
+public interface VectorStore {
+
+	void add(List<Document> documents);
+
+	Optional<Boolean> delete(List<String> idList);
+
+	List<Document> similaritySearch(String query);
+
+	List<Document> similaritySearch(String query, int k);
+
+	List<Document> similaritySearch(String query, int k, double threshold);
+```
+
+The Spring AI library uses the `Document` class to model the `String` you want to store in the Vector Database along with the vector representing that `String`.
+The vector that representing the `String` is of the type `List<Double>` and is often called the string's embedding.
+
+The `List<Double> is computed from the `String` using an implementation of the class `EmbeddingClient`.
+An Embedding Model is an example of an AI model, that transforms from `String` to a `List<Double>`.
+The embeddings are used internally by other AI Model implementations, such as models that convert `text` to `text` like ChatGPT.
+
+`EmbeddingClient` that computes the embedding is passed as a constructor argument to `VectorStore` implementation.
+
+
+The `VectorStore` implementations supported by Spring AI are:
+
+* InMemoryVectorStore
+* SimplePersistentVectorStore
+* PgVector - A Vector Store build on PostgreSQL.
+
+More are implementations are coming, with Pinecone being the next implementation.
+
+If you have a Vector Database that needs to be supported by Spring AI, please open an issue on GitHub or, even better, submit a Pull Request with an implementation.
+
+== Usage
+
+To compute the embeddings for a Vector Database, you need to pick an Embedding Model that matches the higher-level AI model being used.
+
+For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and the model name `text-embedding-ada-002`.
+
+The Spring Boot Starter's autoconfiguation for OpenAI makes an implementation of `EmbeddingClient` available in the Spring Application Context for Dependency Injection.
+
+The general usage of loading data into a vector store is something you do as a batch-type job, first loading data into Spring AI's `Document` class and then calling the `save` method.
+
+Given a String `sourceFile` that represents a JSON file with data we want to load into the Vector Database, we use Spring AI's `JsonLoader` to load specific fields in the JSON file, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
+The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the Vector Database.
+
+```java
+  @Autowired
+  VectorStore vectorStore;
+
+  void load(String sourceFile) {}
+            JsonLoader jsonLoader = new JsonLoader(new FileSystemResource(sourceFile),
+                    "price", "name", "shortDescription", "description", "tags");
+            List<Document> documents = jsonLoader.load();
+            this.vectorStore.add(documents);
+  }
+```
+
+Later, when a user question is to be passed into the AI Model, a similarity search is done to retrieve similar documents, which are then 'stuffed' into the prompt as context for the user's question.
+
+```java
+
+   String question = <question from user>
+   List<Document> similarDocuments = store.similaritySearch(question);
+```
+
+There are additional options to be passed into the `similaritySearch` method that defines how many documents to retrieve and a threshold of the similarity search.
+
+== Understanding Vectors
+
+Vectors have dimensionality and a direction.
+For example, a picture of a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
+
+image::vector_2d_coordinates.png[]
+
+The head of the vector stem:[\vec{a}] is at the point stem:[(a_1, a_2)]
+The *x* coordinate value is stem:[a_1] and the *y* coordinate value is stem:[a_2] and are also referred to as the components of the vector.
+
+== Similarity
+
+Several mathematical formulas can be used to determine if two vectors are similar.
+
+One of the most intuitive to visualize and understand is cosine similarity.
+
+Look at the following pictures that show three sets of graphs.
+
+image::vector_similarity.png[]
+
+The vectors stem:[\vec{A}] and stem:[\vec{B}] are considered similar, when they are pointing close to each other, as in the first diagram.
+The vectors are considered unrelated when pointing perpendicular to each other and opposite when they point away from each other.
+
+The angle between them, stem:[\theta], is a good measure of their similarity.
+How can the angle stem:[\theta] be computed?
+
+We are all familiar with the https://en.wikipedia.org/wiki/Pythagorean_theorem#History[Pythagorean Theorem]
+
+image:pythagorean-triangle.png[]
+
+What about when the angle between *a* and *b* is not 90 degrees?
+
+Enter the https://en.wikipedia.org/wiki/Law_of_cosines[Law of cosines]
+
+
+.Law of Cosines
+****
+stem:[a^2 + b^2 - 2ab\cos\theta = c^2]
+****
+
+Showing this as a vector diagram
+
+image:lawofcosines.png[]
+
+
+The magnitude of this vector is defined in terms of its components as:
+
+.Magnitude
+****
+stem:[\vec{A} * \vec{A} = ||\vec{A}||^2 = A_1^2 + A_2^2 ]
+****
+
+and the dot product between two vectors stem:[\vec{A}] and stem:[\vec{B}] is defined in terms of its components as:
+
+
+.Dot Product
+****
+stem:[\vec{A} * \vec{B} = A_1B_1 + A_2B_2]
+****
+
+Rewriting the Law of Cosines with vector magnitudes and dot products gives:
+
+.Law of Cosines in Vector form
+****
+stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec{C}||^2]
+****
+
+
+Replacing stem:[||\vec{C}||^2] with stem:[||\vec{B} - \vec{A}||^2] gives:
+
+.Law of Cosines in Vector form only in terms of stem:[\vec{A}] and stem:[\vec{B}]
+
+****
+stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec{B} - \vec{A}||^2]
+****
+
+
+https://towardsdatascience.com/cosine-similarity-how-does-it-measure-the-similarity-maths-behind-and-usage-in-python-50ad30aad7db[Expanding this out] gives us the formula for https://en.wikipedia.org/wiki/Cosine_similarity[Cosine Similarity].
+
+.Cosine Similarity
+****
+stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{\vec{A}\cdot\vec{B}}{||\vec{A}\||\cdot||\vec{B}||]
+****
+
+This formula works for dimensions higher than 2 or 3, though it is hard to visualize, https://projector.tensorflow.org/[but can be done to some extent].
+It is common for vectors in AI/ML applications to have hundreds or a thousand dimensions.
+
+The similarity function in higher dimensions using the components of the vector is shown below.
+It expands the two-dimensional definitions of Magnitude and Dot Product given previously to *N* dimensions using the https://en.wikipedia.org/wiki/Summation[Summation mathematical syntax].
+
+.Cosine Similarity with vector components
+****
+stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{ \sum_{i=1}^{n} {A_i  B_i} }{ \sqrt{\sum_{i=1}^{n}{A_i^2} \cdot \sum_{i=1}^{n}{B_i^2}}]
+****
+
+This is the key formula used in the simple implementation of a Vector Store and can be found in the `InMemoryVectorStore` implementation.
+
+
+
+
+
+
+
+
+
+
+

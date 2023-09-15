@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.experimental.ai</groupId>
@@ -17,6 +18,10 @@
 		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
 		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
 	</scm>
+
+	<properties>
+		<jsonschema.version>4.31.1</jsonschema.version>
+	</properties>
 
 	<dependencies>
 
@@ -46,20 +51,14 @@
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-generator</artifactId>
-			<version>4.31.1</version>
+			<version>${jsonschema.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-jackson</artifactId>
-			<version>4.31.1</version>
+			<version>${jsonschema.version}</version>
 		</dependency>
-
-<!--		<dependency>-->
-<!--			<groupId>com.kjetland</groupId>-->
-<!--			<artifactId>mbknor-jackson-jsonschema_2.13</artifactId>-->
-<!--			<version>1.0.39</version>-->
-<!--		</dependency>-->
 
 		<!-- test dependencies -->
 		<dependency>

@@ -19,6 +19,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-docs</module>
+		<module>vector-stores/spring-ai-pgvector-store</module>
 	</modules>
 
     <organization>
@@ -61,7 +62,7 @@
 		<java.version>17</java.version>
 
 
-		<!-- prodution dependencies -->
+		<!-- production dependencies -->
 		<spring-boot.version>3.1.2</spring-boot.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
 		<open-ai-client.version>0.12.0</open-ai-client.version>
@@ -127,9 +128,6 @@
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
 					<argLine>${surefireArgLine}</argLine>
-					<excludes>
-						<exclude>**/*IntegrationTests.java</exclude>
-					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -247,11 +245,6 @@
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-failsafe-plugin</artifactId>
 						<version>${maven-failsafe-plugin.version}</version>
-						<configuration>
-							<includes>
-								<include>**/*IntegrationTests.java</include>
-							</includes>
-						</configuration>
 						<executions>
 							<execution>
 								<goals>

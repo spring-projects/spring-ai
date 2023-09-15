@@ -8,7 +8,7 @@ import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.loader.impl.JsonLoader;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.testutils.AbstractIntegrationTest;
+import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class AcmeIntegrationTest extends AbstractIntegrationTest {
+public class AcmeIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AcmeIntegrationTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(AcmeIT.class);
 
 	@Value("classpath:/data/acme/bikes.json")
 	private Resource bikesResource;
