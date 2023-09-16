@@ -47,18 +47,54 @@ public class PgVectorStore implements VectorStore {
 
 	private int dimensions;
 
-	private DistanceType distanceType;
+	private PgDistanceType distanceType;
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public enum DistanceType {
+	/**
+	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
+	 * recall. You can add an index to use approximate nearest neighbor search, which
+	 * trades some recall for speed. Unlike typical indexes, you will see different
+	 * results for queries after adding an approximate index.
+	 */
+	public enum PgIndexType {
 
-		EuclideanDistance("<->"), NegativeInnerProduct("<#>"), CosineDistance("<=>");
+		/**
+		 * Performs exact nearest neighbor search, which provides perfect recall.
+		 */
+		NONE,
+		/**
+		 * An IVFFlat index divides vectors into lists, and then searches a subset of
+		 * those lists that are closest to the query vector. It has faster build times and
+		 * uses less memory than HNSW, but has lower query performance (in terms of
+		 * speed-recall tradeoff).
+		 */
+		IVFFLAT,
+		/**
+		 * An HNSW index creates a multilayer graph. It has slower build times and uses
+		 * more memory than IVFFlat, but has better query performance (in terms of
+		 * speed-recall tradeoff). There’s no training step like IVFFlat, so the index can
+		 * be created without any data in the table.
+		 */
+		HNSW;
 
-		public final String symbol;
+	}
 
-		DistanceType(String symbol) {
-			this.symbol = symbol;
+	public enum PgDistanceType {
+
+		EuclideanDistance("<->", "vector_l2_ops"),
+
+		NegativeInnerProduct("<#>", "vector_ip_ops"),
+
+		CosineDistance("<=>", "vector_cosine_ops");
+
+		public final String operator;
+
+		public final String index;
+
+		PgDistanceType(String operator, String index) {
+			this.operator = operator;
+			this.index = index;
 		}
 
 	}
@@ -116,11 +152,11 @@ public class PgVectorStore implements VectorStore {
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-		this(jdbcTemplate, embeddingClient, 1536, PgVectorStore.DistanceType.CosineDistance, false);
+		this(jdbcTemplate, embeddingClient, 1536, PgVectorStore.PgDistanceType.CosineDistance, false, PgIndexType.NONE);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions,
-			DistanceType distanceType, boolean removeExistingVectorStoreTable) {
+			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.embeddingClient = embeddingClient;
 		this.dimensions = dimensions;
@@ -138,11 +174,20 @@ public class PgVectorStore implements VectorStore {
 			this.jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
 		}
 
-		this.jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS vector_store ( " +
 		// TODO: we create id of type UUID, while the Document's id is String!!!
-				"id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, " + "content text, " + "metadata json, " +
-				// TODO: remove injection!
-				"embedding vector(" + this.dimensions + "))");
+		// TODO: remove injection!
+		this.jdbcTemplate
+			.execute("CREATE TABLE IF NOT EXISTS vector_store ( " + "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, "
+					+ "content text, " + "metadata json, " + "embedding vector(" + this.dimensions + "))");
+
+		if (createIndexMethod != PgIndexType.NONE) {
+			this.jdbcTemplate.execute("CREATE INDEX ON vector_store USING " + createIndexMethod.name() + " (embedding "
+					+ distanceType.index + ")");
+		}
+
+		this.jdbcTemplate
+			.execute("CREATE TABLE IF NOT EXISTS vector_store ( " + "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, "
+					+ "content text, " + "metadata json, " + "embedding vector(" + this.dimensions + "))");
 	}
 
 	@Override
@@ -188,7 +233,7 @@ public class PgVectorStore implements VectorStore {
 	public List<Document> similaritySearch(String query, int k) {
 		PGvector queryEmbedding = getQueryEmbedding(query);
 		return this.jdbcTemplate.query(
-				"SELECT * FROM vector_store ORDER BY embedding " + this.distanceType.symbol + " ? LIMIT ?",
+				"SELECT * FROM vector_store ORDER BY embedding " + this.distanceType.operator + " ? LIMIT ?",
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, k);
 	}
 
@@ -196,7 +241,7 @@ public class PgVectorStore implements VectorStore {
 	public List<Document> similaritySearch(String query, int k, double threshold) {
 		PGvector queryEmbedding = getQueryEmbedding(query);
 		return this.jdbcTemplate.query(
-				"SELECT * FROM vector_store ORDER BY embedding " + this.distanceType.symbol + " ? < ? LIMIT ? ",
+				"SELECT * FROM vector_store ORDER BY embedding " + this.distanceType.operator + " ? < ? LIMIT ? ",
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, threshold, k);
 	}
 
