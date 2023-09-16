@@ -7,10 +7,10 @@
 		<artifactId>spring-ai</artifactId>
 		<version>0.2.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>spring-ai-it</artifactId>
+	<artifactId>spring-ai-pgvector-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI IT</name>
-	<description>Spring AI Integration Tests</description>
+	<name>Spring AI PGVector Vector Store</name>
+	<description>Spring AI PGVector Vector Store</description>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
 
 	<scm>
@@ -19,13 +19,46 @@
 		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
 	</scm>
 
-	<dependencies>
+	<properties>
+		<pgvector.version>0.1.3</pgvector.version>
+		<postgresql.version>42.6.0</postgresql.version>
+		<spring-ai.version>0.2.0-SNAPSHOT</spring-ai.version>
+		<!-- testing -->
+		<testcontainers.version>1.19.0</testcontainers.version>
+		<hikari-cp.version>4.0.3</hikari-cp.version>
+	</properties>
 
-		<!-- PGVector -->
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-core</artifactId>
+			<version>${spring-ai.version}</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>com.pgvector</groupId>
+			<artifactId>pgvector</artifactId>
+			<version>${pgvector.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+		</dependency>
+
+		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
 			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-			<version>0.2.0-SNAPSHOT</version>
+			<version>${spring-ai.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -37,26 +70,21 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>1.19.0</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>1.19.0</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>com.zaxxer</groupId>
 			<artifactId>HikariCP</artifactId>
-			<version>4.0.3</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
+			<version>${hikari-cp.version}</version>
 			<scope>test</scope>
 		</dependency>
 

@@ -31,8 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.impl.PgVectorStore;
-import org.springframework.ai.vectorstore.impl.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -61,7 +60,7 @@ public class PgVectorStoreTest {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.datasource.type=com.zaxxer.hikari.HikariDataSource",
-				"spring.ai.openai.apiKey=PUT-YOUR-OPENAI-KEY-HERE",
+				"spring.ai.openai.apiKey=PUT-YOUR-OPENAI-API-KEY-HERE",
 
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",

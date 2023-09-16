@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore.impl;
+package org.springframework.ai.vectorstore;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,7 +32,6 @@ import org.postgresql.util.PGobject;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
