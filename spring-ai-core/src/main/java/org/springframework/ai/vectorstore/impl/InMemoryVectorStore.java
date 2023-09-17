@@ -1,5 +1,7 @@
 package org.springframework.ai.vectorstore.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -14,9 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryVectorStore implements VectorStore {
 
-	private Map<String, Document> store = new ConcurrentHashMap<>();
+	private static final Logger logger = LoggerFactory.getLogger(InMemoryVectorStore.class);
 
-	private EmbeddingClient embeddingClient;
+	protected Map<String, Document> store = new ConcurrentHashMap<>();
+
+	protected EmbeddingClient embeddingClient;
 
 	public InMemoryVectorStore(EmbeddingClient embeddingClient) {
 		Objects.requireNonNull(embeddingClient, "EmbeddingClient must not be null");
@@ -26,6 +30,7 @@ public class InMemoryVectorStore implements VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
+			logger.info("Calling EmbeddingClient for document id = " + document.getId());
 			List<Double> embedding = this.embeddingClient.embed(document);
 			document.setEmbedding(embedding);
 			this.store.put(document.getId(), document);

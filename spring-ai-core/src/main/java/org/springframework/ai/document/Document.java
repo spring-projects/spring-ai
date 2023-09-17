@@ -1,5 +1,8 @@
 package org.springframework.ai.document;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -11,26 +14,22 @@ public class Document {
 	 */
 	private final String id;
 
+	@JsonProperty(index = 100)
 	private List<Double> embedding = new ArrayList<>();
 
 	/**
 	 * Metadata for the document. It should not be nested and values should be restricted
 	 * to string, int, float, boolean for simple use with Vector Dbs.
 	 */
-	private Map<String, Object> metadata = new HashMap<>();
+	private Map<String, Object> metadata;
 
 	// Type; introduce when support images, now only text.
 
-	// TODO: Rename to `content` instead.
 	private String text;
 
-	public Document(String text) {
-		this(UUID.randomUUID().toString(), text);
-	}
-
-	public Document(String id, String text) {
-		this.id = id;
-		this.text = text;
+	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+	public Document(@JsonProperty("text") String text) {
+		this(text, new HashMap<>());
 	}
 
 	public Document(String text, Map<String, Object> metadata) {
@@ -68,26 +67,21 @@ public class Document {
 		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", text='" + text + '\'' + '}';
 	}
 
-	// TODO: Consider moving the following methods & fields in a seprarate
-	// dedicated class. (e.g. DocumentService, DocumentUtil or alike)¬
-
-	// private List<String> excludedMetadataKeysForEmbedding;
-	// private List<String> relatedIds;
-
 	private static String DEFAULT_TEXT_TEMPLATE = "{metadata_string}\n\n{text}";
 
 	private static String DEFAULT_METADATA_TEMPLATE = "{key}: {value}";
 
-	private final String textTemplate = DEFAULT_TEXT_TEMPLATE;
+	private String textTemplate = DEFAULT_TEXT_TEMPLATE;
 
-	private final String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
+	private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
 
-	private final String metadataSeparator = "\n";
+	private String metadataSeparator = "\n";
 
 	private MetadataMode metadataMode = MetadataMode.NONE;
 
 	private List<String> excludedMetadataKeysForLlm;
 
+	@JsonIgnore
 	public String getContent() {
 		return getContent(MetadataMode.ALL);
 	}
@@ -103,6 +97,7 @@ public class Document {
 		return getTextTemplate().replace("{metadata_string}", metadataString).replace("{text}", text);
 	}
 
+	@JsonIgnore
 	public String getMetadataString() {
 		return getMetadataString(metadataMode);
 	}
@@ -144,16 +139,16 @@ public class Document {
 		return metadataSeparator;
 	}
 
-	// public void setTextTemplate(String textTemplate) {
-	// this.textTemplate = textTemplate;
-	// }
+	public void setTextTemplate(String textTemplate) {
+		this.textTemplate = textTemplate;
+	}
 
-	// public void setMetadataTemplate(String metadataTemplate) {
-	// this.metadataTemplate = metadataTemplate;
-	// }
+	public void setMetadataTemplate(String metadataTemplate) {
+		this.metadataTemplate = metadataTemplate;
+	}
 
-	// public void setMetadataSeparator(String metadataSeparator) {
-	// this.metadataSeparator = metadataSeparator;
-	// }
+	public void setMetadataSeparator(String metadataSeparator) {
+		this.metadataSeparator = metadataSeparator;
+	}
 
 }

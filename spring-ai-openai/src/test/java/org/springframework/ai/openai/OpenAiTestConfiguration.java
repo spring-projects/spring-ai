@@ -1,8 +1,9 @@
 package org.springframework.ai.openai;
 
 import com.theokanning.openai.service.OpenAiService;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -32,7 +33,7 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
-	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
+	public EmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
 		return new OpenAiEmbeddingClient(theoOpenAiService);
 	}
 

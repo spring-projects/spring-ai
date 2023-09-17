@@ -13,23 +13,30 @@ import java.util.*;
 
 public class JsonLoader implements Loader {
 
+	private Resource resource;
+
+	private JsonMetadataGenerator jsonMetadataGenerator;
+
 	/**
 	 * The key from the JSON that we will use as the text to parse into the Document text
 	 */
-	private List<String> jsonKeysToUse = new ArrayList<>();
-
-	private Resource resource;
+	private List<String> jsonKeysToUse;
 
 	public JsonLoader(Resource resource) {
-		Objects.requireNonNull(resource, "The Spring Resource must not be null");
-		this.resource = resource;
+		this(resource, new ArrayList<>().toArray(new String[0]));
 	}
 
 	public JsonLoader(Resource resource, String... jsonKeysToUse) {
+		this(resource, new EmptyJsonMetadataGenerator(), jsonKeysToUse);
+	}
+
+	public JsonLoader(Resource resource, JsonMetadataGenerator jsonMetadataGenerator, String... jsonKeysToUse) {
 		Objects.requireNonNull(jsonKeysToUse, "keys must not be null");
+		Objects.requireNonNull(jsonMetadataGenerator, "jsonMetadataGenerator must not be null");
 		Objects.requireNonNull(resource, "The Spring Resource must not be null");
-		this.jsonKeysToUse = List.of(jsonKeysToUse);
 		this.resource = resource;
+		this.jsonMetadataGenerator = jsonMetadataGenerator;
+		this.jsonKeysToUse = List.of(jsonKeysToUse);
 	}
 
 	@Override
@@ -41,9 +48,6 @@ public class JsonLoader implements Loader {
 	public List<Document> load(TextSplitter textSplitter) {
 
 		ObjectMapper objectMapper = new ObjectMapper();
-		TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
-		};
-
 		List<Document> documents = new ArrayList<>();
 		try {
 			// TODO, not all json will be an array
@@ -61,21 +65,30 @@ public class JsonLoader implements Loader {
 					}
 				}
 
+				Map<String, Object> metadata = this.jsonMetadataGenerator.generate(item);
+
+				Document document;
 				if (!sb.isEmpty()) {
-					Document document = new Document(sb.toString());
-					documents.add(document);
+					document = new Document(sb.toString(), metadata);
 				}
 				else {
-					Document document = new Document(item.toString());
-					documents.add(document);
+					document = new Document(item.toString(), metadata);
 				}
+				// Splitting at the item level is good when the size of the json per
+				// element is large
+				// as is the case with a catalog of product, as the metadata applies
+				// across all split documents
+				// This may not be good when the size of the json element is small as it
+				// can create too many individual
+				// documents.
+				List<Document> splitDocuments = textSplitter.apply(List.of(document));
+				documents.addAll(splitDocuments);
 			}
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		List<Document> splitDocuments = textSplitter.apply(documents);
-		return splitDocuments;
+		return documents;
 	}
 
 }
