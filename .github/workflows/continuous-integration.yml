@@ -22,6 +22,7 @@ jobs:
       - name: Build with Maven and deploy to Artifactory
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: mvn -s settings.xml -Pintegration-tests --batch-mode --update-snapshots deploy
