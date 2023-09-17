@@ -86,7 +86,6 @@ The `VectorStore` implementation computes the embeddings and stores the JSON and
 Later, when a user question is to be passed into the AI Model, a similarity search is done to retrieve similar documents, which are then 'stuffed' into the prompt as context for the user's question.
 
 ```java
-
    String question = <question from user>
    List<Document> similarDocuments = store.similaritySearch(question);
 ```
@@ -189,14 +188,3 @@ stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{ \sum_{i=1}^{n} {A_i  B_i
 ****
 
 This is the key formula used in the simple implementation of a Vector Store and can be found in the `InMemoryVectorStore` implementation.
-
-
-
-
-
-
-
-
-
-
-
