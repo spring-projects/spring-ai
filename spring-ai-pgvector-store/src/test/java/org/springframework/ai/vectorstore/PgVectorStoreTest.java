@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -60,7 +61,7 @@ public class PgVectorStoreTest {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.datasource.type=com.zaxxer.hikari.HikariDataSource",
-				"spring.ai.openai.apiKey=PUT-YOUR-OPENAI-API-KEY-HERE",
+				"spring.ai.openai.apiKey=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",
 
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
@@ -100,6 +101,43 @@ public class PgVectorStoreTest {
 
 			List<Document> results2 = vectorStore.similaritySearch("Great", 1);
 			assertThat(results2).hasSize(0);
+
+		});
+	}
+
+	@Test
+	public void documentUpdateTest() {
+
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
+					Collections.singletonMap("meta1", "meta1"));
+
+			vectorStore.add(List.of(document));
+
+			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(document.getId());
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta1", "meta1"));
+
+			Document sameIdDocument = new Document(document.getId(),
+					"The World is Big and Salvation Lurks Around the Corner",
+					Collections.singletonMap("meta2", "meta2"));
+
+			vectorStore.add(List.of(sameIdDocument));
+
+			results = vectorStore.similaritySearch("FooBar", 5);
+
+			assertThat(results).hasSize(1);
+			resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(document.getId());
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
 
 		});
 	}

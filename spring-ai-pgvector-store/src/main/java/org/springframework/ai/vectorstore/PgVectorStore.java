@@ -40,6 +40,8 @@ import org.springframework.jdbc.core.RowMapper;
  */
 public class PgVectorStore implements VectorStore {
 
+	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
+
 	private final JdbcTemplate jdbcTemplate;
 
 	private final EmbeddingClient embeddingClient;
@@ -151,7 +153,8 @@ public class PgVectorStore implements VectorStore {
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-		this(jdbcTemplate, embeddingClient, 1536, PgVectorStore.PgDistanceType.CosineDistance, false, PgIndexType.NONE);
+		this(jdbcTemplate, embeddingClient, OPENAI_EMBEDDING_DIMENSION_SIZE,
+				PgVectorStore.PgDistanceType.CosineDistance, false, PgIndexType.NONE);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions,
@@ -195,10 +198,16 @@ public class PgVectorStore implements VectorStore {
 			List<Double> embedding = this.embeddingClient.embed(document);
 			document.setEmbedding(embedding);
 
+			UUID id = UUID.fromString(document.getId());
+			String content = document.getText(); // TODO: shall we use the text of text +
+													// metadata?
+			Map<String, Object> metadata = document.getMetadata();
+			PGvector pgEmbedding = new PGvector(toFloatArray(embedding));
+
 			jdbcTemplate.update(
-					"INSERT INTO vector_store (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?)",
-					UUID.fromString(document.getId()), document.getText(), document.getMetadata(),
-					new PGvector(toFloatArray(embedding)));
+					"INSERT INTO vector_store (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) "
+							+ "ON CONFLICT (id) DO " + "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
+					id, content, metadata, pgEmbedding, content, metadata, pgEmbedding);
 		}
 	}
 
