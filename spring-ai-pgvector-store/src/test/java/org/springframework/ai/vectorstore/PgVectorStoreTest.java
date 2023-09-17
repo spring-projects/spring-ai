@@ -61,7 +61,7 @@ public class PgVectorStoreTest {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.datasource.type=com.zaxxer.hikari.HikariDataSource",
-				"spring.ai.openai.apiKey=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",
+				"spring.ai.openai.apiKey=YOU OPENAI API KEY",
 
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
