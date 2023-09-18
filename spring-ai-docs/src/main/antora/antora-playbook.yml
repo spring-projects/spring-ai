@@ -21,9 +21,11 @@ asciidoc:
     hide-uri-scheme: '@'
     tabs-sync-option: '@'
     chomp: 'all'
+    stem: 'asciimath'
   extensions:
     - '@asciidoctor/tabs'
     - '@springio/asciidoctor-extensions'
+    - '@djencks/asciidoctor-mathjax'
   sourcemap: true
 urls:
   latest_version_segment: ''
