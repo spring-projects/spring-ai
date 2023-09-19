@@ -20,6 +20,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
+		<module>vector-stores/spring-ai-milvus-store</module>
 	</modules>
 
     <organization>

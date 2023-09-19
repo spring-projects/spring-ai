@@ -36,12 +36,13 @@ public interface VectorStore {
 	List<Document> similaritySearch(String query, int k);
 
 	List<Document> similaritySearch(String query, int k, double threshold);
+}
 ```
 
 The Spring AI library uses the `Document` class to model the `String` you want to store in the Vector Database along with the vector representing that `String`.
 The vector that representing the `String` is of the type `List<Double>` and is often called the string's embedding.
 
-The `List<Double> is computed from the `String` using an implementation of the class `EmbeddingClient`.
+The `List<Double>` is computed from the `String` using an implementation of the class `EmbeddingClient`.
 An Embedding Model is an example of an AI model, that transforms from `String` to a `List<Double>`.
 The embeddings are used internally by other AI Model implementations, such as models that convert `text` to `text` like ChatGPT.
 
@@ -52,7 +53,8 @@ The `VectorStore` implementations supported by Spring AI are:
 
 * InMemoryVectorStore
 * SimplePersistentVectorStore
-* PgVector - A Vector Store build on PostgreSQL.
+* PgVector - A Vector Store build on https://github.com/pgvector/pgvector[PostgreSQL/PGVector].
+* Milvus - A Vector Store build on https://milvus.io/[Milvus]
 
 More are implementations are coming, with Pinecone being the next implementation.
 
