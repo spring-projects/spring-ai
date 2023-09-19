@@ -24,7 +24,6 @@
 	</properties>
 
 	<dependencies>
-
 		<!-- production dependencies -->
 		<dependency>
 			<groupId>org.antlr</groupId>

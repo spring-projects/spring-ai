@@ -23,6 +23,7 @@
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
 		<module>embedding-clients/spring-ai-postgresml-embedding-client</module>
+		<module>document-readers/pdf-reader</module>
 	</modules>
 
     <organization>
