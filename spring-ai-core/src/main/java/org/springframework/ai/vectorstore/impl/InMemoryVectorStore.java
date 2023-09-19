@@ -95,6 +95,14 @@ public class InMemoryVectorStore implements VectorStore {
 			this.similarity = similarity;
 		}
 
+		public double getSimilarity() {
+			return similarity;
+		}
+
+		public String getKey() {
+			return key;
+		}
+
 	}
 
 	public class EmbeddingMath {

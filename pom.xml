@@ -7,7 +7,6 @@
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
-
 	<name>Spring AI</name>
 	<description>Building AI applications with Spring Boot</description>
 
@@ -20,6 +19,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
+		<module>vector-stores/spring-ai-mongodb-store</module>
 	</modules>
 
     <organization>

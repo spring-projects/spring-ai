@@ -42,6 +42,12 @@ public class Document {
 		this.metadata = metadata;
 	}
 
+	public Document() {
+		this.id = null;
+		this.text = null;
+		this.metadata = null;
+	};
+
 	public String getId() {
 		return id;
 	}
