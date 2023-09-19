@@ -26,9 +26,11 @@ asciidoc:
     page-pagination: ''
     hide-uri-scheme: '@'
     tabs-sync-option: '@'
+    stem: 'asciimath'
   extensions:
   - '@asciidoctor/tabs'
   - '@springio/asciidoctor-extensions'
+  - '@djencks/asciidoctor-mathjax'
 urls:
   latest_version_segment_strategy: redirect:to
   latest_version_segment: ''
