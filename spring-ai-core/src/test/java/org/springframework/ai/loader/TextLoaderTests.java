@@ -48,7 +48,7 @@ public class TextLoaderTests {
 			assertThat(document.getMetadata().get("customKey")).isEqualTo("Value");
 			assertThat(document.getMetadata().get(TextLoader.SOURCE_METADATA)).isEqualTo("text_source.txt");
 			assertThat(document.getMetadata().get(TextLoader.CHARSET_METADATA)).isEqualTo("UTF-8");
-			assertThat(document.getText()).isNotEmpty();
+			assertThat(document.getContent()).isNotEmpty();
 		}
 	}
 

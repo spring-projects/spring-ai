@@ -40,7 +40,7 @@ public class JsonLoaderTests {
 		List<Document> documents = jsonLoader.load();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
-			assertThat(document.getText()).isNotEmpty();
+			assertThat(document.getContent()).isNotEmpty();
 		}
 	}
 

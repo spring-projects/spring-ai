@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 public class SimplePersistentVectorStoreIT {
 
-	@Value("classpath:/data/acme/bikes.json")
+	@Value("file:src/test/resources/data/acme/bikes.json")
 	private Resource bikesJsonResource;
 
 	@Autowired

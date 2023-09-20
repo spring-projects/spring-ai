@@ -325,7 +325,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		row.put("id", document.getId());
 
 		var properties = new HashMap<String, Object>();
-		properties.put("text", document.getText());
+		properties.put("text", document.getContent());
 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);

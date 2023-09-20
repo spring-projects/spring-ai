@@ -1,9 +1,9 @@
 package org.springframework.ai.vectorstore;
 
-import org.springframework.ai.document.Document;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.ai.document.Document;
 
 public interface VectorStore {
 

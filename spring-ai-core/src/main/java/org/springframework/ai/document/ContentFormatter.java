@@ -16,8 +16,13 @@
 
 package org.springframework.ai.document;
 
-public enum MetadataMode {
+/**
+ * Converts the Document text and metadata into a AI, prompt-friendly text representation.
+ *
+ * @author Christian Tzolov
+ */
+public interface ContentFormatter {
 
-	ALL, EMBED, INFERENCE, NONE;
+	String format(Document document, MetadataMode mode);
 
 }

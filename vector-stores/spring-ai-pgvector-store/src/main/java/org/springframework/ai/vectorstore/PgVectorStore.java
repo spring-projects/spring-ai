@@ -213,7 +213,7 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 			document.setEmbedding(embedding);
 
 			UUID id = UUID.fromString(document.getId());
-			String content = document.getText();
+			String content = document.getContent();
 			Map<String, Object> metadata = document.getMetadata();
 			PGvector pgEmbedding = new PGvector(toFloatArray(embedding));
 

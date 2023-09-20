@@ -37,7 +37,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </dependency>
 ```
 
@@ -47,7 +47,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </dependency>
 ```
 
@@ -59,7 +59,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </dependency>
 ```
 
