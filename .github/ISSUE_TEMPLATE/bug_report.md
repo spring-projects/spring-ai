@@ -23,5 +23,5 @@ Steps to reproduce the issue.
 A clear and concise description of what you expected to happen.
 
 **Minimal Complete Reproducible example**
-Please provide a failing test or a [minimal complete verifiable example](https://github.com/spring-projects/spring-batch/blob/main/ISSUE_REPORTING.md) that reproduces the issue.
+Please provide a failing test or a [minimal complete verifiable example](https://github.com/spring-projects/spring-ai/blob/main/ISSUE_REPORTING.md) that reproduces the issue.
 Bug reports that are reproducible will take priority in resolution over reports that are not reproducible.

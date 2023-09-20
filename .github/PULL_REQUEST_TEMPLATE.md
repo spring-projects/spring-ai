@@ -9,4 +9,4 @@ You might have already read the [contributor guide][1], but as a reminder, pleas
 For more details, please check the [contributor guide][1].
 Thank you upfront!
 
-[1]: https://github.com/spring-projects/spring-batch/blob/main/CONTRIBUTING.md
+[1]: https://github.com/spring-projects/spring-ai/blob/main/CONTRIBUTING.md
