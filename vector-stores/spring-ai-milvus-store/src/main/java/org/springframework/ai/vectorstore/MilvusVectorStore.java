@@ -269,7 +269,7 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
-			contentArray.add(document.getText());
+			contentArray.add(document.getContent());
 			metadataArray.add(new JSONObject(document.getMetadata()));
 			embeddingArray.add(toFloatList(embedding));
 		}

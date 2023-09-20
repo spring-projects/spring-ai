@@ -25,7 +25,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 		Map<String, Object> metadata = new HashMap<>();
 
 		for (Document doc : documents) {
-			texts.add(doc.getText());
+			texts.add(doc.getContent());
 			metadata.putAll(doc.getMetadata());
 		}
 
