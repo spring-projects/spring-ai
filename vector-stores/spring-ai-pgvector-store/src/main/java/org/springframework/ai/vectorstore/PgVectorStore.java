@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -32,15 +33,22 @@ import org.postgresql.util.PGobject;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.Nullable;
 
 /**
+ * Uses the "vector_store" table to store the Spring AI vector data. The table and the
+ * vector index will be auto-created if not available.
+ *
  * @author Christian Tzolov
  */
-public class PgVectorStore implements VectorStore {
+public class PgVectorStore implements VectorStore, SmartLifecycle {
 
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
+
+	public static final String VECTOR_TABLE_NAME = "vector_store";
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -51,6 +59,10 @@ public class PgVectorStore implements VectorStore {
 	private PgDistanceType distanceType;
 
 	private ObjectMapper objectMapper = new ObjectMapper();
+
+	private boolean removeExistingVectorStoreTable;
+
+	private PgIndexType createIndexMethod;
 
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
@@ -159,37 +171,17 @@ public class PgVectorStore implements VectorStore {
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions,
 			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod) {
+
 		this.jdbcTemplate = jdbcTemplate;
 		this.embeddingClient = embeddingClient;
 		this.dimensions = dimensions;
 		this.distanceType = distanceType;
+		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
+		this.createIndexMethod = createIndexMethod;
+	}
 
-		// Add PGVector support.
-		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
-		// Add JSONB support.
-		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
-		// Add UUID support.
-		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
-
-		// Remove existing VectorStoreTable
-		if (removeExistingVectorStoreTable) {
-			this.jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
-		}
-
-		// TODO: we create id of type UUID, while the Document's id is String!!!
-		// TODO: remove injection!
-		this.jdbcTemplate
-			.execute("CREATE TABLE IF NOT EXISTS vector_store ( " + "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, "
-					+ "content text, " + "metadata json, " + "embedding vector(" + this.dimensions + "))");
-
-		if (createIndexMethod != PgIndexType.NONE) {
-			this.jdbcTemplate.execute("CREATE INDEX ON vector_store USING " + createIndexMethod.name() + " (embedding "
-					+ distanceType.index + ")");
-		}
-
-		this.jdbcTemplate
-			.execute("CREATE TABLE IF NOT EXISTS vector_store ( " + "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, "
-					+ "content text, " + "metadata json, " + "embedding vector(" + this.dimensions + "))");
+	public PgDistanceType getDistanceType() {
+		return distanceType;
 	}
 
 	@Override
@@ -199,14 +191,14 @@ public class PgVectorStore implements VectorStore {
 			document.setEmbedding(embedding);
 
 			UUID id = UUID.fromString(document.getId());
-			String content = document.getText(); // TODO: shall we use the text of text +
-													// metadata?
+			String content = document.getText(); // TODO: text of text + metadata?
 			Map<String, Object> metadata = document.getMetadata();
 			PGvector pgEmbedding = new PGvector(toFloatArray(embedding));
 
-			jdbcTemplate.update(
-					"INSERT INTO vector_store (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) "
-							+ "ON CONFLICT (id) DO " + "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
+			this.jdbcTemplate.update(
+					"INSERT INTO " + VECTOR_TABLE_NAME
+							+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
+							+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
 					id, content, metadata, pgEmbedding, content, metadata, pgEmbedding);
 		}
 	}
@@ -224,8 +216,7 @@ public class PgVectorStore implements VectorStore {
 	public Optional<Boolean> delete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
-			int count = jdbcTemplate.update("DELETE FROM vector_store WHERE id = ?", UUID.fromString(id));
-
+			int count = jdbcTemplate.update("DELETE FROM " + VECTOR_TABLE_NAME + " WHERE id = ?", UUID.fromString(id));
 			updateCount = updateCount + count;
 		}
 
@@ -240,22 +231,86 @@ public class PgVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query, int k) {
 		PGvector queryEmbedding = getQueryEmbedding(query);
-		return this.jdbcTemplate.query(
-				"SELECT * FROM vector_store ORDER BY embedding " + this.distanceType.operator + " ? LIMIT ?",
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, k);
+		return this.jdbcTemplate.query("SELECT * FROM " + VECTOR_TABLE_NAME + " ORDER BY embedding "
+				+ this.getDistanceType().operator + " ? LIMIT ?", new DocumentRowMapper(this.objectMapper),
+				queryEmbedding, k);
 	}
 
 	@Override
 	public List<Document> similaritySearch(String query, int k, double threshold) {
 		PGvector queryEmbedding = getQueryEmbedding(query);
 		return this.jdbcTemplate.query(
-				"SELECT * FROM vector_store ORDER BY embedding " + this.distanceType.operator + " ? < ? LIMIT ? ",
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, threshold, k);
+				"SELECT * FROM " + VECTOR_TABLE_NAME + " WHERE embedding " + this.getDistanceType().operator
+						+ " ? < ? ORDER BY embedding " + this.getDistanceType().operator + " ? LIMIT ? ",
+				new DocumentRowMapper(this.objectMapper), queryEmbedding, threshold, queryEmbedding, k);
+	}
+
+	public List<Double> embeddingDistance(String query) {
+		return this.jdbcTemplate.query(
+				"SELECT embedding " + this.getDistanceType().operator + " ? AS distance FROM " + VECTOR_TABLE_NAME,
+				new RowMapper<Double>() {
+					@Override
+					@Nullable
+					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
+						return rs.getDouble("distance");
+					}
+
+				}, getQueryEmbedding(query));
 	}
 
 	private PGvector getQueryEmbedding(String query) {
 		List<Double> embedding = this.embeddingClient.embed(query);
 		return new PGvector(toFloatArray(embedding));
+	}
+
+	// ---------------------------------------------------------------------------------
+	// SmartLifecycle
+	// ---------------------------------------------------------------------------------
+	private AtomicBoolean isRunning = new AtomicBoolean(false);
+
+	@Override
+	public void start() {
+
+		// Enable the PGVector, JSONB and UUID support.
+		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
+		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
+		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+
+		// Remove existing VectorStoreTable
+		if (this.removeExistingVectorStoreTable) {
+			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
+		}
+
+		this.jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + VECTOR_TABLE_NAME + " ( "
+				+ "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, " + "content text, " + "metadata json, "
+				+ "embedding vector(" + this.dimensions + "))");
+
+		if (this.createIndexMethod != PgIndexType.NONE) {
+			this.jdbcTemplate.execute("CREATE INDEX ON " + VECTOR_TABLE_NAME + " USING " + this.createIndexMethod
+					+ " (embedding " + this.getDistanceType().index + ")");
+		}
+
+		this.isRunning.set(true);
+	}
+
+	@Override
+	public void stop() {
+		// Remove existing VectorStoreTable
+		if (this.removeExistingVectorStoreTable) {
+			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
+		}
+
+		this.isRunning.set(false);
+	}
+
+	@Override
+	public boolean isRunning() {
+		return this.isRunning.get();
+	}
+
+	@Override
+	public boolean isAutoStartup() {
+		return true;
 	}
 
 }

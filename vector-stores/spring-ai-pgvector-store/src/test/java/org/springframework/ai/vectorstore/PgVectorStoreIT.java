@@ -58,6 +58,14 @@ public class PgVectorStoreIT {
 		.withEnv("POSTGRES_PASSWORD", "postgres")
 		.withExposedPorts(5432);
 
+	List<Document> documents = List.of(
+			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
+					Collections.singletonMap("meta1", "meta1")),
+			new Document("Hello World Hello World Hello World Hello World Hello World Hello World Hello World"),
+			new Document(
+					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
+					Collections.singletonMap("meta2", "meta2")));
+
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.datasource.type=com.zaxxer.hikari.HikariDataSource",
@@ -70,19 +78,10 @@ public class PgVectorStoreIT {
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	@Test
-	public void vectorStoreTest() {
+	public void addAndSearchTest() {
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			List<Document> documents = List.of(
-					new Document(
-							"Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
-							Collections.singletonMap("meta1", "meta1")),
-					new Document("Hello World Hello World Hello World Hello World Hello World Hello World Hello World"),
-					new Document(
-							"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
-							Collections.singletonMap("meta2", "meta2")));
 
 			vectorStore.add(documents);
 
@@ -141,14 +140,39 @@ public class PgVectorStoreIT {
 		});
 	}
 
+	@Test
+	public void searchThresholdTest() {
+
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore.add(documents);
+
+			assertThat(vectorStore.similaritySearch("Great", 5, 1.0)).hasSize(3);
+
+			List<Double> embeddingDistance = ((PgVectorStore) vectorStore).embeddingDistance("Great");
+
+			List<Document> results = vectorStore.similaritySearch("Great", 5, 0.21);
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getText()).isEqualTo(
+					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
+			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
+
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-			return new PgVectorStore(jdbcTemplate, embeddingClient, 1536, PgVectorStore.PgDistanceType.CosineDistance,
-					true, PgIndexType.HNSW);
+			return new PgVectorStore(jdbcTemplate, embeddingClient, PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE,
+					PgVectorStore.PgDistanceType.CosineDistance, true, PgIndexType.HNSW);
 		}
 
 		@Bean
