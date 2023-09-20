@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.experimental.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.2.0-SNAPSHOT</version>
+		<version>0.7.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-neo4j-store</artifactId>
@@ -21,7 +21,7 @@
 	</scm>
 
 	<properties>
-		<spring-ai.version>0.2.0-SNAPSHOT</spring-ai.version>
+		<spring-ai.version>0.7.0-SNAPSHOT</spring-ai.version>
 		<!-- testing -->
 		<testcontainers.version>1.19.0</testcontainers.version>
 	</properties>

@@ -3,7 +3,7 @@
 
 	<groupId>org.springframework.experimental.ai</groupId>
 	<artifactId>spring-ai</artifactId>
-	<version>0.2.0-SNAPSHOT</version>
+	<version>0.7.0-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>

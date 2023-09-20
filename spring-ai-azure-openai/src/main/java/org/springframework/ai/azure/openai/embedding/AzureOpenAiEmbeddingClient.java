@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -31,15 +32,23 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
+	private final MetadataMode metadataMode;
+
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient) {
 		this(azureOpenAiClient, "text-embedding-ada-002");
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model) {
+		this(azureOpenAiClient, model, MetadataMode.EMBED);
+	}
+
+	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model, MetadataMode metadataMode) {
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(model, "Model must not be null");
+		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		this.azureOpenAiClient = azureOpenAiClient;
 		this.model = model;
+		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -54,7 +63,7 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 	public List<Double> embed(Document document) {
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model,
-				new EmbeddingsOptions(List.of(document.getContent())));
+				new EmbeddingsOptions(List.of(document.getFormattedContent(this.metadataMode))));
 		logger.debug("Embeddings retrieved");
 		return extractEmbeddingsList(embeddings);
 	}
