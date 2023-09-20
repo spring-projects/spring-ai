@@ -21,11 +21,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.impl.InMemoryVectorStore;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 /**
  * @author Chris Smith
@@ -75,12 +78,11 @@ public class MongoDBVectorStore implements VectorStore {
 
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
-		long deleteCount = 0;
-		for (String id : idList) {
-			var deleteRes = mongoTemplate.remove(String.format("{_id: \"%s\"}", id), VECTOR_COLLECTION_NAME);// delete
-			// many
-			deleteCount += deleteRes.getDeletedCount();
-		}
+		Query query = new Query(where("_id").in(idList));
+
+		var deleteRes = mongoTemplate.remove(query, VECTOR_COLLECTION_NAME);
+		long deleteCount = deleteRes.getDeletedCount();
+
 		return Optional.of(deleteCount == idList.size());
 	}
 
