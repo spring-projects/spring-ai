@@ -11,12 +11,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
@@ -26,6 +28,8 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 	private final OpenAIClient azureOpenAiClient;
 
 	private final String model;
+
+	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient) {
 		this(azureOpenAiClient, "text-embedding-ada-002");
@@ -104,6 +108,14 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 			data.add(embedding);
 		}
 		return data;
+	}
+
+	@Override
+	public int dimensions() {
+		if (this.embeddingDimensions.get() < 0) {
+			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.model));
+		}
+		return this.embeddingDimensions.get();
 	}
 
 }

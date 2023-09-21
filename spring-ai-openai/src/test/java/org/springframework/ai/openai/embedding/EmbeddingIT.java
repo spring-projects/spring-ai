@@ -28,6 +28,7 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2L);
 		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2L);
 
+		assertThat(embeddingClient.dimensions()).isEqualTo(1536);
 	}
 
 }

@@ -1,21 +1,24 @@
 package org.springframework.ai.openai.embedding;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 import com.theokanning.openai.Usage;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class OpenAiEmbeddingClient implements EmbeddingClient {
 
@@ -24,6 +27,8 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 	private final OpenAiService openAiService;
 
 	private final String model;
+
+	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
 		this(openAiService, "text-embedding-ada-002");
@@ -93,6 +98,14 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		metadata.put("completion-tokens", usage.getCompletionTokens());
 		metadata.put("total-tokens", usage.getTotalTokens());
 		return metadata;
+	}
+
+	@Override
+	public int dimensions() {
+		if (this.embeddingDimensions.get() < 0) {
+			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.model));
+		}
+		return this.embeddingDimensions.get();
 	}
 
 }
