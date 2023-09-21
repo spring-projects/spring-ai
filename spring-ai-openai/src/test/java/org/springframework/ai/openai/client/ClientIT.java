@@ -100,4 +100,27 @@ class ClientIT extends AbstractIT {
 		System.out.println(actorsFilms);
 	}
 
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+	}
+
+	@Test
+	void beanOutputParserRecords() {
+
+		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+
+		String format = outputParser.getFormat();
+		String template = """
+				Generate the filmography of 5 movies for Tom Hanks.
+				{format}
+				""";
+		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Generation generation = openAiClient.generate(prompt).getGeneration();
+
+		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getText());
+		System.out.println(actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
 }
