@@ -52,7 +52,7 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	public OpenAiService theoOpenAiService(OpenAiProperties openAiProperties) {
-		if (openAiProperties.getBaseUrl().equals("https://api.openai.com")) {
+		if ("https://api.openai.com".equals(openAiProperties.getBaseUrl())) {
 			if (!StringUtils.hasText(openAiProperties.getApiKey())) {
 				throw new IllegalArgumentException(
 						"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
