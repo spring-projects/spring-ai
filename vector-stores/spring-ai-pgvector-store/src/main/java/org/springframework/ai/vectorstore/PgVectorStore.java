@@ -122,6 +122,8 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 
 		private static final String COLUMN_CONTENT = "content";
 
+		private static final String COLUMN_DISTANCE = "distance";
+
 		private ObjectMapper objectMapper;
 
 		public DocumentRowMapper(ObjectMapper objectMapper) {
@@ -132,10 +134,14 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 		public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
 			String id = rs.getString(COLUMN_ID);
 			String content = rs.getString(COLUMN_CONTENT);
-			PGobject metadata = rs.getObject(COLUMN_METADATA, PGobject.class);
+			PGobject pgMetadata = rs.getObject(COLUMN_METADATA, PGobject.class);
 			PGobject embedding = rs.getObject(COLUMN_EMBEDDING, PGobject.class);
+			Float distance = rs.getFloat(COLUMN_DISTANCE);
 
-			Document document = new Document(id, content, toMap(metadata));
+			Map<String, Object> metadata = toMap(pgMetadata);
+			metadata.put(COLUMN_DISTANCE, distance);
+
+			Document document = new Document(id, content, metadata);
 			document.setEmbedding(toDoubleList(embedding));
 
 			return document;
@@ -231,8 +237,8 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 	@Override
 	public List<Document> similaritySearch(String query, int k) {
 		PGvector queryEmbedding = getQueryEmbedding(query);
-		return this.jdbcTemplate.query("SELECT * FROM " + VECTOR_TABLE_NAME + " ORDER BY embedding "
-				+ this.getDistanceType().operator + " ? LIMIT ?", new DocumentRowMapper(this.objectMapper),
+		return this.jdbcTemplate.query("SELECT *, embedding " + this.comparisonOperator() + " ? AS distance FROM "
+				+ VECTOR_TABLE_NAME + " ORDER BY distance LIMIT ?", new DocumentRowMapper(this.objectMapper),
 				queryEmbedding, k);
 	}
 
@@ -240,14 +246,14 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 	public List<Document> similaritySearch(String query, int k, double threshold) {
 		PGvector queryEmbedding = getQueryEmbedding(query);
 		return this.jdbcTemplate.query(
-				"SELECT * FROM " + VECTOR_TABLE_NAME + " WHERE embedding " + this.getDistanceType().operator
-						+ " ? < ? ORDER BY embedding " + this.getDistanceType().operator + " ? LIMIT ? ",
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, threshold, queryEmbedding, k);
+				"SELECT *, embedding " + this.comparisonOperator() + " ? AS distance FROM " + VECTOR_TABLE_NAME
+						+ " WHERE embedding " + this.comparisonOperator() + " ? < ? ORDER BY distance LIMIT ? ",
+				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, threshold, k);
 	}
 
 	public List<Double> embeddingDistance(String query) {
 		return this.jdbcTemplate.query(
-				"SELECT embedding " + this.getDistanceType().operator + " ? AS distance FROM " + VECTOR_TABLE_NAME,
+				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + VECTOR_TABLE_NAME,
 				new RowMapper<Double>() {
 					@Override
 					@Nullable
@@ -261,6 +267,10 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 	private PGvector getQueryEmbedding(String query) {
 		List<Double> embedding = this.embeddingClient.embed(query);
 		return new PGvector(toFloatArray(embedding));
+	}
+
+	private String comparisonOperator() {
+		return this.getDistanceType().operator;
 	}
 
 	// ---------------------------------------------------------------------------------

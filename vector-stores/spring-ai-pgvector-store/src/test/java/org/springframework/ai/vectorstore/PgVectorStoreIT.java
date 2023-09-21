@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,6 +44,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,7 +71,7 @@ public class PgVectorStoreIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.datasource.type=com.zaxxer.hikari.HikariDataSource",
-				"spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"),
+				"spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
 
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
@@ -92,7 +94,7 @@ public class PgVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
+			assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
@@ -121,7 +123,7 @@ public class PgVectorStoreIT {
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta1", "meta1"));
+			assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
 			Document sameIdDocument = new Document(document.getId(),
 					"The World is Big and Salvation Lurks Around the Corner",
@@ -135,8 +137,7 @@ public class PgVectorStoreIT {
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
-
+			assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 		});
 	}
 
@@ -149,7 +150,13 @@ public class PgVectorStoreIT {
 
 			vectorStore.add(documents);
 
-			assertThat(vectorStore.similaritySearch("Great", 5, 1.0)).hasSize(3);
+			List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 1.0);
+
+			assertThat(fullResult).hasSize(3);
+
+			assertThat(isSortedByDistance(fullResult)).isTrue();
+
+			fullResult.stream().forEach(doc -> System.out.println(doc.getMetadata().get("distance")));
 
 			List<Double> embeddingDistance = ((PgVectorStore) vectorStore).embeddingDistance("Great");
 
@@ -160,9 +167,31 @@ public class PgVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
+			assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 		});
+	}
+
+	private static boolean isSortedByDistance(List<Document> docs) {
+
+		List<Float> distances = docs.stream()
+			.map(doc -> (Float) doc.getMetadata().get("distance"))
+			.collect(Collectors.toList());
+
+		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+			return true;
+		}
+
+		Iterator<Float> iter = distances.iterator();
+		Float current, previous = iter.next();
+		while (iter.hasNext()) {
+			current = iter.next();
+			if (previous > current) {
+				return false;
+			}
+			previous = current;
+		}
+		return true;
 	}
 
 	@SpringBootConfiguration
