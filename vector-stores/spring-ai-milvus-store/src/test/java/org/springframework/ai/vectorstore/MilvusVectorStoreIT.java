@@ -55,15 +55,13 @@ public class MilvusVectorStoreIT {
 	@Container
 	public static DockerComposeContainer milvusContainer = new DockerComposeContainer(
 			new File("src/test/resources/docker-compose.yml"))
-					.withExposedService("standalone", 19530)
-					.withExposedService("standalone", 9091,
-							Wait.forHttp("/healthz").forPort(9091)
-									.forStatusCode(200)
-									.forStatusCode(401));
+		.withExposedService("standalone", 19530)
+		.withExposedService("standalone", 9091,
+				Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withUserConfiguration(TestApplication.class)
-			.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"));
+		.withUserConfiguration(TestApplication.class)
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
@@ -111,14 +109,15 @@ public class MilvusVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
 
 			List<Document> results2 = vectorStore.similaritySearch("Hello", 1);
 			assertThat(results2).hasSize(0);
-
 		});
 	}
 
@@ -142,7 +141,8 @@ public class MilvusVectorStoreIT {
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta1", "meta1"));
+			assertThat(resultDoc.getMetadata()).containsKey("meta1");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			Document sameIdDocument = new Document(document.getId(),
 					"The World is Big and Salvation Lurks Around the Corner",
@@ -156,7 +156,8 @@ public class MilvusVectorStoreIT {
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			vectorStore.delete(List.of(document.getId()));
 
@@ -183,7 +184,8 @@ public class MilvusVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
 			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 		});
 	}
@@ -201,10 +203,10 @@ public class MilvusVectorStoreIT {
 		@Bean
 		public MilvusServiceClient milvusClient() {
 			return new MilvusServiceClient(ConnectParam.newBuilder()
-					.withHost("localhost")
-					.withPort(19530)
-					// .withPort(milvusEnvironment.getServicePort("standalone", 19530))
-					.build());
+				.withHost("localhost")
+				.withPort(19530)
+				// .withPort(milvusEnvironment.getServicePort("standalone", 19530))
+				.build());
 		}
 
 	}
