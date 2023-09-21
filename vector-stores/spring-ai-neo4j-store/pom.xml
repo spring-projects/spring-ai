@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.experimental.ai</groupId>
+		<artifactId>spring-ai</artifactId>
+		<version>0.2.0-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
+	</parent>
+	<artifactId>spring-ai-neo4j-store</artifactId>
+	<packaging>jar</packaging>
+	<name>Spring AI Vector Store - neo4j</name>
+	<description>Spring AI Neo4j Vector Store</description>
+	<url>https://github.com/spring-projects-experimental/spring-ai</url>
+
+	<scm>
+		<url>https://github.com/spring-projects-experimental/spring-ai</url>
+		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+	</scm>
+
+	<properties>
+		<spring-ai.version>0.2.0-SNAPSHOT</spring-ai.version>
+		<!-- testing -->
+		<testcontainers.version>1.19.0</testcontainers.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-core</artifactId>
+			<version>${spring-ai.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.neo4j.driver</groupId>
+			<artifactId>neo4j-java-driver</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-cypher-dsl-schema-name-support</artifactId>
+			<version>2023.7.0</version>
+		</dependency>
+
+		<!-- TESTING -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+			<version>${spring-ai.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>neo4j</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+
+	</dependencies>
+
+</project>
