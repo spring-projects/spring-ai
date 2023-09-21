@@ -53,8 +53,9 @@ The `VectorStore` implementations supported by Spring AI are:
 
 * InMemoryVectorStore
 * SimplePersistentVectorStore
-* PgVector - A Vector Store build on https://github.com/pgvector/pgvector[PostgreSQL/PGVector].
-* Milvus - A Vector Store build on https://milvus.io/[Milvus]
+* PgVector - The Vector Store https://github.com/pgvector/pgvector[PostgreSQL/PGVector].
+* Milvus - The Vector Store https://milvus.io/[Milvus]
+* Neo4j - The Vector Store https://neo4j.com/[Neo4j]
 
 More are implementations are coming, with Pinecone being the next implementation.
 

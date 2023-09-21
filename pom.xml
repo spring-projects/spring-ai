@@ -21,6 +21,7 @@
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
+		<module>vector-stores/spring-ai-neo4j-store</module>
 	</modules>
 
     <organization>
