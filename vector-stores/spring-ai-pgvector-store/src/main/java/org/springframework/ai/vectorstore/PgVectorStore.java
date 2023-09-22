@@ -95,19 +95,25 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 
 	public enum PgDistanceType {
 
-		EuclideanDistance("<->", "vector_l2_ops"),
+		EuclideanDistance("<->", "vector_l2_ops",
+				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? ORDER BY distance LIMIT ? "),
 
-		NegativeInnerProduct("<#>", "vector_ip_ops"),
+		NegativeInnerProduct("<#>", "vector_ip_ops",
+				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? ORDER BY distance LIMIT ? "),
 
-		CosineDistance("<=>", "vector_cosine_ops");
+		CosineDistance("<=>", "vector_cosine_ops",
+				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? ORDER BY distance LIMIT ? ");
 
 		public final String operator;
 
 		public final String index;
 
-		PgDistanceType(String operator, String index) {
+		public final String similaritySearchSqlTemplate;
+
+		PgDistanceType(String operator, String index, String sqlTemplate) {
 			this.operator = operator;
 			this.index = index;
+			this.similaritySearchSqlTemplate = sqlTemplate;
 		}
 
 	}
@@ -197,7 +203,7 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 			document.setEmbedding(embedding);
 
 			UUID id = UUID.fromString(document.getId());
-			String content = document.getText(); // TODO: text of text + metadata?
+			String content = document.getText();
 			Map<String, Object> metadata = document.getMetadata();
 			PGvector pgEmbedding = new PGvector(toFloatArray(embedding));
 
@@ -235,20 +241,21 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query, int k) {
-		PGvector queryEmbedding = getQueryEmbedding(query);
-		return this.jdbcTemplate.query("SELECT *, embedding " + this.comparisonOperator() + " ? AS distance FROM "
-				+ VECTOR_TABLE_NAME + " ORDER BY distance LIMIT ?", new DocumentRowMapper(this.objectMapper),
-				queryEmbedding, k);
+	public List<Document> similaritySearch(String query, int topK) {
+		return this.similaritySearch(query, topK, 0.0 /** ALL */
+		);
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold) {
+	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
+
+		double distance = 1 - similarityThreshold;
+
 		PGvector queryEmbedding = getQueryEmbedding(query);
+
 		return this.jdbcTemplate.query(
-				"SELECT *, embedding " + this.comparisonOperator() + " ? AS distance FROM " + VECTOR_TABLE_NAME
-						+ " WHERE embedding " + this.comparisonOperator() + " ? < ? ORDER BY distance LIMIT ? ",
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, threshold, k);
+				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME),
+				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
 	}
 
 	public List<Double> embeddingDistance(String query) {
