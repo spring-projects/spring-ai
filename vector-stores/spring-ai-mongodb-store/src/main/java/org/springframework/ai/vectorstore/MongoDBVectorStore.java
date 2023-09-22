@@ -35,11 +35,11 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
  */
 public class MongoDBVectorStore implements VectorStore {
 
-	MongoTemplate mongoTemplate;
+	private MongoTemplate mongoTemplate;
 
-	EmbeddingClient embeddingClient;
+	private EmbeddingClient embeddingClient;
 
-	private final String VECTOR_COLLECTION_NAME = "vector_store";
+	private static final String VECTOR_COLLECTION_NAME = "vector_store";
 
 	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
 		this.mongoTemplate = mongoTemplate;
@@ -54,7 +54,7 @@ public class MongoDBVectorStore implements VectorStore {
 	 * @param basicDBObject
 	 * @return
 	 */
-	public Document mapBasicDbObject(BasicDBObject basicDBObject) {
+	private Document mapBasicDbObject(BasicDBObject basicDBObject) {
 		String id = basicDBObject.getString("_id");
 		String content = basicDBObject.getString("text");
 		Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get("metadata");
@@ -72,7 +72,7 @@ public class MongoDBVectorStore implements VectorStore {
 			List<Double> embedding = this.embeddingClient.embed(document);
 			document.setEmbedding(embedding);
 
-			mongoTemplate.save(document, VECTOR_COLLECTION_NAME);
+			this.mongoTemplate.save(document, VECTOR_COLLECTION_NAME);
 		}
 	}
 
@@ -80,7 +80,7 @@ public class MongoDBVectorStore implements VectorStore {
 	public Optional<Boolean> delete(List<String> idList) {
 		Query query = new Query(where("_id").in(idList));
 
-		var deleteRes = mongoTemplate.remove(query, VECTOR_COLLECTION_NAME);
+		var deleteRes = this.mongoTemplate.remove(query, VECTOR_COLLECTION_NAME);
 		long deleteCount = deleteRes.getDeletedCount();
 
 		return Optional.of(deleteCount == idList.size());
@@ -103,7 +103,7 @@ public class MongoDBVectorStore implements VectorStore {
 					InMemoryVectorStore.EmbeddingMath.cosineSimilarity(queryEmbedding, entry.getEmbedding())))
 			.sorted(Comparator.<InMemoryVectorStore.Similarity>comparingDouble(s -> s.getSimilarity()).reversed())
 			.limit(k)
-			.map(s -> mongoTemplate.findById(s.getKey(), BasicDBObject.class, VECTOR_COLLECTION_NAME))
+			.map(s -> this.mongoTemplate.findById(s.getKey(), BasicDBObject.class, VECTOR_COLLECTION_NAME))
 			.map(this::mapBasicDbObject)
 			.toList();
 	}
@@ -120,7 +120,7 @@ public class MongoDBVectorStore implements VectorStore {
 			.filter(s -> s.getSimilarity() >= threshold)
 			.sorted(Comparator.<InMemoryVectorStore.Similarity>comparingDouble(s -> s.getSimilarity()).reversed())
 			.limit(k)
-			.map(s -> mongoTemplate.findById(s.getKey(), BasicDBObject.class, VECTOR_COLLECTION_NAME))
+			.map(s -> this.mongoTemplate.findById(s.getKey(), BasicDBObject.class, VECTOR_COLLECTION_NAME))
 			.map(this::mapBasicDbObject)
 			.toList();
 	}
