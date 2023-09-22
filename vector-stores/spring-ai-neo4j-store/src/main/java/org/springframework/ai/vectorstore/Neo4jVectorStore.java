@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springramework.ai.vectorstore;
+package org.springframework.ai.vectorstore;
 
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
@@ -22,7 +22,6 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
