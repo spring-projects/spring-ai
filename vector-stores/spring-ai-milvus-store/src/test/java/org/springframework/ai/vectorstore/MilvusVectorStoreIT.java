@@ -25,9 +25,12 @@ import java.util.stream.Collectors;
 
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
+import io.milvus.param.IndexType;
+import io.milvus.param.MetricType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
@@ -36,6 +39,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -91,113 +96,137 @@ public class MilvusVectorStoreIT {
 		((MilvusVectorStore) vectorStore).createCollection();
 	}
 
-	@Test
-	public void addAndSearchTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "L2", "IP" })
+	public void addAndSearchTest(String metricType) {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			vectorStore.add(documents);
+				vectorStore.add(documents);
 
-			List<Document> results = vectorStore.similaritySearch("Great", 1);
+				List<Document> results = vectorStore.similaritySearch("Great", 1);
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getText()).isEqualTo(
-					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).hasSize(2);
-			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+				assertThat(resultDoc.getText()).isEqualTo(
+						"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
+				assertThat(resultDoc.getMetadata()).hasSize(2);
+				assertThat(resultDoc.getMetadata()).containsKey("meta2");
+				assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
+				// Remove all documents from the store
+				vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
 
-			List<Document> results2 = vectorStore.similaritySearch("Hello", 1);
-			assertThat(results2).hasSize(0);
-		});
+				List<Document> results2 = vectorStore.similaritySearch("Hello", 1);
+				assertThat(results2).hasSize(0);
+			});
 	}
 
-	@Test
-	public void documentUpdateTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "L2", "IP" })
+	public void documentUpdateTest(String metricType) {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
-					Collections.singletonMap("meta1", "meta1"));
+				Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
+						Collections.singletonMap("meta1", "meta1"));
 
-			vectorStore.add(List.of(document));
+				vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+				List<Document> results = vectorStore.similaritySearch("Spring", 5);
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
-			assertThat(resultDoc.getMetadata()).containsKey("meta1");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(document.getId());
+				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getMetadata()).containsKey("meta1");
+				assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-			Document sameIdDocument = new Document(document.getId(),
-					"The World is Big and Salvation Lurks Around the Corner",
-					Collections.singletonMap("meta2", "meta2"));
+				Document sameIdDocument = new Document(document.getId(),
+						"The World is Big and Salvation Lurks Around the Corner",
+						Collections.singletonMap("meta2", "meta2"));
 
-			vectorStore.add(List.of(sameIdDocument));
+				vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch("FooBar", 5);
+				results = vectorStore.similaritySearch("FooBar", 5);
 
-			assertThat(results).hasSize(1);
-			resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+				assertThat(results).hasSize(1);
+				resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(document.getId());
+				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getMetadata()).containsKey("meta2");
+				assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-			vectorStore.delete(List.of(document.getId()));
+				vectorStore.delete(List.of(document.getId()));
 
-		});
+			});
 	}
 
-	@Test
-	public void searchThresholdTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "L2", "IP" })
+	public void searchThresholdTest(String metricType) {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			resetCollection(vectorStore);
+				resetCollection(vectorStore);
 
-			vectorStore.add(documents);
+				vectorStore.add(documents);
 
-			assertThat(vectorStore.similaritySearch("Great", 5, 1.0)).hasSize(3);
+				List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 0.0);
 
-			List<Document> results = vectorStore.similaritySearch("Great", 5, 0.43);
+				List<Float> distances = fullResult.stream()
+					.map(doc -> (Float) doc.getMetadata().get("distance"))
+					.collect(Collectors.toList());
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getText()).isEqualTo(
-					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-			assertThat(resultDoc.getMetadata()).containsKey("meta2");
-			assertThat(resultDoc.getMetadata()).containsKey("distance");
+				assertThat(distances).hasSize(3);
 
-		});
+				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - (distances.get(0) + 0.01)));
+
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+				assertThat(resultDoc.getText()).isEqualTo(
+						"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
+				assertThat(resultDoc.getMetadata()).containsKey("meta2");
+				assertThat(resultDoc.getMetadata()).containsKey("distance");
+
+			});
 	}
 
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
+		@Value("${spring.ai.vectorstore.milvus.metricType}")
+		private MetricType metricType;
+
 		@Bean
 		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient) {
-			return new MilvusVectorStore(milvusClient, embeddingClient, "test_vector_store",
-					MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
+			MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
+				.withCollectionName("test_vector_store")
+				.withDatabaseName("default")
+				.withIndexType(IndexType.IVF_FLAT)
+				.withMetricType(metricType)
+				.withEmbeddingDimension(MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE)
+				.build();
+			return new MilvusVectorStore(milvusClient, embeddingClient, config);
 		}
 
 		@Bean
