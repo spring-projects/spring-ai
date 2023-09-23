@@ -96,7 +96,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			this.distanceType = builder.distanceType;
 			this.label = builder.label;
 			this.embeddingProperty = builder.embeddingProperty;
-			this.quotedLabel = SchemaNames.sanitize(label).orElseThrow();
+			this.quotedLabel = SchemaNames.sanitize(this.label).orElseThrow();
 		}
 
 		public static class Builder {
@@ -142,14 +142,14 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 			/**
 			 * Configures the distance type to store in the index and to use in queries.
-			 * @param newDstanceType The distance type, must not be {@literal null}
+			 * @param newDistanceType The distance type, must not be {@literal null}
 			 * @return this builder
 			 */
-			public Builder withDistanceType(Neo4jDistanceType newDstanceType) {
+			public Builder withDistanceType(Neo4jDistanceType newDistanceType) {
 
-				Assert.notNull(newDstanceType, "Distance type may not be null");
+				Assert.notNull(newDistanceType, "Distance type may not be null");
 
-				this.distanceType = newDstanceType;
+				this.distanceType = newDistanceType;
 				return this;
 			}
 
@@ -178,7 +178,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 				Assert.hasText(newEmbeddingProperty, "Embedding property may not be null or blank");
 
-				this.label = newEmbeddingProperty;
+				this.embeddingProperty = newEmbeddingProperty;
 				return this;
 			}
 
@@ -224,7 +224,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 		var rows = documents.stream().map(this::documentToRecord).toList();
 
-		try (var session = driver.session()) {
+		try (var session = this.driver.session()) {
 			var statement = """
 						UNWIND $rows AS row
 						MERGE (u:%s {id: row.id})
@@ -238,32 +238,32 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 						CALL db.create.setVectorProperty(u, $embeddingProperty, row.embedding)
 						YIELD node
 						RETURN count(node)
-					""".formatted(config.quotedLabel);
-			session.run(statement, Map.of("rows", rows, "embeddingProperty", config.embeddingProperty)).consume();
+					""".formatted(this.config.quotedLabel);
+			session.run(statement, Map.of("rows", rows, "embeddingProperty", this.config.embeddingProperty)).consume();
 		}
 	}
 
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
 
-		try (var session = driver.session(config.sessionConfig)) {
+		try (var session = this.driver.session(this.config.sessionConfig)) {
 
 			var summary = session.run("""
 					MATCH (n:%s) WHERE n.id IN $ids
 					CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
-					 """.formatted(config.quotedLabel), Map.of("ids", idList, "transactionSize", 10_000)).consume();
+					 """.formatted(this.config.quotedLabel), Map.of("ids", idList, "transactionSize", 10_000)).consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
 		}
 	}
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return similaritySearch(query, 5);
+		return this.similaritySearch(query, 5);
 	}
 
 	@Override
 	public List<Document> similaritySearch(String query, int k) {
-		return similaritySearch(query, k, 0);
+		return this.similaritySearch(query, k, 0);
 	}
 
 	@Override
@@ -274,7 +274,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
 		var embedding = Values.value(toFloatArray(this.embeddingClient.embed(query)));
-		try (var session = driver.session(config.sessionConfig)) {
+		try (var session = this.driver.session(this.config.sessionConfig)) {
 			return session
 				.run("""
 						CALL db.index.vector.queryNodes($indexName, $numberOfNearestNeighbours, $embeddingValue)
@@ -290,11 +290,11 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void afterPropertiesSet() {
 
-		try (var session = driver.session(config.sessionConfig)) {
+		try (var session = this.driver.session(this.config.sessionConfig)) {
 
 			session
 				.run("CREATE CONSTRAINT %s_unique_idx IF NOT EXISTS FOR (n:%s) REQUIRE n.id IS UNIQUE"
-					.formatted(SchemaNames.sanitize(config.label + "_unique_idx").orElseThrow(), config.quotedLabel))
+					.formatted(SchemaNames.sanitize(this.config.label + "_unique_idx").orElseThrow(), this.config.quotedLabel))
 				.consume();
 
 			var vectorIndexExists = session
@@ -306,9 +306,9 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			if (!vectorIndexExists) {
 				var statement = "CALL db.index.vector.createNodeIndex($indexName, $label, $embeddingProperty, $embeddingDimension, $distanceType)";
 				session.run(statement,
-						Map.of("indexName", INDEX_NAME, "label", config.label, "embeddingProperty",
-								config.embeddingProperty, "embeddingDimension", config.embeddingDimension,
-								"distanceType", config.distanceType.name))
+						Map.of("indexName", INDEX_NAME, "label", this.config.label, "embeddingProperty",
+								this.config.embeddingProperty, "embeddingDimension", this.config.embeddingDimension,
+								"distanceType", this.config.distanceType.name))
 					.consume();
 				session.run("CALL db.awaitIndexes()").consume();
 			}
@@ -333,7 +333,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		return row;
 	}
 
-	private float[] toFloatArray(List<Double> embeddingDouble) {
+	private static float[] toFloatArray(List<Double> embeddingDouble) {
 		float[] embeddingFloat = new float[embeddingDouble.size()];
 		int i = 0;
 		for (Double d : embeddingDouble) {

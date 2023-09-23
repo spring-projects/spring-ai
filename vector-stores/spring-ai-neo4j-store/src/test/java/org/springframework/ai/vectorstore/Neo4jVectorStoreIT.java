@@ -49,33 +49,33 @@ public class Neo4jVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"));
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
 
 	@BeforeEach
 	void cleanDatabase() {
-		contextRunner
+		this.contextRunner
 			.run(context -> context.getBean(Driver.class).executableQuery("MATCH (n) DETACH DELETE n").execute());
 	}
 
 	@Test
 	void addAndSearchTest() {
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			List<Document> results = vectorStore.similaritySearch("Great", 1);
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
+			vectorStore.delete(this.documents.stream().map(Document::getId).collect(Collectors.toList()));
 
 			List<Document> results2 = vectorStore.similaritySearch("Great", 1);
 			assertThat(results2).hasSize(0);
@@ -85,7 +85,7 @@ public class Neo4jVectorStoreIT {
 	@Test
 	void documentUpdateTest() {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -122,11 +122,11 @@ public class Neo4jVectorStoreIT {
 	@Test
 	void searchThresholdTest() {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			vectorStore.add(documents);
+			vectorStore.add(this.documents);
 
 			assertThat(vectorStore.similaritySearch("Great", 5, 0)).hasSize(3);
 
@@ -134,7 +134,7 @@ public class Neo4jVectorStoreIT {
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
 			assertThat(resultDoc.getText()).isEqualTo(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 			assertThat(resultDoc.getMetadata()).isEqualTo(Collections.singletonMap("meta2", "meta2"));
@@ -144,7 +144,7 @@ public class Neo4jVectorStoreIT {
 
 	@Test
 	void ensureVectorIndexGetsCreated() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBean(Driver.class)
 				.executableQuery(
 						"SHOW indexes yield name, type WHERE name = 'spring-ai-document-index' AND type = 'VECTOR' return count(*) > 0")
@@ -159,7 +159,7 @@ public class Neo4jVectorStoreIT {
 
 	@Test
 	void ensureIdIndexGetsCreated() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context.getBean(Driver.class)
 				.executableQuery(
 						"SHOW indexes yield labelsOrTypes, properties, type WHERE any(x in labelsOrTypes where x = 'Document')  AND any(x in properties where x = 'id') AND type = 'RANGE' return count(*) > 0")
