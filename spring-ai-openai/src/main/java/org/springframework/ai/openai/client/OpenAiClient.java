@@ -27,6 +27,7 @@ import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.prompt.messages.MessageType;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class OpenAiClient implements AiClient {
 		List<Message> messages = prompt.getMessages();
 		List<ChatMessage> theoMessages = new ArrayList<>();
 		for (Message message : messages) {
-			String messageType = message.getMessageType().getValue();
+			String messageType = message.getMessageTypeValue();
 			theoMessages.add(new ChatMessage(messageType, message.getContent()));
 		}
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
@@ -148,14 +149,14 @@ public class OpenAiClient implements AiClient {
 		for (Message promptMessage : messages) {
 			switch (promptMessage.getMessageType()) {
 				case USER:
-					chatMessages.add(new ChatMessage("user", promptMessage.getContent()));
+					chatMessages.add(new ChatMessage(MessageType.USER.getValue(), promptMessage.getContent()));
 					break;
 				case ASSISTANT:
 					// TODO - valid?
-					chatMessages.add(new ChatMessage("assistant", promptMessage.getContent()));
+					chatMessages.add(new ChatMessage(MessageType.ASSISTANT.getValue(), promptMessage.getContent()));
 					break;
 				case SYSTEM:
-					chatMessages.add(new ChatMessage("system", promptMessage.getContent()));
+					chatMessages.add(new ChatMessage(MessageType.SYSTEM.getValue(), promptMessage.getContent()));
 					break;
 				case FUNCTION:
 					logger.error(

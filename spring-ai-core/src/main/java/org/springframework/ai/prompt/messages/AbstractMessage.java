@@ -87,4 +87,9 @@ public abstract class AbstractMessage implements Message {
 		return this.messageType;
 	}
 
+	@Override
+	public String getMessageTypeValue() {
+		return this.messageType.getValue();
+	}
+
 }
