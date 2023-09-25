@@ -41,7 +41,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 			String text = texts.get(i);
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
-				logger.info("Broke up document " + i + " into " + chunks.size() + " chunks.");
+				logger.info("Splitting up document into " + chunks.size() + " chunks.");
 			}
 			for (String chunk : chunks) {
 				// only primitive values are in here -
