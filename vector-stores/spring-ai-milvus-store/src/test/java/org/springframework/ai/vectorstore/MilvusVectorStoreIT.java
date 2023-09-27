@@ -17,7 +17,7 @@
 package org.springframework.ai.vectorstore;
 
 import java.io.File;
-import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +28,6 @@ import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.DockerComposeContainer;
@@ -62,7 +61,9 @@ public class MilvusVectorStoreIT {
 			new File("src/test/resources/docker-compose.yml"))
 		.withExposedService("standalone", 19530)
 		.withExposedService("standalone", 9091,
-				Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401));
+				Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
+		.waitingFor("standalone",
+				Wait.forLogMessage(".*Proxy successfully started.*\\s", 1).withStartupTimeout(Duration.ofSeconds(100)));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -75,16 +76,6 @@ public class MilvusVectorStoreIT {
 			new Document(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
 					Collections.singletonMap("meta2", "meta2")));
-
-	@BeforeAll
-	public static void beforeAll() throws IOException {
-		try {
-			Thread.sleep(5000);
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
 
 	@AfterAll
 	public static void afterAll() {
@@ -233,8 +224,8 @@ public class MilvusVectorStoreIT {
 		public MilvusServiceClient milvusClient() {
 			return new MilvusServiceClient(ConnectParam.newBuilder()
 				.withHost("localhost")
-				.withPort(19530)
-				// .withPort(milvusEnvironment.getServicePort("standalone", 19530))
+				// .withPort(19530)
+				.withPort(milvusContainer.getServicePort("standalone", 19530))
 				.build());
 		}
 
