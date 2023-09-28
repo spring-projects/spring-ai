@@ -102,7 +102,7 @@ public class MilvusVectorStoreIT {
 	public void addAndSearchTest(String metricType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -135,7 +135,7 @@ public class MilvusVectorStoreIT {
 	public void documentUpdateTest(String metricType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -181,7 +181,7 @@ public class MilvusVectorStoreIT {
 	public void searchThresholdTest(String metricType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -217,7 +217,7 @@ public class MilvusVectorStoreIT {
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
-		@Value("${spring.ai.vectorstore.milvus.metricType}")
+		@Value("${test.spring.ai.vectorstore.milvus.metricType}")
 		private MetricType metricType;
 
 		@Bean
@@ -227,7 +227,6 @@ public class MilvusVectorStoreIT {
 				.withDatabaseName("default")
 				.withIndexType(IndexType.IVF_FLAT)
 				.withMetricType(metricType)
-				.withEmbeddingDimension(MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE)
 				.build();
 			return new MilvusVectorStore(milvusClient, embeddingClient, config);
 		}

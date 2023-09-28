@@ -67,6 +67,8 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
 
+	public static final int INVALID_EMBEDDING_DIMENSION = -1;
+
 	public static final String DEFAULT_DATABASE_NAME = "default";
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
@@ -140,7 +142,7 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 
 			private String collectionName = DEFAULT_COLLECTION_NAME;
 
-			private int embeddingDimension = OPENAI_EMBEDDING_DIMENSION_SIZE;
+			private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
 
 			private IndexType indexType = IndexType.IVF_FLAT;
 
@@ -442,7 +444,7 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 			FieldType embeddingFieldType = FieldType.newBuilder()
 				.withName(EMBEDDING_FIELD_NAME)
 				.withDataType(DataType.FloatVector)
-				.withDimension(this.config.embeddingDimension)
+				.withDimension(this.embeddingDimensions())
 				.build();
 
 			CreateCollectionParam createCollectionReq = CreateCollectionParam.newBuilder()
@@ -493,6 +495,23 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 		if (loadCollectionStatus.getException() != null) {
 			throw new RuntimeException("Collection loading failed!", loadCollectionStatus.getException());
 		}
+	}
+
+	int embeddingDimensions() {
+		if (this.config.embeddingDimension != INVALID_EMBEDDING_DIMENSION) {
+			return this.config.embeddingDimension;
+		}
+		try {
+			int embeddingDimensions = this.embeddingClient.dimensions();
+			if (embeddingDimensions > 0) {
+				return embeddingDimensions;
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to obtain the embedding dimensions from the embedding client and fall backs to default:"
+					+ this.config.embeddingDimension, e);
+		}
+		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
 
 	// used by the test as well

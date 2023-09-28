@@ -72,7 +72,7 @@ public class PgVectorStoreIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
+				"test.spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
 
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
@@ -84,7 +84,7 @@ public class PgVectorStoreIT {
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
 	public void addAndSearchTest(String distanceType) {
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -114,7 +114,7 @@ public class PgVectorStoreIT {
 	public void documentUpdateTest(String distanceType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -153,7 +153,7 @@ public class PgVectorStoreIT {
 	public void searchThresholdTest(String distanceType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -210,12 +210,12 @@ public class PgVectorStoreIT {
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
-		@Value("${spring.ai.vectorstore.pgvector.distanceType}")
+		@Value("${test.spring.ai.vectorstore.pgvector.distanceType}")
 		PgVectorStore.PgDistanceType distanceType;
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-			return new PgVectorStore(jdbcTemplate, embeddingClient, PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE,
+			return new PgVectorStore(jdbcTemplate, embeddingClient, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
 					distanceType, true, PgIndexType.HNSW);
 		}
 

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  */
 @ExtendWith(MockitoExtension.class)
-public class EmbeddingUtilTest {
+public class EmbeddingUtilTests {
 
 	@Mock
 	private EmbeddingClient embeddingClient;

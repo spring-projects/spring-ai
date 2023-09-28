@@ -29,6 +29,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pgvector.PGvector;
 import org.postgresql.util.PGobject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -45,7 +47,11 @@ import org.springframework.lang.Nullable;
  */
 public class PgVectorStore implements VectorStore, SmartLifecycle {
 
+	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
+
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
+
+	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
 
@@ -176,8 +182,13 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-		this(jdbcTemplate, embeddingClient, OPENAI_EMBEDDING_DIMENSION_SIZE,
-				PgVectorStore.PgDistanceType.CosineDistance, false, PgIndexType.NONE);
+		this(jdbcTemplate, embeddingClient, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.CosineDistance,
+				false, PgIndexType.NONE);
+	}
+
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions) {
+		this(jdbcTemplate, embeddingClient, dimensions, PgVectorStore.PgDistanceType.CosineDistance, false,
+				PgIndexType.NONE);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions,
@@ -299,7 +310,7 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 
 		this.jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + VECTOR_TABLE_NAME + " ( "
 				+ "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, " + "content text, " + "metadata json, "
-				+ "embedding vector(" + this.dimensions + "))");
+				+ "embedding vector(" + this.embeddingDimensions() + "))");
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute("CREATE INDEX ON " + VECTOR_TABLE_NAME + " USING " + this.createIndexMethod
@@ -307,6 +318,25 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 		}
 
 		this.isRunning.set(true);
+	}
+
+	int embeddingDimensions() {
+		// The manually set dimensions have precedence over the computed one.
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+
+		try {
+			int embeddingDimensions = this.embeddingClient.dimensions();
+			if (embeddingDimensions > 0) {
+				return embeddingDimensions;
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to obtain the embedding dimensions from the embedding client and fall backs to default:"
+					+ OPENAI_EMBEDDING_DIMENSION_SIZE, e);
+		}
+		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
 
 	@Override
