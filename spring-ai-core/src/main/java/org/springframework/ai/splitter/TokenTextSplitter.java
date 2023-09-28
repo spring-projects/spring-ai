@@ -61,8 +61,7 @@ public class TokenTextSplitter extends TextSplitter {
 			}
 
 			// Find the last period or punctuation mark in the chunk
-			int lastPunctuation = Math.max(chunkText.lastIndexOf('.'), Math.max(chunkText.lastIndexOf('?'),
-					Math.max(chunkText.lastIndexOf('!'), chunkText.lastIndexOf('\n'))));
+			int lastPunctuation = getLastPunctuation(chunkText);
 
 			if (lastPunctuation != -1 && lastPunctuation > minChunkSizeChars) {
 				// Truncate the chunk text at the punctuation mark
@@ -89,6 +88,18 @@ public class TokenTextSplitter extends TextSplitter {
 		}
 
 		return chunks;
+	}
+
+	private static int getLastPunctuation(String chunkText) {
+		int lastPunctuation = 0;
+		char[] chunkTextCharacters = chunkText.toCharArray();
+		for (int i = chunkText.length(); i --> 0;) {
+			if(PunctuationMark.first(chunkTextCharacters[i])){
+				lastPunctuation = i;
+				break;
+			}
+		}
+		return lastPunctuation;
 	}
 
 	private List<Integer> getEncodedTokens(String text) {
