@@ -48,8 +48,8 @@ import io.milvus.param.dml.SearchParam;
 import io.milvus.param.index.CreateIndexParam;
 import io.milvus.param.index.DescribeIndexParam;
 import io.milvus.param.index.DropIndexParam;
-import io.milvus.response.SearchResultsWrapper;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
+import io.milvus.response.SearchResultsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -359,7 +359,7 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 				metadata.put(DISTANCE_FIELD_NAME, 1 - getResultSimilarity(rowRecord));
 				return new Document(docId, content, metadata.getInnerMap());
 			})
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	private float getResultSimilarity(RowRecord rowRecord) {
@@ -368,7 +368,7 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 	}
 
 	private List<Float> toFloatList(List<Double> embeddingDouble) {
-		return embeddingDouble.stream().map(Number::floatValue).collect(Collectors.toList());
+		return embeddingDouble.stream().map(Number::floatValue).toList();
 	}
 
 	// ---------------------------------------------------------------------------------

@@ -21,18 +21,17 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -56,14 +55,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class MilvusVectorStoreIT {
 
-	@Container
-	public static DockerComposeContainer milvusContainer = new DockerComposeContainer(
-			new File("src/test/resources/docker-compose.yml"))
-		.withExposedService("standalone", 19530)
-		.withExposedService("standalone", 9091,
-				Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
-		.waitingFor("standalone",
-				Wait.forLogMessage(".*Proxy successfully started.*\\s", 1).withStartupTimeout(Duration.ofSeconds(100)));
+	private static DockerComposeContainer milvusContainer;
+
+	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -77,9 +71,25 @@ public class MilvusVectorStoreIT {
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
 					Collections.singletonMap("meta2", "meta2")));
 
+	@BeforeAll
+	public static void beforeAll() {
+		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
+		TEMP_FOLDER.mkdirs();
+
+		milvusContainer = new DockerComposeContainer(new File("src/test/resources/docker-compose.yml"))
+			.withEnv("DOCKER_VOLUME_DIRECTORY", TEMP_FOLDER.getAbsolutePath())
+			.withExposedService("standalone", 19530)
+			.withExposedService("standalone", 9091,
+					Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
+			.waitingFor("standalone", Wait.forLogMessage(".*Proxy successfully started.*\\s", 1)
+				.withStartupTimeout(Duration.ofSeconds(100)));
+		milvusContainer.start();
+	}
+
 	@AfterAll
 	public static void afterAll() {
-		FileSystemUtils.deleteRecursively(new File("src/test/resources/volumes"));
+		milvusContainer.stop();
+		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
 	}
 
 	private void resetCollection(VectorStore vectorStore) {
@@ -113,7 +123,7 @@ public class MilvusVectorStoreIT {
 				assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
+				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
 				List<Document> results2 = vectorStore.similaritySearch("Hello", 1);
 				assertThat(results2).hasSize(0);
@@ -184,11 +194,11 @@ public class MilvusVectorStoreIT {
 
 				List<Float> distances = fullResult.stream()
 					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.collect(Collectors.toList());
+					.toList();
 
 				assertThat(distances).hasSize(3);
 
-				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - (distances.get(0) + 0.01)));
+				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - (distances.get(0) + 0.001)));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
