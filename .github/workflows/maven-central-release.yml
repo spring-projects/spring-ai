@@ -25,11 +25,7 @@ jobs:
       - name: Download release files from Artifactory
         env:
           ARTIFACTORY_URL: "https://repo.spring.io/libs-staging-local/org/springframework/ai"
-        run: |
-#          echo "Downloading BOM artifacts"
-#          cd nexus/org/springframework/batch/spring-ai-bom/$RELEASE_VERSION
-#          wget $ARTIFACTORY_URL/spring-ai-bom/$RELEASE_VERSION/spring-ai-bom-$RELEASE_VERSION.pom
-          
+        run: |          
           echo "Downloading core artifacts"
           cd ../../../../../..
           cd nexus/org/springframework/ai/spring-ai-core/$RELEASE_VERSION
