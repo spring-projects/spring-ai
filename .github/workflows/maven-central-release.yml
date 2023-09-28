@@ -18,9 +18,9 @@ jobs:
       - name: Prepare directory structure
         run: |
           mkdir -p nexus/org/springframework/ai/spring-ai-core/$RELEASE_VERSION
-          mkdir -p nexus/org/springframework/batch/spring-ai-openai/$RELEASE_VERSION
-          mkdir -p nexus/org/springframework/batch/spring-ai-azure-openai/$RELEASE_VERSION
-          mkdir -p nexus/org/springframework/batch/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/ai/spring-ai-openai/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/ai/spring-ai-azure-openai/$RELEASE_VERSION
+          mkdir -p nexus/org/springframework/ai/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION
 
       - name: Download release files from Artifactory
         env:
