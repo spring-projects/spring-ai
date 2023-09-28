@@ -61,7 +61,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	public List<List<Double>> embed(List<String> texts) {
 		EmbeddingResponse embeddingResponse = embedForResponse(texts);
-		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).collect(Collectors.toList());
+		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).toList();
 	}
 
 	@Override

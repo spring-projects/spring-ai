@@ -198,7 +198,9 @@ public class MilvusVectorStoreIT {
 
 				assertThat(distances).hasSize(3);
 
-				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - (distances.get(0) + 0.001)));
+				float threshold = (distances.get(0) + distances.get(1)) / 2;
+
+				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - threshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);

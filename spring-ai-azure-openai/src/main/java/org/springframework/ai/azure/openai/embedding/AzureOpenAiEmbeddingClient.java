@@ -60,11 +60,7 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 	}
 
 	private List<Double> extractEmbeddingsList(Embeddings embeddings) {
-		return embeddings.getData()
-			.stream()
-			.map(EmbeddingItem::getEmbedding)
-			.flatMap(List::stream)
-			.collect(Collectors.toList());
+		return embeddings.getData().stream().map(EmbeddingItem::getEmbedding).flatMap(List::stream).toList();
 	}
 
 	@Override
@@ -72,7 +68,7 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model, new EmbeddingsOptions(texts));
 		logger.debug("Embeddings retrieved");
-		return embeddings.getData().stream().map(emb -> emb.getEmbedding()).collect(Collectors.toList());
+		return embeddings.getData().stream().map(emb -> emb.getEmbedding()).toList();
 	}
 
 	@Override

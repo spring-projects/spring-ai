@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -102,7 +101,7 @@ public class PgVectorStoreIT {
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
+				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
 				List<Document> results2 = vectorStore.similaritySearch("Great", 1);
 				assertThat(results2).hasSize(0);
@@ -165,7 +164,7 @@ public class PgVectorStoreIT {
 
 				List<Float> distances = fullResult.stream()
 					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.collect(Collectors.toList());
+					.toList();
 
 				assertThat(fullResult).hasSize(3);
 
@@ -173,9 +172,9 @@ public class PgVectorStoreIT {
 
 				fullResult.stream().forEach(doc -> System.out.println(doc.getMetadata().get("distance")));
 
-				List<Double> embeddingDistance = ((PgVectorStore) vectorStore).embeddingDistance("Great");
+				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - (distances.get(0) + 0.01)));
+				List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - threshold));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -189,9 +188,7 @@ public class PgVectorStoreIT {
 
 	private static boolean isSortedByDistance(List<Document> docs) {
 
-		List<Float> distances = docs.stream()
-			.map(doc -> (Float) doc.getMetadata().get("distance"))
-			.collect(Collectors.toList());
+		List<Float> distances = docs.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
 
 		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
 			return true;

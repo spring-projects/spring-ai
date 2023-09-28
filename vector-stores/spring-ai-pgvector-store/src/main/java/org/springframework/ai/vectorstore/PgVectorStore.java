@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -158,7 +157,7 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 			List<Double> doubleEmbedding = IntStream.range(0, floatArray.length)
 				.mapToDouble(i -> floatArray[i])
 				.boxed()
-				.collect(Collectors.toList());
+				.toList();
 			return doubleEmbedding;
 
 		}

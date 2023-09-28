@@ -448,7 +448,6 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 			CreateCollectionParam createCollectionReq = CreateCollectionParam.newBuilder()
 				.withDatabaseName(this.config.databaseName)
 				.withCollectionName(this.config.collectionName)
-				// .withDatabaseName(this.collectionName)
 				.withDescription("Spring AI Vector Store")
 				.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 				.withShardsNum(2)

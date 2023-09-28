@@ -345,7 +345,9 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	private static Document recordToDocument(org.neo4j.driver.Record neoRecord) {
 		var node = neoRecord.get("node").asNode();
+		var score = neoRecord.get("score").asFloat();
 		var metaData = new HashMap<String, Object>();
+		metaData.put("distance", 1 - score);
 		node.keys().forEach(key -> {
 			if (key.startsWith("metadata.")) {
 				metaData.put(key.substring(key.indexOf(".") + 1), node.get(key).asObject());
