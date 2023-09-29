@@ -1,9 +1,9 @@
 package org.springframework.ai.vectorstore;
 
-import org.springframework.ai.document.Document;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.ai.document.Document;
 
 public interface VectorStore {
 
@@ -13,6 +13,8 @@ public interface VectorStore {
 	 * underlying provider checks for duplicate IDs on add
 	 */
 	void add(List<Document> documents);
+
+	// void add(List<Document> documents, TextFormatter textFormatter);
 
 	Optional<Boolean> delete(List<String> idList);
 

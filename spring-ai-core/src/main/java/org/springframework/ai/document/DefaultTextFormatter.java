@@ -17,6 +17,7 @@
 package org.springframework.ai.document;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -153,6 +154,12 @@ public class DefaultTextFormatter implements TextFormatter {
 			return this;
 		}
 
+		public Builder withExcludedLlmMetadataKeys(String... keys) {
+			Assert.notNull(keys, "Excluded LLM metadata keys must not be null");
+			this.excludedLlmMetadataKeys.addAll(Arrays.asList(keys));
+			return this;
+		}
+
 		/**
 		 * Configures the excluded Embed metadata keys to filter out from the model.
 		 * @param excludedEmbedMetadataKeys Excluded Embed metadata keys to use.
@@ -161,6 +168,12 @@ public class DefaultTextFormatter implements TextFormatter {
 		public Builder withExcludedEmbedMetadataKeys(List<String> excludedEmbedMetadataKeys) {
 			Assert.notNull(excludedEmbedMetadataKeys, "Excluded Embed metadata keys must not be null");
 			this.excludedEmbedMetadataKeys = excludedEmbedMetadataKeys;
+			return this;
+		}
+
+		public Builder withExcludedEmbedMetadataKeys(String... keys) {
+			Assert.notNull(keys, "Excluded Embed metadata keys must not be null");
+			this.excludedEmbedMetadataKeys.addAll(Arrays.asList(keys));
 			return this;
 		}
 
@@ -187,7 +200,7 @@ public class DefaultTextFormatter implements TextFormatter {
 		return this.textTemplate.replace("{metadata_string}", metadataText).replace("{text}", document.getContent());
 	}
 
-	private Map<String, Object> filterMetadata(Map<String, Object> metadata, MetadataMode metadataMode) {
+	protected Map<String, Object> filterMetadata(Map<String, Object> metadata, MetadataMode metadataMode) {
 
 		if (metadataMode == MetadataMode.NONE) {
 			return new HashMap<String, Object>(Collections.emptyMap());
