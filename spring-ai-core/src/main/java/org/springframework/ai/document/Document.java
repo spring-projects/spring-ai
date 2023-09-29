@@ -9,6 +9,8 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.util.Assert;
+
 public class Document {
 
 	/**
@@ -16,6 +18,12 @@ public class Document {
 	 */
 	private final String id;
 
+	/**
+	 * TODO: do we need the embedding field in the Document? Currently it is used only for
+	 * by the InMemoryVectorStore.
+	 *
+	 * Embedding of the document.
+	 */
 	@JsonProperty(index = 100)
 	private List<Double> embedding = new ArrayList<>();
 
@@ -27,6 +35,9 @@ public class Document {
 
 	// Type; introduce when support images, now only text.
 
+	/**
+	 * Document content.
+	 */
 	private String content;
 
 	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -39,6 +50,10 @@ public class Document {
 	}
 
 	public Document(String id, String content, Map<String, Object> metadata) {
+		Assert.hasText(id, "id must not be null");
+		Assert.hasText(content, "content must not be null");
+		Assert.notNull(metadata, "metadata must not be null");
+
 		this.id = id;
 		this.content = content;
 		this.metadata = metadata;
@@ -53,7 +68,8 @@ public class Document {
 	}
 
 	public String getContent(TextFormatter formatter) {
-		return formatter.format(this);
+		Assert.notNull(formatter, "formatter must not be null");
+		return formatter.apply(this);
 	}
 
 	public Map<String, Object> getMetadata() {
@@ -65,6 +81,7 @@ public class Document {
 	}
 
 	public void setEmbedding(List<Double> embedding) {
+		Assert.notNull(embedding, "embedding must not be null");
 		this.embedding = embedding;
 	}
 

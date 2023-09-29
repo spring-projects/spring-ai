@@ -16,13 +16,13 @@
 
 package org.springframework.ai.document;
 
+import java.util.function.Function;
+
 /**
  * Converts the Document text and metadata into a AI, prompt-friendly text representation.
  *
  * @author Christian Tzolov
  */
-public interface TextFormatter {
-
-	String format(Document document);
+public interface TextFormatter extends Function<Document, String> {
 
 }

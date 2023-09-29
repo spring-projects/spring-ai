@@ -33,17 +33,33 @@ public class TextFormatterTests {
 			Map.of("embedKey1", "value1", "embedKey2", "value2", "embedKey3", "value3", "llmKey2", "value4"));
 
 	@Test
+	public void defaultConfigTextFormatter() {
+
+		DefaultTextFormatter defaultConfigFormatter = DefaultTextFormatter.defaultConfig();
+
+		assertThat(document.getContent(defaultConfigFormatter)).isEqualTo(defaultConfigFormatter.apply(document));
+
+		assertThat(document.getContent(defaultConfigFormatter)).isEqualTo("""
+				llmKey2: value4
+				embedKey1: value1
+				embedKey2: value2
+				embedKey3: value3
+
+				The World is Big and Salvation Lurks Around the Corner""");
+	}
+
+	@Test
 	public void customTextFormatter() {
 
 		DefaultTextFormatter textFormatter = DefaultTextFormatter.builder()
 			.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
 			.withExcludedLlmMetadataKeys("llmKey2")
 			.withMetadataMode(MetadataMode.EMBED)
-			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{text}")
+			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{content}")
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();
 
-		assertThat(document.getContent(textFormatter)).isEqualTo(textFormatter.format(document));
+		assertThat(document.getContent(textFormatter)).isEqualTo(textFormatter.apply(document));
 
 		assertThat(document.getContent(textFormatter)).isEqualTo("""
 				Metadata:
@@ -52,21 +68,6 @@ public class TextFormatterTests {
 
 				Text:The World is Big and Salvation Lurks Around the Corner""");
 
-	}
-
-	@Test
-	public void defaultTextFormatter() {
-		DefaultTextFormatter defaultFormatter = DefaultTextFormatter.defaultConfig();
-
-		assertThat(document.getContent(defaultFormatter)).isEqualTo(defaultFormatter.format(document));
-
-		assertThat(document.getContent(defaultFormatter)).isEqualTo("""
-				llmKey2: value4
-				embedKey1: value1
-				embedKey2: value2
-				embedKey3: value3
-
-				The World is Big and Salvation Lurks Around the Corner""");
 	}
 
 	@Test

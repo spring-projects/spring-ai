@@ -33,11 +33,21 @@ import org.springframework.util.Assert;
  */
 public class DefaultTextFormatter implements TextFormatter {
 
-	private static final String DEFAULT_METADATA_TEMPLATE = "{key}: {value}";
+	private static final String TEMPLATE_CONTENT_PLACEHOLDER = "{content}";
+
+	private static final String TEMPLATE_METADATA_STRING_PLACEHOLDER = "{metadata_string}";
+
+	private static final String TEMPLATE_VALUE_PLACEHOLDER = "{value}";
+
+	private static final String TEMPLATE_KEY_PLACEHOLDER = "{key}";
+
+	private static final String DEFAULT_METADATA_TEMPLATE = String.format("%s: %s", TEMPLATE_KEY_PLACEHOLDER,
+			TEMPLATE_VALUE_PLACEHOLDER);
 
 	private static final String DEFAULT_METADATA_SEPARATOR = "\n";
 
-	private static final String DEFAULT_TEXT_TEMPLATE = "{metadata_string}\n\n{text}";
+	private static final String DEFAULT_TEXT_TEMPLATE = String.format("%s\n\n%s", TEMPLATE_METADATA_STRING_PLACEHOLDER,
+			TEMPLATE_CONTENT_PLACEHOLDER);
 
 	public enum MetadataMode {
 
@@ -45,16 +55,32 @@ public class DefaultTextFormatter implements TextFormatter {
 
 	}
 
+	/**
+	 * Template for how metadata is formatted, with {key} and {value} placeholders.
+	 */
 	private final String metadataTemplate;
 
+	/**
+	 * Separator between metadata fields when converting to string.
+	 */
 	private final String metadataSeparator;
 
+	/**
+	 * Template for how Document text is formatted, with {content} and {metadata_string}
+	 * placeholders.
+	 */
 	private final String textTemplate;
 
 	private final MetadataMode metadataMode;
 
+	/**
+	 * Metadata keys that are excluded from text for the LLM.
+	 */
 	private final List<String> excludedLlmMetadataKeys;
 
+	/**
+	 * Metadata keys that are excluded from text for the embed model.
+	 */
 	private final List<String> excludedEmbedMetadataKeys;
 
 	/**
@@ -187,24 +213,32 @@ public class DefaultTextFormatter implements TextFormatter {
 	}
 
 	@Override
-	public String format(Document document) {
+	public String apply(Document document) {
 
 		var metadata = filterMetadata(document.getMetadata(), this.metadataMode);
 
 		var metadataText = metadata.entrySet()
 			.stream()
-			.map(metadataEntry -> this.metadataTemplate.replace("{key}", metadataEntry.getKey())
-				.replace("{value}", metadataEntry.getValue().toString()))
+			.map(metadataEntry -> this.metadataTemplate.replace(TEMPLATE_KEY_PLACEHOLDER, metadataEntry.getKey())
+				.replace(TEMPLATE_VALUE_PLACEHOLDER, metadataEntry.getValue().toString()))
 			.collect(Collectors.joining(this.metadataSeparator));
 
-		return this.textTemplate.replace("{metadata_string}", metadataText).replace("{text}", document.getContent());
+		return this.textTemplate.replace(TEMPLATE_METADATA_STRING_PLACEHOLDER, metadataText)
+			.replace(TEMPLATE_CONTENT_PLACEHOLDER, document.getContent());
 	}
 
+	/**
+	 * Metadata info string.
+	 * @param metadata Document metadata.
+	 * @param metadataMode
+	 * @return
+	 */
 	protected Map<String, Object> filterMetadata(Map<String, Object> metadata, MetadataMode metadataMode) {
 
 		if (metadataMode == MetadataMode.NONE) {
 			return new HashMap<String, Object>(Collections.emptyMap());
 		}
+
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
 		if (metadataMode == MetadataMode.LLM) {
 			usableMetadataKeys.removeAll(this.excludedLlmMetadataKeys);
