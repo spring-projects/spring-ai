@@ -215,7 +215,7 @@ public class DefaultTextFormatter implements TextFormatter {
 	@Override
 	public String apply(Document document) {
 
-		var metadata = filterMetadata(document.getMetadata(), this.metadataMode);
+		var metadata = metadataFilter(document.getMetadata());
 
 		var metadataText = metadata.entrySet()
 			.stream()
@@ -228,22 +228,25 @@ public class DefaultTextFormatter implements TextFormatter {
 	}
 
 	/**
-	 * Metadata info string.
+	 * Filters the metadata by the configured MetadataMode.
 	 * @param metadata Document metadata.
-	 * @param metadataMode
-	 * @return
+	 * @return Returns the filtered by configured mode metadata.
 	 */
-	protected Map<String, Object> filterMetadata(Map<String, Object> metadata, MetadataMode metadataMode) {
+	protected Map<String, Object> metadataFilter(Map<String, Object> metadata) {
 
-		if (metadataMode == MetadataMode.NONE) {
+		if (this.metadataMode == MetadataMode.ALL) {
+			return new HashMap<String, Object>(metadata);
+		}
+		if (this.metadataMode == MetadataMode.NONE) {
 			return new HashMap<String, Object>(Collections.emptyMap());
 		}
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
-		if (metadataMode == MetadataMode.LLM) {
+
+		if (this.metadataMode == MetadataMode.LLM) {
 			usableMetadataKeys.removeAll(this.excludedLlmMetadataKeys);
 		}
-		else if (metadataMode == MetadataMode.EMBED) {
+		else if (this.metadataMode == MetadataMode.EMBED) {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
 		}
 
