@@ -36,12 +36,12 @@ public class TextFormatterTests {
 	public void customTextFormatter() {
 
 		DefaultTextFormatter textFormatter = DefaultTextFormatter.builder()
-				.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
-				.withExcludedLlmMetadataKeys("llmKey2")
-				.withMetadataMode(MetadataMode.EMBED)
-				.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{text}")
-				.withMetadataTemplate("Key/Value {key}={value}")
-				.build();
+			.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
+			.withExcludedLlmMetadataKeys("llmKey2")
+			.withMetadataMode(MetadataMode.EMBED)
+			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{text}")
+			.withMetadataTemplate("Key/Value {key}={value}")
+			.build();
 
 		assertThat(document.getContent(textFormatter)).isEqualTo(textFormatter.format(document));
 
