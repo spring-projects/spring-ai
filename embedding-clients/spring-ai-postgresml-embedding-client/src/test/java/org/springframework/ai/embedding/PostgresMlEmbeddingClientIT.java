@@ -106,6 +106,15 @@ class PostgresMlEmbeddingClientIT {
 		assertThat(embeddingResponse.getData().get(2).getEmbedding()).hasSize(768);
 	}
 
+	@Test
+	void dimensions() {
+		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate);
+		embeddingClient.afterPropertiesSet();
+		assertThat(embeddingClient.dimensions()).isEqualTo(768);
+		// cached
+		assertThat(embeddingClient.dimensions()).isEqualTo(768);
+	}
+
 	@SpringBootApplication
 	public static class TestApplication {
 
