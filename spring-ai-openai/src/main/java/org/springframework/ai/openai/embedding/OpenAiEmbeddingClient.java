@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import com.theokanning.openai.Usage;
 import com.theokanning.openai.embedding.EmbeddingRequest;
@@ -30,15 +29,22 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
+	private final boolean useFormattedContent;
+
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
 		this(openAiService, "text-embedding-ada-002");
 	}
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService, String model) {
+		this(openAiService, model, true);
+	}
+
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model, boolean useFormattedContent) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
 		Assert.notNull(model, "Model must not be null");
 		this.openAiService = openAiService;
 		this.model = model;
+		this.useFormattedContent = useFormattedContent;
 	}
 
 	@Override
@@ -50,8 +56,9 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 	}
 
 	public List<Double> embed(Document document) {
+		String content = this.useFormattedContent ? document.getFormattedContent() : document.getContent();
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
-			.input(List.of(document.getContent()))
+			.input(List.of(content))
 			.model(this.model)
 			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService

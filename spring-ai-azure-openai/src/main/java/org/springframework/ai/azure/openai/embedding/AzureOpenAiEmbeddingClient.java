@@ -31,15 +31,22 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
+	private final boolean useFormattedContent;
+
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient) {
 		this(azureOpenAiClient, "text-embedding-ada-002");
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model) {
+		this(azureOpenAiClient, model, true);
+	}
+
+	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model, boolean useFormattedContent) {
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(model, "Model must not be null");
 		this.azureOpenAiClient = azureOpenAiClient;
 		this.model = model;
+		this.useFormattedContent = useFormattedContent;
 	}
 
 	@Override
@@ -52,9 +59,10 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
 	@Override
 	public List<Double> embed(Document document) {
+		String content = this.useFormattedContent ? document.getFormattedContent() : document.getContent();
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model,
-				new EmbeddingsOptions(List.of(document.getContent())));
+				new EmbeddingsOptions(List.of(content)));
 		logger.debug("Embeddings retrieved");
 		return extractEmbeddingsList(embeddings);
 	}
