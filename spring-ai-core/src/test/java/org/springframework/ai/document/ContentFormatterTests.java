@@ -20,8 +20,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.document.ContentFormatter.MetadataMode;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -37,15 +35,18 @@ public class ContentFormatterTests {
 
 		DefaultContentFormatter defaultConfigFormatter = DefaultContentFormatter.defaultConfig();
 
-		assertThat(document.getContent(defaultConfigFormatter)).isEqualTo(defaultConfigFormatter.apply(document));
-
-		assertThat(document.getContent(defaultConfigFormatter)).isEqualTo("""
+		assertThat(document.getFormatterContent(defaultConfigFormatter)).isEqualTo("""
 				llmKey2: value4
 				embedKey1: value1
 				embedKey2: value2
 				embedKey3: value3
 
 				The World is Big and Salvation Lurks Around the Corner""");
+
+		assertThat(document.getFormatterContent(defaultConfigFormatter)).isEqualTo(document.getFormattedContent());
+
+		assertThat(document.getFormatterContent(defaultConfigFormatter))
+			.isEqualTo(defaultConfigFormatter.apply(document));
 	}
 
 	@Test
@@ -59,22 +60,31 @@ public class ContentFormatterTests {
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();
 
-		assertThat(document.getContent(textFormatter)).isEqualTo(textFormatter.apply(document));
-
-		assertThat(document.getContent(textFormatter)).isEqualTo("""
+		assertThat(document.getFormatterContent(textFormatter)).isEqualTo("""
 				Metadata:
 				Key/Value llmKey2=value4
 				Key/Value embedKey1=value1
 
 				Text:The World is Big and Salvation Lurks Around the Corner""");
 
+		assertThat(document.getContent()).isEqualTo("""
+				The World is Big and Salvation Lurks Around the Corner""");
+
+		assertThat(document.getFormatterContent(textFormatter)).isEqualTo(textFormatter.apply(document));
+
+		var documentWithCustomFormatter = new Document(document.getId(), document.getContent(), document.getMetadata())
+			.withContentFormatter(textFormatter);
+
+		assertThat(document.getFormatterContent(textFormatter))
+			.isEqualTo(documentWithCustomFormatter.getFormattedContent());
 	}
 
 	@Test
-	public void noFormatter() {
-		assertThat(document.getContent()).isEqualTo(document.getContent(doc -> doc.getContent()));
+	public void noExplicitlySetFormatter() {
 		assertThat(document.getContent()).isEqualTo("""
 				The World is Big and Salvation Lurks Around the Corner""");
+		assertThat(document.getFormattedContent())
+			.isEqualTo(document.getFormatterContent(Document.DEFAULT_CONTENT_FORMATTER));
 	}
 
 }

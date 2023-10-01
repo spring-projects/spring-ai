@@ -7,25 +7,21 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.util.Assert;
 
+@JsonIgnoreProperties({ "contentFormatter" })
 public class Document {
+
+	public final static ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
 
 	/**
 	 * Unique ID
 	 */
 	private final String id;
-
-	/**
-	 * TODO: do we need the embedding field in the Document? Currently it is used only for
-	 * by the InMemoryVectorStore.
-	 *
-	 * Embedding of the document.
-	 */
-	@JsonProperty(index = 100)
-	private List<Double> embedding = new ArrayList<>();
 
 	/**
 	 * Metadata for the document. It should not be nested and values should be restricted
@@ -42,6 +38,21 @@ public class Document {
 	 * generics, e.g. Document<String> vs Document<byte[]>
 	 */
 	private String content;
+
+	/**
+	 * TODO: do we need the embedding field in the Document? Currently it is used only for
+	 * by the InMemoryVectorStore.
+	 *
+	 * Embedding of the document. Note: ephemeral field.
+	 */
+	@JsonProperty(index = 100)
+	private List<Double> embedding = new ArrayList<>();
+
+	/**
+	 * Ephemeral, content to text formatter. Defaults to Document text.
+	 */
+	@JsonIgnore
+	private ContentFormatter contentFormatter = DEFAULT_CONTENT_FORMATTER;
 
 	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
 	public Document(@JsonProperty("content") String content) {
@@ -70,7 +81,15 @@ public class Document {
 		return this.content;
 	}
 
-	public String getContent(ContentFormatter formatter) {
+	@JsonIgnore
+	public String getFormattedContent() {
+		return this.contentFormatter.apply(this);
+	}
+
+	/**
+	 * Helper content extractor that uses and external {@link ContentFormatter}.
+	 */
+	public String getFormatterContent(ContentFormatter formatter) {
 		Assert.notNull(formatter, "formatter must not be null");
 		return formatter.apply(this);
 	}
@@ -86,6 +105,15 @@ public class Document {
 	public void setEmbedding(List<Double> embedding) {
 		Assert.notNull(embedding, "embedding must not be null");
 		this.embedding = embedding;
+	}
+
+	public Document withContentFormatter(ContentFormatter contentFormatter) {
+		this.contentFormatter = contentFormatter;
+		return this;
+	}
+
+	public ContentFormatter getContentFormatter() {
+		return contentFormatter;
 	}
 
 	@Override
