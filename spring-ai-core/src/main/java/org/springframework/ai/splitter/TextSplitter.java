@@ -2,6 +2,8 @@ package org.springframework.ai.splitter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 
@@ -15,24 +17,37 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 	private static final Logger logger = LoggerFactory.getLogger(TextSplitter.class);
 
+	private boolean copyContentFormatter = true;
+
 	@Override
 	public List<Document> apply(List<Document> documents) {
 		return doSplitDocuments(documents);
 	}
 
+	public void setCopyContentFormatter(boolean copyContentFormatter) {
+		this.copyContentFormatter = copyContentFormatter;
+	}
+
+	public boolean isCopyContentFormatter() {
+		return this.copyContentFormatter;
+	}
+
 	private List<Document> doSplitDocuments(List<Document> documents) {
 		List<String> texts = new ArrayList<>();
 		Map<String, Object> metadata = new HashMap<>();
+		List<ContentFormatter> formatters = new ArrayList<>();
 
 		for (Document doc : documents) {
 			texts.add(doc.getContent());
 			metadata.putAll(doc.getMetadata());
+			formatters.add(doc.getContentFormatter());
 		}
 
-		return createDocuments(texts, metadata);
+		return createDocuments(texts, formatters, metadata);
 	}
 
-	private List<Document> createDocuments(List<String> texts, Map<String, Object> metadata) {
+	private List<Document> createDocuments(List<String> texts, List<ContentFormatter> formatters,
+			Map<String, Object> metadata) {
 
 		// Process the data in a column oriented way and recreate the Document
 		List<Document> documents = new ArrayList<>();
@@ -49,6 +64,13 @@ public abstract class TextSplitter implements DocumentTransformer {
 					.stream()
 					.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 				Document newDoc = new Document(chunk, metadataCopy);
+
+				if (this.copyContentFormatter) {
+					// Copies the parent content formatter to the chucks documents it was
+					// spelt into.
+					newDoc = newDoc.withContentFormatter(formatters.get(i));
+				}
+
 				// TODO copy over other properties.
 				documents.add(newDoc);
 			}
