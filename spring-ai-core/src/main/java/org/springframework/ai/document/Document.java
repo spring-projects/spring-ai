@@ -36,7 +36,10 @@ public class Document {
 	// Type; introduce when support images, now only text.
 
 	/**
-	 * Document content.
+	 * Document content. TODO: To support binary content (image, audio ...)
+	 *
+	 * - One option is to change the content type to byte[]. Another option is to use
+	 * generics, e.g. Document<String> vs Document<byte[]>
 	 */
 	private String content;
 
@@ -67,7 +70,7 @@ public class Document {
 		return this.content;
 	}
 
-	public String getContent(TextFormatter formatter) {
+	public String getContent(ContentFormatter formatter) {
 		Assert.notNull(formatter, "formatter must not be null");
 		return formatter.apply(this);
 	}

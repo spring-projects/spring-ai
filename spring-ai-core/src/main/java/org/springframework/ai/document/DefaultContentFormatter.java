@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
 /**
  * @author Christian Tzolov
  */
-public class DefaultTextFormatter implements TextFormatter {
+public class DefaultContentFormatter implements ContentFormatter {
 
 	private static final String TEMPLATE_CONTENT_PLACEHOLDER = "{content}";
 
@@ -49,12 +49,6 @@ public class DefaultTextFormatter implements TextFormatter {
 	private static final String DEFAULT_TEXT_TEMPLATE = String.format("%s\n\n%s", TEMPLATE_METADATA_STRING_PLACEHOLDER,
 			TEMPLATE_CONTENT_PLACEHOLDER);
 
-	public enum MetadataMode {
-
-		ALL, EMBED, LLM, NONE;
-
-	}
-
 	/**
 	 * Template for how metadata is formatted, with {key} and {value} placeholders.
 	 */
@@ -71,7 +65,7 @@ public class DefaultTextFormatter implements TextFormatter {
 	 */
 	private final String textTemplate;
 
-	private final MetadataMode metadataMode;
+	private final ContentFormatter.MetadataMode metadataMode;
 
 	/**
 	 * Metadata keys that are excluded from text for the LLM.
@@ -94,12 +88,12 @@ public class DefaultTextFormatter implements TextFormatter {
 	/**
 	 * {@return the default config}
 	 */
-	public static DefaultTextFormatter defaultConfig() {
+	public static DefaultContentFormatter defaultConfig() {
 
 		return builder().build();
 	}
 
-	private DefaultTextFormatter(Builder builder) {
+	private DefaultContentFormatter(Builder builder) {
 		this.metadataTemplate = builder.metadataTemplate;
 		this.metadataSeparator = builder.metadataSeparator;
 		this.textTemplate = builder.textTemplate;
@@ -110,7 +104,7 @@ public class DefaultTextFormatter implements TextFormatter {
 
 	public static class Builder {
 
-		private MetadataMode metadataMode = MetadataMode.ALL;
+		private ContentFormatter.MetadataMode metadataMode = ContentFormatter.MetadataMode.ALL;
 
 		private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
 
@@ -130,7 +124,7 @@ public class DefaultTextFormatter implements TextFormatter {
 		 * @param metadataMode Metadata mode to use.
 		 * @return this builder
 		 */
-		public Builder withMetadataMode(MetadataMode metadataMode) {
+		public Builder withMetadataMode(ContentFormatter.MetadataMode metadataMode) {
 			Assert.notNull(metadataMode, "Metadata mode must not be null");
 			this.metadataMode = metadataMode;
 			return this;
@@ -206,8 +200,8 @@ public class DefaultTextFormatter implements TextFormatter {
 		/**
 		 * {@return the immutable configuration}
 		 */
-		public DefaultTextFormatter build() {
-			return new DefaultTextFormatter(this);
+		public DefaultContentFormatter build() {
+			return new DefaultContentFormatter(this);
 		}
 
 	}
@@ -234,19 +228,19 @@ public class DefaultTextFormatter implements TextFormatter {
 	 */
 	protected Map<String, Object> metadataFilter(Map<String, Object> metadata) {
 
-		if (this.metadataMode == MetadataMode.ALL) {
+		if (this.metadataMode == ContentFormatter.MetadataMode.ALL) {
 			return new HashMap<String, Object>(metadata);
 		}
-		if (this.metadataMode == MetadataMode.NONE) {
+		if (this.metadataMode == ContentFormatter.MetadataMode.NONE) {
 			return new HashMap<String, Object>(Collections.emptyMap());
 		}
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
 
-		if (this.metadataMode == MetadataMode.LLM) {
+		if (this.metadataMode == ContentFormatter.MetadataMode.LLM) {
 			usableMetadataKeys.removeAll(this.excludedLlmMetadataKeys);
 		}
-		else if (this.metadataMode == MetadataMode.EMBED) {
+		else if (this.metadataMode == ContentFormatter.MetadataMode.EMBED) {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
 		}
 

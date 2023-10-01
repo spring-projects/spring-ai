@@ -20,14 +20,14 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.document.DefaultTextFormatter.MetadataMode;
+import org.springframework.ai.document.ContentFormatter.MetadataMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  */
-public class TextFormatterTests {
+public class ContentFormatterTests {
 
 	Document document = new Document("The World is Big and Salvation Lurks Around the Corner",
 			Map.of("embedKey1", "value1", "embedKey2", "value2", "embedKey3", "value3", "llmKey2", "value4"));
@@ -35,7 +35,7 @@ public class TextFormatterTests {
 	@Test
 	public void defaultConfigTextFormatter() {
 
-		DefaultTextFormatter defaultConfigFormatter = DefaultTextFormatter.defaultConfig();
+		DefaultContentFormatter defaultConfigFormatter = DefaultContentFormatter.defaultConfig();
 
 		assertThat(document.getContent(defaultConfigFormatter)).isEqualTo(defaultConfigFormatter.apply(document));
 
@@ -51,10 +51,10 @@ public class TextFormatterTests {
 	@Test
 	public void customTextFormatter() {
 
-		DefaultTextFormatter textFormatter = DefaultTextFormatter.builder()
+		DefaultContentFormatter textFormatter = DefaultContentFormatter.builder()
 			.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
 			.withExcludedLlmMetadataKeys("llmKey2")
-			.withMetadataMode(MetadataMode.EMBED)
+			.withMetadataMode(ContentFormatter.MetadataMode.EMBED)
 			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{content}")
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();

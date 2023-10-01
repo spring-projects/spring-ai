@@ -23,6 +23,12 @@ import java.util.function.Function;
  *
  * @author Christian Tzolov
  */
-public interface TextFormatter extends Function<Document, String> {
+public interface ContentFormatter extends Function<Document, String> {
+
+	enum MetadataMode {
+
+		ALL, EMBED, LLM, NONE;
+
+	}
 
 }

@@ -14,8 +14,6 @@ public interface VectorStore {
 	 */
 	void add(List<Document> documents);
 
-	// void add(List<Document> documents, TextFormatter textFormatter);
-
 	Optional<Boolean> delete(List<String> idList);
 
 	List<Document> similaritySearch(String query);
