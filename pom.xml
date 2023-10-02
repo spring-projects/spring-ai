@@ -16,6 +16,7 @@
 		<module>spring-ai-core</module>
 		<module>spring-ai-openai</module>
 		<module>spring-ai-azure-openai</module>
+		<module>spring-ai-ollama</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
