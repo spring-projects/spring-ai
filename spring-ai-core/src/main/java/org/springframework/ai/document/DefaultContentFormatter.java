@@ -68,7 +68,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 	/**
 	 * Metadata keys that are excluded from text for the LLM.
 	 */
-	private final List<String> excludedLlmMetadataKeys;
+	private final List<String> excludedInferenceMetadataKeys;
 
 	/**
 	 * Metadata keys that are excluded from text for the embed model.
@@ -95,7 +95,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		this.metadataTemplate = builder.metadataTemplate;
 		this.metadataSeparator = builder.metadataSeparator;
 		this.textTemplate = builder.textTemplate;
-		this.excludedLlmMetadataKeys = builder.excludedLlmMetadataKeys;
+		this.excludedInferenceMetadataKeys = builder.excludedLlmMetadataKeys;
 		this.excludedEmbedMetadataKeys = builder.excludedEmbedMetadataKeys;
 	}
 
@@ -116,7 +116,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 
 		public Builder from(DefaultContentFormatter fromFormatter) {
 			this.withExcludedEmbedMetadataKeys(fromFormatter.getExcludedEmbedMetadataKeys())
-				.withExcludedLlmMetadataKeys(fromFormatter.getExcludedLlmMetadataKeys())
+				.withExcludedLlmMetadataKeys(fromFormatter.getExcludedInferenceMetadataKeys())
 				.withMetadataSeparator(fromFormatter.getMetadataSeparator())
 				.withMetadataTemplate(fromFormatter.getMetadataTemplate())
 				.withTextTemplate(fromFormatter.getTextTemplate());
@@ -230,8 +230,8 @@ public class DefaultContentFormatter implements ContentFormatter {
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
 
-		if (metadataMode == ContentFormatter.MetadataMode.LLM) {
-			usableMetadataKeys.removeAll(this.excludedLlmMetadataKeys);
+		if (metadataMode == ContentFormatter.MetadataMode.INFERENCE) {
+			usableMetadataKeys.removeAll(this.excludedInferenceMetadataKeys);
 		}
 		else if (metadataMode == ContentFormatter.MetadataMode.EMBED) {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
@@ -255,8 +255,8 @@ public class DefaultContentFormatter implements ContentFormatter {
 		return this.textTemplate;
 	}
 
-	public List<String> getExcludedLlmMetadataKeys() {
-		return Collections.unmodifiableList(this.excludedLlmMetadataKeys);
+	public List<String> getExcludedInferenceMetadataKeys() {
+		return Collections.unmodifiableList(this.excludedInferenceMetadataKeys);
 	}
 
 	public List<String> getExcludedEmbedMetadataKeys() {

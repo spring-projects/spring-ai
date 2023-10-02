@@ -37,6 +37,14 @@ import org.springframework.util.CollectionUtils;
  */
 public class SummaryExtractor implements MetadataFeatureExtractor {
 
+	private static final String SECTION_SUMMARY_METADATA_KEY = "section_summary";
+
+	private static final String NEXT_SECTION_SUMMARY_METADATA_KEY = "next_section_summary";
+
+	private static final String PREV_SECTION_SUMMARY_METADATA_KEY = "prev_section_summary";
+
+	private static final String CONTEXT_STR_PLACEHOLDER = "context_str";
+
 	public static final String DEFAULT_SUMMARY_EXTRACT_TEMPLATE = """
 			Here is the content of the section:
 			{context_str}
@@ -91,7 +99,8 @@ public class SummaryExtractor implements MetadataFeatureExtractor {
 
 			var documentContext = document.getFormattedContent(this.metadataMode);
 
-			Prompt prompt = new PromptTemplate(this.summaryTemplate).create(Map.of("context_str", documentContext));
+			Prompt prompt = new PromptTemplate(this.summaryTemplate)
+				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
 			documentSummaries.add(this.aiClient.generate(prompt).getGeneration().getText());
 		}
 
@@ -100,13 +109,13 @@ public class SummaryExtractor implements MetadataFeatureExtractor {
 		for (int i = 0; i < documentSummaries.size(); i++) {
 			Map<String, Object> summaryMetadata = new HashMap<>();
 			if (i > 0 && this.summaryTypes.contains(SummaryType.PREVIOUS)) {
-				summaryMetadata.put("prev_section_summary", documentSummaries.get(i - 1));
+				summaryMetadata.put(PREV_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i - 1));
 			}
 			if (i < (documentSummaries.size() - 1) && this.summaryTypes.contains(SummaryType.NEXT)) {
-				summaryMetadata.put("next_section_summary", documentSummaries.get(i + 1));
+				summaryMetadata.put(NEXT_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i + 1));
 			}
 			if (this.summaryTypes.contains(SummaryType.CURRENT)) {
-				summaryMetadata.put("section_summary", documentSummaries.get(i));
+				summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i));
 			}
 			result.add(summaryMetadata);
 		}

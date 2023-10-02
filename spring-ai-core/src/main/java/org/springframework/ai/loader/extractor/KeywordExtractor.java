@@ -33,6 +33,8 @@ import org.springframework.util.Assert;
  */
 public class KeywordExtractor implements MetadataFeatureExtractor {
 
+	private static final String EXCERPT_KEYWORDS_METADATA_KEY = "excerpt_keywords";
+
 	public static final String CONTEXT_STR_PLACEHOLDER = "context_str";
 
 	public static final String KEYWORDS_TEMPLATE = """
@@ -66,7 +68,7 @@ public class KeywordExtractor implements MetadataFeatureExtractor {
 			var template = new PromptTemplate(String.format(KEYWORDS_TEMPLATE, keywordCount));
 			Prompt prompt = template.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getContent()));
 			String keywords = this.aiClient.generate(prompt).getGeneration().getText();
-			result.add(Map.of("excerpt_keywords", keywords));
+			result.add(Map.of(EXCERPT_KEYWORDS_METADATA_KEY, keywords));
 		}
 
 		return result;

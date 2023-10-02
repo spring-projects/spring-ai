@@ -34,6 +34,10 @@ import org.springframework.util.Assert;
  */
 public class TitleExtractor implements MetadataFeatureExtractor {
 
+	private static final String CONTEXT_STR_PLACEHOLDER = "context_str";
+
+	private static final String DOCUMENT_TITLE_METADATA_KEY = "document_title";
+
 	public static final String DEFAULT_TITLE_DOCUMENT_TEMPLATE = """
 			Context: {context_str}. Give a title that summarizes all of
 			the unique entities, titles or themes found in the context. Title: """;
@@ -83,20 +87,22 @@ public class TitleExtractor implements MetadataFeatureExtractor {
 		List<String> titleCandidates = new ArrayList<>();
 
 		for (Document document : documentsToExtractTitle) {
-			Prompt prompt = new PromptTemplate(this.titleTemplate).create(Map.of("context_str", document.getContent()));
+			Prompt prompt = new PromptTemplate(this.titleTemplate)
+				.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getContent()));
 			titleCandidates.add(this.aiClient.generate(prompt).getGeneration().getText());
 		}
 
 		var title = titleCandidates.get(0);
 		if (titleCandidates.size() > 1) {
 			var titles = titleCandidates.stream().collect(Collectors.joining(","));
-			var combinePrompt = new PromptTemplate(this.combineTemplate).create(Map.of("context_str", titles));
+			var combinePrompt = new PromptTemplate(this.combineTemplate)
+				.create(Map.of(CONTEXT_STR_PLACEHOLDER, titles));
 			title = this.aiClient.generate(combinePrompt).getGeneration().getText();
 		}
 
 		List<Map<String, Object>> result = new ArrayList<>();
 
-		Map<String, Object> titleMetadata = Map.of("document_title", title);
+		Map<String, Object> titleMetadata = Map.of(DOCUMENT_TITLE_METADATA_KEY, title);
 		documents.stream().forEach(doc -> result.add(titleMetadata));
 
 		return result;

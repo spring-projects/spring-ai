@@ -25,7 +25,7 @@ public interface ContentFormatter {
 
 	enum MetadataMode {
 
-		ALL, EMBED, LLM, NONE;
+		ALL, EMBED, INFERENCE, NONE;
 
 	}
 

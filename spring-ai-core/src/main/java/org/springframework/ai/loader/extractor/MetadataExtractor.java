@@ -85,8 +85,8 @@ public class MetadataExtractor {
 					var updatedEmbedExcludeKeys = new ArrayList<>(docFormatter.getExcludedEmbedMetadataKeys());
 					updatedEmbedExcludeKeys.addAll(toUpdateFormatter.getExcludedEmbedMetadataKeys());
 
-					var updatedLlmExcludeKeys = new ArrayList<>(docFormatter.getExcludedLlmMetadataKeys());
-					updatedLlmExcludeKeys.addAll(toUpdateFormatter.getExcludedLlmMetadataKeys());
+					var updatedLlmExcludeKeys = new ArrayList<>(docFormatter.getExcludedInferenceMetadataKeys());
+					updatedLlmExcludeKeys.addAll(toUpdateFormatter.getExcludedInferenceMetadataKeys());
 
 					var builder = DefaultContentFormatter.builder()
 						.withExcludedEmbedMetadataKeys(updatedEmbedExcludeKeys)
