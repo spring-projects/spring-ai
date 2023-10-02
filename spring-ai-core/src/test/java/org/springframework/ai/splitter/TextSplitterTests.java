@@ -56,12 +56,12 @@ public class TextSplitterTests {
 
 		var doc1 = new Document("In the end, writing arises when man realizes that memory is not enough.",
 				Map.of("key1", "value1", "key2", "value2"))
-			.withContentFormatter(contentFormatter1);
+			.updateContentFormatter(contentFormatter1);
 
 		var doc2 = new Document("The most oppressive thing about the labyrinth is that you are constantly "
 				+ "being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
 				Map.of("key2", "value22", "key3", "value3"))
-			.withContentFormatter(contentFormatter2);
+			.updateContentFormatter(contentFormatter2);
 
 		List<Document> chunks = testTextSplitter.apply(List.of(doc1, doc2));
 

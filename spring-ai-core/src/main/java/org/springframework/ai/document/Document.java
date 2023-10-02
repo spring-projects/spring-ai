@@ -49,7 +49,7 @@ public class Document {
 	private List<Double> embedding = new ArrayList<>();
 
 	/**
-	 * Ephemeral, content to text formatter. Defaults to Document text.
+	 * Mutable, ephemeral, content to text formatter. Defaults to Document text.
 	 */
 	@JsonIgnore
 	private ContentFormatter contentFormatter = DEFAULT_CONTENT_FORMATTER;
@@ -94,22 +94,28 @@ public class Document {
 		return formatter.apply(this);
 	}
 
+	public void setEmbedding(List<Double> embedding) {
+		Assert.notNull(embedding, "embedding must not be null");
+		this.embedding = embedding;
+	}
+
+	/**
+	 * Replace the document's {@link ContentFormatter}.
+	 * @param contentFormatter new formatter to use.
+	 * @return Returns an instance of this document with the the updated content
+	 * formatter.
+	 */
+	public Document updateContentFormatter(ContentFormatter contentFormatter) {
+		this.contentFormatter = contentFormatter;
+		return this;
+	}
+
 	public Map<String, Object> getMetadata() {
 		return this.metadata;
 	}
 
 	public List<Double> getEmbedding() {
 		return this.embedding;
-	}
-
-	public void setEmbedding(List<Double> embedding) {
-		Assert.notNull(embedding, "embedding must not be null");
-		this.embedding = embedding;
-	}
-
-	public Document withContentFormatter(ContentFormatter contentFormatter) {
-		this.contentFormatter = contentFormatter;
-		return this;
 	}
 
 	public ContentFormatter getContentFormatter() {

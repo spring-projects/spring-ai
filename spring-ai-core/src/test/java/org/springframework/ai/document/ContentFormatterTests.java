@@ -73,7 +73,7 @@ public class ContentFormatterTests {
 		assertThat(document.getFormatterContent(textFormatter)).isEqualTo(textFormatter.apply(document));
 
 		var documentWithCustomFormatter = new Document(document.getId(), document.getContent(), document.getMetadata())
-			.withContentFormatter(textFormatter);
+			.updateContentFormatter(textFormatter);
 
 		assertThat(document.getFormatterContent(textFormatter))
 			.isEqualTo(documentWithCustomFormatter.getFormattedContent());

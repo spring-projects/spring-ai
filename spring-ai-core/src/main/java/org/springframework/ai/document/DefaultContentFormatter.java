@@ -250,4 +250,28 @@ public class DefaultContentFormatter implements ContentFormatter {
 			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
 	}
 
+	public String getMetadataTemplate() {
+		return this.metadataTemplate;
+	}
+
+	public String getMetadataSeparator() {
+		return this.metadataSeparator;
+	}
+
+	public String getTextTemplate() {
+		return this.textTemplate;
+	}
+
+	public ContentFormatter.MetadataMode getMetadataMode() {
+		return this.metadataMode;
+	}
+
+	public List<String> getExcludedLlmMetadataKeys() {
+		return Collections.unmodifiableList(this.excludedLlmMetadataKeys);
+	}
+
+	public List<String> getExcludedEmbedMetadataKeys() {
+		return Collections.unmodifiableList(this.excludedEmbedMetadataKeys);
+	}
+
 }

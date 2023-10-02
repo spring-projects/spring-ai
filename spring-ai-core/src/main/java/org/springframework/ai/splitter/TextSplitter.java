@@ -68,7 +68,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 				if (this.copyContentFormatter) {
 					// Copies the parent content formatter to the chucks documents it was
 					// spelt into.
-					newDoc = newDoc.withContentFormatter(formatters.get(i));
+					newDoc = newDoc.updateContentFormatter(formatters.get(i));
 				}
 
 				// TODO copy over other properties.
