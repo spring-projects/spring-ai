@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.document;
+package org.springframework.ai.loader.extractor;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.ai.document.Document;
 
 /**
- * Converts the Document text and metadata into a AI, prompt-friendly text representation.
- *
  * @author Christian Tzolov
  */
-public interface ContentFormatter {
+public interface MetadataFeatureExtractor {
 
-	enum MetadataMode {
-
-		ALL, EMBED, LLM, NONE;
-
-	}
-
-	String format(Document document, MetadataMode mode);
+	/**
+	 * Extracts metadata for a list of documents, returning a list of metadata
+	 * dictionaries corresponding to each document.
+	 * @param documents Documents to extract metadata from.
+	 * @return List of metadata dictionaries corresponding to each document
+	 */
+	public List<Map<String, Object>> extract(List<Document> documents);
 
 }

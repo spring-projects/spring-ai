@@ -65,8 +65,6 @@ public class DefaultContentFormatter implements ContentFormatter {
 	 */
 	private final String textTemplate;
 
-	private final ContentFormatter.MetadataMode metadataMode;
-
 	/**
 	 * Metadata keys that are excluded from text for the LLM.
 	 */
@@ -97,14 +95,11 @@ public class DefaultContentFormatter implements ContentFormatter {
 		this.metadataTemplate = builder.metadataTemplate;
 		this.metadataSeparator = builder.metadataSeparator;
 		this.textTemplate = builder.textTemplate;
-		this.metadataMode = builder.metadataMode;
 		this.excludedLlmMetadataKeys = builder.excludedLlmMetadataKeys;
 		this.excludedEmbedMetadataKeys = builder.excludedEmbedMetadataKeys;
 	}
 
 	public static class Builder {
-
-		private ContentFormatter.MetadataMode metadataMode = ContentFormatter.MetadataMode.ALL;
 
 		private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
 
@@ -119,14 +114,12 @@ public class DefaultContentFormatter implements ContentFormatter {
 		private Builder() {
 		}
 
-		/**
-		 * Configures the Document metadata mode.
-		 * @param metadataMode Metadata mode to use.
-		 * @return this builder
-		 */
-		public Builder withMetadataMode(ContentFormatter.MetadataMode metadataMode) {
-			Assert.notNull(metadataMode, "Metadata mode must not be null");
-			this.metadataMode = metadataMode;
+		public Builder from(DefaultContentFormatter fromFormatter) {
+			this.withExcludedEmbedMetadataKeys(fromFormatter.getExcludedEmbedMetadataKeys())
+				.withExcludedLlmMetadataKeys(fromFormatter.getExcludedLlmMetadataKeys())
+				.withMetadataSeparator(fromFormatter.getMetadataSeparator())
+				.withMetadataTemplate(fromFormatter.getMetadataTemplate())
+				.withTextTemplate(fromFormatter.getTextTemplate());
 			return this;
 		}
 
@@ -147,7 +140,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @return this builder
 		 */
 		public Builder withMetadataSeparator(String metadataSeparator) {
-			Assert.hasText(metadataSeparator, "Metadata separator must not be empty");
+			Assert.notNull(metadataSeparator, "Metadata separator must not be empty");
 			this.metadataSeparator = metadataSeparator;
 			return this;
 		}
@@ -207,9 +200,9 @@ public class DefaultContentFormatter implements ContentFormatter {
 	}
 
 	@Override
-	public String apply(Document document) {
+	public String format(Document document, MetadataMode metadataMode) {
 
-		var metadata = metadataFilter(document.getMetadata());
+		var metadata = metadataFilter(document.getMetadata(), metadataMode);
 
 		var metadataText = metadata.entrySet()
 			.stream()
@@ -226,21 +219,21 @@ public class DefaultContentFormatter implements ContentFormatter {
 	 * @param metadata Document metadata.
 	 * @return Returns the filtered by configured mode metadata.
 	 */
-	protected Map<String, Object> metadataFilter(Map<String, Object> metadata) {
+	protected Map<String, Object> metadataFilter(Map<String, Object> metadata, MetadataMode metadataMode) {
 
-		if (this.metadataMode == ContentFormatter.MetadataMode.ALL) {
+		if (metadataMode == ContentFormatter.MetadataMode.ALL) {
 			return new HashMap<String, Object>(metadata);
 		}
-		if (this.metadataMode == ContentFormatter.MetadataMode.NONE) {
+		if (metadataMode == ContentFormatter.MetadataMode.NONE) {
 			return new HashMap<String, Object>(Collections.emptyMap());
 		}
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
 
-		if (this.metadataMode == ContentFormatter.MetadataMode.LLM) {
+		if (metadataMode == ContentFormatter.MetadataMode.LLM) {
 			usableMetadataKeys.removeAll(this.excludedLlmMetadataKeys);
 		}
-		else if (this.metadataMode == ContentFormatter.MetadataMode.EMBED) {
+		else if (metadataMode == ContentFormatter.MetadataMode.EMBED) {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
 		}
 
@@ -260,10 +253,6 @@ public class DefaultContentFormatter implements ContentFormatter {
 
 	public String getTextTemplate() {
 		return this.textTemplate;
-	}
-
-	public ContentFormatter.MetadataMode getMetadataMode() {
-		return this.metadataMode;
 	}
 
 	public List<String> getExcludedLlmMetadataKeys() {

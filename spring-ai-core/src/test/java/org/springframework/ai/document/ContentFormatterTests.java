@@ -20,6 +20,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.document.ContentFormatter.MetadataMode;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -31,11 +33,22 @@ public class ContentFormatterTests {
 			Map.of("embedKey1", "value1", "embedKey2", "value2", "embedKey3", "value3", "llmKey2", "value4"));
 
 	@Test
+	public void noExplicitlySetFormatter() {
+		assertThat(document.getContent()).isEqualTo("""
+				The World is Big and Salvation Lurks Around the Corner""");
+
+		assertThat(document.getFormattedContent()).isEqualTo(document.getFormattedContent(MetadataMode.ALL));
+		assertThat(document.getFormattedContent())
+			.isEqualTo(document.getFormattedContent(Document.DEFAULT_CONTENT_FORMATTER, MetadataMode.ALL));
+
+	}
+
+	@Test
 	public void defaultConfigTextFormatter() {
 
 		DefaultContentFormatter defaultConfigFormatter = DefaultContentFormatter.defaultConfig();
 
-		assertThat(document.getFormatterContent(defaultConfigFormatter)).isEqualTo("""
+		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL)).isEqualTo("""
 				llmKey2: value4
 				embedKey1: value1
 				embedKey2: value2
@@ -43,10 +56,11 @@ public class ContentFormatterTests {
 
 				The World is Big and Salvation Lurks Around the Corner""");
 
-		assertThat(document.getFormatterContent(defaultConfigFormatter)).isEqualTo(document.getFormattedContent());
+		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
+			.isEqualTo(document.getFormattedContent());
 
-		assertThat(document.getFormatterContent(defaultConfigFormatter))
-			.isEqualTo(defaultConfigFormatter.apply(document));
+		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
+			.isEqualTo(defaultConfigFormatter.format(document, MetadataMode.ALL));
 	}
 
 	@Test
@@ -55,12 +69,11 @@ public class ContentFormatterTests {
 		DefaultContentFormatter textFormatter = DefaultContentFormatter.builder()
 			.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
 			.withExcludedLlmMetadataKeys("llmKey2")
-			.withMetadataMode(ContentFormatter.MetadataMode.EMBED)
 			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{content}")
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();
 
-		assertThat(document.getFormatterContent(textFormatter)).isEqualTo("""
+		assertThat(document.getFormattedContent(textFormatter, MetadataMode.EMBED)).isEqualTo("""
 				Metadata:
 				Key/Value llmKey2=value4
 				Key/Value embedKey1=value1
@@ -70,21 +83,14 @@ public class ContentFormatterTests {
 		assertThat(document.getContent()).isEqualTo("""
 				The World is Big and Salvation Lurks Around the Corner""");
 
-		assertThat(document.getFormatterContent(textFormatter)).isEqualTo(textFormatter.apply(document));
+		assertThat(document.getFormattedContent(textFormatter, MetadataMode.EMBED))
+			.isEqualTo(textFormatter.format(document, MetadataMode.EMBED));
 
-		var documentWithCustomFormatter = new Document(document.getId(), document.getContent(), document.getMetadata())
-			.updateContentFormatter(textFormatter);
+		var documentWithCustomFormatter = new Document(document.getId(), document.getContent(), document.getMetadata());
+		documentWithCustomFormatter.setContentFormatter(textFormatter);
 
-		assertThat(document.getFormatterContent(textFormatter))
+		assertThat(document.getFormattedContent(textFormatter, MetadataMode.ALL))
 			.isEqualTo(documentWithCustomFormatter.getFormattedContent());
-	}
-
-	@Test
-	public void noExplicitlySetFormatter() {
-		assertThat(document.getContent()).isEqualTo("""
-				The World is Big and Salvation Lurks Around the Corner""");
-		assertThat(document.getFormattedContent())
-			.isEqualTo(document.getFormatterContent(Document.DEFAULT_CONTENT_FORMATTER));
 	}
 
 }

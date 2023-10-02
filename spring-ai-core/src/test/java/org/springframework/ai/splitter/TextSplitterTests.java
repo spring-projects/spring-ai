@@ -55,13 +55,13 @@ public class TextSplitterTests {
 		assertThat(contentFormatter1).isNotSameAs(contentFormatter2);
 
 		var doc1 = new Document("In the end, writing arises when man realizes that memory is not enough.",
-				Map.of("key1", "value1", "key2", "value2"))
-			.updateContentFormatter(contentFormatter1);
+				Map.of("key1", "value1", "key2", "value2"));
+		doc1.setContentFormatter(contentFormatter1);
 
 		var doc2 = new Document("The most oppressive thing about the labyrinth is that you are constantly "
 				+ "being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
-				Map.of("key2", "value22", "key3", "value3"))
-			.updateContentFormatter(contentFormatter2);
+				Map.of("key2", "value22", "key3", "value3"));
+		doc2.setContentFormatter(contentFormatter2);
 
 		List<Document> chunks = testTextSplitter.apply(List.of(doc1, doc2));
 

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.document.ContentFormatter.MetadataMode;
 import org.springframework.util.Assert;
 
 @JsonIgnoreProperties({ "contentFormatter" })
@@ -83,15 +84,21 @@ public class Document {
 
 	@JsonIgnore
 	public String getFormattedContent() {
-		return this.contentFormatter.apply(this);
+		return this.getFormattedContent(MetadataMode.ALL);
+	}
+
+	public String getFormattedContent(MetadataMode metadataMode) {
+		Assert.notNull(metadataMode, "Metadata mode must not be null");
+		return this.contentFormatter.format(this, metadataMode);
 	}
 
 	/**
 	 * Helper content extractor that uses and external {@link ContentFormatter}.
 	 */
-	public String getFormatterContent(ContentFormatter formatter) {
+	public String getFormattedContent(ContentFormatter formatter, MetadataMode metadataMode) {
 		Assert.notNull(formatter, "formatter must not be null");
-		return formatter.apply(this);
+		Assert.notNull(metadataMode, "Metadata mode must not be null");
+		return formatter.format(this, metadataMode);
 	}
 
 	public void setEmbedding(List<Double> embedding) {
@@ -102,12 +109,9 @@ public class Document {
 	/**
 	 * Replace the document's {@link ContentFormatter}.
 	 * @param contentFormatter new formatter to use.
-	 * @return Returns an instance of this document with the the updated content
-	 * formatter.
 	 */
-	public Document updateContentFormatter(ContentFormatter contentFormatter) {
+	public void setContentFormatter(ContentFormatter contentFormatter) {
 		this.contentFormatter = contentFormatter;
-		return this;
 	}
 
 	public Map<String, Object> getMetadata() {
