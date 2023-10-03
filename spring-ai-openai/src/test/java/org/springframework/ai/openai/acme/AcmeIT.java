@@ -60,7 +60,6 @@ public class AcmeIT extends AbstractIT {
 
 		var textSplitter = new TokenTextSplitter();
 
-		// List<Document> documents = new TokenTextSplitter().apply(jsonLoader.get());
 
 		// Step 2 - Create embeddings and save to vector store
 
@@ -68,8 +67,6 @@ public class AcmeIT extends AbstractIT {
 		VectorStore vectorStore = new InMemoryVectorStore(embeddingClient);
 
 		vectorStore.accept(textSplitter.apply(jsonLoader.get()));
-
-		// vectorStore.add(documents);
 
 		// Now user query
 
