@@ -22,6 +22,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,8 +42,7 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	protected AbstractMessage(MessageType messageType, String content) {
-		this.messageType = messageType;
-		this.content = content;
+		this(messageType, content, Collections.emptyMap());
 	}
 
 	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> messageProperties) {
@@ -52,13 +52,7 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	protected AbstractMessage(MessageType messageType, Resource resource) {
-		this.messageType = messageType;
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.content = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
+		this(messageType, resource, Collections.emptyMap());
 	}
 
 	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> messageProperties) {
