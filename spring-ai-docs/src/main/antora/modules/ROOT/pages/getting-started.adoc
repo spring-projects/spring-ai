@@ -28,7 +28,52 @@ export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
 
+== Dependencies
+
+The Spring AI project provides artifacts in the Spring Milestone Repository.
+You will need to add configuration to add a reference to the Spring Milestone repository in your build file.
+For example, in maven, add the following repository definition.
+
+[source,xml]
+----
+  <repositories>
+    <repository>
+      <id>spring-snapshots</id>
+      <name>Spring Snapshots</name>
+      <url>https://repo.spring.io/snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+----
+
+Add the Spring Boot Starter depending on if you are using Azure Open AI or Open AI.
+
+* Azure OpenAI
+[source, xml]
+----
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+        <version>0.2.0-SNAPSHOT</version>
+    </dependency>
+----
+
+* OpenAI
+
+[source, xml]
+----
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+        <version>0.2.0-SNAPSHOT</version>
+    </dependency>
+----
+
 == Spring CLI
+
+The Spring CLI makes it easy to create new applications with code in your terminal window.  Think of it as the 'create-react-app' of Spring for those familiar with the JavaScript ecosystem.
 
 Download the latest https://github.com/spring-projects-experimental/spring-cli/releases[Spring CLI Release]
 

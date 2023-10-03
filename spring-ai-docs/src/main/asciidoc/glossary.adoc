@@ -1,6 +1,0 @@
-[[glossary]]
-[appendix]
-== Glossary
-
-[glossary]
-=== Spring AI Glossary
