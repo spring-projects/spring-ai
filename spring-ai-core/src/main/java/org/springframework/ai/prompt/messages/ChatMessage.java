@@ -21,14 +21,11 @@ import java.util.Map;
 public class ChatMessage extends AbstractMessage {
 
 	public ChatMessage(String role, String content) {
-		this.messageType = MessageType.valueOf(role);
-		this.content = content;
+		super(MessageType.valueOf(role), content);
 	}
 
 	public ChatMessage(String role, String content, Map<String, Object> properties) {
-		this.messageType = MessageType.valueOf(role);
-		this.content = content;
-		this.properties = properties;
+		super(MessageType.valueOf(role), content, properties);
 	}
 
 	public ChatMessage(MessageType messageType, String content) {
