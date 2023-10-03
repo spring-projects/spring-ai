@@ -94,10 +94,6 @@ public class AcmeIT extends AbstractIT {
 		AiResponse response = aiClient.generate(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
-
-		// Chain
-		// qa = new ConversationalRetrievalChain(llmClient, userPromptTemplate,
-		// vectorStoreRetriever, )
 	}
 
 	private Message getSystemMessage(List<Document> similarDocuments) {

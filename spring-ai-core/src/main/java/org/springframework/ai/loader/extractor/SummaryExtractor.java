@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
@@ -30,12 +31,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Title extractor with adjacent sharing that uses LLM to extract 'section_summary',
+ * Title extractor with adjacent sharing that uses model to extract 'section_summary',
  * 'prev_section_summary', 'next_section_summary' metadata fields.
  *
  * @author Christian Tzolov
  */
-public class SummaryExtractor extends AbstractMetadataFeatureExtractor {
+public class SummaryExtractor implements DocumentTransformer {
 
 	private static final String SECTION_SUMMARY_METADATA_KEY = "section_summary";
 
@@ -60,12 +61,12 @@ public class SummaryExtractor extends AbstractMetadataFeatureExtractor {
 	}
 
 	/**
-	 * LLM predictor
+	 * AI client.
 	 */
 	private final AiClient aiClient;
 
 	/**
-	 * Number of documents from front to use for title extraction
+	 * Number of documents from front to use for title extraction.
 	 */
 	private final List<SummaryType> summaryTypes;
 
@@ -92,7 +93,7 @@ public class SummaryExtractor extends AbstractMetadataFeatureExtractor {
 	}
 
 	@Override
-	public List<Map<String, Object>> extract(List<Document> documents) {
+	public List<Document> apply(List<Document> documents) {
 
 		List<String> documentSummaries = new ArrayList<>();
 		for (Document document : documents) {
@@ -103,8 +104,6 @@ public class SummaryExtractor extends AbstractMetadataFeatureExtractor {
 				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
 			documentSummaries.add(this.aiClient.generate(prompt).getGeneration().getText());
 		}
-
-		List<Map<String, Object>> result = new ArrayList<>();
 
 		for (int i = 0; i < documentSummaries.size(); i++) {
 			Map<String, Object> summaryMetadata = new HashMap<>();
@@ -117,10 +116,11 @@ public class SummaryExtractor extends AbstractMetadataFeatureExtractor {
 			if (this.summaryTypes.contains(SummaryType.CURRENT)) {
 				summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i));
 			}
-			result.add(summaryMetadata);
+
+			documents.get(i).getMetadata().putAll(summaryMetadata);
 		}
 
-		return result;
+		return documents;
 	}
 
 }

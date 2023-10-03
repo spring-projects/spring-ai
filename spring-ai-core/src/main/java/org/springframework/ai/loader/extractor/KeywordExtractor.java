@@ -16,22 +16,22 @@
 
 package org.springframework.ai.loader.extractor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Keyword extractor that uses LLM to extract 'excerpt_keywords' metadata field.
+ * Keyword extractor that uses model to extract 'excerpt_keywords' metadata field.
  *
  * @author Christian Tzolov
  */
-public class KeywordExtractor extends AbstractMetadataFeatureExtractor {
+public class KeywordExtractor implements DocumentTransformer {
 
 	private static final String EXCERPT_KEYWORDS_METADATA_KEY = "excerpt_keywords";
 
@@ -42,7 +42,7 @@ public class KeywordExtractor extends AbstractMetadataFeatureExtractor {
 			document. Format as comma separated. Keywords: """;
 
 	/**
-	 * LLM predictor
+	 * Model predictor
 	 */
 	private final AiClient aiClient;
 
@@ -60,18 +60,15 @@ public class KeywordExtractor extends AbstractMetadataFeatureExtractor {
 	}
 
 	@Override
-	public List<Map<String, Object>> extract(List<Document> documents) {
-
-		List<Map<String, Object>> result = new ArrayList<>();
+	public List<Document> apply(List<Document> documents) {
 		for (Document document : documents) {
 
 			var template = new PromptTemplate(String.format(KEYWORDS_TEMPLATE, keywordCount));
 			Prompt prompt = template.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getContent()));
 			String keywords = this.aiClient.generate(prompt).getGeneration().getText();
-			result.add(Map.of(EXCERPT_KEYWORDS_METADATA_KEY, keywords));
+			document.getMetadata().putAll(Map.of(EXCERPT_KEYWORDS_METADATA_KEY, keywords));
 		}
-
-		return result;
+		return documents;
 	}
 
 }

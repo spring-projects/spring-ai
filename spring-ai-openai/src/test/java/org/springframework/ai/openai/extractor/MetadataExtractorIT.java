@@ -31,7 +31,6 @@ import org.springframework.ai.loader.extractor.ContentFormatEnricher;
 import org.springframework.ai.loader.extractor.KeywordExtractor;
 import org.springframework.ai.loader.extractor.SummaryExtractor;
 import org.springframework.ai.loader.extractor.SummaryExtractor.SummaryType;
-import org.springframework.ai.loader.extractor.TitleExtractor;
 import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -52,9 +51,6 @@ public class MetadataExtractorIT {
 
 	@Autowired
 	SummaryExtractor summaryExtractor;
-
-	@Autowired
-	TitleExtractor titleExtractor;
 
 	@Autowired
 	ContentFormatEnricher metadataExtractor;
@@ -79,9 +75,11 @@ public class MetadataExtractorIT {
 	@Test
 	public void testKeywordExtractor() {
 
-		List<Map<String, Object>> keywords = keywordExtractor.extract(List.of(document1, document2));
+		var updatedDocuments = keywordExtractor.apply(List.of(document1, document2));
 
-		assertThat(keywords.size()).isEqualTo(2);
+		List<Map<String, Object>> keywords = updatedDocuments.stream().map(d -> d.getMetadata()).toList();
+
+		assertThat(updatedDocuments.size()).isEqualTo(2);
 		var keywords1 = keywords.get(0);
 		var keywords2 = keywords.get(1);
 		assertThat(keywords1).containsKeys("excerpt_keywords");
@@ -94,7 +92,9 @@ public class MetadataExtractorIT {
 	@Test
 	public void testSummaryExtractor() {
 
-		List<Map<String, Object>> summaries = summaryExtractor.extract(List.of(document1, document2));
+		var updatedDocuments = summaryExtractor.apply(List.of(document1, document2));
+
+		List<Map<String, Object>> summaries = updatedDocuments.stream().map(d -> d.getMetadata()).toList();
 
 		assertThat(summaries.size()).isEqualTo(2);
 		var summary1 = summaries.get(0);
@@ -111,25 +111,6 @@ public class MetadataExtractorIT {
 
 		assertThat((String) summary1.get("section_summary")).isEqualTo((String) summary2.get("prev_section_summary"));
 		assertThat((String) summary1.get("next_section_summary")).isEqualTo((String) summary2.get("section_summary"));
-	}
-
-	@Test
-	public void testTitleExtractor() {
-
-		List<Map<String, Object>> titles = titleExtractor.extract(List.of(document1, document2));
-
-		assertThat(titles.size()).isEqualTo(2);
-		var title1 = titles.get(0);
-		var title2 = titles.get(1);
-
-		assertThat(title1).containsKeys("document_title");
-		assertThat(title2).containsKeys("document_title");
-
-		assertThat((String) title1.get("document_title")).isNotEmpty();
-		assertThat((String) title2.get("document_title")).isNotEmpty();
-
-		// assertThat((String) title1.get("document_title")).contains("Andes", "Aymara");
-		// assertThat((String) title2.get("document_title")).contains("Spring Framework");
 	}
 
 	@Test
@@ -199,11 +180,6 @@ public class MetadataExtractorIT {
 		@Bean
 		public SummaryExtractor summaryExtractor(OpenAiClient aiClient) {
 			return new SummaryExtractor(aiClient, List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
-		}
-
-		@Bean
-		public TitleExtractor titleExtractor(OpenAiClient aiClient) {
-			return new TitleExtractor(aiClient, 1);
 		}
 
 		@Bean

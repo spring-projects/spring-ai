@@ -116,7 +116,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 
 		public Builder from(DefaultContentFormatter fromFormatter) {
 			this.withExcludedEmbedMetadataKeys(fromFormatter.getExcludedEmbedMetadataKeys())
-				.withExcludedLlmMetadataKeys(fromFormatter.getExcludedInferenceMetadataKeys())
+				.withExcludedInferenceMetadataKeys(fromFormatter.getExcludedInferenceMetadataKeys())
 				.withMetadataSeparator(fromFormatter.getMetadataSeparator())
 				.withMetadataTemplate(fromFormatter.getMetadataTemplate())
 				.withTextTemplate(fromFormatter.getTextTemplate());
@@ -161,7 +161,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @param excludedInferenceMetadataKeys Excluded inference metadata keys to use.
 		 * @return this builder
 		 */
-		public Builder withExcludedLlmMetadataKeys(List<String> excludedInferenceMetadataKeys) {
+		public Builder withExcludedInferenceMetadataKeys(List<String> excludedInferenceMetadataKeys) {
 			Assert.notNull(excludedInferenceMetadataKeys, "Excluded inference metadata keys must not be null");
 			this.excludedInferenceMetadataKeys = excludedInferenceMetadataKeys;
 			return this;

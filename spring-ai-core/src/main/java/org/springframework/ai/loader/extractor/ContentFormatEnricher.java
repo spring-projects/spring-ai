@@ -70,7 +70,7 @@ public class ContentFormatEnricher implements DocumentTransformer {
 
 					var builder = DefaultContentFormatter.builder()
 						.withExcludedEmbedMetadataKeys(updatedEmbedExcludeKeys)
-						.withExcludedLlmMetadataKeys(updatedInterfaceExcludeKeys)
+						.withExcludedInferenceMetadataKeys(updatedInterfaceExcludeKeys)
 						.withMetadataTemplate(docFormatter.getMetadataTemplate())
 						.withMetadataSeparator(docFormatter.getMetadataSeparator());
 
