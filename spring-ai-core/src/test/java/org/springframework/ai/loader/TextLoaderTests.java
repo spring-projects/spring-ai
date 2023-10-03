@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.loader.impl.TextLoader;
+import org.springframework.ai.splitter.TokenTextSplitter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
@@ -40,7 +41,9 @@ public class TextLoaderTests {
 		TextLoader textLoader = new TextLoader(resource);
 		textLoader.getCustomMetadata().put("customKey", "Value");
 
-		List<Document> documents = textLoader.load();
+		List<Document> documents0 = textLoader.get();
+
+		List<Document> documents =new TokenTextSplitter().apply(documents0);
 
 		assertThat(documents.size()).isEqualTo(54);
 

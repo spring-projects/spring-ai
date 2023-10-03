@@ -14,6 +14,7 @@ import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.ai.retriever.impl.VectorStoreRetriever;
+import org.springframework.ai.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.impl.InMemoryVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,12 +52,13 @@ public class AcmeIT extends AbstractIT {
 		assertThat(aiClient).isNotNull();
 	}
 
-	// @Test
+	@Test
 	void acmeChain() {
 
 		// Step 1 - load documents
 		JsonLoader jsonLoader = new JsonLoader(bikesResource, "name", "price", "shortDescription", "description");
-		List<Document> documents = jsonLoader.load();
+		List<Document> documents = new TokenTextSplitter().apply(jsonLoader.get());
+
 
 		// Step 2 - Create embeddings and save to vector store
 

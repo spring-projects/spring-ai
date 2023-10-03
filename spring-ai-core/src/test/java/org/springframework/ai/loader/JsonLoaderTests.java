@@ -37,7 +37,7 @@ public class JsonLoaderTests {
 	void loadJson() {
 		assertThat(resource).isNotNull();
 		JsonLoader jsonLoader = new JsonLoader(resource, "description");
-		List<Document> documents = jsonLoader.load();
+		List<Document> documents = jsonLoader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
 			assertThat(document.getContent()).isNotEmpty();
