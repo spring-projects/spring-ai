@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.loader.extractor;
+package org.springframework.ai.transformer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ import org.springframework.ai.document.DocumentTransformer;
 /**
  * @author Christian Tzolov
  */
-public class ContentFormatEnricher implements DocumentTransformer {
+public class ContentFormatTransformer implements DocumentTransformer {
 
 	/**
 	 * Disable the content-formatter template rewrite.
@@ -36,11 +36,11 @@ public class ContentFormatEnricher implements DocumentTransformer {
 
 	private ContentFormatter contentFormatter;
 
-	public ContentFormatEnricher(ContentFormatter contentFormatter) {
+	public ContentFormatTransformer(ContentFormatter contentFormatter) {
 		this(contentFormatter, false);
 	}
 
-	public ContentFormatEnricher(ContentFormatter contentFormatter, boolean disableTemplateRewrite) {
+	public ContentFormatTransformer(ContentFormatter contentFormatter, boolean disableTemplateRewrite) {
 		this.contentFormatter = contentFormatter;
 		this.disableTemplateRewrite = disableTemplateRewrite;
 	}

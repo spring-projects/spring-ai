@@ -1,7 +1,7 @@
-package org.springframework.ai.retriever.impl;
+package org.springframework.ai.retriever;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.retriever.DocumentRetriever;
+import org.springframework.ai.document.DocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;

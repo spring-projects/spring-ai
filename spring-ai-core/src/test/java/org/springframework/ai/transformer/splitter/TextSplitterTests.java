@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.splitter;
+package org.springframework.ai.transformer.splitter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 
 /**
  * @author Christian Tzolov

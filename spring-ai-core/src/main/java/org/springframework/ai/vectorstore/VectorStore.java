@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentWriter;
 
-public interface VectorStore {
+public interface VectorStore extends DocumentWriter {
 
 	/**
 	 * Adds Documents to the vector store.
@@ -13,6 +14,10 @@ public interface VectorStore {
 	 * underlying provider checks for duplicate IDs on add
 	 */
 	void add(List<Document> documents);
+
+	default void accept(List<Document> documents) {
+		add(documents);
+	}
 
 	Optional<Boolean> delete(List<String> idList);
 

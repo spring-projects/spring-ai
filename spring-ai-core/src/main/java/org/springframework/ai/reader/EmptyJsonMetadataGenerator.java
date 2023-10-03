@@ -1,4 +1,4 @@
-package org.springframework.ai.loader.impl;
+package org.springframework.ai.reader;
 
 import java.util.Collections;
 import java.util.Map;

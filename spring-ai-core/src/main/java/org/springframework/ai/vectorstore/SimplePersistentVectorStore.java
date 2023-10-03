@@ -1,4 +1,4 @@
-package org.springframework.ai.vectorstore.impl;
+package org.springframework.ai.vectorstore;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

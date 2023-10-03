@@ -1,4 +1,4 @@
-package org.springframework.ai.splitter;
+package org.springframework.ai.transformer.splitter;
 
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;

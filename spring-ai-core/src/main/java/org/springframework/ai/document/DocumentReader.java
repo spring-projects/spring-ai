@@ -1,12 +1,8 @@
-package org.springframework.ai.loader;
+package org.springframework.ai.document;
 
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.springframework.ai.document.Document;
-
 public interface DocumentReader extends Supplier<List<Document>> {
-
-	List<Document> get();
 
 }

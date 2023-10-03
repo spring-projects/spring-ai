@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.loader.extractor;
+package org.springframework.ai.transformer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +36,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  */
-public class SummaryExtractor implements DocumentTransformer {
+public class SummaryMetadataEnricher implements DocumentTransformer {
 
 	private static final String SECTION_SUMMARY_METADATA_KEY = "section_summary";
 
@@ -77,11 +77,11 @@ public class SummaryExtractor implements DocumentTransformer {
 	 */
 	private final String summaryTemplate;
 
-	public SummaryExtractor(AiClient aiClient, List<SummaryType> summaryTypes) {
+	public SummaryMetadataEnricher(AiClient aiClient, List<SummaryType> summaryTypes) {
 		this(aiClient, summaryTypes, DEFAULT_SUMMARY_EXTRACT_TEMPLATE, MetadataMode.ALL);
 	}
 
-	public SummaryExtractor(AiClient aiClient, List<SummaryType> summaryTypes, String summaryTemplate,
+	public SummaryMetadataEnricher(AiClient aiClient, List<SummaryType> summaryTypes, String summaryTemplate,
 			MetadataMode metadataMode) {
 		Assert.notNull(aiClient, "AiClient must not be null");
 		Assert.hasText(summaryTemplate, "Summary template must not be empty");

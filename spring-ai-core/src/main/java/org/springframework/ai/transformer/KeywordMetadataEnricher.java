@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.loader.extractor;
+package org.springframework.ai.transformer;
 
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class KeywordExtractor implements DocumentTransformer {
+public class KeywordMetadataEnricher implements DocumentTransformer {
 
 	private static final String EXCERPT_KEYWORDS_METADATA_KEY = "excerpt_keywords";
 
@@ -51,7 +51,7 @@ public class KeywordExtractor implements DocumentTransformer {
 	 */
 	private final int keywordCount;
 
-	public KeywordExtractor(AiClient aiClient, int keywordCount) {
+	public KeywordMetadataEnricher(AiClient aiClient, int keywordCount) {
 		Assert.notNull(aiClient, "AiClient must not be null");
 		Assert.isTrue(keywordCount >= 1, "Document count must be >= 1");
 

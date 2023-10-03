@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.extractor;
+package org.springframework.ai.openai.transformer;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -27,11 +27,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.loader.extractor.ContentFormatEnricher;
-import org.springframework.ai.loader.extractor.KeywordExtractor;
-import org.springframework.ai.loader.extractor.SummaryExtractor;
-import org.springframework.ai.loader.extractor.SummaryExtractor.SummaryType;
 import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.transformer.ContentFormatTransformer;
+import org.springframework.ai.transformer.KeywordMetadataEnricher;
+import org.springframework.ai.transformer.SummaryMetadataEnricher;
+import org.springframework.ai.transformer.SummaryMetadataEnricher.SummaryType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -44,16 +44,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @SpringBootTest
-public class MetadataExtractorIT {
+public class MetadataTransformerIT {
 
 	@Autowired
-	KeywordExtractor keywordExtractor;
+	KeywordMetadataEnricher keywordMetadataEnricher;
 
 	@Autowired
-	SummaryExtractor summaryExtractor;
+	SummaryMetadataEnricher summaryMetadataEnricher;
 
 	@Autowired
-	ContentFormatEnricher metadataExtractor;
+	ContentFormatTransformer contentFormatTransformer;
 
 	@Autowired
 	DefaultContentFormatter defaultContentFormatter;
@@ -75,7 +75,7 @@ public class MetadataExtractorIT {
 	@Test
 	public void testKeywordExtractor() {
 
-		var updatedDocuments = keywordExtractor.apply(List.of(document1, document2));
+		var updatedDocuments = keywordMetadataEnricher.apply(List.of(document1, document2));
 
 		List<Map<String, Object>> keywords = updatedDocuments.stream().map(d -> d.getMetadata()).toList();
 
@@ -92,7 +92,7 @@ public class MetadataExtractorIT {
 	@Test
 	public void testSummaryExtractor() {
 
-		var updatedDocuments = summaryExtractor.apply(List.of(document1, document2));
+		var updatedDocuments = summaryMetadataEnricher.apply(List.of(document1, document2));
 
 		List<Map<String, Object>> summaries = updatedDocuments.stream().map(d -> d.getMetadata()).toList();
 
@@ -126,7 +126,7 @@ public class MetadataExtractorIT {
 		assertThat(((DefaultContentFormatter) document2.getContentFormatter()).getExcludedInferenceMetadataKeys())
 			.doesNotContain("NewInferenceKey");
 
-		List<Document> enrichedDocuments = metadataExtractor.apply(List.of(document1, document2));
+		List<Document> enrichedDocuments = contentFormatTransformer.apply(List.of(document1, document2));
 
 		assertThat(enrichedDocuments.size()).isEqualTo(2);
 		var doc1 = enrichedDocuments.get(0);
@@ -173,13 +173,14 @@ public class MetadataExtractorIT {
 		}
 
 		@Bean
-		public KeywordExtractor keywordExtractor(OpenAiClient aiClient) {
-			return new KeywordExtractor(aiClient, 5);
+		public KeywordMetadataEnricher keywordMetadata(OpenAiClient aiClient) {
+			return new KeywordMetadataEnricher(aiClient, 5);
 		}
 
 		@Bean
-		public SummaryExtractor summaryExtractor(OpenAiClient aiClient) {
-			return new SummaryExtractor(aiClient, List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
+		public SummaryMetadataEnricher summaryMetadata(OpenAiClient aiClient) {
+			return new SummaryMetadataEnricher(aiClient,
+					List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
 		}
 
 		@Bean
@@ -191,8 +192,8 @@ public class MetadataExtractorIT {
 		}
 
 		@Bean
-		public ContentFormatEnricher metadataExtractor(DefaultContentFormatter defaultContentFormatter) {
-			return new ContentFormatEnricher(defaultContentFormatter, false);
+		public ContentFormatTransformer contentFormatTransformer(DefaultContentFormatter defaultContentFormatter) {
+			return new ContentFormatTransformer(defaultContentFormatter, false);
 		}
 
 	}
