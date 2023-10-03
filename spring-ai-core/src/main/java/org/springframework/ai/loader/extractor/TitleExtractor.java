@@ -32,7 +32,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class TitleExtractor implements MetadataFeatureExtractor {
+public class TitleExtractor extends AbstractMetadataFeatureExtractor {
 
 	private static final String CONTEXT_STR_PLACEHOLDER = "context_str";
 

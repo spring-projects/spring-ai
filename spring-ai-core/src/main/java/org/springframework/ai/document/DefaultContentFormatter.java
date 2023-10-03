@@ -66,7 +66,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 	private final String textTemplate;
 
 	/**
-	 * Metadata keys that are excluded from text for the LLM.
+	 * Metadata keys that are excluded from text for the inference.
 	 */
 	private final List<String> excludedInferenceMetadataKeys;
 
@@ -95,7 +95,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		this.metadataTemplate = builder.metadataTemplate;
 		this.metadataSeparator = builder.metadataSeparator;
 		this.textTemplate = builder.textTemplate;
-		this.excludedInferenceMetadataKeys = builder.excludedLlmMetadataKeys;
+		this.excludedInferenceMetadataKeys = builder.excludedInferenceMetadataKeys;
 		this.excludedEmbedMetadataKeys = builder.excludedEmbedMetadataKeys;
 	}
 
@@ -107,7 +107,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 
 		private String textTemplate = DEFAULT_TEXT_TEMPLATE;
 
-		private List<String> excludedLlmMetadataKeys = new ArrayList<>();
+		private List<String> excludedInferenceMetadataKeys = new ArrayList<>();
 
 		private List<String> excludedEmbedMetadataKeys = new ArrayList<>();
 
@@ -157,19 +157,19 @@ public class DefaultContentFormatter implements ContentFormatter {
 		}
 
 		/**
-		 * Configures the excluded LLM metadata keys to filter out from the model.
-		 * @param excludedLlmMetadataKeys Excluded LLM metadata keys to use.
+		 * Configures the excluded Inference metadata keys to filter out from the model.
+		 * @param excludedInferenceMetadataKeys Excluded inference metadata keys to use.
 		 * @return this builder
 		 */
-		public Builder withExcludedLlmMetadataKeys(List<String> excludedLlmMetadataKeys) {
-			Assert.notNull(excludedLlmMetadataKeys, "Excluded LLM metadata keys must not be null");
-			this.excludedLlmMetadataKeys = excludedLlmMetadataKeys;
+		public Builder withExcludedLlmMetadataKeys(List<String> excludedInferenceMetadataKeys) {
+			Assert.notNull(excludedInferenceMetadataKeys, "Excluded inference metadata keys must not be null");
+			this.excludedInferenceMetadataKeys = excludedInferenceMetadataKeys;
 			return this;
 		}
 
-		public Builder withExcludedLlmMetadataKeys(String... keys) {
-			Assert.notNull(keys, "Excluded LLM metadata keys must not be null");
-			this.excludedLlmMetadataKeys.addAll(Arrays.asList(keys));
+		public Builder withExcludedInferenceMetadataKeys(String... keys) {
+			Assert.notNull(keys, "Excluded inference metadata keys must not be null");
+			this.excludedInferenceMetadataKeys.addAll(Arrays.asList(keys));
 			return this;
 		}
 
@@ -221,19 +221,19 @@ public class DefaultContentFormatter implements ContentFormatter {
 	 */
 	protected Map<String, Object> metadataFilter(Map<String, Object> metadata, MetadataMode metadataMode) {
 
-		if (metadataMode == ContentFormatter.MetadataMode.ALL) {
+		if (metadataMode == MetadataMode.ALL) {
 			return new HashMap<String, Object>(metadata);
 		}
-		if (metadataMode == ContentFormatter.MetadataMode.NONE) {
+		if (metadataMode == MetadataMode.NONE) {
 			return new HashMap<String, Object>(Collections.emptyMap());
 		}
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
 
-		if (metadataMode == ContentFormatter.MetadataMode.INFERENCE) {
+		if (metadataMode == MetadataMode.INFERENCE) {
 			usableMetadataKeys.removeAll(this.excludedInferenceMetadataKeys);
 		}
-		else if (metadataMode == ContentFormatter.MetadataMode.EMBED) {
+		else if (metadataMode == MetadataMode.EMBED) {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
 		}
 

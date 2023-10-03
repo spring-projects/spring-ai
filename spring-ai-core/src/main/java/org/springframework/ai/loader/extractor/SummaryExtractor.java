@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.client.AiClient;
-import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.util.Assert;
@@ -35,7 +35,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  */
-public class SummaryExtractor implements MetadataFeatureExtractor {
+public class SummaryExtractor extends AbstractMetadataFeatureExtractor {
 
 	private static final String SECTION_SUMMARY_METADATA_KEY = "section_summary";
 
@@ -69,7 +69,7 @@ public class SummaryExtractor implements MetadataFeatureExtractor {
 	 */
 	private final List<SummaryType> summaryTypes;
 
-	private final ContentFormatter.MetadataMode metadataMode;
+	private final MetadataMode metadataMode;
 
 	/**
 	 * Template for summary extraction.
@@ -77,11 +77,11 @@ public class SummaryExtractor implements MetadataFeatureExtractor {
 	private final String summaryTemplate;
 
 	public SummaryExtractor(AiClient aiClient, List<SummaryType> summaryTypes) {
-		this(aiClient, summaryTypes, DEFAULT_SUMMARY_EXTRACT_TEMPLATE, ContentFormatter.MetadataMode.ALL);
+		this(aiClient, summaryTypes, DEFAULT_SUMMARY_EXTRACT_TEMPLATE, MetadataMode.ALL);
 	}
 
 	public SummaryExtractor(AiClient aiClient, List<SummaryType> summaryTypes, String summaryTemplate,
-			ContentFormatter.MetadataMode metadataMode) {
+			MetadataMode metadataMode) {
 		Assert.notNull(aiClient, "AiClient must not be null");
 		Assert.hasText(summaryTemplate, "Summary template must not be empty");
 

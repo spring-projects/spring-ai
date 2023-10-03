@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class KeywordExtractor implements MetadataFeatureExtractor {
+public class KeywordExtractor extends AbstractMetadataFeatureExtractor {
 
 	private static final String EXCERPT_KEYWORDS_METADATA_KEY = "excerpt_keywords";
 

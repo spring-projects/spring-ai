@@ -12,8 +12,8 @@ import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -30,18 +30,17 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
-	private final ContentFormatter.MetadataMode metadataMode;
+	private final MetadataMode metadataMode;
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
 		this(openAiService, "text-embedding-ada-002");
 	}
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService, String model) {
-		this(openAiService, model, ContentFormatter.MetadataMode.EMBED);
+		this(openAiService, model, MetadataMode.EMBED);
 	}
 
-	public OpenAiEmbeddingClient(OpenAiService openAiService, String model,
-			ContentFormatter.MetadataMode metadataMode) {
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model, MetadataMode metadataMode) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
 		Assert.notNull(model, "Model must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");

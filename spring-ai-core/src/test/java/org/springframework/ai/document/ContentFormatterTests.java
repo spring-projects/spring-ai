@@ -20,8 +20,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.document.ContentFormatter.MetadataMode;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -68,7 +66,7 @@ public class ContentFormatterTests {
 
 		DefaultContentFormatter textFormatter = DefaultContentFormatter.builder()
 			.withExcludedEmbedMetadataKeys("embedKey2", "embedKey3")
-			.withExcludedLlmMetadataKeys("llmKey2")
+			.withExcludedInferenceMetadataKeys("llmKey2")
 			.withTextTemplate("Metadata:\n{metadata_string}\n\nText:{content}")
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();

@@ -27,12 +27,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.loader.extractor.ContentFormatEnricher;
 import org.springframework.ai.loader.extractor.KeywordExtractor;
-import org.springframework.ai.loader.extractor.MetadataExtractor;
-import org.springframework.ai.loader.extractor.MetadataFeatureExtractor;
 import org.springframework.ai.loader.extractor.SummaryExtractor;
-import org.springframework.ai.loader.extractor.TitleExtractor;
 import org.springframework.ai.loader.extractor.SummaryExtractor.SummaryType;
+import org.springframework.ai.loader.extractor.TitleExtractor;
 import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -58,7 +57,10 @@ public class MetadataExtractorIT {
 	TitleExtractor titleExtractor;
 
 	@Autowired
-	MetadataExtractor metadataExtractor;
+	ContentFormatEnricher metadataExtractor;
+
+	@Autowired
+	DefaultContentFormatter defaultContentFormatter;
 
 	Document document1 = new Document("Somewhere in the Andes, they believe to this very day that the"
 			+ " future is behind you. It comes up from behind your back, surprising and unforeseeable, while the past "
@@ -131,35 +133,41 @@ public class MetadataExtractorIT {
 	}
 
 	@Test
-	public void testMetadataExtractor() {
-		List<Document> enrichedDocuments = metadataExtractor.processDocuments(List.of(document1, document2), null);
+	public void testContentFormatEnricher() {
+
+		assertThat(((DefaultContentFormatter) document1.getContentFormatter()).getExcludedEmbedMetadataKeys())
+			.doesNotContain("NewEmbedKey");
+		assertThat(((DefaultContentFormatter) document1.getContentFormatter()).getExcludedInferenceMetadataKeys())
+			.doesNotContain("NewInferenceKey");
+
+		assertThat(((DefaultContentFormatter) document2.getContentFormatter()).getExcludedEmbedMetadataKeys())
+			.doesNotContain("NewEmbedKey");
+		assertThat(((DefaultContentFormatter) document2.getContentFormatter()).getExcludedInferenceMetadataKeys())
+			.doesNotContain("NewInferenceKey");
+
+		List<Document> enrichedDocuments = metadataExtractor.apply(List.of(document1, document2));
 
 		assertThat(enrichedDocuments.size()).isEqualTo(2);
 		var doc1 = enrichedDocuments.get(0);
 		var doc2 = enrichedDocuments.get(1);
 
-		assertThat(doc1.getMetadata()).hasSize(5);
-		assertThat(doc1.getMetadata()).containsKeys("document_title", "section_summary", "excerpt_keywords",
-				"next_section_summary", "key");
+		assertThat(doc1).isEqualTo(document1);
+		assertThat(doc2).isEqualTo(document2);
 
-		assertThat(doc2.getMetadata()).hasSize(4);
-		assertThat(doc2.getMetadata()).containsKeys("document_title", "section_summary", "excerpt_keywords",
-				"prev_section_summary");
+		assertThat(((DefaultContentFormatter) doc1.getContentFormatter()).getTextTemplate())
+			.isSameAs(defaultContentFormatter.getTextTemplate());
+		assertThat(((DefaultContentFormatter) doc1.getContentFormatter()).getExcludedEmbedMetadataKeys())
+			.contains("NewEmbedKey");
+		assertThat(((DefaultContentFormatter) doc1.getContentFormatter()).getExcludedInferenceMetadataKeys())
+			.contains("NewInferenceKey");
 
-		enrichedDocuments = metadataExtractor.processDocuments(List.of(document1, document2),
-				DefaultContentFormatter.defaultConfig());
+		assertThat(((DefaultContentFormatter) doc2.getContentFormatter()).getTextTemplate())
+			.isSameAs(defaultContentFormatter.getTextTemplate());
+		assertThat(((DefaultContentFormatter) doc2.getContentFormatter()).getExcludedEmbedMetadataKeys())
+			.contains("NewEmbedKey");
+		assertThat(((DefaultContentFormatter) doc2.getContentFormatter()).getExcludedInferenceMetadataKeys())
+			.contains("NewInferenceKey");
 
-		assertThat(enrichedDocuments.size()).isEqualTo(2);
-		doc1 = enrichedDocuments.get(0);
-		doc2 = enrichedDocuments.get(1);
-
-		assertThat(doc1.getMetadata()).hasSize(5);
-		assertThat(doc1.getMetadata()).containsKeys("document_title", "section_summary", "excerpt_keywords",
-				"next_section_summary", "key");
-
-		assertThat(doc2.getMetadata()).hasSize(4);
-		assertThat(doc2.getMetadata()).containsKeys("document_title", "section_summary", "excerpt_keywords",
-				"prev_section_summary");
 	}
 
 	@SpringBootConfiguration
@@ -199,8 +207,16 @@ public class MetadataExtractorIT {
 		}
 
 		@Bean
-		public MetadataExtractor metadataExtractor(List<MetadataFeatureExtractor> extractors) {
-			return new MetadataExtractor(extractors);
+		public DefaultContentFormatter defaultContentFormatter() {
+			return DefaultContentFormatter.builder()
+				.withExcludedEmbedMetadataKeys("NewEmbedKey")
+				.withExcludedInferenceMetadataKeys("NewInferenceKey")
+				.build();
+		}
+
+		@Bean
+		public ContentFormatEnricher metadataExtractor(DefaultContentFormatter defaultContentFormatter) {
+			return new ContentFormatEnricher(defaultContentFormatter, false);
 		}
 
 	}

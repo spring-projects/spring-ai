@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.document;
 
 import java.util.ArrayList;
@@ -11,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.document.ContentFormatter.MetadataMode;
 import org.springframework.util.Assert;
 
 @JsonIgnoreProperties({ "contentFormatter" })
@@ -30,20 +45,12 @@ public class Document {
 	 */
 	private Map<String, Object> metadata;
 
-	// Type; introduce when support images, now only text.
-
 	/**
-	 * Document content. TODO: To support binary content (image, audio ...)
-	 *
-	 * - One option is to change the content type to byte[]. Another option is to use
-	 * generics, e.g. Document<String> vs Document<byte[]>
+	 * Document content.
 	 */
 	private String content;
 
 	/**
-	 * TODO: do we need the embedding field in the Document? Currently it is used only for
-	 * by the InMemoryVectorStore.
-	 *
 	 * Embedding of the document. Note: ephemeral field.
 	 */
 	@JsonProperty(index = 100)
@@ -124,6 +131,46 @@ public class Document {
 
 	public ContentFormatter getContentFormatter() {
 		return contentFormatter;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
+		result = prime * result + ((content == null) ? 0 : content.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Document other = (Document) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		}
+		else if (!id.equals(other.id))
+			return false;
+		if (metadata == null) {
+			if (other.metadata != null)
+				return false;
+		}
+		else if (!metadata.equals(other.metadata))
+			return false;
+		if (content == null) {
+			if (other.content != null)
+				return false;
+		}
+		else if (!content.equals(other.content))
+			return false;
+		return true;
 	}
 
 	@Override

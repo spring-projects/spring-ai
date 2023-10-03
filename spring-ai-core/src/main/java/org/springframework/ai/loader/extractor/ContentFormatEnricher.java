@@ -18,79 +18,59 @@ package org.springframework.ai.loader.extractor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentTransformer;
 
 /**
  * @author Christian Tzolov
  */
-public class MetadataExtractor {
-
-	/**
-	 * Enable in place document processing. If false create document copies.
-	 */
-	private boolean inPlaceProcessing = true;
+public class ContentFormatEnricher implements DocumentTransformer {
 
 	/**
 	 * Disable the content-formatter template rewrite.
 	 */
 	private boolean disableTemplateRewrite = false;
 
-	private List<MetadataFeatureExtractor> extractors;
+	private ContentFormatter contentFormatter;
 
-	public MetadataExtractor(List<MetadataFeatureExtractor> extractors) {
-		this(extractors, true, false);
+	public ContentFormatEnricher(ContentFormatter contentFormatter) {
+		this(contentFormatter, false);
 	}
 
-	public MetadataExtractor(List<MetadataFeatureExtractor> extractors, boolean inPlaceProcessing,
-			boolean disableTemplateRewrite) {
-		this.inPlaceProcessing = inPlaceProcessing;
+	public ContentFormatEnricher(ContentFormatter contentFormatter, boolean disableTemplateRewrite) {
+		this.contentFormatter = contentFormatter;
 		this.disableTemplateRewrite = disableTemplateRewrite;
-		this.extractors = extractors;
 	}
 
 	/**
 	 * Post process documents chunked from loader. Allows extractors to be chained.
 	 * @param documents to post process.
-	 * @param contentFormatter Content formatter to override the updated documents.
 	 * @return
 	 */
-	public List<Document> processDocuments(List<Document> documents, ContentFormatter contentFormatter) {
+	public List<Document> apply(List<Document> documents) {
 
-		List<Document> newDocuments = this.inPlaceProcessing ? documents
-				: documents.stream().map(doc -> deepCopy(doc)).toList();
+		if (this.contentFormatter != null) {
 
-		for (MetadataFeatureExtractor extractor : this.extractors) {
-
-			List<Map<String, Object>> metadataList = extractor.extract(newDocuments);
-
-			for (int idx = 0; idx < newDocuments.size(); idx++) {
-				newDocuments.get(idx).getMetadata().putAll(metadataList.get(idx));
-			}
-		}
-
-		if (contentFormatter != null) {
-
-			newDocuments.forEach(document -> {
+			documents.forEach(document -> {
 				// Update formatter
 				if (document.getContentFormatter() instanceof DefaultContentFormatter
-						&& contentFormatter instanceof DefaultContentFormatter) {
+						&& this.contentFormatter instanceof DefaultContentFormatter) {
 
 					DefaultContentFormatter docFormatter = (DefaultContentFormatter) document.getContentFormatter();
-					DefaultContentFormatter toUpdateFormatter = (DefaultContentFormatter) contentFormatter;
+					DefaultContentFormatter toUpdateFormatter = (DefaultContentFormatter) this.contentFormatter;
 
 					var updatedEmbedExcludeKeys = new ArrayList<>(docFormatter.getExcludedEmbedMetadataKeys());
 					updatedEmbedExcludeKeys.addAll(toUpdateFormatter.getExcludedEmbedMetadataKeys());
 
-					var updatedLlmExcludeKeys = new ArrayList<>(docFormatter.getExcludedInferenceMetadataKeys());
-					updatedLlmExcludeKeys.addAll(toUpdateFormatter.getExcludedInferenceMetadataKeys());
+					var updatedInterfaceExcludeKeys = new ArrayList<>(docFormatter.getExcludedInferenceMetadataKeys());
+					updatedInterfaceExcludeKeys.addAll(toUpdateFormatter.getExcludedInferenceMetadataKeys());
 
 					var builder = DefaultContentFormatter.builder()
 						.withExcludedEmbedMetadataKeys(updatedEmbedExcludeKeys)
-						.withExcludedLlmMetadataKeys(updatedLlmExcludeKeys)
+						.withExcludedLlmMetadataKeys(updatedInterfaceExcludeKeys)
 						.withMetadataTemplate(docFormatter.getMetadataTemplate())
 						.withMetadataSeparator(docFormatter.getMetadataSeparator());
 
@@ -101,18 +81,12 @@ public class MetadataExtractor {
 				}
 				else {
 					// Override formatter
-					document.setContentFormatter(contentFormatter);
+					document.setContentFormatter(this.contentFormatter);
 				}
 			});
 		}
 
-		return newDocuments;
-	}
-
-	private Document deepCopy(Document document) {
-		Document newDoc = new Document(document.getId(), document.getContent(), document.getMetadata());
-		newDoc.setContentFormatter(document.getContentFormatter());
-		return newDoc;
+		return documents;
 	}
 
 }

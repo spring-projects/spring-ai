@@ -23,12 +23,6 @@ package org.springframework.ai.document;
  */
 public interface ContentFormatter {
 
-	enum MetadataMode {
-
-		ALL, EMBED, INFERENCE, NONE;
-
-	}
-
 	String format(Document document, MetadataMode mode);
 
 }
