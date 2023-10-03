@@ -1,4 +1,4 @@
-package org.springframework.ai.splitter;
+package org.springframework.ai.transformer.splitter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

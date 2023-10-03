@@ -6,16 +6,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.loader.impl.JsonLoader;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
-import org.springframework.ai.retriever.impl.VectorStoreRetriever;
+import org.springframework.ai.reader.JsonReader;
+import org.springframework.ai.retriever.VectorStoreRetriever;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.InMemoryVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.impl.InMemoryVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,19 +52,20 @@ public class AcmeIT extends AbstractIT {
 		assertThat(aiClient).isNotNull();
 	}
 
-	// @Test
+	@Test
 	void acmeChain() {
 
 		// Step 1 - load documents
-		JsonLoader jsonLoader = new JsonLoader(bikesResource, "name", "price", "shortDescription", "description");
-		List<Document> documents = jsonLoader.load();
+		JsonReader jsonLoader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
+
+		var textSplitter = new TokenTextSplitter();
 
 		// Step 2 - Create embeddings and save to vector store
 
 		logger.info("Creating Embeddings...");
 		VectorStore vectorStore = new InMemoryVectorStore(embeddingClient);
 
-		vectorStore.add(documents);
+		vectorStore.accept(textSplitter.apply(jsonLoader.get()));
 
 		// Now user query
 

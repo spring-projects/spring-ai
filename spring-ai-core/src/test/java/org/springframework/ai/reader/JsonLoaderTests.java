@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.loader;
+package org.springframework.ai.reader;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.loader.impl.JsonLoader;
+import org.springframework.ai.reader.JsonReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
@@ -36,8 +36,8 @@ public class JsonLoaderTests {
 	@Test
 	void loadJson() {
 		assertThat(resource).isNotNull();
-		JsonLoader jsonLoader = new JsonLoader(resource, "description");
-		List<Document> documents = jsonLoader.load();
+		JsonReader jsonLoader = new JsonReader(resource, "description");
+		List<Document> documents = jsonLoader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
 			assertThat(document.getContent()).isNotEmpty();

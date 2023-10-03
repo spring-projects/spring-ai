@@ -1,18 +1,15 @@
-package org.springframework.ai.loader.impl;
+package org.springframework.ai.reader;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.loader.Loader;
-import org.springframework.ai.splitter.TextSplitter;
-import org.springframework.ai.splitter.TokenTextSplitter;
+import org.springframework.ai.document.DocumentReader;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
@@ -21,7 +18,7 @@ import org.springframework.util.StreamUtils;
  * @author Craig Walls
  * @author Christian Tzolov
  */
-public class TextLoader implements Loader {
+public class TextReader implements DocumentReader {
 
 	public static final String CHARSET_METADATA = "charset";
 
@@ -39,11 +36,11 @@ public class TextLoader implements Loader {
 
 	private Map<String, Object> customMetadata = new HashMap<>();
 
-	public TextLoader(String resourceUrl) {
+	public TextReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
 	}
 
-	public TextLoader(Resource resource) {
+	public TextReader(Resource resource) {
 		Objects.requireNonNull(resource, "The Spring Resource must not be null");
 		this.resource = resource;
 	}
@@ -66,12 +63,7 @@ public class TextLoader implements Loader {
 	}
 
 	@Override
-	public List<Document> load() {
-		return load(new TokenTextSplitter());
-	}
-
-	@Override
-	public List<Document> load(TextSplitter textSplitter) {
+	public List<Document> get() {
 		try {
 
 			String document = StreamUtils.copyToString(this.resource.getInputStream(), this.charset);
@@ -80,7 +72,9 @@ public class TextLoader implements Loader {
 			this.customMetadata.put(CHARSET_METADATA, this.charset.name());
 			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename());
 
-			return textSplitter.apply(Collections.singletonList(new Document(document, this.customMetadata)));
+			return List.of(new Document(document, this.customMetadata));
+			// return textSplitter.apply(Collections.singletonList(new Document(document,
+			// this.customMetadata)));
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);

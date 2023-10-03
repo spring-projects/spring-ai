@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.loader;
+package org.springframework.ai.reader;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.loader.impl.TextLoader;
+import org.springframework.ai.reader.TextReader;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
@@ -37,17 +38,19 @@ public class TextLoaderTests {
 	@Test
 	void loadText() {
 		assertThat(resource).isNotNull();
-		TextLoader textLoader = new TextLoader(resource);
+		TextReader textLoader = new TextReader(resource);
 		textLoader.getCustomMetadata().put("customKey", "Value");
 
-		List<Document> documents = textLoader.load();
+		List<Document> documents0 = textLoader.get();
+
+		List<Document> documents = new TokenTextSplitter().apply(documents0);
 
 		assertThat(documents.size()).isEqualTo(54);
 
 		for (Document document : documents) {
 			assertThat(document.getMetadata().get("customKey")).isEqualTo("Value");
-			assertThat(document.getMetadata().get(TextLoader.SOURCE_METADATA)).isEqualTo("text_source.txt");
-			assertThat(document.getMetadata().get(TextLoader.CHARSET_METADATA)).isEqualTo("UTF-8");
+			assertThat(document.getMetadata().get(TextReader.SOURCE_METADATA)).isEqualTo("text_source.txt");
+			assertThat(document.getMetadata().get(TextReader.CHARSET_METADATA)).isEqualTo("UTF-8");
 			assertThat(document.getContent()).isNotEmpty();
 		}
 	}

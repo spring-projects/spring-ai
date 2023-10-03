@@ -1,14 +1,14 @@
-package org.springframework.ai.retriever.impl;
+package org.springframework.ai.retriever;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.retriever.Retriever;
+import org.springframework.ai.document.DocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class VectorStoreRetriever implements Retriever {
+public class VectorStoreRetriever implements DocumentRetriever {
 
 	private VectorStore vectorStore;
 

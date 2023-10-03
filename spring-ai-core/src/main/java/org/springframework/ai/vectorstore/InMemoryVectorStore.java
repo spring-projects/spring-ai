@@ -1,10 +1,9 @@
-package org.springframework.ai.vectorstore.impl;
+package org.springframework.ai.vectorstore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
