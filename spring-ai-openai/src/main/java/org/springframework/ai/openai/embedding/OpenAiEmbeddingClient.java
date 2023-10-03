@@ -12,6 +12,7 @@ import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -29,22 +30,24 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
-	private final boolean useFormattedContent;
+	private final ContentFormatter.MetadataMode metadataMode;
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
 		this(openAiService, "text-embedding-ada-002");
 	}
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService, String model) {
-		this(openAiService, model, true);
+		this(openAiService, model, ContentFormatter.MetadataMode.EMBED);
 	}
 
-	public OpenAiEmbeddingClient(OpenAiService openAiService, String model, boolean useFormattedContent) {
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model,
+			ContentFormatter.MetadataMode metadataMode) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
 		Assert.notNull(model, "Model must not be null");
+		Assert.notNull(metadataMode, "metadataMode must not be null");
 		this.openAiService = openAiService;
 		this.model = model;
-		this.useFormattedContent = useFormattedContent;
+		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -56,9 +59,8 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 	}
 
 	public List<Double> embed(Document document) {
-		String content = this.useFormattedContent ? document.getFormattedContent() : document.getContent();
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
-			.input(List.of(content))
+			.input(List.of(document.getFormattedContent(this.metadataMode)))
 			.model(this.model)
 			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService

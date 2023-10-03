@@ -14,6 +14,7 @@ import com.azure.ai.openai.models.EmbeddingsUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -31,22 +32,24 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
-	private final boolean useFormattedContent;
+	private final ContentFormatter.MetadataMode metadataMode;
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient) {
 		this(azureOpenAiClient, "text-embedding-ada-002");
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model) {
-		this(azureOpenAiClient, model, true);
+		this(azureOpenAiClient, model, ContentFormatter.MetadataMode.EMBED);
 	}
 
-	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model, boolean useFormattedContent) {
+	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model,
+			ContentFormatter.MetadataMode metadataMode) {
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(model, "Model must not be null");
+		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		this.azureOpenAiClient = azureOpenAiClient;
 		this.model = model;
-		this.useFormattedContent = useFormattedContent;
+		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -59,10 +62,9 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
 	@Override
 	public List<Double> embed(Document document) {
-		String content = this.useFormattedContent ? document.getFormattedContent() : document.getContent();
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model,
-				new EmbeddingsOptions(List.of(content)));
+				new EmbeddingsOptions(List.of(document.getFormattedContent(this.metadataMode))));
 		logger.debug("Embeddings retrieved");
 		return extractEmbeddingsList(embeddings);
 	}

@@ -17,6 +17,10 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 	private static final Logger logger = LoggerFactory.getLogger(TextSplitter.class);
 
+	/**
+	 * If true the children documents inherit the content-type of the parent they were
+	 * split from.
+	 */
 	private boolean copyContentFormatter = true;
 
 	@Override
@@ -66,8 +70,8 @@ public abstract class TextSplitter implements DocumentTransformer {
 				Document newDoc = new Document(chunk, metadataCopy);
 
 				if (this.copyContentFormatter) {
-					// Copies the parent content formatter to the chucks documents it was
-					// spelt into.
+					// Transfer the content-formatter of the parent to the chunked
+					// documents it was slit into.
 					newDoc.setContentFormatter(formatters.get(i));
 				}
 
