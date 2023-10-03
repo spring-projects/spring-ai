@@ -53,7 +53,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
 
 ## Workshop
 
-* You can try out the features of Spring AI by following the [workshop material for Azure OpenAI](https://github.com/markpollack/spring-ai-azure-workshop)
+* You can try out the features of Spring AI by following the [workshop material for Azure OpenAI](https://github.com/Azure-Samples/spring-ai-azure-workshop)
 * To use the workshop material with OpenAI (not Azure's offering) you will need to *replace* the Azure Open AI Boot Starter in the `pom.xml` with the Open AI Boot Starter.
 ```xml
     <dependency>
