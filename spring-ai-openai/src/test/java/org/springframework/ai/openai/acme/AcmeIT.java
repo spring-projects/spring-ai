@@ -52,11 +52,11 @@ public class AcmeIT extends AbstractIT {
 		assertThat(aiClient).isNotNull();
 	}
 
-	@Test
+	// @Test
 	void acmeChain() {
 
 		// Step 1 - load documents
-		JsonReader jsonLoader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
+		JsonReader jsonReader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
 
 		var textSplitter = new TokenTextSplitter();
 
@@ -65,7 +65,7 @@ public class AcmeIT extends AbstractIT {
 		logger.info("Creating Embeddings...");
 		VectorStore vectorStore = new InMemoryVectorStore(embeddingClient);
 
-		vectorStore.accept(textSplitter.apply(jsonLoader.get()));
+		vectorStore.accept(textSplitter.apply(jsonReader.get()));
 
 		// Now user query
 

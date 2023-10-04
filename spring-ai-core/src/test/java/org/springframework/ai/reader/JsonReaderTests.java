@@ -28,7 +28,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class JsonLoaderTests {
+public class JsonReaderTests {
 
 	@Value("classpath:bikes.json")
 	private Resource resource;
@@ -36,8 +36,8 @@ public class JsonLoaderTests {
 	@Test
 	void loadJson() {
 		assertThat(resource).isNotNull();
-		JsonReader jsonLoader = new JsonReader(resource, "description");
-		List<Document> documents = jsonLoader.get();
+		JsonReader jsonReader = new JsonReader(resource, "description");
+		List<Document> documents = jsonReader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
 			assertThat(document.getContent()).isNotEmpty();

@@ -31,17 +31,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-public class TextLoaderTests {
+public class TextReaderTests {
 
 	private Resource resource = new DefaultResourceLoader().getResource("classpath:text_source.txt");
 
 	@Test
 	void loadText() {
 		assertThat(resource).isNotNull();
-		TextReader textLoader = new TextReader(resource);
-		textLoader.getCustomMetadata().put("customKey", "Value");
+		TextReader textReader = new TextReader(resource);
+		textReader.getCustomMetadata().put("customKey", "Value");
 
-		List<Document> documents0 = textLoader.get();
+		List<Document> documents0 = textReader.get();
 
 		List<Document> documents = new TokenTextSplitter().apply(documents0);
 
