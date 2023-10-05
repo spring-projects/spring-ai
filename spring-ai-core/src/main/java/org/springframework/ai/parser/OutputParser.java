@@ -18,6 +18,15 @@ package org.springframework.ai.parser;
 
 import org.springframework.ai.prompt.FormatProvider;
 
+/**
+ * Converts the (raw) LLM output into a structured responses of type. The
+ * {@link FormatProvider#getFormat()} method should provide the LLM prompt description of
+ * the desired format.
+ *
+ * @param <T> Specifies the desired response type.
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ */
 public interface OutputParser<T> extends Parser<T>, FormatProvider {
 
 }

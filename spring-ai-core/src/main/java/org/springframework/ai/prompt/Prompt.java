@@ -24,14 +24,14 @@ import java.util.List;
 
 public class Prompt {
 
-	private List<Message> messages;
+	private final List<Message> messages;
 
 	public Prompt(String contents) {
-		this.messages = Collections.singletonList(new UserMessage(contents));
+		this(new UserMessage(contents));
 	}
 
 	public Prompt(Message message) {
-		this.messages = Collections.singletonList(message);
+		this(Collections.singletonList(message));
 	}
 
 	public Prompt(List<Message> messages) {
@@ -40,7 +40,7 @@ public class Prompt {
 
 	public String getContents() {
 		StringBuilder sb = new StringBuilder();
-		for (Message message : messages) {
+		for (Message message : getMessages()) {
 			sb.append(message.getContent());
 		}
 		return sb.toString();

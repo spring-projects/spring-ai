@@ -96,7 +96,7 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-				assertThat(resultDoc.getText()).isEqualTo(
+				assertThat(resultDoc.getContent()).isEqualTo(
 						"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
@@ -129,7 +129,7 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
 				Document sameIdDocument = new Document(document.getId(),
@@ -143,7 +143,7 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 			});
 	}
@@ -179,7 +179,7 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-				assertThat(resultDoc.getText()).isEqualTo(
+				assertThat(resultDoc.getContent()).isEqualTo(
 						"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
