@@ -1,11 +1,9 @@
-package org.springframework.ai.loader.impl;
+package org.springframework.ai.reader;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.loader.Loader;
-import org.springframework.ai.splitter.TextSplitter;
-import org.springframework.ai.splitter.TokenTextSplitter;
+import org.springframework.ai.document.DocumentReader;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
@@ -18,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class PdfLoader implements Loader {
+public class PdfReader implements DocumentReader {
 
 	public static final String CHARSET_METADATA = "charset";
 
@@ -30,11 +28,11 @@ public class PdfLoader implements Loader {
 
 	private Map<String, Object> customMetadata = new HashMap<>();
 
-	public PdfLoader(String resourceUrl) {
+	public PdfReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
 	}
 
-	public PdfLoader(Resource resource) {
+	public PdfReader(Resource resource) {
 		Objects.requireNonNull(resource, "The Spring Resource must not be null");
 		this.resource = resource;
 	}
@@ -53,12 +51,7 @@ public class PdfLoader implements Loader {
 	}
 
 	@Override
-	public List<Document> load() {
-		return load(new TokenTextSplitter());
-	}
-
-	@Override
-	public List<Document> load(TextSplitter textSplitter) {
+	public List<Document> get() {
 		try {
 			PDDocument pdfDocument = PDDocument.load(this.resource.getInputStream());
 			PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -67,7 +60,7 @@ public class PdfLoader implements Loader {
 			this.customMetadata.put(CHARSET_METADATA, this.charset.name());
 			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename());
 
-			return textSplitter.apply(Collections.singletonList(new Document(document, this.customMetadata)));
+			return Collections.singletonList(new Document(document, this.customMetadata));
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
