@@ -24,15 +24,15 @@
 		</fileSet>
 	</fileSets>
 	<files>
-		<file>
-			<source>target/asciidoc/index-single.pdf</source>
-			<destName>spring-ai-reference.pdf</destName>
-			<outputDirectory>reference/pdf</outputDirectory>
-		</file>
-		<file>
-			<source>target/asciidoc/index-single.epub</source>
-			<destName>spring-ai-reference.epub</destName>
-			<outputDirectory>reference/epub</outputDirectory>
-		</file>
+<!--		<file>-->
+<!--			<source>target/asciidoc/index-single.pdf</source>-->
+<!--			<destName>spring-ai-reference.pdf</destName>-->
+<!--			<outputDirectory>reference/pdf</outputDirectory>-->
+<!--		</file>-->
+<!--		<file>-->
+<!--			<source>target/asciidoc/index-single.epub</source>-->
+<!--			<destName>spring-ai-reference.epub</destName>-->
+<!--			<outputDirectory>reference/epub</outputDirectory>-->
+<!--		</file>-->
 	</files>
 </assembly>
