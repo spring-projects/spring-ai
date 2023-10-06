@@ -1,0 +1,15 @@
+:toc: left
+:toclevels: 4
+
+[[configureClient]]
+== Configuring an `AiClient`
+
+include::attributes.adoc[]
+
+TBD
+
+[[usingAiClient]]
+=== Using AiClient
+
+TBD
+

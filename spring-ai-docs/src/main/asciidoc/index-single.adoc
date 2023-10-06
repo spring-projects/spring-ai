@@ -1,0 +1,20 @@
+:doctype: book
+:toc: left
+:toclevels: 4
+:sectnums:
+
+include::attributes.adoc[]
+
+include::header/index-header.adoc[]
+
+include::toggle.adoc[]
+
+include::spring-ai-intro.adoc[]
+
+include::domain.adoc[]
+
+include::prompt.adoc[]
+
+include::aiclient.adoc[]
+
+include::glossary.adoc[]

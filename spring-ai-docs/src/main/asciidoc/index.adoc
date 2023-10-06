@@ -1,0 +1,27 @@
+include::attributes.adoc[]
+
+include::header/index-header.adoc[]
+
+// ======================================================================================
+
+This documentation is also available
+as a link:index-single.html[single HTML file] and as link:../pdf/spring-ai-reference.pdf[PDF]
+and link:../epub/spring-ai-reference.epub[EPUB] documents.
+
+The reference documentation is divided into several sections:
+
+[horizontal]
+<<spring-ai-intro.adoc#spring-ai-intro,Spring AI Introduction>> :: Background, usage
+ scenarios, and general guidelines.
+<<domain.adoc#domainLanguageOfAi,The Domain Language of AI>> :: Core concepts and abstractions
+of the AI domain language.
+<<prompt.adoc#createPrompt,Creating a Prompt>> :: Prompt creation.
+<<aiclient.adoc#configureClient,Configuring an AiClient>> :: AiClient configuration and execution.
+
+The following appendices are available:
+
+[horizontal]
+<<glossary.adoc#glossary,Glossary>> :: Glossary of common terms, concepts, and vocabulary of
+the AI domain.
+
+include::footer/index-footer.adoc[]

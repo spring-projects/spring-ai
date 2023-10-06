@@ -1,0 +1,47 @@
+:toc: left
+:toclevels: 4
+
+include::attributes.adoc[]
+
+ifdef::backend-spring-html[]
+This documentation is also available
+as link:index.html[multiple HTML files] and as link:../pdf/spring-ai-reference.pdf[PDF]
+and link:../epub/spring-ai-reference.epub[EPUB] documents.
+endif::[]
+
+ifdef::backend-pdf[]
+This documentation is also available
+as link:index.html[multiple HTML files], a link:index-single.html[single HTML file],
+and an link:../epub/spring-ai-reference.epub[EPUB] document.
+endif::[]
+
+ifdef::backend-epub3[]
+This documentation is also available
+as link:index.html[multiple HTML files], a link:index-single.html[single HTML file],
+and a link:../pdf/spring-ai-reference.pdf[PDF] document.
+endif::[]
+
+[[spring-ai-intro]]
+== Spring AI Introduction
+
+TBD
+
+
+[[springAiBackground]]
+=== Background
+
+TBD
+
+[[springAiUsageScenarios]]
+=== Usage Scenarios
+
+TBD
+
+==== Business Scenarios
+
+TBD
+
+==== Technical Objectives
+
+TBD
+
