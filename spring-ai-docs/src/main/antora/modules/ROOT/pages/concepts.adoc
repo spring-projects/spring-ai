@@ -178,7 +178,7 @@ These are briefly described below
 * `Document` A text based representation of your data source that also contains metadata to describe the contents.
 * `DocumentTransformer` This is responsible for processing the data in various ways, for example splitting up documents into smaller pieces or adding additional metadata to the `Document`.
 * `DocumentWriter`  This allows you to persist the Documents into a database, most commomly in the AI stack, a Vector Database.
-* `Embedding` This is a representation of your data as a `List<Double` that is used by the Vector Database to compute the 'similarity' of a user's query to relevant documents.
+* `Embedding` This is a representation of your data as a `List<Double>` that is used by the Vector Database to compute the 'similarity' of a user's query to relevant documents.
 
 == Evaluating AI responses
 
