@@ -42,6 +42,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -80,6 +81,11 @@ public class PgVectorStoreIT {
 				"app.datasource.username=postgres", "app.datasource.password=postgres",
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
+	private static void dropTable(ApplicationContext context) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
+	}
+
 	@ParameterizedTest
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
 	public void addAndSearchTest(String distanceType) {
@@ -106,6 +112,7 @@ public class PgVectorStoreIT {
 				List<Document> results2 = vectorStore.similaritySearch("Great", 1);
 				assertThat(results2).hasSize(0);
 
+				dropTable(context);
 			});
 	}
 
@@ -145,6 +152,8 @@ public class PgVectorStoreIT {
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+
+				dropTable(context);
 			});
 	}
 
@@ -183,6 +192,7 @@ public class PgVectorStoreIT {
 						"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
+				dropTable(context);
 			});
 	}
 

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.context.SmartLifecycle;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
@@ -45,7 +44,7 @@ import org.springframework.lang.Nullable;
  *
  * @author Christian Tzolov
  */
-public class PgVectorStore implements VectorStore, SmartLifecycle {
+public class PgVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
 
@@ -291,13 +290,10 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 	}
 
 	// ---------------------------------------------------------------------------------
-	// SmartLifecycle
+	// Initialize
 	// ---------------------------------------------------------------------------------
-	private AtomicBoolean isRunning = new AtomicBoolean(false);
-
 	@Override
-	public void start() {
-
+	public void afterPropertiesSet() throws Exception {
 		// Enable the PGVector, JSONB and UUID support.
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
@@ -317,7 +313,6 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 					+ " (embedding " + this.getDistanceType().index + ")");
 		}
 
-		this.isRunning.set(true);
 	}
 
 	int embeddingDimensions() {
@@ -337,26 +332,6 @@ public class PgVectorStore implements VectorStore, SmartLifecycle {
 					+ OPENAI_EMBEDDING_DIMENSION_SIZE, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
-	}
-
-	@Override
-	public void stop() {
-		// Remove existing VectorStoreTable
-		if (this.removeExistingVectorStoreTable) {
-			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
-		}
-
-		this.isRunning.set(false);
-	}
-
-	@Override
-	public boolean isRunning() {
-		return this.isRunning.get();
-	}
-
-	@Override
-	public boolean isAutoStartup() {
-		return true;
 	}
 
 }
