@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSONObject;
@@ -55,13 +54,13 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.context.SmartLifecycle;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
  */
-public class MilvusVectorStore implements VectorStore, SmartLifecycle {
+public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
@@ -374,41 +373,18 @@ public class MilvusVectorStore implements VectorStore, SmartLifecycle {
 	}
 
 	// ---------------------------------------------------------------------------------
-	// SmartLifecycle
+	// Initialization
 	// ---------------------------------------------------------------------------------
-	private AtomicBoolean isRunning = new AtomicBoolean(false);
-
 	@Override
-	public void start() {
-		try {
-			createCollection();
-		}
-		finally {
-			this.isRunning.set(true);
-		}
+	public void afterPropertiesSet() throws Exception {
+		this.createCollection();
 	}
 
-	@Override
-	public void stop() {
-		try {
-			if (isDatabaseCollectionExists()) {
-				this.milvusClient.releaseCollection(
-						ReleaseCollectionParam.newBuilder().withCollectionName(this.config.collectionName).build());
-			}
+	void releaseCollection() {
+		if (isDatabaseCollectionExists()) {
+			this.milvusClient.releaseCollection(
+					ReleaseCollectionParam.newBuilder().withCollectionName(this.config.collectionName).build());
 		}
-		finally {
-			this.isRunning.set(false);
-		}
-	}
-
-	@Override
-	public boolean isRunning() {
-		return this.isRunning.get();
-	}
-
-	@Override
-	public boolean isAutoStartup() {
-		return true;
 	}
 
 	private boolean isDatabaseCollectionExists() {
