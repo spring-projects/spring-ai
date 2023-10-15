@@ -27,8 +27,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collections;
@@ -44,16 +42,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class MongoDBVectorStoreIT {
 
-	@Container
-	static GenericContainer<?> mongoContainer = new GenericContainer<>("mongo").withExposedPorts(27017);
+	//static GenericContainer<?> mongoContainer = new GenericContainer<>("mongo").withExposedPorts(27017);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"),
 
 				// JdbcTemplate configuration
-				String.format("spring.data.mongodb.uri=mongodb://localhost:%d/test",
-						mongoContainer.getMappedPort(27017)));
+				String.format("spring.data.mongodb.uri=mongodb://localhost:%d/test"));
+
 
 	@Test
 	public void vectorStoreTest() {

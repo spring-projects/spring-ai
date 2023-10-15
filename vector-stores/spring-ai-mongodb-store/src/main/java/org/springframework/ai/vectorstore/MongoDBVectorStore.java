@@ -20,7 +20,9 @@ import com.mongodb.BasicDBObject;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.impl.InMemoryVectorStore;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.Comparator;
@@ -39,7 +41,7 @@ public class MongoDBVectorStore implements VectorStore {
 
 	private EmbeddingClient embeddingClient;
 
-	private static final String VECTOR_COLLECTION_NAME = "vector_store";
+	private static final String VECTOR_COLLECTION_NAME = "SampleCollection";
 
 	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
 		this.mongoTemplate = mongoTemplate;
@@ -95,17 +97,13 @@ public class MongoDBVectorStore implements VectorStore {
 	public List<Document> similaritySearch(String query, int k) {
 		List<Double> queryEmbedding = this.embeddingClient.embed(query);
 
-		// TODO: explore making this query better
-		return this.mongoTemplate.findAll(BasicDBObject.class, VECTOR_COLLECTION_NAME)
-			.stream()
-			.map(this::mapBasicDbObject)
-			.map(entry -> new InMemoryVectorStore.Similarity(entry.getId(),
-					InMemoryVectorStore.EmbeddingMath.cosineSimilarity(queryEmbedding, entry.getEmbedding())))
-			.sorted(Comparator.<InMemoryVectorStore.Similarity>comparingDouble(s -> s.getSimilarity()).reversed())
-			.limit(k)
-			.map(s -> this.mongoTemplate.findById(s.getKey(), BasicDBObject.class, VECTOR_COLLECTION_NAME))
-			.map(this::mapBasicDbObject)
-			.toList();
+		//Build aggregation to leverage searching through mongodb
+		Aggregation aggregation = Aggregation.newAggregation(
+				new VectorSearchAggregation(k, queryEmbedding), Aggregation.sort(Sort.Direction.DESC, "score"));
+		return this.mongoTemplate.aggregate(aggregation, VECTOR_COLLECTION_NAME,BasicDBObject.class)
+				.getMappedResults().stream()
+				.map(this::mapBasicDbObject)
+				.toList();
 	}
 
 	@Override
@@ -124,5 +122,7 @@ public class MongoDBVectorStore implements VectorStore {
 			.map(this::mapBasicDbObject)
 			.toList();
 	}
+
+
 
 }
