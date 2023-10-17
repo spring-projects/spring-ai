@@ -47,7 +47,7 @@ import org.springframework.util.StringUtils;
  */
 public class TikaDocumentReader implements DocumentReader {
 
-	public static final String METADATA_SOURCE_URI = "source_uri";
+	public static final String METADATA_SOURCE = "source";
 
 	private final AutoDetectParser parser;
 
@@ -88,7 +88,6 @@ public class TikaDocumentReader implements DocumentReader {
 
 	@Override
 	public List<Document> get() {
-
 		try {
 			this.parser.parse(this.resource.getInputStream(), this.handler, this.metadata, this.context);
 			return List.of(toDocument(this.handler.toString()));
@@ -96,7 +95,6 @@ public class TikaDocumentReader implements DocumentReader {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
 	private Document toDocument(String docText) {
@@ -105,18 +103,17 @@ public class TikaDocumentReader implements DocumentReader {
 		}
 		docText = this.textFormatter.format(docText);
 		Document doc = new Document(docText);
-		doc.getMetadata().put(METADATA_SOURCE_URI, resourceName());
+		doc.getMetadata().put(METADATA_SOURCE, resourceName());
 		return doc;
 	}
 
 	private String resourceName() {
 		try {
-			if (StringUtils.hasText(this.resource.getFilename())) {
-				return this.resource.getFilename();
+			var resourceName = this.resource.getFilename();
+			if (!StringUtils.hasText(resourceName)) {
+				resourceName = this.resource.getURI().toString();
 			}
-			else {
-				return this.resource.getURI().toString();
-			}
+			return resourceName;
 		}
 		catch (IOException e) {
 			return String.format("Invalid source URI: %s", e.getMessage());

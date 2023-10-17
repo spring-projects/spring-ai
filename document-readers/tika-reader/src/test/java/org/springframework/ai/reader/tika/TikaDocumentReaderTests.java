@@ -16,7 +16,6 @@
 
 package org.springframework.ai.reader.tika;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -30,7 +29,7 @@ public class TikaDocumentReaderTests {
 	@ParameterizedTest
 	@CsvSource({
 			"classpath:/word-sample.docx,word-sample.docx,Two kinds of links are possible, those that refer to an external website",
-			"classpath:/word-sample.doc,word-sample.doc,The limited permissions granted above are perpetual and will not be revoked by OASIS or its successors or assigns.",
+			"classpath:/word-sample.doc,word-sample.doc,The limited permissions granted above are perpetual and will not be revoked by OASIS",
 			"classpath:/sample2.pdf,sample2.pdf,Consult doc/pdftex/manual.pdf from your tetex distribution for more",
 			"classpath:/sample.ppt,sample.ppt,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
 			"classpath:/sample.pptx,sample.pptx,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
@@ -42,8 +41,8 @@ public class TikaDocumentReaderTests {
 
 		var doc = docs.get(0);
 
-		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE_URI);
-		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE_URI)).isEqualTo(resourceName);
+		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE);
+		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)).isEqualTo(resourceName);
 		assertThat(doc.getContent()).contains(contentSnipped);
 	}
 
