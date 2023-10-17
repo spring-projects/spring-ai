@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.reader.pdf.layout;
+package org.springframework.ai.reader;
 
 import org.springframework.util.StringUtils;
 
 /**
- * Provides text formatting options for extracted PDF page text, including left alignment
- * and the ability to trim and delete lines from the top and bottom of the text.
- *
- * This class allows customization of text formatting applied to extracted PDF page text.
- * It can align the text to the left, remove specified lines from the top and bottom of
- * the text, and trim adjacent blank lines.
+ * Allows to re-format the extracted text before later is packaged as a {@link Document}
+ * content. It can align the text to the left, remove specified lines from the top and
+ * bottom of the text, and trim adjacent blank lines.
  *
  * @author Christian Tzolov
  */
-public class PageExtractedTextFormatter {
+public class ExtractedTextFormatter {
 
 	private boolean leftAlignment;
 
@@ -38,7 +35,7 @@ public class PageExtractedTextFormatter {
 
 	private int numberOfBottomTextLinesToDelete;
 
-	private PageExtractedTextFormatter(Builder builder) {
+	private ExtractedTextFormatter(Builder builder) {
 		this.leftAlignment = builder.leftAlignment;
 		this.numberOfBottomTextLinesToDelete = builder.numberOfBottomTextLinesToDelete;
 		this.numberOfTopPagesToSkipBeforeDelete = builder.numberOfTopPagesToSkipBeforeDelete;
@@ -49,8 +46,12 @@ public class PageExtractedTextFormatter {
 		return new Builder();
 	}
 
-	public static PageExtractedTextFormatter defaults() {
+	public static ExtractedTextFormatter defaults() {
 		return new Builder().build();
+	}
+
+	public String format(String pageText) {
+		return this.format(pageText, 0);
 	}
 
 	public String format(String pageText, int pageNumber) {
@@ -120,8 +121,8 @@ public class PageExtractedTextFormatter {
 			return this;
 		}
 
-		public PageExtractedTextFormatter build() {
-			return new PageExtractedTextFormatter(this);
+		public ExtractedTextFormatter build() {
+			return new ExtractedTextFormatter(this);
 		}
 
 	}
@@ -132,9 +133,7 @@ public class PageExtractedTextFormatter {
 	 * @return Returns the same text but with blank lines trimmed.
 	 */
 	public static String trimAdjacentBlankLines(String pageText) {
-
 		return pageText.replaceAll("(?m)(^ *\n)", "\n").replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
-
 	}
 
 	/**

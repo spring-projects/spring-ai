@@ -16,6 +16,7 @@
 
 package org.springframework.ai.reader.tika;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -27,20 +28,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TikaDocumentReaderTests {
 
 	@ParameterizedTest
-	@CsvSource({ "word-sample.docx,Two kinds of links are possible, those that refer to an external website",
-			"word-sample.doc,The limited permissions granted above are perpetual and will not be revoked by OASIS or its successors or assigns.",
-			"sample2.pdf,Consult doc/pdftex/manual.pdf from your tetex distribution for more",
-			"sample.ppt,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
-			"sample.pptx,Lorem ipsum dolor sit amet, consectetur adipiscing elit." })
-	public void testDocx(String fileName, String contentSnipped) {
+	@CsvSource({
+			"classpath:/word-sample.docx,word-sample.docx,Two kinds of links are possible, those that refer to an external website",
+			"classpath:/word-sample.doc,word-sample.doc,The limited permissions granted above are perpetual and will not be revoked by OASIS or its successors or assigns.",
+			"classpath:/sample2.pdf,sample2.pdf,Consult doc/pdftex/manual.pdf from your tetex distribution for more",
+			"classpath:/sample.ppt,sample.ppt,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
+			"classpath:/sample.pptx,sample.pptx,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+			"https://docs.spring.io/spring-ai/reference/,https://docs.spring.io/spring-ai/reference/,help set up essential dependencies and classes." })
+	public void testDocx(String resourceUri, String resourceName, String contentSnipped) {
 
-		var docs = new TikaDocumentReader("classpath:/" + fileName).get();
+		var docs = new TikaDocumentReader(resourceUri).get();
 		assertThat(docs).hasSize(1);
 
 		var doc = docs.get(0);
 
-		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_FILE_NAME);
-		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_FILE_NAME)).isEqualTo(fileName);
+		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE_URI);
+		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE_URI)).isEqualTo(resourceName);
 		assertThat(doc.getContent()).contains(contentSnipped);
 	}
 

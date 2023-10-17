@@ -16,6 +16,7 @@
 
 package org.springframework.ai.reader.tika;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.tika.metadata.Metadata;
@@ -26,50 +27,63 @@ import org.xml.sax.ContentHandler;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
+import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.util.StringUtils;
 
 /**
- * Generic document reader, based on Apache Tika, that can extract text from various
- * document formats, including pdf, doc/docx, ppt/pptx. Check the
- * https://tika.apache.org/2.9.0/formats.html for the full list of supported formats.
+ * Tika based document reader, that extracts text from various document formats, including
+ * pdf, doc/docx, ppt/pptx, html. Fof the full list of supported documents check the
+ * https://tika.apache.org/2.9.0/formats.html.
  *
- * The reader does not provide any addtional pre/post formating for the extracted text.
- * The extracted text is wrapped in a signel {@link Document}.
+ * The reader does not provide any additional pre/post formatting for the extracted text.
+ * The extracted text is wrapped in a {@link Document}.
  *
  * For an advanced PDF document reader consult the PagePdfDocumentReader and
- * PargraphPdfDocumentReader instead.
+ * ParagraphPdfDocumentReader instead.
  *
  * @author Christian Tzolov
  */
 public class TikaDocumentReader implements DocumentReader {
 
-	public static final String METADATA_FILE_NAME = "file_name";
+	public static final String METADATA_SOURCE_URI = "source_uri";
 
-	private AutoDetectParser parser;
+	private final AutoDetectParser parser;
 
-	private ContentHandler handler;
+	private final ContentHandler handler;
 
-	private Metadata metadata;
+	private final Metadata metadata;
 
-	private ParseContext context;
+	private final ParseContext context;
 
-	private Resource resource;
+	private final Resource resource;
+
+	private final ExtractedTextFormatter textFormatter;
 
 	public TikaDocumentReader(String resourceUrl) {
-		this(new DefaultResourceLoader().getResource(resourceUrl));
+		this(resourceUrl, ExtractedTextFormatter.defaults());
+	}
+
+	public TikaDocumentReader(String resourceUrl, ExtractedTextFormatter textFormatter) {
+		this(new DefaultResourceLoader().getResource(resourceUrl), textFormatter);
 	}
 
 	public TikaDocumentReader(Resource resource) {
-		this(resource, new BodyContentHandler()); // plain text
+		this(resource, ExtractedTextFormatter.defaults());
 	}
 
-	public TikaDocumentReader(Resource resource, ContentHandler contentHandler) {
+	public TikaDocumentReader(Resource resource, ExtractedTextFormatter textFormatter) {
+		this(resource, new BodyContentHandler(), textFormatter);
+	}
+
+	public TikaDocumentReader(Resource resource, ContentHandler contentHandler, ExtractedTextFormatter textFormatter) {
 		this.parser = new AutoDetectParser();
 		this.handler = contentHandler;
 		this.metadata = new Metadata();
 		this.context = new ParseContext();
 		this.resource = resource;
+		this.textFormatter = textFormatter;
 	}
 
 	@Override
@@ -86,9 +100,27 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	private Document toDocument(String docText) {
+		if (docText == null) {
+			docText = "";
+		}
+		docText = this.textFormatter.format(docText);
 		Document doc = new Document(docText);
-		doc.getMetadata().put(METADATA_FILE_NAME, this.resource.getFilename());
+		doc.getMetadata().put(METADATA_SOURCE_URI, resourceName());
 		return doc;
+	}
+
+	private String resourceName() {
+		try {
+			if (StringUtils.hasText(this.resource.getFilename())) {
+				return this.resource.getFilename();
+			}
+			else {
+				return this.resource.getURI().toString();
+			}
+		}
+		catch (IOException e) {
+			return String.format("Invalid source URI: %s", e.getMessage());
+		}
 	}
 
 }
