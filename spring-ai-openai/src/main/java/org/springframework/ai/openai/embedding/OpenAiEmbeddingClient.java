@@ -1,21 +1,24 @@
 package org.springframework.ai.openai.embedding;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.theokanning.openai.Usage;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class OpenAiEmbeddingClient implements EmbeddingClient {
 
@@ -23,11 +26,27 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final OpenAiService openAiService;
 
-	private String model = "text-embedding-ada-002";
+	private final String model;
+
+	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
+
+	private final MetadataMode metadataMode;
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
+		this(openAiService, "text-embedding-ada-002");
+	}
+
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model) {
+		this(openAiService, model, MetadataMode.EMBED);
+	}
+
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model, MetadataMode metadataMode) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
+		Assert.notNull(model, "Model must not be null");
+		Assert.notNull(metadataMode, "metadataMode must not be null");
 		this.openAiService = openAiService;
+		this.model = model;
+		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -40,7 +59,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	public List<Double> embed(Document document) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
-			.input(List.of(document.getContent()))
+			.input(List.of(document.getFormattedContent(this.metadataMode)))
 			.model(this.model)
 			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
@@ -50,7 +69,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	public List<List<Double>> embed(List<String> texts) {
 		EmbeddingResponse embeddingResponse = embedForResponse(texts);
-		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).collect(Collectors.toList());
+		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).toList();
 	}
 
 	@Override
@@ -87,6 +106,14 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		metadata.put("completion-tokens", usage.getCompletionTokens());
 		metadata.put("total-tokens", usage.getTotalTokens());
 		return metadata;
+	}
+
+	@Override
+	public int dimensions() {
+		if (this.embeddingDimensions.get() < 0) {
+			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.model));
+		}
+		return this.embeddingDimensions.get();
 	}
 
 }

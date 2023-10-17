@@ -1,5 +1,11 @@
 package org.springframework.ai.azure.openai.embedding;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
@@ -7,17 +13,14 @@ import com.azure.ai.openai.models.EmbeddingsOptions;
 import com.azure.ai.openai.models.EmbeddingsUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
@@ -27,15 +30,25 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final String model;
 
+	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
+
+	private final MetadataMode metadataMode;
+
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient) {
 		this(azureOpenAiClient, "text-embedding-ada-002");
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model) {
+		this(azureOpenAiClient, model, MetadataMode.EMBED);
+	}
+
+	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, String model, MetadataMode metadataMode) {
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(model, "Model must not be null");
+		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		this.azureOpenAiClient = azureOpenAiClient;
 		this.model = model;
+		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -50,17 +63,13 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 	public List<Double> embed(Document document) {
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model,
-				new EmbeddingsOptions(List.of(document.getContent())));
+				new EmbeddingsOptions(List.of(document.getFormattedContent(this.metadataMode))));
 		logger.debug("Embeddings retrieved");
 		return extractEmbeddingsList(embeddings);
 	}
 
 	private List<Double> extractEmbeddingsList(Embeddings embeddings) {
-		return embeddings.getData()
-			.stream()
-			.map(EmbeddingItem::getEmbedding)
-			.flatMap(List::stream)
-			.collect(Collectors.toList());
+		return embeddings.getData().stream().map(EmbeddingItem::getEmbedding).flatMap(List::stream).toList();
 	}
 
 	@Override
@@ -68,7 +77,7 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model, new EmbeddingsOptions(texts));
 		logger.debug("Embeddings retrieved");
-		return embeddings.getData().stream().map(emb -> emb.getEmbedding()).collect(Collectors.toList());
+		return embeddings.getData().stream().map(emb -> emb.getEmbedding()).toList();
 	}
 
 	@Override
@@ -89,8 +98,6 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("model", model);
 		metadata.put("prompt-tokens", embeddingsUsage.getPromptTokens());
-		// NOTE, not in API of AzureAI - metadata.put("completion-tokens",
-		// embeddingsUsage.getCompletionTokens());
 		metadata.put("total-tokens", embeddingsUsage.getTotalTokens());
 		return metadata;
 	}
@@ -104,6 +111,14 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 			data.add(embedding);
 		}
 		return data;
+	}
+
+	@Override
+	public int dimensions() {
+		if (this.embeddingDimensions.get() < 0) {
+			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.model));
+		}
+		return this.embeddingDimensions.get();
 	}
 
 }

@@ -1,0 +1,43 @@
+= AiClient
+
+The interface `AiClient` is the main interface to interacting with an AI Model.
+
+```java
+public interface AiClient {
+
+	default String generate(String message) {
+            // implementation omitted
+	}
+
+	AiResponse generate(Prompt prompt);
+
+}
+```
+
+The `AiClient` provides portability to interact with AI Models that have different APIs.
+As one would expect in Spring, there are multiple implementations of a common interface so that you can more easily switch AI Models without making large amounts of code changes.
+
+To obtain an implementation of the `AiClient` interface, use one of the Spring Boot Starters in your build file.
+For Maven and OpenAI's ChatGPT, the definition would look like
+
+```xml
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.2.0-SNAPSHOT</version>  <!-- replace with latest version -->
+</dependency>
+```
+
+== AiClient Implementations
+
+* OpenAI
+* Azure OpenAI
+* HuggingFace
+
+Planned implementations
+* Amazon Bedrock - This can provide access to many AI models.
+* Google Vertex - Providing access to 'Bard', aka Palm2
+
+Others are welcome, the list is not at all closed.
+
+Note, there are several AI Model that are *not* OpenAI provided models, but expose an OpenAI compatible API.

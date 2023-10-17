@@ -14,4 +14,8 @@ public interface EmbeddingClient {
 
 	EmbeddingResponse embedForResponse(List<String> texts);
 
+	default int dimensions() {
+		return embed("Test String").size();
+	}
+
 }
