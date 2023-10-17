@@ -25,6 +25,7 @@
 		<module>vector-stores/spring-ai-neo4j-store</module>
 		<module>embedding-clients/spring-ai-postgresml-embedding-client</module>
 		<module>document-readers/pdf-reader</module>
+		<module>document-readers/tika-reader</module>
 	</modules>
 
 	<organization>

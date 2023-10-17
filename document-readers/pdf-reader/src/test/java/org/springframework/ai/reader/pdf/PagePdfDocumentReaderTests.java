@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
-import org.springframework.ai.reader.pdf.layout.PageExtractedTextFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +39,7 @@ public class PagePdfDocumentReaderTests {
 				PdfDocumentReaderConfig.builder()
 					.withPageTopMargin(0)
 					.withPageBottomMargin(0)
-					.withPageExtractedTextFormatter(PageExtractedTextFormatter.builder()
+					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
 						.withNumberOfTopTextLinesToDelete(0)
 						.withNumberOfBottomTextLinesToDelete(3)
 						.withNumberOfTopPagesToSkipBeforeDelete(0)
