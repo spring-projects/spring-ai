@@ -20,21 +20,12 @@
 		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<milvus.version>2.3.0</milvus.version>
-		<spring-ai.version>0.7.0-SNAPSHOT</spring-ai.version>
-		<!-- testing -->
-		<testcontainers.version>1.19.0</testcontainers.version>
-		<!-- <hikari-cp.version>4.0.3</hikari-cp.version> -->
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
 			<artifactId>spring-ai-core</artifactId>
-			<version>${spring-ai.version}</version>
+			<version>${parent.version}</version>
 		</dependency>
-
 
 		<dependency>
 			<groupId>io.milvus</groupId>
@@ -46,7 +37,7 @@
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
 			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-			<version>${spring-ai.version}</version>
+			<version>${parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -69,13 +60,6 @@
 			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
-
-		<!-- <dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-			<version>${hikari-cp.version}</version>
-			<scope>test</scope>
-		</dependency> -->
 
 	</dependencies>
 

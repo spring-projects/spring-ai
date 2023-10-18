@@ -20,17 +20,11 @@
 		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<spring-ai.version>0.7.0-SNAPSHOT</spring-ai.version>
-		<!-- testing -->
-		<testcontainers.version>1.19.0</testcontainers.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
 			<artifactId>spring-ai-core</artifactId>
-			<version>${spring-ai.version}</version>
+			<version>${parent.version}</version>
 		</dependency>
 
 		<dependency>
@@ -48,7 +42,7 @@
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
 			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-			<version>${spring-ai.version}</version>
+			<version>${parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
