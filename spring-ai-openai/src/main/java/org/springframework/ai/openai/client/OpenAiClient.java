@@ -32,9 +32,10 @@ import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Implementation of {@link AiClient} backed by an OpenAiService
+ * Implementation of {@link AiClient} backed by an {@link OpenAiService}.
  */
 public class OpenAiClient implements AiClient {
 
@@ -78,11 +79,11 @@ public class OpenAiClient implements AiClient {
 	@Override
 	public AiResponse generate(Prompt prompt) {
 		List<Message> messages = prompt.getMessages();
-		List<ChatMessage> theoMessages = new ArrayList<>();
-		for (Message message : messages) {
-			String messageType = message.getMessageTypeValue();
-			theoMessages.add(new ChatMessage(messageType, message.getContent()));
-		}
+
+		List<ChatMessage> theoMessages = messages.stream()
+			.map(message -> new ChatMessage(message.getMessageTypeValue(), message.getContent()))
+			.toList();
+
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
 			.model(this.model)
 			.temperature(this.temperature)
@@ -114,7 +115,7 @@ public class OpenAiClient implements AiClient {
 			ChatMessage chatMessage = chatCompletionChoice.getMessage();
 			// TODO investigate mapping of additional metadata/runtime info to the
 			// general model.
-			Generation generation = new Generation(chatMessage.getContent());
+			Generation generation = new Generation(chatMessage.getContent(), Map.of("role", chatMessage.getRole()));
 			generations.add(generation);
 		}
 		return new AiResponse(generations);
