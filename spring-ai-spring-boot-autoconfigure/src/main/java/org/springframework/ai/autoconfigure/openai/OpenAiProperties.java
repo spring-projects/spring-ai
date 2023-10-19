@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.openai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 
@@ -27,20 +28,24 @@ public class OpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai";
 
-	private String apiKey;
-
 	private Double temperature = 0.7;
 
 	private Duration duration = Duration.ofSeconds(60);
 
-	private String model = "gpt-3.5-turbo";
+	private String apiKey;
 
-	private String embeddingModel = "text-embedding-ada-002";
+	private String model = "gpt-3.5-turbo";
 
 	private String baseUrl = "https://api.openai.com";
 
+	private String embeddingModel = "text-embedding-ada-002";
+
+	private String embeddingBaseUrl;
+
+	private String embeddingApiKey;
+
 	public String getApiKey() {
-		return apiKey;
+		return this.apiKey;
 	}
 
 	public void setApiKey(String apiKey) {
@@ -48,23 +53,15 @@ public class OpenAiProperties {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
 	}
 
-	public String getEmbeddingModel() {
-		return embeddingModel;
-	}
-
-	public void setEmbeddingModel(String embeddingModel) {
-		this.embeddingModel = embeddingModel;
-	}
-
 	public Double getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	public void setTemperature(Double temperature) {
@@ -72,7 +69,7 @@ public class OpenAiProperties {
 	}
 
 	public Duration getDuration() {
-		return duration;
+		return this.duration;
 	}
 
 	public void setDuration(Duration duration) {
@@ -80,11 +77,35 @@ public class OpenAiProperties {
 	}
 
 	public String getBaseUrl() {
-		return baseUrl;
+		return this.baseUrl;
 	}
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getEmbeddingModel() {
+		return this.embeddingModel;
+	}
+
+	public void setEmbeddingModel(String embeddingModel) {
+		this.embeddingModel = embeddingModel;
+	}
+
+	public void setEmbeddingBaseUrl(String embeddingBaseUrl) {
+		this.embeddingBaseUrl = embeddingBaseUrl;
+	}
+
+	public String getEmbeddingBaseUrl() {
+		return StringUtils.hasText(this.embeddingBaseUrl) ? this.embeddingBaseUrl : this.baseUrl;
+	}
+
+	public String getEmbeddingApiKey() {
+		return StringUtils.hasText(this.embeddingApiKey) ? this.embeddingApiKey : this.apiKey;
+	}
+
+	public void setEmbeddingApiKey(String embeddingApiKey) {
+		this.embeddingApiKey = embeddingApiKey;
 	}
 
 }
