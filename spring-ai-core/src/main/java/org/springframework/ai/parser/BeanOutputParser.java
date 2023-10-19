@@ -20,15 +20,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
-import com.github.victools.jsonschema.generator.SchemaVersion;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import org.springframework.ai.prompt.PromptTemplate;
 
 import java.util.Map;
 import java.util.Objects;
+
+import static com.github.victools.jsonschema.generator.OptionPreset.*;
+import static com.github.victools.jsonschema.generator.SchemaVersion.*;
 
 /**
  * {@link OutputParser} implementation that uses JSON schema to convert the LLM output
@@ -37,13 +39,16 @@ import java.util.Objects;
  * @param <T> The target type to convert the output into.
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Sebastian Ullrich
  */
 public class BeanOutputParser<T> implements OutputParser<T> {
 
 	private String jsonSchema;
 
+	@SuppressWarnings({"FieldMayBeFinal", "rawtypes"})
 	private Class clazz;
 
+	@SuppressWarnings("FieldMayBeFinal")
 	private ObjectMapper objectMapper;
 
 	public BeanOutputParser(Class<T> clazz) {
@@ -62,8 +67,9 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	}
 
 	private void generateSchema() {
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
-				OptionPreset.PLAIN_JSON);
+		JacksonModule jacksonModule = new JacksonModule();
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(DRAFT_2020_12, PLAIN_JSON)
+				.with(jacksonModule);
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonSchema = generator.generateSchema(this.clazz);
@@ -73,6 +79,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	@Override
 	public T parse(String text) {
 		try {
+			//noinspection unchecked
 			return (T) this.objectMapper.readValue(text, this.clazz);
 		}
 		catch (JsonProcessingException e) {

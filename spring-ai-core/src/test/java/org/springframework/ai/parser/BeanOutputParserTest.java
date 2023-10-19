@@ -1,5 +1,7 @@
 package org.springframework.ai.parser;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,9 +44,16 @@ class BeanOutputParserTest {
 	class ParserTest {
 
 		@Test
-		public void shouldParseFromString() {
+		public void shouldParseFieldNamesFromString() {
 			var parser = new BeanOutputParser<>(TestClass.class);
 			var testClass = parser.parse("{ \"someString\": \"some value\" }");
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		public void shouldParseJsonPropertiesFromString() {
+			var parser = new BeanOutputParser<>(TestClassWithJsonAnnotations.class);
+			var testClass = parser.parse("{ \"string_property\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
 		}
 	}
@@ -70,6 +79,23 @@ class BeanOutputParserTest {
 					}```
 					""");
 		}
+
+		@Test
+		public void shouldReturnFormatContainingJsonSchemaIncludingPropertyAndPropertyDescription() {
+			var parser = new BeanOutputParser<>(TestClassWithJsonAnnotations.class);
+			assertThat(parser.getFormat()).contains("""
+					```{
+					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+					  "type" : "object",
+					  "properties" : {
+					    "string_property" : {
+					      "type" : "string",
+					      "description" : "string_property_description"
+					    }
+					  }
+					}```
+					""");
+		}
 	}
 
 	public static class TestClass {
@@ -82,6 +108,20 @@ class BeanOutputParserTest {
 
 		public TestClass(String someString) {
 			this.someString = someString;
+		}
+
+		public String getSomeString() {
+			return someString;
+		}
+	}
+
+	public static class TestClassWithJsonAnnotations {
+
+		@JsonProperty("string_property")
+		@JsonPropertyDescription("string_property_description")
+		private String someString;
+
+		public TestClassWithJsonAnnotations() {
 		}
 
 		public String getSomeString() {
