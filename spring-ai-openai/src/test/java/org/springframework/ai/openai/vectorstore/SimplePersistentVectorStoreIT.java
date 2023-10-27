@@ -31,9 +31,9 @@ public class SimplePersistentVectorStoreIT {
 
 	@Test
 	void persist(@TempDir(cleanup = CleanupMode.ON_SUCCESS) Path workingDir) {
-		JsonReader jsonReader = new JsonReader(bikesJsonResource, new ProductMetadataGenerator(), "price", "name",
-				"shortDescription", "description", "tags");
-		List<Document> documents = jsonReader.get();
+		JsonReader jsonReader = new JsonReader(new ProductMetadataGenerator(), "price", "name", "shortDescription",
+				"description", "tags");
+		List<Document> documents = jsonReader.read(bikesJsonResource);
 		SimplePersistentVectorStore vectorStore = new SimplePersistentVectorStore(this.embeddingClient);
 		vectorStore.add(documents);
 

@@ -11,11 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
 public class JsonReader implements DocumentReader {
-
-	private Resource resource;
 
 	private JsonMetadataGenerator jsonMetadataGenerator;
 
@@ -25,29 +24,31 @@ public class JsonReader implements DocumentReader {
 	private List<String> jsonKeysToUse;
 
 	public JsonReader(Resource resource) {
-		this(resource, new ArrayList<>().toArray(new String[0]));
+		this(new ArrayList<>().toArray(new String[0]));
 	}
 
-	public JsonReader(Resource resource, String... jsonKeysToUse) {
-		this(resource, new EmptyJsonMetadataGenerator(), jsonKeysToUse);
+	public JsonReader(String... jsonKeysToUse) {
+		this(new EmptyJsonMetadataGenerator(), jsonKeysToUse);
 	}
 
-	public JsonReader(Resource resource, JsonMetadataGenerator jsonMetadataGenerator, String... jsonKeysToUse) {
+	public JsonReader(JsonMetadataGenerator jsonMetadataGenerator, String... jsonKeysToUse) {
 		Objects.requireNonNull(jsonKeysToUse, "keys must not be null");
 		Objects.requireNonNull(jsonMetadataGenerator, "jsonMetadataGenerator must not be null");
-		Objects.requireNonNull(resource, "The Spring Resource must not be null");
-		this.resource = resource;
 		this.jsonMetadataGenerator = jsonMetadataGenerator;
 		this.jsonKeysToUse = List.of(jsonKeysToUse);
 	}
 
+	public List<Document> read(String resourceUrl) {
+		return read(new DefaultResourceLoader().getResource(resourceUrl));
+	}
+
 	@Override
-	public List<Document> get() {
+	public List<Document> read(Resource resource) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		List<Document> documents = new ArrayList<>();
 		try {
 			// TODO, not all json will be an array
-			List<Map<String, Object>> jsonData = objectMapper.readValue(this.resource.getInputStream(),
+			List<Map<String, Object>> jsonData = objectMapper.readValue(resource.getInputStream(),
 					new TypeReference<List<Map<String, Object>>>() {
 					});
 			for (Map<String, Object> item : jsonData) {

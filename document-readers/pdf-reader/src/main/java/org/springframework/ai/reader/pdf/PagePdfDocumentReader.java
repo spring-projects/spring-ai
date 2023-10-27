@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
  * pageBottomMargin = 0
  *
  * @author Christian Tzolov
+ * @author Craig Walls
  */
 public class PagePdfDocumentReader implements DocumentReader {
 
@@ -54,45 +55,47 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 	public static final String METADATA_FILE_NAME = "file_name";
 
-	private final PDDocument document;
-
 	private PdfDocumentReaderConfig config;
 
-	private File resourceFileName;
-
-	public PagePdfDocumentReader(String resourceUrl) {
-		this(new DefaultResourceLoader().getResource(resourceUrl));
+	/**
+	 * Constructs a ParagraphPdfDocumentReader with default configuration.
+	 */
+	public PagePdfDocumentReader() {
+		this(PdfDocumentReaderConfig.defaultConfig());
 	}
 
-	public PagePdfDocumentReader(Resource pdfResource) {
-		this(pdfResource, PdfDocumentReaderConfig.defaultConfig());
+	/**
+	 * Constructs a PagePdfDocumentReader using a specific configuration.
+	 * @param config The configuration for PDF document processing.
+	 */
+	public PagePdfDocumentReader(PdfDocumentReaderConfig config) {
+		this.config = config;
 	}
 
-	public PagePdfDocumentReader(String resourceUrl, PdfDocumentReaderConfig config) {
-		this(new DefaultResourceLoader().getResource(resourceUrl), config);
+	/**
+	 * Read and process the PDF document from the given resource URL.
+	 * @param resourceUrl The URL of the PDF document to read.
+	 */
+	@Override
+	public List<Document> read(String resourceUrl) {
+		return read(new DefaultResourceLoader().getResource(resourceUrl));
 	}
 
-	public PagePdfDocumentReader(Resource pdfResource, PdfDocumentReaderConfig config) {
+	/**
+	 * Read and process the PDF document from the given resource.
+	 * @param resource The PDF document to read.
+	 */
+	@Override
+	public List<Document> read(Resource resource) {
 
 		try {
+			File resourceFileName = resource.getFile();
 
 			PDFParser pdfParser = new PDFParser(
-					new org.apache.pdfbox.io.RandomAccessReadBuffer(pdfResource.getInputStream()));
-			this.document = pdfParser.parse();
+					new org.apache.pdfbox.io.RandomAccessReadBuffer(resource.getInputStream()));
+			PDDocument document = pdfParser.parse();
 
-			this.resourceFileName = pdfResource.getFile();
-			this.config = config;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public List<Document> get() {
-
-		List<Document> readDocuments = new ArrayList<>();
-		try {
+			List<Document> readDocuments = new ArrayList<>();
 			var pdfTextStripper = new PDFLayoutTextStripperByArea();
 
 			int pageNumber = 0;
@@ -101,7 +104,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 			List<String> pageTextGroupList = new ArrayList<>();
 
-			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
+			for (PDPage page : document.getDocumentCatalog().getPages()) {
 
 				pagesPerDocument++;
 
@@ -111,7 +114,8 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 					var aggregatedPageTextGroup = pageTextGroupList.stream().collect(Collectors.joining());
 					if (StringUtils.hasText(aggregatedPageTextGroup)) {
-						readDocuments.add(toDocument(aggregatedPageTextGroup, startPageNumber, pageNumber));
+						readDocuments
+							.add(toDocument(resourceFileName, aggregatedPageTextGroup, startPageNumber, pageNumber));
 					}
 					pageTextGroupList.clear();
 
@@ -138,8 +142,8 @@ public class PagePdfDocumentReader implements DocumentReader {
 				pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 			}
 			if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
-						pageNumber));
+				readDocuments.add(toDocument(resourceFileName, pageTextGroupList.stream().collect(Collectors.joining()),
+						startPageNumber, pageNumber));
 			}
 
 			return readDocuments;
@@ -150,14 +154,14 @@ public class PagePdfDocumentReader implements DocumentReader {
 		}
 	}
 
-	private Document toDocument(String docText, int startPageNumber, int endPageNumber) {
+	private Document toDocument(File resourceFileName, String docText, int startPageNumber, int endPageNumber) {
 
 		Document doc = new Document(docText);
 		doc.getMetadata().put(METADATA_START_PAGE_NUMBER, startPageNumber);
 		if (startPageNumber != endPageNumber) {
 			doc.getMetadata().put(METADATA_END_PAGE_NUMBER, endPageNumber);
 		}
-		doc.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+		doc.getMetadata().put(METADATA_FILE_NAME, resourceFileName);
 
 		return doc;
 	}

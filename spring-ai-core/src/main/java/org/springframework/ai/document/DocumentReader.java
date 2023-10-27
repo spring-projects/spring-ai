@@ -1,8 +1,13 @@
 package org.springframework.ai.document;
 
 import java.util.List;
-import java.util.function.Supplier;
 
-public interface DocumentReader extends Supplier<List<Document>> {
+import org.springframework.core.io.Resource;
+
+public interface DocumentReader {
+
+	List<Document> read(String resourceUrl);
+
+	List<Document> read(Resource resource);
 
 }

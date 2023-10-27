@@ -35,19 +35,18 @@ public class PagePdfDocumentReaderTests {
 	@Test
 	public void test1() {
 
-		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
-				PdfDocumentReaderConfig.builder()
-					.withPageTopMargin(0)
-					.withPageBottomMargin(0)
-					.withPageExtractedTextFormatter(PageExtractedTextFormatter.builder()
-						.withNumberOfTopTextLinesToDelete(0)
-						.withNumberOfBottomTextLinesToDelete(3)
-						.withNumberOfTopPagesToSkipBeforeDelete(0)
-						.build())
-					.withPagesPerDocument(1)
-					.build());
+		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(PdfDocumentReaderConfig.builder()
+			.withPageTopMargin(0)
+			.withPageBottomMargin(0)
+			.withPageExtractedTextFormatter(PageExtractedTextFormatter.builder()
+				.withNumberOfTopTextLinesToDelete(0)
+				.withNumberOfBottomTextLinesToDelete(3)
+				.withNumberOfTopPagesToSkipBeforeDelete(0)
+				.build())
+			.withPagesPerDocument(1)
+			.build());
 
-		List<Document> docs = pdfReader.get();
+		List<Document> docs = pdfReader.read("classpath:/sample1.pdf");
 
 		assertThat(docs).hasSize(4);
 

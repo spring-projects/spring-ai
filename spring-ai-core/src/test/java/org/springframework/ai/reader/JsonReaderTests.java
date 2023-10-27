@@ -18,7 +18,6 @@ package org.springframework.ai.reader;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.reader.JsonReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
@@ -36,8 +35,8 @@ public class JsonReaderTests {
 	@Test
 	void loadJson() {
 		assertThat(resource).isNotNull();
-		JsonReader jsonReader = new JsonReader(resource, "description");
-		List<Document> documents = jsonReader.get();
+		JsonReader jsonReader = new JsonReader("description");
+		List<Document> documents = jsonReader.read(resource);
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
 			assertThat(document.getContent()).isNotEmpty();

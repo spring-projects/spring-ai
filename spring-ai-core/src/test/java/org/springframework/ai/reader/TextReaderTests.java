@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Craig Walls
  */
 public class TextReaderTests {
 
@@ -37,10 +38,10 @@ public class TextReaderTests {
 	@Test
 	void loadText() {
 		assertThat(resource).isNotNull();
-		TextReader textReader = new TextReader(resource);
+		TextReader textReader = new TextReader();
 		textReader.getCustomMetadata().put("customKey", "Value");
 
-		List<Document> documents0 = textReader.get();
+		List<Document> documents0 = textReader.read(resource);
 
 		List<Document> documents = new TokenTextSplitter().apply(documents0);
 
