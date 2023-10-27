@@ -48,8 +48,7 @@ public class SbertEmbeddingClient implements EmbeddingClient, InitializingBean {
 	private int gpuDeviceId = -1;
 
 	/**
-	 * DJL, Huggingface tokenizer implementation of the {@link Tokenizer} interface that
-	 * converts sentences into token.
+	 * DJL, Huggingface tokenizer implementation of the {@link Tokenizer} interface that converts sentences into token.
 	 */
 	private HuggingFaceTokenizer tokenizer;
 
@@ -158,11 +157,12 @@ public class SbertEmbeddingClient implements EmbeddingClient, InitializingBean {
 
 			try (OrtSession.Result results = this.session.run(modelInputs)) {
 
-				OnnxValue lastHiddenState = results.get(0);
+				// OnnxValue lastHiddenState = results.get(0);
+				OnnxValue lastHiddenState = results.get("last_hidden_state").get();
 
-				// 0 - input text index
-				// 1 - mask ??
-				// 2 - embeddings
+				// 0 - batch_size (1..x)
+				// 1 - sequence_length (128)
+				// 2 - embedding dimensions (384)
 				float[][][] tokenEmbeddings = (float[][][]) lastHiddenState.getValue();
 
 				try (NDManager manager = NDManager.newBaseManager()) {
@@ -202,8 +202,8 @@ public class SbertEmbeddingClient implements EmbeddingClient, InitializingBean {
 	private NDArray meanPooling(NDArray tokenEmbeddings, NDArray attentionMask) {
 
 		NDArray attentionMaskExpanded = attentionMask.expandDims(-1)
-			.broadcast(tokenEmbeddings.getShape())
-			.toType(DataType.FLOAT32, false);
+				.broadcast(tokenEmbeddings.getShape())
+				.toType(DataType.FLOAT32, false);
 
 		// Multiply token embeddings with expanded attention mask
 		NDArray weightedEmbeddings = tokenEmbeddings.mul(attentionMaskExpanded);
