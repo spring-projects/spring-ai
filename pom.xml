@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.experimental.ai</groupId>
@@ -22,9 +23,10 @@
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
+		<module>spring-ai-aws-bedrock</module>
 	</modules>
 
-    <organization>
+	<organization>
 		<name>VMware Inc.</name>
 		<url>https://spring.io</url>
 	</organization>
@@ -69,16 +71,17 @@
 		<stringtemplate.version>4.0.2</stringtemplate.version>
 		<open-ai-client.version>0.12.0</open-ai-client.version>
 		<azure-open-ai-client.version>1.0.0-beta.3</azure-open-ai-client.version>
+		<aws-bedrock-client.version>2.20.157</aws-bedrock-client.version>
 		<jtokkit.version>0.6.1</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
 
-        <!-- documentation dependencies -->
+		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
 		<asciidoctorj-pdf.version>1.6.2</asciidoctorj-pdf.version> <!-- FIXME build failure with version 2.3.9 -->
 		<asciidoctorj-epub.version>1.5.1</asciidoctorj-epub.version>
 		<spring-asciidoctor-backends.version>0.0.6</spring-asciidoctor-backends.version>
 
-        <!-- plugin versions -->
+		<!-- plugin versions -->
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
@@ -235,7 +238,7 @@
 		</plugins>
 	</build>
 
-   	<profiles>
+	<profiles>
 		<profile>
 			<id>integration-tests</id>
 			<activation>
@@ -368,7 +371,7 @@
 		</developer>
 	</developers>
 
-    <reporting>
+	<reporting>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
