@@ -55,7 +55,7 @@ public class AiResponse {
 	}
 
 	/**
-	 * Arbitrary LLM-provider specific output
+	 * Arbitrary model provider specific output
 	 */
 	public Map<String, Object> getProviderOutput() {
 		return Collections.unmodifiableMap(providerOutput);

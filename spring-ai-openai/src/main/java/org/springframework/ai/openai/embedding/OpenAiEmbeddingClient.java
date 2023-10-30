@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import com.theokanning.openai.Usage;
 import com.theokanning.openai.embedding.EmbeddingRequest;
@@ -14,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -30,15 +30,23 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
+	private final MetadataMode metadataMode;
+
 	public OpenAiEmbeddingClient(OpenAiService openAiService) {
 		this(openAiService, "text-embedding-ada-002");
 	}
 
 	public OpenAiEmbeddingClient(OpenAiService openAiService, String model) {
+		this(openAiService, model, MetadataMode.EMBED);
+	}
+
+	public OpenAiEmbeddingClient(OpenAiService openAiService, String model, MetadataMode metadataMode) {
 		Assert.notNull(openAiService, "OpenAiService must not be null");
 		Assert.notNull(model, "Model must not be null");
+		Assert.notNull(metadataMode, "metadataMode must not be null");
 		this.openAiService = openAiService;
 		this.model = model;
+		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -51,7 +59,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 
 	public List<Double> embed(Document document) {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
-			.input(List.of(document.getContent()))
+			.input(List.of(document.getFormattedContent(this.metadataMode)))
 			.model(this.model)
 			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService

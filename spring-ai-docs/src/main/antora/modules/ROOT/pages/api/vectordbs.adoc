@@ -71,7 +71,7 @@ The Spring Boot Starter's autoconfiguation for OpenAI makes an implementation of
 
 The general usage of loading data into a vector store is something you do as a batch-type job, first loading data into Spring AI's `Document` class and then calling the `save` method.
 
-Given a String `sourceFile` that represents a JSON file with data we want to load into the Vector Database, we use Spring AI's `JsonLoader` to load specific fields in the JSON file, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
+Given a String `sourceFile` that represents a JSON file with data we want to load into the Vector Database, we use Spring AI's `JsonReader` to load specific fields in the JSON file, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
 The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the Vector Database.
 
 ```java
@@ -79,9 +79,9 @@ The `VectorStore` implementation computes the embeddings and stores the JSON and
   VectorStore vectorStore;
 
   void load(String sourceFile) {}
-            JsonLoader jsonLoader = new JsonLoader(new FileSystemResource(sourceFile),
+            JsonReader jsonReader = new JsonReader(new FileSystemResource(sourceFile),
                     "price", "name", "shortDescription", "description", "tags");
-            List<Document> documents = jsonLoader.load();
+            List<Document> documents = jsonReader.get();
             this.vectorStore.add(documents);
   }
 ```

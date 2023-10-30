@@ -5,9 +5,9 @@ import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.loader.impl.JsonLoader;
-import org.springframework.ai.loader.impl.JsonMetadataGenerator;
-import org.springframework.ai.vectorstore.impl.SimplePersistentVectorStore;
+import org.springframework.ai.reader.JsonReader;
+import org.springframework.ai.vectorstore.SimplePersistentVectorStore;
+import org.springframework.ai.reader.JsonMetadataGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 public class SimplePersistentVectorStoreIT {
 
-	@Value("classpath:/data/acme/bikes.json")
+	@Value("file:src/test/resources/data/acme/bikes.json")
 	private Resource bikesJsonResource;
 
 	@Autowired
@@ -31,9 +31,9 @@ public class SimplePersistentVectorStoreIT {
 
 	@Test
 	void persist(@TempDir(cleanup = CleanupMode.ON_SUCCESS) Path workingDir) {
-		JsonLoader jsonLoader = new JsonLoader(bikesJsonResource, new ProductMetadataGenerator(), "price", "name",
+		JsonReader jsonReader = new JsonReader(bikesJsonResource, new ProductMetadataGenerator(), "price", "name",
 				"shortDescription", "description", "tags");
-		List<Document> documents = jsonLoader.load();
+		List<Document> documents = jsonReader.get();
 		SimplePersistentVectorStore vectorStore = new SimplePersistentVectorStore(this.embeddingClient);
 		vectorStore.add(documents);
 

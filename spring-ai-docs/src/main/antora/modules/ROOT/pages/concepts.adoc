@@ -50,12 +50,27 @@ This pre-training feature transforms AI into a general developer tool that doesn
 == Prompts
 
 Prompts serve as the foundation for language-based inputs that guide an AI model to produce specific outputs.
-While this might seem intuitive considering our interactions with ChatGPT, crafting effective prompts involves both an art and a science.
-The wording of the language utilized significantly impacts the AI model's responses, and their specific patterns and words are recognized by the model to guide responses in the intended direction.
+For those familiar with ChatGPT, a prompt might seem like merely the text entered into a dialog box that is sent to the API.
+However, it encompasses much more than that.
+In many AI Models, the text for the prompt is not just a simple String.
 
-The importance of this skill has led to the emergence of "Prompt Engineering."
-When an effective prompt for a particular use case is identified, it is often shared within the community.
+ChatGPT's API has multiple text inputs within a prompt, with each text input being assigned a role.
+For example, there is the system role, that instructs the model how ot behave and sets the context for the interaction.
+There is also the user role, which is typically the input from the user.
 
+Crafting effective prompts is both an art and a science.
+ChatGPT was designed for human conversations.
+This is quite a departure from using something like SQL to 'ask a question'.
+One must communicate with the AI model akin to conversing with another person.
+
+Such is the importance of this interaction style that the term "Prompt Engineering" has emerged as its own discipline.
+There is a burgeoning collection of techniques that improve the effectiveness of prompts.
+Investing time in crafting a prompt can drastically improve the resulting output.
+
+Sharing prompts has become a communcal practice, and there is active academic research being done on this subject.
+As an example of how counter-intuitive it can be to create effective prompt, for example contrasting with SQL,  recent research paper found that one of the most effective prompts you can use starts with the phrase, "Take a deep breath and work on this problem step by step".
+That should give you an indication of how language is so important.
+We don't yet fully understand how to make the most effective use of previous iterations of this technology, such as ChatGPT 3.5, let alone new versions that are being developed.
 
 == Prompt Templates
 
@@ -117,7 +132,7 @@ It uses the output from one call as the input to another.
 
 By chaining calls together, you can support complex use cases by composing pipelines of multiple chains.
 
-==  Customizing Models: Integrating Your Data
+== Bringing Your Data to the AI model
 
 How can you equip the AI model with information it hasn't been trained on?
 
@@ -127,38 +142,43 @@ An interesting bit of trivia is that this dataset is around ~650GB.
 
 Two techniques exist for customizing the AI model to incorporate your data:
 
-Fine Tuning: This traditional Machine Learning technique involves tailoring the model and changing its internal weighting.
+1. Fine Tuning: This traditional Machine Learning technique involves tailoring the model and changing its internal weighting.
 However, it's a challenging process for Machine Learning experts and extremely resource-intensive for models like GPT due to their size. Additionally, some models might not offer this option.
 
-Prompt Stuffing: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
+2. Prompt Stuffing: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
 This approach is colloquially referred to as 'stuffing the prompt'.
 
-The Spring AI library helps you implement solutions based on the 'stuffing of the prompt' technique.
-
+The Spring AI library helps you implement solutions based on the 'stuffing of the prompt' technique otherwise knowsn as Retrieval Augmented Generation
 
 == Retrieval Augmented Generation
 
-A technique termed Retrieval Augmented Generation has emerged to address the challenge of incorporating relevant data into prompts for accurate AI model responses.
+A technique termed Retrieval Augmented Generation (RAG) has emerged to address the challenge of incorporating relevant data into prompts for accurate AI model responses.
 
-The approach involves extracting data from your source and segmenting it into smaller units, each within the model's token limit. These pieces are then stored in a database.
-When a user's request is received, the most pertinent document fragments are retrieved from the database to enrich the prompt, aiding the AI model's response accuracy.
+The approach involves a batch processing style programming model, where the job reads unstructured data from your Documents, transforms it, and then writes it into a Vector Database.
+At a high level, this is an ETL (Extract, Transform and Load) pipeline.
+The Vector Database will be used in the retrieval part of RAG technique.
 
-Data Loaders play a pivotal role in this process, reading and formatting your data into fragments suitable for database storage.
-For optimal retrieval of related documents, a Vector Database is the type of database best suited for this task.
+As part of loading the unstructured data into the Vector Database, one of the most important transformations is to split up the original document into smaller pieces.
+The procedure of splitting up the original document into smaller pieces has two important steps.
 
-Data Loaders and Vector Database are the fundamental building blocks for solving use cases such as "Q&A over my documentation".
+1. Split up the document into parts while preserving the semantic boundaries of the content.
+For example, for a document with paragraphs and tables, one should avoid splitting the document in the middle of a paragraph or table.
+For code, avoid splitting the code in the middle of a method's implementation.
+2. Split up the document's parts further into parts whose size is a small percentage of the AI Model's token limit.
 
+The next phase in RAG, is processing user input.
+When a user's question is to be answered by an AI model, the question along with all the 'similar' document pieces are placed into the prompt that is sent to the AI model.
+This is the reason to use a Vector Database, it is very good at finding 'similar' content.
 
+There are several concepts that are used in implementing RAG.
+The concepts map onto classes in Spring AI.
+These are briefly described below
 
-=== Data Loaders
-
-=== Splitters
-
-=== Embeddings
-
-=== Vector Databases
-
-TBD
+* `DocumentReader` This is an Java functional interface that is responsible for loading a `List<Document>` from a data source.  Common data sources are PDF, Markdown, and JSON.
+* `Document` A text based representation of your data source that also contains metadata to describe the contents.
+* `DocumentTransformer` This is responsible for processing the data in various ways, for example splitting up documents into smaller pieces or adding additional metadata to the `Document`.
+* `DocumentWriter`  This allows you to persist the Documents into a database, most commomly in the AI stack, a Vector Database.
+* `Embedding` This is a representation of your data as a `List<Double` that is used by the Vector Database to compute the 'similarity' of a user's query to relevant documents.
 
 == Evaluating AI responses
 
