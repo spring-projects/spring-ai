@@ -15,15 +15,16 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 @ConditionalOnMissingBean(BedrockRuntimeClient.class)
 public class AWSBedrockAutoConfiguration {
 
-    @Bean
-    @ConditionalOnBean(AwsCredentialsProvider.class)
-    public BedrockRuntimeClient awsBedrockClient(AwsCredentialsProvider provider) {
-        return BedrockRuntimeClient.builder().credentialsProvider(provider).build();
-    }
-    @Bean
-    @ConditionalOnMissingBean(AwsCredentialsProvider.class)
-    public BedrockRuntimeClient awsBedrockClient() {
-        return BedrockRuntimeClient.create();
-    }
+	@Bean
+	@ConditionalOnBean(AwsCredentialsProvider.class)
+	public BedrockRuntimeClient awsBedrockClient(AwsCredentialsProvider provider) {
+		return BedrockRuntimeClient.builder().credentialsProvider(provider).build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(AwsCredentialsProvider.class)
+	public BedrockRuntimeClient awsBedrockClient() {
+		return BedrockRuntimeClient.create();
+	}
 
 }

@@ -15,33 +15,33 @@ import static java.util.Collections.singletonList;
 
 public class AWSBedrockClient implements AiClient {
 
-    private final BedrockRuntimeClient client;
-    private final AWSBaseModel baseModelParams;
+	private final BedrockRuntimeClient client;
 
-    public AWSBedrockClient(BedrockRuntimeClient client,
-            AWSBaseModel baseModelParams) {
-        this.client = client;
-        this.baseModelParams = baseModelParams;
-    }
+	private final AWSBaseModel baseModelParams;
 
-    @Override
-    public String generate(String message) {
-        return invokeModel(message);
-    }
+	public AWSBedrockClient(BedrockRuntimeClient client, AWSBaseModel baseModelParams) {
+		this.client = client;
+		this.baseModelParams = baseModelParams;
+	}
 
-    @Override
-    public AiResponse generate(Prompt prompt) {
-        var response = invokeModel(prompt.getContents());
-        return new AiResponse(singletonList(new Generation(response)));
-    }
+	@Override
+	public String generate(String message) {
+		return invokeModel(message);
+	}
 
-    private String invokeModel(String msg) {
-        var modelRequest = InvokeModelRequest.builder()
-                .modelId(baseModelParams.getModelId())
-                .body(this.baseModelParams.toPayload(msg))
-                .build();
-        var response = client.invokeModel(modelRequest)
-                .body();
-        return this.baseModelParams.getResponseContent(response);
-    }
+	@Override
+	public AiResponse generate(Prompt prompt) {
+		var response = invokeModel(prompt.getContents());
+		return new AiResponse(singletonList(new Generation(response)));
+	}
+
+	private String invokeModel(String msg) {
+		var modelRequest = InvokeModelRequest.builder()
+			.modelId(baseModelParams.getModelId())
+			.body(this.baseModelParams.toPayload(msg))
+			.build();
+		var response = client.invokeModel(modelRequest).body();
+		return this.baseModelParams.getResponseContent(response);
+	}
+
 }
