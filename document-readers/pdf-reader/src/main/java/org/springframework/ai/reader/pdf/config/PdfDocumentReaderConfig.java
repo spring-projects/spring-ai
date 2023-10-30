@@ -78,7 +78,7 @@ public class PdfDocumentReaderConfig {
 
 		/**
 		 * How many pages to put in a single Document instance. 0 stands for all pages.
-		 * Defaults to 0.
+		 * Defaults to 1.
 		 * @param pagesPerDocument Number of page's content to group in single Document.
 		 * @return this builder
 		 */
