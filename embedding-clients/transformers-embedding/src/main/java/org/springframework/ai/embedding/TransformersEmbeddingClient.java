@@ -38,7 +38,7 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	// ONNX model for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-	private final static String DEFAULT_ONNX_MODEL_URI = "https://raw.githubusercontent.com/spring-projects-experimental/spring-ai/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+	private final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects-experimental/spring-ai/raw/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
 
 	private final static int EMBEDDING_AXIS = 1;
 

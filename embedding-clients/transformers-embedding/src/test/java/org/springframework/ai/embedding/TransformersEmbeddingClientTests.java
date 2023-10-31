@@ -16,9 +16,11 @@
 
 package org.springframework.ai.embedding;
 
+import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.document.Document;
 
@@ -32,7 +34,6 @@ public class TransformersEmbeddingClientTests {
 	@Test
 	void embed() throws Exception {
 		TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient();
-		embeddingClient.setResourceCacheDirectory("/tmp/onnx-zoo");
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed("Hello world");
 		assertThat(embed).hasSize(384);
