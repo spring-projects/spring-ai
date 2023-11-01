@@ -10,6 +10,8 @@ public interface Chain extends Function<AiInput, AiOutput> {
 
 	List<String> getOutputKeys();
 
+	String apply(Map<String, Object> input);
+
 	AiInput preProcess(AiInput aiInput);
 
 	Map<String, Object> postProcess(AiInput aiInput, AiOutput aiOutput);

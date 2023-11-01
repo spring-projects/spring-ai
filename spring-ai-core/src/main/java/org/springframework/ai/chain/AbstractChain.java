@@ -34,6 +34,13 @@ public abstract class AbstractChain implements Chain {
 	}
 
 	@Override
+	public String apply(Map<String, Object> input) {
+		AiInput aiInput = new AiInput(input);
+		AiOutput aiOutput = apply(aiInput);
+		return aiOutput.getOutputData().get(getOutputKeys().get(0)).toString();
+	}
+
+	@Override
 	public AiInput preProcess(AiInput aiInput) {
 		validateInputs(aiInput.getInputData());
 		return aiInput;
