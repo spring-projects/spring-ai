@@ -8,7 +8,7 @@ import org.springframework.ai.prompt.PromptTemplate;
 import java.util.List;
 import java.util.Map;
 
-public class LLMChain extends AbstractChain {
+public class AiChain extends AbstractChain {
 
 	private final AiClient aiClient;
 
@@ -18,7 +18,7 @@ public class LLMChain extends AbstractChain {
 
 	private final OutputParser outputParser;
 
-	public LLMChain(AiClient aiClient, PromptTemplate promptTemplate, String outputKey, OutputParser outputParser) {
+	public AiChain(AiClient aiClient, PromptTemplate promptTemplate, String outputKey, OutputParser outputParser) {
 		this.aiClient = aiClient;
 		this.promptTemplate = promptTemplate;
 		this.outputKey = outputKey;
@@ -27,8 +27,7 @@ public class LLMChain extends AbstractChain {
 
 	@Override
 	public List<String> getInputKeys() {
-		return List.of(); // TODO : What are these? In LangChain, they come from the
-							// prompt template.
+		return promptTemplate.getInputVariables().stream().toList();
 	}
 
 	@Override
@@ -39,7 +38,14 @@ public class LLMChain extends AbstractChain {
 	@Override
 	protected AiOutput doApply(AiInput aiInput) {
 		Prompt prompt = promptTemplate.create(aiInput.getInputData());
-		return new AiOutput(Map.of(outputKey, aiClient.generate(prompt)));
+		return new AiOutput(Map.of(outputKey, aiClient.generate(prompt).getGeneration().getText())); // TODO:
+																										// Getting
+																										// the
+																										// text,
+																										// not
+																										// the
+																										// right
+																										// thing
 	}
 
 }

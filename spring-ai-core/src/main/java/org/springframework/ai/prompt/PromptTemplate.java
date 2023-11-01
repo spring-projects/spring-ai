@@ -179,7 +179,7 @@ public class PromptTemplate
 		return new Prompt(render(model));
 	}
 
-	protected Set<String> getInputVariables() {
+	public Set<String> getInputVariables() {
 		TokenStream tokens = this.st.impl.tokens;
 		return IntStream.range(0, tokens.range())
 			.mapToObj(tokens::get)

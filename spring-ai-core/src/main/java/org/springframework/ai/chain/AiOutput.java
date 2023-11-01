@@ -10,7 +10,7 @@ public class AiOutput {
 		this.outputData = outputData;
 	}
 
-	Map<String, Object> getOutputData() {
+	public Map<String, Object> getOutputData() {
 		return this.outputData;
 	}
 
