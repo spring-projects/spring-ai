@@ -89,14 +89,18 @@ public abstract class AbstractMessage implements Message {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 		AbstractMessage that = (AbstractMessage) o;
-		return Objects.equals(content, that.content) && Objects.equals(properties, that.properties) && messageType == that.messageType;
+		return Objects.equals(content, that.content) && Objects.equals(properties, that.properties)
+				&& messageType == that.messageType;
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(content, properties, messageType);
 	}
+
 }

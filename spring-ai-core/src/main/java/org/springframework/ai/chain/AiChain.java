@@ -25,7 +25,6 @@ public class AiChain extends AbstractChain {
 
 	/**
 	 * Constructs an AiChain.
-	 *
 	 * @param aiClient The AI client to use to generate the response
 	 * @param promptTemplate The prompt template to use to render the prompt
 	 * @param outputKey The key to use for the output data when rendered into an AiOutput
