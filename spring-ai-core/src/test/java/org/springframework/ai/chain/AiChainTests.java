@@ -24,7 +24,6 @@ public class AiChainTests {
 		AiChain aiChain = setupAiChain();
 		AiInput aiInput = new AiInput(Map.of("subject", "cows"));
 		AiOutput aiOutput = aiChain.apply(aiInput);
-		System.err.println(" --> " + aiOutput.getOutputData());
 		assertThat(aiOutput.getOutputData().get("outdata"))
 			.isEqualTo("Why did the cow cross the road? To get to the udder side.");
 	}

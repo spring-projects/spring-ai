@@ -83,6 +83,10 @@ class ChainTests {
 
 		}
 
+		@Override
+		public void clear() {
+		}
+
 	}
 
 }

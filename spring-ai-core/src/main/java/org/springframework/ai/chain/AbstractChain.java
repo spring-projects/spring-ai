@@ -42,8 +42,14 @@ public abstract class AbstractChain implements Chain {
 
 	@Override
 	public AiInput preProcess(AiInput aiInput) {
-		validateInputs(aiInput.getInputData());
-		return aiInput;
+		Map<String, Object> inputs = new HashMap<>(aiInput.getInputData());
+		if (memory.isPresent()) {
+			Map<String, Object> externalContext = memory.get().load(inputs);
+			inputs.putAll(externalContext);
+		}
+
+		validateInputs(inputs);
+		return new AiInput(inputs);
 	}
 
 	protected abstract AiOutput doApply(AiInput aiInput);
@@ -51,6 +57,11 @@ public abstract class AbstractChain implements Chain {
 	@Override
 	public Map<String, Object> postProcess(AiInput aiInput, AiOutput aiOutput) {
 		validateOutputs(aiOutput.getOutputData());
+
+		if (memory.isPresent()) {
+			memory.get().save(aiInput.getInputData(), aiOutput.getOutputData());
+		}
+
 		Map<String, Object> combindedMap = new HashMap<>();
 		combindedMap.putAll(aiInput.getInputData());
 		combindedMap.putAll(aiOutput.getOutputData());
