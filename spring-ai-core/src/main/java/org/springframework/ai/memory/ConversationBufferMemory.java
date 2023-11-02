@@ -14,54 +14,54 @@ import java.util.Map;
  */
 public class ConversationBufferMemory extends BaseChatMemory {
 
-    private String memoryKey = "history";
+	private String memoryKey = "history";
 
-    private String humanPrefix = "Human";
-    private String aiPrefix = "AI";
+	private String humanPrefix = "Human";
 
-    public void setMemoryKey(String memoryKey) {
-        this.memoryKey = memoryKey;
-    }
+	private String aiPrefix = "AI";
 
-    public void setHumanPrefix(String humanPrefix) {
-        this.humanPrefix = humanPrefix;
-    }
+	public void setMemoryKey(String memoryKey) {
+		this.memoryKey = memoryKey;
+	}
 
-    public void setAiPrefix(String aiPrefix) {
-        this.aiPrefix = aiPrefix;
-    }
+	public void setHumanPrefix(String humanPrefix) {
+		this.humanPrefix = humanPrefix;
+	}
 
-    @Override
-    public List<String> getKeys() {
-        return List.of(memoryKey);
-    }
+	public void setAiPrefix(String aiPrefix) {
+		this.aiPrefix = aiPrefix;
+	}
 
-    @Override
-    public Map<String, Object> load(Map<String, Object> inputs) {
-        if (returnMessages) {
-            return Map.of(memoryKey, bufferAsMessages());
-        }
-        return Map.of(memoryKey, bufferAsString());
-    }
+	@Override
+	public List<String> getKeys() {
+		return List.of(memoryKey);
+	}
 
-    public String bufferAsString() {
-        List<String> stringMessages = new ArrayList<>();
-        getMessages().forEach(
-                message -> {
-                    String role = message.getMessageTypeValue();
-                    if (role.equals(MessageType.USER)) {
-                        role = humanPrefix;
-                    } else if (role.equals(MessageType.ASSISTANT)) {
-                        role = aiPrefix;
-                    }
-                    stringMessages.add(String.format("%s: %s", role, message.getContent()));
-                }
-        );
-        return String.join("\n", stringMessages);
-    }
+	@Override
+	public Map<String, Object> load(Map<String, Object> inputs) {
+		if (returnMessages) {
+			return Map.of(memoryKey, bufferAsMessages());
+		}
+		return Map.of(memoryKey, bufferAsString());
+	}
 
-    private List<Message> bufferAsMessages() {
-        return getMessages();
-    }
+	public String bufferAsString() {
+		List<String> stringMessages = new ArrayList<>();
+		getMessages().forEach(message -> {
+			String role = message.getMessageTypeValue();
+			if (role.equals(MessageType.USER)) {
+				role = humanPrefix;
+			}
+			else if (role.equals(MessageType.ASSISTANT)) {
+				role = aiPrefix;
+			}
+			stringMessages.add(String.format("%s: %s", role, message.getContent()));
+		});
+		return String.join("\n", stringMessages);
+	}
+
+	private List<Message> bufferAsMessages() {
+		return getMessages();
+	}
 
 }

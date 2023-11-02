@@ -14,18 +14,18 @@ import java.util.List;
  */
 public class ConversationChain extends AiChain {
 
-    private final String inputKey;
+	private final String inputKey;
 
-    public ConversationChain(AiClient aiClient, PromptTemplate promptTemplate, String inputKey, String outputKey, OutputParser outputParser) {
-        super(aiClient, promptTemplate, outputKey, outputParser);
-        this.inputKey = inputKey;
-        this.setMemory(new ConversationBufferMemory());
-    }
+	public ConversationChain(AiClient aiClient, PromptTemplate promptTemplate, String inputKey, String outputKey,
+			OutputParser outputParser) {
+		super(aiClient, promptTemplate, outputKey, outputParser);
+		this.inputKey = inputKey;
+		this.setMemory(new ConversationBufferMemory());
+	}
 
-    @Override
-    public List<String> getInputKeys() {
-        return List.of(inputKey);
-    }
-
+	@Override
+	public List<String> getInputKeys() {
+		return List.of(inputKey);
+	}
 
 }

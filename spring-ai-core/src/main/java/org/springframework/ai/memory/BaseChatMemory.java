@@ -13,41 +13,42 @@ import java.util.Map;
  */
 public abstract class BaseChatMemory implements Memory {
 
-    BaseChatMessageHistory chatMemory = new BaseChatMessageHistory(){};
+	BaseChatMessageHistory chatMemory = new BaseChatMessageHistory() {
+	};
 
-    boolean returnMessages = false;
+	boolean returnMessages = false;
 
-    private String inputKey;
+	private String inputKey;
 
-    private String outputKey;
+	private String outputKey;
 
-    @Override
-    public void save(Map<String, Object> inputs, Map<String, Object> outputs) {
-        String promptInputKey = inputKey;
-        if (promptInputKey == null) {
-            if (inputs.isEmpty()) {
-                throw new IllegalStateException("One input key expected, but got none");
-            }
-            promptInputKey = inputs.keySet().iterator().next();
-        }
-        chatMemory.addUserMessage(inputs.get(promptInputKey).toString());
+	@Override
+	public void save(Map<String, Object> inputs, Map<String, Object> outputs) {
+		String promptInputKey = inputKey;
+		if (promptInputKey == null) {
+			if (inputs.isEmpty()) {
+				throw new IllegalStateException("One input key expected, but got none");
+			}
+			promptInputKey = inputs.keySet().iterator().next();
+		}
+		chatMemory.addUserMessage(inputs.get(promptInputKey).toString());
 
-        String promptOutputKey = outputKey;
-        if (promptOutputKey == null) {
-            if (outputs.isEmpty()) {
-                throw new IllegalStateException("One output key expected, but got none");
-            }
-            promptOutputKey = outputs.keySet().iterator().next();
-        }
-        chatMemory.addAiMessage(outputs.get(promptOutputKey).toString());
-    }
+		String promptOutputKey = outputKey;
+		if (promptOutputKey == null) {
+			if (outputs.isEmpty()) {
+				throw new IllegalStateException("One output key expected, but got none");
+			}
+			promptOutputKey = outputs.keySet().iterator().next();
+		}
+		chatMemory.addAiMessage(outputs.get(promptOutputKey).toString());
+	}
 
-    protected List<Message> getMessages() {
-        return chatMemory.messages;
-    }
+	protected List<Message> getMessages() {
+		return chatMemory.messages;
+	}
 
-    public void clear() {
-        chatMemory.clear();
-    }
+	public void clear() {
+		chatMemory.clear();
+	}
 
 }
