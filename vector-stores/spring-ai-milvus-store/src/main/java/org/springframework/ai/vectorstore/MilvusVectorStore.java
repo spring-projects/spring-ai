@@ -54,8 +54,11 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
@@ -85,6 +88,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	public static final List<String> SEARCH_OUTPUT_FIELDS = Arrays.asList(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
 			METADATA_FIELD_NAME);
+
+	public final MilvusFilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
 
 	private final MilvusServiceClient milvusClient;
 
@@ -327,21 +332,35 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
+		return internalSimilaritySearch(query, topK, similarityThreshold, "");
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
+	}
+
+	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold,
+			String filterExpressions) {
 		Assert.notNull(query, "Query string must not be null");
 
 		List<Double> embedding = this.embeddingClient.embed(query);
 
-		SearchParam searchParam = SearchParam.newBuilder()
+		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withMetricType(this.config.metricType)
 			.withOutFields(SEARCH_OUTPUT_FIELDS)
 			.withTopK(topK)
 			.withVectors(List.of(toFloatList(embedding)))
-			.withVectorFieldName(EMBEDDING_FIELD_NAME)
-			.build();
+			.withVectorFieldName(EMBEDDING_FIELD_NAME);
 
-		R<SearchResults> respSearch = milvusClient.search(searchParam);
+		if (StringUtils.hasText(filterExpressions)) {
+			searchParamBuilder.withExpr(filterExpressions);
+		}
+
+		R<SearchResults> respSearch = milvusClient.search(searchParamBuilder.build());
 
 		if (respSearch.getException() != null) {
 			throw new RuntimeException("Search failed!", respSearch.getException());

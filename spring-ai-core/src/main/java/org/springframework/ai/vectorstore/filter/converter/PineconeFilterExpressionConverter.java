@@ -1,0 +1,63 @@
+/*
+ * Copyright 2023-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.vectorstore.filter.converter;
+
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
+import org.springframework.ai.vectorstore.filter.Filter.Key;
+
+/**
+ * Converts {@link Expression} into Pinecone metadata filter expression format.
+ * (https://docs.pinecone.io/docs/metadata-filtering)
+ *
+ * @author Christian Tzolov
+ */
+public class PineconeFilterExpressionConverter extends AbstractFilterExpressionConverter {
+
+	@Override
+	protected void doExpression(Expression exp, StringBuilder context) {
+
+		context.append("{");
+		if (exp.type() == ExpressionType.AND || exp.type() == ExpressionType.OR) {
+			context.append(getOperationSymbol(exp));
+			context.append("[");
+			this.convert(exp.left(), context);
+			context.append(",");
+			this.convert(exp.right(), context);
+			context.append("]");
+		}
+		else {
+			this.convert(exp.left(), context);
+			context.append("{");
+			context.append(getOperationSymbol(exp));
+			this.convert(exp.right(), context);
+			context.append("}");
+		}
+		context.append("}");
+
+	}
+
+	private String getOperationSymbol(Expression exp) {
+		return "\"$" + exp.type().toString().toLowerCase() + "\": ";
+	}
+
+	@Override
+	protected void doKey(Key key, StringBuilder context) {
+		context.append("\"" + key.key() + "\": ");
+	}
+
+}
