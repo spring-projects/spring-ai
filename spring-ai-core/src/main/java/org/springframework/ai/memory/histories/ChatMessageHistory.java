@@ -8,23 +8,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Abstract base class for storing chat message history.
+ * Component for storing chat message history.
  *
  * @author Craig Walls
  */
-public interface BaseChatMessageHistory {
+public interface ChatMessageHistory {
 
 	/**
-	 * A list of {@link Message} stored in memory.
+	 * @return A list of {@link Message} stored in memory.
 	 */
-	List<Message> messages = new ArrayList<>();
+	List<Message> getMessages();
 
 	/**
 	 * Add a human message string to the store.
 	 * @param message the String contents of the human message.
 	 */
 	default void addUserMessage(String message) {
-		messages.add(new UserMessage(message));
+		getMessages().add(new UserMessage(message));
 	}
 
 	/**
@@ -32,7 +32,7 @@ public interface BaseChatMessageHistory {
 	 * @param message the String contents of the AI message.
 	 */
 	default void addAiMessage(String message) {
-		messages.add(new AssistantMessage(message));
+		getMessages().add(new AssistantMessage(message));
 	}
 
 	/**
@@ -40,14 +40,14 @@ public interface BaseChatMessageHistory {
 	 * @param message the message to add.
 	 */
 	default void addMessage(Message message) {
-		messages.add(message);
+		getMessages().add(message);
 	}
 
 	/**
 	 * Remove all messages from the store.
 	 */
 	default void clear() {
-		messages.clear();
+		getMessages().clear();
 	}
 
 }

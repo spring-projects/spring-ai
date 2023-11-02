@@ -16,9 +16,9 @@ public class ConversationBufferMemory extends BaseChatMemory {
 
 	private String memoryKey = "history";
 
-	private String humanPrefix = "Human";
+	private String humanPrefix = MessageType.USER.getValue();
 
-	private String aiPrefix = "AI";
+	private String aiPrefix = MessageType.ASSISTANT.getValue();
 
 	public void setMemoryKey(String memoryKey) {
 		this.memoryKey = memoryKey;
@@ -42,17 +42,17 @@ public class ConversationBufferMemory extends BaseChatMemory {
 		if (returnMessages) {
 			return Map.of(memoryKey, bufferAsMessages());
 		}
-		return Map.of(memoryKey, bufferAsString());
+		return Map.of(memoryKey, getBufferAsString());
 	}
 
-	public String bufferAsString() {
+	public String getBufferAsString() {
 		List<String> stringMessages = new ArrayList<>();
 		getMessages().forEach(message -> {
-			String role = message.getMessageTypeValue();
-			if (role.equals(MessageType.USER)) {
+			String role = message.getMessageType().getValue();
+			if (role.equals(MessageType.USER.getValue())) {
 				role = humanPrefix;
 			}
-			else if (role.equals(MessageType.ASSISTANT)) {
+			else if (role.equals(MessageType.ASSISTANT.getValue())) {
 				role = aiPrefix;
 			}
 			stringMessages.add(String.format("%s: %s", role, message.getContent()));

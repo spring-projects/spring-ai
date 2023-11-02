@@ -1,6 +1,7 @@
 package org.springframework.ai.memory;
 
-import org.springframework.ai.memory.histories.BaseChatMessageHistory;
+import org.springframework.ai.memory.histories.ChatMessageHistory;
+import org.springframework.ai.memory.histories.InMemoryChatMessageHistory;
 import org.springframework.ai.prompt.messages.Message;
 
 import java.util.List;
@@ -13,8 +14,7 @@ import java.util.Map;
  */
 public abstract class BaseChatMemory implements Memory {
 
-	BaseChatMessageHistory chatMemory = new BaseChatMessageHistory() {
-	};
+	ChatMessageHistory chatMemory = new InMemoryChatMessageHistory();
 
 	boolean returnMessages = false;
 
@@ -44,7 +44,7 @@ public abstract class BaseChatMemory implements Memory {
 	}
 
 	protected List<Message> getMessages() {
-		return chatMemory.messages;
+		return chatMemory.getMessages();
 	}
 
 	public void clear() {

@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mock;
 public class ConversationChainTests {
 
 	@Test
-	public void test() {
+	public void memoryCollectsOverMultipleGenerations() {
 		AiClient aiClient = mock(AiClient.class);
 		Mockito.when(aiClient.generate(Mockito.any(Prompt.class)))
 			.thenReturn(new AiResponse(List
