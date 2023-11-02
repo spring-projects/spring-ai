@@ -12,7 +12,7 @@ This readme will walk you through setting up the Pinecone VectorStore to store d
 2. Pinecone Project: Once registered, create a new project, an index, and generate an API key. You'll need these details for configuration.
 3. OpenAI Account: Create an account at [OpenAI Signup](https://platform.openai.com/signup) and generate the token at [API Keys](https://platform.openai.com/account/api-keys)
 
-## Configuraiton
+## Configuration
 
 To set up PineconeVectorStore, gather the following details from your Pinecone account:
 

@@ -8,9 +8,30 @@ This readme will walk you through setting up the PGvector VectorStore to store d
 
 ## Prerequisites
 
-1. Access to PostgresSQL instance with required database credentials.
-For test purposes you can deploy a local, Docker PostgresSQL/PGvector instance. See the [Run Postgres & PGVector DB locally](#appendix_a) appendix.
-2. OpenAI Account: Create an account at [OpenAI Signup](https://platform.openai.com/signup) and generate the token at [API Keys](https://platform.openai.com/account/api-keys)
+1. OpenAI Account: Create an account at [OpenAI Signup](https://platform.openai.com/signup) and generate the token at [API Keys](https://platform.openai.com/account/api-keys).
+
+2. Access to PostgresSQL instance with following configurations
+
+	The [setup local Postgres/PGVector](#appendix_a) appendix show how to setup a DB locally with a Docker container.
+
+	On startup the `PgVectorStore` will attempt to install the required database extensions, to create the required `vector_store` table and index.
+	But, optionally, one can do it manually like this:
+
+	(Optional)
+	```sql
+	CREATE EXTENSION IF NOT EXISTS vector
+	CREATE EXTENSION IF NOT EXISTS hstore
+	CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+
+	CREATE TABLE IF NOT EXISTS vector_store (
+		id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+		content text,
+		metadata json,
+		embedding vector(1536)
+	)
+
+	CREATE INDEX ON vector_store USING HNSW (embedding vector_cosine_ops)
+	```
 
 ## Configuration
 
