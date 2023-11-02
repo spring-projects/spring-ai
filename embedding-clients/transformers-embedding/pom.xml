@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.experimental.ai</groupId>
+		<artifactId>spring-ai</artifactId>
+		<version>0.7.0-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
+	</parent>
+	<artifactId>transformers-embedding</artifactId>
+	<packaging>jar</packaging>
+	<name>Spring AI Embedding Client - Sentence Transormers Embeddings </name>
+	<description>Spring AI Sentence Transformers Embedding Client</description>
+	<url>https://github.com/spring-projects-experimental/spring-ai</url>
+
+	<scm>
+		<url>https://github.com/spring-projects-experimental/spring-ai</url>
+		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+	</scm>
+
+	<properties>
+		<djl.version>0.24.0</djl.version>
+		<onnxruntime.version>1.16.1</onnxruntime.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-core</artifactId>
+			<version>${parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.microsoft.onnxruntime</groupId>
+			<artifactId>onnxruntime</artifactId>
+			<version>${onnxruntime.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ai.djl.pytorch</groupId>
+			<artifactId>pytorch-engine</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ai.djl</groupId>
+			<artifactId>api</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ai.djl</groupId>
+			<artifactId>model-zoo</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ai.djl.huggingface</groupId>
+			<artifactId>tokenizers</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+
+
+		<!-- TESTING -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+</project>

@@ -20,59 +20,82 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
-import com.github.victools.jsonschema.generator.SchemaVersion;
-import org.springframework.ai.prompt.PromptTemplate;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
 
-import java.util.Map;
 import java.util.Objects;
 
+import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
+import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
+
 /**
- * {@link OutputParser} implementation that uses JSON schema to convert the LLM output
- * into a desired object of type T.
+ * An implementation of {@link OutputParser} that transforms the LLM output to a specific
+ * object type using JSON schema. This parser works by generating a JSON schema based on a
+ * given Java class, which is then used to validate and transform the LLM output into the
+ * desired type.
  *
- * @param <T> The target type to convert the output into.
+ * @param <T> The target type to which the output will be converted.
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Sebastian Ullrich
  */
 public class BeanOutputParser<T> implements OutputParser<T> {
 
+	/** Holds the generated JSON schema for the target type. */
 	private String jsonSchema;
 
+	/** The Java class representing the target type. */
+	@SuppressWarnings({ "FieldMayBeFinal", "rawtypes" })
 	private Class clazz;
 
+	/** The object mapper used for deserialization and other JSON operations. */
+	@SuppressWarnings("FieldMayBeFinal")
 	private ObjectMapper objectMapper;
 
+	/**
+	 * Constructor to initialize with the target type's class.
+	 * @param clazz The target type's class.
+	 */
 	public BeanOutputParser(Class<T> clazz) {
-		Objects.requireNonNull(clazz, "Java Class can not be null;");
-		this.clazz = clazz;
-		this.objectMapper = getObjectMapper();
-		generateSchema();
+		this(clazz, null);
 	}
 
+	/**
+	 * Constructor to initialize with the target type's class and a custom object mapper.
+	 * @param clazz The target type's class.
+	 * @param objectMapper Custom object mapper for JSON operations.
+	 */
 	public BeanOutputParser(Class<T> clazz, ObjectMapper objectMapper) {
-		Objects.requireNonNull(clazz, "Java Class can not be null;");
-		Objects.requireNonNull(objectMapper, "ObjectMapper can not be null;");
+		Objects.requireNonNull(clazz, "Java Class cannot be null;");
 		this.clazz = clazz;
-		this.objectMapper = objectMapper;
+		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
 		generateSchema();
 	}
 
+	/**
+	 * Generates the JSON schema for the target type.
+	 */
 	private void generateSchema() {
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
-				OptionPreset.PLAIN_JSON);
+		JacksonModule jacksonModule = new JacksonModule();
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(DRAFT_2020_12, PLAIN_JSON)
+			.with(jacksonModule);
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
-		JsonNode jsonSchema = generator.generateSchema(this.clazz);
-		this.jsonSchema = jsonSchema.toPrettyString();
+		JsonNode jsonNode = generator.generateSchema(this.clazz);
+		this.jsonSchema = jsonNode.toPrettyString();
 	}
 
 	@Override
+	/**
+	 * Parses the given text to transform it to the desired target type.
+	 * @param text The LLM output in string format.
+	 * @return The parsed output in the desired target type.
+	 */
 	public T parse(String text) {
 		try {
+			// noinspection unchecked
 			return (T) this.objectMapper.readValue(text, this.clazz);
 		}
 		catch (JsonProcessingException e) {
@@ -80,23 +103,30 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 		}
 	}
 
+	/**
+	 * Configures and returns an object mapper for JSON operations.
+	 * @return Configured object mapper.
+	 */
 	protected ObjectMapper getObjectMapper() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return objectMapper;
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		return mapper;
 	}
 
+	/**
+	 * Provides the expected format of the response, instructing that it should adhere to
+	 * the generated JSON schema.
+	 * @return The instruction format string.
+	 */
 	@Override
 	public String getFormat() {
-
-		String raw = """
+		String template = """
 				Your response should be in JSON format.
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
 				Here is the JSON Schema instance your output must adhere to:
-				```{jsonSchema}```
+				```%s```
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(raw);
-		return promptTemplate.render(Map.of("jsonSchema", this.jsonSchema));
+		return String.format(template, this.jsonSchema);
 	}
 
 }

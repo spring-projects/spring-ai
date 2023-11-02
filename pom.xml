@@ -17,6 +17,7 @@
 		<module>spring-ai-core</module>
 		<module>spring-ai-openai</module>
 		<module>spring-ai-azure-openai</module>
+		<module>spring-ai-ollama</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
@@ -27,6 +28,10 @@
 		<module>spring-ai-aws-bedrock</module>
 		<module>embedding-clients/spring-ai-postgresml-embedding-client</module>
 		<module>document-readers/pdf-reader</module>
+		<module>document-readers/tika-reader</module>
+		<module>embedding-clients/transformers-embedding</module>
+		<module>vector-stores/spring-ai-pinecone</module>
+
 	</modules>
 
 	<organization>
@@ -83,6 +88,8 @@
 		<pgvector.version>0.1.3</pgvector.version>
 		<postgresql.version>42.6.0</postgresql.version>
 		<milvus.version>2.3.0</milvus.version>
+		<pinecone.version>0.6.0</pinecone.version>
+		<protobuf-java-util.version>3.24.4</protobuf-java-util.version>
 		<!-- testing dependecies -->
 		<testcontainers.version>1.19.0</testcontainers.version>
 		<!-- documentation dependencies -->

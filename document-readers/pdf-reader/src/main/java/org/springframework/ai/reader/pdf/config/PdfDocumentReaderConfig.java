@@ -1,8 +1,8 @@
 package org.springframework.ai.reader.pdf.config;
 
+import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.ParagraphPdfDocumentReader;
-import org.springframework.ai.reader.pdf.layout.PageExtractedTextFormatter;
 import org.springframework.util.Assert;
 
 /**
@@ -23,7 +23,7 @@ public class PdfDocumentReaderConfig {
 
 	public final int pageBottomMargin;
 
-	public final PageExtractedTextFormatter pageExtractedTextFormatter;
+	public final ExtractedTextFormatter pageExtractedTextFormatter;
 
 	/**
 	 * Start building a new configuration.
@@ -57,7 +57,7 @@ public class PdfDocumentReaderConfig {
 
 		private int pageBottomMargin = 0;
 
-		private PageExtractedTextFormatter pageExtractedTextFormatter = PageExtractedTextFormatter.defaults();
+		private ExtractedTextFormatter pageExtractedTextFormatter = ExtractedTextFormatter.defaults();
 
 		private boolean reversedParagraphPosition = false;
 
@@ -70,7 +70,7 @@ public class PdfDocumentReaderConfig {
 		 * @return this builder
 		 */
 		public PdfDocumentReaderConfig.Builder withPageExtractedTextFormatter(
-				PageExtractedTextFormatter pageExtractedTextFormatter) {
+				ExtractedTextFormatter pageExtractedTextFormatter) {
 			Assert.notNull(pagesPerDocument >= 0, "PageExtractedTextFormatter must not be null.");
 			this.pageExtractedTextFormatter = pageExtractedTextFormatter;
 			return this;
@@ -78,7 +78,7 @@ public class PdfDocumentReaderConfig {
 
 		/**
 		 * How many pages to put in a single Document instance. 0 stands for all pages.
-		 * Defaults to 0.
+		 * Defaults to 1.
 		 * @param pagesPerDocument Number of page's content to group in single Document.
 		 * @return this builder
 		 */
