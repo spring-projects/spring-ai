@@ -56,6 +56,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
@@ -327,21 +328,30 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
+		return similaritySearch(query, topK, similarityThreshold, null);
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int topK, double similarityThreshold,
+			String filterExpressions) {
 		Assert.notNull(query, "Query string must not be null");
 
 		List<Double> embedding = this.embeddingClient.embed(query);
 
-		SearchParam searchParam = SearchParam.newBuilder()
+		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withMetricType(this.config.metricType)
 			.withOutFields(SEARCH_OUTPUT_FIELDS)
 			.withTopK(topK)
 			.withVectors(List.of(toFloatList(embedding)))
-			.withVectorFieldName(EMBEDDING_FIELD_NAME)
-			.build();
+			.withVectorFieldName(EMBEDDING_FIELD_NAME);
 
-		R<SearchResults> respSearch = milvusClient.search(searchParam);
+		if (StringUtils.hasText(filterExpressions)) {
+			searchParamBuilder.withExpr(filterExpressions);
+		}
+
+		R<SearchResults> respSearch = milvusClient.search(searchParamBuilder.build());
 
 		if (respSearch.getException() != null) {
 			throw new RuntimeException("Search failed!", respSearch.getException());

@@ -349,29 +349,29 @@ public class PineconeVectorStore implements VectorStore {
 		List<Double> queryEmbedding = this.embeddingClient.embed(query);
 
 		var queryRequestBuilder = QueryRequest.newBuilder()
-				.addAllVector(toFloatList(queryEmbedding))
-				.setTopK(topK)
-				.setIncludeMetadata(true)
-				.setNamespace(this.pineconeNamespace);
+			.addAllVector(toFloatList(queryEmbedding))
+			.setTopK(topK)
+			.setIncludeMetadata(true)
+			.setNamespace(this.pineconeNamespace);
 
 		if (StringUtils.hasText(filters)) {
-			queryRequestBuilder.setFilter(metadataFiltersToStruct(filters))
+			queryRequestBuilder.setFilter(metadataFiltersToStruct(filters));
 		}
 
 		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequestBuilder.build());
 
 		return queryResponse.getMatchesList()
-				.stream()
-				.filter(scoredVector -> scoredVector.getScore() >= similarityThreshold)
-				.map(scoredVector -> {
-					var id = scoredVector.getId();
-					Struct metadataStruct = scoredVector.getMetadata();
-					var content = metadataStruct.getFieldsOrThrow(CONTENT_FIELD_NAME).getStringValue();
-					Map<String, Object> metadata = extractMetadata(metadataStruct);
-					metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - scoredVector.getScore());
-					return new Document(id, content, metadata);
-				})
-				.toList();
+			.stream()
+			.filter(scoredVector -> scoredVector.getScore() >= similarityThreshold)
+			.map(scoredVector -> {
+				var id = scoredVector.getId();
+				Struct metadataStruct = scoredVector.getMetadata();
+				var content = metadataStruct.getFieldsOrThrow(CONTENT_FIELD_NAME).getStringValue();
+				Map<String, Object> metadata = extractMetadata(metadataStruct);
+				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - scoredVector.getScore());
+				return new Document(id, content, metadata);
+			})
+			.toList();
 	}
 
 	private Struct metadataFiltersToStruct(String metadataFilters) {
