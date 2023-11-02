@@ -25,6 +25,7 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.junit.Assert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.GenericContainer;
@@ -119,7 +120,7 @@ public class PgVectorStoreIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void searchWithFilter(String distanceType) {
+	public void searchWithFilters(String distanceType) {
 
 		// https://www.postgresql.org/docs/current/functions-json.html
 		// SELECT id, metadata FROM vector_store WHERE metadata::jsonb @@ '$.country ==
@@ -158,6 +159,13 @@ public class PgVectorStoreIT {
 						"$.country == \"BG\" && $.year == \"2020\"");
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+				try {
+					results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "Invalid Expression");
+					Assert.fail("Malicious jsonpath expressions should be detected!");
+				}
+				catch (Exception e) {
+				}
 
 				// Remove all documents from the store
 				dropTable(context);

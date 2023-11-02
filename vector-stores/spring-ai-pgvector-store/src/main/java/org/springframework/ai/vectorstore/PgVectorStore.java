@@ -26,8 +26,6 @@ import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
 import com.pgvector.PGvector;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -271,11 +269,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(filterExpression)) {
-			if (!isValidJsonPathExpression(filterExpression)) {
-				throw new IllegalArgumentException("Invalid jsonpath expression: " + filterExpression);
-			}
-
-			jsonPathFilter = " AND metadata::jsonb @@ '" + filterExpression + "' ";
+			jsonPathFilter = " AND metadata::jsonb @@ '" + filterExpression + "'::jsonpath ";
 		}
 
 		double distance = 1 - similarityThreshold;
@@ -285,16 +279,6 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
-	}
-
-	private boolean isValidJsonPathExpression(String jsonPathExpression) {
-		try {
-			DocumentContext jp = JsonPath.parse(jsonPathExpression);
-			return jp != null;
-		}
-		catch (Exception e) {
-			return false;
-		}
 	}
 
 	public List<Double> embeddingDistance(String query) {
