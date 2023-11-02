@@ -34,4 +34,17 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	List<Document> similaritySearch(String query, int k, double threshold);
 
+	/**
+	 * @param query The query to send, it will be converted to an embedding based on the
+	 * configuration of the vector store.
+	 * @param k the top 'k' similar results
+	 * @param threshold the lower bound of the similarity score
+	 * @param filters vector store specific search push-down filter predicates. Usually a
+	 * json expression.
+	 * @return similar documents that match the requested threshold and filter.
+	 */
+	default List<Document> similaritySearch(String query, int k, double threshold, String filters) {
+		throw new UnsupportedOperationException("This vector store doesn't support search filtering");
+	}
+
 }

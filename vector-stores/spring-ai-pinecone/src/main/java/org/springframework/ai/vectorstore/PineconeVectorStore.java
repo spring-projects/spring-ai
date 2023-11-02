@@ -37,6 +37,7 @@ import io.pinecone.proto.Vector;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * A VectorStore implementation backed by Pinecone, a cloud-based vector database. This
@@ -339,29 +340,50 @@ public class PineconeVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
+		return similaritySearch(query, topK, similarityThreshold, null);
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int topK, double similarityThreshold, String filters) {
+
 		List<Double> queryEmbedding = this.embeddingClient.embed(query);
 
-		QueryRequest queryRequest = QueryRequest.newBuilder()
-			.addAllVector(toFloatList(queryEmbedding))
-			.setTopK(topK)
-			.setIncludeMetadata(true)
-			.setNamespace(this.pineconeNamespace)
-			.build();
+		var queryRequestBuilder = QueryRequest.newBuilder()
+				.addAllVector(toFloatList(queryEmbedding))
+				.setTopK(topK)
+				.setIncludeMetadata(true)
+				.setNamespace(this.pineconeNamespace);
 
-		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequest);
+		if (StringUtils.hasText(filters)) {
+			queryRequestBuilder.setFilter(metadataFiltersToStruct(filters))
+		}
+
+		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequestBuilder.build());
 
 		return queryResponse.getMatchesList()
-			.stream()
-			.filter(scoredVector -> scoredVector.getScore() >= similarityThreshold)
-			.map(scoredVector -> {
-				var id = scoredVector.getId();
-				Struct metadataStruct = scoredVector.getMetadata();
-				var content = metadataStruct.getFieldsOrThrow(CONTENT_FIELD_NAME).getStringValue();
-				Map<String, Object> metadata = extractMetadata(metadataStruct);
-				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - scoredVector.getScore());
-				return new Document(id, content, metadata);
-			})
-			.toList();
+				.stream()
+				.filter(scoredVector -> scoredVector.getScore() >= similarityThreshold)
+				.map(scoredVector -> {
+					var id = scoredVector.getId();
+					Struct metadataStruct = scoredVector.getMetadata();
+					var content = metadataStruct.getFieldsOrThrow(CONTENT_FIELD_NAME).getStringValue();
+					Map<String, Object> metadata = extractMetadata(metadataStruct);
+					metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - scoredVector.getScore());
+					return new Document(id, content, metadata);
+				})
+				.toList();
+	}
+
+	private Struct metadataFiltersToStruct(String metadataFilters) {
+		try {
+			var structBuilder = Struct.newBuilder();
+			JsonFormat.parser().ignoringUnknownFields().merge(metadataFilters, structBuilder);
+			var filterStruct = structBuilder.build();
+			return filterStruct;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**

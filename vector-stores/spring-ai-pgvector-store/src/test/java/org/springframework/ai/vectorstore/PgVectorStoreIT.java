@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -86,9 +87,9 @@ public class PgVectorStoreIT {
 		jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void addAndSearchTest(String distanceType) {
+	public void addAndSearch(String distanceType) {
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
@@ -116,9 +117,56 @@ public class PgVectorStoreIT {
 			});
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void documentUpdateTest(String distanceType) {
+	public void searchWithFilter(String distanceType) {
+
+		// https://www.postgresql.org/docs/current/functions-json.html
+		// SELECT id, metadata FROM vector_store WHERE metadata::jsonb @@ '$.country ==
+		// "NL"' ;
+
+		final double THRESHOLD_ALL = 0.0;
+
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", "2020"));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", "2023"));
+
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				List<Document> results = vectorStore.similaritySearch("The World", 5);
+				assertThat(results).hasSize(3);
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "$.country == \"NL\"");
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "$.country == \"BG\"");
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
+						"$.country == \"BG\" && $.year == \"2020\"");
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+				// Remove all documents from the store
+				dropTable(context);
+			});
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
+	public void documentUpdate(String distanceType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
@@ -157,9 +205,9 @@ public class PgVectorStoreIT {
 			});
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void searchThresholdTest(String distanceType) {
+	public void searchWithThreshold(String distanceType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)

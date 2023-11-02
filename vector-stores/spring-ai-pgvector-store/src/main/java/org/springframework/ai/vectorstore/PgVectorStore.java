@@ -26,6 +26,8 @@ import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import com.pgvector.PGvector;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -37,6 +39,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 /**
  * Uses the "vector_store" table to store the Spring AI vector data. The table and the
@@ -100,13 +103,13 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public enum PgDistanceType {
 
 		EuclideanDistance("<->", "vector_l2_ops",
-				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? ORDER BY distance LIMIT ? "),
+				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
 		NegativeInnerProduct("<#>", "vector_ip_ops",
-				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? ORDER BY distance LIMIT ? "),
+				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 
 		CosineDistance("<=>", "vector_cosine_ops",
-				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? ORDER BY distance LIMIT ? ");
+				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
 
@@ -258,13 +261,40 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
+		return this.similaritySearch(query, topK, similarityThreshold, null);
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int topK, double similarityThreshold,
+			String filterExpression) {
+
+		String jsonPathFilter = "";
+
+		if (StringUtils.hasText(filterExpression)) {
+			if (!isValidJsonPathExpression(filterExpression)) {
+				throw new IllegalArgumentException("Invalid jsonpath expression: " + filterExpression);
+			}
+
+			jsonPathFilter = " AND metadata::jsonb @@ '" + filterExpression + "' ";
+		}
+
 		double distance = 1 - similarityThreshold;
 
 		PGvector queryEmbedding = getQueryEmbedding(query);
 
 		return this.jdbcTemplate.query(
-				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME),
+				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
+	}
+
+	private boolean isValidJsonPathExpression(String jsonPathExpression) {
+		try {
+			DocumentContext jp = JsonPath.parse(jsonPathExpression);
+			return jp != null;
+		}
+		catch (Exception e) {
+			return false;
+		}
 	}
 
 	public List<Double> embeddingDistance(String query) {
