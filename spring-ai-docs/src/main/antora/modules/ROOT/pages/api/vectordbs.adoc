@@ -1,27 +1,27 @@
 = Vector Databases
 
-== Overview
-Vector Databases are a specialized type of database that plays an essential role in AI applications.
+== Introduction
+Vector databases are a specialized type of database that plays an essential role in AI applications.
 
-In Vector Databases, queries differ from traditional relational databases.
+In vector databases, queries differ from traditional relational databases.
 Instead of exact matches, they perform similarity searches.
-When given a vector as a query, a Vector Database returns vectors that are "similar" to the query vector.
+When given a vector as a query, a vector database returns vectors that are "similar" to the query vector.
 Further details on how this similarity is calculated at a high-level is provided in a later section.
 
-Vector Databases are used to integrate your data with AI Models.
-The first step in their usage is to load your data into a Vector Database.
+Vector databases are used to integrate your data with AI models.
+The first step in their usage is to load your data into a vector database.
 Then, when a user query is to be sent to the AI model, a set of similar documents is retrieved first.
 These documents then serve as the context for the user's question and are sent to the AI model along with the user's query.
 This technique is known as Retrieval Augmented Generation.
 
-In the following sections, we will describe the Spring AI interface for using multiple Vector Database implementations and some high-level sample usage.
+In the following sections, we will describe the Spring AI interface for using multiple vector database implementations and some high-level sample usage.
 
-The last section attempts to demystify the underlying approach of similarity search of Vector Databases.
+The last section attempts to demystify the underlying approach of similarity search of vector databases.
 
 == API Overview
 This section serves as a guide to the `VectorStore` interface and its associated classes within the Spring AI framework.
 
-Spring AI offers an abstracted API for interacting with Vector Databases through the `VectorStore` interface.
+Spring AI offers an abstracted API for interacting with vector databases through the `VectorStore` interface.
 
 Here is the `VectorStore` interface definition:
 
@@ -46,50 +46,49 @@ public interface VectorStore {
 }
 ```
 
-To insert data into the Vector Database, encapsulate it within a `Document` object.
+To insert data into the vector database, encapsulate it within a `Document` object.
 The `Document` class encapsulates content from a data source, such as a PDF or Word document, and includes text represented as a String.
 It also contains metadata in the form of key-value pairs, including details like the filename.
 
-Upon addition to the Vector Database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an Embedding Model. Embedding models like https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002` model are used to convert words, sentences, or paragraphs into these vector embeddings.
+Upon insertion into the vector database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an Embedding model. Embedding models like https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002` model are used to convert words, sentences, or paragraphs into these vector embeddings.
 
-The Vector Database's role is to store and facilitate similarity searches for these embeddings; it does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
+The vector database's role is to store and facilitate similarity searches for these embeddings; it does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
 
 The `similaritySearch` methods in the interface allow for retrieving documents similar to a given query string. These methods can be fine-tuned using the following parameters:
 
-
-* k - An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search.
+* k - An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search, or 'K nearest neighbors' (KNN).
 * threshold - A double value ranging from 0 to 1, where values closer to 1 indicate higher similarity. By default, if you set a threshold of 0.75, for instance, only documents with a similarity above this value will be returned.
 * Filter.Expression - A class used for passing a Fluent DSL (Domain-Specific Language) expression that functions similarly to a 'where' clause in SQL, but it applies exclusively to the metadata key-value pairs of a Document.
-* filterExpression - An External DSL based on Antlr4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and isActive, you could use an expression such as country == 'UK' && year >= 2020 && isActive == true.
+* filterExpression - An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and isActive, you could use an expression such as country == 'UK' && year >= 2020 && isActive == true.
 
 
 == Available Implementations
 
 These are the available implementations of the `VectorStore` interface
 
-* InMemoryVectorStore
-* SimplePersistentVectorStore
-* Pinecone - The Vector Store https://www.pinecone.io/[PineCone]
-* PgVector - The Vector Store https://github.com/pgvector/pgvector[PostgreSQL/PGVector].
-* Milvus - The Vector Store https://milvus.io/[Milvus]
-* Neo4j - The Vector Store https://neo4j.com/[Neo4j]
+* `InMemoryVectorStore`
+* `SimplePersistentVectorStore`
+* Pinecone - https://www.pinecone.io/[PineCone] vector store.
+* PgVector [`PgVectorStore`] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
+* Milvus [`MilvusVectorStore`] - The https://milvus.io/[Milvus] vector store
+* Neo4j [`Neo4jVectorStore`]- The https://neo4j.com/[Neo4j] vector store
 
-Others are welcome, the list is not at all closed.
+More implementations will be supported in future releases.
 
-If you have a Vector Database that needs to be supported by Spring AI, please open an issue on GitHub or, even better, submit a Pull Request with an implementation.
+If you have a vector database that needs to be supported by Spring AI, please open an issue on GitHub or, even better, submit a Pull Request with an implementation.
 
 == Example Usage
 
-To compute the embeddings for a Vector Database, you need to pick an Embedding Model that matches the higher-level AI model being used.
+To compute the embeddings for a vector database, you need to pick an Embedding model that matches the higher-level AI model being used.
 
 For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and the model name `text-embedding-ada-002`.
 
-The Spring Boot Starter's autoconfiguation for OpenAI makes an implementation of `EmbeddingClient` available in the Spring Application Context for Dependency Injection.
+The Spring Boot Starter's auto-configuation for OpenAI makes an implementation of `EmbeddingClient` available in the Spring Application Context for Dependency Injection.
 
-The general usage of loading data into a vector store is something you do as a batch-type job, first loading data into Spring AI's `Document` class and then calling the `save` method.
+The general usage of loading data into a vector store is something you would do in a batch-like job, by first loading data into Spring AI's `Document` class and then calling the `save` method.
 
-Given a String `sourceFile` that represents a JSON file with data we want to load into the Vector Database, we use Spring AI's `JsonReader` to load specific fields in the JSON file, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
-The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the Vector Database.
+Given a `String` reference to a source file representing a JSON file with data we want to load into the vector database, we use Spring AI's `JsonReader` to load specific fields in the JSON, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
+The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the vector database.
 
 ```java
   @Autowired
@@ -103,7 +102,7 @@ The `VectorStore` implementation computes the embeddings and stores the JSON and
   }
 ```
 
-Later, when a user question is to be passed into the AI Model, a similarity search is done to retrieve similar documents, which are then 'stuffed' into the prompt as context for the user's question.
+Later, when a user question is passed into the AI model, a similarity search is done to retrieve similar documents, which are then 'stuffed' into the prompt as context for the user's question.
 
 ```java
    String question = <question from user>
@@ -183,12 +182,12 @@ Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 == Understanding Vectors
 
 Vectors have dimensionality and a direction.
-For example, a picture of a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
+For example, the picture below depicts a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
 
 image::vector_2d_coordinates.png[]
 
 The head of the vector stem:[\vec{a}] is at the point stem:[(a_1, a_2)]
-The *x* coordinate value is stem:[a_1] and the *y* coordinate value is stem:[a_2] and are also referred to as the components of the vector.
+The *x* coordinate value is stem:[a_1] and the *y* coordinate value is stem:[a_2]. The coordinates are also referred to as the components of the vector.
 
 == Similarity
 
@@ -265,7 +264,7 @@ stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{\vec{A}\cdot\vec{B}}{||\v
 ****
 
 This formula works for dimensions higher than 2 or 3, though it is hard to visualize, https://projector.tensorflow.org/[but can be done to some extent].
-It is common for vectors in AI/ML applications to have hundreds or a thousand dimensions.
+It is common for vectors in AI/ML applications to have hundreds or even thousands of dimensions.
 
 The similarity function in higher dimensions using the components of the vector is shown below.
 It expands the two-dimensional definitions of Magnitude and Dot Product given previously to *N* dimensions using the https://en.wikipedia.org/wiki/Summation[Summation mathematical syntax].
@@ -275,4 +274,4 @@ It expands the two-dimensional definitions of Magnitude and Dot Product given pr
 stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{ \sum_{i=1}^{n} {A_i  B_i} }{ \sqrt{\sum_{i=1}^{n}{A_i^2} \cdot \sum_{i=1}^{n}{B_i^2}}]
 ****
 
-This is the key formula used in the simple implementation of a Vector Store and can be found in the `InMemoryVectorStore` implementation.
+This is the key formula used in the simple implementation of a vector store and can be found in the `InMemoryVectorStore` implementation.
