@@ -29,7 +29,7 @@ public abstract class AbstractChain implements Chain {
 	public AiOutput apply(AiInput aiInput) {
 		AiInput aiInputToUse = preProcess(aiInput);
 		AiOutput aiOutput = doApply(aiInputToUse);
-		Map<String, Object> outputMapToUse = postProcess(aiInput, aiOutput);
+		Map<String, Object> outputMapToUse = postProcess(aiInputToUse, aiOutput);
 		return new AiOutput(outputMapToUse);
 	}
 

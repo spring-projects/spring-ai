@@ -1,7 +1,10 @@
-package org.springframework.ai.chain;
+package org.springframework.ai.chain.conversation;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.ai.chain.AiInput;
+import org.springframework.ai.chain.AiOutput;
+import org.springframework.ai.chain.conversation.ConversationChain;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
@@ -26,17 +29,14 @@ public class ConversationChainTests {
 			.thenReturn(new AiResponse(List
 				.of(new Generation("The sky is blue because blue light is scattered more than other colors."))));
 
-		PromptTemplate promptTemplate = new PromptTemplate(
-				"Answer this question submitted by the user: {question}\nHISTORY: {history}");
-		String inputKey = "question";
 		String outputKey = "response";
 		OutputParser outputParser = new StringOutputParser();
 
-		ConversationChain chain = new ConversationChain(aiClient, promptTemplate, inputKey, outputKey, outputParser);
+		ConversationChain chain = new ConversationChain(aiClient, outputKey, outputParser);
 		ConversationBufferMemory memory = new ConversationBufferMemory();
 		chain.setMemory(memory);
 
-		AiOutput output = chain.apply(new AiInput(Map.of("question", "Why is the sky blue?")));
+		AiOutput output = chain.apply(new AiInput(Map.of("input", "Why is the sky blue?")));
 		Map<String, Object> outputData = output.getOutputData();
 		assertThat(outputData.get("response"))
 			.isEqualTo("The sky is blue because blue light is scattered more than other colors.");
@@ -45,7 +45,7 @@ public class ConversationChainTests {
 				user: Why is the sky blue?
 				assistant: The sky is blue because blue light is scattered more than other colors.""");
 
-		output = chain.apply(new AiInput(Map.of("question", "What color is the sky?")));
+		output = chain.apply(new AiInput(Map.of("input", "What color is the sky?")));
 		outputData = output.getOutputData();
 		assertThat(outputData.get("response"))
 			.isEqualTo("The sky is blue because blue light is scattered more than other colors.");
