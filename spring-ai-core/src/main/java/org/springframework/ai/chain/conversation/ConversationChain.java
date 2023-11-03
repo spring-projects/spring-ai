@@ -16,19 +16,16 @@ import java.util.Map;
  */
 public class ConversationChain extends AiChain implements DefaultTemplate {
 
-	private String inputKey = "input";
+	private final String inputKey;
 
 	public ConversationChain(AiClient aiClient, String outputKey, OutputParser outputParser) {
-		this(aiClient, DEFAULT_PROMPT_TEMPLATE, outputKey, outputParser);
+		this(aiClient, DEFAULT_PROMPT_TEMPLATE, "input", outputKey, outputParser);
 	}
-	public ConversationChain(AiClient aiClient, PromptTemplate promptTemplate, String outputKey,
+	public ConversationChain(AiClient aiClient, PromptTemplate promptTemplate, String inputKey, String outputKey,
 			OutputParser outputParser) {
 		super(aiClient, promptTemplate, outputKey, outputParser);
-		this.setMemory(new ConversationBufferMemory());
-	}
-
-	public void setInputKey(String inputKey) {
 		this.inputKey = inputKey;
+		this.setMemory(new ConversationBufferMemory());
 	}
 
 	@Override
