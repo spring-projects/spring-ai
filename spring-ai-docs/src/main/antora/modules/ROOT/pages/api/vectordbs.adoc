@@ -6,7 +6,7 @@ Vector Databases are a specialized type of database that plays an essential role
 In Vector Databases, queries differ from traditional relational databases.
 Instead of exact matches, they perform similarity searches.
 When given a vector as a query, a Vector Database returns vectors that are "similar" to the query vector.
-Further details on how this similarity is calculated at a high level in provided in a later section.
+Further details on how this similarity is calculated at a high-level is provided in a later section.
 
 Vector Databases are used to integrate your data with AI Models.
 The first step in their usage is to load your data into a Vector Database.

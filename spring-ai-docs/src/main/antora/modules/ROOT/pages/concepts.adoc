@@ -55,7 +55,7 @@ However, it encompasses much more than that.
 In many AI Models, the text for the prompt is not just a simple String.
 
 ChatGPT's API has multiple text inputs within a prompt, with each text input being assigned a role.
-For example, there is the system role, that instructs the model how ot behave and sets the context for the interaction.
+For example, there is the system role, that instructs the model how to behave and sets the context for the interaction.
 There is also the user role, which is typically the input from the user.
 
 Crafting effective prompts is both an art and a science.

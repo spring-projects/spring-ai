@@ -40,4 +40,4 @@ Planned implementations
 
 Others are welcome, the list is not at all closed.
 
-Note, there are several AI Model that are *not* OpenAI provided models, but expose an OpenAI compatible API.
+Note, there are several AI Models that are *not* OpenAI provided models, but expose an OpenAI compatible API.
