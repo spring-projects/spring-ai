@@ -160,6 +160,12 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
+						"($.country == \"BG\" && $.year == \"2020\") || ($.country == \"NL\")");
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+
 				try {
 					results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "Invalid Expression");
 					Assert.fail("Malicious jsonpath expressions should be detected!");
