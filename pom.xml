@@ -60,6 +60,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 		<module>spring-ai-retry</module>
+		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
 	</modules>
 
 	<organization>
