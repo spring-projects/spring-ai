@@ -19,6 +19,7 @@ export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on link:https://portal.azure.com[Azure Portal].
 
 The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
+There is also a configuraiton property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
 
 Exporting environment variables is one way to set these configuration properties.
 
@@ -56,7 +57,7 @@ Add the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </dependency>
 ----
 
@@ -67,7 +68,7 @@ Add the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </dependency>
 ----
 
