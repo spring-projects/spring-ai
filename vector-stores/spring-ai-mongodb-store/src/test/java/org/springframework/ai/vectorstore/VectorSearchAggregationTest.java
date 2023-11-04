@@ -15,16 +15,16 @@ class VectorSearchAggregationTest {
 
     @Test
     void toDocument() {
-        var aggregation = new VectorSearchAggregation(10, List.of(1.0,2.0,3.0));
-        var doc = aggregation.toDocument(Aggregation.DEFAULT_CONTEXT);
-        assertEquals(1, doc.size());
-        var search = (Document) doc.get("$search");
-        assertEquals(5, search.size());
-        assertEquals("default", search.get("index"));
-        assertEquals("embedding", search.get("path"));
-        assertEquals(100, search.get("numCandidates"));
-        assertEquals(10, search.get("limit"));
-        assertEquals(List.of(1.0,2.0,3.0), search.get("queryVector"));
-
+        var vectorSearchAggregation = new VectorSearchAggregation(List.of(1.0, 2.0, 3.0), "embedding", 10, "vector_store", 10);
+        var aggregation = Aggregation.newAggregation(vectorSearchAggregation);
+        var document = aggregation.toDocument("vector_store",
+                Aggregation.DEFAULT_CONTEXT);
+        var expected = new Document("$vectorSearch",
+                new Document("queryVector", List.of(1.0, 2.0, 3.0))
+                        .append("path", "embedding")
+                        .append("numCandidates", 10)
+                        .append("index", "vector_store")
+                        .append("limit", 10));
+        assertEquals(expected, document);
     }
 }

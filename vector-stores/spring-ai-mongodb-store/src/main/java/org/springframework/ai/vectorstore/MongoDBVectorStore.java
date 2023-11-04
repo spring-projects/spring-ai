@@ -34,9 +34,9 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
  */
 public class MongoDBVectorStore implements VectorStore {
 
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
-    private EmbeddingClient embeddingClient;
+    private final EmbeddingClient embeddingClient;
 
     private static final String VECTOR_COLLECTION_NAME = "vector_store";
 
@@ -51,8 +51,8 @@ public class MongoDBVectorStore implements VectorStore {
     /**
      * Maps a basicDBObject to a Spring AI Document
      *
-     * @param basicDBObject
-     * @return
+     * @param basicDBObject the basicDBObject to map to a spring ai document
+     * @return the spring ai document
      */
     private Document mapBasicDbObject(BasicDBObject basicDBObject) {
         String id = basicDBObject.getString("_id");

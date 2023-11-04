@@ -6,23 +6,16 @@ import org.springframework.data.mongodb.core.aggregation.AggregationOperationCon
 
 import java.util.List;
 
-class VectorSearchAggregation implements AggregationOperation {
-
-    private final int count;
-    private final List<Double> embeddings;
-
-    public VectorSearchAggregation(int count, List<Double> embeddings){
-        this.count = count;
-        this.embeddings = embeddings;
-    }
+record VectorSearchAggregation(List<Double> embeddings,String path, int numCandidates, String index,  int count) implements AggregationOperation {
     @Override
     public org.bson.Document toDocument(AggregationOperationContext context) {
-        var doc =  new Document("$search",
-                new Document("index", "default")
-                        .append("path", "embedding")
-                        .append("numCandidates", 100)
-                        .append("limit",count)
-                        .append("queryVector", embeddings));
+        var doc =  new Document("$vectorSearch",
+                new Document("queryVector", embeddings)
+                        .append("path", path)
+                        .append("numCandidates", numCandidates)
+                        .append("index", index)
+                        .append("limit", count));
+
         return context.getMappedObject(doc);
     }
 }
