@@ -17,8 +17,6 @@
 package org.springframework.ai.vectorstore;
 
 import com.mongodb.client.MongoClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
@@ -36,7 +34,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -87,7 +84,7 @@ class MongoDBVectorStoreIT {
             assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
             assertThat(resultDoc.getContent()).isEqualTo(
                     "Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-            assertThat(resultDoc.getMetadata()).contains(entry("meta2", "meta2"));
+            assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
             // Remove all documents from the store
             vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
@@ -117,7 +114,7 @@ class MongoDBVectorStoreIT {
             Document resultDoc = results.get(0);
             assertThat(resultDoc.getId()).isEqualTo(document.getId());
             assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
-            assertThat(resultDoc.getMetadata()).contains(entry("meta1", "meta1"));
+            assertThat(resultDoc.getMetadata()).containsEntry("meta1", "meta1");
 
             Document sameIdDocument = new Document(document.getId(),
                     "The World is Big and Salvation Lurks Around the Corner",
@@ -131,7 +128,7 @@ class MongoDBVectorStoreIT {
             resultDoc = results.get(0);
             assertThat(resultDoc.getId()).isEqualTo(document.getId());
             assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-            assertThat(resultDoc.getMetadata()).contains(entry("meta2", "meta2"));
+            assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
         });
     }
