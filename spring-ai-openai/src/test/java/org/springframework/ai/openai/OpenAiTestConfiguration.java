@@ -8,14 +8,13 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.time.Duration;
 
 @SpringBootConfiguration
 public class OpenAiTestConfiguration {
 
 	@Bean
-	public OpenAiService theoOpenAiService() throws IOException {
+	public OpenAiService theoOpenAiService() {
 		String apiKey = System.getenv("OPENAI_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
