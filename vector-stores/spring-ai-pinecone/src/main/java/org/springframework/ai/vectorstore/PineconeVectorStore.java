@@ -36,6 +36,8 @@ import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -53,6 +55,8 @@ public class PineconeVectorStore implements VectorStore {
 	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
 
 	private static final Double SIMILARITY_THRESHOLD_ALL = 0.0;
+
+	public final PineconeFilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
 	private final EmbeddingClient embeddingClient;
 
@@ -340,7 +344,7 @@ public class PineconeVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
-		return similaritySearch(query, topK, similarityThreshold, null);
+		return similaritySearch(query, topK, similarityThreshold, "");
 	}
 
 	@Override
@@ -372,6 +376,12 @@ public class PineconeVectorStore implements VectorStore {
 				return new Document(id, content, metadata);
 			})
 			.toList();
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.similaritySearch(query, k, threshold, pgVectorFilterExpression);
 	}
 
 	private Struct metadataFiltersToStruct(String metadataFilters) {

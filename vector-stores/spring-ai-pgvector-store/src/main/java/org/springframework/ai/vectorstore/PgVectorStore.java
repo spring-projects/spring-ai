@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.JsonPathFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -54,6 +56,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
+
+	public final JsonPathFilterExpressionConverter filterExpressionConverter = new JsonPathFilterExpressionConverter();
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -259,7 +263,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
-		return this.similaritySearch(query, topK, similarityThreshold, null);
+		return this.similaritySearch(query, topK, similarityThreshold, "");
 	}
 
 	@Override
@@ -279,6 +283,12 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.similaritySearch(query, k, threshold, pgVectorFilterExpression);
 	}
 
 	public List<Double> embeddingDistance(String query) {

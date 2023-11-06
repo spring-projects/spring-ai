@@ -136,6 +136,8 @@ public class MilvusVectorStoreIT {
 	// @ValueSource(strings = { "IP", "L2" })
 	public void searchWithFilters(String metricType) throws InterruptedException {
 
+		// https://milvus.io/docs/json_data_type.md
+
 		final double THRESHOLD_ALL = 0.0;
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))

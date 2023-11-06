@@ -54,6 +54,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -86,6 +88,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	public static final List<String> SEARCH_OUTPUT_FIELDS = Arrays.asList(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
 			METADATA_FIELD_NAME);
+
+	public final MilvusFilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
 
 	private final MilvusServiceClient milvusClient;
 
@@ -328,7 +332,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
-		return similaritySearch(query, topK, similarityThreshold, null);
+		return similaritySearch(query, topK, similarityThreshold, "");
 	}
 
 	@Override
@@ -371,6 +375,12 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 				return new Document(docId, content, metadata.getInnerMap());
 			})
 			.toList();
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.similaritySearch(query, k, threshold, pgVectorFilterExpression);
 	}
 
 	private float getResultSimilarity(RowRecord rowRecord) {
