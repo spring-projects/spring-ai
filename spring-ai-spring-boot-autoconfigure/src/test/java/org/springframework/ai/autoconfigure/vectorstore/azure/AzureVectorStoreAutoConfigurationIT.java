@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorstore.pinecone;
+package org.springframework.ai.autoconfigure.vectorstore.azure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -31,6 +31,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.vectorstore.AzureVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -45,8 +46,9 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
-public class PineconeVectorStoreAutoConfigurationIT {
+@EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_ENDPOINT", matches = ".+")
+public class AzureVectorStoreAutoConfigurationIT {
 
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
@@ -64,12 +66,10 @@ public class PineconeVectorStoreAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(PineconeVectorStoreAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(AzureVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.pinecone.apiKey=" + System.getenv("PINECONE_API_KEY"),
-				"spring.ai.vectorstore.pinecone.environment=gcp-starter",
-				"spring.ai.vectorstore.pinecone.projectId=814621f",
-				"spring.ai.vectorstore.pinecone.indexName=spring-ai-test-index");
+		.withPropertyValues("spring.ai.vectorstore.azure.apiKey=" + System.getenv("AZURE_AI_SEARCH_API_KEY"),
+				"spring.ai.vectorstore.azure.url=" + System.getenv("AZURE_AI_SEARCH_ENDPOINT"));
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -81,33 +81,47 @@ public class PineconeVectorStoreAutoConfigurationIT {
 	@Test
 	public void addAndSearchTest() {
 
-		contextRunner.run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.vectorstore.azure.indexName=my_test_index",
+					"spring.ai.vectorstore.azure.defaultTopK=6",
+					"spring.ai.vectorstore.azure.defaultSimilarityThreshold=0.75")
+			.run(context -> {
 
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+				var properties = context.getBean(AzureVectorStoreProperties.class);
 
-			vectorStore.add(documents);
+				assertThat(properties.getUrl()).isEqualTo(System.getenv("AZURE_AI_SEARCH_ENDPOINT"));
+				assertThat(properties.getApiKey()).isEqualTo(System.getenv("AZURE_AI_SEARCH_API_KEY"));
+				assertThat(properties.getDefaultTopK()).isEqualTo(6);
+				assertThat(properties.getDefaultSimilarityThreshold()).isEqualTo(0.75);
+				assertThat(properties.getIndexName()).isEqualTo("my_test_index");
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-			}, hasSize(1));
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				assertThat(vectorStore).isInstanceOf(AzureVectorStore.class);
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
-					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
-			assertThat(resultDoc.getMetadata()).hasSize(2);
-			assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
+				vectorStore.add(documents);
 
-			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				Awaitility.await().until(() -> {
+					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				}, hasSize(1));
 
-			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-			}, hasSize(0));
-		});
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getContent()).contains(
+						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+				assertThat(resultDoc.getMetadata()).hasSize(2);
+				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
+
+				// Remove all documents from the store
+				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+
+				Awaitility.await().until(() -> {
+					return vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				}, hasSize(0));
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)

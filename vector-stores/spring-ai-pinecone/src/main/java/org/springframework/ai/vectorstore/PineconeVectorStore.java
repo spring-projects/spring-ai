@@ -299,14 +299,6 @@ public class PineconeVectorStore implements VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
-		// return this.internalSimilaritySearch(request.getQuery(), request.getTopK(),
-		// request.getSimilarityThreshold(),
-		// request.getFilterExpression());
-		// }
-
-		// List<Document> internalSimilaritySearch(String query, int topK, double
-		// similarityThreshold,
-		// Filter.Expression filterExpression) {
 
 		String nativeExpressionFilters = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.experimental.ai</groupId>
+		<artifactId>spring-ai</artifactId>
+		<version>0.7.1-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
+	</parent>
+	<artifactId>spring-ai-azure-vector-store</artifactId>
+	<packaging>jar</packaging>
+	<name>Spring AI - Azure AI Search Vector Store</name>
+	<description>Spring AI - Azure AI Search Vector Store</description>
+	<url>https://github.com/spring-projects-experimental/spring-ai</url>
+
+	<scm>
+		<url>https://github.com/spring-projects-experimental/spring-ai</url>
+		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+	</scm>
+
+	<properties>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-core</artifactId>
+			<version>${parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-search-documents</artifactId>
+			<version>${azure-search.version}</version>
+			<exclusions>
+				<!-- exclude this to avoid changing the default serializer and the null-value behavior -->
+				<exclusion>
+					<groupId>com.azure</groupId>
+					<artifactId>azure-core-serializer-json-jackson</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba.fastjson2</groupId>
+			<artifactId>fastjson2</artifactId>
+			<version>${fastjson.version}</version>
+		</dependency>
+
+		<!-- TESTING -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>transformers-embedding</artifactId>
+			<version>${parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Contains smaple test data -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-test</artifactId>
+			<version>${parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+</project>

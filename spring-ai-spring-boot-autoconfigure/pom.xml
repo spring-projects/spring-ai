@@ -102,6 +102,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Azure Vector Store -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-azure-vector-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -157,7 +165,6 @@
 		<dependency>
 			<groupId>org.awaitility</groupId>
 			<artifactId>awaitility</artifactId>
-			<version>3.0.0</version>
 			<scope>test</scope>
 		</dependency>
 

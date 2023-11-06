@@ -6,3 +6,4 @@ org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoCon
 org.springframework.ai.autoconfigure.embedding.transformer.TransformersEmbeddingClientAutoConfiguration
 org.springframework.ai.autoconfigure.huggingface.HuggingfaceAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfiguration

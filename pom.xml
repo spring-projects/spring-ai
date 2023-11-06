@@ -33,6 +33,7 @@
 		<module>embedding-clients/transformers-embedding</module>
 		<module>vector-stores/spring-ai-pinecone</module>
 		<module>vector-stores/spring-ai-chroma</module>
+		<module>vector-stores/spring-ai-azure</module>
 
 	</modules>
 
@@ -92,6 +93,8 @@
 		<milvus.version>2.3.3</milvus.version>
 		<pinecone.version>0.6.0</pinecone.version>
 		<protobuf-java-util.version>3.24.4</protobuf-java-util.version>
+		<fastjson.version>2.0.42</fastjson.version>
+		<azure-search.version>11.6.0</azure-search.version>
 
 		<!-- testing dependecies -->
 		<testcontainers.version>1.19.0</testcontainers.version>
