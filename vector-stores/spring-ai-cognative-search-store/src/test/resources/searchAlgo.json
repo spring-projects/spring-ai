@@ -1,0 +1,11 @@
+{
+        "name": "default",
+        "kind": "hnsw",
+        "hnswParameters": {
+          "metric": "cosine",
+          "m": 4,
+          "efConstruction": 400,
+          "efSearch": 1000
+        },
+        "exhaustiveKnnParameters": null
+}
