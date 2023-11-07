@@ -138,13 +138,11 @@ public class PineconeVectorStoreIT {
 			List<Document> results = vectorStore.similaritySearch("The World", 5);
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-					"{\"country\": {\"$eq\": \"Bulgaria\"}}");
+			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Bulgaria'");
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-					"{\"country\": {\"$eq\": \"Netherland\"}}");
+			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Netherland'");
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

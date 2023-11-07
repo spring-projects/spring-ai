@@ -1,5 +1,6 @@
 package org.springframework.ai.openai.client;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;

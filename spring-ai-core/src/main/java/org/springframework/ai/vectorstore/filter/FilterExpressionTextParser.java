@@ -1,26 +1,41 @@
+/*
+ * Copyright 2023-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vectorstore.filter;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
-import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.atn.ATNConfigSet;
-import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -36,43 +51,48 @@ import org.springframework.util.Assert;
  *
  * var parser = new FilterExpressionTextParser();
  *
- * var exp1 = parser.parse("country == 'BG'"); // creates:
+ * exp1 = parser.parse("country == 'BG'"); // creates:
+ *  |
+ *  +->	new Expression(EQ, new Key("country"), new Value("BG"));
  *
- * new Expression(EQ, new Key("country"), new Value("BG"));
+ * exp2 = parser.parse("genre == 'drama' && year >= 2020"); // creates:
+ *  |
+ *  +->	new Expression(AND,
+ * 			new Expression(EQ, new Key("genre"), new Value("drama")),
+ * 			new Expression(GTE, new Key("year"), new Value(2020)));
  *
- * var exp2 = parser.parse("genre == 'drama' && year >= 2020"); // creates:
+ * exp3 = parser.parse("genre in ['comedy', 'documentary', 'drama']");
+ *  |
+ *  +->	new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama")));
  *
- * new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
- * 		new Expression(GTE, new Key("year"), new Value(2020)));
+ * exp4 = parser.parse("year >= 2020 || country == 'BG' && city != 'Sofia'");
+ *  |
+ *  +->	new Expression(OR,
+ * 			new Expression(GTE, new Key("year"), new Value(2020)),
+ * 			new Expression(AND,
+ * 					new Expression(EQ, new Key("country"), new Value("BG")),
+ * 					new Expression(NE, new Key("city"), new Value("Sofia"))));
  *
- * var exp3 = parser.parse("genre in ['comedy', 'documentary', 'drama']"); // creates:
- *
- * new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama")));
- *
- * var exp4 = parser.parse("year >= 2020 || country == 'BG' && city != 'Sofia'"); // creates:
- *
- * new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
- * 		new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
- * 				new Expression(NE, new Key("city"), new Value("Sofia"))));
- *
- * var exp5 = parser.parse("(year >= 2020 || country == \"BG\") && city NOT IN ['Sofia', \"Plovdiv\"]"); // creates:
- *
- * new Expression(AND,
- * 		new Group(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
+ * exp5 = parser.parse("(year >= 2020 || country == \"BG\") && city NOT IN ['Sofia', \"Plovdiv\"]"); // creates:
+ *  |
+ *  +->	new Expression(AND,
+ * 			new Group(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
  * 				new Expression(GTE, new Key("year"), new Value(2020)))),
- * 		new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Varna"))));
+ * 			new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Varna"))));
  *
- * var exp6 = parser.parse("isOpen == true && year >= 2020 && country IN ['BG', 'NL', 'US']"); // creates:
- *
- * new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
- * 		new Expression(AND, new Expression(GTE, new Key("year"), new Value(2020)),
+ * exp6 = parser.parse("isOpen == true && year >= 2020 && country IN ['BG', 'NL', 'US']"); // creates:
+ *  |
+ *  +->	new Expression(AND,
+ * 			new Expression(EQ, new Key("isOpen"), new Value(true)),
+ * 			new Expression(AND,
+ * 				new Expression(GTE, new Key("year"), new Value(2020)),
  * 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
  *
- * var exp7 = parser.parse("price >= 15.6 && price <= 20.13"); // creates:
- *
- * new Expression(AND,
- * 		new Expression(GTE, new Key("price"), new Value(15.6)),
- * 		new Expression(LTE, new Key("price"), new Value(20.13)));
+ * exp7 = parser.parse("price >= 15.6 && price <= 20.13"); // creates:
+ *  |
+ *  +->	new Expression(AND,
+ * 			new Expression(GTE, new Key("price"), new Value(15.6)),
+ * 			new Expression(LTE, new Key("price"), new Value(20.13)));
  *
  * }</pre>
  *
@@ -82,36 +102,41 @@ public class FilterExpressionTextParser {
 
 	private static final String WHERE_PREFIX = "WHERE";
 
-	private final ANTLRErrorListener errorListener;
+	private final DescriptiveErrorListener errorListener;
 
 	private final ANTLRErrorStrategy errorHandler;
 
+	private final Map<String, Filter.Expression> cache = new ConcurrentHashMap<>();
+
 	public FilterExpressionTextParser() {
-		this(DescriptiveErrorListener.INSTANCE, new BailErrorStrategy());
+		this(new BailErrorStrategy());
 	}
 
-	public FilterExpressionTextParser(ANTLRErrorListener listener, ANTLRErrorStrategy handler) {
-		this.errorListener = listener;
+	public FilterExpressionTextParser(ANTLRErrorStrategy handler) {
+		this.errorListener = DescriptiveErrorListener.INSTANCE;
 		this.errorHandler = handler;
 	}
 
-	public Filter.Expression parse(String textExpression) {
+	public Filter.Expression parse(String textFilterExpression) {
 
-		Assert.hasText(textExpression, "Expression should not be empty!");
+		Assert.hasText(textFilterExpression, "Expression should not be empty!");
 
 		// Prefix the expression with the compulsory WHERE keyword.
-		if (!textExpression.toUpperCase().startsWith(WHERE_PREFIX)) {
-			textExpression = String.format("%s %s", WHERE_PREFIX, textExpression);
+		if (!textFilterExpression.toUpperCase().startsWith(WHERE_PREFIX)) {
+			textFilterExpression = String.format("%s %s", WHERE_PREFIX, textFilterExpression);
 		}
 
-		var lexer = new FiltersLexer(CharStreams.fromString(textExpression));
+		if (this.cache.containsKey(textFilterExpression)) {
+			return this.cache.get(textFilterExpression);
+		}
+
+		var lexer = new FiltersLexer(CharStreams.fromString(textFilterExpression));
 		var tokens = new CommonTokenStream(lexer);
 		var parser = new FiltersParser(tokens);
 
-		if (this.errorListener != null) {
-			parser.removeErrorListeners();
-			parser.addErrorListener(this.errorListener);
-		}
+		parser.removeErrorListeners();
+		this.errorListener.errorMessages.clear();
+		parser.addErrorListener(this.errorListener);
 
 		if (this.errorHandler != null) {
 			parser.setErrorHandler(this.errorHandler);
@@ -120,16 +145,41 @@ public class FilterExpressionTextParser {
 		var filterExpressionVisitor = new FilterExpressionVisitor();
 		try {
 			Filter.Operand operand = filterExpressionVisitor.visit(parser.where());
-			return filterExpressionVisitor.castToExpression(operand);
+			var filterExpression = filterExpressionVisitor.castToExpression(operand);
+			this.cache.putIfAbsent(textFilterExpression, filterExpression);
+			return filterExpression;
 		}
 		catch (ParseCancellationException e) {
-			throw new RuntimeException(e);
+			var msg = this.errorListener.errorMessages.stream().collect(Collectors.joining());
+			var rootCause = NestedExceptionUtils.getRootCause(e);
+			throw new FilterExpressionParseException(msg, rootCause);
 		}
+	}
+
+	public void clearCache() {
+		this.cache.clear();
+	}
+
+	/** For testing only */
+	Map<String, Filter.Expression> getCache() {
+		return cache;
+	}
+
+	public static class FilterExpressionParseException extends RuntimeException {
+
+		public FilterExpressionParseException(Throwable cause) {
+			super(cause);
+		}
+
+		public FilterExpressionParseException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
 	}
 
 	public static class FilterExpressionVisitor extends FiltersBaseVisitor<Filter.Operand> {
 
-		private static final Map<String, Filter.ExpressionType> EXPRESSION_TYPES_MAP = Map.of("==",
+		private static final Map<String, Filter.ExpressionType> COMP_EXPRESSION_TYPE_MAP = Map.of("==",
 				Filter.ExpressionType.EQ, "!=", Filter.ExpressionType.NE, ">", Filter.ExpressionType.GT, ">=",
 				Filter.ExpressionType.GTE, "<", Filter.ExpressionType.LT, "<=", Filter.ExpressionType.LTE);
 
@@ -193,10 +243,10 @@ public class FilterExpressionTextParser {
 		}
 
 		private Filter.ExpressionType covertCompare(String compare) {
-			if (!EXPRESSION_TYPES_MAP.containsKey(compare)) {
+			if (!COMP_EXPRESSION_TYPE_MAP.containsKey(compare)) {
 				throw new RuntimeException("Unknown compare operator: " + compare);
 			}
-			return EXPRESSION_TYPES_MAP.get(compare);
+			return COMP_EXPRESSION_TYPE_MAP.get(compare);
 		}
 
 		@Override
@@ -229,43 +279,27 @@ public class FilterExpressionTextParser {
 
 	public static class DescriptiveErrorListener extends BaseErrorListener {
 
-		public static DescriptiveErrorListener INSTANCE = new DescriptiveErrorListener();
+		public static final DescriptiveErrorListener INSTANCE = new DescriptiveErrorListener();
 
-		public static boolean REPORT_SYNTAX_ERRORS = true;
+		public final CopyOnWriteArrayList<String> errorMessages = new CopyOnWriteArrayList<>();
 
 		@Override
 		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine,
 				String msg, RecognitionException e) {
 
-			if (!REPORT_SYNTAX_ERRORS) {
-				return;
-			}
-
 			String sourceName = recognizer.getInputStream().getSourceName();
-			if (!sourceName.isEmpty()) {
-				sourceName = String.format("%s:%d:%d: ", sourceName, line, charPositionInLine);
-			}
+			// if (!sourceName.isEmpty()) {
+			// sourceName = String.format("%s:%d:%d: ", sourceName, line,
+			// charPositionInLine);
+			// }
+
+			var errorMessage = String.format("Source: %s, Line: %s:%s, Error: %s", sourceName, line, charPositionInLine,
+					msg);
+
+			this.errorMessages.add(errorMessage);
 
 			System.err.println(sourceName + "line " + line + ":" + charPositionInLine + " " + msg);
 			System.out.println();
-		}
-
-		@Override
-		public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact,
-				BitSet ambigAlts, ATNConfigSet configs) {
-			super.reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs);
-		}
-
-		@Override
-		public void reportAttemptingFullContext(Parser recognizer, DFA dfa, int startIndex, int stopIndex,
-				BitSet conflictingAlts, ATNConfigSet configs) {
-			super.reportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs);
-		}
-
-		@Override
-		public void reportContextSensitivity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, int prediction,
-				ATNConfigSet configs) {
-			super.reportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs);
 		}
 
 	}

@@ -36,6 +36,7 @@ import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -122,10 +123,6 @@ public class PgVectorStoreIT {
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
 	public void searchWithFilters(String distanceType) {
 
-		// https://www.postgresql.org/docs/current/functions-json.html
-		// SELECT id, metadata FROM vector_store WHERE metadata::jsonb @@ '$.country ==
-		// "NL"' ;
-
 		final double THRESHOLD_ALL = 0.0;
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
@@ -135,39 +132,48 @@ public class PgVectorStoreIT {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
 				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", "2020"));
+						Map.of("country", "BG", "year", 2020));
 				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 						Map.of("country", "NL"));
 				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", "2023"));
+						Map.of("country", "BG", "year", 2023));
 
 				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 				List<Document> results = vectorStore.similaritySearch("The World", 5);
 				assertThat(results).hasSize(3);
 
-				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "$.country == \"NL\"");
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'NL'");
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "$.country == \"BG\"");
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'BG'");
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-						"$.country == \"BG\" && $.year == \"2020\"");
+						"country == 'BG' && year == 2020");
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-						"($.country == \"BG\" && $.year == \"2020\") || ($.country == \"NL\")");
+						"(country == 'BG' && year == 2020) || (country == 'NL')");
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 
 				try {
-					results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "Invalid Expression");
+					vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == NL");
+					Assert.fail("Invalid filter expression should have been cached!");
+				}
+				catch (FilterExpressionParseException e) {
+					assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
+				}
+
+				try {
+					results = ((PgVectorStore) vectorStore).internalSimilaritySearch("The World", 5, THRESHOLD_ALL,
+							"Invalid Expression");
 					Assert.fail("Malicious jsonpath expressions should be detected!");
 				}
 				catch (Exception e) {

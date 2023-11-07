@@ -344,11 +344,16 @@ public class PineconeVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
-		return similaritySearch(query, topK, similarityThreshold, "");
+		return internalSimilaritySearch(query, topK, similarityThreshold, "");
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold, String filters) {
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
+	}
+
+	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold, String filters) {
 
 		List<Double> queryEmbedding = this.embeddingClient.embed(query);
 
@@ -376,12 +381,6 @@ public class PineconeVectorStore implements VectorStore {
 				return new Document(id, content, metadata);
 			})
 			.toList();
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
-		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
-		return this.similaritySearch(query, k, threshold, pgVectorFilterExpression);
 	}
 
 	private Struct metadataFiltersToStruct(String metadataFilters) {

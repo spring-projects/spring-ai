@@ -16,15 +16,6 @@
 
 package org.springframework.ai.vectorstore.filter;
 
-import java.util.List;
-
-import org.springframework.ai.vectorstore.filter.converter.JsonPathFilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.converter.PrintFilterExpressionConverter;
-
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.*;
-
 /**
  * Portable runtime model for metadata filter expressions. This generic model is used to
  * define store agnostic filter expressions than later can be converted into vector-store
@@ -66,8 +57,9 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.*;
  *
  *
  * Usually you will not create expression manually but use either the
- * {@link FilterExpressionBuilder} DSL for building the expressions programmatically or
- * the TODO for parsing generic text filter expressions.
+ * {@link Filter#builder()} DSL or the {@link Filter#parser()} for parsing generic text
+ * expressions. Follow the {@link FilterExpressionBuilder} and
+ * {@link FilterExpressionTextParser} documentation for how to use them.
  *
  * @author Christian Tzolov
  */
@@ -76,14 +68,14 @@ public class Filter {
 	/**
 	 * DSL builder for creating {@link Filter.Expression} programmatically.
 	 */
-	public static FilterExpressionBuilder expressionBuilder() {
+	public static FilterExpressionBuilder builder() {
 		return new FilterExpressionBuilder();
 	}
 
 	/**
-	 * Parses a portable filter expression language into {@link Filter.Expression}.
+	 * Parses a portable filter expression text language into {@link Filter.Expression}.
 	 */
-	public static FilterExpressionTextParser expressionParser() {
+	public static FilterExpressionTextParser parser() {
 		return new FilterExpressionTextParser();
 	}
 
@@ -112,9 +104,10 @@ public class Filter {
 	/**
 	 * Filter expression operations. <br/>
 	 *
-	 * - EQ, NE, GT, GTE, LT, LTE operations supports "Key OP Value" expressions.<br/>
+	 * - EQ, NE, GT, GTE, LT, LTE operations supports "Key ExprType Value"
+	 * expressions.<br/>
 	 *
-	 * - AND, OR are binary operations that support "(Expression|Group) OP
+	 * - AND, OR are binary operations that support "(Expression|Group) ExprType
 	 * (Expression|Group)" expressions. <br/>
 	 *
 	 * - IN, NIN support "Key (IN|NIN) ArrayValue" expression. <br/>
@@ -147,55 +140,6 @@ public class Filter {
 	 * @param content Inner expression to be evaluated as a part of the group.
 	 */
 	public record Group(Expression content) implements Operand {
-	}
-
-	public static void main(String[] args) {
-
-		// 1: country == "BG"
-		var expression1 = new Expression(EQ, new Key("country"), new Value("BG"));
-
-		evalExpression("country == \"BG\"", expression1);
-
-		// 2: genre == "drama" AND year >= 2020
-		var expression2 = new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
-				new Expression(GTE, new Key("year"), new Value(2020)));
-
-		evalExpression("genre == \"drama\" AND year >= 2020", expression2);
-
-		// 3: genre in ["comedy", "documentary", "drama"]
-		var expression3 = new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama")));
-
-		evalExpression("genre in [\"comedy\", \"documentary\", \"drama\"]", expression3);
-
-		// 4: year >= 2020 OR country == "BG" AND city != "Sofia"
-		var expression4 = new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
-				new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
-						new Expression(NE, new Key("city"), new Value("Sofia"))));
-
-		evalExpression("year >= 2020 OR country == \"BG\" AND city != \"Sofia\"", expression4);
-
-		// 5: (year >= 2020 OR country == "BG") AND city NIN ["Sofia", "Plovdiv"]
-		var expression5 = new Expression(AND,
-				new Group(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
-						new Expression(GTE, new Key("year"), new Value(2020)))),
-				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Varna"))));
-
-		evalExpression("(year >= 2020 OR country == \"BG\") AND city NIN [\"Sofia\", \"Plovdiv\"]", expression5);
-
-		// 6: isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		var expression6 = new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
-				new Expression(AND, new Expression(GTE, new Key("year"), new Value(2020)),
-						new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
-
-		evalExpression("isOpen == true AND year >= 2020 AND country IN [\"BG\", \"NL\", \"US\"]", expression6);
-	}
-
-	private static void evalExpression(String description, Expression expression) {
-		System.out.println("\nEXP: " + description + "\n");
-		System.out.println("  Simple:   " + new PrintFilterExpressionConverter().convert(expression));
-		System.out.println("  PGvector: " + new JsonPathFilterExpressionConverter().convert(expression));
-		System.out.println("  Pinecone: " + new PineconeFilterExpressionConverter().convert(expression));
-		System.out.println("  Milvus:   " + new MilvusFilterExpressionConverter().convert(expression));
 	}
 
 }

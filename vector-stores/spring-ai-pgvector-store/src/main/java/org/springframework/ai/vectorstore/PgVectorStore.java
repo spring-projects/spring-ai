@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.converter.JsonPathFilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -57,7 +57,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
 
-	public final JsonPathFilterExpressionConverter filterExpressionConverter = new JsonPathFilterExpressionConverter();
+	public final PgVectorFilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -225,7 +225,16 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					"INSERT INTO " + VECTOR_TABLE_NAME
 							+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
 							+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
-					id, content, metadata, pgEmbedding, content, metadata, pgEmbedding);
+					id, content, toJson(metadata), pgEmbedding, content, toJson(metadata), pgEmbedding);
+		}
+	}
+
+	private String toJson(Map<String, Object> map) {
+		try {
+			return objectMapper.writeValueAsString(map);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -263,11 +272,16 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
-		return this.similaritySearch(query, topK, similarityThreshold, "");
+		return this.internalSimilaritySearch(query, topK, similarityThreshold, "");
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold,
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
+	}
+
+	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold,
 			String filterExpression) {
 
 		String jsonPathFilter = "";
@@ -283,12 +297,6 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
-		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
-		return this.similaritySearch(query, k, threshold, pgVectorFilterExpression);
 	}
 
 	public List<Double> embeddingDistance(String query) {

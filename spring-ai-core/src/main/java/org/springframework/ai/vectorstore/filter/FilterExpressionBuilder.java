@@ -21,7 +21,6 @@ import java.util.List;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
-import org.springframework.ai.vectorstore.filter.converter.PrintFilterExpressionConverter;
 
 /**
  * DSL builder for {@link Filter.Expression} instances. Here are some common examples:
@@ -32,7 +31,7 @@ import org.springframework.ai.vectorstore.filter.converter.PrintFilterExpression
  * // 1: country == "BG"
  * var exp1 = b.eq("country", "BG");
  *
- * // 2: genre = "drama" AND year >= 2020
+ * // 2: genre == "drama" AND year >= 2020
  * var exp2 = b.and(b.eq("genre", "drama"), b.gte("year", 2020));
  *
  * // 3: genre in ["comedy", "documentary", "drama"]
@@ -57,7 +56,7 @@ import org.springframework.ai.vectorstore.filter.converter.PrintFilterExpression
  */
 public class FilterExpressionBuilder {
 
-	private record Op(Filter.Operand expression) {
+	record Op(Filter.Operand expression) {
 
 		public Filter.Expression build() {
 			if (expression instanceof Filter.Group group) {
@@ -76,7 +75,7 @@ public class FilterExpressionBuilder {
 	}
 
 	public Op ne(String key, Object value) {
-		return new Op(new Filter.Expression(ExpressionType.EQ, new Key(key), new Value(value)));
+		return new Op(new Filter.Expression(ExpressionType.NE, new Key(key), new Value(value)));
 	}
 
 	public Op gt(String key, Object value) {
@@ -121,38 +120,6 @@ public class FilterExpressionBuilder {
 
 	public Op group(Op content) {
 		return new Op(new Filter.Group(content.build()));
-	}
-
-	public static void main(String[] args) {
-
-		var b = new FilterExpressionBuilder();
-
-		// 1: country == "BG"
-		var exp1 = b.eq("country", "BG");
-
-		// 2: genre = "drama" AND year >= 2020
-		var exp2 = b.and(b.eq("genre", "drama"), b.gte("year", 2020));
-
-		// 3: genre in ["comedy", "documentary", "drama"]
-		var exp3 = b.in("genre", "comedy", "documentary", "drama");
-
-		// 4: year >= 2020 OR country == "BG" AND city != "Sofia"
-		var exp4 = b.and(b.or(b.gte("year", 2020), b.eq("country", "BG")), b.ne("city", "Sofia"));
-
-		// 5: (year >= 2020 OR country == "BG") AND city NIN ["Sofia", "Plovdiv"]
-		var exp5 = b.and(b.group(b.or(b.gte("year", 2020), b.eq("country", "BG"))), b.nin("city", "Sofia", "Plovdiv"));
-
-		// 6: isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		var exp6 = b.and(b.and(b.eq("isOpen", true), b.gte("year", 2020)), b.in("country", "BG", "NL", "US"));
-
-		var printer = new PrintFilterExpressionConverter();
-
-		System.out.println(printer.convert(exp1.build()));
-		System.out.println(printer.convert(exp2.build()));
-		System.out.println(printer.convert(exp3.build()));
-		System.out.println(printer.convert(exp4.build()));
-		System.out.println(printer.convert(exp5.build()));
-		System.out.println(printer.convert(exp6.build()));
 	}
 
 }

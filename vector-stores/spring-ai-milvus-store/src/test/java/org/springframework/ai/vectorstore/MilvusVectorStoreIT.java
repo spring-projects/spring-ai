@@ -146,30 +146,28 @@ public class MilvusVectorStoreIT {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 
 				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", "2020"));
+						Map.of("country", "BG", "year", 2020));
 				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 						Map.of("country", "NL"));
 				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", "2023"));
+						Map.of("country", "BG", "year", 2023));
 
 				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 				List<Document> results = vectorStore.similaritySearch("The World", 5);
 				assertThat(results).hasSize(3);
 
-				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-						"metadata[\"country\"] == \"NL\"");
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'NL'");
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-						"metadata[\"country\"] == \"BG\"");
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'BG'");
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
-						"metadata[\"country\"] == \"BG\" && metadata[\"year\"] == \"2020\"");
+						"country == 'BG' && year == 2020");
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 			});
