@@ -1,6 +1,6 @@
 = Vector Databases
 
-== Introduction
+== Overview
 Vector Databases are a specialized type of database that plays an essential role in AI applications.
 
 In Vector Databases, queries differ from traditional relational databases.
@@ -18,11 +18,12 @@ In the following sections, we will describe the Spring AI interface for using mu
 
 The last section attempts to demystify the underlying approach of similarity search of Vector Databases.
 
-== Spring AI Vector Database Support
+== API Overview
+This section serves as a guide to the `VectorStore` interface and its associated classes within the Spring AI framework.
 
-Spring AI provides an abstract API over Vector Databases using the interface `VectorStore`.
+Spring AI offers an abstracted API for interacting with Vector Databases through the `VectorStore` interface.
 
-The API of the Vector store is shown below
+Here is the `VectorStore` interface definition:
 
 ```java
 public interface VectorStore {
@@ -36,32 +37,48 @@ public interface VectorStore {
 	List<Document> similaritySearch(String query, int k);
 
 	List<Document> similaritySearch(String query, int k, double threshold);
+
+    List<Document> similaritySearch(String query, int topK, double similarityThreshold,
+			Filter.Expression filterExpression);
+
+    List<Document> similaritySearch(String query, int topK, double similarityThreshold,
+			String filterExpression);
 }
 ```
 
-The Spring AI library uses the `Document` class to model the `String` you want to store in the Vector Database along with the vector representing that `String`.
-The vector that representing the `String` is of the type `List<Double>` and is often called the string's embedding.
+To insert data into the Vector Database, encapsulate it within a `Document` object.
+The `Document` class encapsulates content from a data source, such as a PDF or Word document, and includes text represented as a String.
+It also contains metadata in the form of key-value pairs, including details like the filename.
 
-The `List<Double>` is computed from the `String` using an implementation of the class `EmbeddingClient`.
-An Embedding Model is an example of an AI model, that transforms from `String` to a `List<Double>`.
-The embeddings are used internally by other AI Model implementations, such as models that convert `text` to `text` like ChatGPT.
+Upon addition to the Vector Database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an Embedding Model. Embedding models like https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002` model are used to convert words, sentences, or paragraphs into these vector embeddings.
 
-`EmbeddingClient` that computes the embedding is passed as a constructor argument to `VectorStore` implementation.
+The Vector Database's role is to store and facilitate similarity searches for these embeddings; it does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
+
+The `similaritySearch` methods in the interface allow for retrieving documents similar to a given query string. These methods can be fine-tuned using the following parameters:
 
 
-The `VectorStore` implementations supported by Spring AI are:
+* k - An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search.
+* threshold - A double value ranging from 0 to 1, where values closer to 1 indicate higher similarity. By default, if you set a threshold of 0.75, for instance, only documents with a similarity above this value will be returned.
+* Filter.Expression - A class used for passing a Fluent DSL (Domain-Specific Language) expression that functions similarly to a 'where' clause in SQL, but it applies exclusively to the metadata key-value pairs of a Document.
+* filterExpression - An External DSL based on Antlr4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and isActive, you could use an expression such as country == 'UK' && year >= 2020 && isActive == true.
+
+
+== Available Implementations
+
+These are the available implementations of the `VectorStore` interface
 
 * InMemoryVectorStore
 * SimplePersistentVectorStore
+* Pinecone - The Vector Store https://www.pinecone.io/[PineCone]
 * PgVector - The Vector Store https://github.com/pgvector/pgvector[PostgreSQL/PGVector].
 * Milvus - The Vector Store https://milvus.io/[Milvus]
 * Neo4j - The Vector Store https://neo4j.com/[Neo4j]
 
-More are implementations are coming, with Pinecone being the next implementation.
+Others are welcome, the list is not at all closed.
 
 If you have a Vector Database that needs to be supported by Spring AI, please open an issue on GitHub or, even better, submit a Pull Request with an implementation.
 
-== Usage
+== Example Usage
 
 To compute the embeddings for a Vector Database, you need to pick an Embedding Model that matches the higher-level AI model being used.
 
@@ -94,6 +111,74 @@ Later, when a user question is to be passed into the AI Model, a similarity sear
 ```
 
 There are additional options to be passed into the `similaritySearch` method that defines how many documents to retrieve and a threshold of the similarity search.
+
+== Metadata Filters
+
+=== Filter String
+You can pass in SQL like filter expressions as String to one of the similaritySearch overloads.
+
+For example
+
+* `"country == 'BG'"`
+* `"genre == 'drama' && year >= 2020"`
+* `"genre in ['comedy', 'documentary', 'drama']"`
+
+
+
+
+
+=== Filter.Expression
+
+You can create an instance of `Filter.Expression` with a `FilterExpressionbuilder` that exposes a fluent API.
+A simple example is
+
+[source, java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+Expression expression = b.eq("country", "BG").build();
+----
+
+You can build up sophisticated expressions using the operators
+
+[source, text]
+----
+EQUALS: '=='
+MINUS : '-'
+PLUS: '+'
+GT: '>'
+GE: '>='
+LT: '<'
+LE: '<='
+NE: '!='
+----
+
+You can combine expressions using
+
+[source,text]
+----
+AND: 'AND' | 'and' | '&&';
+OR: 'OR' | 'or' | '||';
+----
+
+For example
+[source,java]
+----
+Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
+----
+
+You can also use the operators
+
+[source,text]
+----
+IN: 'IN' | 'in';
+NIN: 'NIN' | 'nin';
+NOT: 'NOT' | 'not';
+----
+
+[source,java]
+----
+Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
+----
 
 == Understanding Vectors
 

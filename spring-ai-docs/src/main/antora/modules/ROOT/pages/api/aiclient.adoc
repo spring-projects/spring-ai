@@ -18,7 +18,7 @@ This design aligns with Spring's philosophy of modularity and interchangeability
 
 == API Overview
 
-This section provides a gudie to the `AiClient` interface and associated classes.
+This section provides a guide to the `AiClient` interface and associated classes.
 
 === AiClient
 Here is the `AiClient` interface definition:
@@ -126,6 +126,12 @@ Planned implementations
 * Google Vertex - Providing access to 'Bard', aka Palm2
 
 Others are welcome, the list is not at all closed.
+
+== OpenAI-Compatible Models
+
+A variety of models compatible with the OpenAI API are available, including those that can be operated locally, such as [LocalAI](https://github.com/mudler/LocalAI). The standard configuration for connecting to the OpenAI API is through the `spring.ai.openai.baseUrl` property, which defaults to `https://api.openai.com`.
+
+To link the OpenAI client to a compatible model that utilizes the OpenAI API, you should adjust the `spring.ai.openai.baseUrl` property to the corresponding URL of the model you wish to connect to.
 
 == Configuration
 

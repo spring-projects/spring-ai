@@ -43,6 +43,7 @@ public class FilterExpressionBuilderTests {
 
 	@Test
 	public void testEQ() {
+		Expression expression = b.eq("country", "BG").build();
 		// country == "BG"
 		assertThat(b.eq("country", "BG").build()).isEqualTo(new Expression(EQ, new Key("country"), new Value("BG")));
 	}
@@ -58,7 +59,7 @@ public class FilterExpressionBuilderTests {
 	@Test
 	public void tesIn() {
 		// genre in ["comedy", "documentary", "drama"]
-		var exp = b.in("genre", "comedy", "documentary", "drama").build();
+		Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 		assertThat(exp)
 			.isEqualTo(new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
 	}
