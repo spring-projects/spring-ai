@@ -1,7 +1,11 @@
 package org.springframework.ai.openai.client;
 
-import org.junit.jupiter.api.Disabled;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
 import org.springframework.ai.openai.testutils.AbstractIT;
@@ -17,10 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
