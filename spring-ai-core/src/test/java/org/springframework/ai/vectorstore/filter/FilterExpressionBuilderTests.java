@@ -58,10 +58,9 @@ public class FilterExpressionBuilderTests {
 	}
 
 	@Test
-	@Disabled("investigate")
-	public void tesIn() {
+	public void testIn() {
 		// genre in ["comedy", "documentary", "drama"]
-		Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
+		var exp = b.in("genre", "comedy", "documentary", "drama").build();
 		assertThat(exp)
 			.isEqualTo(new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
 	}
