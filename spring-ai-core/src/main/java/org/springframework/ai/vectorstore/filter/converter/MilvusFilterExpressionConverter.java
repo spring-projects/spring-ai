@@ -31,9 +31,9 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
-		this.convert(exp.left(), context);
+		this.convertOperand(exp.left(), context);
 		context.append(getOperationSymbol(exp));
-		this.convert(exp.right(), context);
+		this.convertOperand(exp.right(), context);
 	}
 
 	private String getOperationSymbol(Expression exp) {
@@ -65,7 +65,7 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 
 	@Override
 	protected void doGroup(Group group, StringBuilder context) {
-		this.convert(new Expression(ExpressionType.AND, group.content(), group.content()), context); // trick
+		this.convertOperand(new Expression(ExpressionType.AND, group.content(), group.content()), context); // trick
 	}
 
 	@Override

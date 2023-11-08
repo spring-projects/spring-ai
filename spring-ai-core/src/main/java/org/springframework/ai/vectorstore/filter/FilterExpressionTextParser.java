@@ -186,14 +186,22 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIdentifier(FiltersParser.IdentifierContext ctx) {
-			return new Filter.Key(ctx.getText());
+			String identifier = ctx.getText();
+			if ((identifier.startsWith("\"") && identifier.endsWith("\""))
+					|| (identifier.startsWith("'") && identifier.endsWith("'"))) {
+				identifier = removeOuterQuotes(identifier);
+			}
+			return new Filter.Key(identifier);
 		}
 
 		@Override
 		public Filter.Operand visitTextConstant(FiltersParser.TextConstantContext ctx) {
-			var twiceQuotedText = ctx.getText();
-			String onceQuotedText = twiceQuotedText.substring(1, twiceQuotedText.length() - 1);
+			String onceQuotedText = removeOuterQuotes(ctx.getText());
 			return new Filter.Value(onceQuotedText);
+		}
+
+		private String removeOuterQuotes(String in) {
+			return in.substring(1, in.length() - 1);
 		}
 
 		@Override

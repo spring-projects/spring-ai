@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -56,7 +57,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
 
-	public final PgVectorFilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -273,7 +274,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convert(request.getFilterExpression()) : "";
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
 		String jsonPathFilter = "";
 

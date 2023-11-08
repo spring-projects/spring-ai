@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -88,7 +89,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	public static final List<String> SEARCH_OUTPUT_FIELDS = Arrays.asList(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
 			METADATA_FIELD_NAME);
 
-	public final MilvusFilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
 
 	private final MilvusServiceClient milvusClient;
 
@@ -324,7 +325,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convert(request.getFilterExpression()) : "";
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 
