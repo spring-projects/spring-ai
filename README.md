@@ -16,9 +16,11 @@ Let's make your `@Beans` intelligent!
 
 ## Educational Resources
 
-* Follow the [workshop](Workshop Section) 
-* Overview of Spring AI @ Devoxx 2023 [![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
-* Introducing Spring AI - Add Generative AI to your Spring Applications [![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
+* Follow the [Workshop](#workshop) 
+* Overview of Spring AI @ Devoxx 2023 
+<br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
+* Introducing Spring AI - Add Generative AI to your Spring Applications 
+<br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
 
 ## Dependencies
 
