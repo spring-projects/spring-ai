@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.filter.converter;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
@@ -27,16 +28,20 @@ import org.springframework.util.Assert;
 /**
  * @author Christian Tzolov
  */
-public abstract class AbstractFilterExpressionConverter {
+public abstract class AbstractFilterExpressionConverter implements FilterExpressionConverter {
 
-	public String convert(Operand operand) {
-		Assert.notNull(operand, "Operand can't be null");
+	@Override
+	public String convertExpression(Expression expression) {
+		return this.convertOperand(expression);
+	}
+
+	protected String convertOperand(Operand operand) {
 		var context = new StringBuilder();
-		this.convert(operand, context);
+		this.convertOperand(operand, context);
 		return context.toString();
 	}
 
-	protected void convert(Operand operand, StringBuilder context) {
+	protected void convertOperand(Operand operand, StringBuilder context) {
 
 		if (operand instanceof Filter.Group group) {
 			this.doGroup(group, context);
@@ -88,7 +93,7 @@ public abstract class AbstractFilterExpressionConverter {
 
 	protected void doGroup(Group group, StringBuilder context) {
 		this.doStartGroup(group, context);
-		this.convert(group.content(), context);
+		this.convertOperand(group.content(), context);
 		this.doEndGroup(group, context);
 	}
 
@@ -108,6 +113,16 @@ public abstract class AbstractFilterExpressionConverter {
 
 	protected void doAddValueRangeSpitter(Filter.Value listValue, StringBuilder context) {
 		context.append(",");
+	}
+
+	// Utilities
+	protected boolean hasOuterQuotes(String str) {
+		str = str.trim();
+		return (str.startsWith("\"") && str.endsWith("\"")) || (str.startsWith("'") && str.endsWith("'"));
+	}
+
+	protected String removeOuterQuotes(String in) {
+		return in.substring(1, in.length() - 1);
 	}
 
 }

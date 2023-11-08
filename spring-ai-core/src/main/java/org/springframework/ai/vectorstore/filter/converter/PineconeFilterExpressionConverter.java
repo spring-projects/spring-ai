@@ -35,16 +35,16 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 		if (exp.type() == ExpressionType.AND || exp.type() == ExpressionType.OR) {
 			context.append(getOperationSymbol(exp));
 			context.append("[");
-			this.convert(exp.left(), context);
+			this.convertOperand(exp.left(), context);
 			context.append(",");
-			this.convert(exp.right(), context);
+			this.convertOperand(exp.right(), context);
 			context.append("]");
 		}
 		else {
-			this.convert(exp.left(), context);
+			this.convertOperand(exp.left(), context);
 			context.append("{");
 			context.append(getOperationSymbol(exp));
-			this.convert(exp.right(), context);
+			this.convertOperand(exp.right(), context);
 			context.append("}");
 		}
 		context.append("}");
@@ -57,7 +57,8 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("\"" + key.key() + "\": ");
+		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
+		context.append("\"" + identifier + "\": ");
 	}
 
 }

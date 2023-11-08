@@ -28,9 +28,9 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 public class PrintFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	public void doExpression(Expression expression, StringBuilder context) {
-		this.convert(expression.left(), context);
+		this.convertOperand(expression.left(), context);
 		context.append(" " + expression.type() + " ");
-		this.convert(expression.right(), context);
+		this.convertOperand(expression.right(), context);
 
 	}
 

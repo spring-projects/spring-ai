@@ -30,9 +30,9 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
-		this.convert(expression.left(), context);
+		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
-		this.convert(expression.right(), context);
+		this.convertOperand(expression.right(), context);
 	}
 
 	private String getOperationSymbol(Expression exp) {

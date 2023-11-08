@@ -94,6 +94,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Chroma Vector Store -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-chroma-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

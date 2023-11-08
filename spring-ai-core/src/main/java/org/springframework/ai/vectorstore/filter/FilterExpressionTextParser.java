@@ -191,9 +191,12 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitTextConstant(FiltersParser.TextConstantContext ctx) {
-			var twiceQuotedText = ctx.getText();
-			String onceQuotedText = twiceQuotedText.substring(1, twiceQuotedText.length() - 1);
+			String onceQuotedText = removeOuterQuotes(ctx.getText());
 			return new Filter.Value(onceQuotedText);
+		}
+
+		private String removeOuterQuotes(String in) {
+			return in.substring(1, in.length() - 1);
 		}
 
 		@Override

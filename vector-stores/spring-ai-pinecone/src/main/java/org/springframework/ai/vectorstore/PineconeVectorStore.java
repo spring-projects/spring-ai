@@ -36,6 +36,8 @@ import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -53,7 +55,7 @@ public class PineconeVectorStore implements VectorStore {
 
 	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
 
-	public final PineconeFilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
 	private final EmbeddingClient embeddingClient;
 
@@ -307,7 +309,7 @@ public class PineconeVectorStore implements VectorStore {
 		// Filter.Expression filterExpression) {
 
 		String nativeExpressionFilters = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convert(request.getFilterExpression()) : "";
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
 		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 

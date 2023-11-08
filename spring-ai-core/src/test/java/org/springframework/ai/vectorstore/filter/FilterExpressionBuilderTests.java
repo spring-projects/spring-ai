@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore.filter;
 
 import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -44,7 +43,6 @@ public class FilterExpressionBuilderTests {
 
 	@Test
 	public void testEQ() {
-		Expression expression = b.eq("country", "BG").build();
 		// country == "BG"
 		assertThat(b.eq("country", "BG").build()).isEqualTo(new Expression(EQ, new Key("country"), new Value("BG")));
 	}

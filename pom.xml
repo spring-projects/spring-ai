@@ -32,6 +32,7 @@
 		<module>document-readers/tika-reader</module>
 		<module>embedding-clients/transformers-embedding</module>
 		<module>vector-stores/spring-ai-pinecone</module>
+		<module>vector-stores/spring-ai-chroma</module>
 
 	</modules>
 
