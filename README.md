@@ -11,8 +11,14 @@ Let's make your `@Beans` intelligent!
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [Issues](https://github.com/spring-projects-experimental/spring-ai/issues)
-* [Discussions](https://github.com/spring-projects-experimental/spring-ai/discussions)
+* [Discussions](https://github.com/spring-projects-experimental/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!  
 * [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
+
+## Educational Resources
+
+* Follow the [workshop](Workshop Section) 
+* Overview of Spring AI @ Devoxx 2023 [![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
+* Introducing Spring AI - Add Generative AI to your Spring Applications [![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
 
 ## Dependencies
 
