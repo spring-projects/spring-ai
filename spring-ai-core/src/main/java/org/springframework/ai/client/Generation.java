@@ -19,6 +19,9 @@ package org.springframework.ai.client;
 import java.util.Collections;
 import java.util.Map;
 
+import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.lang.Nullable;
+
 public class Generation {
 
 	// Just text for now
@@ -26,13 +29,15 @@ public class Generation {
 
 	private Map<String, Object> info;
 
+	private ChoiceMetadata choiceMetadata;
+
 	public Generation(String text) {
 		this(text, Collections.emptyMap());
 	}
 
 	public Generation(String text, Map<String, Object> info) {
 		this.text = text;
-		this.info = info;
+		this.info = Map.copyOf(info);
 	}
 
 	public String getText() {
@@ -40,7 +45,17 @@ public class Generation {
 	}
 
 	public Map<String, Object> getInfo() {
-		return Collections.unmodifiableMap(this.info);
+		return this.info;
+	}
+
+	public ChoiceMetadata getChoiceMetadata() {
+		ChoiceMetadata choiceMetadata = this.choiceMetadata;
+		return choiceMetadata != null ? choiceMetadata : ChoiceMetadata.NULL;
+	}
+
+	public Generation withChoiceMetadata(@Nullable ChoiceMetadata choiceMetadata) {
+		this.choiceMetadata = choiceMetadata;
+		return this;
 	}
 
 	@Override

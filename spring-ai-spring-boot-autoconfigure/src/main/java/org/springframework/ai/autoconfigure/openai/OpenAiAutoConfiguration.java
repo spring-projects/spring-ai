@@ -16,19 +16,18 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
+
 import java.time.Duration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theokanning.openai.client.OpenAiApi;
 import com.theokanning.openai.service.OpenAiService;
-import okhttp3.OkHttpClient;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,7 +37,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.StringUtils;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
+import okhttp3.OkHttpClient;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
+import retrofit2.http.HEAD;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAiService.class)
@@ -50,8 +53,8 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
 
-		OpenAiService openAiService = theoOpenAiService(openAiProperties.getBaseUrl(), openAiProperties.getApiKey(),
-				openAiProperties.getDuration());
+		OpenAiService openAiService = theoOpenAiService(openAiProperties, openAiProperties.getBaseUrl(),
+				openAiProperties.getApiKey(), openAiProperties.getDuration());
 
 		OpenAiClient openAiClient = new OpenAiClient(openAiService);
 		openAiClient.setTemperature(openAiProperties.getTemperature());
@@ -64,13 +67,14 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public EmbeddingClient openAiEmbeddingClient(OpenAiProperties openAiProperties) {
 
-		OpenAiService openAiService = theoOpenAiService(openAiProperties.getEmbedding().getBaseUrl(),
+		OpenAiService openAiService = theoOpenAiService(openAiProperties, openAiProperties.getEmbedding().getBaseUrl(),
 				openAiProperties.getEmbedding().getApiKey(), openAiProperties.getDuration());
 
 		return new OpenAiEmbeddingClient(openAiService, openAiProperties.getEmbedding().getModel());
 	}
 
-	private OpenAiService theoOpenAiService(String baseUrl, String apiKey, Duration duration) {
+	private OpenAiService theoOpenAiService(OpenAiProperties properties, String baseUrl, String apiKey,
+			Duration duration) {
 
 		if ("https://api.openai.com".equals(baseUrl) && !StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
@@ -78,7 +82,14 @@ public class OpenAiAutoConfiguration {
 		}
 
 		ObjectMapper mapper = OpenAiService.defaultObjectMapper();
-		OkHttpClient client = OpenAiService.defaultClient(apiKey, duration);
+
+		OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder(OpenAiService.defaultClient(apiKey, duration));
+
+		if (properties.getMetadata().isRateLimitMetricsEnabled()) {
+			clientBuilder.addInterceptor(new OpenAiHttpResponseHeadersInterceptor());
+		}
+
+		OkHttpClient client = clientBuilder.build();
 
 		// Waiting for https://github.com/TheoKanning/openai-java/issues/249 to be
 		// resolved.

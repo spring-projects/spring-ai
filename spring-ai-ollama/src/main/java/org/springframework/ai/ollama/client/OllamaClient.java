@@ -211,9 +211,7 @@ public class OllamaClient implements AiClient {
 		var generation = new Generation(ollamaResponse);
 
 		// TODO investigate mapping of additional metadata/runtime info to the response.
-		// Determine if should be top
-		// level map vs. nested map
-		return new AiResponse(Collections.singletonList(generation), Map.of("ollama-generate-results", results));
+		return new AiResponse(Collections.singletonList(generation));
 	}
 
 	/**

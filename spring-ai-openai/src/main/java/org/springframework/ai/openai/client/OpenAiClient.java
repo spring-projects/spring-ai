@@ -16,19 +16,23 @@
 
 package org.springframework.ai.openai.client;
 
-import com.theokanning.openai.completion.chat.ChatCompletionChoice;
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
+import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.ai.openai.metadata.OpenAiGenerationMetadata;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.MessageType;
 import org.springframework.util.Assert;
+
+import com.theokanning.openai.completion.chat.ChatCompletionChoice;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatCompletionResult;
+import com.theokanning.openai.completion.chat.ChatMessage;
+import com.theokanning.openai.service.OpenAiService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +105,21 @@ public class OpenAiClient implements AiClient {
 		return getAiResponse(chatCompletionRequest);
 	}
 
+	private AiResponse getAiResponse(ChatCompletionRequest chatCompletionRequest) {
+		logger.trace("ChatMessages: {}", chatCompletionRequest.getMessages());
+		ChatCompletionResult chatCompletionResult = this.openAiService.createChatCompletion(chatCompletionRequest);
+		List<ChatCompletionChoice> chatCompletionChoices = chatCompletionResult.getChoices();
+		logger.trace("ChatCompletionChoices: {}", chatCompletionChoices);
+		List<Generation> generations = new ArrayList<>();
+		for (ChatCompletionChoice chatCompletionChoice : chatCompletionChoices) {
+			ChatMessage chatMessage = chatCompletionChoice.getMessage();
+			Generation generation = new Generation(chatMessage.getContent(), Map.of("role", chatMessage.getRole()))
+				.withChoiceMetadata(ChoiceMetadata.from(chatCompletionChoice.getFinishReason(), null));
+			generations.add(generation);
+		}
+		return new AiResponse(generations, OpenAiGenerationMetadata.from(chatCompletionResult));
+	}
+
 	private ChatCompletionRequest getChatCompletionRequest(String text) {
 
 		List<ChatMessage> chatMessages = List.of(new ChatMessage("user", text));
@@ -114,27 +133,6 @@ public class OpenAiClient implements AiClient {
 		logger.trace("ChatCompletionRequest: {}", chatCompletionRequest);
 
 		return chatCompletionRequest;
-	}
-
-	private AiResponse getAiResponse(ChatCompletionRequest chatCompletionRequest) {
-
-		List<Generation> generations = new ArrayList<>();
-		logger.trace("ChatMessages: {}", chatCompletionRequest.getMessages());
-
-		List<ChatCompletionChoice> chatCompletionChoices = this.openAiService
-			.createChatCompletion(chatCompletionRequest)
-			.getChoices();
-		logger.trace("ChatCompletionChoice: {}", chatCompletionChoices);
-
-		for (ChatCompletionChoice chatCompletionChoice : chatCompletionChoices) {
-			ChatMessage chatMessage = chatCompletionChoice.getMessage();
-			// TODO investigate mapping of additional metadata/runtime info to the general
-			// model.
-			Generation generation = new Generation(chatMessage.getContent(), Map.of("role", chatMessage.getRole()));
-			generations.add(generation);
-		}
-
-		return new AiResponse(generations);
 	}
 
 	private String getResponse(ChatCompletionRequest chatCompletionRequest) {

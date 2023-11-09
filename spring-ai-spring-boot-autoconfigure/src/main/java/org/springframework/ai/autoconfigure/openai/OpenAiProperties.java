@@ -35,6 +35,8 @@ public class OpenAiProperties {
 
 	private final Embedding embedding = new Embedding(this);
 
+	private final Metadata metadata = new Metadata();
+
 	private String apiKey;
 
 	private String model = "gpt-3.5-turbo";
@@ -85,6 +87,10 @@ public class OpenAiProperties {
 		return this.embedding;
 	}
 
+	public Metadata getMetadata() {
+		return this.metadata;
+	}
+
 	public static class Embedding {
 
 		private final OpenAiProperties openAiProperties;
@@ -126,6 +132,24 @@ public class OpenAiProperties {
 
 		public void setBaseUrl(String baseUrl) {
 			this.baseUrl = baseUrl;
+		}
+
+	}
+
+	public static class Metadata {
+
+		private Boolean rateLimitMetricsEnabled;
+
+		public boolean isRateLimitMetricsEnabled() {
+			return Boolean.TRUE.equals(getRateLimitMetricsEnabled());
+		}
+
+		public Boolean getRateLimitMetricsEnabled() {
+			return this.rateLimitMetricsEnabled;
+		}
+
+		public void setRateLimitMetricsEnabled(Boolean rateLimitMetricsEnabled) {
+			this.rateLimitMetricsEnabled = rateLimitMetricsEnabled;
 		}
 
 	}

@@ -20,8 +20,6 @@ public class OllamaClientTests {
 		AiResponse aiResponse = ollama2.generate(prompt);
 		Assertions.assertNotNull(aiResponse);
 		Assertions.assertFalse(CollectionUtils.isEmpty(aiResponse.getGenerations()));
-		Assertions.assertFalse(CollectionUtils.isEmpty(aiResponse.getProviderOutput()));
-		Assertions.assertNotNull(aiResponse.getProviderOutput().get("ollama-generate-results"));
 		Assertions.assertNotNull(aiResponse.getGeneration());
 		Assertions.assertNotNull(aiResponse.getGeneration().getText());
 	}
