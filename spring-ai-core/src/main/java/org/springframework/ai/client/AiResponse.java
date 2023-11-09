@@ -15,11 +15,15 @@
  */
 package org.springframework.ai.client;
 
+import org.springframework.ai.client.metadata.AiMetadata;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class AiResponse {
+
+	private final AiMetadata metadata;
 
 	private final List<Generation> generations;
 
@@ -28,14 +32,25 @@ public class AiResponse {
 	private final Map<String, Object> runInfo;
 
 	public AiResponse(List<Generation> generations) {
-		this(generations, Collections.emptyMap(), Collections.emptyMap());
+		this(generations, Collections.emptyMap(), Collections.emptyMap(), AiMetadata.EMPTY);
+	}
+
+	public AiResponse(List<Generation> generations, AiMetadata metadata) {
+		this(generations, Collections.emptyMap(), Collections.emptyMap(), metadata);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput) {
-		this(generations, providerOutput, Collections.emptyMap());
+		this(generations, providerOutput, Collections.emptyMap(), AiMetadata.EMPTY);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
+		this(generations, providerOutput, runInfo, AiMetadata.EMPTY);
+	}
+
+	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo,
+			AiMetadata metadata) {
+
+		this.metadata = metadata;
 		this.generations = List.copyOf(generations);
 		this.providerOutput = Map.copyOf(providerOutput);
 		this.runInfo = Map.copyOf(runInfo);
@@ -54,6 +69,16 @@ public class AiResponse {
 
 	public Generation getGeneration() {
 		return this.generations.get(0);
+	}
+
+	/**
+	 * Returns {@link AiMetadata metadata} containing metadata about the use of the AI
+	 * provider's API.
+	 * @return {@link AiMetadata metadata} containing metadata about the use of the AI
+	 * provider's API.
+	 */
+	public AiMetadata getMetadata() {
+		return this.metadata;
 	}
 
 	/**
