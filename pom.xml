@@ -79,7 +79,7 @@
 		<maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
 
-		<!-- prodution dependencies -->
+		<!-- production dependencies -->
 		<spring-boot.version>3.1.3</spring-boot.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
 		<open-ai-client.version>0.16.0</open-ai-client.version>
@@ -87,7 +87,7 @@
 		<jtokkit.version>0.6.1</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
 
-		<!-- readers/writer/stores dependecies-->
+		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.0</pdfbox.version>
 		<pgvector.version>0.1.3</pgvector.version>
 		<postgresql.version>42.6.0</postgresql.version>
@@ -97,7 +97,7 @@
 		<fastjson.version>2.0.42</fastjson.version>
 		<azure-search.version>11.6.0</azure-search.version>
 
-		<!-- testing dependecies -->
+		<!-- testing dependencies -->
 		<testcontainers.version>1.19.0</testcontainers.version>
 
 		<!-- documentation dependencies -->

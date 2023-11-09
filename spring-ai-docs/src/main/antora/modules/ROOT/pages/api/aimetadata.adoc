@@ -1,0 +1,139 @@
+[[AiMetadata]]
+= AI metadata
+
+Use of an AI, such as OpenAI's ChatGPT, consumes resources and generates metrics returned by the AI provider based on the usage and requests made to the AI through the API.
+Consumption is typically in the form of requests made or tokens used in a given timeframe, such as monthly, that AI providers use to measure this consumption and reset limits.
+Your rate limits are directly determined by your plan when you signed up with your AI provider. For instance, you can review details on OpenAI's https://platform.openai.com/docs/guides/rate-limits?context=tier-free[rate limits] and https://openai.com/pricing#language-models[plans] by following the links.
+
+To help garner insight into your AI (model) consumption and general usage, Spring AI provides an API to introspect the metadata that is returned by AI providers in their APIs.
+
+Spring AI defines 3 primary interfaces to examine these metrics: `GenerationMetadata`, `RateLimit` and `Usage`. All of these interface can be accessed programmatically from the `AiResponse` returned and initiated by an AI request.
+
+[[AiMetadata-GenerationMetadata]]
+== `GenerationMetadata` interface
+
+The `GenerationMetadata` interface is defined as:
+
+.GenerationMetadata interface
+[source,java]
+----
+interface GenerationMetadata {
+
+	default RateLimit getRateLimit() {
+		return RateLimit.NULL;
+	}
+
+	default Usage getUsage() {
+		return Usage.NULL;
+	}
+
+}
+----
+
+An instance of `GenerationMetadata` is automatically created by Spring AI when an AI request is made through the AI provider's API and an AI response is returned. You can get access to the AI provider metadata from the `AiResponse` using:
+
+.Get access to `GenerationMetadata` from `AiResponse`
+[source,java]
+----
+@Service
+class MyService {
+
+	ApplicationObjectType askTheAi(ServiceRequest request) {
+
+        Prompt prompt = createPrompt(request);
+
+        AiResponse response = aiClient.generate(prompt)
+
+        // Process the AI response
+
+        GenerationMetadata metadata = response.getMetadata();
+
+        // Inspect the AI metadata returned in the AI response of the AI providers API
+
+        Long totalTokensUsedInAiPromptAndResponse = metadata.getUsage().getTotalTokens();
+
+        // Act on this information somehow
+	}
+}
+----
+
+You might imagine that you can rate limit your own Spring applications using AI, or restrict `Prompt` sizes, which affect your token usage, in an automated, intelligent and realtime manner.
+
+Minimally, you can simply gather these metrics to monitor and report on your consumption.
+
+[[AiMetadata-RateLimit]]
+== RateLimit
+
+The `RateLimit` interface provides access to actual information returned by an AI provider on your API usage when making AI requests.
+
+.`RateLimit` interface
+[source,java]
+----
+interface RateLimit {
+
+	Long getRequestsLimit();
+
+	Long getRequestsRemaining();
+
+	Duration getRequestsReset();
+
+	Long getTokensLimit();
+
+	Long getTokensRemaining();
+
+	Duration getTokensReset();
+
+}
+----
+
+`requestsLimit` and `requestsRemaining` let you know how many AI requests, based on the AI provider plan you chose when you signed up, that you can make in total along with your remaining balance within the given timeframe. `requestsReset` returns a `Duration` of time before the timeframe expires and your limits reset based on your chosen plan.
+
+The methods for `tokensLimit`, `tokensRemaining` and `tokensReset` are similar to the methods for requests, but focus on token limits, balance and resets instead.
+
+The `RateLimit` instance can be acquired from the `GenerationMetadata`, like so:
+
+.Get access to `RateLimit` from `GenerationMetadata`
+[source,java]
+----
+RateLimit rateLimit = generationMetadata.getRateLimit();
+
+Long tokensRemaining = rateLimit.getTokensRemaining();
+
+// do something interesting with the RateLimit metadata
+----
+
+For AI providers like OpenAI, the rate limit metadata is returned in https://platform.openai.com/docs/guides/rate-limits/rate-limits-in-headers[HTTP headers] from their (REST) API accessible through HTTP clients, like OkHttp.
+
+Because this can be potentially a costly operation, the collection of rate limit AI metadata must be explicitly enabled. You can enable this collection with a Spring AI property in Spring Boot application.properties; for example:
+
+.Enable API rate limit collection from AI metadata
+[source,properties]
+----
+# Spring Boot application.properties
+spring.ai.openai.metadata.rate-limit-metrics-enabled=true
+----
+
+[[AiMetadata-Usage]]
+== Usage
+
+As shown <<AiMetadata-GenerationMetadata,above>>, `Usage` data can be obtained from the `GenerationMetadata` object. The `Usage` interface is defined as:
+
+.`Usage` interface
+[source,java]
+----
+interface Usage {
+
+	Long getPromptTokens();
+
+	Long getGenerationTokens();
+
+	default Long getTotalTokens() {
+		return getPromptTokens() + getGenerationTokens();
+	}
+
+}
+----
+
+The method names are self-explanatory, but tells you the tokens that the AI required to process the `Prompt` and generate a response.
+
+`totalTokens` is the sum of `promptTokens` and `generationTokens`. Spring AI computes this by default, but the information is returned in the AI response from OpenAI.

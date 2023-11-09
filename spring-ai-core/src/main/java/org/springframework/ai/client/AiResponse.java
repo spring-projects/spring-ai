@@ -19,35 +19,36 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.PromptMetadata;
+import org.springframework.lang.Nullable;
+
 public class AiResponse {
+
+	private final GenerationMetadata metadata;
 
 	private final List<Generation> generations;
 
-	private Map<String, Object> providerOutput;
-
-	private Map<String, Object> runInfo;
+	private PromptMetadata promptMetadata;
 
 	public AiResponse(List<Generation> generations) {
-		this(generations, Collections.emptyMap(), Collections.emptyMap());
+		this(generations, GenerationMetadata.NULL);
 	}
 
-	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput) {
-		this(generations, providerOutput, Collections.emptyMap());
-	}
-
-	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
+	public AiResponse(List<Generation> generations, GenerationMetadata metadata) {
+		this.metadata = metadata;
 		this.generations = List.copyOf(generations);
-		this.providerOutput = Map.copyOf(providerOutput);
-		this.runInfo = Map.copyOf(runInfo);
 	}
 
 	/**
-	 * The list of generated outputs. It is a list of lists because the Prompt could
-	 * request multiple output generations.
-	 * @return
+	 * The {@link List} of {@link Generation generated outputs}.
+	 * <p>
+	 * It is a {@link List} of {@link List lists} because the Prompt could request
+	 * multiple output {@link Generation generations}.
+	 * @return the {@link List} of {@link Generation generated outputs}.
 	 */
 	public List<Generation> getGenerations() {
-		return Collections.unmodifiableList(generations);
+		return this.generations;
 	}
 
 	public Generation getGeneration() {
@@ -55,17 +56,37 @@ public class AiResponse {
 	}
 
 	/**
-	 * Arbitrary model provider specific output
+	 * Returns {@link GenerationMetadata} containing information about the use of the AI
+	 * provider's API.
+	 * @return {@link GenerationMetadata} containing information about the use of the AI
+	 * provider's API.
 	 */
-	public Map<String, Object> getProviderOutput() {
-		return Collections.unmodifiableMap(providerOutput);
+	public GenerationMetadata getGenerationMetadata() {
+		return this.metadata;
 	}
 
 	/**
-	 * The run metadata information
+	 * Returns {@link PromptMetadata} containing information on prompt processing by the
+	 * AI.
+	 * @return {@link PromptMetadata} containing information on prompt processing by the
+	 * AI.
 	 */
-	public Map<String, Object> getRunInfo() {
-		return Collections.unmodifiableMap(runInfo);
+	public PromptMetadata getPromptMetadata() {
+		PromptMetadata promptMetadata = this.promptMetadata;
+		return promptMetadata != null ? promptMetadata : PromptMetadata.empty();
+	}
+
+	/**
+	 * Builder method used to include {@link PromptMetadata} returned in the AI response
+	 * when processing the prompt.
+	 * @param promptMetadata {@link PromptMetadata} returned by the AI in the response
+	 * when processing the prompt.
+	 * @return this {@link AiResponse}.
+	 * @see #getPromptMetadata()
+	 */
+	public AiResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
+		this.promptMetadata = promptMetadata;
+		return this;
 	}
 
 }
