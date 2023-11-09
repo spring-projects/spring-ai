@@ -1,14 +1,19 @@
+[[getting-started]]
 = Getting Started
+
+This section offers quick guidance on how to get started with using Spring AI.
 
 == API Keys
 
+To use OpenAI or Azure OpenAI, you need to generate an API key.
+
 === OpenAI
 
-Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
 
-The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from `openai.com`.
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
 
-Exporting an environment variable is one way to set that configuration property.
+Exporting an environment variable is one way to set that configuration property:
 
 [source,shell]
 ----
@@ -16,12 +21,12 @@ export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 ----
 
 === Azure OpenAI
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on link:https://portal.azure.com[Azure Portal].
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
 
 The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
-There is also a configuraiton property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
+There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
 
-Exporting environment variables is one way to set these configuration properties.
+Exporting environment variables is one way to set these configuration properties:
 
 [source,shell]
 ----
@@ -32,8 +37,8 @@ export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 == Dependencies
 
 The Spring AI project provides artifacts in the Spring Milestone Repository.
-You will need to add configuration to add a reference to the Spring Milestone repository in your build file.
-For example, in maven, add the following repository definition.
+You need to add configuration to add a reference to the Spring Milestone repository in your build file.
+For example, in Maven, add the following repository definition:
 
 [source,xml]
 ----
@@ -49,7 +54,7 @@ For example, in maven, add the following repository definition.
   </repositories>
 ----
 
-Add the Spring Boot Starter depending on if you are using Azure Open AI or Open AI.
+Add the Spring Boot Starter, depending on whether you use Azure Open AI or Open AI:
 
 * Azure OpenAI
 [source, xml]
@@ -62,7 +67,6 @@ Add the Spring Boot Starter depending on if you are using Azure Open AI or Open 
 ----
 
 * OpenAI
-
 [source, xml]
 ----
     <dependency>
@@ -74,13 +78,12 @@ Add the Spring Boot Starter depending on if you are using Azure Open AI or Open 
 
 == Spring CLI
 
-The Spring CLI makes it easy to create new applications with code in your terminal window.  Think of it as the 'create-react-app' of Spring for those familiar with the JavaScript ecosystem.
+The Spring CLI makes it easy to create new applications with code in your terminal window. Think of it as the 'create-react-app' of Spring for those familiar with the JavaScript ecosystem.
 
 Download the latest https://github.com/spring-projects-experimental/spring-cli/releases[Spring CLI Release]
-
 and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[instructions] to add `spring` to your `PATH`.
 
-Create a simple AI application
+Create a simple AI application:
 
 * For OpenAI
 
@@ -88,22 +91,18 @@ Create a simple AI application
 spring boot new ai
 ```
 
-or
-
 *  For Azure OpenAI
 
 ```shell
 spring boot new ai-azure
 ```
 
-You can also `ADD` the same simple AI application to your current project using
+You can also add the same simple AI application to your current project by using:
 
 *  For OpenAI
 ```shell
 spring boot add ai
 ```
-
-or
 
 *  For Azure OpenAI
 ```shell
@@ -111,15 +110,13 @@ spring boot add ai-azure
 ```
 
 There is a project catalog available for Azure OpenAI that covers more functionality.
-Add the catalog by running the command
-
-* For Azure Open AI
+Add the catalog by running the the following command:
 
 ```shell
 spring project-catalog add ai-azure
 ```
 
-Now you have the following projects that you can use to create a new project using the `spring boot new` command or add to your existing project using the `spring boot add` command.
+Now you have the following projects that you can use to create a new project by using the `spring boot new` command or add to your existing project by using the `spring boot add` command.
 
 ```shell
 spring project list

@@ -1,22 +1,22 @@
+[[vector-databases]]
 = Vector Databases
 
-== Introduction
-Vector databases are a specialized type of database that plays an essential role in AI applications.
+A vector databases is a specialized type of database that plays an essential role in AI applications.
 
 In vector databases, queries differ from traditional relational databases.
 Instead of exact matches, they perform similarity searches.
-When given a vector as a query, a vector database returns vectors that are "similar" to the query vector.
-Further details on how this similarity is calculated at a high-level is provided in a later section.
+When given a vector as a query, a vector database returns vectors that are "`similar`" to the query vector.
+Further details on how this similarity is calculated at a high-level is provided in a <<vectordbs-similarity,later section>>.
 
 Vector databases are used to integrate your data with AI models.
 The first step in their usage is to load your data into a vector database.
-Then, when a user query is to be sent to the AI model, a set of similar documents is retrieved first.
-These documents then serve as the context for the user's question and are sent to the AI model along with the user's query.
-This technique is known as Retrieval Augmented Generation.
+Then, when a user query is to be sent to the AI model, a set of similar documents is first retrieved.
+These documents then serve as the context for the user's question and are sent to the AI model, along with the user's query.
+This technique is known as <<concept-rag,Retrieval Augmented Generation (RAG)>>.
 
-In the following sections, we will describe the Spring AI interface for using multiple vector database implementations and some high-level sample usage.
+The following sections describe the Spring AI interface for using multiple vector database implementations and some high-level sample usage.
 
-The last section attempts to demystify the underlying approach of similarity search of vector databases.
+The last section attempts to demystify the underlying approach of similarity searching in vector databases.
 
 == API Overview
 This section serves as a guide to the `VectorStore` interface and its associated classes within the Spring AI framework.
@@ -47,48 +47,50 @@ public interface VectorStore {
 ```
 
 To insert data into the vector database, encapsulate it within a `Document` object.
-The `Document` class encapsulates content from a data source, such as a PDF or Word document, and includes text represented as a String.
-It also contains metadata in the form of key-value pairs, including details like the filename.
+The `Document` class encapsulates content from a data source, such as a PDF or Word document, and includes text represented as a string.
+It also contains metadata in the form of key-value pairs, including details such as the filename.
 
-Upon insertion into the vector database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an Embedding model. Embedding models like https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002` model are used to convert words, sentences, or paragraphs into these vector embeddings.
+Upon insertion into the vector database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an embedding model. Embedding models, such as https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002`, are used to convert words, sentences, or paragraphs into these vector embeddings.
 
-The vector database's role is to store and facilitate similarity searches for these embeddings; it does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
+The vector database's role is to store and facilitate similarity searches for these embeddings. It does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
 
-The `similaritySearch` methods in the interface allow for retrieving documents similar to a given query string. These methods can be fine-tuned using the following parameters:
+The `similaritySearch` methods in the interface allow for retrieving documents similar to a given query string. These methods can be fine-tuned by using the following parameters:
 
-* k - An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search, or 'K nearest neighbors' (KNN).
-* threshold - A double value ranging from 0 to 1, where values closer to 1 indicate higher similarity. By default, if you set a threshold of 0.75, for instance, only documents with a similarity above this value will be returned.
-* Filter.Expression - A class used for passing a Fluent DSL (Domain-Specific Language) expression that functions similarly to a 'where' clause in SQL, but it applies exclusively to the metadata key-value pairs of a Document.
-* filterExpression - An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and isActive, you could use an expression such as country == 'UK' && year >= 2020 && isActive == true.
-
+* `k`: An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search, or 'K nearest neighbors' (KNN).
+* `threshold`: A double value ranging from 0 to 1, where values closer to 1 indicate higher similarity. By default, if you set a threshold of 0.75, for instance, only documents with a similarity above this value are returned.
+* `Filter.Expression`: A class used for passing a fluent DSL (Domain-Specific Language) expression that functions similarly to a 'where' clause in SQL, but it applies exclusively to the metadata key-value pairs of a `Document`.
+* `filterExpression`: An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and `isActive`, you could use an expression such as 
+``` java
+country == 'UK' && year >= 2020 && isActive == true.
+```
 
 == Available Implementations
 
-These are the available implementations of the `VectorStore` interface
+These are the available implementations of the `VectorStore` interface:
 
 * `InMemoryVectorStore`
 * `SimplePersistentVectorStore`
-* Pinecone - https://www.pinecone.io/[PineCone] vector store.
-* PgVector [`PgVectorStore`] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
-* Milvus [`MilvusVectorStore`] - The https://milvus.io/[Milvus] vector store
-* Neo4j [`Neo4jVectorStore`]- The https://neo4j.com/[Neo4j] vector store
+* Pinecone: https://www.pinecone.io/[PineCone] vector store.
+* PgVector [`PgVectorStore`]: The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
+* Milvus [`MilvusVectorStore`]: The https://milvus.io/[Milvus] vector store
+* Neo4j [`Neo4jVectorStore`]: The https://neo4j.com/[Neo4j] vector store
 
-More implementations will be supported in future releases.
+More implementations may be supported in future releases.
 
-If you have a vector database that needs to be supported by Spring AI, please open an issue on GitHub or, even better, submit a Pull Request with an implementation.
+If you have a vector database that needs to be supported by Spring AI, open an issue on GitHub or, even better, submit a pull request with an implementation.
 
 == Example Usage
 
-To compute the embeddings for a vector database, you need to pick an Embedding model that matches the higher-level AI model being used.
+To compute the embeddings for a vector database, you need to pick an embedding model that matches the higher-level AI model being used.
 
-For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and the model name `text-embedding-ada-002`.
+For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and a model name of `text-embedding-ada-002`.
 
-The Spring Boot Starter's auto-configuation for OpenAI makes an implementation of `EmbeddingClient` available in the Spring Application Context for Dependency Injection.
+The Spring Boot starter's auto-configuration for OpenAI makes an implementation of `EmbeddingClient` available in the Spring application context for dependency injection.
 
 The general usage of loading data into a vector store is something you would do in a batch-like job, by first loading data into Spring AI's `Document` class and then calling the `save` method.
 
-Given a `String` reference to a source file representing a JSON file with data we want to load into the vector database, we use Spring AI's `JsonReader` to load specific fields in the JSON, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
-The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the vector database.
+Given a `String` reference to a source file that represents a JSON file with data we want to load into the vector database, we use Spring AI's `JsonReader` to load specific fields in the JSON, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
+The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the vector database:
 
 ```java
   @Autowired
@@ -102,34 +104,32 @@ The `VectorStore` implementation computes the embeddings and stores the JSON and
   }
 ```
 
-Later, when a user question is passed into the AI model, a similarity search is done to retrieve similar documents, which are then 'stuffed' into the prompt as context for the user's question.
+Later, when a user question is passed into the AI model, a similarity search is done to retrieve similar documents, which are then "'stuffed'" into the prompt as context for the user's question.
 
 ```java
    String question = <question from user>
    List<Document> similarDocuments = store.similaritySearch(question);
 ```
 
-There are additional options to be passed into the `similaritySearch` method that defines how many documents to retrieve and a threshold of the similarity search.
+Additional options can be passed into the `similaritySearch` method to define how many documents to retrieve and a threshold of the similarity search.
 
 == Metadata Filters
 
-=== Filter String
-You can pass in SQL like filter expressions as String to one of the similaritySearch overloads.
+This section describes various filters that you can use against the results of a query.
 
-For example
+=== Filter String
+You can pass in an SQL-like filter expressions as a `String` to one of the `similaritySearch` overloads.
+
+Consider the following examples:
 
 * `"country == 'BG'"`
 * `"genre == 'drama' && year >= 2020"`
 * `"genre in ['comedy', 'documentary', 'drama']"`
 
-
-
-
-
 === Filter.Expression
 
 You can create an instance of `Filter.Expression` with a `FilterExpressionbuilder` that exposes a fluent API.
-A simple example is
+A simple example is as follows:
 
 [source, java]
 ----
@@ -137,7 +137,7 @@ FilterExpressionBuilder b = new FilterExpressionBuilder();
 Expression expression = b.eq("country", "BG").build();
 ----
 
-You can build up sophisticated expressions using the operators
+You can build up sophisticated expressions by using the following operators:
 
 [source, text]
 ----
@@ -151,7 +151,7 @@ LE: '<='
 NE: '!='
 ----
 
-You can combine expressions using
+You can combine expressions by using the following operators:
 
 [source,text]
 ----
@@ -159,13 +159,14 @@ AND: 'AND' | 'and' | '&&';
 OR: 'OR' | 'or' | '||';
 ----
 
-For example
+Considering the following example:
+
 [source,java]
 ----
 Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 ----
 
-You can also use the operators
+You can also use the following operators:
 
 [source,text]
 ----
@@ -173,6 +174,8 @@ IN: 'IN' | 'in';
 NIN: 'NIN' | 'nin';
 NOT: 'NOT' | 'not';
 ----
+
+Consider the following example:
 
 [source,java]
 ----
@@ -182,20 +185,21 @@ Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 == Understanding Vectors
 
 Vectors have dimensionality and a direction.
-For example, the picture below depicts a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
+For example, the following image depicts a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
 
 image::vector_2d_coordinates.png[]
 
-The head of the vector stem:[\vec{a}] is at the point stem:[(a_1, a_2)]
+The head of the vector stem:[\vec{a}] is at the point stem:[(a_1, a_2)].
 The *x* coordinate value is stem:[a_1] and the *y* coordinate value is stem:[a_2]. The coordinates are also referred to as the components of the vector.
 
+[[vectordbs-similarity]]
 == Similarity
 
 Several mathematical formulas can be used to determine if two vectors are similar.
 
 One of the most intuitive to visualize and understand is cosine similarity.
 
-Look at the following pictures that show three sets of graphs.
+Consider the following images that show three sets of graphs:
 
 image::vector_similarity.png[]
 
@@ -205,13 +209,13 @@ The vectors are considered unrelated when pointing perpendicular to each other a
 The angle between them, stem:[\theta], is a good measure of their similarity.
 How can the angle stem:[\theta] be computed?
 
-We are all familiar with the https://en.wikipedia.org/wiki/Pythagorean_theorem#History[Pythagorean Theorem]
+We are all familiar with the https://en.wikipedia.org/wiki/Pythagorean_theorem#History[Pythagorean Theorem].
 
 image:pythagorean-triangle.png[]
 
 What about when the angle between *a* and *b* is not 90 degrees?
 
-Enter the https://en.wikipedia.org/wiki/Law_of_cosines[Law of cosines]
+Enter the https://en.wikipedia.org/wiki/Law_of_cosines[Law of cosines].
 
 
 .Law of Cosines
@@ -219,7 +223,7 @@ Enter the https://en.wikipedia.org/wiki/Law_of_cosines[Law of cosines]
 stem:[a^2 + b^2 - 2ab\cos\theta = c^2]
 ****
 
-Showing this as a vector diagram
+The following image shows this approach as a vector diagram:
 
 image:lawofcosines.png[]
 
@@ -231,7 +235,7 @@ The magnitude of this vector is defined in terms of its components as:
 stem:[\vec{A} * \vec{A} = ||\vec{A}||^2 = A_1^2 + A_2^2 ]
 ****
 
-and the dot product between two vectors stem:[\vec{A}] and stem:[\vec{B}] is defined in terms of its components as:
+The dot product between two vectors stem:[\vec{A}] and stem:[\vec{B}] is defined in terms of its components as:
 
 
 .Dot Product
@@ -239,7 +243,7 @@ and the dot product between two vectors stem:[\vec{A}] and stem:[\vec{B}] is def
 stem:[\vec{A} * \vec{B} = A_1B_1 + A_2B_2]
 ****
 
-Rewriting the Law of Cosines with vector magnitudes and dot products gives:
+Rewriting the Law of Cosines with vector magnitudes and dot products gives the following:
 
 .Law of Cosines in Vector form
 ****
@@ -247,7 +251,7 @@ stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec
 ****
 
 
-Replacing stem:[||\vec{C}||^2] with stem:[||\vec{B} - \vec{A}||^2] gives:
+Replacing stem:[||\vec{C}||^2] with stem:[||\vec{B} - \vec{A}||^2] gives the following:
 
 .Law of Cosines in Vector form only in terms of stem:[\vec{A}] and stem:[\vec{B}]
 
@@ -263,11 +267,11 @@ https://towardsdatascience.com/cosine-similarity-how-does-it-measure-the-similar
 stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{\vec{A}\cdot\vec{B}}{||\vec{A}\||\cdot||\vec{B}||]
 ****
 
-This formula works for dimensions higher than 2 or 3, though it is hard to visualize, https://projector.tensorflow.org/[but can be done to some extent].
+This formula works for dimensions higher than 2 or 3, though it is hard to visualize. However, https://projector.tensorflow.org/[it can be visualized to some extent].
 It is common for vectors in AI/ML applications to have hundreds or even thousands of dimensions.
 
 The similarity function in higher dimensions using the components of the vector is shown below.
-It expands the two-dimensional definitions of Magnitude and Dot Product given previously to *N* dimensions using the https://en.wikipedia.org/wiki/Summation[Summation mathematical syntax].
+It expands the two-dimensional definitions of Magnitude and Dot Product given previously to *N* dimensions by using https://en.wikipedia.org/wiki/Summation[Summation mathematical syntax].
 
 .Cosine Similarity with vector components
 ****

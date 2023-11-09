@@ -1,20 +1,18 @@
+[[AiClient]]
 = AiClient
 
-== Overview
-
-The AiClient interface streamlines interactions with xref:concepts.adoc#_models[AI Models].
-It simplifies connecting to various AI Models — each with potentially unique APIs — by offering a uniform interface for interaction.
+The `AiClient` interface streamlines interactions with xref:concepts.adoc#_models[AI Models].
+It simplifies connecting to various AI Models -— each with potentially unique APIs -— by offering a uniform interface for interaction.
 
 Currently, the interface supports only text-based input and output.
-You should expect some of the classes and interfaces to change as we support for other input and output types is implemented.
+You should expect some of the classes and interfaces to change as we add other input and output types.
 
-The design of the AiClient interface centers around two primary goals:
+The design of the `AiClient` interface centers around two primary goals:
 
-1. *Portability*: It allows easy integration with different AI Models, allowing developers to switch between differing AI models with minimal code changes.
+* *Portability*: It allows easy integration with different AI Models, letting developers switch between differing AI models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability.
 
-
-2. *Simplicity*: Using companion classes like `Prompt` for input encapsulation and `AiResponse` for output handling, the `AiClient` interface simplifies communication with AI Models.  It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
+* *Simplicity*: By using companion classes like `Prompt` for input encapsulation and `AiResponse` for output handling, the `AiClient` interface simplifies communication with AI Models. It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
 
 == API Overview
 
@@ -36,13 +34,11 @@ public interface AiClient {
 
 The `generate` method with a `String` parameter simplifies initial use, avoiding the complexities of the more sophisticated `Prompt` and `AiResponse` classes.
 
-
 === Prompt
-In a real-world application, it will be most common to use the generate method, taking a `Prompt` instance and returning an `AiResponse`.
+In a real-world application, it is most common to use the `generate` method, taking a `Prompt` instance and returning an `AiResponse`.
 
 The `Prompt` class encapsulates a list of `Message` objects.
-Below is a truncated version of the Prompt class, excluding constructors and other utility methods:
-
+The following listing shows a truncated version of the Prompt class, excluding constructors and other utility methods:
 
 ```java
 public class Prompt {
@@ -57,7 +53,6 @@ public class Prompt {
 
 The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, and a categorization known as `MessageType`. The interface is defined as follows:
 
-
 ```java
 public interface Message {
 
@@ -70,15 +65,14 @@ public interface Message {
 }
 ```
 
-The Message interface has various implementations corresponding to the categories of messages that an AI model can process.
+The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process.
 Some models, like OpenAI's chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.
 
-
-For instance, OpenAI recognizes message categories for distinct conversational roles such as "system", "user", or "assistant".
-While the term MessageType might imply a specific message format, in this context, it effectively designates the role a message plays in the dialogue.
+For instance, OpenAI recognizes message categories for distinct conversational roles such as "`system,`" "`user,`" or "`assistant.`"
+While the term, `MessageType`, might imply a specific message format, in this context, it effectively designates the role a message plays in the dialogue.
 
 For AI models that do not use specific roles, the `UserMessage` implementation acts as a standard category, typically representing user-generated inquiries or instructions.
-To understand the practical application and the relationship between Prompt and Message, especially in the context of these roles or message categories, please refer to the detailed explanations in the Prompts section.
+To understand the practical application and the relationship between `Prompt` and `Message`, especially in the context of these roles or message categories, see the detailed explanations in the <<Prompts>> section.
 
 === AiResponse
 
@@ -95,11 +89,11 @@ public class AiResponse {
 
 The `AiResponse` class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs from a single prompt.
 
-The `AiResponse` class additionally carries a map of key-value pairs providing metadata about the AI Model's response. This feature is still in progress and is not elaborated on in this document.
+The `AiResponse` class also carries a map of key-value pairs providing metadata about the AI Model's response. This feature is still in progress and is not elaborated on in this document.
 
 === Generation
 
-Finally, the `Generation` class contains a String representing the output text and a map that provides metadata about this response.
+Finally, the `Generation` class contains a `String` that represents the output text and a map that provides metadata about this response:
 
 
 ```java
@@ -114,30 +108,38 @@ public class Generation {
 
 == Available Implementations
 
-These are the available implementations of the `AiClient` interface
+The `AiClient` interface has the following available implementations:
 
-* OpenAI - Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
-* Azure OpenAI - Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
-* Hugging Face - Using the https://huggingface.co/inference-endpoints[Hugging Face Hosted Inference Service].  This gives you access to hundreds of models.
-* https://ollama.ai/[Ollama] - Run large language models, locally.
+* OpenAI: Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
+* Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
+* Hugging Face: Using the https://huggingface.co/inference-endpoints[Hugging Face Hosted Inference Service].  This gives you access to hundreds of models.
+* https://ollama.ai/[Ollama]: Run large language models locally.
 
 Planned implementations
-* Amazon Bedrock - This can provide access to many AI models.
-* Google Vertex - Providing access to 'Bard', aka Palm2
+* Amazon Bedrock: This can provide access to many AI models.
+* Google Vertex: Providing access to 'Bard' (AKA Palm2).
 
-Others are welcome, the list is not at all closed.
+Others are welcome. The list is not at all closed.
 
 == OpenAI-Compatible Models
 
 A variety of models compatible with the OpenAI API are available, including those that can be operated locally, such as [LocalAI](https://github.com/mudler/LocalAI). The standard configuration for connecting to the OpenAI API is through the `spring.ai.openai.baseUrl` property, which defaults to `https://api.openai.com`.
 
-To link the OpenAI client to a compatible model that utilizes the OpenAI API, you should adjust the `spring.ai.openai.baseUrl` property to the corresponding URL of the model you wish to connect to.
+To link the OpenAI client to a compatible model that uses the OpenAI API, you should adjust the `spring.ai.openai.baseUrl` property to the corresponding URL of the model you wish to connect to.
 
 == Configuration
 
+This section describes how to configure models, including:
+
+* <<openai-api,OpenAI>>
+* <<azure-openai-api,Azure OpenAI>>
+* <<hugging-face-api,Hugging Face>>
+* <<ollama-api,Ollama>>
+
+[[openan-api]]
 === OpenAI
 
-Add the Spring Boot starter to you project's dependencies
+Add the Spring Boot starter to you project's dependencies:
 
 [source, xml]
 ----
@@ -148,7 +150,7 @@ Add the Spring Boot starter to you project's dependencies
     </dependency>
 ----
 
-This will make an instance of the `AiClient` that is backed by the https://github.com/TheoKanning/openai-java[Theo Kanning client library] available for injection in your application classes.
+This makes an instance of the `AiClient` that is backed by the https://github.com/TheoKanning/openai-java[Theo Kanning client library] available for injection in your application classes.
 
 The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from `openai.com`.
 
@@ -159,12 +161,13 @@ Exporting an environment variable is one way to set that configuration property.
 export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 ----
 
+[[azure-openai-api]]
 === Azure OpenAI
 
-This will make an instance of the `AiClient` that is backed by the https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library] available for injection in your application classes.
+This makes an instance of the `AiClient` that is backed by https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library] available for injection in your application classes.
 
 The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
-There is also a configuraiton property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
+There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
 
 Exporting environment variables is one way to set these configuration properties.
 
@@ -174,9 +177,10 @@ export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
 
+[[hugging-face-api]]
 === Hugging Face
 
-There is not yet a Spring Boot Starter for this client implementation, so you should add the dependency to the HuggingFace client implementation to your project's dependencies.
+There is not yet a Spring Boot Starter for this client implementation, so you should add the dependency to the HuggingFace client implementation to your project's dependencies and export an environment variable:
 
 [source, xml]
 ----
@@ -192,11 +196,12 @@ There is not yet a Spring Boot Starter for this client implementation, so you sh
 export HUGGINGFACE_API_KEY=your_api_key_here
 ----
 
-Obtain the endpoint URL of the Inference Endpoint. You can find this on the Inference Endpoint's UI https://ui.endpoints.huggingface.co/[here].
+Obtain the endpoint URL of the inference endpoint. You can find this on the Inference Endpoint's UI https://ui.endpoints.huggingface.co/[here].
 
+[[ollama-api]]
 === Ollama
 
-There is not yet a Spring Boot Starter for this client implementation, so you should add the dependency to the Ollama client implementation to your project's dependencies.
+There is not yet a Spring Boot Starter for this client implementation, so you should add the dependency to the Ollama client implementation to your project's dependencies:
 
 [source, xml]
 ----
@@ -209,7 +214,7 @@ There is not yet a Spring Boot Starter for this client implementation, so you sh
 
 == Example Usage
 
-A simple hello world example is shown below that uses the `AiClient's generate method that takes a `String` as input and returns a `String` as output.
+The following listing shows a simple "Hello, world" example. It uses the `AiClient.generate` method that takes a `String` as input and returns a `String` as output:
 
 [source,java]
 ----
