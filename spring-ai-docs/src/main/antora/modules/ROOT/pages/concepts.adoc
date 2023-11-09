@@ -1,4 +1,7 @@
+[[concepts]]
 = AI Concepts
+
+This section describes core concepts that Spring AI uses. We recommend reading it closely to understand the ideas behind how Spring AI is implemented.
 
 == Models
 
@@ -9,8 +12,7 @@ There are many different types of AI models, each suited for a specific use case
 While ChatGPT and its generative AI capabilities have captivated users through text input and output, many models and companies offer diverse inputs and outputs.
 Before ChatGPT, many people were fascinated by text-to-image generation models such as Midjourney and Stable Diffusion.
 
-The following table categorizes several models based on their input and output types.
-
+The following table categorizes several models based on their input and output types:
 
 [cols=3*, options=header]
 |===
@@ -36,47 +38,46 @@ The following table categorizes several models based on their input and output t
 
 |Text
 |Numbers
-|Many, aka, Embeddings
+|Many (AKA embeddings)
 |===
 
 The initial focus of Spring AI is on models that process language input and provide language output, initially OpenAI + Azure OpenAI.
-The last row in the previous table, which accepts text as input and output numbers, is more commonly known as Embedding text and represents the internal data structures used in an AI model.
-Spring AI has support for Embeddings to support more advanced use cases.
+The last row in the previous table, which accepts text as input and output numbers, is more commonly known as embedding text and represents the internal data structures used in an AI model.
+Spring AI has support for embeddings to support more advanced use cases.
 
 What sets models like GPT apart is their pre-trained nature, as indicated by the "P" in GPT—Chat Generative Pre-Trained Transformer.
-This pre-training feature transforms AI into a general developer tool that doesn't necessitate an extensive machine learning or model training background.
-
+This pre-training feature transforms AI into a general developer tool that does not require an extensive machine learning or model training background.
 
 == Prompts
 
-Prompts serve as the foundation for language-based inputs that guide an AI model to produce specific outputs.
+Prompts serve as the foundation for the language-based inputs that guide an AI model to produce specific outputs.
 For those familiar with ChatGPT, a prompt might seem like merely the text entered into a dialog box that is sent to the API.
 However, it encompasses much more than that.
-In many AI Models, the text for the prompt is not just a simple String.
+In many AI Models, the text for the prompt is not just a simple string.
 
 ChatGPT's API has multiple text inputs within a prompt, with each text input being assigned a role.
-For example, there is the system role, that instructs the model how to behave and sets the context for the interaction.
+For example, there is the system role, which tells the model how to behave and sets the context for the interaction.
 There is also the user role, which is typically the input from the user.
 
 Crafting effective prompts is both an art and a science.
 ChatGPT was designed for human conversations.
-This is quite a departure from using something like SQL to 'ask a question'.
+This is quite a departure from using something like SQL to "'ask a question.'"
 One must communicate with the AI model akin to conversing with another person.
 
 Such is the importance of this interaction style that the term "Prompt Engineering" has emerged as its own discipline.
 There is a burgeoning collection of techniques that improve the effectiveness of prompts.
 Investing time in crafting a prompt can drastically improve the resulting output.
 
-Sharing prompts has become a communcal practice, and there is active academic research being done on this subject.
-As an example of how counter-intuitive it can be to create effective prompt, for example contrasting with SQL,  recent research paper found that one of the most effective prompts you can use starts with the phrase, "Take a deep breath and work on this problem step by step".
-That should give you an indication of how language is so important.
-We don't yet fully understand how to make the most effective use of previous iterations of this technology, such as ChatGPT 3.5, let alone new versions that are being developed.
+Sharing prompts has become a communal practice, and there is active academic research being done on this subject.
+As an example of how counter-intuitive it can be to create an effective prompt (for example, contrasting with SQL), a https://URLhere[recent research paper] found that one of the most effective prompts you can use starts with the phrase, "`Take a deep breath and work on this problem step by step.`"
+That should give you an indication of why language is so important.
+We do not yet fully understand how to make the most effective use of previous iterations of this technology, such as ChatGPT 3.5, let alone new versions that are being developed.
 
 == Prompt Templates
 
 Creating effective prompts involves establishing the context of the request and substituting parts of the request with values specific to the user's input.
 
-This process utilizes traditional text-based Template engines for prompt creation and management.
+This process uses traditional text-based template engines for prompt creation and management.
 Spring AI employs the OSS library, StringTemplate, for this purpose.
 
 For instance, consider the simple prompt template:
@@ -85,39 +86,38 @@ For instance, consider the simple prompt template:
 Tell me a {adjective} joke about {content}.
 ```
 
-In Spring AI, Prompt Templates can be likened to the 'View' in Spring MVC architecture.
+In Spring AI, prompt templates can be likened to the "'View'" in Spring MVC architecture.
 A model object, typically a `java.util.Map`, is provided to populate placeholders within the template.
-The 'rendered' string becomes the content of the Prompt supplied to the AI model.
+The "'rendered'" string becomes the content of the prompt supplied to the AI model.
 
-There is considerable variability in the specific data format of the Prompt sent to the model.
+There is considerable variability in the specific data format of the prompt sent to the model.
 Initially starting as simple strings, prompts have evolved to include multiple messages, where each string in each message represents a distinct role for the model.
-
 
 == Tokens
 
 Tokens serve as the building blocks of how an AI model works.
-On input, Models convert words to tokens, and on output, they convert tokens back to words.
+On input, models convert words to tokens. On output, they convert tokens back to words.
 
 In English, one token roughly corresponds to 75% of a word. For reference, Shakespeare's complete works, totaling around 900,000 words, translates to approximately 1.2 million tokens.
 
 Perhaps more important is that Tokens = *`$`*.
 
-In the context of hosted AI models, your charges are determined by the number of tokens utilized. Both input and output contribute to the overall token count.
+In the context of hosted AI models, your charges are determined by the number of tokens used. Both input and output contribute to the overall token count.
 
 Also, models are subject to token limits, which restrict the amount of text processed in a single API call.
-This threshold is often referred to as the 'context window'. The model won't process any text exceeding this limit.
+This threshold is often referred to as the 'context window'. The model does not process any text that exceeds this limit.
 
 For instance, ChatGPT3 has a 4K token limit, while GPT4 offers varying options, such as 8K, 16K, and 32K.
 Anthropic's Claude AI model features a 100K token limit, and Meta's recent research yielded a 1M token limit model.
 
 To summarize the collected works of Shakespeare with GPT4, you need to devise software engineering strategies to chop up the data and present the data within the model's context window limits.
-This is an area that the Spring AI project helps you with.
+The Spring AI project helps you with this task.
 
 == Output Parsing
 
 The output of AI models traditionally arrives as a `java.util.String`, even if you ask for the reply to be in JSON.
-It may be the correct JSON, but it isn't a JSON data structure. It is just a string.
-Also, asking "for JSON" as part of the prompt isn't 100% accurate.
+It may be the correct JSON, but it is not a JSON data structure. It is just a string.
+Also, asking "`for JSON`" as part of the prompt is not 100% accurate.
 
 This intricacy has led to the emergence of a specialized field involving the creation of prompts to yield the intended output, followed by parsing the resulting simple string into a usable data structure for application integration.
 
@@ -127,58 +127,58 @@ This challenge has prompted OpenAI to introduce 'OpenAI Functions' as a means to
 
 == Chaining Calls
 
-A Chain is a concept that represents a series of calls to an AI model.
+A chain is a concept that represents a series of calls to an AI model.
 It uses the output from one call as the input to another.
 
 By chaining calls together, you can support complex use cases by composing pipelines of multiple chains.
 
 == Bringing Your Data to the AI model
 
-How can you equip the AI model with information it hasn't been trained on?
+How can you equip the AI model with information on which it has not been trained?
 
-It's important to note that the GPT 3.5/4.0 dataset extends only until September 2021.
-Consequently, the model will say that it doesn't know the answer to questions that require knowledge beyond that date.
-An interesting bit of trivia is that this dataset is around ~650GB.
+Note that the GPT 3.5/4.0 dataset extends only until September 2021.
+Consequently, the model says that it does not know the answer to questions that require knowledge beyond that date.
+An interesting bit of trivia is that this dataset is around 650GB.
 
 Two techniques exist for customizing the AI model to incorporate your data:
 
-1. Fine Tuning: This traditional Machine Learning technique involves tailoring the model and changing its internal weighting.
-However, it's a challenging process for Machine Learning experts and extremely resource-intensive for models like GPT due to their size. Additionally, some models might not offer this option.
+* Fine Tuning: This traditional machine learning technique involves tailoring the model and changing its internal weighting.
+However, it is a challenging process for machine learning experts and extremely resource-intensive for models like GPT due to their size. Additionally, some models might not offer this option.
 
-2. Prompt Stuffing: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
-This approach is colloquially referred to as 'stuffing the prompt'.
+* Prompt Stuffing: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
+This approach is colloquially referred to as "'stuffing the prompt.'"
 
-The Spring AI library helps you implement solutions based on the 'stuffing of the prompt' technique otherwise knowsn as Retrieval Augmented Generation
+The Spring AI library helps you implement solutions based on the "'stuffing the prompt'" technique otherwise known as Retrieval Augmented Generation (RAG).
 
+[[concept-rag]]
 == Retrieval Augmented Generation
 
 A technique termed Retrieval Augmented Generation (RAG) has emerged to address the challenge of incorporating relevant data into prompts for accurate AI model responses.
 
-The approach involves a batch processing style programming model, where the job reads unstructured data from your Documents, transforms it, and then writes it into a Vector Database.
+The approach involves a batch processing style programming model, where the job reads unstructured data from your documents, transforms it, and then writes it into a vector database.
 At a high level, this is an ETL (Extract, Transform and Load) pipeline.
-The Vector Database will be used in the retrieval part of RAG technique.
+The vector database is used in the retrieval part of RAG technique.
 
-As part of loading the unstructured data into the Vector Database, one of the most important transformations is to split up the original document into smaller pieces.
-The procedure of splitting up the original document into smaller pieces has two important steps.
+As part of loading the unstructured data into the vector database, one of the most important transformations is to split up the original document into smaller pieces.
+The procedure of splitting up the original document into smaller pieces has two important steps:
 
-1. Split up the document into parts while preserving the semantic boundaries of the content.
+. Split up the document into parts while preserving the semantic boundaries of the content.
 For example, for a document with paragraphs and tables, one should avoid splitting the document in the middle of a paragraph or table.
 For code, avoid splitting the code in the middle of a method's implementation.
-2. Split up the document's parts further into parts whose size is a small percentage of the AI Model's token limit.
+. Split up the document's parts further into parts whose size is a small percentage of the AI Model's token limit.
 
-The next phase in RAG, is processing user input.
-When a user's question is to be answered by an AI model, the question along with all the 'similar' document pieces are placed into the prompt that is sent to the AI model.
-This is the reason to use a Vector Database, it is very good at finding 'similar' content.
+The next phase in RAG is processing user input.
+When a user's question is to be answered by an AI model, the question and all the "'similar'" document pieces are placed into the prompt that is sent to the AI model.
+This is the reason to use a vector database. It is very good at finding 'similar' content.
 
 There are several concepts that are used in implementing RAG.
-The concepts map onto classes in Spring AI.
-These are briefly described below
+The concepts map onto classes in Spring AI:
 
-* `DocumentReader` This is an Java functional interface that is responsible for loading a `List<Document>` from a data source.  Common data sources are PDF, Markdown, and JSON.
-* `Document` A text based representation of your data source that also contains metadata to describe the contents.
-* `DocumentTransformer` This is responsible for processing the data in various ways, for example splitting up documents into smaller pieces or adding additional metadata to the `Document`.
-* `DocumentWriter`  This allows you to persist the Documents into a database, most commomly in the AI stack, a Vector Database.
-* `Embedding` This is a representation of your data as a `List<Double>` that is used by the Vector Database to compute the 'similarity' of a user's query to relevant documents.
+* `DocumentReader`: A Java functional interface that is responsible for loading a `List<Document>` from a data source. Common data sources are PDF, Markdown, and JSON.
+* `Document`: A text-based representation of your data source that also contains metadata to describe the contents.
+* `DocumentTransformer`: Responsible for processing the data in various ways (for example, splitting up documents into smaller pieces or adding additional metadata to the `Document`.)
+* `DocumentWriter`: Lets you persist the Documents into a database (most commonly in the AI stack, a vector database).
+* `Embedding`: A representation of your data as a `List<Double>` that is used by the vector database to compute the "'similarity'" of a user's query to relevant documents.
 
 == Evaluating AI responses
 
@@ -189,9 +189,6 @@ This evaluation process involves analyzing whether the generated response aligns
 
 One approach involves presenting both the user's request and the AI model's response to the model, querying whether the response aligns with the provided data.
 
-Furthermore, leveraging the information stored in the Vector Database as supplementary data can enhance the evaluation process, aiding in the determination of response relevance.
+Furthermore, leveraging the information stored in the vector database as supplementary data can enhance the evaluation process, aiding in the determination of response relevance.
 
 The Spring AI project currently provides some very basic examples of how you can evaluate the responses in the form of prompts to include in a JUnit test.
-
-
-
