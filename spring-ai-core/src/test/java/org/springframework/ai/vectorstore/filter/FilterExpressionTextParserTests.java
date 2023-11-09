@@ -126,13 +126,13 @@ public class FilterExpressionTextParserTests {
 	@Test
 	public void testIdentifiers() {
 		Expression exp = parser.parse("'country.1' == 'BG'");
-		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country.1"), new Value("BG")));
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("'country.1'"), new Value("BG")));
 
 		exp = parser.parse("'country_1_2_3' == 'BG'");
-		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country_1_2_3"), new Value("BG")));
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("'country_1_2_3'"), new Value("BG")));
 
-		exp = parser.parse("'country 1 2 3' == 'BG'");
-		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
+		exp = parser.parse("\"country 1 2 3\" == 'BG'");
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 	}
 
 }

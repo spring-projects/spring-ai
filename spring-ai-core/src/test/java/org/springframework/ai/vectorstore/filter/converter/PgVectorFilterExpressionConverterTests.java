@@ -108,4 +108,11 @@ public class PgVectorFilterExpressionConverterTests {
 		assertThat(vectorExpr).isEqualTo("$.temperature >= -15.6 && $.temperature <= 20.13");
 	}
 
+	@Test
+	public void testComplexIdentifiers() {
+		String vectorExpr = converter
+			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("$.\"country 1 2 3\" == \"BG\"");
+	}
+
 }

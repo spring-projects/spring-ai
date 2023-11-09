@@ -186,12 +186,7 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIdentifier(FiltersParser.IdentifierContext ctx) {
-			String identifier = ctx.getText();
-			if ((identifier.startsWith("\"") && identifier.endsWith("\""))
-					|| (identifier.startsWith("'") && identifier.endsWith("'"))) {
-				identifier = removeOuterQuotes(identifier);
-			}
-			return new Filter.Key(identifier);
+			return new Filter.Key(ctx.getText());
 		}
 
 		@Override

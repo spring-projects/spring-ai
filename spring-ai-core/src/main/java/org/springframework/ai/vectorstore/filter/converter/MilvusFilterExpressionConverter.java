@@ -70,7 +70,8 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("metadata[\"" + key.key() + "\"]");
+		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
+		context.append("metadata[\"" + identifier + "\"]");
 	}
 
 }

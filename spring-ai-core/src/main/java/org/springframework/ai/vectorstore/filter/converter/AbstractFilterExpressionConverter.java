@@ -115,4 +115,14 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		context.append(",");
 	}
 
+	// Utilities
+	protected boolean hasOuterQuotes(String str) {
+		str = str.trim();
+		return (str.startsWith("\"") && str.endsWith("\"")) || (str.startsWith("'") && str.endsWith("'"));
+	}
+
+	protected String removeOuterQuotes(String in) {
+		return in.substring(1, in.length() - 1);
+	}
+
 }

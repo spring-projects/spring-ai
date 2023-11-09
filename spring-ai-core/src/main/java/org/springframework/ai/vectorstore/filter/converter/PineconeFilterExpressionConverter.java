@@ -57,7 +57,8 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("\"" + key.key() + "\": ");
+		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
+		context.append("\"" + identifier + "\": ");
 	}
 
 }
