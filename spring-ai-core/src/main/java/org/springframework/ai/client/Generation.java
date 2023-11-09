@@ -32,7 +32,7 @@ public class Generation {
 
 	public Generation(String text, Map<String, Object> info) {
 		this.text = text;
-		this.info = info;
+		this.info = Map.copyOf(info);
 	}
 
 	public String getText() {
@@ -40,7 +40,7 @@ public class Generation {
 	}
 
 	public Map<String, Object> getInfo() {
-		return Collections.unmodifiableMap(this.info);
+		return this.info;
 	}
 
 	@Override

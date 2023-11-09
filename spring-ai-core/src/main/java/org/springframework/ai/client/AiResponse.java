@@ -23,9 +23,9 @@ public class AiResponse {
 
 	private final List<Generation> generations;
 
-	private Map<String, Object> providerOutput;
+	private final Map<String, Object> providerOutput;
 
-	private Map<String, Object> runInfo;
+	private final Map<String, Object> runInfo;
 
 	public AiResponse(List<Generation> generations) {
 		this(generations, Collections.emptyMap(), Collections.emptyMap());
@@ -42,12 +42,14 @@ public class AiResponse {
 	}
 
 	/**
-	 * The list of generated outputs. It is a list of lists because the Prompt could
-	 * request multiple output generations.
-	 * @return
+	 * The {@link List} of {@link Generation generated outputs}.
+	 * <p>
+	 * It is a {@link List} of {@link List lists} because the Prompt could request
+	 * multiple output {@link Generation generations}.
+	 * @return the {@link List} of {@link Generation generated outputs}.
 	 */
 	public List<Generation> getGenerations() {
-		return Collections.unmodifiableList(generations);
+		return this.generations;
 	}
 
 	public Generation getGeneration() {
@@ -58,14 +60,14 @@ public class AiResponse {
 	 * Arbitrary model provider specific output
 	 */
 	public Map<String, Object> getProviderOutput() {
-		return Collections.unmodifiableMap(providerOutput);
+		return this.providerOutput;
 	}
 
 	/**
 	 * The run metadata information
 	 */
 	public Map<String, Object> getRunInfo() {
-		return Collections.unmodifiableMap(runInfo);
+		return this.runInfo;
 	}
 
 }
