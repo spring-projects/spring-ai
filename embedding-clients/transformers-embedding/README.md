@@ -14,7 +14,7 @@ To run things in Java, we need to serialize the Tokenizer and the Transformer Mo
 
 One, quick, way to achieve this, is to use the [optimum-cli](https://huggingface.co/docs/optimum/exporters/onnx/usage_guides/export_a_model#exporting-a-model-to-onnx-using-the-cli) command line tool.
 
-Following snippet creates an python virtual environment, installs the required packages and runs the optimum-cli to serialize (e.g. export) the models:
+Following snippet prepares a python virtual environment, installs the required packages and serializes (e.g. exports) specified model using `optimum-cli` :
 
 ```bash
 python3 -m venv venv
@@ -24,14 +24,25 @@ source ./venv/bin/activate
 (venv) optimum-cli export onnx --model sentence-transformers/all-MiniLM-L6-v2 onnx-output-folder
 ```
 
-The `optimum-cli` command exports the [sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding client.
+The snippet exports the [sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding client.
 
-## Apply the ONNX model
+In place of the all-MiniLM-L6-v2 you can pick any huggingface transformer identifier or provide direct file path.
 
-Use the `setTokenizerResource(tokenizerJsonUri)` and `setModelResource(modelOnnxUri)` methods to set the URI locations of the exported `tokenizer.json` and `model.onnx` files.
-The `classpath:`, `file:` or `https:` URI schemas are supported.
+## Using the ONNX models
 
-If no other model is explicitly set, the `TransformersEmbeddingClient` defaults to [sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) model:
+Add the `transformers-embedding` project to your maven dependencies:
+
+```xml
+<dependency>
+	<groupId>org.springframework.experimental.ai</groupId>
+	<artifactId>transformers-embedding</artifactId>
+	<version>0.7.0-SNAPSHOT</version>
+</dependency>
+```
+
+then create a new `TransformersEmbeddingClient` instance and use the `setTokenizerResource(tokenizerJsonUri)` and `setModelResource(modelOnnxUri)` methods to set the URIs  of the exported `tokenizer.json` and `model.onnx` files. (`classpath:`, `file:` or `https:` URI schemas are supported).
+
+If the model is not explicitly set, `TransformersEmbeddingClient` defaults to [sentence-transformers/all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2):
 
 |     |  |
 | -------- | ------- |
