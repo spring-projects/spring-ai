@@ -216,6 +216,11 @@ Set API key environment variables for OpenAI and Azure OpenAI before running.
 ./mvnw clean verify -Pintegration-tests
 ```
 
+To run a specific integration test allowing for up to two attempts to succeed.  This is useful when a hosted service is not reliable or times out.
+```shell
+./mvnw -pl vector-stores/spring-ai-pgvector-store -Pintegration-tests -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
+
+```
 To build the docs
 ```shell
 ./mvnw -pl spring-ai-docs antora
