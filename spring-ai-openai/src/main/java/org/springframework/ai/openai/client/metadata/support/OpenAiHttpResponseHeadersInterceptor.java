@@ -16,6 +16,13 @@
 
 package org.springframework.ai.openai.client.metadata.support;
 
+import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.REQUESTS_LIMIT_HEADER;
+import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.REQUESTS_REMAINING_HEADER;
+import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.REQUESTS_RESET_HEADER;
+import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.TOKENS_LIMIT_HEADER;
+import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER;
+import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.TOKENS_RESET_HEADER;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -50,18 +57,6 @@ import okhttp3.ResponseBody;
  * @since 0.7.0
  */
 public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
-
-	protected static final String REQUESTS_LIMIT_FIELD = "x-ratelimit-limit-requests";
-
-	protected static final String REQUESTS_REMAINING_FIELD = "x-ratelimit-remaining-requests";
-
-	protected static final String REQUESTS_RESET_FIELD = "x-ratelimit-reset-requests";
-
-	protected static final String TOKENS_RESET_FIELD = "x-ratelimit-reset-tokens";
-
-	protected static final String TOKENS_LIMIT_FIELD = "x-ratelimit-limit-tokens";
-
-	protected static final String TOKENS_REMAINING_FIELD = "x-ratelimit-remaining-tokens";
 
 	private static final Map<String, OpenAiRateLimit> cache = Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -98,13 +93,13 @@ public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
 
 		OpenAiRateLimit rateLimit = StringUtils.hasText(id) ? cache.computeIfAbsent(id, key -> {
 
-			Long requestsLimit = getHeaderAsLong(response, REQUESTS_LIMIT_FIELD);
-			Long requestsRemaining = getHeaderAsLong(response, REQUESTS_REMAINING_FIELD);
-			Long tokensLimit = getHeaderAsLong(response, TOKENS_LIMIT_FIELD);
-			Long tokensRemaining = getHeaderAsLong(response, TOKENS_REMAINING_FIELD);
+			Long requestsLimit = getHeaderAsLong(response, REQUESTS_LIMIT_HEADER.getName());
+			Long requestsRemaining = getHeaderAsLong(response, REQUESTS_REMAINING_HEADER.getName());
+			Long tokensLimit = getHeaderAsLong(response, TOKENS_LIMIT_HEADER.getName());
+			Long tokensRemaining = getHeaderAsLong(response, TOKENS_REMAINING_HEADER.getName());
 
-			Duration requestsReset = getHeaderAsDuration(response, REQUESTS_RESET_FIELD);
-			Duration tokensReset = getHeaderAsDuration(response, TOKENS_RESET_FIELD);
+			Duration requestsReset = getHeaderAsDuration(response, REQUESTS_RESET_HEADER.getName());
+			Duration tokensReset = getHeaderAsDuration(response, TOKENS_RESET_HEADER.getName());
 
 			return new OpenAiRateLimit(requestsLimit, requestsRemaining, requestsReset, tokensLimit, tokensRemaining,
 					tokensReset);
