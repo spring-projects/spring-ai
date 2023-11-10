@@ -59,6 +59,7 @@ TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient();
 
 // (optional) defaults to classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json
 embeddingClient.setTokenizerResource("classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json");
+
 // (optional) defaults to classpath:/onnx/all-MiniLM-L6-v2/model.onnx
 embeddingClient.setModelResource("classpath:/onnx/all-MiniLM-L6-v2/model.onnx");
 
@@ -68,11 +69,14 @@ embeddingClient.setResourceCacheDirectory("/tmp/onnx-zoo");
 
 embeddingClient.afterPropertiesSet();
 
-List<List<Double>> embeddings =
-	embeddingClient.embed(List.of("Hello world", "World is big"));
+List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "World is big"));
 
 ```
 
+The first `embed()` call downloads the the large ONNX model and caches it on the local file system.
+Therefore the first call might take longer than usual.
+Use the `#setResourceCacheDirectory(<path>)` to set the local folder where the ONNX models as stored.
+The default cache folder is `${java.io.tmpdir}/spring-ai-onnx-model`.
 
 
 
