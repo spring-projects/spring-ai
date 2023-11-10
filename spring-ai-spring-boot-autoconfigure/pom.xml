@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.experimental.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.7.0-SNAPSHOT</version>
+		<version>0.7.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 	<packaging>jar</packaging>
@@ -48,6 +49,45 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Pinecone Vector Store-->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-pinecone</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Milvus Vector Store -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-milvus-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- PG Vector Store-->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-pgvector-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>com.pgvector</groupId>
+			<artifactId>pgvector</artifactId>
+			<version>${pgvector.version}</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
@@ -61,11 +101,58 @@
 		</dependency>
 
 		<!-- test dependencies -->
+
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-test</artifactId>
+			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>transformers-embedding</artifactId>
+			<version>${parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<version>3.0.0</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 </project>

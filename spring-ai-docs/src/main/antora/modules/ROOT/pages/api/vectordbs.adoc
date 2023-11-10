@@ -28,22 +28,41 @@ Here is the `VectorStore` interface definition:
 ```java
 public interface VectorStore {
 
-	void add(List<Document> documents);
+    void add(List<Document> documents);
 
-	Optional<Boolean> delete(List<String> idList);
+    Optional<Boolean> delete(List<String> idList);
 
-	List<Document> similaritySearch(String query);
+    List<Document> similaritySearch(String query);
 
-	List<Document> similaritySearch(String query, int k);
-
-	List<Document> similaritySearch(String query, int k, double threshold);
-
-    List<Document> similaritySearch(String query, int topK, double similarityThreshold,
-			Filter.Expression filterExpression);
-
-    List<Document> similaritySearch(String query, int topK, double similarityThreshold,
-			String filterExpression);
+    List<Document> similaritySearch(SearchRequest request);
 }
+```
+
+and the related `SearchRequest` builder:
+
+```java
+public class SearchRequest {
+
+	public final String query;
+	private int topK = 4;
+	private double similarityThreshold = SIMILARITY_THRESHOLD_ALL;
+	private Filter.Expression filterExpression;
+
+	public static SearchRequest query(String query) { return new SearchRequest(query); }
+	private SearchRequest(String query) { this.query = query; }
+
+	public SearchRequest withTopK(int topK) {...}
+	public SearchRequest withSimilarityThreshold(double threshold) {...}
+	public SearchRequest withSimilarityThresholdAll() {...}
+	public SearchRequest withFilterExpression(Filter.Expression expression) {...}
+	public SearchRequest withFilterExpression(String textExpression) {...}
+
+	public String getQuery() {...}
+	public int getTopK() {...}
+	public double getSimilarityThreshold() {...}
+	public Filter.Expression getFilterExpression() {...}
+}
+
 ```
 
 To insert data into the vector database, encapsulate it within a `Document` object.
@@ -59,7 +78,7 @@ The `similaritySearch` methods in the interface allow for retrieving documents s
 * `k`: An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search, or 'K nearest neighbors' (KNN).
 * `threshold`: A double value ranging from 0 to 1, where values closer to 1 indicate higher similarity. By default, if you set a threshold of 0.75, for instance, only documents with a similarity above this value are returned.
 * `Filter.Expression`: A class used for passing a fluent DSL (Domain-Specific Language) expression that functions similarly to a 'where' clause in SQL, but it applies exclusively to the metadata key-value pairs of a `Document`.
-* `filterExpression`: An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and `isActive`, you could use an expression such as 
+* `filterExpression`: An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and `isActive`, you could use an expression such as
 ``` java
 country == 'UK' && year >= 2020 && isActive == true.
 ```

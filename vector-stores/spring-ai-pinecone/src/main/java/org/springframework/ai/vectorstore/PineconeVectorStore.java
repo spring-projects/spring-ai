@@ -36,7 +36,6 @@ import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -54,8 +53,6 @@ public class PineconeVectorStore implements VectorStore {
 
 	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
 
-	private static final Double SIMILARITY_THRESHOLD_ALL = 0.0;
-
 	public final PineconeFilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
 	private final EmbeddingClient embeddingClient;
@@ -63,8 +60,6 @@ public class PineconeVectorStore implements VectorStore {
 	private final PineconeConnection pineconeConnection;
 
 	private final String pineconeNamespace;
-
-	private final int defaultSimilarityTopK;
 
 	private final ObjectMapper objectMapper;
 
@@ -81,7 +76,7 @@ public class PineconeVectorStore implements VectorStore {
 
 		private final PineconeClientConfig clientConfig;
 
-		private final int defaultSimilarityTopK;
+		// private final int defaultSimilarityTopK;
 
 		/**
 		 * Constructor using the builder.
@@ -93,7 +88,7 @@ public class PineconeVectorStore implements VectorStore {
 		 */
 		public PineconeVectorStoreConfig(Builder builder) {
 			this.namespace = builder.namespace;
-			this.defaultSimilarityTopK = builder.defaultSimilarityTopK;
+			// this.defaultSimilarityTopK = builder.defaultSimilarityTopK;
 			this.connectionConfig = new PineconeConnectionConfig().withIndexName(builder.indexName);
 			this.clientConfig = new PineconeClientConfig().withApiKey(builder.apiKey)
 				.withEnvironment(builder.environment)
@@ -129,8 +124,6 @@ public class PineconeVectorStore implements VectorStore {
 
 			// The free-tier (gcp-starter) doesn't support Namespaces!
 			private String namespace = "";
-
-			private int defaultSimilarityTopK = 5;
 
 			/**
 			 * Optional server-side timeout in seconds for all operations. Default: 20
@@ -203,16 +196,6 @@ public class PineconeVectorStore implements VectorStore {
 			}
 
 			/**
-			 * Pinecone default top K similarity search response size.
-			 * @param defaultSimilarityTopK default top K to use.
-			 * @return this builder.
-			 */
-			public Builder withDefaultTopK(int defaultSimilarityTopK) {
-				this.defaultSimilarityTopK = defaultSimilarityTopK;
-				return this;
-			}
-
-			/**
 			 * {@return the immutable configuration}
 			 */
 			public PineconeVectorStoreConfig build() {
@@ -234,7 +217,6 @@ public class PineconeVectorStore implements VectorStore {
 
 		this.embeddingClient = embeddingClient;
 		this.pineconeNamespace = config.namespace;
-		this.defaultSimilarityTopK = config.defaultSimilarityTopK;
 		this.pineconeConnection = new PineconeClient(config.clientConfig).connect(config.connectionConfig);
 		this.objectMapper = new ObjectMapper();
 	}
@@ -313,65 +295,37 @@ public class PineconeVectorStore implements VectorStore {
 		return Optional.of(true);
 	}
 
-	/**
-	 * Searches for documents similar to the given query. Uses the default topK value.
-	 * @param query The query string.
-	 * @return A list of similar documents.
-	 */
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return similaritySearch(query, this.defaultSimilarityTopK);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
+		// return this.internalSimilaritySearch(request.getQuery(), request.getTopK(),
+		// request.getSimilarityThreshold(),
+		// request.getFilterExpression());
+		// }
 
-	/**
-	 * Searches for documents similar to the given query.
-	 * @param query The query string.
-	 * @param topK The maximum number of results to return.
-	 * @return A list of similar documents.
-	 */
-	@Override
-	public List<Document> similaritySearch(String query, int topK) {
-		return similaritySearch(query, topK, SIMILARITY_THRESHOLD_ALL);
-	}
+		// List<Document> internalSimilaritySearch(String query, int topK, double
+		// similarityThreshold,
+		// Filter.Expression filterExpression) {
 
-	/**
-	 * Searches for documents similar to the given query.
-	 * @param query The query string.
-	 * @param topK The maximum number of results to return.
-	 * @param similarityThreshold The similarity threshold for results.
-	 * @return A list of similar documents.
-	 */
-	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
+		String nativeExpressionFilters = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convert(request.getFilterExpression()) : "";
 
-		return internalSimilaritySearch(query, topK, similarityThreshold, "");
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
-		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
-		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
-	}
-
-	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold, String filters) {
-
-		List<Double> queryEmbedding = this.embeddingClient.embed(query);
+		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 
 		var queryRequestBuilder = QueryRequest.newBuilder()
 			.addAllVector(toFloatList(queryEmbedding))
-			.setTopK(topK)
+			.setTopK(request.getTopK())
 			.setIncludeMetadata(true)
 			.setNamespace(this.pineconeNamespace);
 
-		if (StringUtils.hasText(filters)) {
-			queryRequestBuilder.setFilter(metadataFiltersToStruct(filters));
+		if (StringUtils.hasText(nativeExpressionFilters)) {
+			queryRequestBuilder.setFilter(metadataFiltersToStruct(nativeExpressionFilters));
 		}
 
 		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequestBuilder.build());
 
 		return queryResponse.getMatchesList()
 			.stream()
-			.filter(scoredVector -> scoredVector.getScore() >= similarityThreshold)
+			.filter(scoredVector -> scoredVector.getScore() >= request.getSimilarityThreshold())
 			.map(scoredVector -> {
 				var id = scoredVector.getId();
 				Struct metadataStruct = scoredVector.getMetadata();

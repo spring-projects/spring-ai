@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
 
 /**
  *
- * Parse a text, vector-store agnostic, filter expression language into
+ * Parse a textual, vector-store agnostic, filter expression language into
  * {@link Filter.Expression}.
  *
  * The vector-store agnostic, filter expression language is defined by a formal ANTLR4

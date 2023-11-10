@@ -4,7 +4,7 @@
 
 	<groupId>org.springframework.experimental.ai</groupId>
 	<artifactId>spring-ai</artifactId>
-	<version>0.7.0-SNAPSHOT</version>
+	<version>0.7.1-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
@@ -87,7 +87,7 @@
 		<pdfbox.version>3.0.0</pdfbox.version>
 		<pgvector.version>0.1.3</pgvector.version>
 		<postgresql.version>42.6.0</postgresql.version>
-		<milvus.version>2.3.0</milvus.version>
+		<milvus.version>2.3.3</milvus.version>
 		<pinecone.version>0.6.0</pinecone.version>
 		<protobuf-java-util.version>3.24.4</protobuf-java-util.version>
 

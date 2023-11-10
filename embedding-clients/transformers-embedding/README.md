@@ -36,7 +36,7 @@ Add the `transformers-embedding` project to your maven dependencies:
 <dependency>
 	<groupId>org.springframework.experimental.ai</groupId>
 	<artifactId>transformers-embedding</artifactId>
-	<version>0.7.0-SNAPSHOT</version>
+	<version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
 

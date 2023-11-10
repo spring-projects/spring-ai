@@ -5,10 +5,15 @@ import java.util.Optional;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
+/**
+ * The {@code VectorStore} interface defines the operations for managing and querying
+ * documents in a vector database. It extends {@link DocumentWriter} to support document
+ * writing operations. Vector databases are specialized for AI applications, performing
+ * similarity searches based on vector representations of data rather than exact matches.
+ * This interface allows for adding, deleting, and searching documents based on their
+ * similarity to a given query.
+ */
 public interface VectorStore extends DocumentWriter {
 
 	/**
@@ -30,107 +35,24 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	Optional<Boolean> delete(List<String> idList);
 
-	List<Document> similaritySearch(String query);
-
-	List<Document> similaritySearch(String query, int k);
-
-	/**
-	 * @param query The query to send, it will be converted to an embedding based on the
-	 * configuration of the vector store.
-	 * @param k the top 'k' similar results
-	 * @param threshold the lower bound of the similarity score
-	 * @return similar documents
-	 */
-	List<Document> similaritySearch(String query, int k, double threshold);
-
 	/**
 	 * Retrieves documents by query embedding similarity and metadata filters to retrieve
-	 * exactly the number of nearest-neighbor results that match the filters.
-	 *
-	 * For example if your {@link Document#getMetadata()} has a schema like:
-	 *
-	 * <pre>{@code
-	 * &#123;
-	 *  "country":  <Text>,
-	 *  "city":     <Text>,
-	 *  "year":     <Number>,
-	 *  "price":    <Decimal>,
-	 *  "isActive": <Boolean>
-	 * &#125;
-	 * }</pre>
-	 *
-	 * then you can constrain the search result with metadata filter expressions
-	 * equivalent to (country == 'UK' AND year >= 2020 AND isActive == true). You can
-	 * build this filter programmatically like this:
-	 *
-	 * <pre>{@code
-	 *
-	 * new Filter.Expression(AND,
-	 * 		new Expression(EQ, new Key("country"), new Value("UK")),
-	 * 		new Expression(AND,
-	 * 				new Expression(GTE, new Key("year"), new Value(2020)),
-	 * 				new Expression(EQ, new Key("isActive"), new Value(true))));
-	 *
-	 * }</pre>
-	 *
-	 * and it will ensure that the response contains only embeddings that match the
-	 * specified filer criteria. <br/>
-	 *
-	 * The {@link Filter.Expression} is portable across all vector stores that offer
-	 * metadata filtering. The {@link FilterExpressionBuilder} is expression DSL and
-	 * {@link FilterExpressionTextParser} is text expression parser that build
-	 * {@link Filter.Expression}.
-	 * @param topK the top 'k' similar results to return.
-	 * @param similarityThreshold the lower bound of the similarity score
-	 * @param filterExpression portable metadata filter expression.
-	 * @return similar documents that match the requested similarity threshold and filter.
+	 * exactly the number of nearest-neighbor results that match the request criteria.
+	 * @param request Search request for set search parameters, such as the query text,
+	 * topK, similarity threshold and metadata filter expressions.
+	 * @return Returns documents th match the query request conditions.
 	 */
-	default List<Document> similaritySearch(String query, int topK, double similarityThreshold,
-			Filter.Expression filterExpression) {
-		throw new UnsupportedOperationException("This vector store doesn't support search filtering");
-	}
+	List<Document> similaritySearch(SearchRequest request);
 
 	/**
-	 * Retrieves documents by query embedding similarity and metadata filters to retrieve
-	 * exactly the number of nearest-neighbor results that match the filters.
-	 *
-	 * For example if your {@link Document#getMetadata()} has a schema like:
-	 *
-	 * <pre>{@code
-	 * &#123;
-	 *  "country":  <Text>,
-	 *  "city":     <Text>,
-	 *  "year":     <Number>,
-	 *  "price":    <Decimal>,
-	 *  "isActive": <Boolean>
-	 * &#125;
-	 * }</pre>
-	 *
-	 * then you can constrain the search result with metadata filter expressions like:
-	 *
-	 * <pre>{@code
-	 *country == 'UK' && year >= 2020 && isActive == true
-	 *                        Or
-	 *country == 'BG' && (city NOT IN ['Sofia', 'Plovdiv'] || price < 134.34)
-	 * }</pre>
-	 *
-	 * This ensures that the response contains only embeddings that match the specified
-	 * filer criteria. <br/>
-	 *
-	 * The declarative, SQL like, filter syntax is portable across all vector stores
-	 * supporting the filter search feature.<br/>
-	 *
-	 * The {@link FilterExpressionTextParser} is used to convert the text filter
-	 * expression into {@link Filter.Expression}.
-	 * @param topK the top 'k' similar results to return.
-	 * @param similarityThreshold the lower bound of the similarity score
-	 * @param filterExpression portable metadata filter expression.
-	 * @return similar documents that match the requested similarity threshold and filter.
+	 * Retrieves documents by query embedding similarity using the default
+	 * {@link SearchRequest}'s' search criteria.
+	 * @param query Text to use for embedding similarity comparison.
+	 * @return Returns a list of documents that have embeddings similar to the query text
+	 * embedding.
 	 */
-	default List<Document> similaritySearch(String query, int topK, double similarityThreshold,
-			String filterExpression) {
-		var filterExpressionObject = Filter.parser().parse(filterExpression);
-		return similaritySearch(query, topK, similarityThreshold, filterExpressionObject);
+	default List<Document> similaritySearch(String query) {
+		return this.similaritySearch(SearchRequest.query(query));
 	}
 
 }
