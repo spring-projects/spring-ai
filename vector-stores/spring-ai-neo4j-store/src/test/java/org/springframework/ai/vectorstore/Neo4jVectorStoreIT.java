@@ -65,7 +65,7 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			List<Document> results = vectorStore.similaritySearch("Great", 1);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -78,7 +78,7 @@ class Neo4jVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
-			List<Document> results2 = vectorStore.similaritySearch("Great", 1);
+			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).isEmpty();
 		});
 	}
@@ -95,7 +95,7 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -110,7 +110,7 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch("FooBar", 5);
+			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -131,7 +131,8 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(this.documents);
 
-			List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 0);
+			List<Document> fullResult = vectorStore
+				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThresholdAll());
 
 			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
 
@@ -139,7 +140,8 @@ class Neo4jVectorStoreIT {
 
 			float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch("Great", 5, 1 - threshold);
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThreshold(1 - threshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);

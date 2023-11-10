@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -259,44 +258,24 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(query, 4);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK) {
-		return this.similaritySearch(query, topK, 0.0 /** ALL */
-		);
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
-
-		return this.internalSimilaritySearch(query, topK, similarityThreshold, "");
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
-		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
-		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
-	}
-
-	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold,
-			String filterExpression) {
+		String nativeFilterExpression = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convert(request.getFilterExpression()) : "";
 
 		String jsonPathFilter = "";
 
-		if (StringUtils.hasText(filterExpression)) {
-			jsonPathFilter = " AND metadata::jsonb @@ '" + filterExpression + "'::jsonpath ";
+		if (StringUtils.hasText(nativeFilterExpression)) {
+			jsonPathFilter = " AND metadata::jsonb @@ '" + nativeFilterExpression + "'::jsonpath ";
 		}
 
-		double distance = 1 - similarityThreshold;
+		double distance = 1 - request.getSimilarityThreshold();
 
-		PGvector queryEmbedding = getQueryEmbedding(query);
+		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
+				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {

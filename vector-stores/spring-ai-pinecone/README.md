@@ -59,7 +59,7 @@ Add these dependencies to your project:
 <dependency>
 	<groupId>org.springframework.experimental.ai</groupId>
 	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-	<version>0.7.0-SNAPSHOT</version>
+	<version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -69,7 +69,7 @@ Add these dependencies to your project:
 <dependency>
     <groupId>org.springframework.experimental.ai</groupId>
     <artifactId>spring-ai-pinecone</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -119,7 +119,7 @@ vectorStore.add(List.of(document));
 And finally, retrieve documents similar to a query:
 
 ```java
-List<Document> results = vectorStore.similaritySearch("Spring", 5);
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ```
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".

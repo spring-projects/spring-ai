@@ -11,15 +11,15 @@ Let's make your `@Beans` intelligent!
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [Issues](https://github.com/spring-projects-experimental/spring-ai/issues)
-* [Discussions](https://github.com/spring-projects-experimental/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!  
+* [Discussions](https://github.com/spring-projects-experimental/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!
 * [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
 
 ## Educational Resources
 
-* Follow the [Workshop](#workshop) 
-* Overview of Spring AI @ Devoxx 2023 
+* Follow the [Workshop](#workshop)
+* Overview of Spring AI @ Devoxx 2023
 <br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
-* Introducing Spring AI - Add Generative AI to your Spring Applications 
+* Introducing Spring AI - Add Generative AI to your Spring Applications
 <br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
 
 ## Dependencies
@@ -49,7 +49,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.7.0-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </dependency>
 ```
 
@@ -59,7 +59,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.7.0-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </dependency>
 ```
 
@@ -71,7 +71,7 @@ And the Spring Boot Starter depending on if you are using Azure Open AI or Open 
     <dependency>
         <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.7.0-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </dependency>
 ```
 
@@ -96,11 +96,11 @@ These Python libraries share foundational themes with Spring projects, such as:
 
 Taking inspiration from these libraries, the Spring AI project aims to provide a similar experience for Spring developers in the AI domain.
 
-Note, that the Spring AI API is not a direct port of either LangChain or LlamaIndex.  You will see significant differences in the API if you are familiar with those two projects, though concepts and ideas are fairly portable. 
+Note, that the Spring AI API is not a direct port of either LangChain or LlamaIndex.  You will see significant differences in the API if you are familiar with those two projects, though concepts and ideas are fairly portable.
 
 ## Feature Overview
 
-This is a high level feature overview.  
+This is a high level feature overview.
 The features that are implemented lay the foundation, with subsequent more complex features building upon them.
 
 You can find more details in the [Reference Documentation](https://docs.spring.io/spring-ai/reference/)
@@ -134,7 +134,7 @@ For implementation details, visit the [OutputParser API guide](https://docs.spri
 
 Incorporating proprietary data into Generative AI without retraining the model has been a breakthrough.
 Retraining models, especially those with billions of parameters, is challenging due to the specialized hardware required.
-The 'In-context' learning technique provides a simpler method to infuse your pre-trained model with data, whether from text files, HTML, or database results. 
+The 'In-context' learning technique provides a simpler method to infuse your pre-trained model with data, whether from text files, HTML, or database results.
 The right techniques are critical for developing successful solutions.
 
 
@@ -150,9 +150,9 @@ The subsequent classes and interfaces support RAG's data preparation.
 
 **Documents:**
 
-The `Document` class encapsulates your data, including text and metadata, for the AI model. 
+The `Document` class encapsulates your data, including text and metadata, for the AI model.
 While a Document can represent extensive content, such as an entire file, the RAG approach
-segments content into smaller pieces for inclusion in the prompt. 
+segments content into smaller pieces for inclusion in the prompt.
 The ETL process uses the interfaces `DocumentReader`, `DocumentTransformer`, and `DocumentWriter`, ending with data storage in a Vector Database.
 This database later discerns the pieces of data that are pertinent to a user's query.
 
@@ -160,7 +160,7 @@ This database later discerns the pieces of data that are pertinent to a user's q
 **Document Readers:**
 
 Document Readers produce a `List<Document>` from diverse sources like PDFs, Markdown files, and Word documents.
-Given that many sources are unstructured, Document Readers often segment based on content semantics, avoiding splits within tables or code sections. 
+Given that many sources are unstructured, Document Readers often segment based on content semantics, avoiding splits within tables or code sections.
 After the initial creation of the `List<Document>`, the data flows through transformers for further refinement.
 
 **Document Transformers:**
@@ -171,7 +171,7 @@ Each model has a context-window indicating its input and output data limits. Typ
 
 **Document Writers:**
 
-The final ETL step within RAG involves committing the data segments to a Vector Database. 
+The final ETL step within RAG involves committing the data segments to a Vector Database.
 Though the `DocumentWriter` interface isn't exclusively for Vector Database writing, it the main type of implementation.
 
 **Vector Stores:**  Vector Databases are instrumental in incorporating your data with AI models.

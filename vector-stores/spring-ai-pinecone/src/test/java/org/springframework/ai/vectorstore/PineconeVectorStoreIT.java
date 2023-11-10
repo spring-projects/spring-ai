@@ -89,10 +89,10 @@ public class PineconeVectorStoreIT {
 			vectorStore.add(documents);
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Great", 1);
+				return vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			}, hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch("Great", 1);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -107,7 +107,7 @@ public class PineconeVectorStoreIT {
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Hello", 1);
+				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));
 		});
 	}
@@ -117,8 +117,6 @@ public class PineconeVectorStoreIT {
 
 		// Pinecone metadata filtering syntax:
 		// https://docs.pinecone.io/docs/metadata-filtering
-
-		final double THRESHOLD_ALL = 0.0;
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
@@ -131,18 +129,24 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
+			SearchRequest searchRequest = SearchRequest.query("The World");
+
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("The World", 1);
+				return vectorStore.similaritySearch(searchRequest.withTopK(1));
 			}, hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch("The World", 5);
+			List<Document> results = vectorStore.similaritySearch(searchRequest.withTopK(5));
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Bulgaria'");
+			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'Bulgaria'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Netherland'");
+			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'Netherland'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
@@ -150,7 +154,7 @@ public class PineconeVectorStoreIT {
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("The World", 1);
+				return vectorStore.similaritySearch(searchRequest.withTopK(1));
 			}, hasSize(0));
 		});
 	}
@@ -168,11 +172,13 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
+			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
+
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Spring", 5);
+				return vectorStore.similaritySearch(springSearchRequest);
 			}, hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -187,11 +193,13 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
+			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
+
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("FooBar", 5).get(0).getContent();
+				return vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent();
 			}, equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
-			results = vectorStore.similaritySearch("FooBar", 5);
+			results = vectorStore.similaritySearch(fooBarSearchRequest);
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -203,7 +211,7 @@ public class PineconeVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(List.of(document.getId()));
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("FooBar", 1);
+				return vectorStore.similaritySearch(fooBarSearchRequest);
 			}, hasSize(0));
 
 		});
@@ -219,10 +227,11 @@ public class PineconeVectorStoreIT {
 			vectorStore.add(documents);
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Great", 5);
+				return vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(5));
 			}, hasSize(3));
 
-			List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 0.0);
+			List<Document> fullResult = vectorStore
+				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThresholdAll());
 
 			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
 
@@ -230,7 +239,8 @@ public class PineconeVectorStoreIT {
 
 			float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - threshold));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThreshold(1 - threshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -243,7 +253,7 @@ public class PineconeVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Hello", 1);
+				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));
 		});
 	}

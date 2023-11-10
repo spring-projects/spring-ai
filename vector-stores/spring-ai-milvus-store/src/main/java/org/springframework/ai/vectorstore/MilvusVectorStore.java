@@ -54,7 +54,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -321,43 +320,26 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(query, 4);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK) {
-		return similaritySearch(query, topK, 0.0D);
-	}
+		String nativeFilterExpressions = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convert(request.getFilterExpression()) : "";
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
-		return internalSimilaritySearch(query, topK, similarityThreshold, "");
-	}
+		Assert.notNull(request.getQuery(), "Query string must not be null");
 
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
-		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
-		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
-	}
-
-	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold,
-			String filterExpressions) {
-		Assert.notNull(query, "Query string must not be null");
-
-		List<Double> embedding = this.embeddingClient.embed(query);
+		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
 
 		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withMetricType(this.config.metricType)
 			.withOutFields(SEARCH_OUTPUT_FIELDS)
-			.withTopK(topK)
+			.withTopK(request.getTopK())
 			.withVectors(List.of(toFloatList(embedding)))
 			.withVectorFieldName(EMBEDDING_FIELD_NAME);
 
-		if (StringUtils.hasText(filterExpressions)) {
-			searchParamBuilder.withExpr(filterExpressions);
+		if (StringUtils.hasText(nativeFilterExpressions)) {
+			searchParamBuilder.withExpr(nativeFilterExpressions);
 		}
 
 		R<SearchResults> respSearch = milvusClient.search(searchParamBuilder.build());
@@ -370,7 +352,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		return wrapperSearch.getRowRecords()
 			.stream()
-			.filter(rowRecord -> getResultSimilarity(rowRecord) >= similarityThreshold)
+			.filter(rowRecord -> getResultSimilarity(rowRecord) >= request.getSimilarityThreshold())
 			.map(rowRecord -> {
 				String docId = (String) rowRecord.get(DOC_ID_FIELD_NAME);
 				String content = (String) rowRecord.get(CONTENT_FIELD_NAME);

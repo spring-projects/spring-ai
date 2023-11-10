@@ -22,6 +22,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
+import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
@@ -29,6 +30,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Operand;
 public abstract class AbstractFilterExpressionConverter {
 
 	public String convert(Operand operand) {
+		Assert.notNull(operand, "Operand can't be null");
 		var context = new StringBuilder();
 		this.convert(operand, context);
 		return context.toString();

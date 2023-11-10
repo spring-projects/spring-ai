@@ -6,7 +6,7 @@ This readme walks you through setting up `Neo4jVectorStore` to store document em
 
 [Neo4j](https://neo4j.com) is an open source NoSQL graph database.
 It is a fully transactional database (ACID) that stores data structured as graphs consisting of nodes, connected by relationships.
-Inspired by the structure of the real world, it allows for high query performance on complex data, while remaining intuitive and simple for the developer. 
+Inspired by the structure of the real world, it allows for high query performance on complex data, while remaining intuitive and simple for the developer.
 
 ## What is Neo4j Vector Search?
 
@@ -18,7 +18,7 @@ Those indexes are powered by Lucene using a Hierarchical Navigable Small World G
 
 1. OpenAI Account: Create an account at [OpenAI Signup](https://platform.openai.com/signup) and generate the token at [API Keys](https://platform.openai.com/account/api-keys).
 
-2. A running Neo4j (5.13+) instance 
+2. A running Neo4j (5.13+) instance
     1. [Docker](https://hub.docker.com/_/neo4j) image _neo4j:5.13_
 	2. [Neo4j Desktop](https://neo4j.com/download/)
     3. [Neo4j Aura](https://neo4j.com/cloud/aura-free/)
@@ -53,22 +53,22 @@ To acquire Spring AI artifacts, declare the Spring Snapshot repository:
 
 Add these dependencies to your project:
 
-1. OpenAI: Required for calculating embeddings.  
+1. OpenAI: Required for calculating embeddings.
 ```xml
 <dependency>
 	<groupId>org.springframework.experimental.ai</groupId>
 	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-	<version>0.7.0-SNAPSHOT</version>
+	<version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
-  
+
 2. Neo4j Vector Store
 
 ```xml
 <dependency>
 	<groupId>org.springframework.experimental.ai</groupId>
 	<artifactId>spring-ai-neo4j-store</artifactId>
-	<version>0.7.0-SNAPSHOT</version>
+	<version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -112,7 +112,7 @@ vectorStore.add(List.of(document));
 And finally, retrieve documents similar to a query:
 
 ```java
-List<Document> results = vectorStore.similaritySearch("Spring", 5);
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ```
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!" as the first result.
@@ -124,7 +124,7 @@ The default configuration should fit for most of the basic use-cases, but if you
 
 The default params
 * embedding dimension = 1536
-* distance type = cosine 
+* distance type = cosine
 * document node label = "Document"
 * node property for embedding = "embedding"
 * database name = "neo4j"
