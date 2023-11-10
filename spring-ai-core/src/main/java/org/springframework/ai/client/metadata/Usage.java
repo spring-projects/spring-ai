@@ -27,8 +27,8 @@ public interface Usage {
 
 	/**
 	 * Returns the number of tokens used in the {@literal prompt} of the AI request.
-	 * @return an {@link Long} with the number of tokens used in the {@literal prompt}
-	 * of the AI request.
+	 * @return an {@link Long} with the number of tokens used in the {@literal prompt} of
+	 * the AI request.
 	 */
 	Long getPromptTokens();
 

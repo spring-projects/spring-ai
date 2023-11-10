@@ -56,8 +56,8 @@ public interface RateLimit {
 	/**
 	 * Returns the maximum number of tokens that are permitted before exhausting the rate
 	 * limit.
-	 * @return an {@link Long} with the maximum number of tokens that are permitted
-	 * before exhausting the rate limit.
+	 * @return an {@link Long} with the maximum number of tokens that are permitted before
+	 * exhausting the rate limit.
 	 */
 	Long getTokensLimit();
 
