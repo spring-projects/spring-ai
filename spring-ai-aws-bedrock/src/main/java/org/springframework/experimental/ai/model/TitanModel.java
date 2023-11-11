@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
@@ -51,7 +52,7 @@ public final class TitanModel extends AbstractAWSBaseModelParams {
 	@Override
 	public String getResponseContent(SdkBytes response) {
 		try {
-			ArrayNode json = mapper.readValue(response.asUtf8String(), ArrayNode.class);
+			JsonNode json = mapper.readValue(response.asUtf8String(), JsonNode.class);
 			return json.get("results").get(0).get("outputText").asText();
 		}
 		catch (JsonProcessingException e) {
