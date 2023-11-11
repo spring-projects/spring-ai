@@ -16,42 +16,43 @@ import static java.util.Collections.singletonList;
 
 public class AWSBedrockClient implements AiClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(AWSBedrockClient.class);
+	private static final Logger logger = LoggerFactory.getLogger(AWSBedrockClient.class);
 
-    private final BedrockRuntimeClient client;
+	private final BedrockRuntimeClient client;
 
-    private final AWSBaseModel baseModelParams;
+	private final AWSBaseModel baseModelParams;
 
-    public AWSBedrockClient(BedrockRuntimeClient client, AWSBaseModel baseModelParams) {
-        this.client = client;
-        this.baseModelParams = baseModelParams;
-    }
+	public AWSBedrockClient(BedrockRuntimeClient client, AWSBaseModel baseModelParams) {
+		this.client = client;
+		this.baseModelParams = baseModelParams;
+	}
 
-    @Override
-    public String generate(String message) {
-        return invokeModel(message);
-    }
+	@Override
+	public String generate(String message) {
+		return invokeModel(message);
+	}
 
-    @Override
-    public AiResponse generate(Prompt prompt) {
-        var response = invokeModel(prompt.getContents());
-        return new AiResponse(singletonList(new Generation(response)));
-    }
+	@Override
+	public AiResponse generate(Prompt prompt) {
+		var response = invokeModel(prompt.getContents());
+		return new AiResponse(singletonList(new Generation(response)));
+	}
 
-    private String invokeModel(String msg) {
+	private String invokeModel(String msg) {
 
-        var modelRequest = InvokeModelRequest.builder()
-                .modelId(baseModelParams.getModelId())
-                .contentType("application/json")
-                .body(this.baseModelParams.toPayload(msg))
-                .build();
-        try {
-            var response = client.invokeModel(modelRequest).body();
-            return this.baseModelParams.getResponseContent(response);
-        } catch (SdkException e) {
-            logger.error("error invoking model for request {} with exception type {}", modelRequest, e.getClass(), e);
-        }
-        return null;
-    }
+		var modelRequest = InvokeModelRequest.builder()
+			.modelId(baseModelParams.getModelId())
+			.contentType("application/json")
+			.body(this.baseModelParams.toPayload(msg))
+			.build();
+		try {
+			var response = client.invokeModel(modelRequest).body();
+			return this.baseModelParams.getResponseContent(response);
+		}
+		catch (SdkException e) {
+			logger.error("error invoking model for request {} with exception type {}", modelRequest, e.getClass(), e);
+		}
+		return null;
+	}
 
 }
