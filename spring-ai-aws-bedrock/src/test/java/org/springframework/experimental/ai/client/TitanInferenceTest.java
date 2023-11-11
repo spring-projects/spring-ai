@@ -32,6 +32,7 @@ public class TitanInferenceTest {
     @Test
     void testInferenceWorks() throws JsonProcessingException {
         var result = "Hello World";
+        // payload according to https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-titan.html#model-parameters-titan-response-body
         var responseStr = """
                 {
                     "inputTextTokenCount": 20,
