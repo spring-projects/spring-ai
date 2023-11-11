@@ -33,10 +33,13 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 /**
  * Uses the "vector_store" table to store the Spring AI vector data. The table and the
@@ -53,6 +56,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
+
+	public final PgVectorFilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -100,13 +105,13 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public enum PgDistanceType {
 
 		EuclideanDistance("<->", "vector_l2_ops",
-				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? ORDER BY distance LIMIT ? "),
+				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
 		NegativeInnerProduct("<#>", "vector_ip_ops",
-				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? ORDER BY distance LIMIT ? "),
+				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 
 		CosineDistance("<=>", "vector_cosine_ops",
-				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? ORDER BY distance LIMIT ? ");
+				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
 
@@ -220,7 +225,16 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					"INSERT INTO " + VECTOR_TABLE_NAME
 							+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
 							+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
-					id, content, metadata, pgEmbedding, content, metadata, pgEmbedding);
+					id, content, toJson(metadata), pgEmbedding, content, toJson(metadata), pgEmbedding);
+		}
+	}
+
+	private String toJson(Map<String, Object> map) {
+		try {
+			return objectMapper.writeValueAsString(map);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -258,12 +272,30 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
+		return this.internalSimilaritySearch(query, topK, similarityThreshold, "");
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
+	}
+
+	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold,
+			String filterExpression) {
+
+		String jsonPathFilter = "";
+
+		if (StringUtils.hasText(filterExpression)) {
+			jsonPathFilter = " AND metadata::jsonb @@ '" + filterExpression + "'::jsonpath ";
+		}
+
 		double distance = 1 - similarityThreshold;
 
 		PGvector queryEmbedding = getQueryEmbedding(query);
 
 		return this.jdbcTemplate.query(
-				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME),
+				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
 	}
 
@@ -274,7 +306,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					@Override
 					@Nullable
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
-						return rs.getDouble("distance");
+						return rs.getDouble(DocumentRowMapper.COLUMN_DISTANCE);
 					}
 
 				}, getQueryEmbedding(query));

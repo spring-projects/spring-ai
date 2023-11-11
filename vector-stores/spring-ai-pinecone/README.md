@@ -1,6 +1,6 @@
-# Pinecone VectorStore
+# Pinecone Vector Store
 
-This readme will walk you through setting up the Pinecone VectorStore to store document embeddings and perform similarity searches.
+This readme walks you through setting up the Pinecone `VectorStore` to store document embeddings and perform similarity searches.
 
 ## What is Pinecone?
 
@@ -8,13 +8,13 @@ This readme will walk you through setting up the Pinecone VectorStore to store d
 
 ## Prerequisites
 
-1. Pinecone Account: Before you start, ensure you sign up for a [Pinecone account](https://app.pinecone.io/).
+1. Pinecone Account: Before you start, sign up for a [Pinecone account](https://app.pinecone.io/).
 2. Pinecone Project: Once registered, create a new project, an index, and generate an API key. You'll need these details for configuration.
 3. OpenAI Account: Create an account at [OpenAI Signup](https://platform.openai.com/signup) and generate the token at [API Keys](https://platform.openai.com/account/api-keys)
 
 ## Configuration
 
-To set up PineconeVectorStore, gather the following details from your Pinecone account:
+To set up `PineconeVectorStore`, gather the following details from your Pinecone account:
 
 * Pinecone API Key
 * Pinecone Environment
@@ -34,6 +34,21 @@ Additionally, you'll need to provide your OpenAI API Key. Set it as an environme
 export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
 ```
 
+## Repository
+
+To acquire Spring AI artifacts, declare the Spring Snapshot repository:
+
+```xml
+<repository>
+	<id>spring-snapshots</id>
+	<name>Spring Snapshots</name>
+	<url>https://repo.spring.io/snapshot</url>
+	<releases>
+		<enabled>false</enabled>
+	</releases>
+</repository>
+```
+
 ## Dependencies
 
 Add these dependencies to your project:
@@ -41,21 +56,21 @@ Add these dependencies to your project:
 1. OpenAI: Required for calculating embeddings.
 
 ```xml
-    <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
-        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.7.0-SNAPSHOT</version>
-    </dependency>
+<dependency>
+	<groupId>org.springframework.experimental.ai</groupId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+	<version>0.7.0-SNAPSHOT</version>
+</dependency>
 ```
 
 2. Pinecone
 
 ```xml
-    <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
-        <artifactId>spring-ai-pinecone</artifactId>
-        <version>0.7.0-SNAPSHOT</version>
-    </dependency>
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-pinecone</artifactId>
+    <version>0.7.0-SNAPSHOT</version>
+</dependency>
 ```
 
 ## Sample Code
@@ -86,7 +101,7 @@ public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingClient
 }
 ```
 
-In your main code, create some documents
+In your main code, create some documents:
 
 ```java
 List<Document> documents = List.of(
@@ -95,7 +110,7 @@ List<Document> documents = List.of(
 	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 ```
 
-Add the documents to your vector store:
+Add the documents to Pinecone:
 
 ```java
 vectorStore.add(List.of(document));

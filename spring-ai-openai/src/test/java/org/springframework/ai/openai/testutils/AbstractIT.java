@@ -2,8 +2,8 @@ package org.springframework.ai.openai.testutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -23,7 +23,7 @@ public abstract class AbstractIT {
 	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
 
 	@Autowired
-	protected OpenAiClient openAiClient;
+	protected AiClient openAiClient;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;

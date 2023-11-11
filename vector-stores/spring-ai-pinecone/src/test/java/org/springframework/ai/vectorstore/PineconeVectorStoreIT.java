@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +53,7 @@ public class PineconeVectorStoreIT {
 	// PINECONE_API_KEY with your pinecone credentials.
 	private static final String PINECONE_ENVIRONMENT = "gcp-starter";
 
-	private static final String PINECONE_PROJECT_ID = "89309e6";
+	private static final String PINECONE_PROJECT_ID = "814621f";
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
@@ -73,7 +74,7 @@ public class PineconeVectorStoreIT {
 
 	@BeforeAll
 	public static void beforeAll() {
-		Awaitility.setDefaultPollInterval(10, TimeUnit.SECONDS);
+		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
 		Awaitility.setDefaultTimeout(Duration.ONE_MINUTE);
 	}
@@ -107,6 +108,49 @@ public class PineconeVectorStoreIT {
 
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch("Hello", 1);
+			}, hasSize(0));
+		});
+	}
+
+	@Test
+	public void addAndSearchWithFilters() {
+
+		// Pinecone metadata filtering syntax:
+		// https://docs.pinecone.io/docs/metadata-filtering
+
+		final double THRESHOLD_ALL = 0.0;
+
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "Bulgaria"));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "Netherland"));
+
+			vectorStore.add(List.of(bgDocument, nlDocument));
+
+			Awaitility.await().until(() -> {
+				return vectorStore.similaritySearch("The World", 1);
+			}, hasSize(1));
+
+			List<Document> results = vectorStore.similaritySearch("The World", 5);
+			assertThat(results).hasSize(2);
+
+			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Bulgaria'");
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Netherland'");
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			// Remove all documents from the store
+			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
+
+			Awaitility.await().until(() -> {
+				return vectorStore.similaritySearch("The World", 1);
 			}, hasSize(0));
 		});
 	}

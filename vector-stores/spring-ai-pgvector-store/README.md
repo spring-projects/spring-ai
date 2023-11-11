@@ -1,6 +1,6 @@
-# PGvector VectorStore
+# PGvector Vector Store
 
-This readme will walk you through setting up the PGvector VectorStore to store document embeddings and perform similarity searches.
+This readme walks you through setting up the PGvector `VectorStore` to store document embeddings and perform similarity searches.
 
 ## What is PGvector?
 
@@ -12,10 +12,10 @@ This readme will walk you through setting up the PGvector VectorStore to store d
 
 2. Access to PostgresSQL instance with following configurations
 
-	The [setup local Postgres/PGVector](#appendix_a) appendix show how to setup a DB locally with a Docker container.
+	The [setup local Postgres/PGVector](#appendix_a) appendix shows how to setup a DB locally with a Docker container.
 
-	On startup the `PgVectorStore` will attempt to install the required database extensions, to create the required `vector_store` table and index.
-	But, optionally, one can do it manually like this:
+	On startup the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with index.
+	Optionally, you can do this manually like so:
 
 	(Optional)
 	```sql
@@ -35,7 +35,7 @@ This readme will walk you through setting up the PGvector VectorStore to store d
 
 ## Configuration
 
-To set up PgVectorStore, you need to provide (via application.yaml) configurations to your PostgresSQL database.
+To set up `PgVectorStore`, you need to provide (via `application.yaml`) configurations to your PostgresSQL database.
 
 Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
 
@@ -43,48 +43,63 @@ Additionally, you'll need to provide your OpenAI API Key. Set it as an environme
 export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
 ```
 
+## Repository
+
+To acquire Spring AI artifacts, declare the Spring Snapshot repository:
+
+```xml
+<repository>
+	<id>spring-snapshots</id>
+	<name>Spring Snapshots</name>
+	<url>https://repo.spring.io/snapshot</url>
+	<releases>
+		<enabled>false</enabled>
+	</releases>
+</repository>
+```
+
 ## Dependencies
 
 Add these dependencies to your project:
 
-1. PostgresSQL connection and JdbcTemplate auto-configuration.
+1. PostgresSQL connection and `JdbcTemplate` auto-configuration.
 
-	```xml
-	<dependency>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-jdbc</artifactId>
-	</dependency>
+```xml
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
 
-	<dependency>
-		<groupId>org.postgresql</groupId>
-		<artifactId>postgresql</artifactId>
-		<scope>runtime</scope>
-	</dependency>
-	```
+<dependency>
+	<groupId>org.postgresql</groupId>
+	<artifactId>postgresql</artifactId>
+	<scope>runtime</scope>
+</dependency>
+```
 
 2. OpenAI: Required for calculating embeddings.
 
-	```xml
-	<dependency>
-		<groupId>org.springframework.experimental.ai</groupId>
-		<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-		<version>0.7.0-SNAPSHOT</version>
-	</dependency>
-	```
+```xml
+<dependency>
+	<groupId>org.springframework.experimental.ai</groupId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+	<version>0.7.0-SNAPSHOT</version>
+</dependency>
+```
 
 3. PGvector
 
-	```xml
-	<dependency>
-		<groupId>org.springframework.experimental.ai</groupId>
-		<artifactId>spring-ai-pgvector-store</artifactId>
-		<version>0.7.0-SNAPSHOT</version>
-	</dependency>
+```xml
+<dependency>
+	<groupId>org.springframework.experimental.ai</groupId>
+	<artifactId>spring-ai-pgvector-store</artifactId>
+	<version>0.7.0-SNAPSHOT</version>
+</dependency>
 	```
 
 ## Sample Code
 
-To configure PgVectorStore in your application, you can use the following setup:
+To configure `PgVectorStore` in your application, you can use the following setup:
 
 Add to `application.yml` (using your DB credentials):
 
@@ -96,7 +111,7 @@ spring:
 		password: postgres
 ```
 
-Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to your project.
+Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI Starter to your project.
 This provides you with an implementation of the Embeddings client:
 
 ```java
@@ -106,7 +121,7 @@ public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embedd
 }
 ```
 
-In your main code, create some documents
+In your main code, create some documents:
 
 ```java
 List<Document> documents = List.of(

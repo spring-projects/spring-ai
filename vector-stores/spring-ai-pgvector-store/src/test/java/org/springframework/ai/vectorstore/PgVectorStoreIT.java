@@ -19,11 +19,13 @@ package org.springframework.ai.vectorstore;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.junit.Assert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.GenericContainer;
@@ -34,6 +36,7 @@ import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -86,9 +89,9 @@ public class PgVectorStoreIT {
 		jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void addAndSearchTest(String distanceType) {
+	public void addAndSearch(String distanceType) {
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
 			.run(context -> {
@@ -116,9 +119,74 @@ public class PgVectorStoreIT {
 			});
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void documentUpdateTest(String distanceType) {
+	public void searchWithFilters(String distanceType) {
+
+		final double THRESHOLD_ALL = 0.0;
+
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
+
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				List<Document> results = vectorStore.similaritySearch("The World", 5);
+				assertThat(results).hasSize(3);
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'NL'");
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'BG'");
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
+						"country == 'BG' && year == 2020");
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
+						"(country == 'BG' && year == 2020) || (country == 'NL')");
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+
+				try {
+					vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == NL");
+					Assert.fail("Invalid filter expression should have been cached!");
+				}
+				catch (FilterExpressionParseException e) {
+					assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
+				}
+
+				try {
+					results = ((PgVectorStore) vectorStore).internalSimilaritySearch("The World", 5, THRESHOLD_ALL,
+							"Invalid Expression");
+					Assert.fail("Malicious jsonpath expressions should be detected!");
+				}
+				catch (Exception e) {
+				}
+
+				// Remove all documents from the store
+				dropTable(context);
+			});
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
+	public void documentUpdate(String distanceType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
@@ -157,9 +225,9 @@ public class PgVectorStoreIT {
 			});
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
-	public void searchThresholdTest(String distanceType) {
+	public void searchWithThreshold(String distanceType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)

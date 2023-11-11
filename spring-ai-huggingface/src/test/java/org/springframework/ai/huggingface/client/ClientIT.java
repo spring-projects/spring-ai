@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "HUGGINGFACE_API_KEY", matches = ".+")
-public class ClientIntegrationTests {
+public class ClientIT {
 
 	@Autowired
 	protected HuggingfaceAiClient huggingfaceAiClient;

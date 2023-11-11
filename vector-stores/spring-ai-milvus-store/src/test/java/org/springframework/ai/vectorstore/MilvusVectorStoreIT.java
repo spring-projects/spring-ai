@@ -20,6 +20,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.milvus.client.MilvusServiceClient;
@@ -99,7 +100,7 @@ public class MilvusVectorStoreIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "L2", "IP" })
-	public void addAndSearchTest(String metricType) {
+	public void addAndSearch(String metricType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
@@ -131,8 +132,50 @@ public class MilvusVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "L2" })
+	// @ValueSource(strings = { "IP", "L2" })
+	public void searchWithFilters(String metricType) throws InterruptedException {
+
+		// https://milvus.io/docs/json_data_type.md
+
+		final double THRESHOLD_ALL = 0.0;
+
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
+
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				List<Document> results = vectorStore.similaritySearch("The World", 5);
+				assertThat(results).hasSize(3);
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'NL'");
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'BG'");
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+
+				results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL,
+						"country == 'BG' && year == 2020");
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+			});
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "L2", "IP" })
-	public void documentUpdateTest(String metricType) {
+	public void documentUpdate(String metricType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)
@@ -178,7 +221,7 @@ public class MilvusVectorStoreIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "L2", "IP" })
-	public void searchThresholdTest(String metricType) {
+	public void searchWithThreshold(String metricType) {
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType)

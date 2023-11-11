@@ -4,6 +4,16 @@ HuggingFace Inference Endpoints allow you to deploy and serve machine learning m
 
 ## Prerequisites
 
+Add the `spring-ai-huggingface` dependency:
+
+```xml
+<dependency>
+   <groupId>org.springframework.experimental.ai</groupId>
+   <artifactId>spring-ai-huggingface</artifactId>
+   <version>0.7.0-SNAPSHOT</version>
+</dependency>
+```
+
 You should get your HuggingFace API key and set it as an environment variable
 
 ```shell

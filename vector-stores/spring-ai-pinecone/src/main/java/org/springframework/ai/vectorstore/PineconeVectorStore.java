@@ -36,7 +36,10 @@ import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * A VectorStore implementation backed by Pinecone, a cloud-based vector database. This
@@ -52,6 +55,8 @@ public class PineconeVectorStore implements VectorStore {
 	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
 
 	private static final Double SIMILARITY_THRESHOLD_ALL = 0.0;
+
+	public final PineconeFilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
 	private final EmbeddingClient embeddingClient;
 
@@ -339,16 +344,30 @@ public class PineconeVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
 
+		return internalSimilaritySearch(query, topK, similarityThreshold, "");
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
+		String pgVectorFilterExpression = this.filterExpressionConverter.convert(filterExpression);
+		return this.internalSimilaritySearch(query, k, threshold, pgVectorFilterExpression);
+	}
+
+	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold, String filters) {
+
 		List<Double> queryEmbedding = this.embeddingClient.embed(query);
 
-		QueryRequest queryRequest = QueryRequest.newBuilder()
+		var queryRequestBuilder = QueryRequest.newBuilder()
 			.addAllVector(toFloatList(queryEmbedding))
 			.setTopK(topK)
 			.setIncludeMetadata(true)
-			.setNamespace(this.pineconeNamespace)
-			.build();
+			.setNamespace(this.pineconeNamespace);
 
-		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequest);
+		if (StringUtils.hasText(filters)) {
+			queryRequestBuilder.setFilter(metadataFiltersToStruct(filters));
+		}
+
+		QueryResponse queryResponse = this.pineconeConnection.getBlockingStub().query(queryRequestBuilder.build());
 
 		return queryResponse.getMatchesList()
 			.stream()
@@ -362,6 +381,18 @@ public class PineconeVectorStore implements VectorStore {
 				return new Document(id, content, metadata);
 			})
 			.toList();
+	}
+
+	private Struct metadataFiltersToStruct(String metadataFilters) {
+		try {
+			var structBuilder = Struct.newBuilder();
+			JsonFormat.parser().ignoringUnknownFields().merge(metadataFilters, structBuilder);
+			var filterStruct = structBuilder.build();
+			return filterStruct;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
