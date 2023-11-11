@@ -259,6 +259,11 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
+		if (request.getFilterExpression() != null) {
+			throw new UnsupportedOperationException(
+					"The [" + this.getClass() + "] doesn't support metadata filtering!");
+		}
+
 		Assert.isTrue(request.getTopK() > 0, "The number of documents to returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");

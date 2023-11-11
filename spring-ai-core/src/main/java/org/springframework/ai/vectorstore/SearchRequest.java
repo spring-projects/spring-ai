@@ -23,17 +23,31 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
 
 /**
+ * Similarity search request builder. Use the {@link #query(String)}, {@link #defaults()}
+ * or {@link #from(SearchRequest)} factory methods to create a new {@link SearchRequest}
+ * instance and then apply the 'with' methods to alter the default values.
+ *
  * @author Christian Tzolov
  */
 public class SearchRequest {
 
-	public static final double SIMILARITY_THRESHOLD_ALL = 0.0;
+	/**
+	 * Similarity threshold that accepts all search scores. A threshold value of 0.0 means
+	 * any similarity is accepted or disable the similarity threshold filtering. A
+	 * threshold value of 1.0 means an exact match is required.
+	 */
+	public static final double SIMILARITY_THRESHOLD_ACCEPT_ALL = 0.0;
 
-	public final String query;
+	/**
+	 * Default value for the top 'k' similar results to return.
+	 */
+	public static final int DEFAULT_TOP_K = 4;
 
-	private int topK = 4;
+	public String query;
 
-	private double similarityThreshold = SIMILARITY_THRESHOLD_ALL;
+	private int topK = DEFAULT_TOP_K;
+
+	private double similarityThreshold = SIMILARITY_THRESHOLD_ACCEPT_ALL;
 
 	private Filter.Expression filterExpression;
 
@@ -42,12 +56,45 @@ public class SearchRequest {
 	}
 
 	/**
+	 * Create a new {@link SearchRequest} builder instance with specified embedding query
+	 * string.
 	 * @param query Text to use for embedding similarity comparison.
-	 * @return Returns {@link SearchRequest} builder instance.
+	 * @return Returns new {@link SearchRequest} builder instance.
 	 */
 	public static SearchRequest query(String query) {
 		Assert.notNull(query, "Query can not be null.");
 		return new SearchRequest(query);
+	}
+
+	/**
+	 * Create a new {@link SearchRequest} builder instance with an empty embedding query
+	 * string. Use the {@link #withQuery(String query)} to set/update the embedding query
+	 * text.
+	 * @return Returns new {@link SearchRequest} builder instance.
+	 */
+	public static SearchRequest defaults() {
+		return new SearchRequest("");
+	}
+
+	/**
+	 * Copy an existing {@link SearchRequest} instance.
+	 * @param originalSearchRequest {@link SearchRequest} instance to copy.
+	 * @return Returns new {@link SearchRequest} builder instance.
+	 */
+	public static SearchRequest from(SearchRequest originalSearchRequest) {
+		return new SearchRequest(originalSearchRequest.getQuery()).withTopK(originalSearchRequest.getTopK())
+			.withSimilarityThreshold(originalSearchRequest.getSimilarityThreshold())
+			.withFilterExpression(originalSearchRequest.getFilterExpression());
+	}
+
+	/**
+	 * @param query Text to use for embedding similarity comparison.
+	 * @return this builder.
+	 */
+	public SearchRequest withQuery(String query) {
+		Assert.notNull(query, "Query can not be null.");
+		this.query = query;
+		return this;
 	}
 
 	/**
@@ -63,7 +110,9 @@ public class SearchRequest {
 	/**
 	 * Similarity threshold score to filter the search response by. Only documents with
 	 * similarity score equal or greater than the 'threshold' will be returned. Note that
-	 * this is a post processing step performed on the client not the server side.
+	 * this is a post processing step performed on the client not the server side. A
+	 * threshold value of 0.0 means any similarity is accepted or disable the similarity
+	 * threshold filtering. A threshold value of 1.0 means an exact match is required.
 	 * @param threshold The lower bound of the similarity score.
 	 * @return this builder.
 	 */
@@ -74,16 +123,17 @@ public class SearchRequest {
 	}
 
 	/**
-	 * Sets disables the similarity threshold by setting it to 0. All results are
-	 * acceptable.
+	 * Sets disables the similarity threshold by setting it to 0.0 - all results are
+	 * accepted.
 	 * @return this builder.
 	 */
 	public SearchRequest withSimilarityThresholdAll() {
-		return withSimilarityThreshold(SIMILARITY_THRESHOLD_ALL);
+		return withSimilarityThreshold(SIMILARITY_THRESHOLD_ACCEPT_ALL);
 	}
 
 	/**
-	 * Retrieves documents by query embedding similarity and matching the filters.
+	 * Retrieves documents by query embedding similarity and matching the filters. Value
+	 * of 'null' means that no metadata filters will be applied to the search.
 	 *
 	 * For example if the {@link Document#getMetadata()} schema is:
 	 *
@@ -117,10 +167,10 @@ public class SearchRequest {
 	 * <pre>{@code
 	 * var b = new FilterExpressionBuilder();
 	 * var exp = b.and(
-	 *              b.eq("country", "UK"),
-	 *              b.and(
-	 *                 b.gte("year", 2020),
-	 *                 b.eq("isActive", true)));
+	 * 		b.eq("country", "UK"),
+	 * 		b.and(
+	 * 			b.gte("year", 2020),
+	 * 			b.eq("isActive", true)));
 	 * }</pre>
 	 *
 	 * The {@link FilterExpressionTextParser} converts textual, SQL like filter expression
@@ -131,11 +181,10 @@ public class SearchRequest {
 	 * var exp = parser.parse("country == 'UK' && isActive == true && year >=2020");
 	 * }</pre>
 	 * @param expression {@link Filter.Expression} instance used to define the metadata
-	 * filter criteria.
+	 * filter criteria. The 'null' value stands for no expression filters.
 	 * @return this builder.
 	 */
 	public SearchRequest withFilterExpression(Filter.Expression expression) {
-		Assert.notNull(expression, "Filter expression can not be null!");
 		this.filterExpression = expression;
 		return this;
 	}
@@ -170,12 +219,12 @@ public class SearchRequest {
 	 *
 	 * The {@link FilterExpressionTextParser} is used to convert the text filter
 	 * expression into {@link Filter.Expression}.
-	 * @param textExpression declarative, portable, SQL like, metadata filter syntax.
+	 * @param textExpression declarative, portable, SQL like, metadata filter syntax. The
+	 * 'null' value stands for no expression filters.
 	 * @return this.builder
 	 */
 	public SearchRequest withFilterExpression(String textExpression) {
-		Assert.notNull(textExpression, "Filter expression can not be null!");
-		this.filterExpression = Filter.parser().parse(textExpression);
+		this.filterExpression = (textExpression != null) ? Filter.parser().parse(textExpression) : null;
 		return this;
 	}
 
@@ -193,6 +242,10 @@ public class SearchRequest {
 
 	public Filter.Expression getFilterExpression() {
 		return filterExpression;
+	}
+
+	public boolean hasFilterExpression() {
+		return this.filterExpression != null;
 	}
 
 }

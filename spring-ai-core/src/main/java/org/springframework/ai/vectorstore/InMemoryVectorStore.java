@@ -49,7 +49,7 @@ public class InMemoryVectorStore implements VectorStore {
 	public List<Document> similaritySearch(SearchRequest request) {
 		if (request.getFilterExpression() != null) {
 			throw new UnsupportedOperationException(
-					"The [" + this.getClass() + "] doesn't support filter expressions!");
+					"The [" + this.getClass() + "] doesn't support metadata filtering!");
 		}
 
 		List<Double> userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
