@@ -1,11 +1,15 @@
 package org.springframework.ai.vectorstore;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import com.theokanning.openai.client.OpenAiApi;
+import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -13,12 +17,14 @@ import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -29,8 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Gerrit Meier
  * @author Michael Simons
+ * @author Christian Tzolov
  */
 @Testcontainers
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class Neo4jVectorStoreIT {
 
 	// Neo4j 5.12 has a bug wrt checking limits, so either 5.11 or anything higher than
@@ -48,8 +56,7 @@ class Neo4jVectorStoreIT {
 					Collections.singletonMap("meta2", "meta2")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withUserConfiguration(TestApplication.class);
 
 	@BeforeEach
 	void cleanDatabase() {
@@ -59,7 +66,7 @@ class Neo4jVectorStoreIT {
 
 	@Test
 	void addAndSearchTest() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -86,7 +93,7 @@ class Neo4jVectorStoreIT {
 	@Test
 	void documentUpdateTest() {
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -125,7 +132,7 @@ class Neo4jVectorStoreIT {
 	@Test
 	void searchThresholdTest() {
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -199,6 +206,20 @@ class Neo4jVectorStoreIT {
 		public Driver driver() {
 			return GraphDatabase.driver(neo4jContainer.getBoltUrl(),
 					AuthTokens.basic("neo4j", neo4jContainer.getAdminPassword()));
+		}
+
+		@Bean
+		public EmbeddingClient embeddingClient() {
+
+			Retrofit retrofit = new Retrofit.Builder().baseUrl("https://api.openai.com")
+				.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
+				.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
+				.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+				.build();
+
+			OpenAiApi api = retrofit.create(OpenAiApi.class);
+
+			return new OpenAiEmbeddingClient(new OpenAiService(api), "text-embedding-ada-002");
 		}
 
 	}

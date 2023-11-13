@@ -101,11 +101,23 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	}
 
+	/**
+	 * Defaults to CosineDistance. But if vectors are normalized to length 1 (like OpenAI
+	 * embeddings), use inner product (NegativeInnerProduct) for best performance.
+	 */
 	public enum PgDistanceType {
 
+		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// embeddings), use inner product for best performance.
+		// The Sentence transformers are NOT normalized:
+		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EuclideanDistance("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
+		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// embeddings), use inner product for best performance.
+		// The Sentence transformers are NOT normalized:
+		// https://github.com/UKPLab/sentence-transformers/issues/233
 		NegativeInnerProduct("<#>", "vector_ip_ops",
 				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 

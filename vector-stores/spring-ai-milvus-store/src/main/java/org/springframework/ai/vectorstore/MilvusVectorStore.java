@@ -149,7 +149,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 			private IndexType indexType = IndexType.IVF_FLAT;
 
-			private MetricType metricType = MetricType.L2;
+			private MetricType metricType = MetricType.COSINE;
 
 			private String indexParameters = "{\"nlist\":1024}";
 
@@ -158,13 +158,14 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 			/**
 			 * Configures the Milvus metric type to use. Leave {@literal null} or blank to
-			 * use the metric metric.
+			 * use the metric metric: https://milvus.io/docs/metric.md#floating
 			 * @param metricType the metric type to use
 			 * @return this builder
 			 */
 			public Builder withMetricType(MetricType metricType) {
 				Assert.notNull(metricType, "Collection Name must not be empty");
-				Assert.isTrue(metricType == MetricType.IP || metricType == MetricType.L2,
+				Assert.isTrue(
+						metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
 						"Only the text metric types IP and L2 are supported");
 
 				this.metricType = metricType;
@@ -350,7 +351,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		SearchResultsWrapper wrapperSearch = new SearchResultsWrapper(respSearch.getData().getResults());
 
-		return wrapperSearch.getRowRecords()
+		return wrapperSearch.getRowRecords(0)
 			.stream()
 			.filter(rowRecord -> getResultSimilarity(rowRecord) >= request.getSimilarityThreshold())
 			.map(rowRecord -> {
@@ -366,7 +367,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private float getResultSimilarity(RowRecord rowRecord) {
 		Float distance = (Float) rowRecord.get(DISTANCE_FIELD_NAME);
-		return (this.config.metricType == MetricType.IP) ? distance : (1 - distance);
+		return (this.config.metricType == MetricType.IP || this.config.metricType == MetricType.COSINE) ? distance
+				: (1 - distance);
 	}
 
 	private List<Float> toFloatList(List<Double> embeddingDouble) {
