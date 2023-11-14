@@ -17,7 +17,11 @@
 package org.springframework.ai.azure.openai.client;
 
 import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.models.*;
+import com.azure.ai.openai.models.ChatChoice;
+import com.azure.ai.openai.models.ChatCompletions;
+import com.azure.ai.openai.models.ChatCompletionsOptions;
+import com.azure.ai.openai.models.ChatMessage;
+import com.azure.ai.openai.models.ChatRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
@@ -31,83 +35,102 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementation of {@link AiClient} backed by an OpenAiService
+ * {@link AiClient} implementation for {@literal Microsoft Azure AI} backed by
+ * {@link OpenAIClient}.
+ *
+ * @author Mark Pollack
+ * @author Ueibin Kim
+ * @author John Blum
+ * @see org.springframework.ai.client.AiClient
+ * @see com.azure.ai.openai.OpenAIClient
  */
 public class AzureOpenAiClient implements AiClient {
-
-	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiClient.class);
-
-	private final OpenAIClient msoftOpenAiClient;
 
 	private Double temperature = 0.7;
 
 	private String model = "gpt-35-turbo";
 
-	public AzureOpenAiClient(OpenAIClient msoftOpenAiClient) {
-		Assert.notNull(msoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
-		this.msoftOpenAiClient = msoftOpenAiClient;
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private final OpenAIClient msoftOpenAiClient;
+
+	public AzureOpenAiClient(OpenAIClient microsoftOpenAiClient) {
+		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
+		this.msoftOpenAiClient = microsoftOpenAiClient;
 	}
 
-	@Override
-	public String generate(String text) {
-		ChatMessage azureChatMessage = new ChatMessage(ChatRole.USER, text);
-
-		ChatCompletionsOptions options = new ChatCompletionsOptions(List.of(azureChatMessage));
-		options.setTemperature(this.getTemperature());
-		options.setModel(this.getModel());
-
-		logger.trace("Azure Chat Message: ", azureChatMessage);
-		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
-		logger.trace("Azure ChatCompletions: ", chatCompletions);
-		StringBuilder sb = new StringBuilder();
-		for (ChatChoice choice : chatCompletions.getChoices()) {
-			if (choice.getMessage() != null && choice.getMessage().getContent() != null) {
-				sb.append(choice.getMessage().getContent());
-			}
-		}
-		return sb.toString();
+	public String getModel() {
+		return this.model;
 	}
 
-	@Override
-	public AiResponse generate(Prompt prompt) {
-		List<Message> messages = prompt.getMessages();
-		List<ChatMessage> azureMessages = new ArrayList<>();
-		for (Message message : messages) {
-			String messageType = message.getMessageTypeValue();
-			ChatRole chatRole = ChatRole.fromString(messageType);
-			azureMessages.add(new ChatMessage(chatRole, message.getContent()));
-		}
-		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
-		options.setTemperature(this.getTemperature());
-		options.setModel(this.getModel());
-		logger.trace("Azure ChatCompletionsOptions: ", options);
-		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
-		logger.trace("Azure ChatCompletions: ", chatCompletions);
-		List<Generation> generations = new ArrayList<>();
-		for (ChatChoice choice : chatCompletions.getChoices()) {
-			ChatMessage choiceMessage = choice.getMessage();
-			// TODO investigate mapping of additional metadata/runtime info to the
-			// general model.
-			Generation generation = new Generation(choiceMessage.getContent());
-			generations.add(generation);
-		}
-		return new AiResponse(generations);
+	public void setModel(String model) {
+		this.model = model;
 	}
 
 	public Double getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
-	public String getModel() {
-		return model;
+	@Override
+	public String generate(String text) {
+
+		ChatMessage azureChatMessage = new ChatMessage(ChatRole.USER, text);
+
+		ChatCompletionsOptions options = new ChatCompletionsOptions(List.of(azureChatMessage));
+		options.setTemperature(this.getTemperature());
+		options.setModel(this.getModel());
+		logger.trace("Azure Chat Message: {}", azureChatMessage);
+
+		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		logger.trace("Azure ChatCompletions: {}", chatCompletions);
+
+		StringBuilder stringBuilder = new StringBuilder();
+
+		for (ChatChoice choice : chatCompletions.getChoices()) {
+			ChatMessage message = choice.getMessage();
+			if (message != null && message.getContent() != null) {
+				stringBuilder.append(message.getContent());
+			}
+		}
+
+		return stringBuilder.toString();
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	@Override
+	public AiResponse generate(Prompt prompt) {
+
+		List<Message> messages = prompt.getMessages();
+		List<ChatMessage> azureMessages = new ArrayList<>();
+
+		for (Message message : messages) {
+			String messageType = message.getMessageTypeValue();
+			ChatRole chatRole = ChatRole.fromString(messageType);
+			azureMessages.add(new ChatMessage(chatRole, message.getContent()));
+		}
+
+		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
+		options.setTemperature(this.getTemperature());
+		options.setModel(this.getModel());
+		logger.trace("Azure ChatCompletionsOptions: {}", options);
+
+		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		logger.trace("Azure ChatCompletions: {}", chatCompletions);
+
+		List<Generation> generations = new ArrayList<>();
+
+		for (ChatChoice choice : chatCompletions.getChoices()) {
+			ChatMessage choiceMessage = choice.getMessage();
+			// TODO investigate mapping of additional metadata/runtime info to the general
+			// model.
+			Generation generation = new Generation(choiceMessage.getContent());
+			generations.add(generation);
+		}
+
+		return new AiResponse(generations);
 	}
 
 }
