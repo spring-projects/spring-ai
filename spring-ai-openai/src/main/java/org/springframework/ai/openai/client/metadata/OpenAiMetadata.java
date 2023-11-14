@@ -21,6 +21,7 @@ import com.theokanning.openai.completion.chat.ChatCompletionResult;
 import org.springframework.ai.client.metadata.AiMetadata;
 import org.springframework.ai.client.metadata.RateLimit;
 import org.springframework.ai.client.metadata.Usage;
+import org.springframework.ai.openai.client.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -28,6 +29,9 @@ import org.springframework.util.Assert;
  * {@link AiMetadata} implementation for {@literal OpenAI}.
  *
  * @author John Blum
+ * @see org.springframework.ai.client.metadata.AiMetadata
+ * @see org.springframework.ai.client.metadata.RateLimit
+ * @see org.springframework.ai.client.metadata.Usage
  * @since 0.7.0
  */
 public class OpenAiMetadata implements AiMetadata {
@@ -36,7 +40,9 @@ public class OpenAiMetadata implements AiMetadata {
 
 	public static OpenAiMetadata from(ChatCompletionResult result) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
-		return new OpenAiMetadata(result.getId(), OpenAiUsage.from(result.getUsage()));
+		OpenAiMetadata metadata = new OpenAiMetadata(result.getId(), OpenAiUsage.from(result.getUsage()));
+		OpenAiHttpResponseHeadersInterceptor.applyTo(metadata);
+		return metadata;
 	}
 
 	private final String id;

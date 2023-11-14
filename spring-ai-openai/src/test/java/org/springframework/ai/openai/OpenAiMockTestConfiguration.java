@@ -76,7 +76,8 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
  *
  * @author John Blum
  * @see okhttp3.mockwebserver.Dispatcher
- * @see okhttp3.mockwebserver.MockResponse
+ * @see okhttp3.mockwebserver.MockWebServer
+ * @see org.springframework.boot.SpringBootConfiguration
  * @see org.springframework.test.web.servlet.MockMvc
  * @since 0.7.0
  */
@@ -100,7 +101,7 @@ public class OpenAiMockTestConfiguration {
 	OpenAiService theoOpenAiService(MockWebServer webServer) {
 
 		String apiKey = UUID.randomUUID().toString();
-		Duration timeout = Duration.ofMinutes(5);
+		Duration timeout = Duration.ofSeconds(60);
 
 		ObjectMapper objectMapper = OpenAiService.defaultObjectMapper();
 

@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.metadata.RateLimit;
 import org.springframework.ai.openai.client.metadata.OpenAiMetadata;
 import org.springframework.ai.openai.client.metadata.OpenAiRateLimit;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -54,6 +55,7 @@ import okhttp3.ResponseBody;
  * from {@literal OpenAI} API.
  *
  * @author John Blum
+ * @see okhttp3.Interceptor
  * @since 0.7.0
  */
 public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
@@ -121,8 +123,11 @@ public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
 	private String parseAiResponseId(Response response) {
 
 		try {
-			ResponseBody responseBody = response.body();
-			return responseBody != null ? JsonPath.with(responseBody.string()).getString("id") : null;
+			long contentLength = resolveContentLength(response);
+			ResponseBody responseBody = response.peekBody(contentLength);
+			String bodyContent = responseBody.string();
+			String id = JsonPath.with(bodyContent).getString("id");
+			return id;
 		}
 		catch (Exception e) {
 			getLogger().warn("Unable to get AI response body as a String: {}", e.getMessage());
@@ -143,6 +148,10 @@ public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
 		}
 
 		return null;
+	}
+
+	private long resolveContentLength(Response response) {
+		return getHeaderAsLong(response, HttpHeaders.CONTENT_LENGTH);
 	}
 
 	enum DurationFormatter {
