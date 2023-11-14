@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Raphael Yu
  * @author Dingmeng Xue
  * @author Mark Pollack
+ * @author Christian Tzolov
  */
 public class InMemoryVectorStore implements VectorStore {
 
@@ -45,36 +46,23 @@ public class InMemoryVectorStore implements VectorStore {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return similaritySearch(query, 4);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
+		if (request.getFilterExpression() != null) {
+			throw new UnsupportedOperationException(
+					"The [" + this.getClass() + "] doesn't support metadata filtering!");
+		}
 
-	@Override
-	public List<Document> similaritySearch(String query, int k) {
-		List<Double> userQueryEmbedding = getUserQueryEmbedding(query);
+		List<Double> userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		var similarities = this.store.values()
 			.stream()
 			.map(entry -> new Similarity(entry.getId(),
 					EmbeddingMath.cosineSimilarity(userQueryEmbedding, entry.getEmbedding())))
+			.filter(s -> s.similarity >= request.getSimilarityThreshold())
 			.sorted(Comparator.<Similarity>comparingDouble(s -> s.similarity).reversed())
-			.limit(k)
-			.map(s -> store.get(s.key))
+			.limit(request.getTopK())
+			.map(s -> this.store.get(s.key))
 			.toList();
-		return similarities;
-	}
 
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold) {
-		List<Double> userQueryEmbedding = getUserQueryEmbedding(query);
-		var similarities = this.store.values()
-			.stream()
-			.map(entry -> new Similarity(entry.getId(),
-					EmbeddingMath.cosineSimilarity(userQueryEmbedding, entry.getEmbedding())))
-			.filter(s -> s.similarity >= threshold)
-			.sorted(Comparator.<Similarity>comparingDouble(s -> s.similarity).reversed())
-			.limit(k)
-			.map(s -> store.get(s.key))
-			.toList();
 		return similarities;
 	}
 

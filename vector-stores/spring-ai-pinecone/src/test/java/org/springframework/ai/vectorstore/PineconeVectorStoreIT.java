@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,15 +30,16 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
+import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.TransformersEmbeddingClient;
 import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,7 +49,6 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Christian Tzolov
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class PineconeVectorStoreIT {
 
 	// Replace the PINECONE_ENVIRONMENT, PINECONE_PROJECT_ID, PINECONE_INDEX_NAME and
@@ -61,16 +63,22 @@ public class PineconeVectorStoreIT {
 	private static final String PINECONE_NAMESPACE = "";
 
 	List<Document> documents = List.of(
-			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
-					Collections.singletonMap("meta1", "meta1")),
-			new Document("Hello World Hello World Hello World Hello World Hello World Hello World Hello World"),
-			new Document(
-					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
-					Collections.singletonMap("meta2", "meta2")));
+			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+
+	public static String getText(String uri) {
+		var resource = new DefaultResourceLoader().getResource(uri);
+		try {
+			return resource.getContentAsString(StandardCharsets.UTF_8);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withUserConfiguration(TestApplication.class);
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -82,23 +90,22 @@ public class PineconeVectorStoreIT {
 	@Test
 	public void addAndSearchTest() {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			vectorStore.add(documents);
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Great", 1);
+				return vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 			}, hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch("Great", 1);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
-					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
+			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
@@ -107,7 +114,7 @@ public class PineconeVectorStoreIT {
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Hello", 1);
+				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));
 		});
 	}
@@ -118,9 +125,7 @@ public class PineconeVectorStoreIT {
 		// Pinecone metadata filtering syntax:
 		// https://docs.pinecone.io/docs/metadata-filtering
 
-		final double THRESHOLD_ALL = 0.0;
-
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -131,18 +136,24 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
+			SearchRequest searchRequest = SearchRequest.query("The World");
+
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("The World", 1);
+				return vectorStore.similaritySearch(searchRequest.withTopK(1));
 			}, hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch("The World", 5);
+			List<Document> results = vectorStore.similaritySearch(searchRequest.withTopK(5));
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Bulgaria'");
+			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'Bulgaria'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Netherland'");
+			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'Netherland'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
@@ -150,7 +161,7 @@ public class PineconeVectorStoreIT {
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("The World", 1);
+				return vectorStore.similaritySearch(searchRequest.withTopK(1));
 			}, hasSize(0));
 		});
 	}
@@ -159,7 +170,7 @@ public class PineconeVectorStoreIT {
 	public void documentUpdateTest() {
 
 		// Note ,using OpenAI to calculate embeddings
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -168,11 +179,13 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
+			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
+
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Spring", 5);
+				return vectorStore.similaritySearch(springSearchRequest);
 			}, hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -187,11 +200,13 @@ public class PineconeVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
+			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
+
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("FooBar", 5).get(0).getContent();
+				return vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent();
 			}, equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
-			results = vectorStore.similaritySearch("FooBar", 5);
+			results = vectorStore.similaritySearch(fooBarSearchRequest);
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -203,7 +218,7 @@ public class PineconeVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(List.of(document.getId()));
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("FooBar", 1);
+				return vectorStore.similaritySearch(fooBarSearchRequest);
 			}, hasSize(0));
 
 		});
@@ -212,17 +227,19 @@ public class PineconeVectorStoreIT {
 	@Test
 	public void searchThresholdTest() {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			vectorStore.add(documents);
 
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Great", 5);
+				return vectorStore
+					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll());
 			}, hasSize(3));
 
-			List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 0.0);
+			List<Document> fullResult = vectorStore
+				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThresholdAll());
 
 			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
 
@@ -230,20 +247,20 @@ public class PineconeVectorStoreIT {
 
 			float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - threshold));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThreshold(1 - threshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getContent()).isEqualTo(
-					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
+			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await().until(() -> {
-				return vectorStore.similaritySearch("Hello", 1);
+				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));
 		});
 	}
@@ -267,6 +284,11 @@ public class PineconeVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingClient embeddingClient) {
 			return new PineconeVectorStore(config, embeddingClient);
+		}
+
+		@Bean
+		public EmbeddingClient embeddingClient() {
+			return new TransformersEmbeddingClient();
 		}
 
 	}

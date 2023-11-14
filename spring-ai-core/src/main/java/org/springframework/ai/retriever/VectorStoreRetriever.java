@@ -1,12 +1,13 @@
 package org.springframework.ai.retriever;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentRetriever;
-import org.springframework.ai.vectorstore.VectorStore;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentRetriever;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 
 public class VectorStoreRetriever implements DocumentRetriever {
 
@@ -47,12 +48,13 @@ public class VectorStoreRetriever implements DocumentRetriever {
 
 	@Override
 	public List<Document> retrieve(String query) {
+
+		SearchRequest request = SearchRequest.query(query).withTopK(this.k);
 		if (threshold.isPresent()) {
-			return this.vectorStore.similaritySearch(query, this.k, this.threshold.get());
+			request.withSimilarityThreshold(this.threshold.get());
 		}
-		else {
-			return this.vectorStore.similaritySearch(query, this.k);
-		}
+
+		return this.vectorStore.similaritySearch(request);
 	}
 
 }

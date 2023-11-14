@@ -1,11 +1,15 @@
 package org.springframework.ai.vectorstore;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import com.theokanning.openai.client.OpenAiApi;
+import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -13,12 +17,14 @@ import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -29,8 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Gerrit Meier
  * @author Michael Simons
+ * @author Christian Tzolov
  */
 @Testcontainers
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class Neo4jVectorStoreIT {
 
 	// Neo4j 5.12 has a bug wrt checking limits, so either 5.11 or anything higher than
@@ -48,8 +56,7 @@ class Neo4jVectorStoreIT {
 					Collections.singletonMap("meta2", "meta2")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withUserConfiguration(TestApplication.class);
 
 	@BeforeEach
 	void cleanDatabase() {
@@ -59,13 +66,13 @@ class Neo4jVectorStoreIT {
 
 	@Test
 	void addAndSearchTest() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			vectorStore.add(this.documents);
 
-			List<Document> results = vectorStore.similaritySearch("Great", 1);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -78,7 +85,7 @@ class Neo4jVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
-			List<Document> results2 = vectorStore.similaritySearch("Great", 1);
+			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).isEmpty();
 		});
 	}
@@ -86,7 +93,7 @@ class Neo4jVectorStoreIT {
 	@Test
 	void documentUpdateTest() {
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -95,7 +102,7 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -110,7 +117,7 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch("FooBar", 5);
+			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -125,13 +132,14 @@ class Neo4jVectorStoreIT {
 	@Test
 	void searchThresholdTest() {
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			vectorStore.add(this.documents);
 
-			List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 0);
+			List<Document> fullResult = vectorStore
+				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThresholdAll());
 
 			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
 
@@ -139,7 +147,8 @@ class Neo4jVectorStoreIT {
 
 			float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch("Great", 5, 1 - threshold);
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Great").withTopK(5).withSimilarityThreshold(1 - threshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -197,6 +206,20 @@ class Neo4jVectorStoreIT {
 		public Driver driver() {
 			return GraphDatabase.driver(neo4jContainer.getBoltUrl(),
 					AuthTokens.basic("neo4j", neo4jContainer.getAdminPassword()));
+		}
+
+		@Bean
+		public EmbeddingClient embeddingClient() {
+
+			Retrofit retrofit = new Retrofit.Builder().baseUrl("https://api.openai.com")
+				.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
+				.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
+				.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+				.build();
+
+			OpenAiApi api = retrofit.create(OpenAiApi.class);
+
+			return new OpenAiEmbeddingClient(new OpenAiService(api), "text-embedding-ada-002");
 		}
 
 	}
