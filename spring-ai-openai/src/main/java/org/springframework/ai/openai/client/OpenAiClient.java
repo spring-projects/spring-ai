@@ -35,17 +35,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Implementation of {@link AiClient} backed by an {@link OpenAiService}.
+ * {@link AiClient} implementation for {@literal OpenAI} backed by {@link OpenAiService}.
+ *
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @author Ueibin Kim
+ * @author John Blum
+ * @see org.springframework.ai.client.AiClient
+ * @see com.theokanning.openai.service.OpenAiService
  */
 public class OpenAiClient implements AiClient {
-
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiClient.class);
 
 	// TODO how to set default options for the entire client
 	// TODO expose request options into Prompt API via PromptOptions
 	private Double temperature = 0.7;
 
 	private String model = "gpt-3.5-turbo";
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final OpenAiService openAiService;
 
@@ -54,20 +61,20 @@ public class OpenAiClient implements AiClient {
 		this.openAiService = openAiService;
 	}
 
-	public Double getTemperature() {
-		return temperature;
-	}
-
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	public Double getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
 	}
 
 	@Override
@@ -78,6 +85,7 @@ public class OpenAiClient implements AiClient {
 
 	@Override
 	public AiResponse generate(Prompt prompt) {
+
 		List<Message> messages = prompt.getMessages();
 
 		List<ChatMessage> theoMessages = messages.stream()
@@ -89,86 +97,95 @@ public class OpenAiClient implements AiClient {
 			.temperature(this.temperature)
 			.messages(theoMessages)
 			.build();
+
 		return getAiResponse(chatCompletionRequest);
 	}
 
 	private ChatCompletionRequest getChatCompletionRequest(String text) {
+
 		List<ChatMessage> chatMessages = List.of(new ChatMessage("user", text));
-		logger.trace("ChatMessages: ", chatMessages);
+		logger.trace("ChatMessages: {}", chatMessages);
+
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
 			.model(this.model)
 			.temperature(this.temperature)
 			.messages(List.of(new ChatMessage("user", text)))
 			.build();
-		logger.trace("ChatCompletionRequest: ", chatCompletionRequest);
+		logger.trace("ChatCompletionRequest: {}", chatCompletionRequest);
+
 		return chatCompletionRequest;
 	}
 
 	private AiResponse getAiResponse(ChatCompletionRequest chatCompletionRequest) {
+
 		List<Generation> generations = new ArrayList<>();
-		logger.trace("ChatMessages: ", chatCompletionRequest.getMessages());
+		logger.trace("ChatMessages: {}", chatCompletionRequest.getMessages());
+
 		List<ChatCompletionChoice> chatCompletionChoices = this.openAiService
 			.createChatCompletion(chatCompletionRequest)
 			.getChoices();
-		logger.trace("ChatCompletionChoice: ", chatCompletionChoices);
+		logger.trace("ChatCompletionChoice: {}", chatCompletionChoices);
+
 		for (ChatCompletionChoice chatCompletionChoice : chatCompletionChoices) {
 			ChatMessage chatMessage = chatCompletionChoice.getMessage();
-			// TODO investigate mapping of additional metadata/runtime info to the
-			// general model.
+			// TODO investigate mapping of additional metadata/runtime info to the general
+			// model.
 			Generation generation = new Generation(chatMessage.getContent(), Map.of("role", chatMessage.getRole()));
 			generations.add(generation);
 		}
+
 		return new AiResponse(generations);
 	}
 
 	private String getResponse(ChatCompletionRequest chatCompletionRequest) {
+
 		StringBuilder builder = new StringBuilder();
-		this.openAiService.createChatCompletion(chatCompletionRequest).getChoices().forEach(choice -> {
-			builder.append(choice.getMessage().getContent());
-		});
+
+		this.openAiService.createChatCompletion(chatCompletionRequest)
+			.getChoices()
+			.forEach(choice -> builder.append(choice.getMessage().getContent()));
 
 		String response = builder.toString();
+
 		return response;
 	}
 
 	private List<ChatCompletionRequest> getChatCompletionRequest(Prompt prompt) {
-		List<ChatCompletionRequest> chatCompletionRequests = new ArrayList<>();
 
 		List<ChatMessage> chatMessages = convertToChatMessages(prompt.getMessages());
+		List<ChatCompletionRequest> chatCompletionRequests = new ArrayList<>();
+
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
 			.model(this.model)
 			.temperature(this.temperature)
 			.messages(chatMessages)
 			.build();
+
 		chatCompletionRequests.add(chatCompletionRequest);
 
 		return chatCompletionRequests;
 	}
 
 	private List<ChatMessage> convertToChatMessages(List<Message> messages) {
+
 		List<ChatMessage> chatMessages = new ArrayList<>();
+
 		for (Message promptMessage : messages) {
-			switch (promptMessage.getMessageType()) {
-				case USER:
-					chatMessages.add(new ChatMessage(MessageType.USER.getValue(), promptMessage.getContent()));
-					break;
-				case ASSISTANT:
-					// TODO - valid?
-					chatMessages.add(new ChatMessage(MessageType.ASSISTANT.getValue(), promptMessage.getContent()));
-					break;
-				case SYSTEM:
-					chatMessages.add(new ChatMessage(MessageType.SYSTEM.getValue(), promptMessage.getContent()));
-					break;
-				case FUNCTION:
-					logger.error(
-							"Can not send a Spring AI Function MessageType to the ChatGPT API, use 'system', 'user' or 'ai' message types.");
-					break;
-				default:
-					logger.error("Unknown Spring AI Chat MessageType.  Use 'system', 'human' or 'ai' message types.");
-					break;
+			MessageType promptMessageType = promptMessage.getMessageType();
+			switch (promptMessageType) {
+				case USER, ASSISTANT, SYSTEM -> chatMessages.add(newChatMessage(promptMessage));
+				case FUNCTION -> logger.error(
+						"Cannot send a Spring AI Function MessageType to the ChatGPT API; use 'system', 'user' or 'ai' message types.");
+				default ->
+					logger.error("Unknown Spring AI Chat MessageType; use 'system', 'human' or 'ai' message types.");
 			}
 		}
+
 		return chatMessages;
+	}
+
+	private ChatMessage newChatMessage(Message message) {
+		return new ChatMessage(message.getMessageType().getValue(), message.getContent());
 	}
 
 }
