@@ -147,7 +147,7 @@ Consider the following examples:
 
 === Filter.Expression
 
-You can create an instance of `Filter.Expression` with a `FilterExpressionbuilder` that exposes a fluent API.
+You can create an instance of `Filter.Expression` with a `FilterExpressionBuilder` that exposes a fluent API.
 A simple example is as follows:
 
 [source, java]
