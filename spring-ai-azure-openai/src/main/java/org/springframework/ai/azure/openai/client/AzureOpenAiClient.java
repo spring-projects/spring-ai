@@ -24,6 +24,7 @@ import com.azure.ai.openai.models.ChatMessage;
 import com.azure.ai.openai.models.ChatRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.azure.openai.metadata.AzureOpenAiGenerationMetadata;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
@@ -124,13 +125,11 @@ public class AzureOpenAiClient implements AiClient {
 
 		for (ChatChoice choice : chatCompletions.getChoices()) {
 			ChatMessage choiceMessage = choice.getMessage();
-			// TODO investigate mapping of additional metadata/runtime info to the general
-			// model.
 			Generation generation = new Generation(choiceMessage.getContent());
 			generations.add(generation);
 		}
 
-		return new AiResponse(generations);
+		return new AiResponse(generations, AzureOpenAiGenerationMetadata.from(chatCompletions));
 	}
 
 }
