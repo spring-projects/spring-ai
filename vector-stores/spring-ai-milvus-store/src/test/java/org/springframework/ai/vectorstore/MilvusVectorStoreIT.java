@@ -310,11 +310,6 @@ public class MilvusVectorStoreIT {
 			return new OpenAiEmbeddingClient(new OpenAiService(api), "text-embedding-ada-002");
 		}
 
-		// @Bean
-		// public EmbeddingClient embeddingClient() {
-		// return new TransformersEmbeddingClient();
-		// }
-
 	}
 
 }

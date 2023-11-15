@@ -10,7 +10,7 @@ Add the `spring-ai-huggingface` dependency:
 <dependency>
    <groupId>org.springframework.experimental.ai</groupId>
    <artifactId>spring-ai-huggingface</artifactId>
-   <version>0.7.0-SNAPSHOT</version>
+   <version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
 

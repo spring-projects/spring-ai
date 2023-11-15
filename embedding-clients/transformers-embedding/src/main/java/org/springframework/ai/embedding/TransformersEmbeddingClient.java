@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import ai.djl.huggingface.tokenizers.Encoding;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
@@ -17,6 +18,8 @@ import ai.onnxruntime.OnnxValue;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -33,12 +36,14 @@ import org.springframework.util.StringUtils;
  */
 public class TransformersEmbeddingClient implements EmbeddingClient, InitializingBean {
 
+	private static final Log logger = LogFactory.getLog(TransformersEmbeddingClient.class);
+
 	// ONNX tokenizer for the all-MiniLM-L6-v2 model
-	private final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects-experimental/spring-ai/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
+	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects-experimental/spring-ai/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
 
 	// ONNX model for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-	private final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects-experimental/spring-ai/raw/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects-experimental/spring-ai/raw/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
 
 	private final static int EMBEDDING_AXIS = 1;
 
@@ -59,10 +64,19 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 	 */
 	private OrtEnvironment environment;
 
+	/**
+	 * Runtime session that wraps the ONNX model and enables inference calls.
+	 */
 	private OrtSession session;
 
 	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
+	/**
+	 * Specifies what parts of the {@link Document}'s content and metadata will be used
+	 * for computing the embeddings. Applicable for the {@link #embed(Document)} method
+	 * only. Has no effect on the {@link #embed(String)} or {@link #embed(List)}. Defaults
+	 * to {@link MetadataMode#NONE}.
+	 */
 	private final MetadataMode metadataMode;
 
 	/**
@@ -76,7 +90,15 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 	 */
 	private boolean disableCaching = false;
 
-	private ResourceCacheService cache;
+	/**
+	 * Cache service for caching large {@link Resource} contents, such as the
+	 * tokenizerResource and modelResource, on the local file system. Can be
+	 * enabled/disabled with the {@link #disableCaching} property and uses the
+	 * {@link #resourceCacheDirectory} for local storage.
+	 */
+	private ResourceCacheService cacheService;
+
+	public Map<String, String> tokenizerOptions = Map.of();
 
 	public TransformersEmbeddingClient() {
 		this(MetadataMode.NONE);
@@ -85,6 +107,10 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 	public TransformersEmbeddingClient(MetadataMode metadataMode) {
 		Assert.notNull(metadataMode, "Metadata mode should not be null");
 		this.metadataMode = metadataMode;
+	}
+
+	public void setTokenizerOptions(Map<String, String> tokenizerOptions) {
+		this.tokenizerOptions = tokenizerOptions;
 	}
 
 	public void setDisableCaching(boolean disableCaching) {
@@ -121,23 +147,32 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		this.cache = StringUtils.hasText(this.resourceCacheDirectory)
+
+		this.cacheService = StringUtils.hasText(this.resourceCacheDirectory)
 				? new ResourceCacheService(this.resourceCacheDirectory) : new ResourceCacheService();
+
+		// Create a pre-trained HuggingFaceTokenizer instance from tokenizerResource
+		// InputStream.
 		this.tokenizer = HuggingFaceTokenizer.newInstance(getCachedResource(this.tokenizerResource).getInputStream(),
-				Map.of());
+				this.tokenizerOptions);
+
+		// onnxruntime
 		this.environment = OrtEnvironment.getEnvironment();
 
 		var sessionOptions = new OrtSession.SessionOptions();
 		if (this.gpuDeviceId >= 0) {
-			// Run on a GPU or with another provider
-			sessionOptions.addCUDA(this.gpuDeviceId);
+			sessionOptions.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
+														// provider
 		}
 		this.session = this.environment.createSession(getCachedResource(this.modelResource).getContentAsByteArray(),
 				sessionOptions);
+
+		logger.info("Model input names: " + this.session.getInputNames().stream().collect(Collectors.joining(", ")));
+		logger.info("Model output names: " + this.session.getOutputNames().stream().collect(Collectors.joining(", ")));
 	}
 
 	private Resource getCachedResource(Resource resource) {
-		return this.disableCaching ? resource : this.cache.getCachedResource(resource);
+		return this.disableCaching ? resource : this.cacheService.getCachedResource(resource);
 	}
 
 	@Override
@@ -186,6 +221,9 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 			Map<String, OnnxTensor> modelInputs = Map.of("input_ids", inputIds, "attention_mask", attentionMask,
 					"token_type_ids", tokenTypeIds);
 
+			// The Run result object is AutoCloseable to prevent references from leaking
+			// out. Once the Result object is
+			// closed, all it’s child OnnxValues are closed too.
 			try (OrtSession.Result results = this.session.run(modelInputs)) {
 
 				// OnnxValue lastHiddenState = results.get(0);

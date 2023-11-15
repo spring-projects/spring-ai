@@ -34,9 +34,9 @@ Add the `transformers-embedding` project to your maven dependencies:
 
 ```xml
 <dependency>
-	<groupId>org.springframework.experimental.ai</groupId>
-	<artifactId>transformers-embedding</artifactId>
-	<version>0.7.1-SNAPSHOT</version>
+  <groupId>org.springframework.experimental.ai</groupId>
+  <artifactId>transformers-embedding</artifactId>
+  <version>0.7.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -51,8 +51,7 @@ If the model is not explicitly set, `TransformersEmbeddingClient` defaults to [s
 | Speed    | 14200 sentences/sec    |
 | Size    | 80MB    |
 
-
-Following snippet illustrates how to use the `TransformersEmbeddingClient`:
+Following snippet illustrates how to use the `TransformersEmbeddingClient` manually:
 
 ```java
 TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient();
@@ -73,14 +72,53 @@ List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "Wo
 
 ```
 
+Note that when created manually you have to call the `afterPropertiesSet()` after setting the properties and before using the client.
+
 The first `embed()` call downloads the the large ONNX model and caches it on the local file system.
 Therefore the first call might take longer than usual.
 Use the `#setResourceCacheDirectory(<path>)` to set the local folder where the ONNX models as stored.
 The default cache folder is `${java.io.tmpdir}/spring-ai-onnx-model`.
 
+It is more convenient (and preferred) to create the TransformersEmbeddingClient as a `Bean`.
+Then you don't have to call the `afterPropertiesSet()` manually.
 
+```java
+@Bean
+public EmbeddingClient embeddingClient() {
+   return new TransformersEmbeddingClient();
+}
+```
 
+## Transformers Embedding Spring Boot Starter.
 
+You can bootstrap and auto-wire the `TransformersEmbeddingClient` with following boot starer:
 
+```xml
+<dependency>
+   <groupId>org.springframework.experimental.ai</groupId>
+   <artifactId>spring-ai-transformers-embedding-spring-boot-starter</artifactId>
+   <version>0.7.1-SNAPSHOT</version>
+</dependency>
+```
 
+and use the `spring.ai.embedding.transformer.*` properties to configure it.
+
+For example add this to your application.properties to configure with the [intfloat/e5-small-v2](https://huggingface.co/intfloat/e5-small-v2) text embedding model:
+
+```
+spring.ai.embedding.transformer.onnx.modelUri=https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx
+spring.ai.embedding.transformer.tokenizer.uri=https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json
+```
+
+The complete list of supported properties are:
+
+| Property    | Description | Default |
+| -------- | ------- | ------- |
+| spring.ai.embedding.transformer.tokenizer.uri  | URI of a pre-trained HuggingFaceTokenizer created by the ONNX engine (e.g. tokenizer.json).   | onnx/all-MiniLM-L6-v2/tokenizer.json |
+| spring.ai.embedding.transformer.tokenizer.options  | HuggingFaceTokenizer options such as '`addSpecialTokens`', '`modelMaxLength`', '`truncation`', '`padding`', '`maxLength`', '`stride`' and '`padToMultipleOf`'. Leave empty to fallback to the defaults. | empty |
+| spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true |
+| spring.ai.embedding.transformer.cache.directory  | Directory path to cache remote resources, such as the ONNX models   | ${java.io.tmpdir}/spring-ai-onnx-model  |
+| spring.ai.embedding.transformer.onnx.modelUri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx |
+| spring.ai.embedding.transformer.onnx.gpuDeviceId  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise. |  -1 |
+| spring.ai.embedding.transformer.metadataMode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE |
 

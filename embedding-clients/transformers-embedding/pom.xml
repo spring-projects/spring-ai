@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>transformers-embedding</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Embedding Client - Sentence Transormers Embeddings </name>
-	<description>Spring AI Sentence Transformers Embedding Client</description>
+	<name>Spring AI Transormers Embedding Client</name>
+	<description>Spring AI Transformers Embedding Client</description>
 	<url>https://github.com/spring-projects-experimental/spring-ai</url>
 
 	<scm>
@@ -21,8 +21,8 @@
 	</scm>
 
 	<properties>
-		<djl.version>0.24.0</djl.version>
-		<onnxruntime.version>1.16.1</onnxruntime.version>
+		<djl.version>0.25.0</djl.version>
+		<onnxruntime.version>1.16.2</onnxruntime.version>
 	</properties>
 	<dependencies>
 		<dependency>
