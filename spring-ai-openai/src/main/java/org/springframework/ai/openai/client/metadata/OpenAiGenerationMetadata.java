@@ -71,15 +71,13 @@ public class OpenAiGenerationMetadata implements GenerationMetadata {
 	@Nullable
 	public RateLimit getRateLimit() {
 		RateLimit rateLimit = this.rateLimit;
-		Assert.state(rateLimit != null, "OpenAI rate limit metadata was not provided");
-		return rateLimit;
+		return rateLimit != null ? rateLimit : RateLimit.NULL;
 	}
 
 	@Override
 	public Usage getUsage() {
 		Usage usage = this.usage;
-		Assert.state(usage != null, "OpenAI usage metadata was not provided");
-		return usage;
+		return usage != null ? usage : Usage.NULL;
 	}
 
 	public OpenAiGenerationMetadata withRateLimit(RateLimit rateLimit) {

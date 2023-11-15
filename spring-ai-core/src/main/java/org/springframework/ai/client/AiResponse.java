@@ -32,7 +32,7 @@ public class AiResponse {
 	private final Map<String, Object> runInfo;
 
 	public AiResponse(List<Generation> generations) {
-		this(generations, Collections.emptyMap(), Collections.emptyMap(), GenerationMetadata.EMPTY);
+		this(generations, Collections.emptyMap(), Collections.emptyMap(), GenerationMetadata.NULL);
 	}
 
 	public AiResponse(List<Generation> generations, GenerationMetadata metadata) {
@@ -40,11 +40,11 @@ public class AiResponse {
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput) {
-		this(generations, providerOutput, Collections.emptyMap(), GenerationMetadata.EMPTY);
+		this(generations, providerOutput, Collections.emptyMap(), GenerationMetadata.NULL);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
-		this(generations, providerOutput, runInfo, GenerationMetadata.EMPTY);
+		this(generations, providerOutput, runInfo, GenerationMetadata.NULL);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo,

@@ -25,6 +25,9 @@ package org.springframework.ai.client.metadata;
  */
 public interface Usage {
 
+	Usage NULL = new AbstractUsage() {
+	};
+
 	/**
 	 * Returns the number of tokens used in the {@literal prompt} of the AI request.
 	 * @return an {@link Long} with the number of tokens used in the {@literal prompt} of

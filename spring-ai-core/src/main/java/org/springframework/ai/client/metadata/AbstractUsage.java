@@ -17,23 +17,21 @@
 package org.springframework.ai.client.metadata;
 
 /**
- * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
- * response.
+ * Abstract base class used as a foundation for implementing {@link Usage}.
  *
  * @author John Blum
  * @since 0.7.0
  */
-public interface GenerationMetadata {
+public abstract class AbstractUsage implements Usage {
 
-	GenerationMetadata NULL = new GenerationMetadata() {
-	};
-
-	default RateLimit getRateLimit() {
-		return RateLimit.NULL;
+	@Override
+	public Long getPromptTokens() {
+		return 0L;
 	}
 
-	default Usage getUsage() {
-		return Usage.NULL;
+	@Override
+	public Long getGenerationTokens() {
+		return 0L;
 	}
 
 }
