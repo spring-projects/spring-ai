@@ -16,21 +16,26 @@
 
 package org.springframework.experimental.ai.vectorstore;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import com.theokanning.openai.client.OpenAiApi;
+import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.experimental.ai.chroma.ChromaApi;
@@ -76,9 +81,7 @@ public class TokenSecuredChromaWhereIT {
 	@Test
 	public void withInFiltersExpressions1() {
 
-		final double THRESHOLD_ALL = 0.0;
-
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -102,7 +105,7 @@ public class TokenSecuredChromaWhereIT {
 	@Test
 	public void withInFiltersExpressions() {
 
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -150,6 +153,20 @@ public class TokenSecuredChromaWhereIT {
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi) {
 			return new ChromaVectorStore(embeddingClient, chromaApi, "TestCollection");
+		}
+
+		@Bean
+		public EmbeddingClient embeddingClient() {
+
+			Retrofit retrofit = new Retrofit.Builder().baseUrl("https://api.openai.com")
+				.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
+				.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
+				.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+				.build();
+
+			OpenAiApi api = retrofit.create(OpenAiApi.class);
+
+			return new OpenAiEmbeddingClient(new OpenAiService(api), "text-embedding-ada-002");
 		}
 
 	}
