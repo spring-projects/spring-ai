@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client.metadata;
+package org.springframework.ai.openai.metadata;
 
 import com.theokanning.openai.completion.chat.ChatCompletionResult;
 
-import org.springframework.ai.client.metadata.GenerationMetadata;
-import org.springframework.ai.client.metadata.RateLimit;
-import org.springframework.ai.client.metadata.Usage;
-import org.springframework.ai.openai.client.metadata.support.OpenAiHttpResponseHeadersInterceptor;
+import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.RateLimit;
+import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -29,9 +29,9 @@ import org.springframework.util.Assert;
  * {@link GenerationMetadata} implementation for {@literal OpenAI}.
  *
  * @author John Blum
- * @see GenerationMetadata
- * @see org.springframework.ai.client.metadata.RateLimit
- * @see org.springframework.ai.client.metadata.Usage
+ * @see org.springframework.ai.metadata.GenerationMetadata
+ * @see org.springframework.ai.metadata.RateLimit
+ * @see org.springframework.ai.metadata.Usage
  * @since 0.7.0
  */
 public class OpenAiGenerationMetadata implements GenerationMetadata {

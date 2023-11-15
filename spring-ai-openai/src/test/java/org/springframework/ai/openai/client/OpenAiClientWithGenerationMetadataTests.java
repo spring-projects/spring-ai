@@ -24,11 +24,11 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.metadata.GenerationMetadata;
-import org.springframework.ai.client.metadata.RateLimit;
-import org.springframework.ai.client.metadata.Usage;
+import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.RateLimit;
+import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.openai.OpenAiMockTestConfiguration;
-import org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders;
+import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;

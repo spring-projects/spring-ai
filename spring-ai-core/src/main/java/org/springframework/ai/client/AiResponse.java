@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.client;
 
-import org.springframework.ai.client.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 
 import java.util.Collections;
 import java.util.List;

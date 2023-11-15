@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client.metadata;
+package org.springframework.ai.metadata;
 
 import java.time.Duration;
 
@@ -53,6 +53,7 @@ public interface RateLimit {
 	 * to its {@link #getRequestsLimit() initial state}.
 	 * @return a {@link Duration} representing the time until the rate limit (based on
 	 * requests) resets to its {@link #getRequestsLimit() initial state}.
+	 * @see #getRequestsLimit()
 	 */
 	Duration getRequestsReset();
 
@@ -61,6 +62,7 @@ public interface RateLimit {
 	 * limit.
 	 * @return an {@link Long} with the maximum number of tokens that are permitted before
 	 * exhausting the rate limit.
+	 * @see #getTokensRemaining()
 	 */
 	Long getTokensLimit();
 
@@ -78,6 +80,7 @@ public interface RateLimit {
 	 * its {@link #getTokensLimit() initial state}.
 	 * @return a {@link Duration} with the time until the rate limit (based on tokens)
 	 * resets to its {@link #getTokensLimit() initial state}.
+	 * @see #getTokensLimit()
 	 */
 	Duration getTokensReset();
 

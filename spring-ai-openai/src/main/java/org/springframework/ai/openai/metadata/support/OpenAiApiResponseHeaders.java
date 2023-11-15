@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client.metadata.support;
+package org.springframework.ai.openai.metadata.support;
 
 /**
  * {@link Enum Enumeration} of {@literal OpenAI} API response headers.

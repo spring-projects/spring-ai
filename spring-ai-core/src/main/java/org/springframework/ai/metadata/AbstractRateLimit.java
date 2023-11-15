@@ -14,26 +14,46 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client.metadata;
+package org.springframework.ai.metadata;
+
+import java.time.Duration;
 
 /**
- * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
- * response.
+ * Abstract base class used as a foundation for implementing {@link RateLimit}.
  *
  * @author John Blum
  * @since 0.7.0
  */
-public interface GenerationMetadata {
+public abstract class AbstractRateLimit implements RateLimit {
 
-	GenerationMetadata NULL = new GenerationMetadata() {
-	};
-
-	default RateLimit getRateLimit() {
-		return RateLimit.NULL;
+	@Override
+	public Long getRequestsLimit() {
+		return 0L;
 	}
 
-	default Usage getUsage() {
-		return Usage.NULL;
+	@Override
+	public Long getRequestsRemaining() {
+		return 0L;
+	}
+
+	@Override
+	public Duration getRequestsReset() {
+		return Duration.ZERO;
+	}
+
+	@Override
+	public Long getTokensLimit() {
+		return 0L;
+	}
+
+	@Override
+	public Long getTokensRemaining() {
+		return 0L;
+	}
+
+	@Override
+	public Duration getTokensReset() {
+		return Duration.ZERO;
 	}
 
 }

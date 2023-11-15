@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client.metadata.support;
+package org.springframework.ai.openai.metadata.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,7 +22,7 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.openai.client.metadata.support.OpenAiHttpResponseHeadersInterceptor.DurationFormatter;
+import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor.DurationFormatter;
 
 /**
  * Unit Tests for {@link OpenAiHttpResponseHeadersInterceptor}.

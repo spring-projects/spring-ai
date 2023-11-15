@@ -14,24 +14,36 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client.metadata;
+package org.springframework.ai.metadata;
 
 /**
- * Abstract base class used as a foundation for implementing {@link Usage}.
+ * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
+ * response.
  *
  * @author John Blum
  * @since 0.7.0
  */
-public abstract class AbstractUsage implements Usage {
+public interface GenerationMetadata {
 
-	@Override
-	public Long getPromptTokens() {
-		return 0L;
+	GenerationMetadata NULL = new GenerationMetadata() {
+	};
+
+	/**
+	 * Returns AI provider specific metadata on rate limits.
+	 * @return AI provider specific metadata on rate limits.
+	 * @see RateLimit
+	 */
+	default RateLimit getRateLimit() {
+		return RateLimit.NULL;
 	}
 
-	@Override
-	public Long getGenerationTokens() {
-		return 0L;
+	/**
+	 * Returns AI provider specific metadata on API usage.
+	 * @return AI provider specific metadata on API usage.
+	 * @see Usage
+	 */
+	default Usage getUsage() {
+		return Usage.NULL;
 	}
 
 }

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client.metadata;
+package org.springframework.ai.openai.metadata;
 
 import java.time.Duration;
 
-import org.springframework.ai.client.metadata.RateLimit;
+import org.springframework.ai.metadata.RateLimit;
 
 /**
  * {@link RateLimit} implementation for {@literal OpenAI}.

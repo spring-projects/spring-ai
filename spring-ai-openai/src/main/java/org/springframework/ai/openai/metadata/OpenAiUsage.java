@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client.metadata;
+package org.springframework.ai.openai.metadata;
 
-import org.springframework.ai.client.metadata.Usage;
+import org.springframework.ai.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**
@@ -24,6 +24,9 @@ import org.springframework.util.Assert;
  *
  * @author John Blum
  * @since 0.7.0
+ * @see <a href=
+ * "https://platform.openai.com/docs/api-reference/completions/object">Completion
+ * Object</a>
  */
 public class OpenAiUsage implements Usage {
 

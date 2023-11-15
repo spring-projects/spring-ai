@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client.metadata;
+package org.springframework.ai.metadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doCallRealMethod;

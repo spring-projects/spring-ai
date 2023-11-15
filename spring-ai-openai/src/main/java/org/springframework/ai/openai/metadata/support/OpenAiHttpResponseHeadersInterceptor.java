@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client.metadata.support;
+package org.springframework.ai.openai.metadata.support;
 
-import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.REQUESTS_LIMIT_HEADER;
-import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.REQUESTS_REMAINING_HEADER;
-import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.REQUESTS_RESET_HEADER;
-import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.TOKENS_LIMIT_HEADER;
-import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER;
-import static org.springframework.ai.openai.client.metadata.support.OpenAiApiResponseHeaders.TOKENS_RESET_HEADER;
+import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.REQUESTS_LIMIT_HEADER;
+import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.REQUESTS_REMAINING_HEADER;
+import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.REQUESTS_RESET_HEADER;
+import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.TOKENS_LIMIT_HEADER;
+import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER;
+import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.TOKENS_RESET_HEADER;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -38,9 +38,9 @@ import io.restassured.path.json.JsonPath;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.client.metadata.RateLimit;
-import org.springframework.ai.openai.client.metadata.OpenAiGenerationMetadata;
-import org.springframework.ai.openai.client.metadata.OpenAiRateLimit;
+import org.springframework.ai.metadata.RateLimit;
+import org.springframework.ai.openai.metadata.OpenAiGenerationMetadata;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -181,16 +181,20 @@ public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
 
 		enum Unit {
 
-			NANOSECONDS("ns", ChronoUnit.NANOS), MICROSECONDS("us", ChronoUnit.MICROS),
-			MILLISECONDS("ms", ChronoUnit.MILLIS), SECONDS("s", ChronoUnit.SECONDS), MINUTES("m", ChronoUnit.MINUTES),
-			HOURS("h", ChronoUnit.HOURS), DAYS("d", ChronoUnit.DAYS);
+			NANOSECONDS("ns", "nanoseconds", ChronoUnit.NANOS), MICROSECONDS("us", "microseconds", ChronoUnit.MICROS),
+			MILLISECONDS("ms", "milliseconds", ChronoUnit.MILLIS), SECONDS("s", "seconds", ChronoUnit.SECONDS),
+			MINUTES("m", "minutes", ChronoUnit.MINUTES), HOURS("h", "hours", ChronoUnit.HOURS),
+			DAYS("d", "days", ChronoUnit.DAYS);
+
+			private final String name;
 
 			private final String symbol;
 
 			private final ChronoUnit unit;
 
-			Unit(String symbol, ChronoUnit unit) {
+			Unit(String symbol, String name, ChronoUnit unit) {
 				this.symbol = symbol;
+				this.name = name;
 				this.unit = unit;
 			}
 
@@ -220,6 +224,10 @@ public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
 
 			private static Long parseTime(String value) {
 				return Long.parseLong(parse(value, Character::isDigit));
+			}
+
+			public String getName() {
+				return this.name;
 			}
 
 			public String getSymbol() {

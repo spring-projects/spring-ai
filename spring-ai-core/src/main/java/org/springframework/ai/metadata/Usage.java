@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client.metadata;
+package org.springframework.ai.metadata;
 
 /**
  * Abstract Data Type (ADT) encapsulating metadata on the usage of an AI provider's API
@@ -32,6 +32,7 @@ public interface Usage {
 	 * Returns the number of tokens used in the {@literal prompt} of the AI request.
 	 * @return an {@link Long} with the number of tokens used in the {@literal prompt} of
 	 * the AI request.
+	 * @see #getGenerationTokens()
 	 */
 	Long getPromptTokens();
 
@@ -40,6 +41,7 @@ public interface Usage {
 	 * of the AI's response.
 	 * @return an {@link Long} with the number of tokens returned in the
 	 * {@literal generation (aka completion)} of the AI's response.
+	 * @see #getPromptTokens()
 	 */
 	Long getGenerationTokens();
 
