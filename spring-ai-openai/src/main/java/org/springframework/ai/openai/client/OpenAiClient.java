@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
-import org.springframework.ai.openai.client.metadata.OpenAiMetadata;
+import org.springframework.ai.openai.client.metadata.OpenAiGenerationMetadata;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.MessageType;
@@ -115,7 +115,7 @@ public class OpenAiClient implements AiClient {
 			Generation generation = new Generation(chatMessage.getContent(), Map.of("role", chatMessage.getRole()));
 			generations.add(generation);
 		}
-		return new AiResponse(generations, OpenAiMetadata.from(chatCompletionResult));
+		return new AiResponse(generations, OpenAiGenerationMetadata.from(chatCompletionResult));
 	}
 
 	private ChatCompletionRequest getChatCompletionRequest(String text) {

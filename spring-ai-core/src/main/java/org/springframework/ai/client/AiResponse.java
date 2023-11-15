@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.client;
 
-import org.springframework.ai.client.metadata.AiMetadata;
+import org.springframework.ai.client.metadata.GenerationMetadata;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class AiResponse {
 
-	private final AiMetadata metadata;
+	private final GenerationMetadata metadata;
 
 	private final List<Generation> generations;
 
@@ -32,23 +32,23 @@ public class AiResponse {
 	private final Map<String, Object> runInfo;
 
 	public AiResponse(List<Generation> generations) {
-		this(generations, Collections.emptyMap(), Collections.emptyMap(), AiMetadata.EMPTY);
+		this(generations, Collections.emptyMap(), Collections.emptyMap(), GenerationMetadata.EMPTY);
 	}
 
-	public AiResponse(List<Generation> generations, AiMetadata metadata) {
+	public AiResponse(List<Generation> generations, GenerationMetadata metadata) {
 		this(generations, Collections.emptyMap(), Collections.emptyMap(), metadata);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput) {
-		this(generations, providerOutput, Collections.emptyMap(), AiMetadata.EMPTY);
+		this(generations, providerOutput, Collections.emptyMap(), GenerationMetadata.EMPTY);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo) {
-		this(generations, providerOutput, runInfo, AiMetadata.EMPTY);
+		this(generations, providerOutput, runInfo, GenerationMetadata.EMPTY);
 	}
 
 	public AiResponse(List<Generation> generations, Map<String, Object> providerOutput, Map<String, Object> runInfo,
-			AiMetadata metadata) {
+			GenerationMetadata metadata) {
 
 		this.metadata = metadata;
 		this.generations = List.copyOf(generations);
@@ -72,12 +72,12 @@ public class AiResponse {
 	}
 
 	/**
-	 * Returns {@link AiMetadata metadata} containing metadata about the use of the AI
-	 * provider's API.
-	 * @return {@link AiMetadata metadata} containing metadata about the use of the AI
-	 * provider's API.
+	 * Returns {@link GenerationMetadata metadata} containing metadata about the use of
+	 * the AI provider's API.
+	 * @return {@link GenerationMetadata metadata} containing metadata about the use of
+	 * the AI provider's API.
 	 */
-	public AiMetadata getMetadata() {
+	public GenerationMetadata getMetadata() {
 		return this.metadata;
 	}
 

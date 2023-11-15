@@ -24,7 +24,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.metadata.AiMetadata;
+import org.springframework.ai.client.metadata.GenerationMetadata;
 import org.springframework.ai.client.metadata.RateLimit;
 import org.springframework.ai.client.metadata.Usage;
 import org.springframework.ai.openai.OpenAiMockTestConfiguration;
@@ -48,17 +48,18 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
 
 /**
- * Tests using the {@link OpenAiClient} to send {@literal OpenAI} API requests (chat
- * completions) to test the presence of AI metadata in the AI response.
+ * Tests using the {@link OpenAiClient} to send an {@literal OpenAI} API request (chat
+ * completion) to test the presence of {@link GenerationMetadata} in the
+ * {@link AiResponse}.
  *
  * @author John Blum
  * @since 0.7.0
  */
 @SpringBootTest
-@ContextConfiguration(classes = OpenAiClientWithMetadataTests.TestConfiguration.class)
+@ContextConfiguration(classes = OpenAiClientWithGenerationMetadataTests.TestConfiguration.class)
 @ActiveProfiles("spring-ai-openai-mocks")
 @SuppressWarnings("unused")
-class OpenAiClientWithMetadataTests {
+class OpenAiClientWithGenerationMetadataTests {
 
 	@Autowired
 	private OpenAiClient aiClient;
@@ -72,18 +73,18 @@ class OpenAiClientWithMetadataTests {
 
 		assertThat(response).isNotNull();
 
-		AiMetadata metadata = response.getMetadata();
+		GenerationMetadata generationMetadata = response.getMetadata();
 
-		assertThat(metadata).isNotNull();
+		assertThat(generationMetadata).isNotNull();
 
-		Usage usage = metadata.getUsage();
+		Usage usage = generationMetadata.getUsage();
 
 		assertThat(usage).isNotNull();
 		assertThat(usage.getPromptTokens()).isEqualTo(9L);
 		assertThat(usage.getGenerationTokens()).isEqualTo(12L);
 		assertThat(usage.getTotalTokens()).isEqualTo(21L);
 
-		RateLimit rateLimit = metadata.getRateLimit();
+		RateLimit rateLimit = generationMetadata.getRateLimit();
 
 		Duration expectedRequestsReset = Duration.ofDays(2L)
 			.plus(Duration.ofHours(16L))
@@ -116,6 +117,7 @@ class OpenAiClientWithMetadataTests {
 
 	@RestController
 	@RequestMapping("/spring-ai/api")
+	@SuppressWarnings("all")
 	static class SpringOpenAiChatCompletionsController {
 
 		@PostMapping("/v1/chat/completions")

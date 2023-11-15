@@ -39,7 +39,7 @@ import io.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.metadata.RateLimit;
-import org.springframework.ai.openai.client.metadata.OpenAiMetadata;
+import org.springframework.ai.openai.client.metadata.OpenAiGenerationMetadata;
 import org.springframework.ai.openai.client.metadata.OpenAiRateLimit;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
@@ -62,7 +62,7 @@ public class OpenAiHttpResponseHeadersInterceptor implements Interceptor {
 
 	private static final Map<String, OpenAiRateLimit> cache = Collections.synchronizedMap(new WeakHashMap<>());
 
-	public static void applyTo(OpenAiMetadata metadata) {
+	public static void applyTo(OpenAiGenerationMetadata metadata) {
 
 		String id = metadata.getId();
 

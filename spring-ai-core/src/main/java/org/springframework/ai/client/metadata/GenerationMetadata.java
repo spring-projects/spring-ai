@@ -23,9 +23,9 @@ package org.springframework.ai.client.metadata;
  * @author John Blum
  * @since 0.7.0
  */
-public interface AiMetadata {
+public interface GenerationMetadata {
 
-	AiMetadata EMPTY = new AiMetadata() {
+	GenerationMetadata EMPTY = new GenerationMetadata() {
 	};
 
 	default RateLimit getRateLimit() {

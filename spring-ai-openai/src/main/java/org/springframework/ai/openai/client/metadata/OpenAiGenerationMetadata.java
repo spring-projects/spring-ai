@@ -18,7 +18,7 @@ package org.springframework.ai.openai.client.metadata;
 
 import com.theokanning.openai.completion.chat.ChatCompletionResult;
 
-import org.springframework.ai.client.metadata.AiMetadata;
+import org.springframework.ai.client.metadata.GenerationMetadata;
 import org.springframework.ai.client.metadata.RateLimit;
 import org.springframework.ai.client.metadata.Usage;
 import org.springframework.ai.openai.client.metadata.support.OpenAiHttpResponseHeadersInterceptor;
@@ -26,23 +26,24 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * {@link AiMetadata} implementation for {@literal OpenAI}.
+ * {@link GenerationMetadata} implementation for {@literal OpenAI}.
  *
  * @author John Blum
- * @see org.springframework.ai.client.metadata.AiMetadata
+ * @see GenerationMetadata
  * @see org.springframework.ai.client.metadata.RateLimit
  * @see org.springframework.ai.client.metadata.Usage
  * @since 0.7.0
  */
-public class OpenAiMetadata implements AiMetadata {
+public class OpenAiGenerationMetadata implements GenerationMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 
-	public static OpenAiMetadata from(ChatCompletionResult result) {
+	public static OpenAiGenerationMetadata from(ChatCompletionResult result) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
-		OpenAiMetadata metadata = new OpenAiMetadata(result.getId(), OpenAiUsage.from(result.getUsage()));
-		OpenAiHttpResponseHeadersInterceptor.applyTo(metadata);
-		return metadata;
+		OpenAiUsage usage = OpenAiUsage.from(result.getUsage());
+		OpenAiGenerationMetadata generationMetadata = new OpenAiGenerationMetadata(result.getId(), usage);
+		OpenAiHttpResponseHeadersInterceptor.applyTo(generationMetadata);
+		return generationMetadata;
 	}
 
 	private final String id;
@@ -52,11 +53,11 @@ public class OpenAiMetadata implements AiMetadata {
 
 	private final Usage usage;
 
-	protected OpenAiMetadata(String id, OpenAiUsage usage) {
+	protected OpenAiGenerationMetadata(String id, OpenAiUsage usage) {
 		this(id, usage, null);
 	}
 
-	protected OpenAiMetadata(String id, OpenAiUsage usage, @Nullable OpenAiRateLimit rateLimit) {
+	protected OpenAiGenerationMetadata(String id, OpenAiUsage usage, @Nullable OpenAiRateLimit rateLimit) {
 		this.id = id;
 		this.usage = usage;
 		this.rateLimit = rateLimit;
@@ -81,7 +82,7 @@ public class OpenAiMetadata implements AiMetadata {
 		return usage;
 	}
 
-	public OpenAiMetadata withRateLimit(RateLimit rateLimit) {
+	public OpenAiGenerationMetadata withRateLimit(RateLimit rateLimit) {
 		this.rateLimit = rateLimit;
 		return this;
 	}
