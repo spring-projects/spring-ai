@@ -56,7 +56,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
  */
 public class FilterExpressionBuilder {
 
-	record Op(Filter.Operand expression) {
+	public record Op(Filter.Operand expression) {
 
 		public Filter.Expression build() {
 			if (expression instanceof Filter.Group group) {
