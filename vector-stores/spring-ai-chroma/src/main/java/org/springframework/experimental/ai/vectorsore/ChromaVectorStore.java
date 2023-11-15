@@ -18,20 +18,15 @@ package org.springframework.experimental.ai.vectorsore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.VectorStoreUtil;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -119,34 +114,18 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(query, DEFAULT_TOP_K);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK) {
-		return similaritySearch(query, topK, SIMILARITY_THRESHOLD_ALL);
-	}
+		String nativeFilterExpression = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
-		return this.internalSimilaritySearch(query, topK, similarityThreshold, "");
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query, int k, double threshold, Filter.Expression filterExpression) {
-		String whereClause = this.filterExpressionConverter.convertExpression(filterExpression);
-		return this.internalSimilaritySearch(query, k, threshold, whereClause);
-	}
-
-	List<Document> internalSimilaritySearch(String query, int topK, double similarityThreshold, String whereClause) {
-
+		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
 
 		List<Double> embedding = this.embeddingClient.embed(query);
-		Map<String, Object> where = (StringUtils.hasText(whereClause)) ? VectorStoreUtil.jsonToMap(whereClause)
-				: Map.of();
-		var queryRequest = new ChromaApi.QueryRequest(VectorStoreUtil.toFloatList(embedding), topK, where);
+		Map<String, Object> where = (StringUtils.hasText(nativeFilterExpression))
+				? VectorStoreUtil.jsonToMap(nativeFilterExpression) : Map.of();
+		var queryRequest = new ChromaApi.QueryRequest(VectorStoreUtil.toFloatList(embedding), request.getTopK(), where);
 		var queryResponse = this.chromaApi.queryCollection(this.collectionId, queryRequest);
 		var embeddings = this.chromaApi.toEmbeddingResponseList(queryResponse);
 
@@ -154,7 +133,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 		for (Embedding chromaEmbedding : embeddings) {
 			float distance = chromaEmbedding.distances().floatValue();
-			if ((1 - distance) >= similarityThreshold) {
+			if ((1 - distance) >= request.getSimilarityThreshold()) {
 				String id = chromaEmbedding.id();
 				String content = chromaEmbedding.document();
 				Map<String, Object> metadata = chromaEmbedding.metadata();

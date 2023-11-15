@@ -28,6 +28,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -73,8 +74,6 @@ public class BasicAuthChromaWhereIT {
 	@Test
 	public void withInFiltersExpressions1() {
 
-		final double THRESHOLD_ALL = 0.0;
-
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -85,10 +84,13 @@ public class BasicAuthChromaWhereIT {
 
 			String query = "Give me articles by john";
 
-			List<Document> results = vectorStore.similaritySearch(query, 5);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query(query).withTopK(5));
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(query, 5, THRESHOLD_ALL, "author in ['john', 'jill']");
+			results = vectorStore.similaritySearch(SearchRequest.query(query)
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("author in ['john', 'jill']"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");

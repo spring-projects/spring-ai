@@ -71,9 +71,9 @@ public class PgVectorStoreIT {
 
 	@Container
 	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector")
-			.withEnv("POSTGRES_USER", "postgres")
-			.withEnv("POSTGRES_PASSWORD", "postgres")
-			.withExposedPorts(5432);
+		.withEnv("POSTGRES_USER", "postgres")
+		.withEnv("POSTGRES_PASSWORD", "postgres")
+		.withExposedPorts(5432);
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -91,14 +91,14 @@ public class PgVectorStoreIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withUserConfiguration(TestApplication.class)
-			.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
+		.withUserConfiguration(TestApplication.class)
+		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
 
-					// JdbcTemplate configuration
-					String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
-							postgresContainer.getMappedPort(5432), "postgres"),
-					"app.datasource.username=postgres", "app.datasource.password=postgres",
-					"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
+				// JdbcTemplate configuration
+				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
+						postgresContainer.getMappedPort(5432), "postgres"),
+				"app.datasource.username=postgres", "app.datasource.password=postgres",
+				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	private static void dropTable(ApplicationContext context) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
@@ -109,29 +109,29 @@ public class PgVectorStoreIT {
 	@ValueSource(strings = { "CosineDistance", "EuclideanDistance", "NegativeInnerProduct" })
 	public void addAndSearch(String distanceType) {
 		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
-				.run(context -> {
+			.run(context -> {
 
-					VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-					vectorStore.add(documents);
+				vectorStore.add(documents);
 
-					List<Document> results = vectorStore
-							.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
 
-					assertThat(results).hasSize(1);
-					Document resultDoc = results.get(0);
-					assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-					assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
-					// Remove all documents from the store
-					vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				// Remove all documents from the store
+				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-					List<Document> results2 = vectorStore
-							.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
-					assertThat(results2).hasSize(0);
+				List<Document> results2 = vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+				assertThat(results2).hasSize(0);
 
-					dropTable(context);
-				});
+				dropTable(context);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -139,67 +139,67 @@ public class PgVectorStoreIT {
 	public void searchWithFilters(String distanceType) {
 
 		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
-				.run(context -> {
+			.run(context -> {
 
-					VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-					var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-							Map.of("country", "BG", "year", 2020, "foo bar 1", "bar.foo"));
-					var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-							Map.of("country", "NL"));
-					var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-							Map.of("country", "BG", "year", 2023));
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020, "foo bar 1", "bar.foo"));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
 
-					vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-					SearchRequest searchRequest = SearchRequest.query("The World").withTopK(5)
-							.withSimilarityThresholdAll();
+				SearchRequest searchRequest = SearchRequest.query("The World").withTopK(5).withSimilarityThresholdAll();
 
-					List<Document> results = vectorStore.similaritySearch(searchRequest);
+				List<Document> results = vectorStore.similaritySearch(searchRequest);
 
-					assertThat(results).hasSize(3);
+				assertThat(results).hasSize(3);
 
-					results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'NL'"));
+				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'NL'"));
 
-					assertThat(results).hasSize(1);
-					assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-					results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'BG'"));
+				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'BG'"));
 
-					assertThat(results).hasSize(2);
-					assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
-					assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
-					results = vectorStore
-							.similaritySearch(searchRequest.withFilterExpression("country == 'BG' && year == 2020"));
+				results = vectorStore
+					.similaritySearch(searchRequest.withFilterExpression("country == 'BG' && year == 2020"));
 
-					assertThat(results).hasSize(1);
-					assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-					results = vectorStore.similaritySearch(
-							searchRequest
-									.withFilterExpression("(country == 'BG' && year == 2020) || (country == 'NL')"));
+				results = vectorStore.similaritySearch(
+						searchRequest.withFilterExpression("(country == 'BG' && year == 2020) || (country == 'NL')"));
 
-					assertThat(results).hasSize(2);
-					assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
-					assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+				assertThat(results).hasSize(2);
+				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 
-					results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5)
-							.withSimilarityThresholdAll().withFilterExpression("\"foo bar 1\" == 'bar.foo'"));
-					assertThat(results).hasSize(1);
-					assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+				results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("\"foo bar 1\" == 'bar.foo'"));
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-					try {
-						vectorStore.similaritySearch(searchRequest.withFilterExpression("country == NL"));
-						Assert.fail("Invalid filter expression should have been cached!");
-					}
-					catch (FilterExpressionParseException e) {
-						assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
-					}
+				try {
+					vectorStore.similaritySearch(searchRequest.withFilterExpression("country == NL"));
+					Assert.fail("Invalid filter expression should have been cached!");
+				}
+				catch (FilterExpressionParseException e) {
+					assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
+				}
 
-					// Remove all documents from the store
-					dropTable(context);
-				});
+				// Remove all documents from the store
+				dropTable(context);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -207,40 +207,39 @@ public class PgVectorStoreIT {
 	public void documentUpdate(String distanceType) {
 
 		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
-				.run(context -> {
+			.run(context -> {
 
-					VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-					Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
-							Collections.singletonMap("meta1", "meta1"));
+				Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
+						Collections.singletonMap("meta1", "meta1"));
 
-					vectorStore.add(List.of(document));
+				vectorStore.add(List.of(document));
 
-					List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 
-					assertThat(results).hasSize(1);
-					Document resultDoc = results.get(0);
-					assertThat(resultDoc.getId()).isEqualTo(document.getId());
-					assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
-					assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(document.getId());
+				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
-					Document sameIdDocument = new Document(document.getId(),
-							"The World is Big and Salvation Lurks Around the Corner",
-							Collections.singletonMap("meta2", "meta2"));
+				Document sameIdDocument = new Document(document.getId(),
+						"The World is Big and Salvation Lurks Around the Corner",
+						Collections.singletonMap("meta2", "meta2"));
 
-					vectorStore.add(List.of(sameIdDocument));
+				vectorStore.add(List.of(sameIdDocument));
 
-					results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+				results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
 
-					assertThat(results).hasSize(1);
-					resultDoc = results.get(0);
-					assertThat(resultDoc.getId()).isEqualTo(document.getId());
-					assertThat(resultDoc.getContent())
-							.isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-					assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(results).hasSize(1);
+				resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(document.getId());
+				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
-					dropTable(context);
-				});
+				dropTable(context);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -249,35 +248,34 @@ public class PgVectorStoreIT {
 	public void searchWithThreshold(String distanceType) {
 
 		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + distanceType)
-				.run(context -> {
+			.run(context -> {
 
-					VectorStore vectorStore = context.getBean(VectorStore.class);
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-					vectorStore.add(documents);
+				vectorStore.add(documents);
 
-					List<Document> fullResult = vectorStore
-							.similaritySearch(
-									SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
+				List<Document> fullResult = vectorStore
+					.similaritySearch(SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
 
-					assertThat(fullResult).hasSize(3);
+				assertThat(fullResult).hasSize(3);
 
-					assertThat(isSortedByDistance(fullResult)).isTrue();
+				assertThat(isSortedByDistance(fullResult)).isTrue();
 
-					List<Float> distances = fullResult.stream()
-							.map(doc -> (Float) doc.getMetadata().get("distance"))
-							.toList();
+				List<Float> distances = fullResult.stream()
+					.map(doc -> (Float) doc.getMetadata().get("distance"))
+					.toList();
 
-					float threshold = (distances.get(0) + distances.get(1)) / 2;
+				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-					List<Document> results = vectorStore.similaritySearch(
-							SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(1 - threshold));
 
-					assertThat(results).hasSize(1);
-					Document resultDoc = results.get(0);
-					assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
 
-					dropTable(context);
-				});
+				dropTable(context);
+			});
 	}
 
 	private static boolean isSortedByDistance(List<Document> docs) {
@@ -334,10 +332,10 @@ public class PgVectorStoreIT {
 		public EmbeddingClient embeddingClient() {
 
 			Retrofit retrofit = new Retrofit.Builder().baseUrl("https://api.openai.com")
-					.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
-					.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
-					.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-					.build();
+				.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
+				.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
+				.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+				.build();
 
 			OpenAiApi api = retrofit.create(OpenAiApi.class);
 

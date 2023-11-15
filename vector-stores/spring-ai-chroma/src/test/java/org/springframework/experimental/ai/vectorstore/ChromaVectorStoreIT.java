@@ -29,6 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -70,7 +71,7 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(documents);
 
-			List<Document> results = vectorStore.similaritySearch("Great", 1);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -82,15 +83,13 @@ public class ChromaVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-			List<Document> results2 = vectorStore.similaritySearch("Great", 1);
+			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).hasSize(0);
 		});
 	}
 
 	@Test
 	public void addAndSearchWithFilters() {
-
-		final double THRESHOLD_ALL = 0.0;
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
@@ -103,14 +102,18 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			List<Document> results = vectorStore.similaritySearch("The World", 5);
+			var request = SearchRequest.query("The World").withTopK(5);
+
+			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Bulgaria'");
+			results = vectorStore
+				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch("The World", 5, THRESHOLD_ALL, "country == 'Netherland'");
+			results = vectorStore
+				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherland'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
@@ -132,7 +135,7 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
-			List<Document> results = vectorStore.similaritySearch("Spring", 5);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -147,7 +150,7 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			results = vectorStore.similaritySearch("FooBar", 5);
+			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
 
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
@@ -170,7 +173,8 @@ public class ChromaVectorStoreIT {
 
 			vectorStore.add(documents);
 
-			List<Document> fullResult = vectorStore.similaritySearch("Great", 5, 0.0);
+			var request = SearchRequest.query("Great").withTopK(5);
+			List<Document> fullResult = vectorStore.similaritySearch(request.withSimilarityThresholdAll());
 
 			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
 
@@ -178,7 +182,7 @@ public class ChromaVectorStoreIT {
 
 			float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch("Great", 5, (1 - threshold));
+			List<Document> results = vectorStore.similaritySearch(request.withSimilarityThreshold(1 - threshold));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);

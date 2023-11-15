@@ -27,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -85,12 +86,13 @@ public class TokenSecuredChromaWhereIT {
 					new Document("2", "Article by Jack", Map.of("author", "jack")),
 					new Document("3", "Article by Jill", Map.of("author", "jill"))));
 
-			String query = "Give me articles by john";
+			var request = SearchRequest.query("Give me articles by john").withTopK(5);
 
-			List<Document> results = vectorStore.similaritySearch(query, 5);
+			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(query, 5, THRESHOLD_ALL, "author in ['john', 'jill']");
+			results = vectorStore.similaritySearch(
+					request.withSimilarityThresholdAll().withFilterExpression("author in ['john', 'jill']"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");
@@ -99,8 +101,6 @@ public class TokenSecuredChromaWhereIT {
 
 	@Test
 	public void withInFiltersExpressions() {
-
-		final double THRESHOLD_ALL = 0.0;
 
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
@@ -111,19 +111,19 @@ public class TokenSecuredChromaWhereIT {
 						new Document("2", "Article by Jack", Map.of("author", "jack", "article_type", "social")),
 						new Document("3", "Article by Jill", Map.of("author", "jill", "article_type", "paper"))));
 
-			String query = "Give me articles by john";
+			var request = SearchRequest.query("Give me articles by john").withTopK(5);
 
-			List<Document> results = vectorStore.similaritySearch(query, 5);
+			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(query, 5, THRESHOLD_ALL,
-					"author in ['john', 'jill'] && 'article_type' == 'blog'");
+			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
+				.withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo("1");
 
-			results = vectorStore.similaritySearch(query, 5, THRESHOLD_ALL,
-					"author in ['john'] || 'article_type' == 'paper'");
+			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
+				.withFilterExpression("author in ['john'] || 'article_type' == 'paper'"));
 
 			assertThat(results).hasSize(2);
 
