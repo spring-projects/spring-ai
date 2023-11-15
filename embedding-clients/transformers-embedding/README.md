@@ -66,6 +66,10 @@ embeddingClient.setModelResource("classpath:/onnx/all-MiniLM-L6-v2/model.onnx");
 // Only the http/https resources are cached by default.
 embeddingClient.setResourceCacheDirectory("/tmp/onnx-zoo");
 
+// (optional) Set the tokenizer padding if you see an errors like:
+// "ai.onnxruntime.OrtException: Supplied array is ragged, ..."
+embeddingClient.setTokenizerOptions(Map.of("padding", "true"));
+
 embeddingClient.afterPropertiesSet();
 
 List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "World is big"));
@@ -122,3 +126,9 @@ The complete list of supported properties are:
 | spring.ai.embedding.transformer.onnx.gpuDeviceId  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise. |  -1 |
 | spring.ai.embedding.transformer.metadataMode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE |
 
+
+Note: if you see error like: `Caused by: ai.onnxruntime.OrtException: Supplied array is ragged,..` then you need to enable the tokenizer padding in boot starter's `application.properties`:
+
+```
+spring.ai.embedding.transformer.tokenizer.options.padding=true
+```

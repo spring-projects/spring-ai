@@ -84,7 +84,7 @@ public class TransformersEmbeddingClientProperties {
 	public static class Cache {
 
 		/**
-		 * Enable the {@link Resource} caching.
+		 * Enable the Resource caching.
 		 */
 		private boolean enabled = true;
 
@@ -132,6 +132,11 @@ public class TransformersEmbeddingClientProperties {
 		private String modelUri = TransformersEmbeddingClient.DEFAULT_ONNX_MODEL_URI;
 
 		/**
+		 * Defaults to: 'last_hidden_state'.
+		 */
+		private String modelOutputName = TransformersEmbeddingClient.DEFAULT_MODEL_OUTPUT_NAME;
+
+		/**
 		 * Run on a GPU or with another provider (optional).
 		 * https://onnxruntime.ai/docs/get-started/with-java.html#run-on-a-gpu-or-with-another-provider-optional
 		 *
@@ -153,6 +158,14 @@ public class TransformersEmbeddingClientProperties {
 
 		public void setGpuDeviceId(int gpuDeviceId) {
 			this.gpuDeviceId = gpuDeviceId;
+		}
+
+		public String getModelOutputName() {
+			return modelOutputName;
+		}
+
+		public void setModelOutputName(String modelOutputName) {
+			this.modelOutputName = modelOutputName;
 		}
 
 	}

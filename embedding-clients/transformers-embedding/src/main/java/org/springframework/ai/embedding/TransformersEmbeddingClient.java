@@ -4,6 +4,7 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,8 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 	// ONNX model for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
 	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects-experimental/spring-ai/raw/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+
+	public final static String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
 	private final static int EMBEDDING_AXIS = 1;
 
@@ -100,6 +103,10 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	public Map<String, String> tokenizerOptions = Map.of();
 
+	private String modelOutputName = DEFAULT_MODEL_OUTPUT_NAME;
+
+	private Set<String> onnxModelInputs;
+
 	public TransformersEmbeddingClient() {
 		this(MetadataMode.NONE);
 	}
@@ -145,6 +152,10 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 		this.embeddingDimensions.set(dimension);
 	}
 
+	public void setModelOutputName(String modelOutputName) {
+		this.modelOutputName = modelOutputName;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
@@ -167,8 +178,14 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 		this.session = this.environment.createSession(getCachedResource(this.modelResource).getContentAsByteArray(),
 				sessionOptions);
 
-		logger.info("Model input names: " + this.session.getInputNames().stream().collect(Collectors.joining(", ")));
-		logger.info("Model output names: " + this.session.getOutputNames().stream().collect(Collectors.joining(", ")));
+		this.onnxModelInputs = this.session.getInputNames();
+		Set<String> onnxModelOutputs = this.session.getOutputNames();
+
+		logger.info("Model input names: " + this.onnxModelInputs.stream().collect(Collectors.joining(", ")));
+		logger.info("Model output names: " + onnxModelOutputs.stream().collect(Collectors.joining(", ")));
+
+		Assert.isTrue(onnxModelOutputs.contains(this.modelOutputName),
+				"The model output names doesn't contain expected: " + this.modelOutputName);
 	}
 
 	private Resource getCachedResource(Resource resource) {
@@ -221,13 +238,15 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 			Map<String, OnnxTensor> modelInputs = Map.of("input_ids", inputIds, "attention_mask", attentionMask,
 					"token_type_ids", tokenTypeIds);
 
+			modelInputs = removeUnknownModelInputs(modelInputs);
+
 			// The Run result object is AutoCloseable to prevent references from leaking
 			// out. Once the Result object is
 			// closed, all it’s child OnnxValues are closed too.
 			try (OrtSession.Result results = this.session.run(modelInputs)) {
 
 				// OnnxValue lastHiddenState = results.get(0);
-				OnnxValue lastHiddenState = results.get("last_hidden_state").get();
+				OnnxValue lastHiddenState = results.get(this.modelOutputName).get();
 
 				// 0 - batch_size (1..x)
 				// 1 - sequence_length (128)
@@ -251,6 +270,15 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 		}
 
 		return resultEmbeddings;
+	}
+
+	private Map<String, OnnxTensor> removeUnknownModelInputs(Map<String, OnnxTensor> modelInputs) {
+
+		return modelInputs.entrySet()
+			.stream()
+			.filter(a -> onnxModelInputs.contains(a.getKey()))
+			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+
 	}
 
 	// Build a NDArray from 3D float array.
