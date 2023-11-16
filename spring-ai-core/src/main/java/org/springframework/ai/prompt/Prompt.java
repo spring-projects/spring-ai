@@ -64,4 +64,5 @@ public class Prompt {
 	public int hashCode() {
 		return getContents().hashCode();
 	}
+
 }

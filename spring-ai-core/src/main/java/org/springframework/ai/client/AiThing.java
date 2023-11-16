@@ -8,32 +8,34 @@ import java.util.Map;
 
 public interface AiThing {
 
-    String generate();
+	String generate();
 
-    String generate(Map<String, Object> parameters);
+	String generate(Map<String, Object> parameters);
 
-    static AiThing create(AiClient aiClient) {
-        return (new DefaultAiThingBuilder()).aiClient(aiClient).build();
-    }
+	static AiThing create(AiClient aiClient) {
+		return (new DefaultAiThingBuilder()).aiClient(aiClient).build();
+	}
 
-    static AiThing.Builder builder() {
-        return new DefaultAiThingBuilder();
-    }
+	static AiThing.Builder builder() {
+		return new DefaultAiThingBuilder();
+	}
 
-    AiThing promptTemplate(String promptTemplate);
+	AiThing promptTemplate(String promptTemplate);
 
-    public interface Builder {
-        Builder aiClient(AiClient aiClient);
+	public interface Builder {
 
-        Builder promptTemplate(String promptTemplate);
+		Builder aiClient(AiClient aiClient);
 
-        Builder vectorStore(VectorStore vectorStore);
+		Builder promptTemplate(String promptTemplate);
 
-        Builder vectorStoreKey(String vectorStoreKey);
+		Builder vectorStore(VectorStore vectorStore);
 
-        Builder conversationMemory(Memory memory);
+		Builder vectorStoreKey(String vectorStoreKey);
 
-        AiThing build();
-    }
+		Builder conversationMemory(Memory memory);
+
+		AiThing build();
+
+	}
 
 }
