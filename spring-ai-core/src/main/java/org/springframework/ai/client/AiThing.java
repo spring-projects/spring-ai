@@ -1,6 +1,7 @@
 package org.springframework.ai.client;
 
 import org.springframework.ai.chain.AiOutput;
+import org.springframework.ai.memory.Memory;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.Map;
@@ -29,6 +30,8 @@ public interface AiThing {
         Builder vectorStore(VectorStore vectorStore);
 
         Builder vectorStoreKey(String vectorStoreKey);
+
+        Builder conversationMemory(Memory memory);
 
         AiThing build();
     }

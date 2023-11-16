@@ -55,4 +55,13 @@ public class Prompt {
 		return "Prompt{" + "messages=" + messages + '}';
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof Prompt && ((Prompt) obj).getContents().equals(getContents());
+	}
+
+	@Override
+	public int hashCode() {
+		return getContents().hashCode();
+	}
 }

@@ -1,5 +1,6 @@
 package org.springframework.ai.client;
 
+import org.springframework.ai.memory.Memory;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
 
@@ -12,6 +13,8 @@ public class DefaultAiThingBuilder implements AiThing.Builder {
     private VectorStore vectorStore;
 
     private String vectorStoreKey = "documents";
+
+    private Memory memory;
 
     public DefaultAiThingBuilder() {}
 
@@ -39,10 +42,16 @@ public class DefaultAiThingBuilder implements AiThing.Builder {
         return this;
     }
 
+    public AiThing.Builder conversationMemory(Memory memory) {
+        this.memory = memory;
+        return this;
+    }
+
     public AiThing build() {
         DefaultAiThing aiThing = new DefaultAiThing(aiClient, promptTemplate);
         aiThing.vectorStore(vectorStore);
         aiThing.vectorStoreKey(vectorStoreKey);
+        aiThing.conversationMemory(memory);
         return aiThing;
     }
     
