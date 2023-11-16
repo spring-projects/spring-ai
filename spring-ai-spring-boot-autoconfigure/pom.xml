@@ -49,6 +49,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-ollama</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Transformers Embedding Client -->
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
