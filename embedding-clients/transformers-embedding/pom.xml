@@ -24,6 +24,19 @@
 		<djl.version>0.25.0</djl.version>
 		<onnxruntime.version>1.16.2</onnxruntime.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>ai.djl</groupId>
+				<artifactId>bom</artifactId>
+				<version>${djl.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.experimental.ai</groupId>
@@ -40,25 +53,21 @@
 		<dependency>
 			<groupId>ai.djl.pytorch</groupId>
 			<artifactId>pytorch-engine</artifactId>
-			<version>${djl.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>ai.djl</groupId>
 			<artifactId>api</artifactId>
-			<version>${djl.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>ai.djl</groupId>
 			<artifactId>model-zoo</artifactId>
-			<version>${djl.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>ai.djl.huggingface</groupId>
 			<artifactId>tokenizers</artifactId>
-			<version>${djl.version}</version>
 		</dependency>
 
 
