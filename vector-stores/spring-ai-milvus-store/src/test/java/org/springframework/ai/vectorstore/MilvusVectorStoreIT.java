@@ -290,7 +290,7 @@ public class MilvusVectorStoreIT {
 		@Bean
 		public MilvusServiceClient milvusClient() {
 			return new MilvusServiceClient(ConnectParam.newBuilder()
-				.withHost("localhost")
+				.withHost(milvusContainer.getServiceHost("standalone", 19530))
 				.withPort(milvusContainer.getServicePort("standalone", 19530))
 				.build());
 		}

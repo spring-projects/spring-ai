@@ -49,7 +49,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ChromaVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://localhost",
+		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chromaContainer.getHost(),
 				"spring.ai.vectorstore.chroma.client.port=" + chromaContainer.getMappedPort(8000),
 				"spring.ai.vectorstore.chroma.store.collectionName=TestCollection");
 

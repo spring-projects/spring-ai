@@ -176,9 +176,10 @@ public class ChromaApiIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-
+			String host = chromaContainer.getHost();
 			int port = chromaContainer.getMappedPort(8000);
-			return new ChromaApi("http://localhost:" + port, restTemplate);
+			String baseUrl = "http://%s:%d".formatted(host, port);
+			return new ChromaApi(baseUrl, restTemplate);
 		}
 
 	}

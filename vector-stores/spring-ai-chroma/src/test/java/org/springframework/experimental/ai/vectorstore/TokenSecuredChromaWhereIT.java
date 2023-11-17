@@ -57,8 +57,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class TokenSecuredChromaWhereIT {
 
-	public static String CHROMA_SERVER_URL = "http://localhost:";
-
 	public static String CHROMA_SERVER_AUTH_CREDENTIALS = "test-token";
 
 	/**
@@ -144,8 +142,10 @@ public class TokenSecuredChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
+			String host = chromaContainer.getHost();
 			int port = chromaContainer.getMappedPort(8000);
-			var chromaApi = new ChromaApi(CHROMA_SERVER_URL + port, restTemplate);
+			String baseurl = "http://%s:%d".formatted(host, port);
+			var chromaApi = new ChromaApi(baseurl, restTemplate);
 			chromaApi.withKeyToken(CHROMA_SERVER_AUTH_CREDENTIALS);
 			return chromaApi;
 		}

@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PgVectorStoreAutoConfigurationIT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector")
+	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector:v0.5.1")
 		.withEnv("POSTGRES_USER", "postgres")
 		.withEnv("POSTGRES_PASSWORD", "postgres")
 		.withExposedPorts(5432);
@@ -74,7 +74,7 @@ public class PgVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
 				// JdbcTemplate configuration
-				String.format("spring.datasource.url=jdbc:postgresql://localhost:%d/%s",
+				String.format("spring.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
 						postgresContainer.getMappedPort(5432), "postgres"),
 				"spring.datasource.username=postgres", "spring.datasource.password=postgres");
 

@@ -58,8 +58,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class BasicAuthChromaWhereIT {
 
-	public static String CHROMA_SERVER_URL = "http://localhost:";
-
 	/**
 	 * ChromaDB with Basic Authentication:
 	 * https://docs.trychroma.com/usage-guide#basic-authentication
@@ -113,8 +111,10 @@ public class BasicAuthChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
+			String host = chromaContainer.getHost();
 			int port = chromaContainer.getMappedPort(8000);
-			return new ChromaApi(CHROMA_SERVER_URL + port, restTemplate).withBasicAuthCredentials("admin", "admin");
+			String baseUrl = "http://%s:%d".formatted(host, port);
+			return new ChromaApi(baseUrl, restTemplate).withBasicAuthCredentials("admin", "admin");
 		}
 
 		@Bean
