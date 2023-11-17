@@ -19,7 +19,6 @@ package org.springframework.ai.autoconfigure.vectorstore.milvus;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,8 +26,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MinIOContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
@@ -51,7 +53,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class MilvusVectorStoreAutoConfigurationIT {
 
-	private static DockerComposeContainer milvusContainer;
+	private static final Network network = Network.newNetwork();
+
+	private static final MinIOContainer minio = new MinIOContainer("minio/minio:RELEASE.2023-11-11T08-14-41Z")
+		.withNetwork(network)
+		.withNetworkAliases("minio");
+
+	private static final GenericContainer<?> etcd = new GenericContainer<>("quay.io/coreos/etcd:v3.5.5")
+		.withNetwork(network)
+		.withNetworkAliases("etcd")
+		.withCommand("etcd", "-advertise-client-urls=http://127.0.0.1:2379", "-listen-client-urls=http://0.0.0.0:2379",
+				"--data-dir=/etcd")
+		.withEnv(Map.of("ETCD_AUTO_COMPACTION_MODE", "revision", "ETCD_AUTO_COMPACTION_RETENTION", "1000",
+				"ETCD_QUOTA_BACKEND_BYTES", "4294967296", "ETCD_SNAPSHOT_COUNT", "50000"))
+		.waitingFor(Wait.forLogMessage(".*ready to serve client requests.*", 1));
+
+	@Container
+	private static final GenericContainer<?> milvus = new GenericContainer<>("milvusdb/milvus:v2.3.1")
+		.withExposedPorts(19530)
+		.dependsOn(minio, etcd)
+		.withNetwork(network)
+		.withCommand("milvus", "run", "standalone")
+		.withEnv(Map.of("ETCD_ENDPOINTS", "etcd:2379", "MINIO_ADDRESS", "minio:9000"))
+		.waitingFor(Wait.forLogMessage(".*Proxy successfully started.*\\s", 1));
 
 	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
 
@@ -74,20 +98,10 @@ public class MilvusVectorStoreAutoConfigurationIT {
 	public static void beforeAll() {
 		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
 		TEMP_FOLDER.mkdirs();
-
-		milvusContainer = new DockerComposeContainer(new File("src/test/resources/milvus/docker-compose.yml"))
-			.withEnv("DOCKER_VOLUME_DIRECTORY", TEMP_FOLDER.getAbsolutePath())
-			.withExposedService("standalone", 19530)
-			.withExposedService("standalone", 9091,
-					Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
-			.waitingFor("standalone", Wait.forLogMessage(".*Proxy successfully started.*\\s", 1)
-				.withStartupTimeout(Duration.ofSeconds(100)));
-		milvusContainer.start();
 	}
 
 	@AfterAll
 	public static void afterAll() {
-		milvusContainer.stop();
 		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
 	}
 
@@ -97,12 +111,14 @@ public class MilvusVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void addAndSearch() {
-		contextRunner.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
-				"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
-				"spring.ai.vectorstore.milvus.embeddingDimension=384",
-				"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
+		contextRunner
+			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
+					"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
+					"spring.ai.vectorstore.milvus.embeddingDimension=384",
+					"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
 
-				"spring.ai.vectorstore.milvus.client.host=localhost", "spring.ai.vectorstore.milvus.client.port=19530")
+					"spring.ai.vectorstore.milvus.client.host=" + milvus.getHost(),
+					"spring.ai.vectorstore.milvus.client.port=" + milvus.getMappedPort(19530))
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				vectorStore.add(documents);

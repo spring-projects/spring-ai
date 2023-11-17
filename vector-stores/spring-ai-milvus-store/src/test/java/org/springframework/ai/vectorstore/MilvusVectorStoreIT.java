@@ -36,8 +36,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MinIOContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
@@ -65,7 +68,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class MilvusVectorStoreIT {
 
-	private static DockerComposeContainer milvusContainer;
+	private static final Network network = Network.newNetwork();
+
+	private static final MinIOContainer minio = new MinIOContainer("minio/minio:RELEASE.2023-11-11T08-14-41Z")
+		.withNetwork(network)
+		.withNetworkAliases("minio");
+
+	private static final GenericContainer<?> etcd = new GenericContainer<>("quay.io/coreos/etcd:v3.5.5")
+		.withNetwork(network)
+		.withNetworkAliases("etcd")
+		.withCommand("etcd", "-advertise-client-urls=http://127.0.0.1:2379", "-listen-client-urls=http://0.0.0.0:2379",
+				"--data-dir=/etcd")
+		.withEnv(Map.of("ETCD_AUTO_COMPACTION_MODE", "revision", "ETCD_AUTO_COMPACTION_RETENTION", "1000",
+				"ETCD_QUOTA_BACKEND_BYTES", "4294967296", "ETCD_SNAPSHOT_COUNT", "50000"))
+		.waitingFor(Wait.forLogMessage(".*ready to serve client requests.*", 1));
+
+	@Container
+	private static final GenericContainer<?> milvus = new GenericContainer<>("milvusdb/milvus:v2.3.1")
+		.withExposedPorts(19530)
+		.dependsOn(minio, etcd)
+		.withNetwork(network)
+		.withCommand("milvus", "run", "standalone")
+		.withEnv(Map.of("ETCD_ENDPOINTS", "etcd:2379", "MINIO_ADDRESS", "minio:9000"))
+		.waitingFor(Wait.forLogMessage(".*Proxy successfully started.*\\s", 1));
 
 	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
 
@@ -91,20 +116,10 @@ public class MilvusVectorStoreIT {
 	public static void beforeAll() {
 		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
 		TEMP_FOLDER.mkdirs();
-
-		milvusContainer = new DockerComposeContainer(new File("src/test/resources/docker-compose.yml"))
-			.withEnv("DOCKER_VOLUME_DIRECTORY", TEMP_FOLDER.getAbsolutePath())
-			.withExposedService("standalone", 19530)
-			.withExposedService("standalone", 9091,
-					Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
-			.waitingFor("standalone", Wait.forLogMessage(".*Proxy successfully started.*\\s", 1)
-				.withStartupTimeout(Duration.ofSeconds(100)));
-		milvusContainer.start();
 	}
 
 	@AfterAll
 	public static void afterAll() {
-		milvusContainer.stop();
 		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
 	}
 
@@ -289,10 +304,8 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public MilvusServiceClient milvusClient() {
-			return new MilvusServiceClient(ConnectParam.newBuilder()
-				.withHost("localhost")
-				.withPort(milvusContainer.getServicePort("standalone", 19530))
-				.build());
+			return new MilvusServiceClient(
+					ConnectParam.newBuilder().withHost(milvus.getHost()).withPort(milvus.getMappedPort(19530)).build());
 		}
 
 		@Bean
