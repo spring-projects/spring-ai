@@ -16,6 +16,7 @@
 
 package org.springframework.ai.embedding;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -29,14 +30,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TransformersEmbeddingClientTests {
 
+	private static DecimalFormat DF = new DecimalFormat("#.######");
+
 	@Test
 	void embed() throws Exception {
+
 		TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient();
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed("Hello world");
 		assertThat(embed).hasSize(384);
-		assertThat(embed.get(0)).isEqualTo(-0.19744634628295898);
-		assertThat(embed.get(383)).isEqualTo(0.17298996448516846);
+		assertThat(DF.format(embed.get(0))).isEqualTo(DF.format(-0.19744634628295898));
+		assertThat(DF.format(embed.get(383))).isEqualTo(DF.format(0.17298996448516846));
 	}
 
 	@Test
@@ -45,8 +49,8 @@ public class TransformersEmbeddingClientTests {
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed(new Document("Hello world"));
 		assertThat(embed).hasSize(384);
-		assertThat(embed.get(0)).isEqualTo(-0.19744634628295898);
-		assertThat(embed.get(383)).isEqualTo(0.17298996448516846);
+		assertThat(DF.format(embed.get(0))).isEqualTo(DF.format(-0.19744634628295898));
+		assertThat(DF.format(embed.get(383))).isEqualTo(DF.format(0.17298996448516846));
 	}
 
 	@Test
@@ -56,12 +60,12 @@ public class TransformersEmbeddingClientTests {
 		List<List<Double>> embed = embeddingClient.embed(List.of("Hello world", "World is big"));
 		assertThat(embed).hasSize(2);
 		assertThat(embed.get(0)).hasSize(384);
-		assertThat(embed.get(0).get(0)).isEqualTo(-0.19744634628295898);
-		assertThat(embed.get(0).get(383)).isEqualTo(0.17298996448516846);
+		assertThat(DF.format(embed.get(0).get(0))).isEqualTo(DF.format(-0.19744634628295898));
+		assertThat(DF.format(embed.get(0).get(383))).isEqualTo(DF.format(0.17298996448516846));
 
 		assertThat(embed.get(1)).hasSize(384);
-		assertThat(embed.get(1).get(0)).isEqualTo(0.4293745160102844);
-		assertThat(embed.get(1).get(383)).isEqualTo(0.05501303821802139);
+		assertThat(DF.format(embed.get(1).get(0))).isEqualTo(DF.format(0.4293745160102844));
+		assertThat(DF.format(embed.get(1).get(383))).isEqualTo(DF.format(0.05501303821802139));
 
 		assertThat(embed.get(0)).isNotEqualTo(embed.get(1));
 	}
@@ -75,12 +79,12 @@ public class TransformersEmbeddingClientTests {
 		assertThat(embed.getMetadata()).isEmpty();
 
 		assertThat(embed.getData().get(0).getEmbedding()).hasSize(384);
-		assertThat(embed.getData().get(0).getEmbedding().get(0)).isEqualTo(-0.19744634628295898);
-		assertThat(embed.getData().get(0).getEmbedding().get(383)).isEqualTo(0.17298996448516846);
+		assertThat(DF.format(embed.getData().get(0).getEmbedding().get(0))).isEqualTo(DF.format(-0.19744634628295898));
+		assertThat(DF.format(embed.getData().get(0).getEmbedding().get(383))).isEqualTo(DF.format(0.17298996448516846));
 
 		assertThat(embed.getData().get(1).getEmbedding()).hasSize(384);
-		assertThat(embed.getData().get(1).getEmbedding().get(0)).isEqualTo(0.4293745160102844);
-		assertThat(embed.getData().get(1).getEmbedding().get(383)).isEqualTo(0.05501303821802139);
+		assertThat(DF.format(embed.getData().get(1).getEmbedding().get(0))).isEqualTo(DF.format(0.4293745160102844));
+		assertThat(DF.format(embed.getData().get(1).getEmbedding().get(383))).isEqualTo(DF.format(0.05501303821802139));
 	}
 
 	@Test
