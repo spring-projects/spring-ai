@@ -117,6 +117,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Weaviate Vector Store -->
+		<dependency>
+			<groupId>org.springframework.experimental.ai</groupId>
+			<artifactId>spring-ai-weaviate-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -93,6 +93,8 @@ These are the available implementations of the `VectorStore` interface:
 * PgVector [`PgVectorStore`]: The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
 * Milvus [`MilvusVectorStore`]: The https://milvus.io/[Milvus] vector store
 * Neo4j [`Neo4jVectorStore`]: The https://neo4j.com/[Neo4j] vector store
+* Weaviate [`WeaviateVectorStore`] The https://weaviate.io/[Weaviate] vector store
+* Azure Vector Search [`AzureVectorStore`] the https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store
 
 More implementations may be supported in future releases.
 
