@@ -70,7 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PgVectorStoreIT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector")
+	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector:v0.5.1")
 		.withEnv("POSTGRES_USER", "postgres")
 		.withEnv("POSTGRES_PASSWORD", "postgres")
 		.withExposedPorts(5432);
@@ -95,7 +95,7 @@ public class PgVectorStoreIT {
 		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
 
 				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:postgresql://localhost:%d/%s",
+				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
 						postgresContainer.getMappedPort(5432), "postgres"),
 				"app.datasource.username=postgres", "app.datasource.password=postgres",
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
