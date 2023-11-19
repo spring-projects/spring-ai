@@ -35,6 +35,7 @@
 		<module>vector-stores/spring-ai-pinecone</module>
 		<module>vector-stores/spring-ai-chroma</module>
 		<module>vector-stores/spring-ai-azure</module>
+		<module>vector-stores/spring-ai-weaviate</module>
 
 	</modules>
 
@@ -96,6 +97,7 @@
 		<protobuf-java-util.version>3.24.4</protobuf-java-util.version>
 		<fastjson.version>2.0.42</fastjson.version>
 		<azure-search.version>11.6.0</azure-search.version>
+		<weaviate-client.version>4.4.1</weaviate-client.version>
 
 		<!-- testing dependencies -->
 		<testcontainers.version>1.19.0</testcontainers.version>
