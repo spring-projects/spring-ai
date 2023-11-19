@@ -19,6 +19,11 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Cache Docker images.
+        uses: ScribeMD/docker-cache@0.3.6
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('**/OllamaImage.java') }}
+
       - name: Build with Maven and deploy to Artifactory
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
