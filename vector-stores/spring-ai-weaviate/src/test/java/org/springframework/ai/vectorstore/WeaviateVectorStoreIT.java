@@ -243,7 +243,7 @@ public class WeaviateVectorStoreIT {
 			WeaviateVectorStoreConfig config = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
 				.withScheme("http")
 				.withHost(String.format("%s:%s", weaviateContainer.getHost(), weaviateContainer.getMappedPort(8080)))
-				.withFilterableMetadataKeys(List.of(MetadataField.text("country"), MetadataField.number("year")))
+				.withFilterableMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
 				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
 				.build();
 

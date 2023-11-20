@@ -45,7 +45,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 			.withHost(properties.getHost())
 			.withHeaders(properties.getHeaders())
 			.withObjectClass(properties.getObjectClass())
-			.withFilterableMetadataKeys(properties.getFilterField()
+			.withFilterableMetadataFields(properties.getFilterField()
 				.entrySet()
 				.stream()
 				.map(e -> new MetadataField(e.getKey(), e.getValue()))

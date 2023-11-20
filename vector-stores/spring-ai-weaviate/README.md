@@ -76,7 +76,7 @@ Create a WeaviateVectorStore instance connected to local Weaviate cluster:
          .withHost("localhost:8080")
          // Define the metadata fields to be used
          // in the similarity search filters.
-         .withFilterableMetadataKeys(List.of(
+         .withFilterableMetadataFields(List.of(
             MetadataField.text("country"),
             MetadataField.number("year"),
             MetadataField.bool("active")))
@@ -91,7 +91,10 @@ Create a WeaviateVectorStore instance connected to local Weaviate cluster:
 > [!NOTE]
 > You must list explicitly all metadata field names and types (`BOOLEAN`, `TEXT` or `NUMBER`) for any metadata key used in filter expression.
 >The `withFilterableMetadataKeys` above registers filterable metadata fields: `country` of type `TEXT`, `year` of type `NUMBER` and `active` of type `BOOLEAN`.
-> If new entries are added to the filter list you would likely have to (re)upload/update all affected Documents.
+>
+> If the filterable metadata fields is expanded with new entires, you have to (re)upload/update the documents with this metadata.
+>
+> You can use the following, Weaviate [system metadata](https://weaviate.io/developers/weaviate/api/graphql/filters#special-cases) fields without explicit definition: `id`, `_creationTimeUnix` and `_lastUpdateTimeUnix`.
 
 Then yn your main code, create some documents
 

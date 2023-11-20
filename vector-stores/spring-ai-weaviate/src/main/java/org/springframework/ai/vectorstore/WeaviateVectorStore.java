@@ -280,7 +280,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 			 * @param filterMetadataFields known metadata fields to use.
 			 * @return this builder.
 			 */
-			public Builder withFilterableMetadataKeys(List<MetadataField> filterMetadataFields) {
+			public Builder withFilterableMetadataFields(List<MetadataField> filterMetadataFields) {
 				Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
 				this.filterMetadataFields = filterMetadataFields;
 				return this;
