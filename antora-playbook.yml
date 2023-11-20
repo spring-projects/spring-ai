@@ -15,7 +15,7 @@ git:
   ensure_git_suffix: false
 content:
   sources:
-  - url: https://github.com/spring-projects-experimental/spring-ai
+  - url: https://github.com/spring-projects/spring-ai
     # Refname matching:
     # https://docs.antora.org/antora/latest/playbook/content-refname-matching/
     branches: [main]
