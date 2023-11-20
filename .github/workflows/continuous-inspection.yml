@@ -24,7 +24,7 @@ jobs:
         run: mvn -P test-coverage verify
 
       - name: Analyse code quality with Sonar
-        if: github.repository == 'spring-experimental/spring-ai'
+        if: github.repository == 'spring-projects/spring-ai'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
