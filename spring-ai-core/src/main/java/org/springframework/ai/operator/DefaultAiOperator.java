@@ -1,5 +1,7 @@
-package org.springframework.ai.client;
+package org.springframework.ai.operator;
 
+import org.springframework.ai.client.AiClient;
+import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.memory.Memory;
 import org.springframework.ai.prompt.Prompt;
@@ -10,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DefaultAiThing implements AiThing {
+public class DefaultAiOperator implements AiOperator {
 
 	private final AiClient aiClient;
 
@@ -22,27 +24,27 @@ public class DefaultAiThing implements AiThing {
 
 	private Memory memory;
 
-	protected DefaultAiThing(AiClient aiClient, PromptTemplate promptTemplate) {
+	protected DefaultAiOperator(AiClient aiClient, PromptTemplate promptTemplate) {
 		this.aiClient = aiClient;
 		this.promptTemplate = promptTemplate;
 	}
 
-	public AiThing promptTemplate(String promptTemplate) {
+	public AiOperator promptTemplate(String promptTemplate) {
 		this.promptTemplate = new PromptTemplate(promptTemplate);
 		return this;
 	}
 
-	public AiThing vectorStore(VectorStore vectorStore) {
+	public AiOperator vectorStore(VectorStore vectorStore) {
 		this.vectorStore = vectorStore;
 		return this;
 	}
 
-	public AiThing vectorStoreKey(String vectorStoreKey) {
+	public AiOperator vectorStoreKey(String vectorStoreKey) {
 		this.vectorStoreKey = vectorStoreKey;
 		return this;
 	}
 
-	public AiThing conversationMemory(Memory memory) {
+	public AiOperator conversationMemory(Memory memory) {
 		this.memory = memory;
 		return this;
 	}

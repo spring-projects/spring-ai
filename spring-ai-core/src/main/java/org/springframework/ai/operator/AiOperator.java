@@ -1,26 +1,26 @@
-package org.springframework.ai.client;
+package org.springframework.ai.operator;
 
-import org.springframework.ai.chain.AiOutput;
+import org.springframework.ai.client.AiClient;
 import org.springframework.ai.memory.Memory;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.Map;
 
-public interface AiThing {
+public interface AiOperator {
 
 	String generate();
 
 	String generate(Map<String, Object> parameters);
 
-	static AiThing create(AiClient aiClient) {
-		return (new DefaultAiThingBuilder()).aiClient(aiClient).build();
+	static AiOperator create(AiClient aiClient) {
+		return (new DefaultAiOperatorBuilder()).aiClient(aiClient).build();
 	}
 
-	static AiThing.Builder builder() {
-		return new DefaultAiThingBuilder();
+	static AiOperator.Builder builder() {
+		return new DefaultAiOperatorBuilder();
 	}
 
-	AiThing promptTemplate(String promptTemplate);
+	AiOperator promptTemplate(String promptTemplate);
 
 	public interface Builder {
 
@@ -34,7 +34,7 @@ public interface AiThing {
 
 		Builder conversationMemory(Memory memory);
 
-		AiThing build();
+		AiOperator build();
 
 	}
 

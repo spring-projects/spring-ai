@@ -1,11 +1,14 @@
-package org.springframework.ai.client;
+package org.springframework.ai.operator;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.client.AiClient;
+import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.client.Generation;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.memory.ConversationBufferMemory;
+import org.springframework.ai.operator.AiOperator;
+import org.springframework.ai.operator.DefaultPromptTemplateStrings;
 import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.vectorstore.InMemoryVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
@@ -16,7 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AiThingTests {
+public class AiOperatorTests {
 
 	@Test
 	public void simplePrompt() {
@@ -24,9 +27,8 @@ public class AiThingTests {
 		AiResponse aiResponse = new AiResponse(List.of(new Generation("Because of Rayleigh scattering.")));
 		when(aiClient.generate(new Prompt("Why is the sky blue?"))).thenReturn(aiResponse);
 
-		// create and use the AiThing
-		AiThing aiThing = AiThing.create(aiClient).promptTemplate("Why is the sky blue?");
-		String response = aiThing.generate();
+		AiOperator aiOperator = AiOperator.create(aiClient).promptTemplate("Why is the sky blue?");
+		String response = aiOperator.generate();
 
 		assertThat(response).isEqualTo("Because of Rayleigh scattering.");
 	}
@@ -37,9 +39,8 @@ public class AiThingTests {
 		AiResponse aiResponse = new AiResponse(List.of(new Generation("Because of Rayleigh scattering.")));
 		when(aiClient.generate(new Prompt("Why is the sky blue?"))).thenReturn(aiResponse);
 
-		// create and use the AiThing
-		AiThing aiThing = AiThing.builder().aiClient(aiClient).promptTemplate("Why is the sky blue?").build();
-		String response = aiThing.generate();
+		AiOperator aiOperator = AiOperator.builder().aiClient(aiClient).promptTemplate("Why is the sky blue?").build();
+		String response = aiOperator.generate();
 
 		assertThat(response).isEqualTo("Because of Rayleigh scattering.");
 	}
@@ -52,12 +53,11 @@ public class AiThingTests {
 
 		when(aiClient.generate(new Prompt("Tell me a joke about cows."))).thenReturn(aiResponse);
 
-		// create and use the AiThing
-		AiThing aiThing = AiThing.builder()
+		AiOperator aiOperator = AiOperator.builder()
 			.aiClient(aiClient)
 			.promptTemplate("Tell me a joke about {subject}.")
 			.build();
-		String response = aiThing.generate(Map.of("subject", "cows"));
+		String response = aiOperator.generate(Map.of("subject", "cows"));
 
 		assertThat(response).isEqualTo("What do you call a herd of wealthy cows? Cash cows.");
 	}
@@ -84,15 +84,14 @@ public class AiThingTests {
 				List.of(new Generation("Roads are worth 1 point for each tile of a completed road.")));
 		when(aiClient.generate(prompt)).thenReturn(aiResponse);
 
-		// Build the AiThing
-		AiThing aiThing = AiThing.builder()
+		AiOperator aiOperator = AiOperator.builder()
 			.aiClient(aiClient)
 			.promptTemplate(DefaultPromptTemplateStrings.RAG_PROMPT)
 			.vectorStore(vectorStore)
 			.build();
 
 		// Ask the question
-		String response = aiThing.generate(Map.of("input", "How do you score roads?"));
+		String response = aiOperator.generate(Map.of("input", "How do you score roads?"));
 
 		// Assert the response
 		assertThat(response).isEqualTo("Roads are worth 1 point for each tile of a completed road.");
@@ -106,19 +105,19 @@ public class AiThingTests {
 
 		ConversationBufferMemory memory = new ConversationBufferMemory();
 
-		AiThing aiThing = AiThing.builder()
+		AiOperator aiOperator = AiOperator.builder()
 			.aiClient(aiClient)
 			.promptTemplate(DefaultPromptTemplateStrings.CHAT_PROMPT)
 			.conversationMemory(memory)
 			.build();
 
-		aiThing.generate(Map.of("input", "Why is the sky blue?"));
+		aiOperator.generate(Map.of("input", "Why is the sky blue?"));
 		Map<String, Object> memoryMap = memory.load(Map.of());
 		assertThat(memoryMap.get("history")).isEqualTo("""
 				user: Why is the sky blue?
 				assistant: Because of Rayleigh scattering.""");
 
-		aiThing.generate(Map.of("input", "Why is the sky blue?"));
+		aiOperator.generate(Map.of("input", "Why is the sky blue?"));
 		memoryMap = memory.load(Map.of());
 		assertThat(memoryMap.get("history")).isEqualTo("""
 				user: Why is the sky blue?
@@ -143,20 +142,20 @@ public class AiThingTests {
 						Map.of()),
 				new Document("Roads are terminated at cities, monasteries, and crossroads.", Map.of())));
 
-		AiThing aiThing = AiThing.builder()
+		AiOperator aiOperator = AiOperator.builder()
 			.aiClient(aiClient)
 			.promptTemplate(DefaultPromptTemplateStrings.RAG_PROMPT)
 			.conversationMemory(memory)
 			.vectorStore(vectorStore)
 			.build();
 
-		aiThing.generate(Map.of("input", "Why is the sky blue?"));
+		aiOperator.generate(Map.of("input", "Why is the sky blue?"));
 		Map<String, Object> memoryMap = memory.load(Map.of());
 		assertThat(memoryMap.get("history")).isEqualTo("""
 				user: Why is the sky blue?
 				assistant: Because of Rayleigh scattering.""");
 
-		aiThing.generate(Map.of("input", "Why is the sky blue?"));
+		aiOperator.generate(Map.of("input", "Why is the sky blue?"));
 		memoryMap = memory.load(Map.of());
 		assertThat(memoryMap.get("history")).isEqualTo("""
 				user: Why is the sky blue?

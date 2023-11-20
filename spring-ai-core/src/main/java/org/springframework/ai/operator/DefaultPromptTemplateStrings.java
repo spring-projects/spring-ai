@@ -1,4 +1,4 @@
-package org.springframework.ai.client;
+package org.springframework.ai.operator;
 
 public interface DefaultPromptTemplateStrings {
 
