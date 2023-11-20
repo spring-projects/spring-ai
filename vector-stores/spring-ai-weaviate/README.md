@@ -14,8 +14,7 @@ It gives you the tools to store document embeddings, content and metadata and to
 
    - `Transformers Embedding` - computes the embedding in your, local environment. Follow the [Transformers Embedding](../../embedding-clients/transformers-embedding/) instructions.
    - `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at [OpenAI Signup](https://platform.openai.com/signup) and generate the api-key token at [API Keys](https://platform.openai.com/account/api-keys).
-   - `Azure OpenAI Embedding`.
-   - `PostgresML Embedding Client`.
+   - You can also use the `Azure OpenAI Embedding` or the `PostgresML Embedding Client`.
 
 2. `Weaviate cluster`. You can a cluster, locally, in a Docker container ([Local Weaviate](#appendix_a)) or create a [Weaviate Cloud Service](https://console.weaviate.cloud/). For later you need to create an weaviate account spin a cluster and get your access api-key from the [dashboard details](https://console.weaviate.cloud/dashboard).
 
