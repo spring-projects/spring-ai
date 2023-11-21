@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai;
+package org.springframework.ai.test.config;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,27 +23,18 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.theokanning.openai.client.OpenAiApi;
-import com.theokanning.openai.service.OpenAiService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.client.OpenAiClient;
-import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,26 +44,24 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okio.Buffer;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 /**
- * {@link SpringBootConfiguration} for {@literal OpenAI's} API using mock objects.
+ * Spring {@link Configuration} for AI integration testing using mock objects.
  * <p>
- * This test configuration allows Spring AI framework developers to mock OpenAI's API with
- * Spring {@link MockMvc} and a test provided Spring Web MVC
+ * This test configuration allows Spring AI framework developers to mock an AI provider's
+ * APIs with Spring {@link MockMvc} and a test provided Spring Web MVC
  * {@link org.springframework.web.bind.annotation.RestController}.
  * <p>
  * This test configuration makes use of the OkHttp3 {@link MockWebServer} and
- * {@link Dispatcher} to integrate with Spring {@link MockMvc}.
+ * {@link Dispatcher} to integrate with Spring {@link MockMvc}. This allows you to mock
+ * the AI response (e.g. JSON) coming back from the AI provider API and let it pass
+ * through the underlying AI client library and infrastructure components responsible for
+ * accessing the provider's AI with its API all the way back to Spring AI.
  *
  * @author John Blum
  * @see okhttp3.mockwebserver.Dispatcher
@@ -81,14 +70,13 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
  * @see org.springframework.test.web.servlet.MockMvc
  * @since 0.7.0
  */
-@SpringBootConfiguration
-@Profile("spring-ai-openai-mocks")
+@Configuration
 @SuppressWarnings("unused")
-public class OpenAiMockTestConfiguration {
+public class MockAiTestConfiguration {
 
-	private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
+	public static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
-	private static final String SPRING_AI_API_PATH = "/spring-ai/api";
+	public static final String SPRING_AI_API_PATH = "/spring-ai/api";
 
 	@Bean
 	MockWebServerFactoryBean mockWebServer(MockMvc mockMvc) {
@@ -97,36 +85,12 @@ public class OpenAiMockTestConfiguration {
 		return factoryBean;
 	}
 
-	@Bean
-	OpenAiService theoOpenAiService(MockWebServer webServer) {
-
-		String apiKey = UUID.randomUUID().toString();
-		Duration timeout = Duration.ofSeconds(60);
-
-		ObjectMapper objectMapper = OpenAiService.defaultObjectMapper();
-
-		OkHttpClient httpClient = new OkHttpClient.Builder(OpenAiService.defaultClient(apiKey, timeout))
-			.addInterceptor(new OpenAiHttpResponseHeadersInterceptor())
-			.build();
-
-		HttpUrl baseUrl = webServer.url(SPRING_AI_API_PATH.concat("/"));
-
-		Retrofit retrofit = new Retrofit.Builder().baseUrl(baseUrl)
-			.addConverterFactory(JacksonConverterFactory.create(objectMapper))
-			.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-			.client(httpClient)
-			.build();
-
-		OpenAiApi api = retrofit.create(OpenAiApi.class);
-
-		return new OpenAiService(api);
-	}
-
-	@Bean
-	OpenAiClient apiClient(OpenAiService openAiService) {
-		return new OpenAiClient(openAiService);
-	}
-
+	/**
+	 * OkHttp {@link Dispatcher} implementation integrated with Spring Web MVC.
+	 *
+	 * @see okhttp3.mockwebserver.Dispatcher
+	 * @see org.springframework.test.web.servlet.MockMvc
+	 */
 	static class MockMvcDispatcher extends Dispatcher {
 
 		private final MockMvc mockMvc;
@@ -141,6 +105,7 @@ public class OpenAiMockTestConfiguration {
 		}
 
 		@Override
+		@SuppressWarnings("all")
 		public MockResponse dispatch(RecordedRequest request) {
 
 			try {
@@ -213,7 +178,7 @@ public class OpenAiMockTestConfiguration {
 	}
 
 	/**
-	 * Spring {@link FactoryBean} used to construct, configure and properly initialize the
+	 * Spring {@link FactoryBean} used to construct, configure and initialize the
 	 * {@link MockWebServer} inside the Spring container.
 	 * <p>
 	 * Unfortunately, {@link MockWebServerFactoryBean} cannot implement the Spring
@@ -226,8 +191,8 @@ public class OpenAiMockTestConfiguration {
 	 * <li>The MockWebServer.started is a private state variable</li>
 	 * <li>The overridden before() function is protected</li>
 	 * <li>The class is final and cannot be extended</li>
-	 * <li>Calling MockWebServer.url(:String) needed to construct Retrofit client in the
-	 * theoOpenAiService bean necessarily starts the MockWebServer</li>
+	 * <li>Calling MockWebServer.url(:String) is needed to construct Retrofit client in
+	 * the theoOpenAiService bean necessarily starts the MockWebServer</li>
 	 * </ul>
 	 * <p>
 	 * TODO: Figure out a way to implement the Spring {@link SmartLifecycle} interface
@@ -235,6 +200,7 @@ public class OpenAiMockTestConfiguration {
 	 * methods.
 	 *
 	 * @see org.springframework.beans.factory.FactoryBean
+	 * @see org.springframework.beans.factory.DisposableBean
 	 * @see org.springframework.beans.factory.InitializingBean
 	 * @see okhttp3.mockwebserver.MockWebServer
 	 */

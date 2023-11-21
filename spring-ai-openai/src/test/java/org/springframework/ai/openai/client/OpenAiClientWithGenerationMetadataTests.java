@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.test.config.MockAiTestConfiguration.SPRING_AI_API_PATH;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -29,7 +30,7 @@ import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.openai.OpenAiMockTestConfiguration;
+import org.springframework.ai.openai.MockOpenAiTestConfiguration;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,8 +59,8 @@ import org.springframework.web.context.request.WebRequest;
  * @since 0.7.0
  */
 @SpringBootTest
-@ContextConfiguration(classes = OpenAiClientWithGenerationMetadataTests.TestConfiguration.class)
 @ActiveProfiles("spring-ai-openai-mocks")
+@ContextConfiguration(classes = OpenAiClientWithGenerationMetadataTests.TestConfiguration.class)
 @SuppressWarnings("unused")
 class OpenAiClientWithGenerationMetadataTests {
 
@@ -119,7 +120,7 @@ class OpenAiClientWithGenerationMetadataTests {
 	}
 
 	@SpringBootConfiguration
-	@Import(OpenAiMockTestConfiguration.class)
+	@Import(MockOpenAiTestConfiguration.class)
 	static class TestConfiguration {
 
 		@Bean
@@ -130,7 +131,7 @@ class OpenAiClientWithGenerationMetadataTests {
 	}
 
 	@RestController
-	@RequestMapping("/spring-ai/api")
+	@RequestMapping(SPRING_AI_API_PATH)
 	@SuppressWarnings("all")
 	static class SpringOpenAiChatCompletionsController {
 

@@ -43,7 +43,7 @@ public class AzureOpenAiUsage implements Usage {
 	private final CompletionsUsage usage;
 
 	public AzureOpenAiUsage(CompletionsUsage usage) {
-		Assert.notNull(usage, "CompletionUsage must not be null");
+		Assert.notNull(usage, "CompletionsUsage must not be null");
 		this.usage = usage;
 	}
 
@@ -53,17 +53,17 @@ public class AzureOpenAiUsage implements Usage {
 
 	@Override
 	public Long getPromptTokens() {
-		return Integer.valueOf(getUsage().getPromptTokens()).longValue();
+		return (long) getUsage().getPromptTokens();
 	}
 
 	@Override
 	public Long getGenerationTokens() {
-		return Integer.valueOf(getUsage().getCompletionTokens()).longValue();
+		return (long) getUsage().getCompletionTokens();
 	}
 
 	@Override
 	public Long getTotalTokens() {
-		return Integer.valueOf(getUsage().getTotalTokens()).longValue();
+		return (long) getUsage().getTotalTokens();
 	}
 
 	@Override
