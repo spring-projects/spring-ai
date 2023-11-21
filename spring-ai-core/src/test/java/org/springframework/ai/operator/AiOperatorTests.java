@@ -78,8 +78,8 @@ public class AiOperatorTests {
 		// Create a resolved version of the template for mocking purposes only
 		String resolvedRagTemplate = DefaultPromptTemplateStrings.RAG_PROMPT.replace("{documents}", """
 				Roads are scored when completed and are worth 1 point per tile they go through.
-				Roads are terminated at cities, monasteries, and crossroads.
-				""").replace("{input}", "How do you score roads?");
+				Roads are terminated at cities, monasteries, and crossroads.""")
+			.replace("{input}", "How do you score roads?");
 
 		// Mock the AiClient
 		AiClient aiClient = mock(AiClient.class);
