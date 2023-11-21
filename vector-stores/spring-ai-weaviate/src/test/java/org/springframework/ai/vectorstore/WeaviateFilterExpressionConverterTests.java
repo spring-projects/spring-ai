@@ -48,17 +48,6 @@ public class WeaviateFilterExpressionConverterTests {
 	}
 
 	@Test
-	public void boza() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("author", "article_type"));
-
-		String weaviateWhere = converter
-			.convertExpression(Filter.parser().parse("author in ['john', 'jill'] && 'article_type' == 'blog'"));
-
-		System.out.println(weaviateWhere);
-
-	}
-
-	@Test
 	public void testMissingFilterName() {
 
 		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of());
