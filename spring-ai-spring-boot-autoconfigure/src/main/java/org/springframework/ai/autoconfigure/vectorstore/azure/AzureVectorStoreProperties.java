@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.azure;
 
-import org.springframework.ai.vectorstore.AzureVectorStore;
+import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

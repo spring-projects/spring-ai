@@ -43,7 +43,7 @@ Add these dependencies to your project:
 1. Select an Embeddings interface implementation.
 You can choose between:
 
-* OpenAI Embedding:
+* or OpenAI Embedding:
 
    ```xml
    <dependency>
@@ -102,9 +102,20 @@ To create a vector store, you can use the following code by injecting the `Searc
 ```java
 @Bean
 public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
-  return new AzureVectorStore(searchIndexClient, embeddingClient);
+  return new AzureVectorStore(searchIndexClient, embeddingClient,
+    // Define the metadata fields to be used
+    // in the similarity search filters.
+    List.of(MetadataField.text("country"),
+            MetadataField.int64("year"),
+            MetadataField.bool("active")));
 }
 ```
+
+> [!NOTE]
+> You must list explicitly all metadata field names and types for any metadata key used in filter expression.
+>The list above registers filterable metadata fields: `country` of type `TEXT`, `year` of type `INT64` and `active` of type `BOOLEAN`.
+>
+> If the filterable metadata fields is expanded with new entires, you have to (re)upload/update the documents with this metadata.
 
 In your main code, create some documents
 
@@ -124,10 +135,56 @@ vectorStore.add(List.of(document));
 And finally, retrieve documents similar to a query:
 
 ```java
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest
+      .query("Spring")
+      .withTopK(5));
 ```
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+### Metadata filtering
+
+You can leverage the generic, portable [metadata filters](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters) with AzureVectorStore as well.
+
+For example you can use either the text expression language:
+
+```java
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+```
+
+or programmatically using the expression DSL:
+
+```java
+FilterExpressionBuilder b = Filter.builder();
+
+vectorStore.similaritySearch(
+    SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+```
+
+The, portable, filter expressions get automatically converted into the proprietary Azure Search [OData filters](https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter).
+For example the following, portable, filter expression
+
+```sql
+country in ['UK', 'NL'] && year >= 2020
+```
+
+is converted into Azure, OData, [filter expression](https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter):
+
+```graphQL
+$filter search.in(meta_country, 'UK,NL', ',') and meta_year ge 2020
+```
 
 ## Integration With Azure OpenAI Studio Data Ingestion
 
@@ -135,7 +192,7 @@ Azure Open AI services provides a convenient method to upload documents into an 
 [learning document](https://learn.microsoft.com/en-us/azure/ai-services/openai/use-your-data-quickstart?tabs=command-line&pivots=programming-language-csharp).
 The `AzureVectorStore` implementation is compatible with indexes that use this methodology facilitating an *easier* way to integrate with your existing documents for the purpose of searching and integrating with the AI system.
 
-## <a name="appendix_a" /> Appendix A: Create Vector Store Search Index
+## <a name="appendix_a" /> Appendix A: Create Vector Store Search Index </a>
 
 The easiest way to crate a search index manually, is to create one from a JSON document.
 This can be done by clicking on the `Indexes` link under the `Search management` section.
