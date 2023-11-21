@@ -73,7 +73,7 @@ class OpenAiClientWithGenerationMetadataTests {
 
 		assertThat(response).isNotNull();
 
-		GenerationMetadata generationMetadata = response.getMetadata();
+		GenerationMetadata generationMetadata = response.getGenerationMetadata();
 
 		assertThat(generationMetadata).isNotNull();
 

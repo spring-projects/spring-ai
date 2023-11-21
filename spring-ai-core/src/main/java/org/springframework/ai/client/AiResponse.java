@@ -15,11 +15,11 @@
  */
 package org.springframework.ai.client;
 
-import org.springframework.ai.metadata.GenerationMetadata;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.ai.metadata.GenerationMetadata;
 
 public class AiResponse {
 
@@ -72,12 +72,12 @@ public class AiResponse {
 	}
 
 	/**
-	 * Returns {@link GenerationMetadata metadata} containing metadata about the use of
-	 * the AI provider's API.
-	 * @return {@link GenerationMetadata metadata} containing metadata about the use of
-	 * the AI provider's API.
+	 * Returns {@link GenerationMetadata} containing information about the use of the AI
+	 * provider's API.
+	 * @return {@link GenerationMetadata} containing information about the use of the AI
+	 * provider's API.
 	 */
-	public GenerationMetadata getMetadata() {
+	public GenerationMetadata getGenerationMetadata() {
 		return this.metadata;
 	}
 
