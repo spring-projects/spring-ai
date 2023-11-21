@@ -1,13 +1,18 @@
 package org.springframework.ai.openai.acme;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.client.AiClient;
+
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.prompt.Prompt;
@@ -23,10 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,7 +47,7 @@ public class AcmeIT extends AbstractIT {
 	private OpenAiEmbeddingClient embeddingClient;
 
 	@Autowired
-	private AiClient aiClient;
+	private OpenAiClient aiClient;
 
 	@Test
 	void beanTest() {
