@@ -14,45 +14,82 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.reader.pdf.layout;
+package org.springframework.ai.reader;
 
 import org.springframework.util.StringUtils;
 
 /**
- * Provides text formatting options for extracted PDF page text, including left alignment
- * and the ability to trim and delete lines from the top and bottom of the text.
+ * A utility to reformat extracted text content before encapsulating it in a
+ * {@link org.springframework.ai.document.Document}. This formatter provides the following
+ * functionalities:
  *
- * This class allows customization of text formatting applied to extracted PDF page text.
- * It can align the text to the left, remove specified lines from the top and bottom of
- * the text, and trim adjacent blank lines.
+ * <ul>
+ * <li>Left alignment of text</li>
+ * <li>Removal of specified lines from the beginning and end of content</li>
+ * <li>Consolidation of consecutive blank lines</li>
+ * </ul>
+ *
+ * An instance of this formatter can be customized using the {@link Builder} nested class.
  *
  * @author Christian Tzolov
  */
-public class PageExtractedTextFormatter {
+public class ExtractedTextFormatter {
 
+	/** Flag indicating if the text should be left-aligned */
 	private boolean leftAlignment;
 
+	/** Number of top pages to skip before performing delete operations */
 	private int numberOfTopPagesToSkipBeforeDelete;
 
+	/** Number of top text lines to delete from a page */
 	private int numberOfTopTextLinesToDelete;
 
+	/** Number of bottom text lines to delete from a page */
 	private int numberOfBottomTextLinesToDelete;
 
-	private PageExtractedTextFormatter(Builder builder) {
+	/**
+	 * Private constructor to initialize the formatter from the builder.
+	 * @param builder Builder used to initialize the formatter.
+	 */
+	private ExtractedTextFormatter(Builder builder) {
 		this.leftAlignment = builder.leftAlignment;
 		this.numberOfBottomTextLinesToDelete = builder.numberOfBottomTextLinesToDelete;
 		this.numberOfTopPagesToSkipBeforeDelete = builder.numberOfTopPagesToSkipBeforeDelete;
 		this.numberOfTopTextLinesToDelete = builder.numberOfTopTextLinesToDelete;
 	}
 
+	/**
+	 * Provides an instance of the builder for this formatter.
+	 * @return an instance of the builder.
+	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static PageExtractedTextFormatter defaults() {
+	/**
+	 * Provides a default instance of the formatter.
+	 * @return default instance of the formatter.
+	 */
+	public static ExtractedTextFormatter defaults() {
 		return new Builder().build();
 	}
 
+	/**
+	 * Formats the provided text according to the formatter's configuration.
+	 * @param pageText Text to be formatted.
+	 * @return Formatted text.
+	 */
+	public String format(String pageText) {
+		return this.format(pageText, 0);
+	}
+
+	/**
+	 * Formats the provided text based on the formatter's configuration, considering the
+	 * page number.
+	 * @param pageText Text to be formatted.
+	 * @param pageNumber Page number of the provided text.
+	 * @return Formatted text.
+	 */
 	public String format(String pageText, int pageNumber) {
 
 		var text = trimAdjacentBlankLines(pageText);
@@ -69,6 +106,36 @@ public class PageExtractedTextFormatter {
 		return text;
 	}
 
+	/**
+	 * The {@code Builder} class is a nested static class of
+	 * {@link ExtractedTextFormatter} designed to facilitate the creation and
+	 * customization of instances of {@link ExtractedTextFormatter}.
+	 *
+	 * <p>
+	 * It allows for a step-by-step, fluent construction of the
+	 * {@link ExtractedTextFormatter}, by providing methods to set specific configurations
+	 * such as left alignment of text, the number of top lines or bottom lines to delete,
+	 * and the number of top pages to skip before deletion. Each configuration method in
+	 * the builder returns the builder instance itself, enabling method chaining.
+	 * </p>
+	 *
+	 *
+	 * By default, the builder sets:
+	 * <ul>
+	 * <li>Left alignment to {@code false}</li>
+	 * <li>Number of top pages to skip before deletion to 0</li>
+	 * <li>Number of top text lines to delete to 0</li>
+	 * <li>Number of bottom text lines to delete to 0</li>
+	 * </ul>
+	 * 
+	 *
+	 * <p>
+	 * After configuring the builder, calling the {@link #build()} method will return a
+	 * new instance of {@link ExtractedTextFormatter} with the specified configurations.
+	 * </p>
+	 *
+	 * @see ExtractedTextFormatter
+	 */
 	public static class Builder {
 
 		private boolean leftAlignment = false;
@@ -120,8 +187,25 @@ public class PageExtractedTextFormatter {
 			return this;
 		}
 
-		public PageExtractedTextFormatter build() {
-			return new PageExtractedTextFormatter(this);
+		/**
+		 * Constructs and returns an instance of {@link ExtractedTextFormatter} using the
+		 * configurations set on this builder.
+		 *
+		 * <p>
+		 * This method uses the values set on the builder to initialize the configuration
+		 * for the {@link ExtractedTextFormatter} instance. If no values are explicitly
+		 * set on the builder, the defaults specified in the builder are used.
+		 * </p>
+		 *
+		 * <p>
+		 * It's recommended to use this method only once per builder instance to ensure
+		 * that each {@link ExtractedTextFormatter} object is configured as intended.
+		 * </p>
+		 * @return a new instance of {@link ExtractedTextFormatter} configured with the
+		 * values set on this builder.
+		 */
+		public ExtractedTextFormatter build() {
+			return new ExtractedTextFormatter(this);
 		}
 
 	}
@@ -132,9 +216,7 @@ public class PageExtractedTextFormatter {
 	 * @return Returns the same text but with blank lines trimmed.
 	 */
 	public static String trimAdjacentBlankLines(String pageText) {
-
 		return pageText.replaceAll("(?m)(^ *\n)", "\n").replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
-
 	}
 
 	/**
@@ -167,6 +249,27 @@ public class PageExtractedTextFormatter {
 		return pageText.substring(0, truncateIndex);
 	}
 
+	/**
+	 * Removes a specified number of lines from the top part of the given text.
+	 *
+	 * <p>
+	 * This method takes a text and trims it by removing a certain number of lines from
+	 * the top. If the provided text is null or contains only whitespace, it will be
+	 * returned as is. If the number of lines to remove exceeds the actual number of lines
+	 * in the text, the result will be an empty string.
+	 * </p>
+	 *
+	 * <p>
+	 * The method identifies lines based on the system's line separator, making it
+	 * compatible with different platforms.
+	 * </p>
+	 * @param pageText The text from which the top lines need to be removed. If this is
+	 * null, empty, or consists only of whitespace, it will be returned unchanged.
+	 * @param numberOfLines The number of lines to remove from the top of the text. If
+	 * this exceeds the actual number of lines in the text, an empty string will be
+	 * returned.
+	 * @return The text with the specified number of lines removed from the top.
+	 */
 	public static String deleteTopTextLines(String pageText, int numberOfLines) {
 		if (!StringUtils.hasText(pageText)) {
 			return pageText;

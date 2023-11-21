@@ -16,12 +16,13 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.util.StringUtils;
+import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
 
 import java.time.Duration;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 @ConfigurationProperties(CONFIG_PREFIX)
 public class OpenAiProperties {
@@ -32,17 +33,13 @@ public class OpenAiProperties {
 
 	private Duration duration = Duration.ofSeconds(60);
 
+	private final Embedding embedding = new Embedding(this);
+
 	private String apiKey;
 
 	private String model = "gpt-3.5-turbo";
 
 	private String baseUrl = "https://api.openai.com";
-
-	private String embeddingModel = "text-embedding-ada-002";
-
-	private String embeddingBaseUrl;
-
-	private String embeddingApiKey;
 
 	public String getApiKey() {
 		return this.apiKey;
@@ -58,6 +55,14 @@ public class OpenAiProperties {
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	public String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 	public Double getTemperature() {
@@ -76,36 +81,53 @@ public class OpenAiProperties {
 		this.duration = duration;
 	}
 
-	public String getBaseUrl() {
-		return this.baseUrl;
+	public Embedding getEmbedding() {
+		return this.embedding;
 	}
 
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
+	public static class Embedding {
 
-	public String getEmbeddingModel() {
-		return this.embeddingModel;
-	}
+		private final OpenAiProperties openAiProperties;
 
-	public void setEmbeddingModel(String embeddingModel) {
-		this.embeddingModel = embeddingModel;
-	}
+		private String apiKey;
 
-	public void setEmbeddingBaseUrl(String embeddingBaseUrl) {
-		this.embeddingBaseUrl = embeddingBaseUrl;
-	}
+		private String model = "text-embedding-ada-002";
 
-	public String getEmbeddingBaseUrl() {
-		return StringUtils.hasText(this.embeddingBaseUrl) ? this.embeddingBaseUrl : this.baseUrl;
-	}
+		private String baseUrl;
 
-	public String getEmbeddingApiKey() {
-		return StringUtils.hasText(this.embeddingApiKey) ? this.embeddingApiKey : this.apiKey;
-	}
+		protected Embedding(OpenAiProperties openAiProperties) {
+			Assert.notNull(openAiProperties, "OpenAiProperties must not be null");
+			this.openAiProperties = openAiProperties;
+		}
 
-	public void setEmbeddingApiKey(String embeddingApiKey) {
-		this.embeddingApiKey = embeddingApiKey;
+		public OpenAiProperties getOpenAiProperties() {
+			return openAiProperties;
+		}
+
+		public String getApiKey() {
+			return StringUtils.hasText(this.apiKey) ? this.apiKey : getOpenAiProperties().getApiKey();
+		}
+
+		public void setApiKey(String embeddingApiKey) {
+			this.apiKey = embeddingApiKey;
+		}
+
+		public String getModel() {
+			return this.model;
+		}
+
+		public void setModel(String model) {
+			this.model = model;
+		}
+
+		public String getBaseUrl() {
+			return StringUtils.hasText(this.baseUrl) ? this.baseUrl : getOpenAiProperties().getBaseUrl();
+		}
+
+		public void setBaseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+		}
+
 	}
 
 }

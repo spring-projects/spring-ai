@@ -49,19 +49,25 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
-		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService(openAiProperties.getBaseUrl(),
-				openAiProperties.getApiKey(), openAiProperties.getDuration()));
+
+		OpenAiService openAiService = theoOpenAiService(openAiProperties.getBaseUrl(), openAiProperties.getApiKey(),
+				openAiProperties.getDuration());
+
+		OpenAiClient openAiClient = new OpenAiClient(openAiService);
 		openAiClient.setTemperature(openAiProperties.getTemperature());
 		openAiClient.setModel(openAiProperties.getModel());
+
 		return openAiClient;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	public EmbeddingClient openAiEmbeddingClient(OpenAiProperties openAiProperties) {
-		return new OpenAiEmbeddingClient(theoOpenAiService(openAiProperties.getEmbeddingBaseUrl(),
-				openAiProperties.getEmbeddingApiKey(), openAiProperties.getDuration()),
-				openAiProperties.getEmbeddingModel());
+
+		OpenAiService openAiService = theoOpenAiService(openAiProperties.getEmbedding().getBaseUrl(),
+				openAiProperties.getEmbedding().getApiKey(), openAiProperties.getDuration());
+
+		return new OpenAiEmbeddingClient(openAiService, openAiProperties.getEmbedding().getModel());
 	}
 
 	private OpenAiService theoOpenAiService(String baseUrl, String apiKey, Duration duration) {

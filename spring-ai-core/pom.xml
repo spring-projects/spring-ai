@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.experimental.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.7.0-SNAPSHOT</version>
+		<version>0.7.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-core</artifactId>
 	<packaging>jar</packaging>
@@ -21,6 +21,7 @@
 
 	<properties>
 		<jsonschema.version>4.31.1</jsonschema.version>
+		<antlr.version>4.13.1</antlr.version>
 	</properties>
 
 	<dependencies>
@@ -30,6 +31,13 @@
 			<artifactId>stringtemplate</artifactId>
 			<version>${stringtemplate.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>antlr4-runtime</artifactId>
+			<version>${antlr.version}</version>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -67,5 +75,37 @@
 		</dependency>
 
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>antlr4</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.antlr</groupId>
+						<artifactId>antlr4-maven-plugin</artifactId>
+						<version>${antlr.version}</version>
+						<configuration>
+							<sourceDirectory>${basedir}/src/main/resources/antlr4</sourceDirectory>
+							<outputDirectory>${basedir}/src/main/java</outputDirectory>
+							<!-- <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory> -->
+							<visitor>true</visitor>
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>antlr4</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 
 </project>

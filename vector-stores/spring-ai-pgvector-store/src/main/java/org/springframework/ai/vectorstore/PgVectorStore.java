@@ -33,10 +33,13 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 /**
  * Uses the "vector_store" table to store the Spring AI vector data. The table and the
@@ -53,6 +56,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
+
+	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -97,16 +102,28 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	}
 
+	/**
+	 * Defaults to CosineDistance. But if vectors are normalized to length 1 (like OpenAI
+	 * embeddings), use inner product (NegativeInnerProduct) for best performance.
+	 */
 	public enum PgDistanceType {
 
+		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// embeddings), use inner product for best performance.
+		// The Sentence transformers are NOT normalized:
+		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EuclideanDistance("<->", "vector_l2_ops",
-				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? ORDER BY distance LIMIT ? "),
+				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
+		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// embeddings), use inner product for best performance.
+		// The Sentence transformers are NOT normalized:
+		// https://github.com/UKPLab/sentence-transformers/issues/233
 		NegativeInnerProduct("<#>", "vector_ip_ops",
-				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? ORDER BY distance LIMIT ? "),
+				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 
 		CosineDistance("<=>", "vector_cosine_ops",
-				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? ORDER BY distance LIMIT ? ");
+				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
 
@@ -220,7 +237,16 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					"INSERT INTO " + VECTOR_TABLE_NAME
 							+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
 							+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
-					id, content, metadata, pgEmbedding, content, metadata, pgEmbedding);
+					id, content, toJson(metadata), pgEmbedding, content, toJson(metadata), pgEmbedding);
+		}
+	}
+
+	private String toJson(Map<String, Object> map) {
+		try {
+			return objectMapper.writeValueAsString(map);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -245,26 +271,24 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(query, 4);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK) {
-		return this.similaritySearch(query, topK, 0.0 /** ALL */
-		);
-	}
+		String nativeFilterExpression = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
+		String jsonPathFilter = "";
 
-		double distance = 1 - similarityThreshold;
+		if (StringUtils.hasText(nativeFilterExpression)) {
+			jsonPathFilter = " AND metadata::jsonb @@ '" + nativeFilterExpression + "'::jsonpath ";
+		}
 
-		PGvector queryEmbedding = getQueryEmbedding(query);
+		double distance = 1 - request.getSimilarityThreshold();
+
+		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
-				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME),
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, topK);
+				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
+				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {
@@ -274,7 +298,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					@Override
 					@Nullable
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
-						return rs.getDouble("distance");
+						return rs.getDouble(DocumentRowMapper.COLUMN_DISTANCE);
 					}
 
 				}, getQueryEmbedding(query));

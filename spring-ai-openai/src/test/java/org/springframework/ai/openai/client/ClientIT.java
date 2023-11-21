@@ -1,5 +1,6 @@
 package org.springframework.ai.openai.client;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
@@ -55,7 +56,7 @@ class ClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiClient.generate(prompt).getGeneration();
+		Generation generation = this.openAiClient.generate(prompt).getGeneration();
 
 		List<String> list = outputParser.parse(generation.getText());
 		System.out.println(list);
