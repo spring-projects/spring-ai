@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.openai.client.OpenAiStreamClient;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -24,6 +25,9 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected AiClient openAiClient;
+
+	@Autowired
+	protected OpenAiStreamClient openAiStreamClient;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
