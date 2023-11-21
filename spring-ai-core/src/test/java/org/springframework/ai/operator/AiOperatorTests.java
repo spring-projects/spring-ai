@@ -1,5 +1,6 @@
 package org.springframework.ai.operator;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
@@ -9,6 +10,9 @@ import org.springframework.ai.memory.ConversationBufferMemory;
 import org.springframework.ai.operator.AiOperator;
 import org.springframework.ai.operator.DefaultPromptTemplateStrings;
 import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.prompt.messages.AssistantMessage;
+import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
@@ -127,20 +131,39 @@ public class AiOperatorTests {
 
 	}
 
-	// TODO: This test passes, but only coincidentally. Need to make it better.
 	@Test
 	public void withVectorStoreAndMemory() {
 		AiClient aiClient = mock(AiClient.class);
-		when(aiClient.generate(any(Prompt.class)))
-			.thenReturn(new AiResponse(List.of(new Generation("Because of Rayleigh scattering."))));
-
 		ConversationBufferMemory memory = new ConversationBufferMemory();
 
+		// preload the memory with some chat history
+		String history = """
+				user: Why is water wet?
+				assistant: Because of the hydrogen bonds that hold water molecules together.
+				user: Why is the sky blue?
+				assistant: Because of Rayleigh scattering.""";
+		memory.save(Map.of("input", "Why is water wet?"),
+				Map.of("output", "Because of the hydrogen bonds that hold water molecules together."));
+		memory.save(Map.of("input", "Why is the sky blue?"), Map.of("output", "Because of Rayleigh scattering."));
+
+		// Mock the vector store
 		VectorStore vectorStore = mock(VectorStore.class);
-		when(vectorStore.similaritySearch("How do you score roads?", 2)).thenReturn(List.of(
-				new Document("Roads are scored when completed and are worth 1 point per tile they go through.",
-						Map.of()),
-				new Document("Roads are terminated at cities, monasteries, and crossroads.", Map.of())));
+		when(vectorStore.similaritySearch("Why is the sky blue?", 2))
+			.thenReturn(List.of(new Document("Because of Rayleigh scattering.", Map.of())));
+		when(vectorStore.similaritySearch("Is the sky ever green?", 2))
+			.thenReturn(List.of(new Document("The sky turns green on St. Patrick's Day.", Map.of())));
+
+		String standalonePrompt = DefaultPromptTemplateStrings.STANDALONE_QUESTION_PROMPT.replace("{history}", history)
+			.replace("{input}", "Is it ever green?");
+
+		when(aiClient.generate(new Prompt(standalonePrompt)))
+			.thenReturn(new AiResponse(List.of(new Generation("Is the sky ever green?"))));
+
+		String questionPrompt = DefaultPromptTemplateStrings.RAG_PROMPT
+			.replace("{documents}", "The sky turns green on St. Patrick's Day.")
+			.replace("{input}", "Is the sky ever green?");
+		when(aiClient.generate(new Prompt(questionPrompt)))
+			.thenReturn(new AiResponse(List.of(new Generation("The sky is only green on St. Patrick's Day."))));
 
 		AiOperator aiOperator = AiOperator.builder()
 			.aiClient(aiClient)
@@ -149,19 +172,8 @@ public class AiOperatorTests {
 			.vectorStore(vectorStore)
 			.build();
 
-		aiOperator.generate(Map.of("input", "Why is the sky blue?"));
-		Map<String, Object> memoryMap = memory.load(Map.of());
-		assertThat(memoryMap.get("history")).isEqualTo("""
-				user: Why is the sky blue?
-				assistant: Because of Rayleigh scattering.""");
-
-		aiOperator.generate(Map.of("input", "Why is the sky blue?"));
-		memoryMap = memory.load(Map.of());
-		assertThat(memoryMap.get("history")).isEqualTo("""
-				user: Why is the sky blue?
-				assistant: Because of Rayleigh scattering.
-				user: Why is the sky blue?
-				assistant: Because of Rayleigh scattering.""");
+		String result = aiOperator.generate(Map.of("input", "Is it ever green?"));
+		assertThat(result).isEqualTo("The sky is only green on St. Patrick's Day.");
 	}
 
 }

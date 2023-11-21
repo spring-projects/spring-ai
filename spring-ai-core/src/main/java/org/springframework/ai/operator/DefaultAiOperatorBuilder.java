@@ -17,6 +17,12 @@ public class DefaultAiOperatorBuilder implements AiOperator.Builder {
 
 	private Memory memory;
 
+	private String inputParameterName = "input";
+
+	private String historyParameterName = "history";
+
+	private int k = 2;
+
 	public DefaultAiOperatorBuilder() {
 	}
 
@@ -49,11 +55,29 @@ public class DefaultAiOperatorBuilder implements AiOperator.Builder {
 		return this;
 	}
 
+	public AiOperator.Builder inputParameterName(String inputParameterName) {
+		this.inputParameterName = inputParameterName;
+		return this;
+	}
+
+	public AiOperator.Builder historyParameterName(String historyParameterName) {
+		this.historyParameterName = historyParameterName;
+		return this;
+	}
+
+	public AiOperator.Builder k(int k) {
+		this.k = k;
+		return this;
+	}
+
 	public AiOperator build() {
 		DefaultAiOperator aiOperator = new DefaultAiOperator(aiClient, promptTemplate);
 		aiOperator.vectorStore(vectorStore);
 		aiOperator.vectorStoreKey(vectorStoreKey);
 		aiOperator.conversationMemory(memory);
+		aiOperator.inputParameterName(inputParameterName);
+		aiOperator.historyParameterName(historyParameterName);
+		aiOperator.k(k);
 		return aiOperator;
 	}
 

@@ -22,6 +22,12 @@ public class DefaultAiOperator implements AiOperator {
 
 	private String vectorStoreKey;
 
+	private String inputParameterName = "input";
+
+	private String historyParameterName = "history";
+
+	private int k = 2;
+
 	private Memory memory;
 
 	protected DefaultAiOperator(AiClient aiClient, PromptTemplate promptTemplate) {
@@ -49,6 +55,21 @@ public class DefaultAiOperator implements AiOperator {
 		return this;
 	}
 
+	public AiOperator inputParameterName(String inputParameterName) {
+		this.inputParameterName = inputParameterName;
+		return this;
+	}
+
+	public AiOperator historyParameterName(String historyParameterName) {
+		this.historyParameterName = historyParameterName;
+		return this;
+	}
+
+	public AiOperator k(int k) {
+		this.k = k;
+		return this;
+	}
+
 	@Override
 	public String generate() {
 		return generate(Map.of());
@@ -59,15 +80,14 @@ public class DefaultAiOperator implements AiOperator {
 		Map<String, Object> resolvedParameters = new HashMap<>(parameters);
 
 		if (vectorStore != null) {
-			// TODO: There is a lot of hardcoding here. Need to make this more flexible.
-			String input = memory != null ? generateStandaloneQuestion(parameters) : parameters.get("input").toString();
+			String input = memory != null ? generateStandaloneQuestion(parameters)
+					: parameters.get(inputParameterName).toString();
 
-			List<Document> documents = vectorStore.similaritySearch(input, 2);
+			List<Document> documents = vectorStore.similaritySearch(input, k);
 			List<String> contentList = documents.stream().map(doc -> {
 				return doc.getContent() + "\n";
 			}).toList();
-			resolvedParameters.put("input", input); // replace original question with
-													// standalone question
+			resolvedParameters.put(inputParameterName, input);
 			resolvedParameters.put(vectorStoreKey, contentList);
 		}
 		else {
@@ -75,7 +95,7 @@ public class DefaultAiOperator implements AiOperator {
 		}
 
 		PromptTemplate promptTemplateCopy = new PromptTemplate(promptTemplate.getTemplate());
-		String prompt = promptTemplateCopy.render(resolvedParameters);
+		String prompt = promptTemplateCopy.render(resolvedParameters).trim();
 		AiResponse aiResponse = aiClient.generate(new Prompt(prompt));
 		String generationResponse = aiResponse.getGenerations().get(0).getText();
 
@@ -99,16 +119,14 @@ public class DefaultAiOperator implements AiOperator {
 	private Map<String, Object> preProcess(Map<String, Object> parameters) {
 		Map<String, Object> combinedParameters = new HashMap<>(parameters);
 		if (memory != null) {
-			Map<String, Object> externalContext = memory.load(parameters);
-			Object history = externalContext.get("history");
-			combinedParameters.putAll(externalContext);
+			combinedParameters.putAll(memory.load(parameters));
 		}
 		return combinedParameters;
 	}
 
 	private void postProcess(Map<String, Object> parameters, AiResponse aiResponse) {
 		if (memory != null) {
-			memory.save(parameters, Map.of("history", aiResponse.getGenerations().get(0).getText()));
+			memory.save(parameters, Map.of(historyParameterName, aiResponse.getGenerations().get(0).getText()));
 		}
 	}
 

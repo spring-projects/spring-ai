@@ -34,6 +34,12 @@ public interface AiOperator {
 
 		Builder conversationMemory(Memory memory);
 
+		Builder inputParameterName(String inputParameterName);
+
+		Builder historyParameterName(String historyParameterName);
+
+		Builder k(int k);
+
 		AiOperator build();
 
 	}

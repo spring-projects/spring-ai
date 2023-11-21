@@ -39,8 +39,6 @@ public class ConversationBufferMemory implements Memory {
 
 	@Override
 	public void save(Map<String, Object> inputs, Map<String, Object> outputs) {
-		// TODO: Langchain allows the input/output keys to be specified rather than
-		// blindly pulling the first one. Is this needed?
 		String promptInputKey = inputs.keySet().iterator().next();
 		messages.add(new UserMessage(inputs.get(promptInputKey).toString()));
 
