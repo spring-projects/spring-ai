@@ -24,7 +24,9 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.openai.OpenAiMockTestConfiguration;
@@ -102,6 +104,18 @@ class OpenAiClientWithGenerationMetadataTests {
 		assertThat(rateLimit.getTokensLimit()).isEqualTo(725_000L);
 		assertThat(rateLimit.getTokensRemaining()).isEqualTo(112_358L);
 		assertThat(rateLimit.getTokensReset()).isEqualTo(expectedTokensReset);
+
+		PromptMetadata promptMetadata = response.getPromptMetadata();
+
+		assertThat(promptMetadata).isNotNull();
+		assertThat(promptMetadata).isEmpty();
+
+		response.getGenerations().forEach(generation -> {
+			ChoiceMetadata choiceMetadata = generation.getChoiceMetadata();
+			assertThat(choiceMetadata).isNotNull();
+			assertThat(choiceMetadata.getFinishReason()).isEqualTo("stop");
+			assertThat(choiceMetadata.<Object>getContentFilterMetadata()).isNull();
+		});
 	}
 
 	@SpringBootConfiguration
