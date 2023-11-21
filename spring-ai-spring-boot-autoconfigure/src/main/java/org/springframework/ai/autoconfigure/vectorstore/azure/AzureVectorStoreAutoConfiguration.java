@@ -21,7 +21,7 @@ import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
 
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.AzureVectorStore;
+import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

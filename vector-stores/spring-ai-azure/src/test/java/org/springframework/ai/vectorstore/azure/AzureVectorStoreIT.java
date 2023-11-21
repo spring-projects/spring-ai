@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.azure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +37,10 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.azure.AzureVectorStore;
+import org.springframework.ai.vectorstore.azure.AzureVectorStore.MetadataField;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -97,6 +102,90 @@ public class AzureVectorStoreIT {
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));
+		});
+	}
+
+	@Test
+	public void searchWithFilters() throws InterruptedException {
+
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
+			var nlDocument = new Document("2", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL", "activationDate", new Date(2000)));
+			var bgDocument2 = new Document("3", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023, "activationDate", new Date(3000)));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Awaitility.await().until(() -> {
+				return vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
+			}, hasSize(3));
+
+			// List<Document> results =
+			// vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country == 'NL'"));
+			// assertThat(results).hasSize(1);
+			// assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country == 'BG'"));
+
+			// assertThat(results).hasSize(2);
+			// assertThat(results.get(0).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+			// assertThat(results.get(1).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country == 'BG' && year == 2020"));
+
+			// assertThat(results).hasSize(1);
+			// assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country in ['BG']"));
+
+			// assertThat(results).hasSize(2);
+			// assertThat(results.get(0).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+			// assertThat(results.get(1).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country in ['BG','NL']"));
+
+			// assertThat(results).hasSize(3);
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country nin ['BG']"));
+
+			// assertThat(results).hasSize(1);
+			// assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("activationDate > '1970-01-01T00:00:02Z'"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			vectorStore.delete(List.of(bgDocument.getId(), nlDocument.getId(), bgDocument2.getId()));
 		});
 	}
 
@@ -211,7 +300,9 @@ public class AzureVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
-			return new AzureVectorStore(searchIndexClient, embeddingClient);
+			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
+					MetadataField.date("activationDate"));
+			return new AzureVectorStore(searchIndexClient, embeddingClient, filterableMetaFields);
 		}
 
 		@Bean
