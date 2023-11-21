@@ -169,8 +169,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 		this.searchIndexClient = searchIndexClient;
 		this.embeddingClient = embeddingClient;
 		this.filterMetadataFields = filterMetadataFields;
-		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(
-				filterMetadataFields.stream().map(MetadataField::name).toList());
+		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
 	}
 
 	/**

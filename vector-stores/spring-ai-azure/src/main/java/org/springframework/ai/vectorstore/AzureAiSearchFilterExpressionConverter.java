@@ -16,8 +16,14 @@
 
 package org.springframework.ai.vectorstore;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.regex.Pattern;
 
+import org.springframework.ai.vectorstore.AzureVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
@@ -34,11 +40,22 @@ import org.springframework.util.Assert;
  */
 public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	private final List<String> allowedIdentifierNames;
+	private static Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
 
-	public AzureAiSearchFilterExpressionConverter(List<String> allowedIdentifierNames) {
-		Assert.notNull(allowedIdentifierNames, "The allowedIdentifierNames can not null.");
-		this.allowedIdentifierNames = allowedIdentifierNames;
+	private final List<MetadataField> filterMetadataFields;
+
+	private final SimpleDateFormat dateFormat;
+
+	private List<String> allowedIdentifierNames;
+
+	public AzureAiSearchFilterExpressionConverter(List<MetadataField> filterMetadataFields) {
+		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not null.");
+
+		this.allowedIdentifierNames = filterMetadataFields.stream().map(MetadataField::name).toList();
+		this.filterMetadataFields = filterMetadataFields;
+		this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		// this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ");
+		this.dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
 	@Override
@@ -134,8 +151,22 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
-		if (value instanceof String) {
-			context.append(String.format("'%s'", value));
+		if (value instanceof Date date) {
+			context.append(this.dateFormat.format(date));
+		}
+		else if (value instanceof String text) {
+			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
+				try {
+					Date date = this.dateFormat.parse(text);
+					context.append(this.dateFormat.format(date));
+				}
+				catch (ParseException e) {
+					throw new IllegalArgumentException("Invalid date type:" + text, e);
+				}
+			}
+			else {
+				context.append(String.format("'%s'", text));
+			}
 		}
 		else {
 			context.append(value);

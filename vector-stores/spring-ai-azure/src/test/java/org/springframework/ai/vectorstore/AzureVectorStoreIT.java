@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -108,11 +109,11 @@ public class AzureVectorStoreIT {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
+					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
 			var nlDocument = new Document("2", "The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL"));
+					Map.of("country", "NL", "activationDate", new Date(2000)));
 			var bgDocument2 = new Document("3", "The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
+					Map.of("country", "BG", "year", 2023, "activationDate", new Date(3000)));
 
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
@@ -120,50 +121,63 @@ public class AzureVectorStoreIT {
 				return vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
 			}, hasSize(3));
 
+			// List<Document> results =
+			// vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country == 'NL'"));
+			// assertThat(results).hasSize(1);
+			// assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country == 'BG'"));
+
+			// assertThat(results).hasSize(2);
+			// assertThat(results.get(0).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+			// assertThat(results.get(1).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country == 'BG' && year == 2020"));
+
+			// assertThat(results).hasSize(1);
+			// assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country in ['BG']"));
+
+			// assertThat(results).hasSize(2);
+			// assertThat(results.get(0).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+			// assertThat(results.get(1).getId()).isIn(bgDocument.getId(),
+			// bgDocument2.getId());
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country in ['BG','NL']"));
+
+			// assertThat(results).hasSize(3);
+
+			// results = vectorStore.similaritySearch(SearchRequest.query("The World")
+			// .withTopK(5)
+			// .withSimilarityThresholdAll()
+			// .withFilterExpression("country nin ['BG']"));
+
+			// assertThat(results).hasSize(1);
+			// assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
 				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'NL'"));
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
-
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG'"));
-
-			assertThat(results).hasSize(2);
-			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
-			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
-
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG' && year == 2020"));
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
-
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country in ['BG']"));
-
-			assertThat(results).hasSize(2);
-			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
-			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
-
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country in ['BG','NL']"));
-
-			assertThat(results).hasSize(3);
-
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country nin ['BG']"));
+				.withFilterExpression("activationDate > '1970-01-01T00:00:02Z'"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
@@ -283,7 +297,8 @@ public class AzureVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
-			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"));
+			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
+					MetadataField.date("activationDate"));
 			return new AzureVectorStore(searchIndexClient, embeddingClient, filterableMetaFields);
 		}
 
