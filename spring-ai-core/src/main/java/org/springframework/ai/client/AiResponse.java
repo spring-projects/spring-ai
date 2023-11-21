@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.PromptMetadata;
+import org.springframework.lang.Nullable;
 
 public class AiResponse {
 
@@ -30,6 +32,8 @@ public class AiResponse {
 	private final Map<String, Object> providerOutput;
 
 	private final Map<String, Object> runInfo;
+
+	private PromptMetadata promptMetadata;
 
 	public AiResponse(List<Generation> generations) {
 		this(generations, Collections.emptyMap(), Collections.emptyMap(), GenerationMetadata.NULL);
@@ -82,6 +86,17 @@ public class AiResponse {
 	}
 
 	/**
+	 * Returns {@link PromptMetadata} containing information on prompt processing by the
+	 * AI.
+	 * @return {@link PromptMetadata} containing information on prompt processing by the
+	 * AI.
+	 */
+	public PromptMetadata getPromptMetadata() {
+		PromptMetadata promptMetadata = this.promptMetadata;
+		return promptMetadata != null ? promptMetadata : PromptMetadata.empty();
+	}
+
+	/**
 	 * Arbitrary model provider specific output
 	 */
 	public Map<String, Object> getProviderOutput() {
@@ -93,6 +108,19 @@ public class AiResponse {
 	 */
 	public Map<String, Object> getRunInfo() {
 		return this.runInfo;
+	}
+
+	/**
+	 * Builder method used to include {@link PromptMetadata} returned in the AI response
+	 * when processing the prompt.
+	 * @param promptMetadata {@link PromptMetadata} returned by the AI in the response
+	 * when processing the prompt.
+	 * @return this {@link AiResponse}.
+	 * @see #getPromptMetadata()
+	 */
+	public AiResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
+		this.promptMetadata = promptMetadata;
+		return this;
 	}
 
 }
