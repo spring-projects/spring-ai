@@ -108,15 +108,15 @@ class PostgresMlEmbeddingClientIT {
 		EmbeddingResponse embeddingResponse = embeddingClient
 			.embedForResponse(List.of("Hello World!", "Spring AI!", "LLM!"));
 		assertThat(embeddingResponse).isNotNull();
-		assertThat(embeddingResponse.getData()).hasSize(3);
-		assertThat(embeddingResponse.getMetadata()).containsExactlyEntriesOf(
+		assertThat(embeddingResponse.data()).hasSize(3);
+		assertThat(embeddingResponse.metadata()).containsExactlyEntriesOf(
 				Map.of("transformer", "distilbert-base-uncased", "vector-type", vectorType, "kwargs", "{}"));
-		assertThat(embeddingResponse.getData().get(0).getIndex()).isEqualTo(0);
-		assertThat(embeddingResponse.getData().get(0).getEmbedding()).hasSize(768);
-		assertThat(embeddingResponse.getData().get(1).getIndex()).isEqualTo(1);
-		assertThat(embeddingResponse.getData().get(1).getEmbedding()).hasSize(768);
-		assertThat(embeddingResponse.getData().get(2).getIndex()).isEqualTo(2);
-		assertThat(embeddingResponse.getData().get(2).getEmbedding()).hasSize(768);
+		assertThat(embeddingResponse.data().get(0).index()).isEqualTo(0);
+		assertThat(embeddingResponse.data().get(0).embedding()).hasSize(768);
+		assertThat(embeddingResponse.data().get(1).index()).isEqualTo(1);
+		assertThat(embeddingResponse.data().get(1).embedding()).hasSize(768);
+		assertThat(embeddingResponse.data().get(2).index()).isEqualTo(2);
+		assertThat(embeddingResponse.data().get(2).embedding()).hasSize(768);
 		// embeddingClient.dropPgmlExtension();
 	}
 

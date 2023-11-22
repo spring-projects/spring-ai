@@ -54,7 +54,7 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		EmbeddingRequest embeddingRequest = EmbeddingRequest.builder().input(List.of(text)).model(this.model).build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
-		return generateEmbeddingResponse(nativeEmbeddingResult).getData().get(0).getEmbedding();
+		return generateEmbeddingResponse(nativeEmbeddingResult).data().get(0).embedding();
 	}
 
 	public List<Double> embed(Document document) {
@@ -64,12 +64,12 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 			.build();
 		com.theokanning.openai.embedding.EmbeddingResult nativeEmbeddingResult = this.openAiService
 			.createEmbeddings(embeddingRequest);
-		return generateEmbeddingResponse(nativeEmbeddingResult).getData().get(0).getEmbedding();
+		return generateEmbeddingResponse(nativeEmbeddingResult).data().get(0).embedding();
 	}
 
 	public List<List<Double>> embed(List<String> texts) {
 		EmbeddingResponse embeddingResponse = embedForResponse(texts);
-		return embeddingResponse.getData().stream().map(emb -> emb.getEmbedding()).toList();
+		return embeddingResponse.data().stream().map(emb -> emb.embedding()).toList();
 	}
 
 	@Override
