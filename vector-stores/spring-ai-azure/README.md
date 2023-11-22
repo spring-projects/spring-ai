@@ -121,9 +121,9 @@ In your main code, create some documents
 
 ```java
 List<Document> documents = List.of(
-	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "BG", "year", 2020)),
 	new Document("The World is Big and Salvation Lurks Around the Corner"),
-	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
 ```
 
 Add the documents to your vector store:
