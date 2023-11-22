@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
+import org.springframework.ai.client.AiClient;
 import org.springframework.ai.ollama.client.OllamaClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -30,7 +31,7 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaClient ollamaClient(OllamaProperties properties) {
+	public AiClient ollamaClient(OllamaProperties properties) {
 		return new OllamaClient(properties.getBaseUrl(), properties.getModel());
 	}
 

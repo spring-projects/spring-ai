@@ -16,16 +16,23 @@
 
 package org.springframework.ai.autoconfigure.azure.openai;
 
+import java.time.Duration;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.springframework.ai.azure.openai.client.AzureOpenAiClient;
 import org.springframework.ai.azure.openai.embedding.AzureOpenAiEmbeddingClient;
+import org.springframework.ai.client.AiClient;
+import org.springframework.ai.client.RetryAiClient;
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.RetryEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StringUtils;
 
 @AutoConfiguration
@@ -53,16 +60,32 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
-	public AzureOpenAiClient azureOpenAiClient(OpenAIClient msoftSdkOpenAiClient) {
+	public AiClient azureOpenAiClient(OpenAIClient msoftSdkOpenAiClient, AzureOpenAiProperties azureOpenAiProperties,
+			RetryTemplate retryTemplate) {
 		AzureOpenAiClient azureOpenAiClient = new AzureOpenAiClient(msoftSdkOpenAiClient);
 		azureOpenAiClient.setTemperature(this.azureOpenAiProperties.getTemperature());
 		azureOpenAiClient.setModel(this.azureOpenAiProperties.getModel());
-		return azureOpenAiClient;
+
+		return (azureOpenAiProperties.isRetryEnabled()) ? new RetryAiClient(retryTemplate, azureOpenAiClient)
+				: azureOpenAiClient;
 	}
 
 	@Bean
-	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient msoftSdkOpenAiClient) {
-		return new AzureOpenAiEmbeddingClient(msoftSdkOpenAiClient, this.azureOpenAiProperties.getEmbeddingModel());
+	public EmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient msoftSdkOpenAiClient,
+			AzureOpenAiProperties azureOpenAiProperties, RetryTemplate retryTemplate) {
+		var embeddingClient = new AzureOpenAiEmbeddingClient(msoftSdkOpenAiClient,
+				this.azureOpenAiProperties.getEmbeddingModel());
+		return (azureOpenAiProperties.isRetryEnabled()) ? new RetryEmbeddingClient(retryTemplate, embeddingClient)
+				: embeddingClient;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public RetryTemplate retryTemplate() {
+		return RetryTemplate.builder()
+			.maxAttempts(10)
+			.exponentialBackoff(Duration.ofSeconds(2), 5, Duration.ofMinutes(2))
+			.build();
 	}
 
 }

@@ -35,6 +35,8 @@ public class AzureOpenAiProperties {
 
 	private String embeddingModel = "text-embedding-ada-002";
 
+	private boolean retryEnabled = false;
+
 	public String getEndpoint() {
 		return endpoint;
 	}
@@ -77,6 +79,14 @@ public class AzureOpenAiProperties {
 
 	public void setEmbeddingModel(String embeddingModel) {
 		this.embeddingModel = embeddingModel;
+	}
+
+	public boolean isRetryEnabled() {
+		return retryEnabled;
+	}
+
+	public void setRetryEnabled(boolean retryEnabled) {
+		this.retryEnabled = retryEnabled;
 	}
 
 }

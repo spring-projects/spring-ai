@@ -16,15 +16,13 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
-
 import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(OpenAiProperties.CONFIG_PREFIX)
 public class OpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai";
@@ -42,6 +40,8 @@ public class OpenAiProperties {
 	private String model = "gpt-3.5-turbo";
 
 	private String baseUrl = "https://api.openai.com";
+
+	private boolean retryEnabled = false;
 
 	public String getApiKey() {
 		return this.apiKey;
@@ -89,6 +89,14 @@ public class OpenAiProperties {
 
 	public Metadata getMetadata() {
 		return this.metadata;
+	}
+
+	public void setRetryEnabled(boolean retry) {
+		this.retryEnabled = retry;
+	}
+
+	public boolean isRetryEnabled() {
+		return retryEnabled;
 	}
 
 	public static class Embedding {
