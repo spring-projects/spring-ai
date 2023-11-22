@@ -16,26 +16,30 @@
 
 package org.springframework.ai.azure.openai.client;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
 import com.azure.ai.openai.models.ChatMessage;
 import com.azure.ai.openai.models.ChatRole;
+import com.azure.ai.openai.models.PromptFilterResult;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiGenerationMetadata;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
+import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * {@link AiClient} implementation for {@literal Microsoft Azure AI} backed by
@@ -55,11 +59,11 @@ public class AzureOpenAiClient implements AiClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final OpenAIClient msoftOpenAiClient;
+	private final OpenAIClient azureOpenAiClient;
 
 	public AzureOpenAiClient(OpenAIClient microsoftOpenAiClient) {
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
-		this.msoftOpenAiClient = microsoftOpenAiClient;
+		this.azureOpenAiClient = microsoftOpenAiClient;
 	}
 
 	public String getModel() {
@@ -88,7 +92,7 @@ public class AzureOpenAiClient implements AiClient {
 		options.setModel(this.getModel());
 		logger.trace("Azure Chat Message: {}", azureChatMessage);
 
-		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		ChatCompletions chatCompletions = this.azureOpenAiClient.getChatCompletions(this.getModel(), options);
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
 		StringBuilder stringBuilder = new StringBuilder();
@@ -120,14 +124,15 @@ public class AzureOpenAiClient implements AiClient {
 		options.setModel(this.getModel());
 		logger.trace("Azure ChatCompletionsOptions: {}", options);
 
-		ChatCompletions chatCompletions = this.msoftOpenAiClient.getChatCompletions(this.getModel(), options);
+		ChatCompletions chatCompletions = this.azureOpenAiClient.getChatCompletions(this.getModel(), options);
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
 		List<Generation> generations = new ArrayList<>();
 
 		for (ChatChoice choice : chatCompletions.getChoices()) {
 			ChatMessage choiceMessage = choice.getMessage();
-			Generation generation = new Generation(choiceMessage.getContent());
+			Generation generation = new Generation(choiceMessage.getContent())
+				.withChoiceMetadata(generateChoiceMetadata(choice));
 			generations.add(generation);
 		}
 
@@ -135,14 +140,22 @@ public class AzureOpenAiClient implements AiClient {
 			.withPromptMetadata(generatePromptMetadata(chatCompletions));
 	}
 
+	private ChoiceMetadata generateChoiceMetadata(ChatChoice choice) {
+		return ChoiceMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
+	}
+
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {
 
-		return PromptMetadata.of(chatCompletions.getPromptFilterResults()
-			.stream()
+		List<PromptFilterResult> promptFilterResults = nullSafeList(chatCompletions.getPromptFilterResults());
+
+		return PromptMetadata.of(promptFilterResults.stream()
 			.map(promptFilterResult -> PromptFilterMetadata.from(promptFilterResult.getPromptIndex(),
 					promptFilterResult.getContentFilterResults()))
 			.toList());
+	}
 
+	private <T> List<T> nullSafeList(List<T> list) {
+		return list != null ? list : Collections.emptyList();
 	}
 
 }

@@ -43,7 +43,7 @@ public class AzureOpenAiUsage implements Usage {
 	private final CompletionsUsage usage;
 
 	public AzureOpenAiUsage(CompletionsUsage usage) {
-		Assert.notNull(usage, "CompletionUsage must not be null");
+		Assert.notNull(usage, "CompletionsUsage must not be null");
 		this.usage = usage;
 	}
 
