@@ -22,6 +22,8 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
 
+import java.util.Objects;
+
 /**
  * Similarity search request builder. Use the {@link #query(String)}, {@link #defaults()}
  * or {@link #from(SearchRequest)} factory methods to create a new {@link SearchRequest}
@@ -246,6 +248,28 @@ public class SearchRequest {
 
 	public boolean hasFilterExpression() {
 		return this.filterExpression != null;
+	}
+
+	@Override
+	public String toString() {
+		return "SearchRequest{" + "query='" + query + '\'' + ", topK=" + topK + ", similarityThreshold="
+				+ similarityThreshold + ", filterExpression=" + filterExpression + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		SearchRequest that = (SearchRequest) o;
+		return topK == that.topK && Double.compare(that.similarityThreshold, similarityThreshold) == 0
+				&& Objects.equals(query, that.query) && Objects.equals(filterExpression, that.filterExpression);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(query, topK, similarityThreshold, filterExpression);
 	}
 
 }
