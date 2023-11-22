@@ -1,18 +1,13 @@
 package org.springframework.ai.operator;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.memory.ConversationBufferMemory;
-import org.springframework.ai.operator.AiOperator;
-import org.springframework.ai.operator.DefaultPromptTemplateStrings;
 import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.AssistantMessage;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.List;
@@ -70,7 +65,7 @@ public class AiOperatorTests {
 	public void usingVectorStore() {
 		// Mock the vector store
 		VectorStore vectorStore = mock(VectorStore.class);
-		when(vectorStore.similaritySearch("How do you score roads?", 2)).thenReturn(List.of(
+		when(vectorStore.similaritySearch(SearchRequest.query("How do you score roads?").withTopK(2))).thenReturn(List.of(
 				new Document("Roads are scored when completed and are worth 1 point per tile they go through.",
 						Map.of()),
 				new Document("Roads are terminated at cities, monasteries, and crossroads.", Map.of())));
@@ -148,9 +143,9 @@ public class AiOperatorTests {
 
 		// Mock the vector store
 		VectorStore vectorStore = mock(VectorStore.class);
-		when(vectorStore.similaritySearch("Why is the sky blue?", 2))
+		when(vectorStore.similaritySearch(SearchRequest.query("Why is the sky blue?").withTopK(2)))
 			.thenReturn(List.of(new Document("Because of Rayleigh scattering.", Map.of())));
-		when(vectorStore.similaritySearch("Is the sky ever green?", 2))
+		when(vectorStore.similaritySearch(SearchRequest.query("Is the sky ever green?").withTopK(2)))
 			.thenReturn(List.of(new Document("The sky turns green on St. Patrick's Day.", Map.of())));
 
 		String standalonePrompt = DefaultPromptTemplateStrings.STANDALONE_QUESTION_PROMPT.replace("{history}", history)

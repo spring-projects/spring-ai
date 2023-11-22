@@ -7,6 +7,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.memory.Memory;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import java.util.HashMap;
@@ -88,7 +89,7 @@ public class DefaultAiOperator implements AiOperator {
 
 			LOG.info("input: {}", input);
 
-			List<Document> documents = vectorStore.similaritySearch(input, k);
+			List<Document> documents = vectorStore.similaritySearch(SearchRequest.query(input).withTopK(k));
 			List<String> contentList = documents.stream().map(doc -> {
 				return doc.getContent() + "\n";
 			}).toList();
