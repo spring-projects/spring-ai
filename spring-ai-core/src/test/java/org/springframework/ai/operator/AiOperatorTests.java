@@ -65,10 +65,11 @@ public class AiOperatorTests {
 	public void usingVectorStore() {
 		// Mock the vector store
 		VectorStore vectorStore = mock(VectorStore.class);
-		when(vectorStore.similaritySearch(SearchRequest.query("How do you score roads?").withTopK(2))).thenReturn(List.of(
-				new Document("Roads are scored when completed and are worth 1 point per tile they go through.",
-						Map.of()),
-				new Document("Roads are terminated at cities, monasteries, and crossroads.", Map.of())));
+		when(vectorStore.similaritySearch(SearchRequest.query("How do you score roads?").withTopK(2)))
+			.thenReturn(List.of(
+					new Document("Roads are scored when completed and are worth 1 point per tile they go through.",
+							Map.of()),
+					new Document("Roads are terminated at cities, monasteries, and crossroads.", Map.of())));
 
 		// Create a resolved version of the template for mocking purposes only
 		String resolvedRagTemplate = DefaultPromptTemplateStrings.RAG_PROMPT.replace("{documents}", """
