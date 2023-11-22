@@ -16,9 +16,9 @@
 
 package org.springframework.ai.embedding;
 
-import java.time.Duration;
 import java.util.List;
 
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -37,10 +37,7 @@ public class RetryEmbeddingClient implements EmbeddingClient {
 	private final EmbeddingClient delegate;
 
 	public RetryEmbeddingClient(EmbeddingClient delegate) {
-		this(RetryTemplate.builder()
-			.maxAttempts(10)
-			.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-			.build(), delegate);
+		this(CommonUtils.DEFAULT_RETRY_TEMPLATE, delegate);
 	}
 
 	public RetryEmbeddingClient(RetryTemplate retryTemplate, EmbeddingClient delegate) {

@@ -16,8 +16,6 @@
 
 package org.springframework.ai.vectorstore.azure;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
@@ -34,6 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
@@ -44,7 +43,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -58,9 +56,9 @@ import static org.hamcrest.Matchers.hasSize;
 public class AzureVectorStoreIT {
 
 	List<Document> documents = List.of(
-			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
-			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
-			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+			new Document("1", CommonUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document("2", CommonUtils.getText("classpath:/test/data/time.shelter.txt"), Map.of()), new Document("3",
+					CommonUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class);
@@ -305,16 +303,6 @@ public class AzureVectorStoreIT {
 			return new TransformersEmbeddingClient();
 		}
 
-	}
-
-	private static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 }

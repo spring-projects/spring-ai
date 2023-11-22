@@ -17,8 +17,6 @@
 package org.springframework.ai.vectorstore;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +41,7 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
@@ -53,7 +52,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.FileSystemUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,19 +71,9 @@ public class MilvusVectorStoreIT {
 		.withUserConfiguration(TestApplication.class);
 
 	List<Document> documents = List.of(
-			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
-			new Document(getText("classpath:/test/data/time.shelter.txt")),
-			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
-
-	public static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+			new Document(CommonUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document(CommonUtils.getText("classpath:/test/data/time.shelter.txt")),
+			new Document(CommonUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
 	@BeforeAll
 	public static void beforeAll() {

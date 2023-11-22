@@ -16,8 +16,6 @@
 
 package org.springframework.ai.vectorstore;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +26,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
@@ -37,7 +36,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,22 +58,12 @@ public class WeaviateVectorStoreIT {
 		.withUserConfiguration(TestApplication.class);
 
 	List<Document> documents = List.of(
-			new Document("471a8c78-549a-4b2c-bce5-ef3ae6579be3", getText("classpath:/test/data/spring.ai.txt"),
-					Map.of("meta1", "meta1")),
-			new Document("bc51d7f7-627b-4ba6-adf4-f0bcd1998f8f", getText("classpath:/test/data/time.shelter.txt"),
-					Map.of()),
-			new Document("d0237682-1150-44ff-b4d2-1be9b1731ee5", getText("classpath:/test/data/great.depression.txt"),
-					Map.of("meta2", "meta2")));
-
-	public static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+			new Document("471a8c78-549a-4b2c-bce5-ef3ae6579be3",
+					CommonUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document("bc51d7f7-627b-4ba6-adf4-f0bcd1998f8f",
+					CommonUtils.getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+			new Document("d0237682-1150-44ff-b4d2-1be9b1731ee5",
+					CommonUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
 	private void resetCollection(VectorStore vectorStore) {
 		vectorStore.delete(documents.stream().map(Document::getId).toList());

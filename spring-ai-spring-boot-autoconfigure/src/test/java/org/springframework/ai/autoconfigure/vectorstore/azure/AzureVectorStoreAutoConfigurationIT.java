@@ -16,8 +16,6 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.azure;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -28,17 +26,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
-import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -51,19 +49,9 @@ import static org.hamcrest.Matchers.hasSize;
 public class AzureVectorStoreAutoConfigurationIT {
 
 	List<Document> documents = List.of(
-			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
-			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
-			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
-
-	public static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+			new Document("1", CommonUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
+			new Document("2", CommonUtils.getText("classpath:/test/data/time.shelter.txt"), Map.of()), new Document("3",
+					CommonUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(AzureVectorStoreAutoConfiguration.class))

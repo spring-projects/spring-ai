@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -35,6 +36,10 @@ public class RetryVectorStore implements VectorStore {
 	private final RetryTemplate retryTemplate;
 
 	private final VectorStore delegate;
+
+	public RetryVectorStore(VectorStore delegate) {
+		this(CommonUtils.DEFAULT_RETRY_TEMPLATE, delegate);
+	}
 
 	public RetryVectorStore(RetryTemplate retryTemplate, VectorStore delegate) {
 		this.retryTemplate = retryTemplate;

@@ -16,8 +16,7 @@
 
 package org.springframework.ai.client;
 
-import java.time.Duration;
-
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -35,10 +34,7 @@ public class RetryAiClient implements AiClient {
 	private final AiClient delegate;
 
 	public RetryAiClient(AiClient delegate) {
-		this(RetryTemplate.builder()
-			.maxAttempts(10)
-			.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-			.build(), delegate);
+		this(CommonUtils.DEFAULT_RETRY_TEMPLATE, delegate);
 	}
 
 	public RetryAiClient(RetryTemplate retryTemplate, AiClient delegate) {
