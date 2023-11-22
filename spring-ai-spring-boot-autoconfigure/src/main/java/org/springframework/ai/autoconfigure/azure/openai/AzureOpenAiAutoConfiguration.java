@@ -21,6 +21,7 @@ import java.time.Duration;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+
 import org.springframework.ai.azure.openai.client.AzureOpenAiClient;
 import org.springframework.ai.azure.openai.embedding.AzureOpenAiEmbeddingClient;
 import org.springframework.ai.client.AiClient;
@@ -60,6 +61,7 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	public AiClient azureOpenAiClient(OpenAIClient msoftSdkOpenAiClient, AzureOpenAiProperties azureOpenAiProperties,
 			RetryTemplate retryTemplate) {
 		AzureOpenAiClient azureOpenAiClient = new AzureOpenAiClient(msoftSdkOpenAiClient);
@@ -71,6 +73,7 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	public EmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient msoftSdkOpenAiClient,
 			AzureOpenAiProperties azureOpenAiProperties, RetryTemplate retryTemplate) {
 		var embeddingClient = new AzureOpenAiEmbeddingClient(msoftSdkOpenAiClient,
