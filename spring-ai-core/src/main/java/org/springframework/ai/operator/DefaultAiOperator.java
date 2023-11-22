@@ -1,5 +1,6 @@
 package org.springframework.ai.operator;
 
+import org.slf4j.Logger;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.document.Document;
@@ -13,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 public class DefaultAiOperator implements AiOperator {
+
+	private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefaultAiOperator.class);
 
 	private final AiClient aiClient;
 
@@ -83,6 +86,8 @@ public class DefaultAiOperator implements AiOperator {
 			String input = memory != null ? generateStandaloneQuestion(parameters)
 					: parameters.get(inputParameterName).toString();
 
+			LOG.info("input: {}", input);
+
 			List<Document> documents = vectorStore.similaritySearch(input, k);
 			List<String> contentList = documents.stream().map(doc -> {
 				return doc.getContent() + "\n";
@@ -96,6 +101,7 @@ public class DefaultAiOperator implements AiOperator {
 
 		PromptTemplate promptTemplateCopy = new PromptTemplate(promptTemplate.getTemplate());
 		String prompt = promptTemplateCopy.render(resolvedParameters).trim();
+		LOG.debug("Submitting prompt: {}", prompt);
 		AiResponse aiResponse = aiClient.generate(new Prompt(prompt));
 		String generationResponse = aiResponse.getGenerations().get(0).getText();
 
@@ -112,6 +118,7 @@ public class DefaultAiOperator implements AiOperator {
 		PromptTemplate standalonePromptTemplate = new PromptTemplate(
 				DefaultPromptTemplateStrings.STANDALONE_QUESTION_PROMPT);
 		String prompt = standalonePromptTemplate.render(resolvedParameters);
+		LOG.debug("Submitting standalone question prompt: {}", prompt);
 		AiResponse aiResponse = aiClient.generate(new Prompt(prompt));
 		return aiResponse.getGenerations().get(0).getText();
 	}
