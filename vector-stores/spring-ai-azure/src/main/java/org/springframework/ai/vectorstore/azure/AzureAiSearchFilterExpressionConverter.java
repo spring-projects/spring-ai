@@ -42,8 +42,6 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 
 	private static Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
 
-	private final List<MetadataField> filterMetadataFields;
-
 	private final SimpleDateFormat dateFormat;
 
 	private List<String> allowedIdentifierNames;
@@ -52,9 +50,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not null.");
 
 		this.allowedIdentifierNames = filterMetadataFields.stream().map(MetadataField::name).toList();
-		this.filterMetadataFields = filterMetadataFields;
 		this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		// this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ");
 		this.dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
