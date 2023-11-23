@@ -1,11 +1,13 @@
 package org.springframework.ai.openai.acme;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.prompt.Prompt;
@@ -28,7 +30,8 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = OpenAiTestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class AcmeIT extends AbstractIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AcmeIT.class);

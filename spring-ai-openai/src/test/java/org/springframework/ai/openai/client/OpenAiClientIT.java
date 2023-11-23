@@ -1,9 +1,15 @@
 package org.springframework.ai.openai.client;
 
-import org.junit.jupiter.api.Disabled;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.client.AiResponse;
 import org.springframework.ai.client.Generation;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -18,14 +24,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-class ClientIT extends AbstractIT {
+@SpringBootTest(classes = OpenAiTestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+class OpenAiClientIT extends AbstractIT {
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -59,7 +62,6 @@ class ClientIT extends AbstractIT {
 		Generation generation = this.openAiClient.generate(prompt).getGeneration();
 
 		List<String> list = outputParser.parse(generation.getText());
-		System.out.println(list);
 		assertThat(list).hasSize(5);
 
 	}
@@ -98,7 +100,6 @@ class ClientIT extends AbstractIT {
 		Generation generation = openAiClient.generate(prompt).getGeneration();
 
 		ActorsFilms actorsFilms = outputParser.parse(generation.getText());
-		System.out.println(actorsFilms);
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
@@ -119,7 +120,6 @@ class ClientIT extends AbstractIT {
 		Generation generation = openAiClient.generate(prompt).getGeneration();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getText());
-		System.out.println(actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
