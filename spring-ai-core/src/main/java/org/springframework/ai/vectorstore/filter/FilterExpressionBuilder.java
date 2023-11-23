@@ -122,4 +122,8 @@ public class FilterExpressionBuilder {
 		return new Op(new Filter.Group(content.build()));
 	}
 
+	public Op not(Op content) {
+		return new Op(new Filter.Expression(ExpressionType.NOT, content.expression, null));
+	}
+
 }

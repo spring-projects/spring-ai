@@ -114,7 +114,7 @@ public class Filter {
 	 */
 	public enum ExpressionType {
 
-		AND, OR, EQ, NE, GT, GTE, LT, LTE, IN, NIN
+		AND, OR, EQ, NE, GT, GTE, LT, LTE, IN, NIN, NOT
 
 	}
 
@@ -131,6 +131,9 @@ public class Filter {
 	 * be another {@link Expression}.
 	 */
 	public record Expression(ExpressionType type, Operand left, Operand right) implements Operand {
+		public Expression(ExpressionType type, Operand operand) {
+			this(type, operand, null);
+		}
 	}
 
 	/**

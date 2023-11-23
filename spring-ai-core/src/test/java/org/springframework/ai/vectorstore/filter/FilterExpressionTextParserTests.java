@@ -30,10 +30,11 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AN
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NOT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 
 /**
  * @author Christian Tzolov
@@ -109,6 +110,61 @@ public class FilterExpressionTextParserTests {
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
 		assertThat(parser.getCache()
 			.get("WHERE " + "isOpen == true AND year >= 2020 AND country IN [\"BG\", \"NL\", \"US\"]")).isEqualTo(exp);
+	}
+
+	@Test
+	public void tesNot() {
+		// NOT(isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"])
+		Expression exp = parser.parse("not(isOpen == true AND year >= 2020 AND country IN [\"BG\", \"NL\", \"US\"])");
+
+		assertThat(exp).isEqualTo(new Expression(NOT,
+				new Group(new Expression(AND,
+						new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
+								new Expression(GTE, new Key("year"), new Value(2020))),
+						new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US"))))),
+				null));
+
+		assertThat(parser.getCache()
+			.get("WHERE " + "not(isOpen == true AND year >= 2020 AND country IN [\"BG\", \"NL\", \"US\"])"))
+			.isEqualTo(exp);
+	}
+
+	@Test
+	public void tesNotNin() {
+		// NOT(country NOT IN ["BG", "NL", "US"])
+		Expression exp = parser.parse("not(country NOT IN [\"BG\", \"NL\", \"US\"])");
+
+		assertThat(exp).isEqualTo(new Expression(NOT,
+				new Group(new Expression(NIN, new Key("country"), new Value(List.of("BG", "NL", "US")))), null));
+	}
+
+	@Test
+	public void tesNotNin2() {
+		// NOT country NOT IN ["BG", "NL", "US"]
+		Expression exp = parser.parse("NOT country NOT IN [\"BG\", \"NL\", \"US\"]");
+
+		assertThat(exp).isEqualTo(new Expression(NOT,
+				new Expression(NIN, new Key("country"), new Value(List.of("BG", "NL", "US"))), null));
+	}
+
+	@Test
+	public void tesNestedNot() {
+		// NOT(isOpen == true AND year >= 2020 AND NOT(country IN ["BG", "NL", "US"]))
+		Expression exp = parser
+			.parse("not(isOpen == true AND year >= 2020 AND NOT(country IN [\"BG\", \"NL\", \"US\"]))");
+
+		assertThat(exp).isEqualTo(new Expression(NOT,
+				new Group(new Expression(AND,
+						new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
+								new Expression(GTE, new Key("year"), new Value(2020))),
+						new Expression(NOT,
+								new Group(new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))),
+								null))),
+				null));
+
+		assertThat(parser.getCache()
+			.get("WHERE " + "not(isOpen == true AND year >= 2020 AND NOT(country IN [\"BG\", \"NL\", \"US\"]))"))
+			.isEqualTo(exp);
 	}
 
 	@Test

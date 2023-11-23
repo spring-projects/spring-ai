@@ -156,6 +156,13 @@ public class PineconeVectorStoreIT {
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
+			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("NOT(country == 'Netherland')"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
 			// Remove all documents from the store
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
 
