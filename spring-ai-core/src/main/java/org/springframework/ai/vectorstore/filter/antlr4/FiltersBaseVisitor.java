@@ -95,6 +95,19 @@ public class FiltersBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * </p>
 	 */
 	@Override
+	public T visitNotExpression(FiltersParser.NotExpressionContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation returns the result of calling {@link #visitChildren} on
+	 * {@code ctx}.
+	 * </p>
+	 */
+	@Override
 	public T visitCompareExpression(FiltersParser.CompareExpressionContext ctx) {
 		return visitChildren(ctx);
 	}

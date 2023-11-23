@@ -166,10 +166,19 @@ public class AzureVectorStoreIT {
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
 				.withSimilarityThresholdAll()
-				.withFilterExpression("country nin ['BG']"));
+				.withFilterExpression("country not in ['BG']"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("NOT(country not in ['BG'])"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 			// List<Document> results =
 			// vectorStore.similaritySearch(SearchRequest.query("The World")

@@ -33,6 +33,7 @@ booleanExpression
     | left=booleanExpression operator=AND right=booleanExpression # AndExpression
     | left=booleanExpression operator=OR right=booleanExpression  # OrExpression
     | LEFT_PARENTHESIS booleanExpression RIGHT_PARENTHESIS        # GroupExpression
+    | NOT booleanExpression                                       # NotExpression
     ;
 
 constantArray

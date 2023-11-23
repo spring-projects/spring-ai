@@ -87,8 +87,7 @@ country == 'UK' && year >= 2020 && isActive == true.
 
 These are the available implementations of the `VectorStore` interface:
 
-* `InMemoryVectorStore`
-* `SimplePersistentVectorStore`
+* `InMemoryVectorStore` and `SimplePersistentVectorStore`.
 * Pinecone: https://www.pinecone.io/[PineCone] vector store.
 * PgVector [`PgVectorStore`]: The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
 * Milvus [`MilvusVectorStore`]: The https://milvus.io/[Milvus] vector store
@@ -117,7 +116,7 @@ The `VectorStore` implementation computes the embeddings and stores the JSON and
   @Autowired
   VectorStore vectorStore;
 
-  void load(String sourceFile) {}
+  void load(String sourceFile) {
             JsonReader jsonReader = new JsonReader(new FileSystemResource(sourceFile),
                     "price", "name", "shortDescription", "description", "tags");
             List<Document> documents = jsonReader.get();

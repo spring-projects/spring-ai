@@ -33,6 +33,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NOT;
 
 /**
  * @author Christian Tzolov
@@ -95,6 +96,20 @@ public class FilterExpressionBuilderTests {
 				new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
+	}
+
+	@Test
+	public void tesNot() {
+		// isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
+		var exp = b.not(b.and(b.and(b.eq("isOpen", true), b.gte("year", 2020)), b.in("country", "BG", "NL", "US")))
+			.build();
+
+		assertThat(exp).isEqualTo(new Expression(NOT,
+				new Expression(AND,
+						new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
+								new Expression(GTE, new Key("year"), new Value(2020))),
+						new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))),
+				null));
 	}
 
 }

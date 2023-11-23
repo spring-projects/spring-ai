@@ -64,6 +64,14 @@ public interface FiltersVisitor<T> extends ParseTreeVisitor<T> {
 	T visitInExpression(FiltersParser.InExpressionContext ctx);
 
 	/**
+	 * Visit a parse tree produced by the {@code NotExpression} labeled alternative in
+	 * {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNotExpression(FiltersParser.NotExpressionContext ctx);
+
+	/**
 	 * Visit a parse tree produced by the {@code CompareExpression} labeled alternative in
 	 * {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree

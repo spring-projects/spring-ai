@@ -182,6 +182,12 @@ public class PgVectorStoreIT {
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 
+				results = vectorStore.similaritySearch(searchRequest
+					.withFilterExpression("NOT((country == 'BG' && year == 2020) || (country == 'NL'))"));
+
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
+
 				results = vectorStore.similaritySearch(SearchRequest.query("The World")
 					.withTopK(5)
 					.withSimilarityThresholdAll()
