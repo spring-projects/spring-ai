@@ -113,7 +113,7 @@ One approach involves presenting both the user's request and the AI model's resp
 
 Furthermore, leveraging the information stored in the Vector Database as supplementary data can enhance the evaluation process, aiding in the determination of response relevance.
 
-The Spring AI project currenlty provides some very basic examples of how you can evaluate the responses in the form of prompts to include in a JUnit test.
+The Spring AI project currently provides some very basic examples of how you can evaluate the responses in the form of prompts to include in a JUnit test.
 
 
 

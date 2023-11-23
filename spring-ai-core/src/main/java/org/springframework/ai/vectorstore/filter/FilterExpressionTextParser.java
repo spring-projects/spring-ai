@@ -35,6 +35,7 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.NotExpressionContext;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
@@ -261,6 +262,11 @@ public class FilterExpressionTextParser {
 		@Override
 		public Filter.Operand visitGroupExpression(FiltersParser.GroupExpressionContext ctx) {
 			return new Filter.Group(castToExpression(this.visit(ctx.booleanExpression())));
+		}
+
+		@Override
+		public Filter.Operand visitNotExpression(NotExpressionContext ctx) {
+			return new Filter.Expression(Filter.ExpressionType.NOT, this.visit(ctx.booleanExpression()), null);
 		}
 
 		public Filter.Expression castToExpression(Filter.Operand expression) {

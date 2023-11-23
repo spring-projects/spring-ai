@@ -129,6 +129,28 @@ public class FiltersBaseListener implements FiltersListener {
 	 * </p>
 	 */
 	@Override
+	public void enterNotExpression(FiltersParser.NotExpressionContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitNotExpression(FiltersParser.NotExpressionContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
 	public void enterCompareExpression(FiltersParser.CompareExpressionContext ctx) {
 	}
 

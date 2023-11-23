@@ -84,6 +84,20 @@ public interface FiltersListener extends ParseTreeListener {
 	void exitInExpression(FiltersParser.InExpressionContext ctx);
 
 	/**
+	 * Enter a parse tree produced by the {@code NotExpression} labeled alternative in
+	 * {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterNotExpression(FiltersParser.NotExpressionContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code NotExpression} labeled alternative in
+	 * {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitNotExpression(FiltersParser.NotExpressionContext ctx);
+
+	/**
 	 * Enter a parse tree produced by the {@code CompareExpression} labeled alternative in
 	 * {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree

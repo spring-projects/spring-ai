@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.filter.converter;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterHelper;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
@@ -52,12 +53,25 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 			this.doValue(value, context);
 		}
 		else if (operand instanceof Filter.Expression expression) {
-			if ((expression.type() != ExpressionType.AND && expression.type() != ExpressionType.OR)
-					&& !(expression.right() instanceof Filter.Value)) {
+			if ((expression.type() != ExpressionType.NOT && expression.type() != ExpressionType.AND
+					&& expression.type() != ExpressionType.OR) && !(expression.right() instanceof Filter.Value)) {
 				throw new RuntimeException("Non AND/OR expression must have Value right argument!");
 			}
-			this.doExpression(expression, context);
+			if (expression.type() == ExpressionType.NOT) {
+				this.doNot(expression, context);
+			}
+			else {
+				this.doExpression(expression, context);
+			}
 		}
+	}
+
+	protected void doNot(Filter.Expression expression, StringBuilder context) {
+		// Default behavior is to convert the NOT expression into its semantically
+		// equivalent negation expression.
+		// Effectively removing the NOT types form the boolean expression tree before
+		// passing it to the doExpression.
+		this.convertOperand(FilterHelper.negate(expression), context);
 	}
 
 	protected abstract void doExpression(Filter.Expression expression, StringBuilder context);
