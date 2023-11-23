@@ -17,8 +17,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +24,13 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
@@ -40,7 +40,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.FileSystemUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
+@Disabled("Disabled until https://github.com/milvus-io/milvus-sdk-java/issues/704")
 @Testcontainers
 public class MilvusVectorStoreAutoConfigurationIT {
 
@@ -56,19 +56,9 @@ public class MilvusVectorStoreAutoConfigurationIT {
 	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
 
 	List<Document> documents = List.of(
-			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
-			new Document(getText("classpath:/test/data/time.shelter.txt")),
-			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
-
-	public static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
+			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
+					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -97,12 +87,14 @@ public class MilvusVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void addAndSearch() {
-		contextRunner.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
-				"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
-				"spring.ai.vectorstore.milvus.embeddingDimension=384",
-				"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
+		contextRunner
+			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
+					"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
+					"spring.ai.vectorstore.milvus.embeddingDimension=384",
+					"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
 
-				"spring.ai.vectorstore.milvus.client.host=localhost", "spring.ai.vectorstore.milvus.client.port=19530")
+					"spring.ai.vectorstore.milvus.client.host=" + milvusContainer.getServiceHost("standalone", 19530),
+					"spring.ai.vectorstore.milvus.client.port=" + milvusContainer.getServicePort("standalone", 19530))
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				vectorStore.add(documents);
