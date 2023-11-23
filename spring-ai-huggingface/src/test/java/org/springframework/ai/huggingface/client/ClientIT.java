@@ -16,6 +16,7 @@
 
 package org.springframework.ai.huggingface.client;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -26,6 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled("Until a valid inference endpoint is available for the provided HUGGINGFACE_API_KEY ")
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "HUGGINGFACE_API_KEY", matches = ".+")
 public class ClientIT {
