@@ -16,8 +16,6 @@
 
 package org.springframework.ai.autoconfigure.azure.openai;
 
-import java.time.Duration;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
@@ -68,7 +66,7 @@ public class AzureOpenAiAutoConfiguration {
 		azureOpenAiClient.setTemperature(this.azureOpenAiProperties.getTemperature());
 		azureOpenAiClient.setModel(this.azureOpenAiProperties.getModel());
 
-		return (azureOpenAiProperties.isRetryEnabled()) ? new RetryAiClient(retryTemplate, azureOpenAiClient)
+		return (azureOpenAiProperties.getRetry().isEnabled()) ? new RetryAiClient(retryTemplate, azureOpenAiClient)
 				: azureOpenAiClient;
 	}
 
@@ -78,16 +76,20 @@ public class AzureOpenAiAutoConfiguration {
 			AzureOpenAiProperties azureOpenAiProperties, RetryTemplate retryTemplate) {
 		var embeddingClient = new AzureOpenAiEmbeddingClient(msoftSdkOpenAiClient,
 				this.azureOpenAiProperties.getEmbeddingModel());
-		return (azureOpenAiProperties.isRetryEnabled()) ? new RetryEmbeddingClient(retryTemplate, embeddingClient)
+		return (azureOpenAiProperties.getRetry().isEnabled()) ? new RetryEmbeddingClient(retryTemplate, embeddingClient)
 				: embeddingClient;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RetryTemplate retryTemplate() {
+	public RetryTemplate retryTemplate(AzureOpenAiProperties openAiProperties) {
+		var retry = openAiProperties.getRetry();
+		// currentInterval = Math.min(initialInterval * Math.pow(multiplier, retryNum),
+		// maxInterval)}
 		return RetryTemplate.builder()
-			.maxAttempts(10)
-			.exponentialBackoff(Duration.ofSeconds(2), 5, Duration.ofMinutes(2))
+			.maxAttempts(retry.getMaxAttempts())
+			.exponentialBackoff(retry.getInitialInterval(), retry.getBackoffIntervalMultiplier(),
+					retry.getMaximumBackoffDuration())
 			.build();
 	}
 

@@ -50,9 +50,9 @@ public class OpenAiIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(booleans = { false, true })
 	public void embeddingClient(boolean retryEnabled) {
-		contextRunner.withPropertyValues("spring.ai.openai.retryEnabled=" + retryEnabled).run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.retry.enabled=" + retryEnabled).run(context -> {
 			OpenAiProperties properties = context.getBean(OpenAiProperties.class);
-			assertThat(properties.isRetryEnabled()).isEqualTo(retryEnabled);
+			assertThat(properties.getRetry().isEnabled()).isEqualTo(retryEnabled);
 
 			EmbeddingClient embeddingClient = context.getBean(EmbeddingClient.class);
 			if (retryEnabled) {
@@ -85,9 +85,9 @@ public class OpenAiIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(booleans = { false, true })
 	public void aiClient(boolean retryEnabled) {
-		contextRunner.withPropertyValues("spring.ai.openai.retryEnabled=" + retryEnabled).run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.retry.enabled=" + retryEnabled).run(context -> {
 			OpenAiProperties properties = context.getBean(OpenAiProperties.class);
-			assertThat(properties.isRetryEnabled()).isEqualTo(retryEnabled);
+			assertThat(properties.getRetry().isEnabled()).isEqualTo(retryEnabled);
 
 			AiClient aiClient = context.getBean(AiClient.class);
 			if (retryEnabled) {

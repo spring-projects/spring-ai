@@ -60,7 +60,8 @@ public class OpenAiAutoConfiguration {
 		openAiClient.setTemperature(openAiProperties.getTemperature());
 		openAiClient.setModel(openAiProperties.getModel());
 
-		return (openAiProperties.isRetryEnabled()) ? new RetryAiClient(retryTemplate, openAiClient) : openAiClient;
+		return (openAiProperties.getRetry().isEnabled()) ? new RetryAiClient(retryTemplate, openAiClient)
+				: openAiClient;
 	}
 
 	@Bean
@@ -72,7 +73,7 @@ public class OpenAiAutoConfiguration {
 
 		var embeddingClient = new OpenAiEmbeddingClient(openAiService, openAiProperties.getEmbedding().getModel());
 
-		return (openAiProperties.isRetryEnabled()) ? new RetryEmbeddingClient(retryTemplate, embeddingClient)
+		return (openAiProperties.getRetry().isEnabled()) ? new RetryEmbeddingClient(retryTemplate, embeddingClient)
 				: embeddingClient;
 	}
 
@@ -109,10 +110,14 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RetryTemplate retryTemplate() {
+	public RetryTemplate retryTemplate(OpenAiProperties openAiProperties) {
+		var retry = openAiProperties.getRetry();
+		// currentInterval = Math.min(initialInterval * Math.pow(multiplier, retryNum),
+		// maxInterval)}
 		return RetryTemplate.builder()
-			.maxAttempts(10)
-			.exponentialBackoff(Duration.ofSeconds(2), 5, Duration.ofMinutes(2))
+			.maxAttempts(retry.getMaxAttempts())
+			.exponentialBackoff(retry.getInitialInterval(), retry.getBackoffIntervalMultiplier(),
+					retry.getMaximumBackoffDuration())
 			.build();
 	}
 
