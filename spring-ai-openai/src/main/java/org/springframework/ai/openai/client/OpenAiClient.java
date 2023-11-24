@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.client;
 
+import com.theokanning.openai.client.OpenAiApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.client.AiClient;
@@ -26,6 +27,9 @@ import org.springframework.ai.openai.metadata.OpenAiGenerationMetadata;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.MessageType;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.Assert;
 
 import com.theokanning.openai.completion.chat.ChatCompletionChoice;
@@ -45,10 +49,21 @@ import java.util.Map;
  * @author Christian Tzolov
  * @author Ueibin Kim
  * @author John Blum
+ * @author Josh Long
  * @see org.springframework.ai.client.AiClient
  * @see com.theokanning.openai.service.OpenAiService
  */
+@ImportRuntimeHints(OpenAiClient.Hints.class)
 public class OpenAiClient implements AiClient {
+
+	static class Hints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			hints.proxies().registerJdkProxy(OpenAiApi.class);
+		}
+
+	}
 
 	// TODO how to set default options for the entire client
 	// TODO expose request options into Prompt API via PromptOptions
