@@ -69,7 +69,7 @@ There is a burgeoning collection of techniques that improve the effectiveness of
 Investing time in crafting a prompt can drastically improve the resulting output.
 
 Sharing prompts has become a communal practice, and there is active academic research being done on this subject.
-As an example of how counter-intuitive it can be to create an effective prompt (for example, contrasting with SQL), a https://https://arxiv.org/abs/2205.11916[recent research paper] found that one of the most effective prompts you can use starts with the phrase, "`Take a deep breath and work on this step by step.`"
+As an example of how counter-intuitive it can be to create an effective prompt (for example, contrasting with SQL), a https://arxiv.org/abs/2205.11916[recent research paper] found that one of the most effective prompts you can use starts with the phrase, "`Take a deep breath and work on this step by step.`"
 That should give you an indication of why language is so important.
 We do not yet fully understand how to make the most effective use of previous iterations of this technology, such as ChatGPT 3.5, let alone new versions that are being developed.
 
