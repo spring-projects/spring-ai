@@ -6,6 +6,9 @@ The Spring AI project provides a Spring-friendly API and abstractions for develo
 
 Let's make your `@Beans` intelligent!
 
+## Cloning the repo
+
+You need [Git Large File Storage](https://git-lfs.com/) installed to clone the repo.
 
 ## Project Links
 
