@@ -8,7 +8,11 @@ Let's make your `@Beans` intelligent!
 
 ## Cloning the repo
 
-You need [Git Large File Storage](https://git-lfs.com/) installed to clone the repo.
+This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2). 
+To clone it you have to either:
+
+- Ignore the large files (won't affect the spring-ai behaviour) :  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
+- Or install the [Git Large File Storage](https://git-lfs.com/) before cloning the repo.
 
 ## Project Links
 
