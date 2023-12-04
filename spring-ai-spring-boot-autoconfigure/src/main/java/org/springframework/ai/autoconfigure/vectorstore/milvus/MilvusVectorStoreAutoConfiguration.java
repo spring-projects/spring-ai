@@ -78,27 +78,27 @@ public class MilvusVectorStoreAutoConfiguration {
 		}
 
 		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getToken())) {
-			builder.withUri(clientProperties.getToken());
+			builder.withToken(clientProperties.getToken());
 		}
 
 		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getClientKeyPath())) {
-			builder.withUri(clientProperties.getClientKeyPath());
+			builder.withClientKeyPath(clientProperties.getClientKeyPath());
 		}
 
 		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getClientPemPath())) {
-			builder.withUri(clientProperties.getClientPemPath());
+			builder.withClientPemPath(clientProperties.getClientPemPath());
 		}
 
 		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getCaPemPath())) {
-			builder.withUri(clientProperties.getCaPemPath());
+			builder.withCaPemPath(clientProperties.getCaPemPath());
 		}
 
 		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getServerPemPath())) {
-			builder.withUri(clientProperties.getServerPemPath());
+			builder.withServerPemPath(clientProperties.getServerPemPath());
 		}
 
 		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getServerName())) {
-			builder.withUri(clientProperties.getServerName());
+			builder.withServerName(clientProperties.getServerName());
 		}
 
 		return new MilvusServiceClient(builder.build());
