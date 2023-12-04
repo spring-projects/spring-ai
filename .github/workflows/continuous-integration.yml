@@ -56,4 +56,3 @@ jobs:
         run: |
           cd target && unzip spring-ai-$PROJECT_VERSION-docs.zip
           scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
-          scp -i $HOME/.ssh/key -r reference $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
