@@ -93,6 +93,21 @@ The "'rendered'" string becomes the content of the prompt supplied to the AI mod
 There is considerable variability in the specific data format of the prompt sent to the model.
 Initially starting as simple strings, prompts have evolved to include multiple messages, where each string in each message represents a distinct role for the model.
 
+== Embeddings
+
+Embeddings transform text into numerical arrays or vectors, enabling AI models to process and interpret language data.
+This transformation from text to numbers and back is a key element in how AI interacts with and understands human language.
+As a Java developer exploring AI, it's not necessary to comprehend the intricate mathematical theories or the specific implementations behind these vector representations.
+A basic understanding of their role and function within AI systems suffices, particularly when you're integrating AI functionalities into your applications.
+
+Embeddings are particularly relevant in practical applications like the retrieval-augmented generation pattern.
+They enable the representation of data as points in a semantic space, which is akin to the 2-D space of Euclidean geometry, but in higher dimensions.
+This means just like how points on a plane in Euclidean geometry can be close or far based on their coordinates, in a semantic space, the proximity of points reflects the similarity in meaning.
+So, sentences about similar topics are positioned closer in this multi-dimensional space, much like points lying close to each other on a graph.
+This proximity aids in tasks like text classification, semantic search, and even product recommendations, as it allows the AI to discern and group related concepts based on their 'location' in this expanded semantic landscape.
+
+You can think of this semantic space as a vector,
+
 == Tokens
 
 Tokens serve as the building blocks of how an AI model works.
@@ -124,13 +139,6 @@ This intricacy has led to the emergence of a specialized field involving the cre
 Output parsing employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
 This challenge has prompted OpenAI to introduce 'OpenAI Functions' as a means to specify the desired output format from the model precisely.
-
-== Chaining Calls
-
-A chain is a concept that represents a series of calls to an AI model.
-It uses the output from one call as the input to another.
-
-By chaining calls together, you can support complex use cases by composing pipelines of multiple chains.
 
 == Bringing Your Data to the AI model
 

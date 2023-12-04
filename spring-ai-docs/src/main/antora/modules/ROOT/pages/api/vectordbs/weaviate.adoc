@@ -1,0 +1,207 @@
+= Weaviate
+
+This section will walk you through setting up the Weaviate VectorStore to store document embeddings and perform similarity searches.
+
+== What is Weaviate?
+
+link:https://weaviate.io/[Weaviate] is an open-source vector database.
+It allows you to store data objects and vector embeddings from your favorite ML-models and scale seamlessly into billions of data objects.
+It provides tools to store document embeddings, content, and metadata and to search through those embeddings, including metadata filtering.
+
+== Prerequisites
+
+1. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+
+- `Transformers Embedding` - computes the embedding in your local environment. Follow the ONNX Transformers Embedding instructions.
+- `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
+- You can also use the `Azure OpenAI Embedding` or the `PostgresML Embedding Client`.
+2. `Weaviate cluster`. You can set up a cluster locally in a Docker container or create a link:https://console.weaviate.cloud/[Weaviate Cloud Service]. For the latter, you need to create a Weaviate account, set up a cluster, and get your access API key from the link:https://console.weaviate.cloud/dashboard[dashboard details].
+
+On startup, the `WeaviateVectorStore` creates the required `SpringAiWeaviate` object schema if it's not already provisioned.
+
+== Dependencies
+
+Add these dependencies to your project:
+
+* Embedding Client boot starter, required for calculating embeddings.
+
+* Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions.
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.experimental.ai</groupId>
+  <artifactId>spring-ai-transformers-embedding-spring-boot-starter</artifactId>
+  <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+or use OpenAI (Cloud)
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+You'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+
+[source,bash]
+----
+export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+----
+
+* Add the Weaviate VectorStore dependency
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.experimental.ai</groupId>
+  <artifactId>spring-ai-weaviate-store</artifactId>
+  <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+== Usage
+
+Create a WeaviateVectorStore instance connected to the local Weaviate cluster:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+  WeaviateVectorStoreConfig config = WeaviateVectorStoreConfig.builder()
+     .withScheme("http")
+     .withHost("localhost:8080")
+     // Define the metadata fields to be used
+     // in the similarity search filters.
+     .withFilterableMetadataFields(List.of(
+        MetadataField.text("country"),
+        MetadataField.number("year"),
+        MetadataField.bool("active")))
+     // Consistency level can be: ONE, QUORUM, or ALL.
+     .withConsistencyLevel(ConsistentLevel.ONE)
+     .build();
+
+  return new WeaviateVectorStore(config, embeddingClient);
+}
+----
+
+> [NOTE]
+> You must list explicitly all metadata field names and types (`BOOLEAN`, `TEXT`, or `NUMBER`) for any metadata key used in filter expression.
+> The `withFilterableMetadataKeys` above registers filterable metadata fields: `country` of type `TEXT`, `year` of type `NUMBER`, and `active` of type `BOOLEAN`.
+>
+> If the filterable metadata fields are expanded with new entries, you have to (re)upload/update the documents with this metadata.
+>
+> You can use the following Weaviate link:https://weaviate.io/developers/weaviate/api/graphql/filters#special-cases[system metadata] fields without explicit definition: `id`, `_creationTimeUnix`, and `_lastUpdateTimeUnix`.
+
+Then in your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "active", true, "year", 2020)),
+   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
+   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "active", false, "year", 2023)));
+----
+
+Now add the documents to your vector store:
+
+
+[source,java]
+----
+vectorStore.add(List.of(document));
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest
+      .query("Spring")
+      .withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with WeaviateVectorStore as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = Filter.builder();
+
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+----
+
+The portable filter expressions get automatically converted into the proprietary Weaviate link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filters].
+For example, the following portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into Weaviate GraphQL link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filter expression]:
+
+[source,graphql]
+----
+operator:And
+   operands:
+      [{
+         operator:Or
+         operands:
+            [{
+               path:["meta_country"]
+               operator:Equal
+               valueText:"UK"
+            },
+            {
+               path:["meta_country"]
+               operator:Equal
+               valueText:"NL"
+            }]
+      },
+      {
+         path:["meta_year"]
+         operator:GreaterThanEqual
+         valueNumber:2020
+      }]
+----
+
+== Run Weaviate cluster in docker container
+
+Start Weaviate in a docker container:
+
+[source,bash]
+----
+docker run -it --rm --name weaviate -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate -e QUERY_DEFAULTS_LIMIT=25 -e DEFAULT_VECTORIZER_MODULE=none -e CLUSTER_HOSTNAME=node1 -p 8080:8080 semitechnologies/weaviate:1.22.4
+----
+
+Starts a Weaviate cluster at http://localhost:8080/v1 with scheme=http, host=localhost:8080, and apiKey="". Then follow the usage instructions.
