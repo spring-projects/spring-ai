@@ -1,3 +1,150 @@
-= Document Readers
+= ETL Pipeline
 
-TBD
+The Extraction, Transformation, and Loading (ETL) framework serves as the backbone of data processing within the Retrieval-Augmented Generation (RAG) use case.
+
+The ETL pipeline orchestrates the flow from raw data sources to a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
+
+The RAG use-case is designed to augment the capabilities of generative models by retrieving relevant information from a body of data to enhancing the quality and relevance of the generated output.
+
+
+== API Overview
+
+=== DocumentReader
+
+```java
+public interface DocumentReader extends Supplier<List<Document>> {
+
+}
+```
+
+=== DocumentTransformer
+
+```java
+public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
+
+}
+```
+
+=== DocumentWriter
+
+```java
+public interface DocumentWriter extends Consumer<List<Document>> {
+
+}
+```
+
+=== Available Implementations
+
+==== DocumentReader Interface
+
+*Supplier<List<Document>>*::
++ Provides a source of documents from diverse origins.
+
+*JsonReader*::
++ Parses documents in JSON format.
+
+*TextReader*::
++ Processes plain text documents.
+
+*Document*::
++ Represents the core data structure manipulated throughout the pipeline.
+
+
+=== DocumentTransformer Interface
+
+*Function<List<Document>, List<Document>>*::
++ Transforms a batch of documents as part of the processing workflow.
+
+*TextSplitter*::
++ Divides documents to fit the AI model's context window.
+
+*TokenTextSplitter*::
++ Splits documents while preserving token-level integrity.
+
+*ContentFormatTransformer*::
++ Ensures uniform content formats across all documents.
+
+*KeywordMetadataEnricher*::
++ Augments documents with essential keyword metadata.
+
+*SummaryMetadataEnricher*::
++ Enriches documents with summarization metadata for enhanced retrieval.
+
+=== DocumentWriter Interface
+
+*Consumer<List<Document>>*::
++ Manages the final stage of the ETL process, preparing documents for storage.
+
+*VectorStore*::
++ The abstracted interface for vector database interactions.
+
+*MilvusVectorStore*::
++ An implementation for the Milvus vector database.
+
+*PgVectorStore*::
++ Provides vector storage capabilities using PostgreSQL.
+
+*SimplePersistentVectorStore*::
++ A straightforward approach to persistent vector storage.
+
+*InMemoryVectorStore*::
++ Enables rapid access with in-memory storage solutions.
+
+*Neo4jVectorStore*::
++ Leverages the Neo4j graph database for vector storage.
+
+== Using PDF Reader
+
+
+== Using PagePdfDocumentReader
+
+[source,java]
+----
+PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(
+	"file:document-readers/pdf-reader/src/test/resources/sample.pdf",
+	PdfDocumentReaderConfig.builder()
+			.withPageTopMargin(0)
+			.withPageBottomMargin(0)
+			.withPageExtractedTextFormatter(PageExtractedTextFormatter.builder()
+					.withNumberOfTopTextLinesToDelete(0)
+					.withNumberOfBottomTextLinesToDelete(3)
+					.withNumberOfTopPagesToSkipBeforeDelete(0)
+					.build())
+			.withPagesPerDocument(1)
+			.build());
+
+var documents = pdfReader.get();
+
+PdfTestUtils.writeToFile("document-readers/pdf-reader/target/sample.txt", documents, false);
+----
+
+[source,java]
+----
+public static void main(String[] args) throws IOException {
+
+	ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader(
+			"file:document-readers/pdf-reader/src/test/resources/sample2.pdf",
+			PdfDocumentReaderConfig.builder()
+					// .withPageBottomMargin(15)
+					// .withReversedParagraphPosition(true)
+					// .withTextLeftAlignment(true)
+					.build());
+	// ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader(
+	// "file:document-readers/pdf-reader/src/test/resources/spring-framework.pdf",
+	// PdfDocumentReaderConfig.builder()
+	// .withPageBottomMargin(15)
+	// .withReversedParagraphPosition(true)
+	// // .withTextLeftAlignment(true)
+	// .build());
+
+	// PdfDocumentReader pdfReader = new
+	// PdfDocumentReader("file:document-readers/pdf-reader/src/test/resources/uber-k-10.pdf",
+	// PdfDocumentReaderConfig.builder().withPageTopMargin(80).withPageBottomMargin(60).build());
+
+	var documents = pdfReader.get();
+
+	writeToFile("document-readers/pdf-reader/target/sample2.txt", documents, true);
+	System.out.println(documents.size());
+
+}
+----

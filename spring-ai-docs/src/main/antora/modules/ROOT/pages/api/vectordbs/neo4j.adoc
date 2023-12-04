@@ -1,0 +1,81 @@
+= Neo4j
+
+This section walks you through setting up `Neo4jVectorStore` to store document embeddings and perform similarity searches.
+
+== What is Neo4j?
+
+link:https://neo4j.com[Neo4j] is an open-source NoSQL graph database. It is a fully transactional database (ACID) that stores data structured as graphs consisting of nodes, connected by relationships. Inspired by the structure of the real world, it allows for high query performance on complex data while remaining intuitive and simple for the developer.
+
+== What is Neo4j Vector Search?
+
+link:https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/[Neo4j's Vector Search] got introduced in Neo4j 5.11 and was considered GA with the release of version 5.13. Embeddings can be stored on _Node_ properties and can be queried with the `db.index.vector.queryNodes()` function. Those indexes are powered by Lucene using a Hierarchical Navigable Small World Graph (HNSW) to perform a k approximate nearest neighbors (k-ANN) query over the vector fields.
+
+=== Prerequisites
+
+1. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+
+2. A running Neo4j (5.13+) instance
+a. link:https://hub.docker.com/_/neo4j[Docker] image _neo4j:5.13_
+b. link:https://neo4j.com/download/[Neo4j Desktop]
+c. link:https://neo4j.com/cloud/aura-free/[Neo4j Aura]
+d. link:https://neo4j.com/deployment-center/[Neo4j Server] instance
+
+== Configuration
+
+To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide (e.g. via `application.properties`) configurations for your instance.
+
+Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+
+[source,bash]
+----
+export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+----
+
+== Repository
+
+To acquire Spring AI artifacts, declare the Spring Snapshot repository:
+
+[source,xml]
+----
+<repository>
+	<id>spring-snapshots</id>
+	<name>Spring Snapshots</name>
+	<url>https://repo.spring.io/snapshot</url>
+	<releases>
+		<enabled>false</enabled>
+	</releases>
+</repository>
+----
+
+== Dependencies
+
+Add these dependencies to your project:
+
+* OpenAI: Required for calculating embeddings.
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.experimental.ai</groupId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+	<version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+* Neo4j Vector Store
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.experimental.ai</groupId>
+	<artifactId>spring-ai-neo4j-store</artifactId>
+	<version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+== Sample Code
+
+To configure `Neo4jVectorStore` in your application, you can use the following setup:
+
+Add to `application.properties` (using your Neo4j credentials):
+
