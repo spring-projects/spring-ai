@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate Reference docs
         working-directory: spring-ai-docs
-        run: mvn site
+        run: mvn assembly:single
 
       - name: Capture project version
         run: echo PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
