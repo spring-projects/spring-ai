@@ -126,7 +126,7 @@ If all goes well, you should retrieve the document containing the text "Spring A
 
 You can leverage the generic, portable [metadata filters](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters) with WeaviateVectorStore as well.
 
-For example you can use either the text expression language:
+For example, you can use either the text expression language:
 
 ```java
 vectorStore.similaritySearch(

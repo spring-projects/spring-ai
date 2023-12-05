@@ -57,7 +57,7 @@ public class TransformersEmbeddingClientProperties {
 		/**
 		 * HuggingFaceTokenizer options such as 'addSpecialTokens', 'modelMaxLength',
 		 * 'truncation', 'padding', 'maxLength', 'stride' and 'padToMultipleOf'. Leave
-		 * empty to fallback to the defaults.
+		 * empty to fall back to the defaults.
 		 */
 		private Map<String, String> options = new HashMap<>();
 

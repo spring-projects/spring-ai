@@ -20,7 +20,7 @@ Add the `spring-ai-ollama` dependency to your project's pom:
 </dependency>
 ```
 
-then create an client and use generate response:
+then create a client and use generate response:
 
 ```java
 var ollamaClient = new OllamaClient("http://127.0.0.1:11434", "llama2",
@@ -35,7 +35,7 @@ AiResponse aiResponse = ollamaClient.generate(new Prompt("Hello"));
 
 ### Spring Boot Starter
 
-For convenience you can opt for the Ollama Boot starter.
+For convenience, you can opt for the Ollama Boot starter.
 For this add the following dependency:
 
 ```xml

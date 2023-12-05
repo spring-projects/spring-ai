@@ -112,7 +112,7 @@ public class SearchRequest {
 	/**
 	 * Similarity threshold score to filter the search response by. Only documents with
 	 * similarity score equal or greater than the 'threshold' will be returned. Note that
-	 * this is a post processing step performed on the client not the server side. A
+	 * this is a post-processing step performed on the client not the server side. A
 	 * threshold value of 0.0 means any similarity is accepted or disable the similarity
 	 * threshold filtering. A threshold value of 1.0 means an exact match is required.
 	 * @param threshold The lower bound of the similarity score.

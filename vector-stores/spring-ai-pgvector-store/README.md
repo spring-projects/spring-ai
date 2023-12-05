@@ -12,7 +12,7 @@ This readme walks you through setting up the PGvector `VectorStore` to store doc
 
 2. Access to PostgresSQL instance with following configurations
 
-	The [setup local Postgres/PGVector](#appendix_a) appendix shows how to setup a DB locally with a Docker container.
+	The [setup local Postgres/PGVector](#appendix_a) appendix shows how to set up a DB locally with a Docker container.
 
 	On startup the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with index.
 	Optionally, you can do this manually like so:

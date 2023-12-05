@@ -577,7 +577,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	}
 
 	/**
-	 * Converts a list of doubles to a array of floats.
+	 * Converts a list of doubles to an array of floats.
 	 * @param doubleList The list of doubles.
 	 * @return The converted array of floats.
 	 */

@@ -37,7 +37,6 @@ import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.experimental.ai.chroma.ChromaApi;

@@ -15,13 +15,11 @@
  */
 package org.springframework.ai.client;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.lang.Nullable;
+
+import java.util.List;
 
 public class AiResponse {
 

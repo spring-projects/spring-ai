@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-Please do a quick search on Github issues first, the feature you are about to request might have already been requested.
+Please do a quick search on GitHub issues first, the feature you are about to request might have already been requested.
 
 **Expected Behavior**
 

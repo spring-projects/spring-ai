@@ -10,7 +10,7 @@ Among other features, it allows users to query information using vector based st
 1. Azure Subscription: You will need an [Azure subscription](https://azure.microsoft.com/en-us/free/) to use any Azure service.
 2. Azure AI Search Service: Create an [AI Search service](https://portal.azure.com/#create/Microsoft.Search).  Once the service is created,
 obtain the admin apiKey from the `Keys` section under `Settings` and retrieve the endpoint from the `Url` field under the `Overview` section.
-3. (Optional) Azure OpenAI Service: Create an an Azure [OpenAI service](https://portal.azure.com/#create/Microsoft.AIServicesOpenAI).
+3. (Optional) Azure OpenAI Service: Create an Azure [OpenAI service](https://portal.azure.com/#create/Microsoft.AIServicesOpenAI).
 **NOTE:** You may have to fill out a separate form to gain access to Azure Open AI services.
 Once the service is created, obtain the endpoint and apiKey from the `Keys and Endpoint` section under `Resource Management`
 
@@ -147,7 +147,7 @@ If all goes well, you should retrieve the document containing the text "Spring A
 
 You can leverage the generic, portable [metadata filters](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters) with AzureVectorStore as well.
 
-For example you can use either the text expression language:
+For example, you can use either the text expression language:
 
 ```java
 vectorStore.similaritySearch(

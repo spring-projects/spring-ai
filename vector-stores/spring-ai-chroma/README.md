@@ -109,7 +109,7 @@ If all goes well, you should retrieve the document containing the text "Spring A
 
 You can leverage the generic, portable [metadata filters](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters) with ChromaVector store as well.
 
-For example you can use either the text expression language:
+For example, you can use either the text expression language:
 
 ```java
 vectorStore.similaritySearch("The World", TOP_K, SIMILARITY_THRESHOLD,
@@ -141,7 +141,7 @@ is converted into the proprietary Chroma format:
 {"$and":[
 	{"author": {"$in": ["john", "jill"]}},
 	{"article_type":{"$eq":"blog"}}]
-}"
+}
 ```
 
 
