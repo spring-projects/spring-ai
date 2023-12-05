@@ -63,7 +63,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Bulgaria"));
 			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Netherland"));
+					Map.of("country", "Netherlands"));
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
@@ -77,8 +77,8 @@ public class ChromaVectorStoreAutoConfigurationIT {
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherland'"));
+			results = vectorStore.similaritySearch(
+					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

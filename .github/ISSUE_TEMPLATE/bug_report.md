@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-Please do a quick search on Github issues first, there might be already a duplicate issue for the one you are about to create.
+Please do a quick search on GitHub issues first, there might be already a duplicate issue for the one you are about to create.
 If the bug is trivial, just go ahead and create the issue. Otherwise, please take a few moments and fill in the following sections:
 
 **Bug description**

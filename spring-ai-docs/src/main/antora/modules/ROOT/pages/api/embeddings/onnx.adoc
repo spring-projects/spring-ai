@@ -82,8 +82,8 @@ List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "Wo
 
 Note that when created manually you have to call the `afterPropertiesSet()` after setting the properties and before using the client.
 
-The first `embed()` call downloads the the large ONNX model and caches it on the local file system.
-Therefore the first call might take longer than usual.
+The first `embed()` call downloads the large ONNX model and caches it on the local file system.
+Therefore, the first call might take longer than usual.
 Use the `#setResourceCacheDirectory(<path>)` to set the local folder where the ONNX models as stored.
 The default cache folder is `${java.io.tmpdir}/spring-ai-onnx-model`.
 

@@ -168,7 +168,7 @@ For usage details, consult the  [AiClient API guide](https://docs.spring.io/spri
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.
-Crafting an effective Prompt is both an art and science, giving rist to the discipline of "Prompt Engineering".
+Crafting an effective Prompt is both an art and science, giving rise to the discipline of "Prompt Engineering".
 These prompts often leverage a templating engine for easy data substitution within predefined text using placeholders.
 
 Explore more on [Prompts](https://docs.spring.io/spring-ai/reference/concepts.html#_prompts) in our concept guide.

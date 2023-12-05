@@ -81,7 +81,7 @@ public class WeaviateVectorStoreAutoConfigurationTests {
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Bulgaria", "price", 3.14, "active", true, "year", 2020));
 			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Netherland", "price", 1.57, "active", false, "year", 2023));
+					Map.of("country", "Netherlands", "price", 1.57, "active", false, "year", 2023));
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
@@ -95,8 +95,8 @@ public class WeaviateVectorStoreAutoConfigurationTests {
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherland'"));
+			results = vectorStore.similaritySearch(
+					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

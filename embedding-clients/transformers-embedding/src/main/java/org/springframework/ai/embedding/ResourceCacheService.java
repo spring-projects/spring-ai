@@ -50,7 +50,7 @@ public class ResourceCacheService {
 
 	/**
 	 * Resources with URI schemas belonging to the excludedUriSchemas are not cached. By
-	 * default the file and classpath resources are not cached as they are already in the
+	 * default, the file and classpath resources are not cached as they are already in the
 	 * local file system.
 	 */
 	private List<String> excludedUriSchemas = new ArrayList<>(List.of("file", "classpath"));

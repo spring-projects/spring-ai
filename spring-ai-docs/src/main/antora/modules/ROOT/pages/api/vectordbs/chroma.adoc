@@ -145,7 +145,7 @@ For example, this portable filter expression:
 author in ['john', 'jill'] && article_type == 'blog'
 ```
 
-is converted inot the proprietyar Chroma format
+is converted into the proprietary Chroma format
 
 ```json
 {"$and":[
