@@ -26,7 +26,7 @@ docker-compose down; rm -Rf ./volumes
 
 Then connect to the vector store on http://localhost:19530 or for management http://localhost:9001 (user: `minioadmin`, pass: `minioadmin`)
 
-## Throubleshooting
+## Troubleshooting
 
 If Docker complains about resources, then execute:
 

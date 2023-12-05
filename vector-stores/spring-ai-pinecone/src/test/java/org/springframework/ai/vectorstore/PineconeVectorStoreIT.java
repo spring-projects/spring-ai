@@ -131,7 +131,7 @@ public class PineconeVectorStoreIT {
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Bulgaria"));
 			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Netherland"));
+					Map.of("country", "Netherlands"));
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
@@ -152,13 +152,13 @@ public class PineconeVectorStoreIT {
 
 			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
 				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'Netherland'"));
+				.withFilterExpression("country == 'Netherlands'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 			results = vectorStore.similaritySearch(searchRequest.withTopK(5)
 				.withSimilarityThresholdAll()
-				.withFilterExpression("NOT(country == 'Netherland')"));
+				.withFilterExpression("NOT(country == 'Netherlands')"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
