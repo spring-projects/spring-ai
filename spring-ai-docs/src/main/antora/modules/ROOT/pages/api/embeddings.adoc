@@ -1,3 +1,57 @@
-= Embeddings
+[[EmbeddingClient]]
+= EmbeddingClient
 
-TBD
+The `EmbeddingClient` interface is designed for straightforward integration with embedding models in AI and machine learning.
+Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
+These embeddings are crucial for various tasks such as semantic analysis and text classification.
+
+The design of the EmbeddingClient interface centers around two primary goals:
+
+* *Portability*: This interface ensures easy adaptability across various embedding models.
+It allows developers to switch between different embedding techniques or models with minimal code changes.
+This design aligns with Spring's philophy of modularity and interchangeability.
+
+* *Simplicity*: EmbeddingClient simplifies the process of converting text to embeddings.
+By providing straightforward methods like `embed(String text)` and `embed(Document document)`, it takes the complexity out of dealing with raw text data and embedding algorithms. This design choice makes it easier for developers, especially those new to AI, to utilize embeddings in their applications without delving deep into the underlying mechanics.
+
+== API Overview
+
+This section provides a guide to the `EmbeddingClient` interface and associated classes.
+
+=== EmbeddingClient
+Here is the `EmbeddingClient` interface definition:
+
+java
+Copy code
+public interface EmbeddingClient {
+
+    List<Double> embed(String text);
+
+    List<Double> embed(Document document);
+
+    List<List<Double>> embed(List<String> texts);
+
+    EmbeddingResponse embedForResponse(List<String> texts);
+
+    default int dimensions() {
+        return embed("Test String").size();
+    }
+
+}
+The embed methods offer various options for converting text into embeddings, accommodating single strings, structured Document objects, or batches of text.
+The returned values are lists of doubles, representing the embeddings in a numerical vector format.
+
+The `embedForResponse` method provides a more comprehensive output, potentially including additional information about the embeddings.
+
+The dimensions method is a handy tool for developers to quickly ascertain the size of the embedding vectors, which is important for understanding the embedding space and for subsequent processing steps.
+
+
+== Available Implementations
+
+The `EmbeddingClient` interface has the following available implementations:
+
+* OpenAI: Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
+* Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
+* PostgresML: https://postgresml.org/docs/[PostgresML is a complete MLOps platform built on PostgreSQL]
+* Sentence embedding with local ONNX models: The https://djl.ai/[Deep Java Library] and the Microsoft https://onnxruntime.ai/docs/get-started/with-java.html[ONNX Java Runtime] libraries are applied to run the ONNX models and compute the embeddings in Java.
+

@@ -1,3 +1,123 @@
+[[OutputParser]]
+
 = Output Parsers
 
-TBD
+The `OutputParser` interface allows you to obtain structured output, for example ampping the output to a Java class or an array of values from the String based ouput of AI Models.
+
+You can think of it in terms similar to Spring JDBC's concept of a `RowMapper` or `ResultSetExtractor`.
+Developers want to quickly turn results from an AI model into data types that can be passed to other functions and methods in their application.
+The `OutputParser` helps achieve that goal.
+
+== API Overview
+
+This section provides a guide to the `OutputParser` interface.
+
+=== OutputParser
+
+Here is the `OutputParser` interface definition
+
+```java
+public interface OutputParser<T> extends Parser<T>, FormatProvider {
+
+}
+```
+
+It combines the `Parser<T>` interface
+
+```java
+@FunctionalInterface
+public interface Parser<T> {
+    T parse(String text);
+}
+```
+
+and the `FormatProvider` interface
+
+```java
+public interface FormatProvider {
+
+	String getFormat();
+
+}
+```
+
+The `Parser` interface parses text strings to produce instances of the type T.
+
+The `FormatProvider` provides text instructions for the AI Model to format the output so that it an be parsed into the type T by the `Parser`.
+These text instructions are most often appended to the end of the user input to the AI Model.
+
+
+== Available Implementations
+
+The `OutputParser` interface has the following available implementations.
+
+
+* `BeanOutputParser`: Specifies the JSON schema for Java class and uses `DRAFT_2020_12` of the JSON schema specification as OpenAI has indicated this would give the best results.
+The JSON output of the AI Model is then deserialized to a Java object, aka `JavaBean`.
+* MapOutputParser:  Similar to BeanOutputParser but the JSON payload is deserialized into a `java.util.Map<String, Object> instance.
+* `ListOutputParser`: Specifies the output to be a comma delimited list.
+
+
+There has been considerable effort in recent OpenAI models to improve the model's ability to return JSON by simply specifying 'return in JSON', but not all models support such direct support for returning structured data.
+
+
+== Example Usage
+
+You can run a fully working example that demonstrates the use of `BeanOutputParser` as part of the https://github.com/Azure-Samples/spring-ai-azure-workshop[Spring AI Azure Workshop].
+Part of this workshop code is reproduced below.
+
+The use case for the example is to as the AI Model to generate the filography for an actor.
+
+The User prompt used is
+
+```
+String userMessage = """
+        Generate the filmography for the actor {actor}.
+        {format}
+        """;
+```
+
+The class `ActorsFilms` shown below
+
+```java
+public class ActorsFilms {
+
+	private String actor;
+
+	private List<String> movies;
+
+    // getters and toString omitted
+}
+```
+
+Here is a controller class that shows these classes in use
+
+
+```java
+    @GetMapping("/ai/output")
+    public ActorsFilms generate(@RequestParam(value = "actor", defaultValue = "Jeff Bridges") String actor) {
+        var outputParser = new BeanOutputParser<>(ActorsFilms.class);
+
+        String userMessage =
+                """
+                Generate the filmography for the actor {actor}.
+                {format}
+                """;
+
+        PromptTemplate promptTemplate = new PromptTemplate(userMessage, Map.of("actor", actor, "format", outputParser.getFormat() ));
+        Prompt prompt = promptTemplate.create();
+        Generation generation = aiClient.generate(prompt).getGeneration();
+
+        ActorsFilms actorsFilms = outputParser.parse(generation.getText());
+        return actorsFilms;
+    }
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,197 @@
+= Azure AI Service
+
+This section will walk you through setting up the AzureVectorStore to store document embeddings and perform similarity searches using the Azure AI Search Service.
+
+link:https://azure.microsoft.com/en-us/products/ai-services/cognitive-search[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
+
+== Prerequisites
+
+1. Azure Subscription: You will need an link:https://azure.microsoft.com/en-us/free/[Azure subscription] to use any Azure service.
+2. Azure AI Search Service: Create an link:https://portal.azure.com/#create/Microsoft.Search[AI Search service]. Once the service is created, obtain the admin apiKey from the `Keys` section under `Settings` and retrieve the endpoint from the `Url` field under the `Overview` section.
+3. (Optional) Azure OpenAI Service: Create an Azure link:https://portal.azure.com/#create/Microsoft.AIServicesOpenAI[OpenAI service]. **NOTE:** You may have to fill out a separate form to gain access to Azure Open AI services. Once the service is created, obtain the endpoint and apiKey from the `Keys and Endpoint` section under `Resource Management`.
+
+== Configuration
+
+On startup, the AzureVectorStore will attempt to create a new index within your AI Search service instance. Alternatively, you can create the index manually as explained in <<appendix-a, Appendix A>>.
+
+To set up an AzureVectorStore, you will need the settings retrieved from the prerequisites above along with your index name:
+
+* Azure AI Search Endpoint
+* Azure AI Search Key
+* (optional) Azure OpenAI API Endpoint
+* (optional) Azure OpenAI API Key
+
+You can provide these values as OS environment variables.
+
+[source,bash]
+----
+export AZURE_AI_SEARCH_API_KEY=<My AI Search API Key>
+export AZURE_AI_SEARCH_ENDPOINT=<My AI Search Index>
+export OPENAI_API_KEY=<My Azure AI API Key> (Optional)
+----
+
+[NOTE]
+====
+You can replace Azure Open AI implementation with any valid OpenAI implementation that supports the Embeddings interface. For example, you could use Spring AI's Open AI or TransformersEmbedding implementations for embeddings instead of the Azure implementation.
+====
+
+== Dependencies
+
+Add these dependencies to your project:
+
+1. Select an Embeddings interface implementation. You can choose between:
+
+* or OpenAI Embedding:
+
+   [source,xml]
+   ----
+   <dependency>
+       <groupId>org.springframework.experimental.ai</groupId>
+       <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+       <version>0.7.1-SNAPSHOT</version>
+   </dependency>
+   ----
+
+* Or Azure AI Embedding:
+
+   [source,xml]
+   ----
+   <dependency>
+     <groupId>org.springframework.experimental.ai</groupId>
+     <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+     <version>0.7.1-SNAPSHOT</version>
+   </dependency>
+   ----
+
+* Or Local Sentence Transformers Embedding:
+
+   [source,xml]
+   ----
+   <dependency>
+     <groupId>org.springframework.experimental.ai</groupId>
+     <artifactId>spring-ai-transformers-embedding-spring-boot-starter</artifactId>
+     <version>0.7.1-SNAPSHOT</version>
+   </dependency>
+   ----
+
+2. Azure (AI Search) Vector Store
+
+    [source,xml]
+    ----
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-azure-vector-store</artifactId>
+        <version>0.7.1-SNAPSHOT</version>
+    </dependency>
+    ----
+
+== Sample Code
+
+To configure an Azure `SearchIndexClient` in your application, you can use the following code:
+
+[source,java]
+----
+@Bean
+public SearchIndexClient searchIndexClient() {
+  return new SearchIndexClientBuilder().endpoint(System.getenv("AZURE_AI_SEARCH_ENDPOINT"))
+    .credential(new AzureKeyCredential(System.getenv("AZURE_AI_SEARCH_API_KEY")))
+    .buildClient();
+}
+----
+
+To create a vector store, you can use the following code by injecting the `SearchIndexClient` bean created in the above sample along with an `EmbeddingClient` provided by the Spring AI library that implements the desired Embeddings interface.
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
+  return new AzureVectorStore(searchIndexClient, embeddingClient,
+    // Define the metadata fields to be used
+    // in the similarity search filters.
+    List.of(MetadataField.text("country"),
+            MetadataField.int64("year"),
+            MetadataField.bool("active")));
+}
+----
+
+[NOTE]
+====
+You must list explicitly all metadata field names and types for any metadata key used in the filter expression. The list above registers filterable metadata fields: `country` of type `TEXT`, `year` of type `INT64`, and `active` of type `BOOLEAN`.
+
+If the filterable metadata fields are expanded with new entries, you have to (re)upload/update the documents with this metadata.
+====
+
+In your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "BG", "year", 2020)),
+	new Document("The World is Big and Salvation Lurks Around the Corner"),
+	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+Add the documents to your vector store:
+
+[source,java]
+----
+vectorStore.add(List.of(document));
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest
+      .query("Spring")
+      .withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with AzureVectorStore as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = Filter.builder();
+
+vectorStore.similaritySearch(
+    SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+----
+
+The portable filter expressions get automatically converted into the proprietary Azure Search link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[OData filters]. For example, the following portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into Azure OData link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[filter expression]:
+
+[source,graphql]
+----
+$filter search.in(meta_country, 'UK,NL', ',') and meta_year ge 2020
+----

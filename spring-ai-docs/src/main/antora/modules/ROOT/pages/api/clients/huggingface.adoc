@@ -1,45 +1,48 @@
-# HuggingFace Inference Endpoints with Spring AI
+= HuggingFace
 
-HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API. Further details on HuggingFace Inference Endpoints can be found [here](https://huggingface.co/docs/inference-endpoints/index).
+HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API. Further details on HuggingFace Inference Endpoints can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
 
-## Prerequisites
+== Prerequisites
 
 Add the `spring-ai-huggingface` dependency:
 
-```xml
+[source,xml]
+----
 <dependency>
    <groupId>org.springframework.experimental.ai</groupId>
    <artifactId>spring-ai-huggingface</artifactId>
    <version>0.7.1-SNAPSHOT</version>
 </dependency>
-```
+----
 
 You should get your HuggingFace API key and set it as an environment variable
 
-```shell
+[source,shell]
+----
 export HUGGINGFACE_API_KEY=your_api_key_here
-```
+----
 
 Note, there is not yet a Spring Boot Starter for this client implementation.
 
 Obtain the endpoint URL of the Inference Endpoint.
-You can find this on the Inference Endpoint's UI [here](https://ui.endpoints.huggingface.co/).
+You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
 
+== Making a call to the model
 
-## Making a call to the model
-
-```java
+[source,java]
+----
 HuggingfaceAiClient client = new HuggingfaceAiClient(apiKey, basePath);
 Prompt prompt = new Prompt("Your text here...");
 AiResponse response = client.generate(prompt);
 System.out.println(response.getGeneration().getText());
-```
+----
 
-## Example
+== Example
 
-Using the example found [here](https://www.promptingguide.ai/models/mistral-7b)
+Using the example found link:https://www.promptingguide.ai/models/mistral-7b[here]
 
-```java
+[source,java]
+----
 String mistral7bInstruct = """
         [INST] You are a helpful code assistant. Your task is to generate a valid JSON object based on the given information:
         name: John
@@ -50,17 +53,15 @@ String mistral7bInstruct = """
 Prompt prompt = new Prompt(mistral7bInstruct);
 AiResponse aiResponse = huggingfaceAiClient.generate(prompt);
 System.out.println(response.getGeneration().getText());
-```
-
+----
 Will produce the output
 
-````
-```json
+[source,json]
+----
 {
     "name": "John",
     "lastname": "Smith",
     "address": "#1 Samuel St."
 }
-```
-````
-Note the response itself is in Markdown format.
+----
+
