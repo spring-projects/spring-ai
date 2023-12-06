@@ -1,2 +1,347 @@
+[[prompts]]
 = Prompts
+
+Prompts are the inputs that guide an AI model to generate specific outputs.
+The design and phrasing of these prompts significantly influence the model's responses.
+
+At the lowest level of interaction with AI models in Spring AI, handling prompts in Spring AI is somewhat similar to managing the "View" in Spring MVC.
+This involves creating extensive text with placeholders for dynamic content.
+These placeholders are then replaced based on user requests or other code in application.
+Another analogy is with SQL statement that contain placeholders for certain expressions.
+
+As Spring AI evolves, it will introduce higher levels of abstraction for interacting with AI models.
+The foundational classes described in this section can be likened to JDBC in terms of their role and functionality.
+The `AiClient` class, for instance, is analogous to the core JDBC library in the JDK.
+Building upon this, Spring AI can provide helper classes similar to `JdbcTemplate`, Spring Data Repositories, and eventually, more advanced constructs like ChatEngines and Agents that consider past interactions with the model.
+
+The structure of prompts has evolved over time within the AI field.
+Initially, prompts were simple strings.
+Over time, they have evolved to include placeholders for specific inputs, like "USER:", which the AI model recognizes.
+OpenAI have introduced even more structure to prompts by categorizing multiple message strings into distinct roles before they are processed by the AI model.
+
+
+== API Overview
+
+=== Prompt
+
+It is common to use `AiClient`s `generate` method which takes a `Prompt` instance and returns an `AiResponse`.
+
+The Prompt class functions as a container for an organized series of Message objects, with each one forming a segment of the overall prompt.
+Every Message embodies a unique role within the prompt, differing in its content and intent.
+These roles can encompass a variety of elements, from user inquiries to AI-generated responses or relevant background information.
+This arrangement enables intricate and detailed interactions with AI models, as the prompt is constructed from multiple messages, each assigned a specific role to play in the dialogue.
+
+
+Below is a truncated version of the Prompt class, with constructors and utility methods omitted for brevity:
+
+```java
+public class Prompt {
+
+    private final List<Message> messages;
+
+    // constructors and utility methods omitted
+}
+```
+
+=== Message
+
+The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, and a categorization known as `MessageType`. The interface is defined as follows:
+
+```java
+public interface Message {
+
+   String getContent();
+
+   Map<String, Object> getProperties();
+
+   MessageType getMessageType();
+
+}
+```
+
+Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. Some models, like those from OpenAI, distinguish between message categories based on conversational roles. These roles are effectively mapped by the `MessageType`, as discussed below.
+
+
+== Roles
+
+The evolution of prompts in AI has transitioned from basic, straightforward text to more organized and complex formats with specific roles and structures.
+
+Initially, prompts were simple strings – just lines of text.
+Over time, this evolved to include specific placeholders within these strings, like “USER:”, which the AI model could recognize and respond to accordingly.
+This was a step towards more structured prompts.
+
+OpenAI then introduced an even more organized approach.
+In their model, prompts are not merely single strings but a series of messages.
+Each message, while still in text form, is assigned a specific role.
+These roles categorize the messages, clarifying the context and purpose of each segment of the prompt for the AI model.
+This structured approach enhances the nuance and effectiveness of communication with the AI, as each part of the prompt plays a distinct and defined role in the interaction.
+
+
+The primary roles are:
+
+* System Role: Guides the AI's behavior and response style, setting parameters or rules for how the AI interprets and replies to the input. It's akin to providing instructions to the AI before initiating a conversation.
+* User Role: Represents the user's input – their questions, commands, or statements to the AI. This role is fundamental as it forms the basis of the AI's response.
+* Assistant Role: The AI's response to the user's input. More than just an answer or reaction, it's crucial for maintaining the flow of the conversation. By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
+Function Role: This role deals with specific tasks or operations during the conversation. While the System Role sets the AI's overall behavior, the Function Role focuses on carrying out certain actions or commands the user asks for. It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking. This role allows the AI to offer practical help in addition to conversational responses.
+
+Roles are represented as an enumeration in Spring AI as shown below
+
+```java
+public enum MessageType {
+
+	USER("user"),
+
+	ASSISTANT("assistant"),
+
+	SYSTEM("system"),
+
+	FUNCTION("function");
+
+	private final String value;
+
+	MessageType(String value) {
+		this.value = value;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public static MessageType fromValue(String value) {
+		for (MessageType messageType : MessageType.values()) {
+			if (messageType.getValue().equals(value)) {
+				return messageType;
+			}
+		}
+		throw new IllegalArgumentException("Invalid MessageType value: " + value);
+	}
+
+}
+```
+
+
+=== PromptTemplate
+
+A key component for prompt templating in Spring AI is the `PromptTemplate` class.
+This class uses the StringTemplate engine, developed by Terence Parr, for constructing and managing prompts.
+The `PromptTemplate` class is designed to facilitate the creation of structured prompts that are then sent to the AI model for processing
+
+```java
+public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
+
+    // Other methods to be discussed later
+}
+```
+
+The interfaces implemented by this class support different aspects of prompt creation:
+
+`PromptTemplateStringActions` focuses on creating and rendering prompt strings, representing the most basic form of prompt generation.
+
+`PromptTemplateMessageActions` is tailored for prompt creation through the generation and manipulation of Message objects.
+
+`PromptTemplateActions` is designed to return the Prompt object, which can be passed to AiClient for generating a response.
+
+While these interfaces might not be used extensively in many projects, they show the different approaches to prompt creation.
+
+The implemented interfaces are
+
+```java
+public interface PromptTemplateStringActions {
+
+	String render();
+
+	String render(Map<String, Object> model);
+
+}
+```
+
+The method `String render()` renders a prompt template into a final string format without external input, suitable for templates without placeholders or dynamic content.
+
+The method `String render(Map<String, Object> model)`: Enhances rendering functionality to include dynamic content. It uses a Map<String, Object> where map keys are placeholder names in the prompt template, and values are the dynamic content to be inserted.
+
+```java
+public interface PromptTemplateMessageActions {
+
+	Message createMessage();
+
+	Message createMessage(Map<String, Object> model);
+
+}
+```
+
+The method `Message createMessage()`: Creates a Message object without additional data, used for static or predefined message content.
+
+The method `Message createMessage(Map<String, Object> model)`: Extends message creation to integrate dynamic content, accepting a Map<String, Object> where each entry represents a placeholder in the message template and its corresponding dynamic value.
+
+
+```java
+public interface PromptTemplateActions extends PromptTemplateStringActions {
+
+	Prompt create();
+
+	Prompt create(Map<String, Object> model);
+
+}
+```
+
+The method `Prompt create()`: Generates a Prompt object without external data inputs, ideal for static or predefined prompts.
+
+The method `Prompt create(Map<String, Object> model)`: Expands prompt creation capabilities to include dynamic content, taking a Map<String, Object> where each map entry is a placeholder in the prompt template and its associated dynamic value.
+
+
+== Example Usage
+
+A simple example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/2-README-prompt-templating.md[AI Workshop on PromptTemplates] is shown below.
+
+
+```java
+
+PromptTemplate promptTemplate = new PromptTemplate("Tell me a {adjective} joke about {topic}");
+
+Prompt prompt = promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
+
+return aiClient.generate(prompt).getGeneration();
+```
+
+Another example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/3-README-prompt-roles.md[AI Workshop on Roles] is shown below.
+
+```java
+String userText = """
+    Tell me about three famous pirates from the Golden Age of Piracy and why they did.
+    Write at least a sentence for each pirate.
+    """;
+
+Message userMessage = new UserMessage(userText);
+
+String systemText = """
+  You are a helpful AI assistant that helps people find information.
+  Your name is {name}
+  You should reply to the user's request with your name and also in the style of a {voice}.
+  """;
+
+SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemText);
+Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
+
+Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+
+List<Generation> response = aiClient.generate(prompt).getGenerations();
+
+```
+
+This shows how you can build up the `Prompt` instance by using the `SystemPromptTemplate to create a `Message` with the system role passing in placeholder values.
+The message with the role `user` is then combined with the message of the role `system` to form the form the prompt.
+The prompt is then passed to the AiClient to get a generative response.
+
+
+=== Using resources instead of raw Strings
+
+Spring AI supports the `org.springframework.core.io.Resource` abstraction so you can put prompt data in a file that can directly be used in PromptTemplates.
+For example, you can define a field in your Spring managed component to retrieve the Resource.
+
+```java
+@Value("classpath:/prompts/system-message.st")
+private Resource systemResource;
+```
+
+and then pass that resource to the `SystemPromptTemplate` directly.
+
+
+```java
+SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+```
+
+
+
+
+== Prompt Engineering
+
+In generative AI, the creation of prompts is a crucial task for developers.
+The quality and structure of these prompts significantly influence the effectiveness of the AI's output.
+Investing time and effort in designing thoughtful prompts can greatly improve the results from the AI.
+
+Sharing and discussing prompts is a common practice in the AI community.
+This collaborative approach not only creates a shared learning environment but also leads to the identification and use of highly effective prompts.
+
+Research in this area often involves analyzing and comparing different prompts to assess their effectiveness in various situations.
+For example, a significant study demonstrated that starting a prompt with "Take a deep breath and work on this problem step by step" significantly enhanced problem-solving efficiency.
+This highlights the impact that well-chosen language can have on generative AI systems' performance.
+
+Grasping the most effective use of prompts, particularly with the rapid advancement of AI technologies, is a continuous challenge.
+You should recognize the importance of prompt engineering and consider using insights from the community and research to improve their prompt creation strategies.
+
+=== Creating effective prompts
+
+When developing prompts, it's important to integrate several key components to ensure clarity and effectiveness:
+
+* *Instructions*: Offer clear and direct instructions to the AI, similar to how you would communicate with a person. This clarity is essential for helping the AI understand what is expected.
+
+* *External Context*: nclude relevant background information or specific guidance for the AI's response when necessary. This 'external context' frames the prompt and aids the AI in grasping the overall scenario.
+
+* *User Input*: This is the straightforward part - the user's direct request or question forming the core of the prompt.
+
+* *Output Indicator*: This aspect can be tricky. It involves specifying the desired format for the AI's response, such as JSON. However, be aware that the AI might not always adhere strictly to this format. For instance, it might prepend a phrase like "here is your JSON" before the actual JSON data, or sometimes generate a JSON-like structure that is not accurate.
+
+Providing the AI with examples of the anticipated question and answer format can be highly beneficial when crafting prompts.
+This practice helps the AI 'understand' the structure and intent of your query, leading to more precise and relevant responses.
+While this documentation does not delve deeply into these techniques, they provide a starting point for further exploration in AI prompt engineering.
+
+Here is a list of resources for further investigation
+
+== Simple Techniques
+
+* *https://www.promptingguide.ai/introduction/examples.en#text-summarization[Text Summarization]*: +
+Reduces extensive text into concise summaries, capturing key points and main ideas while omitting less critical details.
+
+* *https://www.promptingguide.ai/introduction/examples.en#question-answering[Question Answering]*: +
+Focuses on deriving specific answers from provided text, based on user-posed questions. It's about pinpointing and extracting relevant information in response to queries.
+
+* *https://www.promptingguide.ai/introduction/examples.en#text-classification[Text Classification]*: +
+Systematically categorizes text into predefined categories or groups, analyzing the text and assigning it to the most fitting category based on its content.
+
+* *https://www.promptingguide.ai/introduction/examples.en#conversation[Conversation]*: +
+Creates interactive dialogues where the AI can engage in back-and-forth communication with users, simulating a natural conversation flow.
+
+* *https://www.promptingguide.ai/introduction/examples.en#code-generation[Code Generation]*: +
+Generates functional code snippets based on specific user requirements or descriptions, translating natural language instructions into executable code.
+
+== Advanced Techniques
+
+* *https://www.promptingguide.ai/techniques/zeroshot[Zero-shot], https://www.promptingguide.ai/techniques/fewshot[Few-shot Learning]*: +
+Enables the model to make accurate predictions or responses with minimal to no prior examples of the specific problem type, understanding and acting on new tasks using learned generalizations.
+
+* *https://www.promptingguide.ai/techniques/cot[Chain-of-Thought]*: +
+Links multiple AI responses to create a coherent and contextually aware conversation. It helps the AI maintain the thread of the discussion, ensuring relevance and continuity.
+
+* *https://www.promptingguide.ai/techniques/react[ReAct (Reason + Act)]*: +
+In this method, the AI first analyzes (reasons about) the input, then determines the most appropriate course of action or response. It combines understanding with decision-making.
+
+== Microsoft Guidance
+
+* *https://github.com/microsoft/guidance[Framework for Prompt Creation and Optimization]*: +
+Microsoft offers a structured approach to developing and refining prompts. This framework guides users in creating effective prompts that elicit the desired responses from AI models, optimizing the interaction for clarity and efficiency.
+
+
+
+== Tokens
+
+Tokens are essential in how AI models process text, acting as a bridge that converts words (as we understand them) into a format that AI models can process.
+This conversion occurs in two stages: words are transformed into tokens upon input, and these tokens are then converted back into words in the output.
+
+Tokenization, the process of breaking down text into tokens, is fundamental to how AI models comprehend and process language.
+The AI model works with this tokenized format to understand and respond to prompts.
+
+To better understand tokens, think of them as portions of words. Typically, a token represents about three-quarters of a word. For instance, the complete works of Shakespeare, totaling roughly 900,000 words, would translate to around 1.2 million tokens.
+
+Experiment with the https://platform.openai.com/tokenizer[OpenAI Tokenizer UI] to see how words are converted into tokens.
+
+Tokens have practical implications beyond their technical role in AI processing, especially regarding billing and model capabilities:
+
+* Billing: AI model services often bill based on token usage. Both the input (prompt) and the output (response) contribute to the total token count, making shorter prompts more cost-effective.
+
+* Model Limits: Different AI models have varying token limits, defining their "context window" – the maximum amount of information they can process at a time. For example, GPT-3's limit is 4K tokens, while other models like Claude 2 and Meta Llama 2 have limits of 100K tokens, and some research models can handle up to 1 million tokens.
+
+* Context Window: A model's token limit determines its context window. Inputs exceeding this limit are not processed by the model. It's crucial to send only the minimal effective set of information for processing. For example, when inquiring about "Hamlet," there's no need to include tokens from all of Shakespeare's other works.
+
+* Response Metadata: The metadata of a response from an AI model includes the number of tokens used, a vital piece of information for managing usage and costs.
+
 

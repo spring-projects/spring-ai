@@ -34,8 +34,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class PromptTemplate
-		implements PromptTemplateActions, PromptTemplateStringActions, PromptTemplateMessageActions {
+public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
 	private ST st;
 
