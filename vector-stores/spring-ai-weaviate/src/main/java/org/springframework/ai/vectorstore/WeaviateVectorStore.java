@@ -243,7 +243,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 			}
 
 			/**
-			 * Pinecone api key.
+			 * Weaviate api key.
 			 * @param apiKey key to use.
 			 * @return this builder.
 			 */
