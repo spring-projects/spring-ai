@@ -116,6 +116,66 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
 ```
+### Vector Stores
+
+Following vector stores are supported:
+
+* Azure Vector Store
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-azure-vector-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+
+* Chroma
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-chroma-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+* Milvus
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+
+* PGVector
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+* Pinecone
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-pinecone-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+* Weaviate
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
 
 ## Workshop
 
