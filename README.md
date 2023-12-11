@@ -8,9 +8,12 @@ Let's make your `@Beans` intelligent!
 
 ## Project Update
 
-The Spring AI project has graduated out of the experimental repository!
+:partying_face: The Spring AI project has graduated out of the experimental repository!
+
+:warning: 
 
 We are transitioning the project's Group ID:
+
 * **FROM**: `org.springframework.experimental.ai`
 * **TO**: `org.springframework.ai`
 
