@@ -3,9 +3,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springframework.experimental.ai</groupId>
+		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.7.1-SNAPSHOT</version>
+		<version>0.8.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 	<packaging>jar</packaging>
@@ -29,28 +29,28 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-openai</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-azure-openai</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-huggingface</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-ollama</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -58,7 +58,7 @@
 
 		<!-- Transformers Embedding Client -->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>transformers-embedding</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -66,7 +66,7 @@
 
 		<!-- Pinecone Vector Store-->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-pinecone</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -74,7 +74,7 @@
 
 		<!-- Milvus Vector Store -->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-milvus-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -82,7 +82,7 @@
 
 		<!-- PG Vector Store-->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-pgvector-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -103,7 +103,7 @@
 
 		<!-- Chroma Vector Store -->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-chroma-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -111,7 +111,7 @@
 
 		<!-- Azure Vector Store -->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-azure-vector-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -119,7 +119,7 @@
 
 		<!-- Weaviate Vector Store -->
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-weaviate-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -141,7 +141,7 @@
 		<!-- test dependencies -->
 
 		<dependency>
-			<groupId>org.springframework.experimental.ai</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>

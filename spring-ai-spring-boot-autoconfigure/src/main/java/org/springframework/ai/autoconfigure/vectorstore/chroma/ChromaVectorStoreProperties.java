@@ -17,7 +17,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.chroma;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.experimental.ai.vectorsore.ChromaVectorStore;
+import org.springframework.ai.vectorsore.ChromaVectorStore;
 
 /**
  * @author Christian Tzolov

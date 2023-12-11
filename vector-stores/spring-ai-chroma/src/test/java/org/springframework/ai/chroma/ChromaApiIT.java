@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.experimental.ai.chroma;
+package org.springframework.ai.chroma;
 
 import java.util.List;
 import java.util.Map;
@@ -29,10 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.experimental.ai.chroma.ChromaApi.AddEmbeddingsRequest;
-import org.springframework.experimental.ai.chroma.ChromaApi.Collection;
-import org.springframework.experimental.ai.chroma.ChromaApi.GetEmbeddingsRequest;
-import org.springframework.experimental.ai.chroma.ChromaApi.QueryRequest;
+import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
+import org.springframework.ai.chroma.ChromaApi.Collection;
+import org.springframework.ai.chroma.ChromaApi.GetEmbeddingsRequest;
+import org.springframework.ai.chroma.ChromaApi.QueryRequest;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;

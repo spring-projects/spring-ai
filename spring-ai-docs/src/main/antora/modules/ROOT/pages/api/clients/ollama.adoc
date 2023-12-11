@@ -15,9 +15,9 @@ Add the `spring-ai-ollama` dependency to your project's pom:
 [source,xml]
 ----
 <dependency>
-   <groupId>org.springframework.experimental.ai</groupId>
+   <groupId>org.springframework.ai</groupId>
    <artifactId>spring-ai-ollama</artifactId>
-   <version>0.7.1-SNAPSHOT</version>
+   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -43,9 +43,9 @@ For this, add the following dependency:
 [source,xml]
 ----
 <dependency>
-   <groupId>org.springframework.experimental.ai</groupId>
+   <groupId>org.springframework.ai</groupId>
    <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
-   <version>0.7.1-SNAPSHOT</version>
+   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 

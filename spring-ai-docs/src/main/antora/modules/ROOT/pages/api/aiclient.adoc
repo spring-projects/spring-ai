@@ -144,9 +144,9 @@ Add the Spring Boot starter to you project's dependencies:
 [source, xml]
 ----
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.8.0-SNAPSHOT</version>
     </dependency>
 ----
 
@@ -185,9 +185,9 @@ There is not yet a Spring Boot Starter for this client implementation, so you sh
 [source, xml]
 ----
 <dependency>
-  <groupId>org.springframework.experimental.ai</groupId>
+  <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-huggingface</artifactId>
-  <version>0.7.1-SNAPSHOT</version>
+  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -206,9 +206,9 @@ There is not yet a Spring Boot Starter for this client implementation, so you sh
 [source, xml]
 ----
 <dependency>
-  <groupId>org.springframework.experimental.ai</groupId>
+  <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-ollama</artifactId>
-  <version>0.7.1-SNAPSHOT</version>
+  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 

@@ -46,9 +46,9 @@ Add these dependencies to your project:
    [source,xml]
    ----
    <dependency>
-       <groupId>org.springframework.experimental.ai</groupId>
+       <groupId>org.springframework.ai</groupId>
        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-       <version>0.7.1-SNAPSHOT</version>
+       <version>0.8.0-SNAPSHOT</version>
    </dependency>
    ----
 
@@ -57,9 +57,9 @@ Add these dependencies to your project:
    [source,xml]
    ----
    <dependency>
-     <groupId>org.springframework.experimental.ai</groupId>
+     <groupId>org.springframework.ai</groupId>
      <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-     <version>0.7.1-SNAPSHOT</version>
+     <version>0.8.0-SNAPSHOT</version>
    </dependency>
    ----
 
@@ -68,9 +68,9 @@ Add these dependencies to your project:
    [source,xml]
    ----
    <dependency>
-     <groupId>org.springframework.experimental.ai</groupId>
+     <groupId>org.springframework.ai</groupId>
      <artifactId>spring-ai-transformers-embedding-spring-boot-starter</artifactId>
-     <version>0.7.1-SNAPSHOT</version>
+     <version>0.8.0-SNAPSHOT</version>
    </dependency>
    ----
 
@@ -79,9 +79,9 @@ Add these dependencies to your project:
     [source,xml]
     ----
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-azure-vector-store</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.8.0-SNAPSHOT</version>
     </dependency>
     ----
 
