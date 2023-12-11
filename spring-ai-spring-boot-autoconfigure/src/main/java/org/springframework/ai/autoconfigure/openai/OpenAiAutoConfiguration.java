@@ -16,32 +16,32 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
-
 import java.time.Duration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theokanning.openai.client.OpenAiApi;
 import com.theokanning.openai.service.OpenAiService;
+import okhttp3.OkHttpClient;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import org.springframework.ai.autoconfigure.NativeHints;
+import org.springframework.ai.client.AiClient;
+import org.springframework.ai.client.RetryAiClient;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.RetryEmbeddingClient;
 import org.springframework.ai.openai.client.OpenAiClient;
-import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StringUtils;
-
-import okhttp3.OkHttpClient;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.HEAD;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAiService.class)
@@ -51,7 +51,7 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
+	public AiClient openAiClient(OpenAiProperties openAiProperties, RetryTemplate retryTemplate) {
 
 		OpenAiService openAiService = theoOpenAiService(openAiProperties, openAiProperties.getBaseUrl(),
 				openAiProperties.getApiKey(), openAiProperties.getDuration());
@@ -60,25 +60,29 @@ public class OpenAiAutoConfiguration {
 		openAiClient.setTemperature(openAiProperties.getTemperature());
 		openAiClient.setModel(openAiProperties.getModel());
 
-		return openAiClient;
+		return (openAiProperties.getRetry().isEnabled()) ? new RetryAiClient(retryTemplate, openAiClient)
+				: openAiClient;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiProperties openAiProperties) {
+	public EmbeddingClient openAiEmbeddingClient(OpenAiProperties openAiProperties, RetryTemplate retryTemplate) {
 
 		OpenAiService openAiService = theoOpenAiService(openAiProperties, openAiProperties.getEmbedding().getBaseUrl(),
 				openAiProperties.getEmbedding().getApiKey(), openAiProperties.getDuration());
 
-		return new OpenAiEmbeddingClient(openAiService, openAiProperties.getEmbedding().getModel());
+		var embeddingClient = new OpenAiEmbeddingClient(openAiService, openAiProperties.getEmbedding().getModel());
+
+		return (openAiProperties.getRetry().isEnabled()) ? new RetryEmbeddingClient(retryTemplate, embeddingClient)
+				: embeddingClient;
 	}
 
 	private OpenAiService theoOpenAiService(OpenAiProperties properties, String baseUrl, String apiKey,
 			Duration duration) {
 
 		if ("https://api.openai.com".equals(baseUrl) && !StringUtils.hasText(apiKey)) {
-			throw new IllegalArgumentException(
-					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
+			throw new IllegalArgumentException("You must provide an API key with the property name "
+					+ OpenAiProperties.CONFIG_PREFIX + ".api-key");
 		}
 
 		ObjectMapper mapper = OpenAiService.defaultObjectMapper();
@@ -102,6 +106,19 @@ public class OpenAiAutoConfiguration {
 		OpenAiApi api = retrofit.create(OpenAiApi.class);
 
 		return new OpenAiService(api);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public RetryTemplate retryTemplate(OpenAiProperties openAiProperties) {
+		var retry = openAiProperties.getRetry();
+		// currentInterval = Math.min(initialInterval * Math.pow(multiplier, retryNum),
+		// maxInterval)}
+		return RetryTemplate.builder()
+			.maxAttempts(retry.getMaxAttempts())
+			.exponentialBackoff(retry.getInitialInterval(), retry.getBackoffIntervalMultiplier(),
+					retry.getMaximumBackoffDuration())
+			.build();
 	}
 
 }

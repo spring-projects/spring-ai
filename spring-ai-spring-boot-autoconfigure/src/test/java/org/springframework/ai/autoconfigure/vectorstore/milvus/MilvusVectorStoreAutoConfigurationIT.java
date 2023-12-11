@@ -30,7 +30,7 @@ import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.ResourceUtils;
+import org.springframework.ai.CommonUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.TransformersEmbeddingClient;
@@ -56,9 +56,9 @@ public class MilvusVectorStoreAutoConfigurationIT {
 	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
 
 	List<Document> documents = List.of(
-			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
-			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
-					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
+			new Document(CommonUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
+			new Document(CommonUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
+					CommonUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	@BeforeAll
 	public static void beforeAll() {

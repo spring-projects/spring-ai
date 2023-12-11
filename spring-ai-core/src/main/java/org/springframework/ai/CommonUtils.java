@@ -18,13 +18,23 @@ package org.springframework.ai;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Christian Tzolov
  */
-public class ResourceUtils {
+public class CommonUtils {
+
+	public static final RetryTemplate DEFAULT_RETRY_TEMPLATE = RetryTemplate.builder()
+		.maxAttempts(10)
+		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
+		.build();
+
+	private CommonUtils() {
+	}
 
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);

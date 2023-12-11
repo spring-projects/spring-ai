@@ -15,9 +15,7 @@
  */
 package org.springframework.ai.client;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
@@ -56,8 +54,6 @@ public class AiResponse {
 	}
 
 	/**
-	 * Returns {@link GenerationMetadata} containing information about the use of the AI
-	 * provider's API.
 	 * @return {@link GenerationMetadata} containing information about the use of the AI
 	 * provider's API.
 	 */
@@ -66,8 +62,6 @@ public class AiResponse {
 	}
 
 	/**
-	 * Returns {@link PromptMetadata} containing information on prompt processing by the
-	 * AI.
 	 * @return {@link PromptMetadata} containing information on prompt processing by the
 	 * AI.
 	 */

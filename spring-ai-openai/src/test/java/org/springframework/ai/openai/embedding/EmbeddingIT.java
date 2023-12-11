@@ -21,12 +21,12 @@ class EmbeddingIT {
 
 		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
 		System.out.println(embeddingResponse);
-		assertThat(embeddingResponse.getData()).hasSize(1);
-		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-ada-002-v2");
-		assertThat(embeddingResponse.getMetadata()).containsEntry("completion-tokens", 0L);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2L);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2L);
+		assertThat(embeddingResponse.data()).hasSize(1);
+		assertThat(embeddingResponse.data().get(0).embedding()).isNotEmpty();
+		assertThat(embeddingResponse.metadata()).containsEntry("model", "text-embedding-ada-002-v2");
+		assertThat(embeddingResponse.metadata()).containsEntry("completion-tokens", 0L);
+		assertThat(embeddingResponse.metadata()).containsEntry("total-tokens", 2L);
+		assertThat(embeddingResponse.metadata()).containsEntry("prompt-tokens", 2L);
 
 		assertThat(embeddingClient.dimensions()).isEqualTo(1536);
 	}

@@ -194,18 +194,19 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	@Override
 	public List<Double> embed(String text) {
-		return embed(List.of(text)).get(0);
+		return this.internalEmbed(List.of(text)).get(0);
 	}
 
 	@Override
 	public List<Double> embed(Document document) {
-		return this.embed(document.getFormattedContent(this.metadataMode));
+		String content = document.getFormattedContent(this.metadataMode);
+		return this.internalEmbed(List.of(content)).get(0);
 	}
 
 	@Override
 	public EmbeddingResponse embedForResponse(List<String> texts) {
 		List<Embedding> data = new ArrayList<>();
-		List<List<Double>> embed = this.embed(texts);
+		List<List<Double>> embed = this.internalEmbed(texts);
 		for (int i = 0; i < embed.size(); i++) {
 			data.add(new Embedding(embed.get(i), i));
 		}
@@ -214,6 +215,10 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	@Override
 	public List<List<Double>> embed(List<String> texts) {
+		return this.internalEmbed(texts);
+	}
+
+	private List<List<Double>> internalEmbed(List<String> texts) {
 
 		List<List<Double>> resultEmbeddings = new ArrayList<>();
 

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.autoconfigure.azure.openai;
 
+import java.time.Duration;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(AzureOpenAiProperties.CONFIG_PREFIX)
@@ -34,6 +36,66 @@ public class AzureOpenAiProperties {
 	private String model = "gpt-35-turbo";
 
 	private String embeddingModel = "text-embedding-ada-002";
+
+	private final Retry retry = new Retry();
+
+	public Retry getRetry() {
+		return retry;
+	}
+
+	public static class Retry {
+
+		private boolean enabled = false;
+
+		private int maxAttempts = 10;
+
+		private Duration initialInterval = Duration.ofSeconds(2);
+
+		private double backoffIntervalMultiplier = 5.0;
+
+		private Duration maximumBackoffDuration = Duration.ofMinutes(2);
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public int getMaxAttempts() {
+			return maxAttempts;
+		}
+
+		public void setMaxAttempts(int maxAttempts) {
+			this.maxAttempts = maxAttempts;
+		}
+
+		public Duration getInitialInterval() {
+			return initialInterval;
+		}
+
+		public void setInitialInterval(Duration initialInterval) {
+			this.initialInterval = initialInterval;
+		}
+
+		public double getBackoffIntervalMultiplier() {
+			return backoffIntervalMultiplier;
+		}
+
+		public void setBackoffIntervalMultiplier(double backoffIntervalMultiplier) {
+			this.backoffIntervalMultiplier = backoffIntervalMultiplier;
+		}
+
+		public Duration getMaximumBackoffDuration() {
+			return maximumBackoffDuration;
+		}
+
+		public void setMaximumBackoffDuration(Duration maximumBackoffDuration) {
+			this.maximumBackoffDuration = maximumBackoffDuration;
+		}
+
+	}
 
 	public String getEndpoint() {
 		return endpoint;
