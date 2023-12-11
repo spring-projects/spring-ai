@@ -25,8 +25,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.experimental.ai.chroma.ChromaApi;
-import org.springframework.experimental.ai.vectorsore.ChromaVectorStore;
+import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 

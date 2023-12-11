@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.experimental.ai.vectorstore;
+package org.springframework.ai.vectorstore;
 
 import java.time.Duration;
 import java.util.List;
@@ -24,7 +24,6 @@ import com.theokanning.openai.client.OpenAiApi;
 import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import retrofit2.Retrofit;
@@ -34,41 +33,41 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.experimental.ai.chroma.ChromaApi;
-import org.springframework.experimental.ai.vectorsore.ChromaVectorStore;
+import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * ChromaDB with Basic Authentication:
- * https://docs.trychroma.com/usage-guide#basic-authentication
+ * ChromaDB with static API Token Authentication:
+ * https://docs.trychroma.com/usage-guide#static-api-token-authentication
  *
- * The scr/test/resource/server.htpasswd file is generated with:
- * <code>htpasswd -Bbn admin admin > server.htpasswd</code>
+ * Test cases are based on the Chroma:
+ * https://docs.trychroma.com/usage-guide#using-where-filters and the related
+ * https://github.com/chroma-core/chroma/blob/main/examples/basic_functionality/in_not_in_filtering.ipynb
  *
  * @author Christian Tzolov
  */
 @Testcontainers
-public class BasicAuthChromaWhereIT {
+public class TokenSecuredChromaWhereIT {
+
+	public static String CHROMA_SERVER_AUTH_CREDENTIALS = "test-token";
 
 	/**
-	 * ChromaDB with Basic Authentication:
-	 * https://docs.trychroma.com/usage-guide#basic-authentication
+	 * ChromaDB with static API Token Authentication:
+	 * https://docs.trychroma.com/usage-guide#static-api-token-authentication
 	 */
 	@Container
 	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
-		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "server.htpasswd")
+		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
-				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")
-		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.basic.BasicAuthServerProvider")
-		.withCopyToContainer(Transferable.of("src/test/resources/server.htpasswd"), "server.htpasswd")
+				"chromadb.auth.token.TokenConfigServerAuthCredentialsProvider")
+		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.token.TokenAuthServerProvider")
+
 		.withExposedPorts(8000);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -86,17 +85,47 @@ public class BasicAuthChromaWhereIT {
 					new Document("2", "Article by Jack", Map.of("author", "jack")),
 					new Document("3", "Article by Jill", Map.of("author", "jill"))));
 
-			String query = "Give me articles by john";
+			var request = SearchRequest.query("Give me articles by john").withTopK(5);
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query(query).withTopK(5));
+			List<Document> results = vectorStore.similaritySearch(request);
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(SearchRequest.query(query)
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("author in ['john', 'jill']"));
+			results = vectorStore.similaritySearch(
+					request.withSimilarityThresholdAll().withFilterExpression("author in ['john', 'jill']"));
 
 			assertThat(results).hasSize(2);
+			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");
+		});
+	}
+
+	@Test
+	public void withInFiltersExpressions() {
+
+		contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore
+				.add(List.of(new Document("1", "Article by john", Map.of("author", "john", "article_type", "blog")),
+						new Document("2", "Article by Jack", Map.of("author", "jack", "article_type", "social")),
+						new Document("3", "Article by Jill", Map.of("author", "jill", "article_type", "paper"))));
+
+			var request = SearchRequest.query("Give me articles by john").withTopK(5);
+
+			List<Document> results = vectorStore.similaritySearch(request);
+			assertThat(results).hasSize(3);
+
+			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
+				.withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo("1");
+
+			results = vectorStore.similaritySearch(request.withSimilarityThresholdAll()
+				.withFilterExpression("author in ['john'] || 'article_type' == 'paper'"));
+
+			assertThat(results).hasSize(2);
+
 			assertThat(results.stream().map(d -> d.getId()).toList()).containsExactlyInAnyOrder("1", "3");
 		});
 	}
@@ -113,8 +142,10 @@ public class BasicAuthChromaWhereIT {
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
 			String host = chromaContainer.getHost();
 			int port = chromaContainer.getMappedPort(8000);
-			String baseUrl = "http://%s:%d".formatted(host, port);
-			return new ChromaApi(baseUrl, restTemplate).withBasicAuthCredentials("admin", "admin");
+			String baseurl = "http://%s:%d".formatted(host, port);
+			var chromaApi = new ChromaApi(baseurl, restTemplate);
+			chromaApi.withKeyToken(CHROMA_SERVER_AUTH_CREDENTIALS);
+			return chromaApi;
 		}
 
 		@Bean

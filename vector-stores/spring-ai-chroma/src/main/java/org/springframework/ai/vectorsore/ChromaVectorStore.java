@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.experimental.ai.vectorsore;
+package org.springframework.ai.vectorsore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,10 +29,10 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.experimental.ai.chroma.ChromaApi;
-import org.springframework.experimental.ai.chroma.ChromaApi.AddEmbeddingsRequest;
-import org.springframework.experimental.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
-import org.springframework.experimental.ai.chroma.ChromaApi.Embedding;
+import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
+import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
+import org.springframework.ai.chroma.ChromaApi.Embedding;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.experimental.ai.chroma;
+package org.springframework.ai.chroma;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.experimental.ai.chroma.ChromaApi.QueryRequest.Include;
+import org.springframework.ai.chroma.ChromaApi.QueryRequest.Include;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;

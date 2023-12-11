@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.experimental.ai.vectorsore;
+package org.springframework.ai.vectorsore;
 
 import java.util.List;
 import java.util.Map;

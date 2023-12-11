@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.experimental.ai.vectorstore;
+package org.springframework.ai.vectorstore;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -35,13 +35,11 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.experimental.ai.chroma.ChromaApi;
-import org.springframework.experimental.ai.vectorsore.ChromaVectorStore;
+import org.springframework.ai.chroma.ChromaApi;
+import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
