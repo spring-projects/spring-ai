@@ -6,6 +6,23 @@ The Spring AI project provides a Spring-friendly API and abstractions for develo
 
 Let's make your `@Beans` intelligent!
 
+## Project Update
+
+The Spring AI project has graduated out of the experimental repository!
+
+We are transitioning the project's Group ID:
+* **FROM**: `org.springframework.experimental.ai`
+* **TO**: `org.springframework.ai`
+
+Artifacts will still be hosted in the snapshot repository as shown below.
+
+The main branch will move to the version `0.8.0-SNAPSHOT`.
+It will be unstable for a week or two.
+Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
+
+You can access `0.7.1-SNAPSHOT` artifacts as before and still access [0.7.1-SNAPSHOT Documentation](https://markpollack.github.io/spring-ai-0.7.1/).
+
+
 ## Cloning the repo
 
 This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2). 
@@ -50,6 +67,33 @@ For example, in maven, add the following repository definition.
 ```
 
 And the Spring Boot Starter depending on if you are using Azure Open AI or Open AI.
+
+### Main Branch
+
+The main branch has move to version 0.8.0-SNAPSHOT.
+It will be unstable for a week or two.
+Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
+
+* Azure OpenAI
+```xml
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+
+* OpenAI
+
+```xml
+    <dependency>
+        <groupId>org.springframework.experimental.ai</groupId>
+        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
+
+### 0.7.1-SNAPSHOT
 
 * Azure OpenAI
 ```xml
