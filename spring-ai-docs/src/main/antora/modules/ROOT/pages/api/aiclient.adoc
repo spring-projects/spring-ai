@@ -249,7 +249,7 @@ You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/
 
 == Feedback and Contributions
 
-The project's https://github.com/spring-projects-experimental/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
+The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
 
 == Related Resources
 
