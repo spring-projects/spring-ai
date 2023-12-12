@@ -72,7 +72,7 @@ For instance, OpenAI recognizes message categories for distinct conversational r
 While the term, `MessageType`, might imply a specific message format, in this context, it effectively designates the role a message plays in the dialogue.
 
 For AI models that do not use specific roles, the `UserMessage` implementation acts as a standard category, typically representing user-generated inquiries or instructions.
-To understand the practical application and the relationship between `Prompt` and `Message`, especially in the context of these roles or message categories, see the detailed explanations in the <<Prompts>> section.
+To understand the practical application and the relationship between `Prompt` and `Message`, especially in the context of these roles or message categories, see the detailed explanations in the xref:api/prompt.adoc[Prompts] section.
 
 === AiResponse
 
@@ -123,7 +123,7 @@ Others are welcome. The list is not at all closed.
 
 == OpenAI-Compatible Models
 
-A variety of models compatible with the OpenAI API are available, including those that can be operated locally, such as [LocalAI](https://github.com/mudler/LocalAI). The standard configuration for connecting to the OpenAI API is through the `spring.ai.openai.baseUrl` property, which defaults to `https://api.openai.com`.
+A variety of models compatible with the OpenAI API are available, including those that can be operated locally, such as https://github.com/mudler/LocalAI[LocalAI]. The standard configuration for connecting to the OpenAI API is through the `spring.ai.openai.baseUrl` property, which defaults to `https://api.openai.com`.
 
 To link the OpenAI client to a compatible model that uses the OpenAI API, you should adjust the `spring.ai.openai.baseUrl` property to the corresponding URL of the model you wish to connect to.
 
