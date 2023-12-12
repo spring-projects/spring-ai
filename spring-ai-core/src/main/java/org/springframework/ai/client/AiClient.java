@@ -24,7 +24,7 @@ public interface AiClient {
 
 	default String generate(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
-		return generate(prompt).getGeneration().getText();
+		return generate(prompt).getGeneration().getContent();
 	}
 
 	AiResponse generate(Prompt prompt);

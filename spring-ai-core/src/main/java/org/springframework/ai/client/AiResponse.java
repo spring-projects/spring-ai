@@ -15,26 +15,42 @@
  */
 package org.springframework.ai.client;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.lang.Nullable;
 
+/**
+ * The chat completion (e.g. generation) response returned by an AI provider.
+ */
 public class AiResponse {
 
 	private final GenerationMetadata metadata;
 
+	/**
+	 * List of generated messages returned by the AI provider.
+	 */
 	private final List<Generation> generations;
 
 	private PromptMetadata promptMetadata;
 
+	/**
+	 * Construct a new {@link AiResponse} instance without metadata.
+	 * @param generations the {@link List} of {@link Generation} returned by the AI
+	 * provider.
+	 */
 	public AiResponse(List<Generation> generations) {
 		this(generations, GenerationMetadata.NULL);
 	}
 
+	/**
+	 * Construct a new {@link AiResponse} instance.
+	 * @param generations the {@link List} of {@link Generation} returned by the AI
+	 * provider.
+	 * @param metadata {@link GenerationMetadata} containing information about the use of
+	 * the AI provider's API.
+	 */
 	public AiResponse(List<Generation> generations, GenerationMetadata metadata) {
 		this.metadata = metadata;
 		this.generations = List.copyOf(generations);
@@ -51,23 +67,22 @@ public class AiResponse {
 		return this.generations;
 	}
 
+	/**
+	 * @return Returns the first {@link Generation} in the generations list.
+	 */
 	public Generation getGeneration() {
 		return this.generations.get(0);
 	}
 
 	/**
-	 * Returns {@link GenerationMetadata} containing information about the use of the AI
-	 * provider's API.
-	 * @return {@link GenerationMetadata} containing information about the use of the AI
-	 * provider's API.
+	 * @return Returns {@link GenerationMetadata} containing information about the use of
+	 * the AI provider's API.
 	 */
 	public GenerationMetadata getGenerationMetadata() {
 		return this.metadata;
 	}
 
 	/**
-	 * Returns {@link PromptMetadata} containing information on prompt processing by the
-	 * AI.
 	 * @return {@link PromptMetadata} containing information on prompt processing by the
 	 * AI.
 	 */

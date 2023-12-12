@@ -21,7 +21,7 @@ public class OllamaClientTests {
 		Assertions.assertNotNull(aiResponse);
 		Assertions.assertFalse(CollectionUtils.isEmpty(aiResponse.getGenerations()));
 		Assertions.assertNotNull(aiResponse.getGeneration());
-		Assertions.assertNotNull(aiResponse.getGeneration().getText());
+		Assertions.assertNotNull(aiResponse.getGeneration().getContent());
 	}
 
 	private static OllamaClient getOllamaClient() {

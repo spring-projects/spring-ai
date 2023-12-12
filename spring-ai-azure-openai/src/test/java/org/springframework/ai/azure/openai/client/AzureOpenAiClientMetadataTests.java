@@ -81,7 +81,7 @@ class AzureOpenAiClientMetadataTests {
 		Generation generation = response.getGeneration();
 
 		assertThat(generation).isNotNull()
-			.extracting(Generation::getText)
+			.extracting(Generation::getContent)
 			.isEqualTo("No! You will actually land with a resounding thud. This is the way!");
 
 		assertPromptMetadata(response);

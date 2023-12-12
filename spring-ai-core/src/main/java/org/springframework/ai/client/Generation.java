@@ -20,14 +20,14 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.ai.prompt.messages.AbstractMessage;
+import org.springframework.ai.prompt.messages.MessageType;
 import org.springframework.lang.Nullable;
 
-public class Generation {
-
-	// Just text for now
-	private final String text;
-
-	private Map<String, Object> info;
+/**
+ * Represents a response returned by the AI.
+ */
+public class Generation extends AbstractMessage {
 
 	private ChoiceMetadata choiceMetadata;
 
@@ -35,17 +35,12 @@ public class Generation {
 		this(text, Collections.emptyMap());
 	}
 
-	public Generation(String text, Map<String, Object> info) {
-		this.text = text;
-		this.info = Map.copyOf(info);
+	public Generation(String content, Map<String, Object> properties) {
+		super(MessageType.ASSISTANT, content, properties);
 	}
 
-	public String getText() {
-		return this.text;
-	}
-
-	public Map<String, Object> getInfo() {
-		return this.info;
+	public Generation(String content, Map<String, Object> properties, MessageType type) {
+		super(type, content, properties);
 	}
 
 	public ChoiceMetadata getChoiceMetadata() {
@@ -60,7 +55,7 @@ public class Generation {
 
 	@Override
 	public String toString() {
-		return "Generation{" + "text='" + text + '\'' + ", info=" + info + '}';
+		return "Generation{" + "text='" + content + '\'' + ", info=" + properties + '}';
 	}
 
 }
