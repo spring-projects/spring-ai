@@ -1,4 +1,4 @@
-# Spring AI [![build status](https://github.com/spring-projects-experimental/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects-experimental/spring-ai/actions/workflows/continuous-integration.yml)
+# Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml)
 
 Welcome to the Spring AI project!
 
@@ -8,13 +8,13 @@ Let's make your `@Beans` intelligent!
 
 ## Project Update
 
-:partying_face: The Spring AI project has graduated out of the experimental repository!
+:partying_face: The Spring AI project has graduated out of the repository!
 
-:warning: 
+:warning:
 
 We are transitioning the project's Group ID:
 
-* **FROM**: `org.springframework.experimental.ai`
+* **FROM**: `org.springframework.ai`
 * **TO**: `org.springframework.ai`
 
 Artifacts will still be hosted in the snapshot repository as shown below.
@@ -28,7 +28,7 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access [0.7.1-SNAP
 
 ## Cloning the repo
 
-This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2). 
+This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2).
 To clone it you have to either:
 
 - Ignore the large files (won't affect the spring-ai behaviour) :  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
@@ -37,8 +37,8 @@ To clone it you have to either:
 ## Project Links
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
-* [Issues](https://github.com/spring-projects-experimental/spring-ai/issues)
-* [Discussions](https://github.com/spring-projects-experimental/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!
+* [Issues](https://github.com/spring-projects/spring-ai/issues)
+* [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!
 * [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
 
 ## Educational Resources
@@ -80,7 +80,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 * Azure OpenAI
 ```xml
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -90,7 +90,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 
 ```xml
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -101,7 +101,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 * Azure OpenAI
 ```xml
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
@@ -111,7 +111,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 
 ```xml
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
@@ -123,7 +123,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 * To use the workshop material with OpenAI (not Azure's offering) you will need to *replace* the Azure Open AI Boot Starter in the `pom.xml` with the Open AI Boot Starter.
 ```xml
     <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>

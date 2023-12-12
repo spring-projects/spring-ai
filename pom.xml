@@ -7,7 +7,7 @@
 	<version>0.8.0-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
-	<url>https://github.com/spring-projects-experimental/spring-ai</url>
+	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<name>Spring AI</name>
 	<description>Building AI applications with Spring Boot</description>
@@ -46,17 +46,17 @@
 		<url>https://spring.io</url>
 	</organization>
 	<scm>
-		<url>https://github.com/spring-projects-experimental/spring-ai</url>
-		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 	<issueManagement>
 		<system>Github Issues</system>
-		<url>https://github.com/spring-projects-experimental/spring-ai/issues</url>
+		<url>https://github.com/spring-projects/spring-ai/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>Github Actions</system>
-		<url>https://github.com/spring-projects-experimental/spring-ai/actions</url>
+		<url>https://github.com/spring-projects/spring-ai/actions</url>
 	</ciManagement>
 	<distributionManagement>
 		<snapshotRepository>

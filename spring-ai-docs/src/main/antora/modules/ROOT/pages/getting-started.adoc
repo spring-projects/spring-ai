@@ -80,7 +80,7 @@ Add the Spring Boot Starter, depending on whether you use Azure Open AI or Open 
 
 The Spring CLI makes it easy to create new applications with code in your terminal window. Think of it as the 'create-react-app' of Spring for those familiar with the JavaScript ecosystem.
 
-Download the latest https://github.com/spring-projects-experimental/spring-cli/releases[Spring CLI Release]
+Download the latest https://github.com/spring-projects/spring-cli/releases[Spring CLI Release]
 and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[instructions] to add `spring` to your `PATH`.
 
 Create a simple AI application:

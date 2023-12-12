@@ -11,12 +11,12 @@
     <packaging>jar</packaging>
     <name>Spring AI Starter - VertexAI</name>
     <description>Spring AI VertexAI Auto Configuration</description>
-    <url>https://github.com/spring-projects-experimental/spring-ai</url>
+    <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
-        <url>https://github.com/spring-projects-experimental/spring-ai</url>
-        <connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
-        <developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+        <url>https://github.com/spring-projects/spring-ai</url>
+        <connection>git://github.com/spring-projects/spring-ai.git</connection>
+        <developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
     </scm>
 
     <dependencies>
