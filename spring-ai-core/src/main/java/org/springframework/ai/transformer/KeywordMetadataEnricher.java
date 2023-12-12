@@ -65,7 +65,7 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 
 			var template = new PromptTemplate(String.format(KEYWORDS_TEMPLATE, keywordCount));
 			Prompt prompt = template.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getContent()));
-			String keywords = this.aiClient.generate(prompt).getGeneration().getText();
+			String keywords = this.aiClient.generate(prompt).getGeneration().getContent();
 			document.getMetadata().putAll(Map.of(EXCERPT_KEYWORDS_METADATA_KEY, keywords));
 		}
 		return documents;

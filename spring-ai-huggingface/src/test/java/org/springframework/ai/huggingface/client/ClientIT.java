@@ -47,7 +47,7 @@ public class ClientIT {
 				 """;
 		Prompt prompt = new Prompt(mistral7bInstruct);
 		AiResponse aiResponse = huggingfaceAiClient.generate(prompt);
-		assertThat(aiResponse.getGeneration().getText()).isNotEmpty();
+		assertThat(aiResponse.getGeneration().getContent()).isNotEmpty();
 		String expectedResponse = """
 				```json
 				{
@@ -56,9 +56,9 @@ public class ClientIT {
 				    "address": "#1 Samuel St."
 				}
 				```""";
-		assertThat(aiResponse.getGeneration().getText()).isEqualTo(expectedResponse);
-		assertThat(aiResponse.getGeneration().getInfo()).containsKey("generated_tokens");
-		assertThat(aiResponse.getGeneration().getInfo()).containsEntry("generated_tokens", 39);
+		assertThat(aiResponse.getGeneration().getContent()).isEqualTo(expectedResponse);
+		assertThat(aiResponse.getGeneration().getProperties()).containsKey("generated_tokens");
+		assertThat(aiResponse.getGeneration().getProperties()).containsEntry("generated_tokens", 39);
 
 	}
 
