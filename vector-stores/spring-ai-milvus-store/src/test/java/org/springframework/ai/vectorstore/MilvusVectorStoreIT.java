@@ -300,6 +300,7 @@ public class MilvusVectorStoreIT {
 		@Bean
 		public MilvusServiceClient milvusClient() {
 			return new MilvusServiceClient(ConnectParam.newBuilder()
+				.withAuthorization("minioadmin", "minioadmin")
 				.withHost(milvusContainer.getServiceHost("standalone", 19530))
 				.withPort(milvusContainer.getServicePort("standalone", 19530))
 				.build());
