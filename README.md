@@ -232,31 +232,6 @@ Though the `DocumentWriter` interface isn't exclusively for Vector Database writ
 They ascertain which document sections the AI should use for generating responses.
 Examples of Vector Databases include Chroma, Postgres, Pinecone, Weaviate, Mongo Atlas, and Redis. Spring AI's `VectorStore` abstraction permits effortless transitions between database implementations.
 
-### Chaining together multiple AI model interactions
-
-**Chains:** Many AI solutions require multiple AI interactions to respond to a single user input.
-"Chains" organize these interactions, offering modular AI workflows that promote reusability.
-While you can create custom Chains tailored to your specific use case, pre-configured use-case-specific Chains are provided to accelerate your development.
-Use cases such as Question-Answering, Text Generation, and Summarization are examples.
-
-* This is currently a work in progress.
-
-### Memory
-
-**Memory:** To support multiple AI model interactions, your application must recall the previous inputs and outputs.
-A variety of algorithms are available for different scenarios, often backed by databases like Redis, Cassandra, MongoDB, Postgres, and other database technologies.
-
-* This is currently a work in progress
-
-### Agents
-
-Beyond Chains, Agents represent the next level of sophistication.
-Agents use the AI models themselves to determine the techniques and steps to respond to a user's query.
-Agents might even dynamically access external data sources to retrieve information necessary for responding to a user.
-It's getting a bit funky, isn't it?
-
-* This is currently a work in progress
-
 ## Building
 
 To build with only unit tests

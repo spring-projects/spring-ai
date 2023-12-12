@@ -73,7 +73,6 @@ public class AcmeIT extends AbstractIT {
 
 		// Now user query
 
-		// This will be wrapped up in a chain
 		VectorStoreRetriever vectorStoreRetriever = new VectorStoreRetriever(vectorStore);
 
 		logger.info("Retrieving relevant documents");
