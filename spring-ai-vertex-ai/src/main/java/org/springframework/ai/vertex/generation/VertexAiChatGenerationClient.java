@@ -39,8 +39,11 @@ public class VertexAiChatGenerationClient implements AiClient {
 	private final VertexAiApi vertexAiApi;
 
 	private Float temperature;
+
 	private Float topP;
+
 	private Integer candidateCount;
+
 	private Integer maxTokens;
 
 	public VertexAiChatGenerationClient(VertexAiApi vertexAiApi) {
@@ -51,15 +54,16 @@ public class VertexAiChatGenerationClient implements AiClient {
 	public AiResponse generate(Prompt prompt) {
 
 		String vertexContext = prompt.getMessages()
-				.stream()
-				.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-				.map(m -> m.getContent())
-				.collect(Collectors.joining("\n"));
+			.stream()
+			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
+			.map(m -> m.getContent())
+			.collect(Collectors.joining("\n"));
 
-		List<VertexAiApi.Message> vertexMessages = prompt.getMessages().stream()
-				.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-				.map(m -> new VertexAiApi.Message(m.getMessageType().getValue(), m.getContent()))
-				.toList();
+		List<VertexAiApi.Message> vertexMessages = prompt.getMessages()
+			.stream()
+			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+			.map(m -> new VertexAiApi.Message(m.getMessageType().getValue(), m.getContent()))
+			.toList();
 
 		Assert.isTrue(!CollectionUtils.isEmpty(vertexMessages), "No user or assistant messages found in the prompt!");
 
@@ -70,9 +74,12 @@ public class VertexAiChatGenerationClient implements AiClient {
 
 		GenerateMessageResponse response = this.vertexAiApi.generateMessage(request);
 
-		List<Generation> generations = response.candidates().stream().map(vmsg -> new Generation(vmsg.content()))
-				.collect(Collectors.toList());
+		List<Generation> generations = response.candidates()
+			.stream()
+			.map(vmsg -> new Generation(vmsg.content()))
+			.collect(Collectors.toList());
 
 		return new AiResponse(generations);
 	}
+
 }

@@ -37,7 +37,8 @@ public class AiResponse {
 
 	/**
 	 * Construct a new {@link AiResponse} instance without metadata.
-	 * @param generations the {@link List} of {@link Generation} returned by the AI provider.
+	 * @param generations the {@link List} of {@link Generation} returned by the AI
+	 * provider.
 	 */
 	public AiResponse(List<Generation> generations) {
 		this(generations, GenerationMetadata.NULL);
@@ -45,8 +46,10 @@ public class AiResponse {
 
 	/**
 	 * Construct a new {@link AiResponse} instance.
-	 * @param generations the {@link List} of {@link Generation} returned by the AI provider.
-	 * @param metadata {@link GenerationMetadata} containing information about the use of the AI provider's API.
+	 * @param generations the {@link List} of {@link Generation} returned by the AI
+	 * provider.
+	 * @param metadata {@link GenerationMetadata} containing information about the use of
+	 * the AI provider's API.
 	 */
 	public AiResponse(List<Generation> generations, GenerationMetadata metadata) {
 		this.metadata = metadata;
@@ -56,8 +59,8 @@ public class AiResponse {
 	/**
 	 * The {@link List} of {@link Generation generated outputs}.
 	 * <p>
-	 * It is a {@link List} of {@link List lists} because the Prompt could request multiple output {@link Generation
-	 * generations}.
+	 * It is a {@link List} of {@link List lists} because the Prompt could request
+	 * multiple output {@link Generation generations}.
 	 * @return the {@link List} of {@link Generation generated outputs}.
 	 */
 	public List<Generation> getGenerations() {
@@ -72,14 +75,16 @@ public class AiResponse {
 	}
 
 	/**
-	 * @return Returns {@link GenerationMetadata} containing information about the use of the AI provider's API.
+	 * @return Returns {@link GenerationMetadata} containing information about the use of
+	 * the AI provider's API.
 	 */
 	public GenerationMetadata getGenerationMetadata() {
 		return this.metadata;
 	}
 
 	/**
-	 * @return {@link PromptMetadata} containing information on prompt processing by the AI.
+	 * @return {@link PromptMetadata} containing information on prompt processing by the
+	 * AI.
 	 */
 	public PromptMetadata getPromptMetadata() {
 		PromptMetadata promptMetadata = this.promptMetadata;
@@ -87,8 +92,10 @@ public class AiResponse {
 	}
 
 	/**
-	 * Builder method used to include {@link PromptMetadata} returned in the AI response when processing the prompt.
-	 * @param promptMetadata {@link PromptMetadata} returned by the AI in the response when processing the prompt.
+	 * Builder method used to include {@link PromptMetadata} returned in the AI response
+	 * when processing the prompt.
+	 * @param promptMetadata {@link PromptMetadata} returned by the AI in the response
+	 * when processing the prompt.
 	 * @return this {@link AiResponse}.
 	 * @see #getPromptMetadata()
 	 */

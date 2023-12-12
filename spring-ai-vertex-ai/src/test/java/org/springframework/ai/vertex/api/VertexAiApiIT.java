@@ -30,8 +30,9 @@ import org.springframework.ai.vertex.api.VertexAiApi.MessagePrompt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for {@link VertexAiApi}. Requires a valid API key to be set via the {@code PALM_API_KEY}
- * environment and at the moment Google enables is it only in the US region (so use VPN for testing).
+ * Integration tests for {@link VertexAiApi}. Requires a valid API key to be set via the
+ * {@code PALM_API_KEY} environment and at the moment Google enables is it only in the US
+ * region (so use VPN for testing).
  *
  * @author Christian Tzolov
  */
@@ -105,8 +106,10 @@ public class VertexAiApiIT {
 		assertThat(response).hasSizeGreaterThan(0);
 		assertThat(response).contains("models/chat-bison-001", "models/text-bison-001", "models/embedding-gecko-001");
 
-		System.out.println(" - " + response.stream().map(vertexAiApi::getModel).map(VertexAiApi.Model::toString)
-				.collect(Collectors.joining("\n - ")));
+		System.out.println(" - " + response.stream()
+			.map(vertexAiApi::getModel)
+			.map(VertexAiApi.Model::toString)
+			.collect(Collectors.joining("\n - ")));
 	}
 
 	@Test
@@ -118,4 +121,5 @@ public class VertexAiApiIT {
 		assertThat(model).isNotNull();
 		assertThat(model.displayName()).isEqualTo("Chat Bison");
 	}
+
 }

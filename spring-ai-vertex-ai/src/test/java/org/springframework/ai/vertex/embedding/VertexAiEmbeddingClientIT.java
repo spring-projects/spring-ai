@@ -42,5 +42,7 @@ class VertexAiEmbeddingClientIT {
 		public VertexAiEmbeddingClient vertexAiEmbedding(VertexAiApi vertexAiApi) {
 			return new VertexAiEmbeddingClient(vertexAiApi);
 		}
+
 	}
+
 }

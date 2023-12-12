@@ -124,6 +124,7 @@ class VertexAiChatGenerationClientIT {
 		public VertexAiChatGenerationClient vertexAiEmbedding(VertexAiApi vertexAiApi) {
 			return new VertexAiChatGenerationClient(vertexAiApi);
 		}
+
 	}
 
 }

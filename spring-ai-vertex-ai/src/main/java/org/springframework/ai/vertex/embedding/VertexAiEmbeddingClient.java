@@ -27,7 +27,6 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vertex.api.VertexAiApi;
 
 /**
- *
  * @author Christian Tzolov
  */
 public class VertexAiEmbeddingClient implements EmbeddingClient {

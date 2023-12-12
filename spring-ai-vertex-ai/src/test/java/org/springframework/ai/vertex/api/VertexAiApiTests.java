@@ -45,7 +45,6 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- *
  * @author Christian Tzolov
  */
 @RestClientTest(VertexAiApiTests.Config.class)
@@ -78,11 +77,12 @@ public class VertexAiApiTests {
 				List.of(new VertexAiApi.Message("0", "I'm fine, thank you.")),
 				List.of(new VertexAiApi.GenerateMessageResponse.ContentFilter(BlockedReason.SAFETY, "reason")));
 
-		server.expect(requestToUriTemplate("/models/{model}:generateMessage?key={apiKey}",
-				VertexAiApi.DEFAULT_GENERATE_MODEL, TEST_API_KEY))
-				.andExpect(method(HttpMethod.POST))
-				.andExpect(content().json(objectMapper.writeValueAsString(request)))
-				.andRespond(withSuccess(objectMapper.writeValueAsString(expectedResponse), MediaType.APPLICATION_JSON));
+		server
+			.expect(requestToUriTemplate("/models/{model}:generateMessage?key={apiKey}",
+					VertexAiApi.DEFAULT_GENERATE_MODEL, TEST_API_KEY))
+			.andExpect(method(HttpMethod.POST))
+			.andExpect(content().json(objectMapper.writeValueAsString(request)))
+			.andRespond(withSuccess(objectMapper.writeValueAsString(expectedResponse), MediaType.APPLICATION_JSON));
 
 		GenerateMessageResponse response = client.generateMessage(request);
 
@@ -98,13 +98,13 @@ public class VertexAiApiTests {
 
 		Embedding expectedEmbedding = new Embedding(List.of(0.1, 0.2, 0.3));
 
-		server.expect(requestToUriTemplate("/models/{model}:embedText?key={apiKey}",
-				VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
-				.andExpect(method(HttpMethod.POST))
-				.andExpect(content().json(objectMapper.writeValueAsString(Map.of("text", text))))
-				.andRespond(
-						withSuccess(objectMapper.writeValueAsString(Map.of("embedding", expectedEmbedding)),
-								MediaType.APPLICATION_JSON));
+		server
+			.expect(requestToUriTemplate("/models/{model}:embedText?key={apiKey}", VertexAiApi.DEFAULT_EMBEDDING_MODEL,
+					TEST_API_KEY))
+			.andExpect(method(HttpMethod.POST))
+			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("text", text))))
+			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embedding", expectedEmbedding)),
+					MediaType.APPLICATION_JSON));
 
 		Embedding embedding = client.embedText(text);
 
@@ -121,12 +121,13 @@ public class VertexAiApiTests {
 		List<Embedding> expectedEmbeddings = List.of(new Embedding(List.of(0.1, 0.2, 0.3)),
 				new Embedding(List.of(0.4, 0.5, 0.6)));
 
-		server.expect(requestToUriTemplate("/models/{model}:batchEmbedText?key={apiKey}",
-				VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
-				.andExpect(method(HttpMethod.POST))
-				.andExpect(content().json(objectMapper.writeValueAsString(Map.of("texts", texts))))
-				.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embeddings", expectedEmbeddings)),
-						MediaType.APPLICATION_JSON));
+		server
+			.expect(requestToUriTemplate("/models/{model}:batchEmbedText?key={apiKey}",
+					VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
+			.andExpect(method(HttpMethod.POST))
+			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("texts", texts))))
+			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embeddings", expectedEmbeddings)),
+					MediaType.APPLICATION_JSON));
 
 		List<Embedding> embeddings = client.batchEmbedText(texts);
 

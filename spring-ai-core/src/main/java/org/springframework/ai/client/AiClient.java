@@ -28,4 +28,5 @@ public interface AiClient {
 	}
 
 	AiResponse generate(Prompt prompt);
+
 }

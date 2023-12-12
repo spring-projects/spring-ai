@@ -24,7 +24,6 @@ import org.springframework.ai.prompt.messages.AbstractMessage;
 import org.springframework.ai.prompt.messages.MessageType;
 import org.springframework.lang.Nullable;
 
-
 /**
  * Represents a response returned by the AI.
  */
