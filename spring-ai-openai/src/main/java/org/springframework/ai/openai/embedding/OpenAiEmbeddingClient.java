@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.theokanning.openai.Usage;
 import com.theokanning.openai.embedding.EmbeddingRequest;
@@ -14,21 +13,18 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
 
-public class OpenAiEmbeddingClient implements EmbeddingClient {
+public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingClient.class);
 
 	private final OpenAiService openAiService;
 
 	private final String model;
-
-	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	private final MetadataMode metadataMode;
 
@@ -106,14 +102,6 @@ public class OpenAiEmbeddingClient implements EmbeddingClient {
 		metadata.put("completion-tokens", usage.getCompletionTokens());
 		metadata.put("total-tokens", usage.getTotalTokens());
 		return metadata;
-	}
-
-	@Override
-	public int dimensions() {
-		if (this.embeddingDimensions.get() < 0) {
-			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.model));
-		}
-		return this.embeddingDimensions.get();
 	}
 
 }

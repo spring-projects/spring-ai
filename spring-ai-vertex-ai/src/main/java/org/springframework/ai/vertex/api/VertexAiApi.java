@@ -49,7 +49,7 @@ import org.springframework.web.client.RestClient;
  * Supported models:
  *
  * <pre>
- * name=models/chat-bison-001,
+ * 		name=models/chat-bison-001,
  * 		version=001,
  * 		displayName=Chat Bison,
  * 		description=Chat-optimized generative language model.,
@@ -60,7 +60,7 @@ import org.springframework.web.client.RestClient;
  * 		topP=0.95,
  *		topK=40
  *
- * name=models/text-bison-001,
+ * 		name=models/text-bison-001,
  *		version=001,
  *		displayName=Text Bison,
  *		description=Model targeted for text generation.,
@@ -71,7 +71,7 @@ import org.springframework.web.client.RestClient;
  *		topP=0.95,
  *		topK=40
  *
- * name=models/embedding-gecko-001,
+ * 		name=models/embedding-gecko-001,
  * 		version=001,
  * 		displayName=Embedding Gecko, description=Obtain a distributed representation of a text.,
  * 		inputTokenLimit=1024,
@@ -98,7 +98,10 @@ public class VertexAiApi {
 	 */
 	public static final String DEFAULT_EMBEDDING_MODEL = "embedding-gecko-001";
 
-	private static final String DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta3";
+	/**
+	 * The default base URL for accessing the Vertex AI API.
+	 */
+	public static final String DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta3";
 
 	private final RestClient restClient;
 
@@ -582,33 +585,5 @@ public class VertexAiApi {
 			}
 		}
 	}
-
-	/**
-	 * Main method to test the VertexAiApi.
-	 * @param args blank.
-	 */
-	public static void main(String[] args) {
-		VertexAiApi vertexAiApi = new VertexAiApi(System.getenv("PALM_API_KEY"));
-
-		var prompt = new MessagePrompt(List.of(new Message("0", "Hello, how are you?")));
-
-		GenerateMessageRequest request = new GenerateMessageRequest(prompt);
-
-		GenerateMessageResponse response = vertexAiApi.generateMessage(request);
-
-		System.out.println(response);
-
-		System.out.println(vertexAiApi.embedText("Hello, how are you?"));
-
-		System.out.println(vertexAiApi.batchEmbedText(List.of("Hello, how are you?", "I am fine, thank you!")));
-
-		System.out.println(vertexAiApi.countMessageTokens(prompt));
-
-		System.out.println(vertexAiApi.listModels());
-
-		System.out.println(vertexAiApi.listModels().stream().map(vertexAiApi::getModel).toList());
-
-	}
-
 }
 // @formatter:on

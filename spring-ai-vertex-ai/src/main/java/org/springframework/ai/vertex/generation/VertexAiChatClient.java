@@ -34,7 +34,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Christian Tzolov
  */
-public class VertexAiChatGenerationClient implements AiClient {
+public class VertexAiChatClient implements AiClient {
 
 	private final VertexAiApi vertexAiApi;
 
@@ -42,12 +42,28 @@ public class VertexAiChatGenerationClient implements AiClient {
 
 	private Float topP;
 
+	private Integer topK;
+
 	private Integer candidateCount;
 
-	private Integer maxTokens;
-
-	public VertexAiChatGenerationClient(VertexAiApi vertexAiApi) {
+	public VertexAiChatClient(VertexAiApi vertexAiApi) {
 		this.vertexAiApi = vertexAiApi;
+	}
+
+	public void setTemperature(Float temperature) {
+		this.temperature = temperature;
+	}
+
+	public void setTopK(Integer candidateCount) {
+		this.topK = candidateCount;
+	}
+
+	public void setTopP(Float topP) {
+		this.topP = topP;
+	}
+
+	public void setCandidateCount(Integer maxTokens) {
+		this.candidateCount = maxTokens;
 	}
 
 	@Override
@@ -70,7 +86,7 @@ public class VertexAiChatGenerationClient implements AiClient {
 		var vertexPrompt = new MessagePrompt(vertexContext, vertexMessages);
 
 		GenerateMessageRequest request = new GenerateMessageRequest(vertexPrompt, this.temperature, this.candidateCount,
-				this.topP, this.maxTokens);
+				this.topP, this.topK);
 
 		GenerateMessageResponse response = this.vertexAiApi.generateMessage(request);
 

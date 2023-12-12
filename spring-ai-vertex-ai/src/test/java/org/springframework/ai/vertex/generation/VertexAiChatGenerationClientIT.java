@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class VertexAiChatGenerationClientIT {
 
 	@Autowired
-	private VertexAiChatGenerationClient client;
+	private VertexAiChatClient client;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -121,8 +121,8 @@ class VertexAiChatGenerationClientIT {
 		}
 
 		@Bean
-		public VertexAiChatGenerationClient vertexAiEmbedding(VertexAiApi vertexAiApi) {
-			return new VertexAiChatGenerationClient(vertexAiApi);
+		public VertexAiChatClient vertexAiEmbedding(VertexAiApi vertexAiApi) {
+			return new VertexAiChatClient(vertexAiApi);
 		}
 
 	}

@@ -101,7 +101,7 @@ public class ResourceCacheServiceTests {
 	public void cacheHttpResources() throws IOException {
 		var cache = new ResourceCacheService(tempDir);
 
-		var originalResourceUri1 = "https://raw.githubusercontent.com/spring-projects-experimental/spring-ai/main/spring-ai-core/src/main/resources/embedding/embedding-model-dimensions.properties";
+		var originalResourceUri1 = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/spring-ai-core/src/main/resources/embedding/embedding-model-dimensions.properties";
 		var cachedResource1 = cache.getCachedResource(originalResourceUri1);
 
 		assertThat(cachedResource1).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri1));

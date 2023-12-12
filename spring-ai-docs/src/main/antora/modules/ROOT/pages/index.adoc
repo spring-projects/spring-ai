@@ -17,6 +17,6 @@ To simplify setup, Spring Boot starters are available to help set up essential d
 There is also a collection of sample applications to help you explore the project's features.
 Lastly, the new Spring CLI project also enables you to get started quickly by using the `spring boot new ai` command for new projects or `spring boot add ai` for adding AI capabilities to your existing application.
 
-The <<concepts,next section>> provides a high-level overview of AI concepts and their representation in Spring AI.
-The <<getting-started,Getting Started>> section shows you how to create your first AI application.
+The xref:concepts.adoc[next section] provides a high-level overview of AI concepts and their representation in Spring AI.
+The xref:getting-started.adoc[Getting Started] section shows you how to create your first AI application.
 Subsequent sections delve into each component and common use cases with a code-focused approach.

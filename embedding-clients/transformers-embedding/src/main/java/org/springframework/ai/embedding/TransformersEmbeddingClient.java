@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import ai.djl.huggingface.tokenizers.Encoding;
@@ -35,16 +34,16 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  */
-public class TransformersEmbeddingClient implements EmbeddingClient, InitializingBean {
+public class TransformersEmbeddingClient extends AbstractEmbeddingClient implements InitializingBean {
 
 	private static final Log logger = LogFactory.getLog(TransformersEmbeddingClient.class);
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 model
-	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects-experimental/spring-ai/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
+	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
 
 	// ONNX model for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects-experimental/spring-ai/raw/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects/spring-ai/raw/main/embedding-clients/transformers-embedding/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
 
 	public final static String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
@@ -71,8 +70,6 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 	 * Runtime session that wraps the ONNX model and enables inference calls.
 	 */
 	private OrtSession session;
-
-	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	/**
 	 * Specifies what parts of the {@link Document}'s content and metadata will be used
@@ -146,10 +143,6 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	public void setModelResource(String modelResourceUri) {
 		this.modelResource = toResource(modelResourceUri);
-	}
-
-	public void setEmbeddingDimensions(int dimension) {
-		this.embeddingDimensions.set(dimension);
 	}
 
 	public void setModelOutputName(String modelOutputName) {
@@ -323,14 +316,6 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 			}
 		}
 		return result;
-	}
-
-	@Override
-	public int dimensions() {
-		if (this.embeddingDimensions.get() < 0) {
-			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, "Test"));
-		}
-		return this.embeddingDimensions.get();
 	}
 
 	private static Resource toResource(String uri) {

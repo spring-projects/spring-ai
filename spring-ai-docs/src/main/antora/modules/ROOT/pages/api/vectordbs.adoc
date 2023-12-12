@@ -12,7 +12,7 @@ Vector databases are used to integrate your data with AI models.
 The first step in their usage is to load your data into a vector database.
 Then, when a user query is to be sent to the AI model, a set of similar documents is first retrieved.
 These documents then serve as the context for the user's question and are sent to the AI model, along with the user's query.
-This technique is known as <<concept-rag,Retrieval Augmented Generation (RAG)>>.
+This technique is known as xref:concepts.adoc#concept-rag[Retrieval Augmented Generation (RAG)].
 
 The following sections describe the Spring AI interface for using multiple vector database implementations and some high-level sample usage.
 

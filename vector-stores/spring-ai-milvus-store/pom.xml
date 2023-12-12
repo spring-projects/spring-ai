@@ -12,12 +12,12 @@
 	<packaging>jar</packaging>
 	<name>Spring AI Milvus Vector Store</name>
 	<description>Spring AI Milvus Vector Store</description>
-	<url>https://github.com/spring-projects-experimental/spring-ai</url>
+	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
-		<url>https://github.com/spring-projects-experimental/spring-ai</url>
-		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
 	<dependencies>
@@ -31,6 +31,27 @@
 			<groupId>io.milvus</groupId>
 			<artifactId>milvus-sdk-java</artifactId>
 			<version>${milvus.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec-http2</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec</artifactId>
+			<version>4.1.101.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec-http2</artifactId>
+			<version>4.1.100.Final</version>
 		</dependency>
 
 		<!-- TESTING -->

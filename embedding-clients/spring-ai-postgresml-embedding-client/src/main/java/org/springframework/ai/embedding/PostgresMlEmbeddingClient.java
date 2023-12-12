@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +24,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Toshiaki Maki
  */
-public class PostgresMlEmbeddingClient implements EmbeddingClient, InitializingBean {
+public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implements InitializingBean {
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -34,8 +33,6 @@ public class PostgresMlEmbeddingClient implements EmbeddingClient, InitializingB
 	private final VectorType vectorType;
 
 	private final String kwargs;
-
-	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	private final MetadataMode metadataMode;
 
@@ -160,14 +157,6 @@ public class PostgresMlEmbeddingClient implements EmbeddingClient, InitializingB
 		}
 		return new EmbeddingResponse(data,
 				Map.of("transformer", this.transformer, "vector-type", this.vectorType.name(), "kwargs", this.kwargs));
-	}
-
-	@Override
-	public int dimensions() {
-		if (this.embeddingDimensions.get() < 0) {
-			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.transformer));
-		}
-		return this.embeddingDimensions.get();
 	}
 
 	@Override
