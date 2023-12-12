@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import ai.djl.huggingface.tokenizers.Encoding;
@@ -35,7 +34,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  */
-public class TransformersEmbeddingClient implements EmbeddingClient, InitializingBean {
+public class TransformersEmbeddingClient extends AbstractEmbeddingClient implements InitializingBean {
 
 	private static final Log logger = LogFactory.getLog(TransformersEmbeddingClient.class);
 
@@ -71,8 +70,6 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 	 * Runtime session that wraps the ONNX model and enables inference calls.
 	 */
 	private OrtSession session;
-
-	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	/**
 	 * Specifies what parts of the {@link Document}'s content and metadata will be used
@@ -146,10 +143,6 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 
 	public void setModelResource(String modelResourceUri) {
 		this.modelResource = toResource(modelResourceUri);
-	}
-
-	public void setEmbeddingDimensions(int dimension) {
-		this.embeddingDimensions.set(dimension);
 	}
 
 	public void setModelOutputName(String modelOutputName) {
@@ -323,14 +316,6 @@ public class TransformersEmbeddingClient implements EmbeddingClient, Initializin
 			}
 		}
 		return result;
-	}
-
-	@Override
-	public int dimensions() {
-		if (this.embeddingDimensions.get() < 0) {
-			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, "Test"));
-		}
-		return this.embeddingDimensions.get();
 	}
 
 	private static Resource toResource(String uri) {

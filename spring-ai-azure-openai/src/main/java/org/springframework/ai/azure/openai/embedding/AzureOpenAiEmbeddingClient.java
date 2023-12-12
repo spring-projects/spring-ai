@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
@@ -16,21 +15,18 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
 
-public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
+public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiEmbeddingClient.class);
 
 	private final OpenAIClient azureOpenAiClient;
 
 	private final String model;
-
-	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	private final MetadataMode metadataMode;
 
@@ -111,14 +107,6 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingClient {
 			data.add(embedding);
 		}
 		return data;
-	}
-
-	@Override
-	public int dimensions() {
-		if (this.embeddingDimensions.get() < 0) {
-			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, this.model));
-		}
-		return this.embeddingDimensions.get();
 	}
 
 }

@@ -30,6 +30,20 @@ class VertexAiEmbeddingClientIT {
 		assertThat(embeddingClient.dimensions()).isEqualTo(768);
 	}
 
+	@Test
+	void batchEmbedding() {
+		assertThat(embeddingClient).isNotNull();
+		EmbeddingResponse embeddingResponse = embeddingClient
+			.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+		assertThat(embeddingResponse.getData()).hasSize(2);
+		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+		assertThat(embeddingResponse.getData().get(0).getIndex()).isEqualTo(0);
+		assertThat(embeddingResponse.getData().get(1).getEmbedding()).isNotEmpty();
+		assertThat(embeddingResponse.getData().get(1).getIndex()).isEqualTo(1);
+
+		assertThat(embeddingClient.dimensions()).isEqualTo(768);
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 

@@ -125,6 +125,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Vertex AI LLM -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

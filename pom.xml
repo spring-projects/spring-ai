@@ -37,6 +37,7 @@
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>spring-ai-vertex-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
 
 	</modules>
 
