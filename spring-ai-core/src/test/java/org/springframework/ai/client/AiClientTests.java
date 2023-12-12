@@ -71,7 +71,7 @@ class AiClientTests {
 		verify(mockClient, times(1)).generate(eq(userMessage));
 		verify(mockClient, times(1)).generate(isA(Prompt.class));
 		verify(response, times(1)).getGeneration();
-		verify(generation, times(1)).getText();
+		verify(generation, times(1)).getContent();
 		verifyNoMoreInteractions(mockClient, generation, response);
 	}
 
