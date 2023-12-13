@@ -18,6 +18,8 @@ package org.springframework.ai.reader.tika;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,6 +27,8 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
+import org.springframework.ai.transformer.splitter.TextSplitter;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.xml.sax.ContentHandler;
 
 import org.springframework.ai.document.Document;
@@ -85,6 +89,8 @@ public class TikaDocumentReader implements DocumentReader {
 	 */
 	private final ExtractedTextFormatter textFormatter;
 
+	private final TokenTextSplitter textSplitter = new TokenTextSplitter();
+
 	/**
 	 * Constructor initializing the reader with a given resource URL.
 	 * @param resourceUrl URL to the resource
@@ -143,7 +149,11 @@ public class TikaDocumentReader implements DocumentReader {
 	public List<Document> get() {
 		try (InputStream stream = this.resource.getInputStream()) {
 			this.parser.parse(stream, this.handler, this.metadata, this.context);
-			return List.of(toDocument(this.handler.toString()));
+			return textSplitter.split(this.handler.toString(), 800)
+				.stream()
+				.filter(StringUtils::hasText)
+				.map(this::toDocument)
+				.toList();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
