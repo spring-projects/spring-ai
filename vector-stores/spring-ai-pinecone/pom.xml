@@ -36,7 +36,30 @@
             <groupId>io.pinecone</groupId>
             <artifactId>pinecone-client</artifactId>
             <version>${pinecone.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http2</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+        <!-- Overrides the pinecone's dependencies. TODO review after pincone verions is updated to > 0.6.0 -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec</artifactId>
+            <version>4.1.101.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-http2</artifactId>
+            <version>4.1.100.Final</version>
+        </dependency>
+
 
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -45,19 +68,19 @@
         </dependency>
 
         <!-- TESTING -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>transformers-embedding</artifactId>
-			<version>${parent.version}</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>transformers-embedding</artifactId>
+            <version>${parent.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-test</artifactId>
-			<version>${parent.version}</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-test</artifactId>
+            <version>${parent.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

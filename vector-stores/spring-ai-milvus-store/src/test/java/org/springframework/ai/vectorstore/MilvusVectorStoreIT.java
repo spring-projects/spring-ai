@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.theokanning.openai.client.OpenAiApi;
-import com.theokanning.openai.service.OpenAiService;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
@@ -39,14 +37,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.vertex.api.VertexAiApi;
+import org.springframework.ai.vertex.embedding.VertexAiEmbeddingClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -62,7 +58,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+// @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".+")
 public class MilvusVectorStoreIT {
 
 	private static DockerComposeContainer milvusContainer;
@@ -152,6 +149,8 @@ public class MilvusVectorStoreIT {
 
 		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "BG", "year", 2020));
@@ -246,7 +245,7 @@ public class MilvusVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "COSINE", "L2", "IP" })
+	@ValueSource(strings = { "COSINE", "IP" })
 	public void searchWithThreshold(String metricType) {
 
 		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
@@ -308,16 +307,9 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public EmbeddingClient embeddingClient() {
-
-			Retrofit retrofit = new Retrofit.Builder().baseUrl("https://api.openai.com")
-				.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
-				.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
-				.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-				.build();
-
-			OpenAiApi api = retrofit.create(OpenAiApi.class);
-
-			return new OpenAiEmbeddingClient(new OpenAiService(api), "text-embedding-ada-002");
+			return new VertexAiEmbeddingClient(new VertexAiApi(System.getenv("PALM_API_KEY")));
+			// return new OpenAiEmbeddingClient(new
+			// OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

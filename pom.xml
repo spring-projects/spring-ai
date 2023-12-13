@@ -84,8 +84,8 @@
 
 		<!-- production dependencies -->
 		<spring-boot.version>3.2.0</spring-boot.version>
+		<spring-framework.version>6.1.1</spring-framework.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
-		<open-ai-client.version>0.16.0</open-ai-client.version>
 		<azure-open-ai-client.version>1.0.0-beta.3</azure-open-ai-client.version>
 		<jtokkit.version>0.6.1</jtokkit.version>
 		<victools.version>4.31.1</victools.version>

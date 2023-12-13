@@ -17,7 +17,6 @@
 package org.springframework.ai.azure.openai.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.test.config.MockAiTestConfiguration.SPRING_AI_API_PATH;
 
 import java.nio.charset.StandardCharsets;
 
@@ -170,7 +169,7 @@ class AzureOpenAiClientMetadataTests {
 	}
 
 	@RestController
-	@RequestMapping(SPRING_AI_API_PATH)
+	@RequestMapping("/spring-ai/api")
 	@SuppressWarnings("all")
 	static class SpringAzureOpenAiChatCompletionsController {
 

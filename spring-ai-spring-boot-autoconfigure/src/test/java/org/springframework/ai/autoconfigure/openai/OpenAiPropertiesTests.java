@@ -50,7 +50,6 @@ class OpenAiPropertiesTests {
 		assertThat(this.openAiProperties.getModel()).isEqualTo("claudia-shiffer-5");
 		assertThat(this.openAiProperties.getBaseUrl()).isEqualTo("https://api.openai.spring.io/eieioh");
 		assertThat(this.openAiProperties.getTemperature()).isEqualTo(0.5d);
-		assertThat(this.openAiProperties.getDuration()).isEqualTo(Duration.ofSeconds(30L));
 
 		OpenAiProperties.Embedding embedding = this.openAiProperties.getEmbedding();
 

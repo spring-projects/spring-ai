@@ -17,16 +17,15 @@
 package org.springframework.ai.openai.transformer;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.client.OpenAiClient;
 import org.springframework.ai.transformer.ContentFormatTransformer;
 import org.springframework.ai.transformer.KeywordMetadataEnricher;
@@ -155,19 +154,18 @@ public class MetadataTransformerIT {
 	public static class OpenAiTestConfiguration {
 
 		@Bean
-		public OpenAiService theoOpenAiService() throws IOException {
+		public OpenAiApi openAiApi() throws IOException {
 			String apiKey = System.getenv("OPENAI_API_KEY");
 			if (!StringUtils.hasText(apiKey)) {
 				throw new IllegalArgumentException(
 						"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 			}
-			OpenAiService openAiService = new OpenAiService(apiKey, Duration.ofSeconds(60));
-			return openAiService;
+			return new OpenAiApi(apiKey);
 		}
 
 		@Bean
-		public OpenAiClient openAiClient(OpenAiService theoOpenAiService) {
-			OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService);
+		public OpenAiClient openAiClient(OpenAiApi openAiApi) {
+			OpenAiClient openAiClient = new OpenAiClient(openAiApi);
 			openAiClient.setTemperature(0.3);
 			return openAiClient;
 		}

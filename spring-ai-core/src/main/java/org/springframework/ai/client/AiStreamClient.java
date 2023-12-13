@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.client;
+package org.springframework.ai.client;
 
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.UserMessage;
 
+@FunctionalInterface
 public interface AiStreamClient {
 
-	default Flux<OpenAiSseResponse> generateStream(String message) {
-		Prompt prompt = new Prompt(new UserMessage(message));
-		return generateStream(prompt);
-	}
-
-	Flux<OpenAiSseResponse> generateStream(Prompt prompt);
+	public Flux<AiResponse> generateStream(Prompt prompt);
 
 }

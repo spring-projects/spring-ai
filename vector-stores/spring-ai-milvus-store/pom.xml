@@ -57,8 +57,9 @@
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-openai</artifactId>
+			<!-- <artifactId>spring-ai-openai</artifactId> -->
 			<!-- <artifactId>transformers-embedding</artifactId> -->
+			<artifactId>spring-ai-vertex-ai</artifactId>
 			<version>${parent.version}</version>
 			<scope>test</scope>
 		</dependency>

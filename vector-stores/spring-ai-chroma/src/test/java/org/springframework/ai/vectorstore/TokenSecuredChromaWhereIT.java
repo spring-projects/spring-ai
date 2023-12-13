@@ -16,28 +16,23 @@
 
 package org.springframework.ai.vectorstore;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import com.theokanning.openai.client.OpenAiApi;
-import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.ai.chroma.ChromaApi;
-import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -155,16 +150,7 @@ public class TokenSecuredChromaWhereIT {
 
 		@Bean
 		public EmbeddingClient embeddingClient() {
-
-			Retrofit retrofit = new Retrofit.Builder().baseUrl("https://api.openai.com")
-				.client(OpenAiService.defaultClient(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(60)))
-				.addConverterFactory(JacksonConverterFactory.create(OpenAiService.defaultObjectMapper()))
-				.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-				.build();
-
-			OpenAiApi api = retrofit.create(OpenAiApi.class);
-
-			return new OpenAiEmbeddingClient(new OpenAiService(api), "text-embedding-ada-002");
+			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

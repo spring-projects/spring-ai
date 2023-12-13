@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.metadata;
 
 import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.util.Assert;
 
 /**
@@ -30,34 +31,34 @@ import org.springframework.util.Assert;
  */
 public class OpenAiUsage implements Usage {
 
-	public static OpenAiUsage from(com.theokanning.openai.Usage usage) {
+	public static OpenAiUsage from(OpenAiApi.Usage usage) {
 		return new OpenAiUsage(usage);
 	}
 
-	private final com.theokanning.openai.Usage usage;
+	private final OpenAiApi.Usage usage;
 
-	protected OpenAiUsage(com.theokanning.openai.Usage usage) {
+	protected OpenAiUsage(OpenAiApi.Usage usage) {
 		Assert.notNull(usage, "OpenAI Usage must not be null");
 		this.usage = usage;
 	}
 
-	protected com.theokanning.openai.Usage getUsage() {
+	protected OpenAiApi.Usage getUsage() {
 		return this.usage;
 	}
 
 	@Override
 	public Long getPromptTokens() {
-		return getUsage().getPromptTokens();
+		return getUsage().promptTokens().longValue();
 	}
 
 	@Override
 	public Long getGenerationTokens() {
-		return getUsage().getCompletionTokens();
+		return getUsage().completionTokens().longValue();
 	}
 
 	@Override
 	public Long getTotalTokens() {
-		return getUsage().getTotalTokens();
+		return getUsage().totalTokens().longValue();
 	}
 
 	@Override

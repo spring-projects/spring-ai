@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-webflux</artifactId>
-			<version>6.1.1</version>
+			<version>${spring-framework.version}</version>
 		</dependency>
 
 		<dependency>

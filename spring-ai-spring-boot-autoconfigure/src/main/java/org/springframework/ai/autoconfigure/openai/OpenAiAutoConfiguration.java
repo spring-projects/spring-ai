@@ -16,18 +16,10 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
-
-import java.time.Duration;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.theokanning.openai.client.OpenAiApi;
-import com.theokanning.openai.service.OpenAiService;
-
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.client.OpenAiClient;
-import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -35,27 +27,24 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
-import org.springframework.util.StringUtils;
-
-import okhttp3.OkHttpClient;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
+import org.springframework.web.client.RestClient;
 
 @AutoConfiguration
-@ConditionalOnClass(OpenAiService.class)
+@ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties(OpenAiProperties.class)
 @ImportRuntimeHints(NativeHints.class)
 public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
+	public OpenAiApi openAiApi(OpenAiProperties openAiProperties) {
+		return new OpenAiApi(openAiProperties.getBaseUrl(), openAiProperties.getApiKey(), RestClient.builder());
+	}
 
-		OpenAiService openAiService = theoOpenAiService(openAiProperties, openAiProperties.getBaseUrl(),
-				openAiProperties.getApiKey(), openAiProperties.getDuration());
-
-		OpenAiClient openAiClient = new OpenAiClient(openAiService);
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiClient openAiClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
+		OpenAiClient openAiClient = new OpenAiClient(openAiApi);
 		openAiClient.setTemperature(openAiProperties.getTemperature());
 		openAiClient.setModel(openAiProperties.getModel());
 
@@ -64,43 +53,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiProperties openAiProperties) {
-
-		OpenAiService openAiService = theoOpenAiService(openAiProperties, openAiProperties.getEmbedding().getBaseUrl(),
-				openAiProperties.getEmbedding().getApiKey(), openAiProperties.getDuration());
-
-		return new OpenAiEmbeddingClient(openAiService, openAiProperties.getEmbedding().getModel());
-	}
-
-	private OpenAiService theoOpenAiService(OpenAiProperties properties, String baseUrl, String apiKey,
-			Duration duration) {
-
-		if ("https://api.openai.com".equals(baseUrl) && !StringUtils.hasText(apiKey)) {
-			throw new IllegalArgumentException(
-					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
-		}
-
-		ObjectMapper mapper = OpenAiService.defaultObjectMapper();
-
-		OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder(OpenAiService.defaultClient(apiKey, duration));
-
-		if (properties.getMetadata().isRateLimitMetricsEnabled()) {
-			clientBuilder.addInterceptor(new OpenAiHttpResponseHeadersInterceptor());
-		}
-
-		OkHttpClient client = clientBuilder.build();
-
-		// Waiting for https://github.com/TheoKanning/openai-java/issues/249 to be
-		// resolved.
-		Retrofit retrofit = new Retrofit.Builder().baseUrl(baseUrl)
-			.client(client)
-			.addConverterFactory(JacksonConverterFactory.create(mapper))
-			.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-			.build();
-
-		OpenAiApi api = retrofit.create(OpenAiApi.class);
-
-		return new OpenAiService(api);
+	public EmbeddingClient openAiEmbeddingClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
+		return new OpenAiEmbeddingClient(openAiApi, openAiProperties.getEmbedding().getModel());
 	}
 
 }

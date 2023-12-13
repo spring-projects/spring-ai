@@ -140,11 +140,12 @@ class OpenAiClientIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = openAiStreamClient.generateStream(prompt)
-			.map(OpenAiSseResponse::choices)
-			.toStream()
+			.collectList()
+			.block()
+			.stream()
+			.map(AiResponse::getGenerations)
 			.flatMap(List::stream)
-			.map(OpenAiSseResponse.Choice::delta)
-			.map(OpenAiSseResponse.Choice.Delta::content)
+			.map(Generation::getContent)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);

@@ -16,22 +16,16 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
-
-import java.time.Duration;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(OpenAiProperties.CONFIG_PREFIX)
 public class OpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai";
 
 	private Double temperature = 0.7;
-
-	private Duration duration = Duration.ofSeconds(60);
 
 	private final Embedding embedding = new Embedding(this);
 
@@ -73,14 +67,6 @@ public class OpenAiProperties {
 
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
-	}
-
-	public Duration getDuration() {
-		return this.duration;
-	}
-
-	public void setDuration(Duration duration) {
-		this.duration = duration;
 	}
 
 	public Embedding getEmbedding() {

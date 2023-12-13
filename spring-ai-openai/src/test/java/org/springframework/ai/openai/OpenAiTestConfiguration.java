@@ -1,12 +1,8 @@
 package org.springframework.ai.openai;
 
-import java.time.Duration;
-
-import com.theokanning.openai.service.OpenAiService;
-
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.client.OpenAiClient;
-import org.springframework.ai.openai.client.OpenAiStreamClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -16,9 +12,9 @@ import org.springframework.util.StringUtils;
 public class OpenAiTestConfiguration {
 
 	@Bean
-	public OpenAiService theoOpenAiService() {
+	public OpenAiApi openAiApi() {
 		String apiKey = getApiKey();
-		OpenAiService openAiService = new OpenAiService(apiKey, Duration.ofSeconds(60));
+		OpenAiApi openAiService = new OpenAiApi(apiKey);
 		return openAiService;
 	}
 
@@ -32,20 +28,15 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
-	public OpenAiClient openAiClient(OpenAiService theoOpenAiService) {
-		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService);
+	public OpenAiClient openAiClient(OpenAiApi api) {
+		OpenAiClient openAiClient = new OpenAiClient(api);
 		openAiClient.setTemperature(0.3);
 		return openAiClient;
 	}
 
 	@Bean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiService theoOpenAiService) {
-		return new OpenAiEmbeddingClient(theoOpenAiService);
-	}
-
-	@Bean
-	public OpenAiStreamClient openAiStreamClient() {
-		return new OpenAiStreamClient(getApiKey());
+	public EmbeddingClient openAiEmbeddingClient(OpenAiApi api) {
+		return new OpenAiEmbeddingClient(api);
 	}
 
 }

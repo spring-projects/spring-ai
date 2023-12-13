@@ -16,11 +16,10 @@
 
 package org.springframework.ai.openai.metadata;
 
-import com.theokanning.openai.completion.chat.ChatCompletionResult;
-
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -38,10 +37,10 @@ public class OpenAiGenerationMetadata implements GenerationMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 
-	public static OpenAiGenerationMetadata from(ChatCompletionResult result) {
+	public static OpenAiGenerationMetadata from(OpenAiApi.ChatCompletion result) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
-		OpenAiUsage usage = OpenAiUsage.from(result.getUsage());
-		OpenAiGenerationMetadata generationMetadata = new OpenAiGenerationMetadata(result.getId(), usage);
+		OpenAiUsage usage = OpenAiUsage.from(result.usage());
+		OpenAiGenerationMetadata generationMetadata = new OpenAiGenerationMetadata(result.id(), usage);
 		OpenAiHttpResponseHeadersInterceptor.applyTo(generationMetadata);
 		return generationMetadata;
 	}

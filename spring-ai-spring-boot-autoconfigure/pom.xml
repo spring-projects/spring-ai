@@ -72,6 +72,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Because of Pinecone compatability issues downgrade
+		netty-codec-http2 from 4.1.101.Final to 4.1.100.Final -->
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec-http2</artifactId>
+			<version>4.1.100.Final</version>
+		</dependency>
+
 		<!-- Milvus Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -138,12 +146,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>com.squareup.retrofit2</groupId>
-			<artifactId>converter-jackson</artifactId>
-			<version>2.9.0</version>
 		</dependency>
 
 		<!-- test dependencies -->
