@@ -14,7 +14,7 @@ Let's make your `@Beans` intelligent!
 
 We are transitioning the project's Group ID:
 
-* **FROM**: `org.springframework.ai`
+* **FROM**: `org.springframework.experimental.ai`
 * **TO**: `org.springframework.ai`
 
 Artifacts will still be hosted in the snapshot repository as shown below.
