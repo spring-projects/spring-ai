@@ -235,9 +235,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 							SET u.id = row.id,
 								u += row.properties
 						WITH row, u
-						CALL db.create.setVectorProperty(u, $embeddingProperty, row.embedding)
-						YIELD node
-						RETURN count(node)
+						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row.embedding)
 					""".formatted(this.config.quotedLabel);
 			session.run(statement, Map.of("rows", rows, "embeddingProperty", this.config.embeddingProperty)).consume();
 		}
