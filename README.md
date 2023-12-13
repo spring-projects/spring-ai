@@ -101,7 +101,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 * Azure OpenAI
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId>
+        <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
@@ -111,7 +111,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId>
+        <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
@@ -125,7 +125,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
     <dependency>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.8.0-SNAPSHOT</version>
     </dependency>
 ```
 
