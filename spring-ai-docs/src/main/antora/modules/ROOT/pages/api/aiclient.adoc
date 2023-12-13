@@ -116,6 +116,7 @@ The `AiClient` interface has the following available implementations:
 * https://ollama.ai/[Ollama]: Run large language models locally.
 
 Planned implementations
+
 * Amazon Bedrock: This can provide access to many AI models.
 * Google Vertex: Providing access to 'Bard' (AKA Palm2).
 
