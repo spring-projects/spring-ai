@@ -82,6 +82,6 @@ public abstract class TextSplitter implements DocumentTransformer {
 		return documents;
 	}
 
-	protected abstract List<String> splitText(String text);
+	public abstract List<String> splitText(String text);
 
 }

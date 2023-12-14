@@ -35,7 +35,7 @@ public class TextSplitterTests {
 	static TextSplitter testTextSplitter = new TextSplitter() {
 
 		@Override
-		protected List<String> splitText(String text) {
+		public List<String> splitText(String text) {
 			int chuckSize = text.length() / 2;
 
 			List<String> chunks = new ArrayList<>();

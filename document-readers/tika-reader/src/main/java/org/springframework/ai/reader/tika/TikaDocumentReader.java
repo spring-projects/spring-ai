@@ -25,6 +25,7 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.xml.sax.ContentHandler;
 
 import org.springframework.ai.document.Document;
@@ -85,6 +86,8 @@ public class TikaDocumentReader implements DocumentReader {
 	 */
 	private final ExtractedTextFormatter textFormatter;
 
+	private TextSplitter textSplitter = new NoOpTextSplitter();
+
 	/**
 	 * Constructor initializing the reader with a given resource URL.
 	 * @param resourceUrl URL to the resource
@@ -136,6 +139,14 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	/**
+	 * Sets the text splitter.
+	 * @param textSplitter Text splitter
+	 */
+	public void setTextSplitter(TextSplitter textSplitter) {
+		this.textSplitter = textSplitter;
+	}
+
+	/**
 	 * Extracts and returns the list of documents from the resource.
 	 * @return List of extracted {@link Document}
 	 */
@@ -143,7 +154,11 @@ public class TikaDocumentReader implements DocumentReader {
 	public List<Document> get() {
 		try (InputStream stream = this.resource.getInputStream()) {
 			this.parser.parse(stream, this.handler, this.metadata, this.context);
-			return List.of(toDocument(this.handler.toString()));
+			return this.textSplitter.splitText(this.handler.toString())
+				.stream()
+				.filter(StringUtils::hasText)
+				.map(this::toDocument)
+				.toList();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -179,6 +194,15 @@ public class TikaDocumentReader implements DocumentReader {
 		catch (IOException e) {
 			return String.format("Invalid source URI: %s", e.getMessage());
 		}
+	}
+
+	private static final class NoOpTextSplitter extends TextSplitter {
+
+		@Override
+		public List<String> splitText(String text) {
+			return List.of(text);
+		}
+
 	}
 
 }

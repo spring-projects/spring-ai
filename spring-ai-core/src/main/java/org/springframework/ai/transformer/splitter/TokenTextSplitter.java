@@ -38,7 +38,7 @@ public class TokenTextSplitter extends TextSplitter {
 	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
 
 	@Override
-	protected List<String> splitText(String text) {
+	public List<String> splitText(String text) {
 		return split(text, defaultChunkSize);
 	}
 
