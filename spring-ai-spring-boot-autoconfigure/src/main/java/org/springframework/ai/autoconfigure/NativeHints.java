@@ -18,6 +18,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+/***
+ * Native hints
+ *
+ * @author Josh Long
+ */
 public class NativeHints implements RuntimeHintsRegistrar {
 
 	@Override
