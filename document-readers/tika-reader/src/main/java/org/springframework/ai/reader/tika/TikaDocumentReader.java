@@ -60,6 +60,11 @@ public class TikaDocumentReader implements DocumentReader {
 	public static final String METADATA_SOURCE = "source";
 
 	/**
+	 * Default chunk size for splitting the extracted text.
+	 */
+	private static final int DEFAULT_CHUNK_SIZE = 800;
+
+	/**
 	 * Parser to automatically detect the type of document and extract text.
 	 */
 	private final AutoDetectParser parser;
@@ -83,6 +88,11 @@ public class TikaDocumentReader implements DocumentReader {
 	 * The resource pointing to the document.
 	 */
 	private final Resource resource;
+
+	/**
+	 * Chunk size for splitting the extracted text.
+	 */
+	private int chunkSize = DEFAULT_CHUNK_SIZE;
 
 	/**
 	 * Formatter for the extracted text.
@@ -142,6 +152,14 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	/**
+	 * Sets the chunk size for splitting the extracted text.
+	 * @param chunkSize Chunk size for splitting the extracted text
+	 */
+	public void setChunkSize(int chunkSize) {
+		this.chunkSize = chunkSize;
+	}
+
+	/**
 	 * Extracts and returns the list of documents from the resource.
 	 * @return List of extracted {@link Document}
 	 */
@@ -149,7 +167,7 @@ public class TikaDocumentReader implements DocumentReader {
 	public List<Document> get() {
 		try (InputStream stream = this.resource.getInputStream()) {
 			this.parser.parse(stream, this.handler, this.metadata, this.context);
-			return textSplitter.split(this.handler.toString(), 800)
+			return textSplitter.split(this.handler.toString(), chunkSize)
 				.stream()
 				.filter(StringUtils::hasText)
 				.map(this::toDocument)
