@@ -21,8 +21,6 @@
 
     <dependencies>
 
-        <!-- production dependencies -->
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -38,13 +36,6 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-pinecone</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
