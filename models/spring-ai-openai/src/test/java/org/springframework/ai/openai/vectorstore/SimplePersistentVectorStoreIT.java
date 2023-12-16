@@ -6,7 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.reader.JsonReader;
-import org.springframework.ai.vectorstore.SimplePersistentVectorStore;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.reader.JsonMetadataGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,14 +34,14 @@ public class SimplePersistentVectorStoreIT {
 		JsonReader jsonReader = new JsonReader(bikesJsonResource, new ProductMetadataGenerator(), "price", "name",
 				"shortDescription", "description", "tags");
 		List<Document> documents = jsonReader.get();
-		SimplePersistentVectorStore vectorStore = new SimplePersistentVectorStore(this.embeddingClient);
+		SimpleVectorStore vectorStore = new SimpleVectorStore(this.embeddingClient);
 		vectorStore.add(documents);
 
 		File tempFile = new File(workingDir.toFile(), "temp.txt");
 		vectorStore.save(tempFile);
 		assertThat(tempFile).isNotEmpty();
 		assertThat(tempFile).content().contains("Velo 99 XR1 AXS");
-		SimplePersistentVectorStore vectorStore2 = new SimplePersistentVectorStore(this.embeddingClient);
+		SimpleVectorStore vectorStore2 = new SimpleVectorStore(this.embeddingClient);
 
 		vectorStore2.load(tempFile);
 		List<Document> similaritySearch = vectorStore2.similaritySearch("Velo 99 XR1 AXS");

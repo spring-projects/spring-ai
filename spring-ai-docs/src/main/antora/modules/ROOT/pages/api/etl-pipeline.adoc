@@ -84,7 +84,7 @@ public interface DocumentWriter extends Consumer<List<Document>> {
 *PgVectorStore*::
 + Provides vector storage capabilities using PostgreSQL.
 
-*SimplePersistentVectorStore*::
+*SimpleVectorStore*::
 + A straightforward approach to persistent vector storage.
 
 *InMemoryVectorStore*::

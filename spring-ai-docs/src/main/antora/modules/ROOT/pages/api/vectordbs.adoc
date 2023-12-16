@@ -87,7 +87,7 @@ country == 'UK' && year >= 2020 && isActive == true.
 
 These are the available implementations of the `VectorStore` interface:
 
-* `InMemoryVectorStore` and `SimplePersistentVectorStore`.
+* `SimpleVectorStore`
 * Pinecone: https://www.pinecone.io/[PineCone] vector store.
 * PgVector [`PgVectorStore`]: The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
 * Milvus [`MilvusVectorStore`]: The https://milvus.io/[Milvus] vector store
