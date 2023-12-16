@@ -38,7 +38,11 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * @author Christian Tzolov
+ * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
+ * interface. It is responsible for adding, deleting, and searching documents based on
+ * their similarity to a query, using the {@link ChromaApi} and {@link EmbeddingClient}
+ * for embedding calculations. For more information about how it does this, see the
+ * official <a href="https://www.trychroma.com/">Chroma website</a>.
  */
 public class ChromaVectorStore implements VectorStore, InitializingBean {
 

@@ -22,7 +22,7 @@ import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.ai.retriever.VectorStoreRetriever;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.InMemoryVectorStore;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,7 +67,7 @@ public class AcmeIT extends AbstractIT {
 		// Step 2 - Create embeddings and save to vector store
 
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = new InMemoryVectorStore(embeddingClient);
+		VectorStore vectorStore = new SimpleVectorStore(embeddingClient);
 
 		vectorStore.accept(textSplitter.apply(jsonReader.get()));
 

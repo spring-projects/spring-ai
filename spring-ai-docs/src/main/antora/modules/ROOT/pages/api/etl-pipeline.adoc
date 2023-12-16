@@ -11,13 +11,29 @@ The RAG use-case is designed to augment the capabilities of generative models by
 
 === DocumentReader
 
+Provides a source of documents from diverse origins.
 ```java
 public interface DocumentReader extends Supplier<List<Document>> {
 
 }
 ```
 
+==== Available Implementations
+
+*JsonReader*: Parses documents in JSON format.
+
+*TextReader*: Processes plain text documents.
+
+*PagePdfDocumentReader*: Uses Apache PdfBox library to parse PDF documents
+
+*ParagraphPdfDocumentReader*: Uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
+
+*TikaDocumentReader*: Uses Apache Tika to extract text from a variety of document
+ * formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
+
 === DocumentTransformer
+
+Transforms a batch of documents as part of the processing workflow.
 
 ```java
 public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
@@ -25,35 +41,7 @@ public interface DocumentTransformer extends Function<List<Document>, List<Docum
 }
 ```
 
-=== DocumentWriter
-
-```java
-public interface DocumentWriter extends Consumer<List<Document>> {
-
-}
-```
-
-=== Available Implementations
-
-==== DocumentReader Interface
-
-*Supplier<List<Document>>*::
-+ Provides a source of documents from diverse origins.
-
-*JsonReader*::
-+ Parses documents in JSON format.
-
-*TextReader*::
-+ Processes plain text documents.
-
-*Document*::
-+ Represents the core data structure manipulated throughout the pipeline.
-
-
-=== DocumentTransformer Interface
-
-*Function<List<Document>, List<Document>>*::
-+ Transforms a batch of documents as part of the processing workflow.
+==== Available Implementations
 
 *TextSplitter*::
 + Divides documents to fit the AI model's context window.
@@ -70,34 +58,21 @@ public interface DocumentWriter extends Consumer<List<Document>> {
 *SummaryMetadataEnricher*::
 + Enriches documents with summarization metadata for enhanced retrieval.
 
-=== DocumentWriter Interface
+=== DocumentWriter
 
-*Consumer<List<Document>>*::
-+ Manages the final stage of the ETL process, preparing documents for storage.
+Manages the final stage of the ETL process, preparing documents for storage.
 
-*VectorStore*::
-+ The abstracted interface for vector database interactions.
+```java
+public interface DocumentWriter extends Consumer<List<Document>> {
 
-*MilvusVectorStore*::
-+ An implementation for the Milvus vector database.
+}
+```
 
-*PgVectorStore*::
-+ Provides vector storage capabilities using PostgreSQL.
+== Available Implementations
 
-*SimplePersistentVectorStore*::
-+ A straightforward approach to persistent vector storage.
+There is an implementation for each of the Vector Stores that Spring AI supports, e.g. `PineconeVectorStore`.
 
-*InMemoryVectorStore*::
-+ Enables rapid access with in-memory storage solutions.
-
-*Neo4jVectorStore*::
-+ Leverages the Neo4j graph database for vector storage.
-
-*RedisVectorStore*::
-+ Provides vector storage capabilities using Redis.
-
-
-== Using PDF Reader
+See xref:api/vectordbs.adoc[Vector DB Documentation] for a full listing.
 
 
 == Using PagePdfDocumentReader
