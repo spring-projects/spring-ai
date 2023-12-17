@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -51,7 +52,7 @@ public class OpenAiApi {
 
 	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
 	private static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
-	private static final String SSE_DONE = "[DONE]";
+	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
 	private final WebClient webClient;
@@ -579,10 +580,10 @@ public class OpenAiApi {
 				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 				.retrieve()
 				.bodyToFlux(String.class)
-				// cancels the flux stream after the SSE_DONE is received.
-				.takeUntil(content -> content.contains(SSE_DONE))
-				// filters out the SSE_DONE message.
-				.filter(content -> !content.contains(SSE_DONE))
+				// cancels the flux stream after the "[DONE]" is received.
+				.takeUntil(SSE_DONE_PREDICATE)
+				// filters out the "[DONE]" message.
+				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> parseJson(content, ChatCompletionChunk.class));
 	}
 
