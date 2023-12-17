@@ -82,11 +82,6 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	@Override
-	public String getMessageTypeValue() {
-		return this.messageType.getValue();
-	}
-
-	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;

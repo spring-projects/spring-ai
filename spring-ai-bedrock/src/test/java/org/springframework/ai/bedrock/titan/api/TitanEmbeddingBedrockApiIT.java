@@ -1,0 +1,76 @@
+/*
+ * Copyright 2023-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.bedrock.titan.api;
+
+import java.io.IOException;
+import java.util.Base64;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import software.amazon.awssdk.regions.Region;
+
+import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
+import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
+import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
+import org.springframework.core.io.DefaultResourceLoader;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * @author Christian Tzolov
+ */
+@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+public class TitanEmbeddingBedrockApiIT {
+
+	@Test
+	public void embedText() {
+
+		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
+				TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(), Region.US_EAST_1.id());
+
+		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputText("I like to eat apples.").build();
+
+		TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.inputTextTokenCount()).isEqualTo(6);
+		assertThat(response.embedding()).hasSize(1536);
+	}
+
+	@Test
+	public void embedImage() throws IOException {
+
+		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
+				TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id());
+
+		byte[] image = new DefaultResourceLoader().getResource("classpath:/spring_framework.png")
+			.getContentAsByteArray();
+
+		String imageBase64 = Base64.getEncoder().encodeToString(image);
+		System.out.println(imageBase64.length());
+
+		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputImage(imageBase64).build();
+
+		TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.inputTextTokenCount()).isEqualTo(0); // e.g. image input
+		assertThat(response.embedding()).hasSize(1024);
+	}
+
+}

@@ -36,14 +36,14 @@ class OpenAiClientIT extends AbstractIT {
 
 	@Test
 	void roleTest() {
-		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
-		String name = "Bob";
-		String voice = "pirate";
-		UserMessage userMessage = new UserMessage(request);
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
+		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		AiResponse response = openAiClient.generate(prompt);
+		assertThat(response.getGenerations()).hasSize(1);
+		assertThat(response.getGenerations().get(0).getContent()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
 	}
 
