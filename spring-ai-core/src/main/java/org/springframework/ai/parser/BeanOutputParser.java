@@ -48,7 +48,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 
 	/** The Java class representing the target type. */
 	@SuppressWarnings({ "FieldMayBeFinal", "rawtypes" })
-	private Class clazz;
+	private Class<T> clazz;
 
 	/** The object mapper used for deserialization and other JSON operations. */
 	@SuppressWarnings("FieldMayBeFinal")
@@ -95,7 +95,6 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 */
 	public T parse(String text) {
 		try {
-			// noinspection unchecked
 			return (T) this.objectMapper.readValue(text, this.clazz);
 		}
 		catch (JsonProcessingException e) {

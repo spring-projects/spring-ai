@@ -47,6 +47,8 @@
 		<module>vector-stores/spring-ai-redis</module>
 		<module>spring-ai-vertex-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
+		<module>spring-ai-bedrock</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 
 	</modules>
 
@@ -98,6 +100,7 @@
 		<azure-open-ai-client.version>1.0.0-beta.3</azure-open-ai-client.version>
 		<jtokkit.version>0.6.1</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
+		<bedrockruntime.version>2.22.0</bedrockruntime.version>
 
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.0</pdfbox.version>

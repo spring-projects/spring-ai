@@ -26,6 +26,4 @@ public interface Message {
 
 	MessageType getMessageType();
 
-	String getMessageTypeValue();
-
 }

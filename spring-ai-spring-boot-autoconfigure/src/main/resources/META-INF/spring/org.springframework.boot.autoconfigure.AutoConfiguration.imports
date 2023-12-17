@@ -11,3 +11,8 @@ org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoCon
 org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.VertexAiAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.llama2.BedrockLlama2AutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereChatAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereEmbeddingAutoConfiguration
+
+

@@ -114,7 +114,7 @@ public class AzureOpenAiClient implements AiClient {
 		List<ChatMessage> azureMessages = new ArrayList<>();
 
 		for (Message message : messages) {
-			String messageType = message.getMessageTypeValue();
+			String messageType = message.getMessageType().getValue();
 			ChatRole chatRole = ChatRole.fromString(messageType);
 			azureMessages.add(new ChatMessage(chatRole, message.getContent()));
 		}

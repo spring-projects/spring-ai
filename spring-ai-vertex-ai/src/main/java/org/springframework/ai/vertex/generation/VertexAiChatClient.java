@@ -50,20 +50,24 @@ public class VertexAiChatClient implements AiClient {
 		this.vertexAiApi = vertexAiApi;
 	}
 
-	public void setTemperature(Float temperature) {
+	public VertexAiChatClient withTemperature(Float temperature) {
 		this.temperature = temperature;
+		return this;
 	}
 
-	public void setTopK(Integer candidateCount) {
-		this.topK = candidateCount;
-	}
-
-	public void setTopP(Float topP) {
+	public VertexAiChatClient withTopP(Float topP) {
 		this.topP = topP;
+		return this;
 	}
 
-	public void setCandidateCount(Integer maxTokens) {
+	public VertexAiChatClient withTopK(Integer topK) {
+		this.topK = topK;
+		return this;
+	}
+
+	public VertexAiChatClient withCandidateCount(Integer maxTokens) {
 		this.candidateCount = maxTokens;
+		return this;
 	}
 
 	@Override

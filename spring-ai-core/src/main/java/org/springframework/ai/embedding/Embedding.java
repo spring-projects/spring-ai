@@ -3,21 +3,35 @@ package org.springframework.ai.embedding;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Represents a single embedding vector.
+ */
 public class Embedding {
 
 	private List<Double> embedding;
 
 	private Integer index;
 
+	/**
+	 * Creates a new {@link Embedding} instance.
+	 * @param embedding the embedding vector values.
+	 * @param index the embedding index in a list of embeddings.
+	 */
 	public Embedding(List<Double> embedding, Integer index) {
 		this.embedding = embedding;
 		this.index = index;
 	}
 
+	/**
+	 * @return Get the embedding vector values.
+	 */
 	public List<Double> getEmbedding() {
 		return embedding;
 	}
 
+	/**
+	 * @return Get the embedding index in a list of embeddings.
+	 */
 	public Integer getIndex() {
 		return index;
 	}
