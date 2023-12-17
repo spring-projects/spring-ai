@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.openai.client;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,11 +33,13 @@ import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
+import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiGenerationMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -59,6 +62,12 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 	private String model = "gpt-3.5-turbo";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	public final RetryTemplate retryTemplate = RetryTemplate.builder()
+		.maxAttempts(10)
+		.retryOn(OpenAiApiException.class)
+		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
+		.build();
 
 	private final OpenAiApi openAiApi;
 
@@ -86,81 +95,86 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 	@Override
 	public AiResponse generate(Prompt prompt) {
 
-		List<Message> messages = prompt.getMessages();
+		return this.retryTemplate.execute(ctx -> {
+			List<Message> messages = prompt.getMessages();
 
-		List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
-			.map(m -> new ChatCompletionMessage(m.getContent(),
-					ChatCompletionMessage.Role.valueOf(m.getMessageType().getValue())))
-			.toList();
+			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
+				.map(m -> new ChatCompletionMessage(m.getContent(),
+						ChatCompletionMessage.Role.valueOf(m.getMessageType().getValue())))
+				.toList();
 
-		ResponseEntity<ChatCompletion> completionEntity = this.openAiApi.chatCompletionEntity(
-				new OpenAiApi.ChatCompletionRequest(chatCompletionMessages, this.model, this.temperature.floatValue()));
+			ResponseEntity<ChatCompletion> completionEntity = this.openAiApi
+				.chatCompletionEntity(new OpenAiApi.ChatCompletionRequest(chatCompletionMessages, this.model,
+						this.temperature.floatValue()));
 
-		var chatCompletion = completionEntity.getBody();
-		if (chatCompletion == null) {
-			logger.warn("No chat completion returned for request: {}", chatCompletionMessages);
-			return new AiResponse(List.of());
-		}
+			var chatCompletion = completionEntity.getBody();
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for request: {}", chatCompletionMessages);
+				return new AiResponse(List.of());
+			}
 
-		RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
-		List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-			return new Generation(choice.message().content(), Map.of("role", choice.message().role().name()))
-				.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
-		}).toList();
+			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+				return new Generation(choice.message().content(), Map.of("role", choice.message().role().name()))
+					.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
+			}).toList();
 
-		return new AiResponse(generations,
-				OpenAiGenerationMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
+			return new AiResponse(generations,
+					OpenAiGenerationMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
+		});
 	}
 
 	@Override
 	public Flux<AiResponse> generateStream(Prompt prompt) {
-		List<Message> messages = prompt.getMessages();
+		return this.retryTemplate.execute(ctx -> {
+			List<Message> messages = prompt.getMessages();
 
-		List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
-			.map(m -> new ChatCompletionMessage(m.getContent(),
-					ChatCompletionMessage.Role.valueOf(m.getMessageType().getValue())))
-			.toList();
+			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
+				.map(m -> new ChatCompletionMessage(m.getContent(),
+						ChatCompletionMessage.Role.valueOf(m.getMessageType().getValue())))
+				.toList();
 
-		Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi
-			.chatCompletionStream(new OpenAiApi.ChatCompletionRequest(chatCompletionMessages, this.model,
-					this.temperature.floatValue(), true));
+			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi
+				.chatCompletionStream(new OpenAiApi.ChatCompletionRequest(chatCompletionMessages, this.model,
+						this.temperature.floatValue(), true));
 
-		// For chunked responses, only the first chunk contains the choice role.
-		// The rest of the chunks with same ID share the same role.
-		ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			// For chunked responses, only the first chunk contains the choice role.
+			// The rest of the chunks with same ID share the same role.
+			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-		// An alternative implementation that returns Flux<Generation> instead of
-		// Flux<AiResponse>.
-		// Flux<Generation> generationFlux = completionChunks.map(chunk -> {
-		// String chunkId = chunk.id();
-		// return chunk.choices().stream()
-		// .map(choice -> {
-		// if (choice.delta().role() != null) {
-		// roleMap.putIfAbsent(chunkId, choice.delta().role().name());
-		// }
-		// return new Generation(choice.delta().content(),
-		// Map.of("role", roleMap.get(chunkId)));
-		// })
-		// .toList();
-		// }).flatMapIterable(generations -> generations);
-		// return generationFlux;
+			// An alternative implementation that returns Flux<Generation> instead of
+			// Flux<AiResponse>.
+			// Flux<Generation> generationFlux = completionChunks.map(chunk -> {
+			// String chunkId = chunk.id();
+			// return chunk.choices().stream()
+			// .map(choice -> {
+			// if (choice.delta().role() != null) {
+			// roleMap.putIfAbsent(chunkId, choice.delta().role().name());
+			// }
+			// return new Generation(choice.delta().content(),
+			// Map.of("role", roleMap.get(chunkId)));
+			// })
+			// .toList();
+			// }).flatMapIterable(generations -> generations);
+			// return generationFlux;
 
-		return completionChunks.map(chunk -> {
-			String chunkId = chunk.id();
-			List<Generation> generations = chunk.choices().stream().map(choice -> {
-				if (choice.delta().role() != null) {
-					roleMap.putIfAbsent(chunkId, choice.delta().role().name());
-				}
-				var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
-				if (choice.finishReason() != null) {
-					generation = generation.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
-				}
-				return generation;
-			}).toList();
-			return new AiResponse(generations);
+			return completionChunks.map(chunk -> {
+				String chunkId = chunk.id();
+				List<Generation> generations = chunk.choices().stream().map(choice -> {
+					if (choice.delta().role() != null) {
+						roleMap.putIfAbsent(chunkId, choice.delta().role().name());
+					}
+					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
+					if (choice.finishReason() != null) {
+						generation = generation
+							.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
+					}
+					return generation;
+				}).toList();
+				return new AiResponse(generations);
+			});
 		});
-
 	}
 
 }

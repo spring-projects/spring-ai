@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,7 +53,7 @@ public class OpenAiApi {
 
 	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
 	private static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
-	private static final String SSE_DONE = "[DONE]";
+	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
 	private final WebClient webClient;
@@ -75,7 +77,7 @@ public class OpenAiApi {
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
 
-		this.objectMapper = new ObjectMapper();
+		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(openAiToken);
@@ -623,10 +625,10 @@ public class OpenAiApi {
 				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 				.retrieve()
 				.bodyToFlux(String.class)
-				// cancels the flux stream after the SSE_DONE is received.
-				.takeUntil(content -> content.contains(SSE_DONE))
-				// filters out the SSE_DONE message.
-				.filter(content -> !content.contains(SSE_DONE))
+				// cancels the flux stream after the "[DONE]" is received.
+				.takeUntil(SSE_DONE_PREDICATE)
+				// filters out the "[DONE]" message.
+				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> parseJson(content, ChatCompletionChunk.class));
 	}
 
