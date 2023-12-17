@@ -16,29 +16,29 @@
 
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 // @formatter:off
 /**
@@ -74,8 +74,8 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
-
-		this.objectMapper = new ObjectMapper();
+		// Use the same ObjectMapper for WebClient's response as the one used in RestClient.
+		this.objectMapper = Jackson2ObjectMapperBuilder.json().build();
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(openAiToken);
@@ -533,7 +533,15 @@ public class OpenAiApi {
 		public record ChunkChoice(
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
-				@JsonProperty("delta") ChatCompletionMessage delta) {
+				@JsonProperty("delta") Delta delta
+		) {
+			// The delta used in ChatCompletionChunk is not identical to ChatCompletion's ChatCompletionMessage, so a Delta record needs to be defined separately.
+			public record Delta(
+
+					@JsonProperty("role") ChatCompletionMessage.Role role,
+
+					@JsonProperty("content") String content) {
+			}
 		}
 	}
 
