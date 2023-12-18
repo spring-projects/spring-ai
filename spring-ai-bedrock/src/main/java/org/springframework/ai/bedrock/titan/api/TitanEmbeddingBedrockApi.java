@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// @formatter:off
+
 package org.springframework.ai.bedrock.titan.api;
 
-import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -25,10 +23,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
+import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
+import org.springframework.util.Assert;
 
 /**
  * Java client for the Bedrock Titan Embedding model.
@@ -37,8 +36,9 @@ import org.springframework.core.io.DefaultResourceLoader;
  * @author Christian Tzolov
  * @since 0.8.0
  */
+// @formatter:off
 public class TitanEmbeddingBedrockApi extends
-		AbstractBedrockApi<TitanEmbeddingBedrockApi.TitanEmbeddingRequest, TitanEmbeddingBedrockApi.TitanEmbeddingResponse, TitanEmbeddingBedrockApi.TitanEmbeddingResponse> {
+		AbstractBedrockApi<TitanEmbeddingRequest, TitanEmbeddingResponse, TitanEmbeddingResponse> {
 
 	/**
 	 * Create a new TitanEmbeddingBedrockApi instance using the default credentials provider and default object
@@ -75,13 +75,39 @@ public class TitanEmbeddingBedrockApi extends
 			@JsonProperty("inputText") String inputText,
 			@JsonProperty("inputImage") String inputImage) {
 
-		/**
-		 * Shortcut constructor to create a TitanEmbeddingRequest with only the inputText parameter.
-		 * @param inputText The text to compute the embedding for.
-		 */
-		TitanEmbeddingRequest(String inputText) {
-			this(inputText, null);
+
+		public static Builder builder() {
+			return new Builder();
 		}
+
+		/**
+		 * TitanEmbeddingRequest builder.
+		 */
+		public static class Builder {
+
+			private String inputText;
+			private String inputImage;
+
+			public Builder withInputText(String inputText) {
+				this.inputText = inputText;
+				return this;
+			}
+
+			public Builder withInputImage(String inputImage) {
+				this.inputImage = inputImage;
+				return this;
+			}
+
+			public TitanEmbeddingRequest build() {
+				Assert.isTrue(this.inputText != null || this.inputImage != null,
+						"At least one of the inputText or inputImage parameters must be provided!");
+				Assert.isTrue(!(this.inputText != null && this.inputImage != null),
+						"Only one of the inputText or inputImage parameters must be provided!");
+
+				return new TitanEmbeddingRequest(this.inputText, this.inputImage);
+			}
+		}
+
 	}
 
 	/**
@@ -129,33 +155,5 @@ public class TitanEmbeddingBedrockApi extends
 	public TitanEmbeddingResponse embedding(TitanEmbeddingRequest request) {
 		return this.internalInvocation(request, TitanEmbeddingResponse.class);
 	}
-
-	/**
-	 * TODO: to remove.
-	 *
-	 * @param args blank.
-	 */
-	public static void main(String[] args) throws IOException {
-		TitanEmbeddingBedrockApi api = new TitanEmbeddingBedrockApi(
-				TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(),
-				Region.US_EAST_1.id());
-
-		TitanEmbeddingRequest request = new TitanEmbeddingRequest("I like to eat apples.");
-		TitanEmbeddingResponse response = api.embedding(request);
-		System.out.println(response);
-
-		TitanEmbeddingBedrockApi api2 = new TitanEmbeddingBedrockApi(
-				TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
-				Region.US_EAST_1.id());
-
-		byte[] image = new DefaultResourceLoader().getResource("classpath:/spring_framework.png")
-				.getContentAsByteArray();
-		String imageBase64 = Base64.getEncoder().encodeToString(image);
-		System.out.println(imageBase64.length());
-		TitanEmbeddingRequest request2 = new TitanEmbeddingRequest(null, imageBase64);
-		System.out.println(api2.embedding(request2));
-
-	}
-
 }
 // @formatter:on
