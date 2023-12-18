@@ -27,7 +27,7 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2Chat
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov

@@ -21,10 +21,11 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
+import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
+import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
+
 
 /**
  * Java client for the Bedrock Jurassic2 chat model.
@@ -34,7 +35,7 @@ import org.springframework.ai.bedrock.api.AbstractBedrockApi;
  * @since 0.8.0
  */
 public class Ai21Jurassic2ChatBedrockApi extends
-		AbstractBedrockApi<Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest, Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse, Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse> {
+		AbstractBedrockApi<Ai21Jurassic2ChatRequest, Ai21Jurassic2ChatResponse, Ai21Jurassic2ChatResponse> {
 
 	/**
 	 * Create a new Ai21Jurassic2ChatBedrockApi instance using the default credentials provider chain, the default
@@ -271,34 +272,6 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	@Override
 	public Ai21Jurassic2ChatResponse chatCompletion(Ai21Jurassic2ChatRequest request) {
 		return this.internalInvocation(request, Ai21Jurassic2ChatResponse.class);
-	}
-
-	/**
-	 * TODO: to remove.
-	 *
-	 * @param args blank.
-	 */
-	public static void main(String[] args) {
-
-		Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(
-				Ai21Jurassic2ChatCompletionModel.AI21_J2_ULTRA_V1.id(), Region.US_EAST_1.id());
-
-		Ai21Jurassic2ChatRequest request = new Ai21Jurassic2ChatRequest(
-				"Hello, how are you?",
-				0.9f,
-				0.9f,
-				100,
-				null, // List.of("END"),
-				new Ai21Jurassic2ChatRequest.IntegerScalePenalty(1, true, true, true, true, true),
-				new Ai21Jurassic2ChatRequest.FloatScalePenalty(0.5f, true, true, true, true, true),
-				new Ai21Jurassic2ChatRequest.IntegerScalePenalty(1, true, true, true, true, true));
-
-		Ai21Jurassic2ChatResponse response = api.chatCompletion(request);
-		System.out.println(response);
-
-		Flux<Ai21Jurassic2ChatResponse> responseStream = api.chatCompletionStream(request);
-		responseStream.subscribe(System.out::println);
-
 	}
 }
 // @formatter:on
