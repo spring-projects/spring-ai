@@ -82,7 +82,7 @@ The primary roles are:
 * System Role: Guides the AI's behavior and response style, setting parameters or rules for how the AI interprets and replies to the input. It's akin to providing instructions to the AI before initiating a conversation.
 * User Role: Represents the user's input – their questions, commands, or statements to the AI. This role is fundamental as it forms the basis of the AI's response.
 * Assistant Role: The AI's response to the user's input. More than just an answer or reaction, it's crucial for maintaining the flow of the conversation. By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
-Function Role: This role deals with specific tasks or operations during the conversation. While the System Role sets the AI's overall behavior, the Function Role focuses on carrying out certain actions or commands the user asks for. It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking. This role allows the AI to offer practical help in addition to conversational responses.
+* Function Role: This role deals with specific tasks or operations during the conversation. While the System Role sets the AI's overall behavior, the Function Role focuses on carrying out certain actions or commands the user asks for. It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking. This role allows the AI to offer practical help in addition to conversational responses.
 
 Roles are represented as an enumeration in Spring AI as shown below
 
@@ -228,8 +228,8 @@ List<Generation> response = aiClient.generate(prompt).getGenerations();
 
 ```
 
-This shows how you can build up the `Prompt` instance by using the `SystemPromptTemplate to create a `Message` with the system role passing in placeholder values.
-The message with the role `user` is then combined with the message of the role `system` to form the form the prompt.
+This shows how you can build up the `Prompt` instance by using the `SystemPromptTemplate` to create a `Message` with the system role passing in placeholder values.
+The message with the role `user` is then combined with the message of the role `system` to form the prompt.
 The prompt is then passed to the AiClient to get a generative response.
 
 
