@@ -50,8 +50,8 @@ public class OpenAiRateLimit implements RateLimit {
 
 	private final Duration tokensReset;
 
-	public OpenAiRateLimit(Long requestsLimit, Long requestsRemaining, Duration requestsReset, Long tokensLimit,
-			Long tokensRemaining, Duration tokensReset) {
+	public OpenAiRateLimit(@Nullable Long requestsLimit, @Nullable Long requestsRemaining, Duration requestsReset,
+						   @Nullable Long tokensLimit, @Nullable Long tokensRemaining, Duration tokensReset) {
 
 		this.requestsLimit = requestsLimit;
 		this.requestsRemaining = requestsRemaining;
