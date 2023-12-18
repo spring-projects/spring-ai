@@ -48,7 +48,6 @@ public class AnthropicChatBedrockApiIT {
 			.withTemperature(0.8f)
 			.withMaxTokensToSample(300)
 			.withTopK(10)
-			// .withStopSequences(List.of("\n\nHuman:"))
 			.build();
 
 		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);

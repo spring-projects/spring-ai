@@ -21,7 +21,7 @@ import java.util.List;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.BedrockUsage;
-import org.springframework.ai.bedrock.MessageToPromptStrategy;
+import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
@@ -135,7 +135,7 @@ public class BedrockCohereChatClient implements AiClient, AiStreamClient {
 	}
 
 	private CohereChatRequest createRequest(Prompt prompt, boolean stream) {
-		final String promptValue = MessageToPromptStrategy.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
 
 		return CohereChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)

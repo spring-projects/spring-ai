@@ -20,7 +20,7 @@ import java.util.List;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.bedrock.MessageToPromptStrategy;
+import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
@@ -89,7 +89,7 @@ public class BedrockAnthropicChatClient implements AiClient, AiStreamClient {
 
 	@Override
 	public AiResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptStrategy.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -108,7 +108,7 @@ public class BedrockAnthropicChatClient implements AiClient, AiStreamClient {
 	@Override
 	public Flux<AiResponse> generateStream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptStrategy.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)

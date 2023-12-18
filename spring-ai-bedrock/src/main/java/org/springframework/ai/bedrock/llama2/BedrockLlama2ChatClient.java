@@ -20,7 +20,7 @@ import java.util.List;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.bedrock.MessageToPromptStrategy;
+import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
@@ -69,7 +69,7 @@ public class BedrockLlama2ChatClient implements AiClient, AiStreamClient {
 
 	@Override
 	public AiResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptStrategy.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
 
 		var request = Llama2ChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -86,7 +86,7 @@ public class BedrockLlama2ChatClient implements AiClient, AiStreamClient {
 	@Override
 	public Flux<AiResponse> generateStream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptStrategy.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
 
 		var request = Llama2ChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)

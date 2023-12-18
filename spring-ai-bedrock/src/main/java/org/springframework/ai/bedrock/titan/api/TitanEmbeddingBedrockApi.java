@@ -115,7 +115,7 @@ public class TitanEmbeddingBedrockApi extends
 	 *
 	 * @param embedding The embedding vector.
 	 * @param inputTextTokenCount The number of tokens in the input text.
-	 * @param message TODO
+	 * @param message No idea what this is.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TitanEmbeddingResponse(

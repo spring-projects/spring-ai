@@ -23,15 +23,12 @@ import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.MessageType;
 
 /**
- * Converts a list of messages to a prompt for particular model.
- *
- * TODO: consider factoring out this into an interface and provide different
- * implementations for different models.
+ * Converts a list of messages to a prompt for bedrock models.
  *
  * @author Christian Tzolov
  * @since 0.8.0
  */
-public class MessageToPromptStrategy {
+public class MessageToPromptConverter {
 
 	private static final String HUMAN_PROMPT = "Human:";
 
@@ -41,19 +38,19 @@ public class MessageToPromptStrategy {
 
 	private String assistantPrompt = ASSISTANT_PROMPT;
 
-	private MessageToPromptStrategy() {
+	private MessageToPromptConverter() {
 	}
 
-	public static MessageToPromptStrategy create() {
-		return new MessageToPromptStrategy();
+	public static MessageToPromptConverter create() {
+		return new MessageToPromptConverter();
 	}
 
-	public MessageToPromptStrategy withHumanPrompt(String humanPrompt) {
+	public MessageToPromptConverter withHumanPrompt(String humanPrompt) {
 		this.humanPrompt = humanPrompt;
 		return this;
 	}
 
-	public MessageToPromptStrategy withAssistantPrompt(String assistantPrompt) {
+	public MessageToPromptConverter withAssistantPrompt(String assistantPrompt) {
 		this.assistantPrompt = assistantPrompt;
 		return this;
 	}
@@ -71,7 +68,7 @@ public class MessageToPromptStrategy {
 			.map(this::messageToString)
 			.collect(Collectors.joining("\n"));
 
-		final String prompt = String.format("%s\n\n%s\n%s", systemMessages, userMessages, ASSISTANT_PROMPT);
+		final String prompt = String.format("%s%n%n%s%n%s", systemMessages, userMessages, ASSISTANT_PROMPT);
 
 		return prompt;
 	}

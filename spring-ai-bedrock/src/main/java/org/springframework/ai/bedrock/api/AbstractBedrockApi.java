@@ -185,7 +185,6 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.build();
 
 		InvokeModelResponse response = this.client.invokeModel(invokeRequest);
-		// BedrockRuntimeResponseMetadata metadata = response.responseMetadata();
 
 		String responseBody = response.body().asString(StandardCharsets.UTF_8);
 
