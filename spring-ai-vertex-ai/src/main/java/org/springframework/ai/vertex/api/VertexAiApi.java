@@ -187,12 +187,13 @@ public class VertexAiApi {
 		record EmbeddingResponse(Embedding embedding) {
 		}
 
-		return this.restClient.post()
-			.uri("/models/{model}:embedText?key={apiKey}", this.embeddingModel, this.apiKey)
-			.body(Map.of("text", text))
-			.retrieve()
-			.body(EmbeddingResponse.class)
-			.embedding();
+		EmbeddingResponse response = this.restClient.post()
+				.uri("/models/{model}:embedText?key={apiKey}", this.embeddingModel, this.apiKey)
+				.body(Map.of("text", text))
+				.retrieve()
+				.body(EmbeddingResponse.class);
+
+		return response != null ? response.embedding() : null;
 	}
 
 	/**
@@ -207,13 +208,14 @@ public class VertexAiApi {
 		record BatchEmbeddingResponse(List<Embedding> embeddings) {
 		}
 
-		return this.restClient.post()
-			.uri("/models/{model}:batchEmbedText?key={apiKey}", this.embeddingModel, this.apiKey)
-			// https://developers.generativeai.google/api/rest/generativelanguage/models/batchEmbedText#request-body
-			.body(Map.of("texts", texts))
-			.retrieve()
-			.body(BatchEmbeddingResponse.class)
-			.embeddings();
+		BatchEmbeddingResponse response = this.restClient.post()
+				.uri("/models/{model}:batchEmbedText?key={apiKey}", this.embeddingModel, this.apiKey)
+				// https://developers.generativeai.google/api/rest/generativelanguage/models/batchEmbedText#request-body
+				.body(Map.of("texts", texts))
+				.retrieve()
+				.body(BatchEmbeddingResponse.class);
+
+		return response != null ? response.embeddings() : null;
 	}
 
 	/**
@@ -228,12 +230,13 @@ public class VertexAiApi {
 		record TokenCount(@JsonProperty("tokenCount") Integer tokenCount) {
 		}
 
-		return this.restClient.post()
-			.uri("/models/{model}:countMessageTokens?key={apiKey}", this.generateModel, this.apiKey)
-			.body(Map.of("prompt", prompt))
-			.retrieve()
-			.body(TokenCount.class)
-			.tokenCount();
+		TokenCount tokenCountResponse = this.restClient.post()
+				.uri("/models/{model}:countMessageTokens?key={apiKey}", this.generateModel, this.apiKey)
+				.body(Map.of("prompt", prompt))
+				.retrieve()
+				.body(TokenCount.class);
+
+		return tokenCountResponse != null ? tokenCountResponse.tokenCount() : null;
 	}
 
 	/**
@@ -248,12 +251,14 @@ public class VertexAiApi {
 			}
 		}
 
-		return this.restClient.get()
+
+		ModelList modelList = this.restClient.get()
 			.uri("/models?key={apiKey}", this.apiKey)
 			.retrieve()
-			.body(ModelList.class)
-			.models()
-			.stream()
+			.body(ModelList.class);
+
+		return modelList == null ? List.of() :
+			modelList.models().stream()
 			.map(ModelList.ModelName::name)
 			.toList();
 	}
