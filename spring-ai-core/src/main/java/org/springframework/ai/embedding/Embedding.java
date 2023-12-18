@@ -39,7 +39,7 @@ public class Embedding {
 
 	@Override
 	public String toString() {
-		String message = this.embedding.size() == 0 ? "<empty>" : "<has data>";
+		String message = this.embedding.isEmpty() ? "<empty>" : "<has data>";
 		return "Embedding{" + "embedding=" + message + ", index=" + index + '}';
 	}
 
