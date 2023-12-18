@@ -30,6 +30,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-weaviate-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
@@ -42,6 +43,7 @@
 		<module>vector-stores/spring-ai-chroma</module>
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
+		<module>vector-stores/spring-ai-redis</module>
 		<module>spring-ai-vertex-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
 

@@ -93,6 +93,10 @@ public interface DocumentWriter extends Consumer<List<Document>> {
 *Neo4jVectorStore*::
 + Leverages the Neo4j graph database for vector storage.
 
+*RedisVectorStore*::
++ Provides vector storage capabilities using Redis.
+
+
 == Using PDF Reader
 
 
