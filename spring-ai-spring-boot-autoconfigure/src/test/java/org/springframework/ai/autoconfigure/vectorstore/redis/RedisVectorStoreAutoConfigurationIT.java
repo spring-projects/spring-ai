@@ -43,53 +43,52 @@ import com.redis.testcontainers.RedisStackContainer;
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
 
-    @Container
-    static RedisStackContainer redisContainer = new RedisStackContainer(
-            RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
+	@Container
+	static RedisStackContainer redisContainer = new RedisStackContainer(
+			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
-    List<Document> documents = List.of(
-            new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
-            new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")),
-            new Document(ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
+	List<Document> documents = List.of(
+			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
+			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
+					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(RedisVectorStoreAutoConfiguration.class))
-            .withUserConfiguration(Config.class)
-            .withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
-            .withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(RedisVectorStoreAutoConfiguration.class))
+		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
+		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
 
-    @Test
-    void addAndSearch() {
-        contextRunner
-          .withPropertyValues("spring.ai.vectorstore.redis.uri=" + redisContainer.getRedisURI())
-          .run(context -> {
-            VectorStore vectorStore = context.getBean(VectorStore.class);
-            vectorStore.add(documents);
+	@Test
+	void addAndSearch() {
+		contextRunner.withPropertyValues("spring.ai.vectorstore.redis.uri=" + redisContainer.getRedisURI())
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				vectorStore.add(documents);
 
-            List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
-            assertThat(results).hasSize(1);
-            Document resultDoc = results.get(0);
-            assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-            assertThat(resultDoc.getContent())
-                    .contains("Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getContent()).contains(
+						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-            // Remove all documents from the store
-            vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+				// Remove all documents from the store
+				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-            results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-            assertThat(results).isEmpty();
-        });
-    }
+				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				assertThat(results).isEmpty();
+			});
+	}
 
-    @Configuration(proxyBeanMethods = false)
-    static class Config {
+	@Configuration(proxyBeanMethods = false)
+	static class Config {
 
-        @Bean
-        public EmbeddingClient embeddingClient() {
-            return new TransformersEmbeddingClient();
-        }
+		@Bean
+		public EmbeddingClient embeddingClient() {
+			return new TransformersEmbeddingClient();
+		}
 
-    }
+	}
 
 }

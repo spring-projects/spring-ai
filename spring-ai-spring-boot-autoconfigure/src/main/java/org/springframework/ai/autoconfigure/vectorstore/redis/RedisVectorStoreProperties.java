@@ -26,36 +26,36 @@ import static org.springframework.ai.autoconfigure.vectorstore.redis.RedisVector
 @ConfigurationProperties(CONFIG_PREFIX)
 public class RedisVectorStoreProperties {
 
-    public static final String CONFIG_PREFIX = "spring.ai.vectorstore.redis";
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.redis";
 
-    private String uri = "redis://localhost:6379";
+	private String uri = "redis://localhost:6379";
 
-    private String index;
+	private String index;
 
-    private String prefix;
-    
-    public String getUri() {
-        return uri;
-    }
-    
-    public void setUri(String uri) {
-        this.uri = uri;
-    }
-    
-    public String getIndex() {
-        return index;
-    }
-    
-    public void setIndex(String name) {
-        this.index = name;
-    }
-    
-    public String getPrefix() {
-        return prefix;
-    }
+	private String prefix;
 
-    public void setPrefix(String prefix) {
-        this.prefix = prefix;
-    }
+	public String getUri() {
+		return uri;
+	}
+
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+
+	public String getIndex() {
+		return index;
+	}
+
+	public void setIndex(String name) {
+		this.index = name;
+	}
+
+	public String getPrefix() {
+		return prefix;
+	}
+
+	public void setPrefix(String prefix) {
+		this.prefix = prefix;
+	}
 
 }

@@ -25,24 +25,24 @@ import org.junit.jupiter.api.Test;
  */
 class RedisVectorStorePropertiesTests {
 
-    @Test
-    void defaultValues() {
-        var props = new RedisVectorStoreProperties();
-        assertThat(props.getUri()).isEqualTo("redis://localhost:6379");
-        assertThat(props.getIndex()).isNull();
-        assertThat(props.getPrefix()).isNull();
-    }
+	@Test
+	void defaultValues() {
+		var props = new RedisVectorStoreProperties();
+		assertThat(props.getUri()).isEqualTo("redis://localhost:6379");
+		assertThat(props.getIndex()).isNull();
+		assertThat(props.getPrefix()).isNull();
+	}
 
-    @Test
-    void customValues() {
-        var props = new RedisVectorStoreProperties();
-        props.setUri("redis://redis.com:12345");
-        props.setIndex("myIdx");
-        props.setPrefix("doc:");
+	@Test
+	void customValues() {
+		var props = new RedisVectorStoreProperties();
+		props.setUri("redis://redis.com:12345");
+		props.setIndex("myIdx");
+		props.setPrefix("doc:");
 
-        assertThat(props.getUri()).isEqualTo("redis://redis.com:12345");
-        assertThat(props.getIndex()).isEqualTo("myIdx");
-        assertThat(props.getPrefix()).isEqualTo("doc:");
-    }
+		assertThat(props.getUri()).isEqualTo("redis://redis.com:12345");
+		assertThat(props.getIndex()).isEqualTo("myIdx");
+		assertThat(props.getPrefix()).isEqualTo("doc:");
+	}
 
 }
