@@ -176,6 +176,15 @@ Following vector stores are supported:
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
 ```
+* Neo4j
+
+```xml
+    <dependency>
+        <groupId>org.springframework.ai</groupId> 
+        <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </dependency>
+```
 
 ## Workshop
 
