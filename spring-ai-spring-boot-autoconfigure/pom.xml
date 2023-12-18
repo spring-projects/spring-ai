@@ -132,6 +132,21 @@
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
+		
+		<!-- Redis Vector Store-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-redis</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+		
+		<!-- Override Jedis version -->
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>5.1.0</version>
+		</dependency>		
 
 		<!-- Vertex AI LLM -->
 		<dependency>
@@ -184,6 +199,13 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.redis</groupId>
+			<artifactId>testcontainers-redis</artifactId>
+			<version>2.0.1</version>
 			<scope>test</scope>
 		</dependency>
 
