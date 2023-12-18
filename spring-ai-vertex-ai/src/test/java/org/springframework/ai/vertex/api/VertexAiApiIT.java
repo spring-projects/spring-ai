@@ -119,7 +119,7 @@ public class VertexAiApiIT {
 
 		System.out.println(model);
 		assertThat(model).isNotNull();
-		assertThat(model.displayName()).isEqualTo("Chat Bison");
+		assertThat(model.displayName()).isEqualTo("PaLM 2 Chat (Legacy)");
 	}
 
 }
