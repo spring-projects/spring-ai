@@ -1,0 +1,183 @@
+= Redis
+
+This section walks you through setting up `RedisVectorStore` to store document embeddings and perform similarity searches.
+
+== What is Redis?
+
+link:https://redis.io[Redis] is an open source (BSD licensed), in-memory data structure store used as a database, cache, message broker, and streaming engine. Redis provides data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes, and streams.
+
+== What is Redis Vector Search?
+
+link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] extends the core features of Redis OSS and allows you to use Redis as a vector database:
+
+* Store vectors and the associated metadata within hashes or JSON documents
+* Retrieve vectors
+* Perform vector searches
+
+== Prerequisites
+
+1. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+
+- `Transformers Embedding` - computes the embedding in your local environment. Follow the ONNX Transformers Embedding instructions.
+- `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
+- You can also use the `Azure OpenAI Embedding`.
+
+2. A Redis Stack instance
+a. https://app.redislabs.com/#/[Redis Cloud] (recommended)
+b. link:https://hub.docker.com/r/redis/redis-stack[Docker] image _redis/redis-stack:latest_
+
+
+== Dependencies
+
+Add these dependencies to your project:
+
+* Embedding Client boot starter, required for calculating embeddings.
+
+* Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions.
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-transformers-embedding-spring-boot-starter</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or use OpenAI (Cloud)
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+You'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+
+[source,bash]
+----
+export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+----
+
+* Add the Redis Vector Store and Jedis dependencies
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-redis-store</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+
+<dependency>
+    <groupId>redis.clients</groupId>
+    <artifactId>jedis</artifactId>
+    <version>5.1.0</version>
+</dependency>
+----
+
+== Usage
+
+Create a RedisVectorStore instance connected to your Redis database:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+  RedisVectorStoreConfig config = RedisVectorStoreConfig.builder()
+     .withURI("redis://localhost:6379")
+     // Define the metadata fields to be used
+     // in the similarity search filters.
+     .withMetadataFields(
+        MetadataField.tag("country"),
+        MetadataField.numeric("year"))
+     .build();
+
+  return new RedisVectorStore(config, embeddingClient);
+}
+----
+
+> [NOTE]
+> You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
+> The `withMetadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
+>
+
+Then in your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
+   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
+   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+Now add the documents to your vector store:
+
+
+[source,java]
+----
+vectorStore.add(List.of(document));
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest
+      .query("Spring")
+      .withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with RedisVectorStore as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = Filter.builder();
+
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+----
+
+The portable filter expressions get automatically converted into link:https://redis.io/docs/interact/search-and-query/query/[Redis search queries].
+For example, the following portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into Redis query:
+
+[source]
+----
+@country:{UK | NL} @year:[2020 inf]
+----

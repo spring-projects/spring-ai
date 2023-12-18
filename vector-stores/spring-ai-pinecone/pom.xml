@@ -14,11 +14,11 @@
     <description>spring-ai-pinecone</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
-    <scm>
-        <url>https://github.com/spring-projects/spring-ai</url>
-        <connection>git://github.com/spring-projects/spring-ai.git</connection>
-        <developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
-    </scm>
+	<scm>
+		<url>https://github.com/spring-projects-experimental/spring-ai</url>
+		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+	</scm>
 
     <properties>
         <maven.compiler.target>17</maven.compiler.target>

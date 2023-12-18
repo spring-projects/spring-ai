@@ -16,6 +16,7 @@
 *** xref:api/vectordbs/neo4j.adoc[]
 *** xref:api/vectordbs/pgvector.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
+*** xref:api/vectordbs/redis.adoc[]
 ** xref:api/testing.adoc[]
 * Appendices
 ** xref:glossary.adoc[]
