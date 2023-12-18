@@ -38,27 +38,14 @@
 			<version>${antlr.version}</version>
 		</dependency>
 
-
-		<!-- TODO replace webflux by reactor-core-->
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-core</artifactId>
 		</dependency>
-		<!-- <dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-core</artifactId>
-		</dependency> -->
-
 
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-messaging</artifactId>
-		</dependency>
-
-		<!-- TODO Get rid off starter-json -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-json</artifactId>
 		</dependency>
 
 		<dependency>
