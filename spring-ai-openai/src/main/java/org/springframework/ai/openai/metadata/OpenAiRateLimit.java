@@ -19,6 +19,7 @@ package org.springframework.ai.openai.metadata;
 import java.time.Duration;
 
 import org.springframework.ai.metadata.RateLimit;
+import org.springframework.lang.Nullable;
 
 /**
  * {@link RateLimit} implementation for {@literal OpenAI}.
@@ -33,12 +34,16 @@ public class OpenAiRateLimit implements RateLimit {
 
 	private static final String RATE_LIMIT_STRING = "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s; tokensRemaining: %6$s; tokensReset: %7$s }";
 
+	@Nullable
 	private final Long requestsLimit;
 
+	@Nullable
 	private final Long requestsRemaining;
 
+	@Nullable
 	private final Long tokensLimit;
 
+	@Nullable
 	private final Long tokensRemaining;
 
 	private final Duration requestsReset;
@@ -57,21 +62,25 @@ public class OpenAiRateLimit implements RateLimit {
 	}
 
 	@Override
+	@Nullable
 	public Long getRequestsLimit() {
 		return this.requestsLimit;
 	}
 
 	@Override
+	@Nullable
 	public Long getTokensLimit() {
 		return this.tokensLimit;
 	}
 
 	@Override
+	@Nullable
 	public Long getRequestsRemaining() {
 		return this.requestsRemaining;
 	}
 
 	@Override
+	@Nullable
 	public Long getTokensRemaining() {
 		return this.tokensRemaining;
 	}
