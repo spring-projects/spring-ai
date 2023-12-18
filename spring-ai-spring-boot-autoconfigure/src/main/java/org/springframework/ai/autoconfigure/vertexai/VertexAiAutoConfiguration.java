@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vertexai;
 
+import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.ai.vertex.embedding.VertexAiEmbeddingClient;
 import org.springframework.ai.vertex.generation.VertexAiChatClient;
@@ -24,10 +25,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.web.client.RestClient;
 
 @AutoConfiguration
 @ConditionalOnClass(VertexAiApi.class)
+@ImportRuntimeHints(NativeHints.class)
 @EnableConfigurationProperties({ VertexAiConnectionProperties.class, VertexAiChatProperties.class,
 		VertexAiEmbeddingProperties.class })
 public class VertexAiAutoConfiguration {
