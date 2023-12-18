@@ -39,6 +39,8 @@ public class OpenAiGenerationMetadata implements GenerationMetadata {
 
 	public static OpenAiGenerationMetadata from(OpenAiApi.ChatCompletion result) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
+		Assert.notNull(result.id(), "ChatCompletionResult id must not be null");
+		Assert.notNull(result.usage(), "ChatCompletionResult usage must not be null");
 		OpenAiUsage usage = OpenAiUsage.from(result.usage());
 		OpenAiGenerationMetadata generationMetadata = new OpenAiGenerationMetadata(result.id(), usage);
 		OpenAiHttpResponseHeadersInterceptor.applyTo(generationMetadata);
