@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// @formatter:off
 package org.springframework.ai.bedrock.titan.api;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
-import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
+import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
+import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse.CompletionReason;
+import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
 
 /**
  * Java client for the Bedrock Titan chat model.
@@ -37,9 +37,9 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
  * @author Christian Tzolov
  * @since 0.8.0
  */
-public class TitanChatBedrockApi
-		extends
-		AbstractBedrockApi<TitanChatBedrockApi.TitanChatRequest, TitanChatBedrockApi.TitanChatResponse, TitanChatBedrockApi.TitanChatResponseChunk> {
+// @formatter:off
+public class TitanChatBedrockApi extends
+		AbstractBedrockApi<TitanChatRequest, TitanChatResponse, TitanChatResponseChunk> {
 
 	TitanChatBedrockApi(String modelId, String region) {
 		super(modelId, region);
@@ -74,6 +74,58 @@ public class TitanChatBedrockApi
 				@JsonProperty("topP") Float topP,
 				@JsonProperty("maxTokenCount") Integer maxTokenCount,
 				@JsonProperty("stopSequences") List<String> stopSequences) {
+		}
+
+		public static Builder builder(String inputText) {
+			return new Builder(inputText);
+		}
+
+		public static class Builder {
+			private final String inputText;
+			private Float temperature;
+			private Float topP;
+			private Integer maxTokenCount;
+			private List<String> stopSequences;
+
+			public Builder(String inputText) {
+				this.inputText = inputText;
+			}
+
+			public Builder withTemperature(Float temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			public Builder withTopP(Float topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			public Builder withMaxTokenCount(Integer maxTokenCount) {
+				this.maxTokenCount = maxTokenCount;
+				return this;
+			}
+
+			public Builder withStopSequences(List<String> stopSequences) {
+				this.stopSequences = stopSequences;
+				return this;
+			}
+
+			public TitanChatRequest build() {
+
+				if (this.temperature == null && this.topP == null && this.maxTokenCount == null
+						&& this.stopSequences == null) {
+					return new TitanChatRequest(this.inputText, null);
+				} else {
+					return new TitanChatRequest(this.inputText,
+						new TextGenerationConfig(
+								this.temperature,
+								this.topP,
+								this.maxTokenCount,
+								this.stopSequences
+						));
+				}
+			}
 		}
 	}
 
@@ -173,32 +225,6 @@ public class TitanChatBedrockApi
 	@Override
 	public Flux<TitanChatResponseChunk> chatCompletionStream(TitanChatRequest request) {
 		return this.internalInvocationStream(request, TitanChatResponseChunk.class);
-	}
-
-	/**
-	 * TODO: to remove.
-	 *
-	 * @param args blank.
-	 */
-	public static void main(String[] args) {
-		// TitanChatBedrockApi titanBedrockApi = new
-		// TitanChatBedrockApi(TitanChatCompletionModel.TITAN_TEXT_LITE_V1.id(),
-		// Region.US_EAST_1.id());
-		TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(
-				TitanChatCompletionModel.TITAN_TEXT_EXPRESS_V1.id(),
-				Region.EU_CENTRAL_1.id());
-
-		TitanChatRequest titanChatRequest = new TitanChatRequest(
-				"What is the capital of Bulgaria and what is the size? What it the national anthem",
-				new TitanChatRequest.TextGenerationConfig(0.5f, 0.9f, 100, List.of("|")));
-
-		TitanChatResponse titanChatResponse = titanBedrockApi.chatCompletion(titanChatRequest);
-		System.out.println(titanChatResponse);
-
-		Flux<TitanChatResponseChunk> flux = titanBedrockApi.chatCompletionStream(titanChatRequest);
-		List<TitanChatResponseChunk> list = flux.collectList().block();
-		System.out.println(list.stream().map(e -> e.toString()).collect(Collectors.joining("\n")));
-
 	}
 }
 // @formatter:on
