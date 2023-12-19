@@ -92,9 +92,9 @@ Use the `BedrockCohereChatProperties` to configure the Bedrock Cohere Chat clien
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
-| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
-| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
-| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
+| spring.ai.bedrock.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.aws.secretKey  | AWS credentials secret key.  |  |
 | spring.ai.bedrock.cohere.chat.enable | Enable Bedrock Cohere chat client. Disabled by default | false |
 | spring.ai.bedrock.cohere.chat.model  | The model id to use. See the `CohereChatModel` for the supported models.  | cohere.command-text-v14 |
 | spring.ai.bedrock.cohere.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7 |

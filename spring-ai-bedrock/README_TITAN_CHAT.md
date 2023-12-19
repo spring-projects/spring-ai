@@ -72,9 +72,9 @@ Use the `BedrockTitanChatProperties` to configure the Bedrock Titan Chat client:
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
-| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
-| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
-| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
+| spring.ai.bedrock.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.aws.secretKey  | AWS credentials secret key.  |  |
 | spring.ai.bedrock.titan.chat.enable | Enable Bedrock Titan chat client. Disabled by default | false |
 | spring.ai.bedrock.titan.chat.model  | The model id to use. See the `TitanChatModel` for the supported models.  | amazon.titan-text-express-v1 |
 | spring.ai.bedrock.titan.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7 |

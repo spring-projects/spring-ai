@@ -80,9 +80,9 @@ Use the `BedrockLlama2ChatProperties` to configure the Bedrock Llama2 Chat clien
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
-| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
-| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
-| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
+| spring.ai.bedrock.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.aws.secretKey  | AWS credentials secret key.  |  |
 | spring.ai.bedrock.llama2.chat.enable | Enable Bedrock Llama2 chat client. Disabled by default | false |
 | spring.ai.bedrock.llama2.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7 |
 | spring.ai.bedrock.llama2.chat.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default |

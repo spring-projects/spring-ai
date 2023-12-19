@@ -65,9 +65,9 @@ Use the `BedrockCohereEmbeddingProperties` to configure the Bedrock Cohere Chat 
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
-| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
-| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
-| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
+| spring.ai.bedrock.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.aws.secretKey  | AWS credentials secret key.  |  |
 | spring.ai.bedrock.cohere.embedding.enable | Enable Bedrock Cohere embedding client. Disabled by default | false |
 | spring.ai.bedrock.cohere.embedding.model  | The model id to use. See the `CohereEmbeddingModel` for the supported models.  | cohere.embed-multilingual-v3 |
 | spring.ai.bedrock.cohere.embedding.inputType  | Prepends special tokens to differentiate each type from one another. You should not mix different types together, except when mixing types for for search and retrieval. In this case, embed your corpus with the search_document type and embedded queries with type search_query type.  | search_document |

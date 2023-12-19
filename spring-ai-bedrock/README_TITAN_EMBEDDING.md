@@ -87,9 +87,9 @@ Use the `BedrockTitanEmbeddingProperties` to configure the Bedrock Titan embeddi
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
-| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
-| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
-| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
+| spring.ai.bedrock.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.aws.secretKey  | AWS credentials secret key.  |  |
 | spring.ai.bedrock.titan.embedding.enable | Enable Bedrock Titan embedding client. Disabled by default | false |
 | spring.ai.bedrock.titan.embedding.model  | The model id to use. See the `TitanEmbeddingModel` for the supported models.  | amazon.titan-embed-image-v1 |
 | spring.ai.bedrock.titan.embedding.inputType  | Titan Embedding API input types. Could be either text or image (encoded in base64).  | TEXT |
