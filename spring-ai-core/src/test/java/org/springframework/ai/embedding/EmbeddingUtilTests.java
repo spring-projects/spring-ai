@@ -83,7 +83,7 @@ public class EmbeddingUtilTests {
 
 	@Test
 	public void testUnknownModelDimension() {
-		when(embeddingClient.embed(eq("Test String"))).thenReturn(List.of(0.1, 0.1, 0.1));
+		when(embeddingClient.embed(eq("Hello world!"))).thenReturn(List.of(0.1, 0.1, 0.1));
 		assertThat(EmbeddingUtil.dimensions(embeddingClient, "unknown_model", "Hello world!")).isEqualTo(3);
 	}
 
