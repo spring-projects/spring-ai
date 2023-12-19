@@ -14,5 +14,9 @@ org.springframework.ai.autoconfigure.vertexai.VertexAiAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.llama2.BedrockLlama2AutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereEmbeddingAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.anthropic.BedrockAnthropicChatAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
+
 
 
