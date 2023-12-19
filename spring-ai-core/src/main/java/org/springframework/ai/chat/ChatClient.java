@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client;
-
-import reactor.core.publisher.Flux;
+package org.springframework.ai.chat;
 
 import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.prompt.messages.UserMessage;
 
 @FunctionalInterface
-public interface AiStreamClient {
+public interface ChatClient {
 
-	public Flux<AiResponse> generateStream(Prompt prompt);
+	default String generate(String message) {
+		Prompt prompt = new Prompt(new UserMessage(message));
+		return generate(prompt).getGeneration().getContent();
+	}
+
+	ChatResponse generate(Prompt prompt);
 
 }

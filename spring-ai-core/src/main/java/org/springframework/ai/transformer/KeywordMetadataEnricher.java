@@ -19,7 +19,7 @@ package org.springframework.ai.transformer;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.client.AiClient;
+import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.prompt.Prompt;
@@ -44,18 +44,18 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 	/**
 	 * Model predictor
 	 */
-	private final AiClient aiClient;
+	private final ChatClient chatClient;
 
 	/**
 	 * The number of keywords to extract.
 	 */
 	private final int keywordCount;
 
-	public KeywordMetadataEnricher(AiClient aiClient, int keywordCount) {
-		Assert.notNull(aiClient, "AiClient must not be null");
+	public KeywordMetadataEnricher(ChatClient chatClient, int keywordCount) {
+		Assert.notNull(chatClient, "ChatClient must not be null");
 		Assert.isTrue(keywordCount >= 1, "Document count must be >= 1");
 
-		this.aiClient = aiClient;
+		this.chatClient = chatClient;
 		this.keywordCount = keywordCount;
 	}
 
@@ -65,7 +65,7 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 
 			var template = new PromptTemplate(String.format(KEYWORDS_TEMPLATE, keywordCount));
 			Prompt prompt = template.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getContent()));
-			String keywords = this.aiClient.generate(prompt).getGeneration().getContent();
+			String keywords = this.chatClient.generate(prompt).getGeneration().getContent();
 			document.getMetadata().putAll(Map.of(EXCERPT_KEYWORDS_METADATA_KEY, keywords));
 		}
 		return documents;

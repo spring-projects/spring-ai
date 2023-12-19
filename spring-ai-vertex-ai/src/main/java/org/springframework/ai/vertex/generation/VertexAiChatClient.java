@@ -19,9 +19,9 @@ package org.springframework.ai.vertex.generation;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.MessageType;
 import org.springframework.ai.vertex.api.VertexAiApi;
@@ -34,7 +34,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Christian Tzolov
  */
-public class VertexAiChatClient implements AiClient {
+public class VertexAiChatClient implements ChatClient {
 
 	private final VertexAiApi vertexAiApi;
 
@@ -71,7 +71,7 @@ public class VertexAiChatClient implements AiClient {
 	}
 
 	@Override
-	public AiResponse generate(Prompt prompt) {
+	public ChatResponse generate(Prompt prompt) {
 
 		String vertexContext = prompt.getMessages()
 			.stream()
@@ -99,7 +99,7 @@ public class VertexAiChatClient implements AiClient {
 			.map(vmsg -> new Generation(vmsg.content()))
 			.toList();
 
-		return new AiResponse(generations);
+		return new ChatResponse(generations);
 	}
 
 }

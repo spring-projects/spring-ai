@@ -8,12 +8,12 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.ChatResponse;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
@@ -52,7 +52,7 @@ class BedrockAnthropicChatClientIT {
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-		AiResponse response = client.generate(prompt);
+		ChatResponse response = client.generate(prompt);
 
 		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 	}
@@ -137,7 +137,7 @@ class BedrockAnthropicChatClientIT {
 			.collectList()
 			.block()
 			.stream()
-			.map(AiResponse::getGenerations)
+			.map(ChatResponse::getGenerations)
 			.flatMap(List::stream)
 			.map(Generation::getContent)
 			.collect(Collectors.joining());

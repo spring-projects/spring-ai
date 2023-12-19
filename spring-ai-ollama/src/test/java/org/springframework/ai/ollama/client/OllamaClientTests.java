@@ -3,7 +3,7 @@ package org.springframework.ai.ollama.client;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.util.CollectionUtils;
 
@@ -17,11 +17,11 @@ public class OllamaClientTests {
 		OllamaClient ollama2 = getOllamaClient();
 
 		Prompt prompt = new Prompt("Hello");
-		AiResponse aiResponse = ollama2.generate(prompt);
-		Assertions.assertNotNull(aiResponse);
-		Assertions.assertFalse(CollectionUtils.isEmpty(aiResponse.getGenerations()));
-		Assertions.assertNotNull(aiResponse.getGeneration());
-		Assertions.assertNotNull(aiResponse.getGeneration().getContent());
+		ChatResponse chatResponse = ollama2.generate(prompt);
+		Assertions.assertNotNull(chatResponse);
+		Assertions.assertFalse(CollectionUtils.isEmpty(chatResponse.getGenerations()));
+		Assertions.assertNotNull(chatResponse.getGeneration());
+		Assertions.assertNotNull(chatResponse.getGeneration().getContent());
 	}
 
 	private static OllamaClient getOllamaClient() {

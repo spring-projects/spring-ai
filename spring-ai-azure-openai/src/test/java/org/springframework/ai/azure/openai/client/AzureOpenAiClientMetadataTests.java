@@ -27,8 +27,8 @@ import com.azure.ai.openai.models.ContentFilterSeverity;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
@@ -73,7 +73,7 @@ class AzureOpenAiClientMetadataTests {
 
 		Prompt prompt = new Prompt("Can I fly like a bird?");
 
-		AiResponse response = this.aiClient.generate(prompt);
+		ChatResponse response = this.aiClient.generate(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -88,7 +88,7 @@ class AzureOpenAiClientMetadataTests {
 		assertChoiceMetadata(generation);
 	}
 
-	private void assertPromptMetadata(AiResponse response) {
+	private void assertPromptMetadata(ChatResponse response) {
 
 		PromptMetadata promptMetadata = response.getPromptMetadata();
 
@@ -101,7 +101,7 @@ class AzureOpenAiClientMetadataTests {
 		assertContentFilterResults(promptFilterMetadata.getContentFilterMetadata(), ContentFilterSeverity.HIGH);
 	}
 
-	private void assertGenerationMetadata(AiResponse response) {
+	private void assertGenerationMetadata(ChatResponse response) {
 
 		GenerationMetadata generationMetadata = response.getGenerationMetadata();
 

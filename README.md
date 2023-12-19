@@ -12,6 +12,19 @@ Let's make your `@Beans` intelligent!
 
 :warning:
 
+### Breaking Changes
+December 19, 2023 Update
+
+Renaming of AiClient and related classes and packagenames
+
+* Rename AiClient to ChatClient
+* Rename AiResponse to ChatResponse
+* Rename AiStreamClient to StreamingChatClient
+* Rename package org.sf.ai.client to org.sf.ai.chat
+:warning:
+
+December 1, 2023
+
 We are transitioning the project's Group ID:
 
 * **FROM**: `org.springframework.experimental.ai`

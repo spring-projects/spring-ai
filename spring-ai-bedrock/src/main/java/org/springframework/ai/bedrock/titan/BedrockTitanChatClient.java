@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
 
+import org.springframework.ai.chat.ChatClient;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -25,10 +26,9 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.AiStreamClient;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.prompt.Prompt;
@@ -37,7 +37,7 @@ import org.springframework.ai.prompt.Prompt;
  * @author Christian Tzolov
  * @since 0.8.0
  */
-public class BedrockTitanChatClient implements AiClient, AiStreamClient {
+public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 
 	private final TitanChatBedrockApi chatApi;
 
@@ -74,17 +74,17 @@ public class BedrockTitanChatClient implements AiClient, AiStreamClient {
 	}
 
 	@Override
-	public AiResponse generate(Prompt prompt) {
+	public ChatResponse generate(Prompt prompt) {
 		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
 		List<Generation> generations = response.results().stream().map(result -> {
 			return new Generation(result.outputText());
 		}).toList();
 
-		return new AiResponse(generations);
+		return new ChatResponse(generations);
 	}
 
 	@Override
-	public Flux<AiResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> generateStream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(chunk -> {
 
 			Generation generation = new Generation(chunk.outputText());
@@ -99,7 +99,7 @@ public class BedrockTitanChatClient implements AiClient, AiStreamClient {
 				generation = generation.withChoiceMetadata(ChoiceMetadata.from(completionReason, extractUsage(chunk)));
 
 			}
-			return new AiResponse(List.of(generation));
+			return new ChatResponse(List.of(generation));
 		});
 	}
 

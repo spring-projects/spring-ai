@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
 
+import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.BedrockUsage;
@@ -28,10 +29,9 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.LogitBias;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.AiStreamClient;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.prompt.Prompt;
@@ -40,7 +40,7 @@ import org.springframework.ai.prompt.Prompt;
  * @author Christian Tzolov
  * @since 0.8.0
  */
-public class BedrockCohereChatClient implements AiClient, AiStreamClient {
+public class BedrockCohereChatClient implements ChatClient, StreamingChatClient {
 
 	private final CohereChatBedrockApi chatApi;
 
@@ -112,25 +112,25 @@ public class BedrockCohereChatClient implements AiClient, AiStreamClient {
 	}
 
 	@Override
-	public AiResponse generate(Prompt prompt) {
+	public ChatResponse generate(Prompt prompt) {
 		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
 		List<Generation> generations = response.generations().stream().map(g -> {
 			return new Generation(g.text());
 		}).toList();
 
-		return new AiResponse(generations);
+		return new ChatResponse(generations);
 	}
 
 	@Override
-	public Flux<AiResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> generateStream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(g -> {
 			if (g.isFinished()) {
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
-				return new AiResponse(
+				return new ChatResponse(
 						List.of(new Generation("").withChoiceMetadata(ChoiceMetadata.from(finishReason, usage))));
 			}
-			return new AiResponse(List.of(new Generation(g.text())));
+			return new ChatResponse(List.of(new Generation(g.text())));
 		});
 	}
 

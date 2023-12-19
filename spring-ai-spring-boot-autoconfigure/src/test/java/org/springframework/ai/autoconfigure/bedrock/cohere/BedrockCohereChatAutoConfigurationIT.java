@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
@@ -30,8 +31,7 @@ import org.springframework.ai.bedrock.cohere.BedrockCohereChatClient;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -72,7 +72,7 @@ public class BedrockCohereChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockCohereChatClient cohereChatClient = context.getBean(BedrockCohereChatClient.class);
-			AiResponse response = cohereChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
+			ChatResponse response = cohereChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
 			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 		});
 	}
@@ -83,14 +83,14 @@ public class BedrockCohereChatAutoConfigurationIT {
 
 			BedrockCohereChatClient cohereChatClient = context.getBean(BedrockCohereChatClient.class);
 
-			Flux<AiResponse> response = cohereChatClient
+			Flux<ChatResponse> response = cohereChatClient
 				.generateStream(new Prompt(List.of(userMessage, systemMessage)));
 
-			List<AiResponse> responses = response.collectList().block();
+			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
 
 			String stitchedResponseContent = responses.stream()
-				.map(AiResponse::getGenerations)
+				.map(ChatResponse::getGenerations)
 				.flatMap(List::stream)
 				.map(Generation::getContent)
 				.collect(Collectors.joining());

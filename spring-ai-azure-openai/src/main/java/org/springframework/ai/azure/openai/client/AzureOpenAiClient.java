@@ -31,9 +31,9 @@ import com.azure.ai.openai.models.PromptFilterResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiGenerationMetadata;
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
@@ -42,16 +42,16 @@ import org.springframework.ai.prompt.messages.Message;
 import org.springframework.util.Assert;
 
 /**
- * {@link AiClient} implementation for {@literal Microsoft Azure AI} backed by
+ * {@link ChatClient} implementation for {@literal Microsoft Azure AI} backed by
  * {@link OpenAIClient}.
  *
  * @author Mark Pollack
  * @author Ueibin Kim
  * @author John Blum
- * @see org.springframework.ai.client.AiClient
+ * @see ChatClient
  * @see com.azure.ai.openai.OpenAIClient
  */
-public class AzureOpenAiClient implements AiClient {
+public class AzureOpenAiClient implements ChatClient {
 
 	private Double temperature = 0.7;
 
@@ -108,7 +108,7 @@ public class AzureOpenAiClient implements AiClient {
 	}
 
 	@Override
-	public AiResponse generate(Prompt prompt) {
+	public ChatResponse generate(Prompt prompt) {
 
 		List<Message> messages = prompt.getMessages();
 		List<ChatMessage> azureMessages = new ArrayList<>();
@@ -136,7 +136,7 @@ public class AzureOpenAiClient implements AiClient {
 			generations.add(generation);
 		}
 
-		return new AiResponse(generations, AzureOpenAiGenerationMetadata.from(chatCompletions))
+		return new ChatResponse(generations, AzureOpenAiGenerationMetadata.from(chatCompletions))
 			.withPromptMetadata(generatePromptMetadata(chatCompletions));
 	}
 

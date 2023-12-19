@@ -28,8 +28,8 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.anthropic.BedrockAnthropicChatClient;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -70,7 +70,7 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockAnthropicChatClient anthropicChatClient = context.getBean(BedrockAnthropicChatClient.class);
-			AiResponse response = anthropicChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
+			ChatResponse response = anthropicChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
 			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 		});
 	}
@@ -81,14 +81,14 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 
 			BedrockAnthropicChatClient anthropicChatClient = context.getBean(BedrockAnthropicChatClient.class);
 
-			Flux<AiResponse> response = anthropicChatClient
+			Flux<ChatResponse> response = anthropicChatClient
 				.generateStream(new Prompt(List.of(userMessage, systemMessage)));
 
-			List<AiResponse> responses = response.collectList().block();
+			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
 
 			String stitchedResponseContent = responses.stream()
-				.map(AiResponse::getGenerations)
+				.map(ChatResponse::getGenerations)
 				.flatMap(List::stream)
 				.map(Generation::getContent)
 				.collect(Collectors.joining());

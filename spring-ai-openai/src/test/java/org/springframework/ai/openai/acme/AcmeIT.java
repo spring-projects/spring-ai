@@ -9,7 +9,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.client.OpenAiClient;
@@ -96,7 +96,7 @@ public class AcmeIT extends AbstractIT {
 		logger.info("Asking AI model to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
-		AiResponse response = aiClient.generate(prompt);
+		ChatResponse response = aiClient.generate(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
 	}

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.client;
+package org.springframework.ai.chat;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ import org.springframework.lang.Nullable;
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
  */
-public class AiResponse {
+public class ChatResponse {
 
 	private final GenerationMetadata metadata;
 
@@ -36,22 +36,22 @@ public class AiResponse {
 	private PromptMetadata promptMetadata;
 
 	/**
-	 * Construct a new {@link AiResponse} instance without metadata.
+	 * Construct a new {@link ChatResponse} instance without metadata.
 	 * @param generations the {@link List} of {@link Generation} returned by the AI
 	 * provider.
 	 */
-	public AiResponse(List<Generation> generations) {
+	public ChatResponse(List<Generation> generations) {
 		this(generations, GenerationMetadata.NULL);
 	}
 
 	/**
-	 * Construct a new {@link AiResponse} instance.
+	 * Construct a new {@link ChatResponse} instance.
 	 * @param generations the {@link List} of {@link Generation} returned by the AI
 	 * provider.
 	 * @param metadata {@link GenerationMetadata} containing information about the use of
 	 * the AI provider's API.
 	 */
-	public AiResponse(List<Generation> generations, GenerationMetadata metadata) {
+	public ChatResponse(List<Generation> generations, GenerationMetadata metadata) {
 		this.metadata = metadata;
 		this.generations = List.copyOf(generations);
 	}
@@ -96,10 +96,10 @@ public class AiResponse {
 	 * when processing the prompt.
 	 * @param promptMetadata {@link PromptMetadata} returned by the AI in the response
 	 * when processing the prompt.
-	 * @return this {@link AiResponse}.
+	 * @return this {@link ChatResponse}.
 	 * @see #getPromptMetadata()
 	 */
-	public AiResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
+	public ChatResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
 		this.promptMetadata = promptMetadata;
 		return this;
 	}

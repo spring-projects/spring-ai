@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.client;
+package org.springframework.ai.chat;
 
 import java.util.Collections;
 import java.util.Map;

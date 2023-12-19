@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
@@ -74,7 +74,7 @@ public class OpenAiClientWithGenerationMetadata2Tests {
 
 		Prompt prompt = new Prompt("Reach for the sky.");
 
-		AiResponse response = this.openAiClient.generate(prompt);
+		ChatResponse response = this.openAiClient.generate(prompt);
 
 		assertThat(response).isNotNull();
 

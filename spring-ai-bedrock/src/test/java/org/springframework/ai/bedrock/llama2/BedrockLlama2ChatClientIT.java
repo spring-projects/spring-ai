@@ -9,13 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.ChatResponse;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatCompletionModel;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
@@ -54,7 +54,7 @@ class BedrockLlama2ChatClientIT {
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-		AiResponse response = client.generate(prompt);
+		ChatResponse response = client.generate(prompt);
 
 		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 	}
@@ -142,7 +142,7 @@ class BedrockLlama2ChatClientIT {
 			.collectList()
 			.block()
 			.stream()
-			.map(AiResponse::getGenerations)
+			.map(ChatResponse::getGenerations)
 			.flatMap(List::stream)
 			.map(Generation::getContent)
 			.collect(Collectors.joining());

@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
@@ -41,7 +41,7 @@ class OpenAiClientIT extends AbstractIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		AiResponse response = openAiClient.generate(prompt);
+		ChatResponse response = openAiClient.generate(prompt);
 		assertThat(response.getGenerations()).hasSize(1);
 		assertThat(response.getGenerations().get(0).getContent()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
@@ -139,11 +139,11 @@ class OpenAiClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = openAiStreamClient.generateStream(prompt)
+		String generationTextFromStream = openStreamingChatClient.generateStream(prompt)
 			.collectList()
 			.block()
 			.stream()
-			.map(AiResponse::getGenerations)
+			.map(ChatResponse::getGenerations)
 			.flatMap(List::stream)
 			.map(Generation::getContent)
 			.collect(Collectors.joining());

@@ -22,14 +22,14 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatClient;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatCompletionModel;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -70,7 +70,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockLlama2ChatClient llama2ChatClient = context.getBean(BedrockLlama2ChatClient.class);
-			AiResponse response = llama2ChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
+			ChatResponse response = llama2ChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
 			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 		});
 	}
@@ -81,14 +81,14 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 
 			BedrockLlama2ChatClient llama2ChatClient = context.getBean(BedrockLlama2ChatClient.class);
 
-			Flux<AiResponse> response = llama2ChatClient
+			Flux<ChatResponse> response = llama2ChatClient
 				.generateStream(new Prompt(List.of(userMessage, systemMessage)));
 
-			List<AiResponse> responses = response.collectList().block();
+			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
 
 			String stitchedResponseContent = responses.stream()
-				.map(AiResponse::getGenerations)
+				.map(ChatResponse::getGenerations)
 				.flatMap(List::stream)
 				.map(Generation::getContent)
 				.collect(Collectors.joining());

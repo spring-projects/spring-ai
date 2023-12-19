@@ -18,8 +18,8 @@ package org.springframework.ai.evaluation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
@@ -39,7 +39,7 @@ public class BasicEvaluationTest {
 	private static final Logger logger = LoggerFactory.getLogger(BasicEvaluationTest.class);
 
 	@Autowired
-	protected AiClient openAiClient;
+	protected ChatClient openAiClient;
 
 	@Value("classpath:/prompts/spring/test/evaluation/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
@@ -53,7 +53,7 @@ public class BasicEvaluationTest {
 	@Value("classpath:/prompts/spring/test/evaluation/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
 
-	protected void evaluateQuestionAndAnswer(String question, AiResponse response, boolean factBased) {
+	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
 		assertThat(response).isNotNull();
 		String answer = response.getGeneration().getContent();
 		logger.info("Question: " + question);

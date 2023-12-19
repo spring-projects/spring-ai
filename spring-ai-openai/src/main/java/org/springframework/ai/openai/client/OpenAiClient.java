@@ -22,12 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.AiStreamClient;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -43,7 +43,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
- * {@link AiClient} implementation for {@literal OpenAI} backed by {@link OpenAiApi}.
+ * {@link ChatClient} implementation for {@literal OpenAI} backed by {@link OpenAiApi}.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
@@ -51,11 +51,11 @@ import org.springframework.util.Assert;
  * @author John Blum
  * @author Josh Long
  * @author Jemin Huh
- * @see org.springframework.ai.client.AiClient
- * @see org.springframework.ai.client.AiStreamClient
+ * @see ChatClient
+ * @see StreamingChatClient
  * @see OpenAiApi
  */
-public class OpenAiClient implements AiClient, AiStreamClient {
+public class OpenAiClient implements ChatClient, StreamingChatClient {
 
 	private Double temperature = 0.7;
 
@@ -93,7 +93,7 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 	}
 
 	@Override
-	public AiResponse generate(Prompt prompt) {
+	public ChatResponse generate(Prompt prompt) {
 
 		return this.retryTemplate.execute(ctx -> {
 			List<Message> messages = prompt.getMessages();
@@ -110,7 +110,7 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 			var chatCompletion = completionEntity.getBody();
 			if (chatCompletion == null) {
 				logger.warn("No chat completion returned for request: {}", chatCompletionMessages);
-				return new AiResponse(List.of());
+				return new ChatResponse(List.of());
 			}
 
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
@@ -120,13 +120,13 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 					.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
 			}).toList();
 
-			return new AiResponse(generations,
+			return new ChatResponse(generations,
 					OpenAiGenerationMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
 		});
 	}
 
 	@Override
-	public Flux<AiResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> generateStream(Prompt prompt) {
 		return this.retryTemplate.execute(ctx -> {
 			List<Message> messages = prompt.getMessages();
 
@@ -144,7 +144,7 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
 			// An alternative implementation that returns Flux<Generation> instead of
-			// Flux<AiResponse>.
+			// Flux<ChatResponse>.
 			// Flux<Generation> generationFlux = completionChunks.map(chunk -> {
 			// String chunkId = chunk.id();
 			// return chunk.choices().stream()
@@ -172,7 +172,7 @@ public class OpenAiClient implements AiClient, AiStreamClient {
 					}
 					return generation;
 				}).toList();
-				return new AiResponse(generations);
+				return new ChatResponse(generations);
 			});
 		});
 	}

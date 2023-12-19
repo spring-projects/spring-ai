@@ -23,9 +23,9 @@ import java.util.Map;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.client.AiClient;
-import org.springframework.ai.client.AiResponse;
-import org.springframework.ai.client.Generation;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
 import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
@@ -35,12 +35,12 @@ import org.springframework.ai.huggingface.model.GenerateResponse;
 import org.springframework.ai.prompt.Prompt;
 
 /**
- * An implementation of {@link AiClient} that interfaces with HuggingFace Inference
+ * An implementation of {@link ChatClient} that interfaces with HuggingFace Inference
  * Endpoints for text generation.
  *
  * @author Mark Pollack
  */
-public class HuggingfaceAiClient implements AiClient {
+public class HuggingfaceAiClient implements ChatClient {
 
 	/**
 	 * Token required for authenticating with the HuggingFace Inference API.
@@ -83,10 +83,10 @@ public class HuggingfaceAiClient implements AiClient {
 	/**
 	 * Generate text based on the provided prompt.
 	 * @param prompt The input prompt based on which text is to be generated.
-	 * @return AiResponse containing the generated text and other related details.
+	 * @return ChatResponse containing the generated text and other related details.
 	 */
 	@Override
-	public AiResponse generate(Prompt prompt) {
+	public ChatResponse generate(Prompt prompt) {
 		GenerateRequest generateRequest = new GenerateRequest();
 		generateRequest.setInputs(prompt.getContents());
 		GenerateParameters generateParameters = new GenerateParameters();
@@ -102,7 +102,7 @@ public class HuggingfaceAiClient implements AiClient {
 				});
 		Generation generation = new Generation(generatedText, detailsMap);
 		generations.add(generation);
-		return new AiResponse(generations);
+		return new ChatResponse(generations);
 	}
 
 	/**
