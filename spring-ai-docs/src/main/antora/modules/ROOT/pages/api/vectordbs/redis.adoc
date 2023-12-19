@@ -39,7 +39,7 @@ Add these dependencies to your project:
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-transformers-embedding-spring-boot-starter</artifactId>
+  <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----

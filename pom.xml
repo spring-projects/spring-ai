@@ -27,7 +27,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers-embedding</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
