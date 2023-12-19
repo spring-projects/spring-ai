@@ -20,7 +20,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
@@ -43,6 +45,19 @@ public class TitanChatBedrockApi extends
 
 	TitanChatBedrockApi(String modelId, String region) {
 		super(modelId, region);
+	}
+
+	/**
+	 * Create a new TitanChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link TitanChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 */
+	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper) {
+		super(modelId, credentialsProvider, region, objectMapper);
 	}
 
 	/**
@@ -76,6 +91,11 @@ public class TitanChatBedrockApi extends
 				@JsonProperty("stopSequences") List<String> stopSequences) {
 		}
 
+		/**
+		 * Create a new TitanChatRequest builder.
+		 * @param inputText The prompt to use for the chat.
+		 * @return A new TitanChatRequest builder.
+		 */
 		public static Builder builder(String inputText) {
 			return new Builder(inputText);
 		}
@@ -162,10 +182,16 @@ public class TitanChatBedrockApi extends
 			 * The response was fully generated.
 			 */
 			FINISH,
+
 			/**
 			 * The response was truncated because of the response length you set.
 			 */
-			LENGTH
+			LENGTH,
+
+			/**
+			 * The response was truncated because of restrictions.
+			 */
+			CONTENT_FILTERED
 		}
 	}
 
@@ -191,7 +217,7 @@ public class TitanChatBedrockApi extends
 	/**
 	 * Titan models version.
 	 */
-	public enum TitanChatCompletionModel {
+	public enum TitanChatModel {
 
 		/**
 		 * amazon.titan-text-lite-v1
@@ -212,7 +238,7 @@ public class TitanChatBedrockApi extends
 			return id;
 		}
 
-		TitanChatCompletionModel(String value) {
+		TitanChatModel(String value) {
 			this.id = value;
 		}
 	}

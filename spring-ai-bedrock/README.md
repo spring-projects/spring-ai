@@ -74,10 +74,10 @@ For example to enable the bedrock Llama2 Chat client you need to set the
 
 Next you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties to configure each model as provided in its documentation:
 
-* [Spring AI Bedrock Llama2 Chat](./README_LLAMA2_CHAT.md) - `spring.ai.bedrock.llama2.chat=true`
-* [Spring AI Bedrock Cohere Chat](./README_COHERE_CHAT.md) - `spring.ai.bedrock.cohere.chat=true`
-* [Spring AI Bedrock Cohere Embedding](./README_COHERE_EMBEDDING.md) - `spring.ai.bedrock.cohere.embedding=true`
-* [Spring AI Bedrock Anthropic Chat](./README_ANTHROPIC_CHAT.md) - `spring.ai.bedrock.anthropic.chat=true`
-* (WIP) [Spring AI Bedrock Titan Chat](./README_TITAN_CHAT.md) - `spring.ai.bedrock.titan.chat=true`
-* [Spring AI Bedrock Titan Embedding](./README_TITAN_EMBEDDING.md) - `spring.ai.bedrock.titan.embedding=true`
-* (WIP) [Spring AI Bedrock Ai21 Jurassic2 Chat](./README_JURASSIC2_CHAT.md) - `spring.ai.bedrock.jurassic2.chat=true`
+* [Spring AI Bedrock Llama2 Chat](./README_LLAMA2_CHAT.md) - `spring.ai.bedrock.llama2.chat.enabled=true`
+* [Spring AI Bedrock Cohere Chat](./README_COHERE_CHAT.md) - `spring.ai.bedrock.cohere.chat.enabled=true`
+* [Spring AI Bedrock Cohere Embedding](./README_COHERE_EMBEDDING.md) - `spring.ai.bedrock.cohere.embedding.enabled=true`
+* [Spring AI Bedrock Anthropic Chat](./README_ANTHROPIC_CHAT.md) - `spring.ai.bedrock.anthropic.chat.enabled=true`
+* [Spring AI Bedrock Titan Chat](./README_TITAN_CHAT.md) - `spring.ai.bedrock.titan.chat.enabled=true`
+* [Spring AI Bedrock Titan Embedding](./README_TITAN_EMBEDDING.md) - `spring.ai.bedrock.titan.embedding.enabled=true`
+* (WIP) [Spring AI Bedrock Ai21 Jurassic2 Chat](./README_JURASSIC2_CHAT.md) - `spring.ai.bedrock.jurassic2.chat.enabled=true`
