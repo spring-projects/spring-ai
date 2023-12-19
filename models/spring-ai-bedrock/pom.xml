@@ -6,11 +6,12 @@
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
 		<version>0.8.0-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-vertex-ai</artifactId>
+	<artifactId>spring-ai-bedrock</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vertex AI</name>
-	<description>Vertex AI support</description>
+	<name>Spring AI Bedrock</name>
+	<description>Bedrock AI support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -34,16 +35,15 @@
 			<version>${spring-framework.version}</version>
 		</dependency>
 
-
-		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-context-support</artifactId>
+			<artifactId>spring-webflux</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-logging</artifactId>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>bedrockruntime</artifactId>
+			<version>${bedrockruntime.version}</version>
 		</dependency>
 
 		<!-- test dependencies -->

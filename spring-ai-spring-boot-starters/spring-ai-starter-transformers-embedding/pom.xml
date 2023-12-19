@@ -34,7 +34,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>transformers-embedding</artifactId>
+			<artifactId>spring-ai-transformers</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 	</dependencies>

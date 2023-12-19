@@ -21,6 +21,13 @@ Renaming of AiClient and related classes and packagenames
 * Rename AiResponse to ChatResponse
 * Rename AiStreamClient to StreamingChatClient
 * Rename package org.sf.ai.client to org.sf.ai.chat
+
+Rename artifact ID of 
+
+* `transformers-embedding` to `spring-ai-transformers`
+
+Moved Maven modules from top level directoryand `embedding-clients` subdirectory to all be under a single `models` directory.
+
 :warning:
 
 December 1, 2023

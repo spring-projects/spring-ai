@@ -5,10 +5,11 @@
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
 		<version>0.8.0-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-openai</artifactId>
+	<artifactId>spring-ai-azure-openai</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI OpenAI</name>
+	<name>Spring AI Azure OpenAI</name>
 	<description>OpenAI support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
@@ -28,42 +29,17 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.retry</groupId>
-			<artifactId>spring-retry</artifactId>
-			<version>2.0.4</version>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-ai-openai</artifactId>
+			<version>${azure-open-ai-client.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>io.rest-assured</groupId>
-			<artifactId>json-path</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.github.victools</groupId>
-			<artifactId>jsonschema-generator</artifactId>
-			<version>${victools.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.github.victools</groupId>
-			<artifactId>jsonschema-module-jackson</artifactId>
-			<version>${victools.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webflux</artifactId>
-		</dependency>
-
+		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-support</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-logging</artifactId>
@@ -77,6 +53,11 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>

@@ -8,7 +8,7 @@
 		<version>0.8.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>transformers-embedding</artifactId>
+	<artifactId>spring-ai-transformers</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Transormers Embedding Client</name>
 	<description>Spring AI Transformers Embedding Client</description>

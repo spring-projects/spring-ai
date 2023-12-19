@@ -14,10 +14,14 @@
 
 	<modules>
 		<module>spring-ai-core</module>
-		<module>spring-ai-openai</module>
-		<module>spring-ai-azure-openai</module>
-		<module>spring-ai-ollama</module>
-		<module>spring-ai-huggingface</module>
+		<module>models/spring-ai-bedrock</module>
+		<module>models/spring-ai-azure-openai</module>
+		<module>models/spring-ai-huggingface</module>
+		<module>models/spring-ai-ollama</module>
+		<module>models/spring-ai-openai</module>
+		<module>models/spring-ai-vertex-ai</module>
+		<module>models/spring-ai-transformers</module>
+		<module>models/spring-ai-postgresml</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -36,18 +40,14 @@
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
-		<module>embedding-clients/spring-ai-postgresml-embedding-client</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
-		<module>embedding-clients/transformers-embedding</module>
 		<module>vector-stores/spring-ai-pinecone</module>
 		<module>vector-stores/spring-ai-chroma</module>
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
-		<module>spring-ai-vertex-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
-		<module>spring-ai-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 
 	</modules>

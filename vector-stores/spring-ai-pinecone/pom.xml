@@ -70,7 +70,7 @@
         <!-- TESTING -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>transformers-embedding</artifactId>
+            <artifactId>spring-ai-transformers</artifactId>
             <version>${parent.version}</version>
             <scope>test</scope>
         </dependency>
