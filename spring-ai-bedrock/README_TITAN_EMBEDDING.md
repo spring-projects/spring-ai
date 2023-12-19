@@ -35,7 +35,7 @@ TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
 
 To embed an image you need to convert it into base64 format:
 
-```json
+```java
 TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
 		TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id());
 
