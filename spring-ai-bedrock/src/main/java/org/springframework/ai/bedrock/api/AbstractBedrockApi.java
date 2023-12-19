@@ -110,6 +110,20 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
+	 * @return The model id.
+	 */
+	public String getModelId() {
+		return modelId;
+	}
+
+	/**
+	 * @return The AWS region.
+	 */
+	public String getRegion() {
+		return region;
+	}
+
+	/**
 	 * Encapsulates the metrics about the model invocation.
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
 	 *

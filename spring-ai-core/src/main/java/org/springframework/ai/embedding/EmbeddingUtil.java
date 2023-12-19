@@ -36,9 +36,10 @@ public class EmbeddingUtil {
 	 * the response dimensions.
 	 * @param embeddingClient Fall-back client to determine, empirically the dimensions.
 	 * @param modelName Embedding model name to retrieve the dimensions for.
+	 * @param dummyContent Dummy content to use for the empirical dimension calculation.
 	 * @return Returns the embedding dimensions for the modelName.
 	 */
-	public static int dimensions(EmbeddingClient embeddingClient, String modelName) {
+	public static int dimensions(EmbeddingClient embeddingClient, String modelName, String dummyContent) {
 
 		if (KNOWN_EMBEDDING_DIMENSIONS.containsKey(modelName)) {
 			// Retrieve the dimension from a pre-configured file.
@@ -47,7 +48,7 @@ public class EmbeddingUtil {
 		else {
 			// Determine the dimensions empirically.
 			// Generate an embedding and count the dimension size;
-			return embeddingClient.embed("Test String").size();
+			return embeddingClient.embed(dummyContent).size();
 		}
 	}
 

@@ -26,12 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AbstractEmbeddingClient implements EmbeddingClient {
 
-	private final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
+	protected final AtomicInteger embeddingDimensions = new AtomicInteger(-1);
 
 	@Override
 	public int dimensions() {
 		if (this.embeddingDimensions.get() < 0) {
-			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, "Test"));
+			this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, "Test", "Hello World"));
 		}
 		return this.embeddingDimensions.get();
 	}

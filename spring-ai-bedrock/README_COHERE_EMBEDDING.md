@@ -58,15 +58,17 @@ or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Boot starter.
 </dependency>
 ```
 
-**NOTE:** You have to enable the Bedrock Cohere chat client with `spring.ai.bedrock.cohere.embedding.enabled=true`.
+**NOTE:** You have to enable the Bedrock Cohere embedding client with `spring.ai.bedrock.cohere.embedding.enabled=true`.
 By default the client is disabled.
 
 Use the `BedrockCohereEmbeddingProperties` to configure the Bedrock Cohere Chat client:
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
-| spring.ai.bedrock.cohere.embedding.enable | Enable Bedrock Cohere chat client. Disabled by default | false |
-| spring.ai.bedrock.cohere.embedding.awsRegion  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
+| spring.ai.bedrock.cohere.embedding.enable | Enable Bedrock Cohere embedding client. Disabled by default | false |
 | spring.ai.bedrock.cohere.embedding.model  | The model id to use. See the `CohereEmbeddingModel` for the supported models.  | cohere.embed-multilingual-v3 |
 | spring.ai.bedrock.cohere.embedding.inputType  | Prepends special tokens to differentiate each type from one another. You should not mix different types together, except when mixing types for for search and retrieval. In this case, embed your corpus with the search_document type and embedded queries with type search_query type.  | search_document |
 | spring.ai.bedrock.cohere.embedding.truncate  | Specifies how the API handles inputs longer than the maximum token length. | NONE |

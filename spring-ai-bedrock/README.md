@@ -79,5 +79,5 @@ Next you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties t
 * [Spring AI Bedrock Cohere Embedding](./README_COHERE_EMBEDDING.md) - `spring.ai.bedrock.cohere.embedding=true`
 * [Spring AI Bedrock Anthropic Chat](./README_ANTHROPIC_CHAT.md) - `spring.ai.bedrock.anthropic.chat=true`
 * (WIP) [Spring AI Bedrock Titan Chat](./README_TITAN_CHAT.md) - `spring.ai.bedrock.titan.chat=true`
-* (WIP) [Spring AI Bedrock Titan Embedding](./README_TITAN_EMBEDING.md) - `spring.ai.bedrock.titan.embedding=true`
+* [Spring AI Bedrock Titan Embedding](./README_TITAN_EMBEDDING.md) - `spring.ai.bedrock.titan.embedding=true`
 * (WIP) [Spring AI Bedrock Ai21 Jurassic2 Chat](./README_JURASSIC2_CHAT.md) - `spring.ai.bedrock.jurassic2.chat=true`

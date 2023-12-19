@@ -47,8 +47,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
-				"spring.ai.bedrock.cohere.chat.inputType=search_document",
-				"spring.ai.bedrock.cohere.chat.truncate=NONE")
+				"spring.ai.bedrock.cohere.embedding.inputType=search_document",
+				"spring.ai.bedrock.cohere.embedding.truncate=NONE")
 		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class));
 
 	@Test
@@ -95,15 +95,15 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 					"spring.ai.bedrock.cohere.embedding.truncate=RIGHT")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
-				var chatProperties = context.getBean(BedrockCohereEmbeddingProperties.class);
+				var properties = context.getBean(BedrockCohereEmbeddingProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
 
-				assertThat(chatProperties.isEnabled()).isTrue();
+				assertThat(properties.isEnabled()).isTrue();
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
-				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getInputType()).isEqualTo(InputType.classification);
-				assertThat(chatProperties.getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.RIGHT);
+				assertThat(properties.getInputType()).isEqualTo(InputType.classification);
+				assertThat(properties.getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.RIGHT);
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(awsProperties.getSecretKey()).isEqualTo("SECRET_KEY");
@@ -111,7 +111,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	}
 
 	@Test
-	public void chatCompletionDisabled() {
+	public void embeddingDisabled() {
 
 		// It is disabled by default
 		new ApplicationContextRunner()
@@ -121,7 +121,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingClient.class)).isEmpty();
 			});
 
-		// Explicitly enable the chat auto-configuration.
+		// Explicitly enable the embedding auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
@@ -129,7 +129,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingClient.class)).isNotEmpty();
 			});
 
-		// Explicitly disable the chat auto-configuration.
+		// Explicitly disable the embedding auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=false")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {

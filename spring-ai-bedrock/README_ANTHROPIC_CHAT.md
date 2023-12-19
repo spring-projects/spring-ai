@@ -82,8 +82,10 @@ Use the `BedrockAnthropicChatProperties` to configure the Bedrock Llama2 Chat cl
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
+| spring.ai.bedrock.embedding.aws.region  | AWS region to use.  | us-east-1 |
+| spring.ai.bedrock.embedding.aws.accessKey  | AWS credentials access key.  |  |
+| spring.ai.bedrock.embedding.aws.secretKey  | AWS credentials secret key.  |  |
 | spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Llama2 chat client. Disabled by default | false |
-| spring.ai.bedrock.anthropic.chat.awsRegion  | AWS region to use.  | us-east-1 |
 | spring.ai.bedrock.anthropic.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8 |
 | spring.ai.bedrock.anthropic.chat.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default |
 | spring.ai.bedrock.anthropic.chat.maxGenLen  | Specify the maximum number of tokens to use in the generated response. | 300 |
