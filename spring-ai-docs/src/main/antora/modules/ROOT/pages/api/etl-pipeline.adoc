@@ -4,7 +4,7 @@ The Extraction, Transformation, and Loading (ETL) framework serves as the backbo
 
 The ETL pipeline orchestrates the flow from raw data sources to a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
 
-The RAG use-case is designed to augment the capabilities of generative models by retrieving relevant information from a body of data to enhancing the quality and relevance of the generated output.
+The RAG use-case is text to augment the capabilities of generative models by retrieving relevant information from a body of data to enhancing the quality and relevance of the generated output.
 
 
 == API Overview
