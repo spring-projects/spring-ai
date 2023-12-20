@@ -101,6 +101,7 @@
 		<jtokkit.version>0.6.1</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
 		<bedrockruntime.version>2.22.0</bedrockruntime.version>
+		<jackson.version>2.16.0</jackson.version>
 
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.0</pdfbox.version>

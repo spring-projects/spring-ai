@@ -13,6 +13,15 @@ Let's make your `@Beans` intelligent!
 :warning:
 
 ### Breaking Changes
+
+December 20, 2023 Update
+
+Refactor the Ollama client and related classes and package names
+
+ - Replace the org.springframework.ai.ollama.client.OllamaClient by org.springframework.ai.ollama.OllamaChatClient.
+ - The OllamaChatClient method signatures have changed.
+ - Rename the org.springframework.ai.autoconfigure.ollama.OllamaProperties into org.springframework.ai.autoconfigure.ollama.OllamaChatProperties and change the suffix to: `spring.ai.ollama.chat`. Some of the properties have changed as well.
+
 December 19, 2023 Update
 
 Renaming of AiClient and related classes and packagenames
@@ -22,7 +31,7 @@ Renaming of AiClient and related classes and packagenames
 * Rename AiStreamClient to StreamingChatClient
 * Rename package org.sf.ai.client to org.sf.ai.chat
 
-Rename artifact ID of 
+Rename artifact ID of
 
 * `transformers-embedding` to `spring-ai-transformers`
 
@@ -144,7 +153,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-azure-vector-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -154,7 +163,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-chroma-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -163,7 +172,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -173,7 +182,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -182,7 +191,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-pinecone-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -191,7 +200,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
@@ -200,7 +209,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>

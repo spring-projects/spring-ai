@@ -48,7 +48,7 @@ public class BedrockTitanChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TitanChatBedrockApi cohereApi(AwsCredentialsProvider credentialsProvider,
+	public TitanChatBedrockApi titanApi(AwsCredentialsProvider credentialsProvider,
 			BedrockTitanChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 
 		return new TitanChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
@@ -56,7 +56,7 @@ public class BedrockTitanChatAutoConfiguration {
 	}
 
 	@Bean
-	public BedrockTitanChatClient cohereChatClient(TitanChatBedrockApi titanChatApi,
+	public BedrockTitanChatClient titanChatClient(TitanChatBedrockApi titanChatApi,
 			BedrockTitanChatProperties properties) {
 
 		return new BedrockTitanChatClient(titanChatApi).withTemperature(properties.getTemperature())

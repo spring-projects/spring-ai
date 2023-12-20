@@ -1,4 +1,3 @@
-org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
@@ -17,6 +16,9 @@ org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereEmbeddingAutoCo
 org.springframework.ai.autoconfigure.bedrock.anthropic.BedrockAnthropicChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
+org.springframework.ai.autoconfigure.ollama.OllamaChatAutoConfiguration
+org.springframework.ai.autoconfigure.ollama.OllamaEmbeddingAutoConfiguration
+
 
 
 
