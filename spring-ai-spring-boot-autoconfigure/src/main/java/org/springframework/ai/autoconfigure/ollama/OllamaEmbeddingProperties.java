@@ -16,12 +16,25 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(OllamaProperties.CONFIG_PREFIX)
-public class OllamaProperties {
+/**
+ * Ollama Embedding autoconfiguration properties.
+ *
+ * @author Christian Tzolov
+ * @since 0.8.0
+ */
+@ConfigurationProperties(OllamaEmbeddingProperties.CONFIG_PREFIX)
+public class OllamaEmbeddingProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.ollama";
+	public static final String CONFIG_PREFIX = "spring.ai.ollama.embedding";
+
+	/**
+	 * Enable Ollama Embedding Client. True by default.
+	 */
+	private boolean enabled = true;
 
 	/**
 	 * Base URL where Ollama API server is running.
@@ -29,9 +42,27 @@ public class OllamaProperties {
 	private String baseUrl = "http://localhost:11434";
 
 	/**
-	 * Language model to use.
+	 * Ollama Embedding model name. Defaults to 'llama2'.
 	 */
 	private String model = "llama2";
+
+	private Map<String, Object> options;
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
 
 	public String getBaseUrl() {
 		return baseUrl;
@@ -41,12 +72,12 @@ public class OllamaProperties {
 		this.baseUrl = baseUrl;
 	}
 
-	public String getModel() {
-		return model;
+	public void setOptions(Map<String, Object> clientOptions) {
+		this.options = clientOptions;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	public Map<String, Object> getOptions() {
+		return options;
 	}
 
 }

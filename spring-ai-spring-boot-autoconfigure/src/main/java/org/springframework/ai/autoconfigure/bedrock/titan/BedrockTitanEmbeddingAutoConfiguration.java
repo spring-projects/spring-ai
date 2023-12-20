@@ -57,7 +57,7 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public BedrockTitanEmbeddingClient cohereEmbeddingClient(TitanEmbeddingBedrockApi titanEmbeddingApi,
+	public BedrockTitanEmbeddingClient titanEmbeddingClient(TitanEmbeddingBedrockApi titanEmbeddingApi,
 			BedrockTitanEmbeddingProperties properties) {
 
 		return new BedrockTitanEmbeddingClient(titanEmbeddingApi).withInputType(properties.getInputType());
