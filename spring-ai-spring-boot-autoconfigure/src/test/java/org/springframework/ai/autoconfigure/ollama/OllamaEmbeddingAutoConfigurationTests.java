@@ -33,21 +33,23 @@ public class OllamaEmbeddingAutoConfigurationTests {
 	@Test
 	public void propertiesTest() {
 
-		new ApplicationContextRunner().withPropertyValues("spring.ai.ollama.embedding.enabled=true",
-				"spring.ai.ollama.embedding.base-url=TEST_BASE_URL", "spring.ai.ollama.embedding.model=MODEL_XYZ",
-				"spring.ai.ollama.embedding.options.temperature=0.13" // TODO: Fix the
-																		// float parsing
-		).withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class)).run(context -> {
-			var properties = context.getBean(OllamaEmbeddingProperties.class);
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.ollama.base-url=TEST_BASE_URL", "spring.ai.ollama.embedding.enabled=true",
+					"spring.ai.ollama.embedding.model=MODEL_XYZ", "spring.ai.ollama.embedding.options.temperature=0.13",
+					"spring.ai.ollama.embedding.options.topK=13")
+			.withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var embeddingProperties = context.getBean(OllamaEmbeddingProperties.class);
+				var connectionProperties = context.getBean(OllamaConnectionProperties.class);
 
-			// java.lang.Float.valueOf(0.13f)
-			assertThat(properties.isEnabled()).isTrue();
-			assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
-			assertThat(properties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
-			assertThat(properties.getOptions()).containsKeys("temperature");
-			assertThat(properties.getOptions().get("temperature")).isEqualTo("0.13");
-
-		});
+				// java.lang.Float.valueOf(0.13f)
+				assertThat(embeddingProperties.isEnabled()).isTrue();
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(embeddingProperties.getOptions().toMap()).containsKeys("temperature");
+				assertThat(embeddingProperties.getOptions().toMap().get("temperature")).isEqualTo(0.13);
+				assertThat(embeddingProperties.getOptions().getTopK()).isEqualTo(13);
+			});
 	}
 
 	@Test

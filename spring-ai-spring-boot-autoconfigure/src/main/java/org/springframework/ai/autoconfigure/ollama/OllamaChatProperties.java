@@ -16,8 +16,7 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
-import java.util.Map;
-
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -32,11 +31,6 @@ public class OllamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
 	/**
-	 * Base URL where Ollama API server is running.
-	 */
-	private String baseUrl = "http://localhost:11434";
-
-	/**
 	 * Enable Ollama Chat Client. True by default.
 	 */
 	private boolean enabled = true;
@@ -47,35 +41,14 @@ public class OllamaChatProperties {
 	private String model = "llama2";
 
 	/**
-	 * (optional) Use a lower value to decrease randomness in the response. Defaults to
-	 * 0.7.
+	 * Client lever Ollama options. Use this property to configure model temperature, topK
+	 * and topP and alike parameters. The null values are ignored defaulting to the
+	 * model's defaults.
 	 */
-	private Float temperature = 0.8f;
-
-	/**
-	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
-	 * The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the
-	 * smallest set of tokens whose probability sum is at least topP.
-	 */
-	private Float topP;
-
-	/**
-	 * Max number or responses to generate.
-	 */
-	private Integer topK;
-
-	private Map<String, Object> options;
-
-	public String getBaseUrl() {
-		return baseUrl;
-	}
-
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
+	private OllamaOptions options = new OllamaOptions();
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
@@ -83,43 +56,15 @@ public class OllamaChatProperties {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
 	}
 
-	public Float getTemperature() {
-		return temperature;
-	}
-
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-	public Float getTopP() {
-		return topP;
-	}
-
-	public void setTopP(Float topP) {
-		this.topP = topP;
-	}
-
-	public Integer getTopK() {
-		return topK;
-	}
-
-	public void setTopK(Integer maxTokens) {
-		this.topK = maxTokens;
-	}
-
-	public void setOptions(Map<String, Object> options) {
-		this.options = options;
-	}
-
-	public Map<String, Object> getOptions() {
-		return options;
+	public OllamaOptions getOptions() {
+		return this.options;
 	}
 
 }

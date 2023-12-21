@@ -22,7 +22,8 @@ EmbeddingResponse embeddings(EmbeddingRequest embeddingRequest)
 
 > NOTE: OllamaApi expose also the Ollama `generation` endpoint but later if inferior compared to the Ollama `chat` endpoint.
 
-The `OllamaApiOptions` is helper class used as type-safe option builder. It provides `toMap` to convert the content into `Map<String, Object>`.
+The `OllamaOptions` is helper class used as type-safe option builder.
+It provides `toMap` to convert the content into `Map<String, Object>`.
 
 Here is a simple snippet how to use the OllamaApi programmatically:
 
@@ -32,7 +33,7 @@ var request = ChatRequest.builder("orca-mini")
 	.withMessages(List.of(Message.builder(Role.user)
 		.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 		.build()))
-	.withOptions(Options.builder().withTemperature(0.9f).build())
+	.withOptions(Options.create().withTemperature(0.9f).withTopK(10))
 	.build();
 
 ChatResponse response = ollamaApi.chat(request);
@@ -44,7 +45,7 @@ var request = ChatRequest.builder("orca-mini")
 	.withMessages(List.of(Message.builder(Role.user)
 		.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 		.build()))
-	.withOptions(Options.builder().withTemperature(0.9f).build().toMap())
+	.withOptions(Options.create().withTemperature(0.9f))
 	.build();
 
 Flux<ChatResponse> response = ollamaApi.streamingChat(request);
@@ -76,15 +77,18 @@ public OllamaApi ollamaApi() {
 
 @Bean
 public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
-	return new OllamaChatClient(ollamaApi).withModel(MODEL)
-		.withOptions(OllamaApiOptions.Options.builder().withTemperature(0.9f).build());
+	return new OllamaChatClient(ollamaApi)
+		.withModel("llama2")
+		.withOptions(OllamaOptions.create()
+			.withTemperature(0.9f)
+			.withTopK(12));
 }
 
 @Bean
 public OllamaEmbeddingClient ollamaEmbedding(OllamaApi ollamaApi) {
-	return new OllamaEmbeddingClient(ollamaApi).withModel("orca-mini");
+	return new OllamaEmbeddingClient(ollamaApi)
+		.withModel("orca-mini");
 }
-
 ```
 
 or you can leverage the `spring-ai-ollama-spring-boot-starter` Spring Boot starter.
@@ -98,23 +102,27 @@ For this add the following dependency:
 </dependency>
 ```
 
+Use the `OllamaConnectionProperties` to configure the Ollama clients (both Chat and Embedding) connections:
+
+| Property  | Description | Default |
+| ------------- | ------------- | ------------- |
+| spring.ai.ollama.base-url  | The base url of the Ollama server. | http://localhost:11434 |
+
 Use the `OllamaChatProperties` to configure the Ollama Chat client:
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
 | spring.ai.ollama.chat.model  | Model to use.  | llama2 |
-| spring.ai.ollama.chat.base-url  | The base url of the Ollama server. | http://localhost:11434 |
 | spring.ai.ollama.chat.enabled  | Allows you to disable the Ollama Chat autoconfiguration.  | true  |
 | spring.ai.ollama.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8 |
 | spring.ai.ollama.chat.topP  | The maximum cumulative probability of tokens to consider when sampling.  | - |
 | spring.ai.ollama.chat.topK  | Max number or responses to generate. | - |
-| spring.ai.options.chat.options  (WIP) | A Map<String,Object> used to configure the Chat client. | - |
+| spring.ai.options.chat.options | A `OllamaOptions` used to configure the Chat client. | - |
 
 and `OllamaEmbeddingProperties` to configure the Ollama Embedding client:
 
 | Property  | Description | Default |
 | ------------- | ------------- | ------------- |
 | spring.ai.ollama.embedding.model  | Model to use.  | llama2 |
-| spring.ai.ollama.embedding.base-url  | The base url of the Ollama server. | http://localhost:11434 |
 | spring.ai.ollama.embedding.enabled  | Allows you to disable the Ollama embedding autoconfiguration.  | true  |
-| spring.ai.options.embedding.options  (WIP) | A Map<String,Object> used to configure the embedding client. | - |
+| spring.ai.options.embedding.options | `OllamaOptions` used to configure the embedding client. | - |

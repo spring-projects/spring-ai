@@ -18,7 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApiOptions;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
@@ -45,7 +45,7 @@ class OllamaChatClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.15").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
 
 	static String baseUrl;
 
@@ -184,7 +184,7 @@ class OllamaChatClientIT {
 		@Bean
 		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
 			return new OllamaChatClient(ollamaApi).withModel(MODEL)
-				.withOptions(OllamaApiOptions.Options.builder().withTemperature(0.9f).build());
+				.withOptions(OllamaOptions.create().withTemperature(0.9f));
 		}
 
 	}

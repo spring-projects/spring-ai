@@ -28,9 +28,10 @@ import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.metadata.ChoiceMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-import org.springframework.ai.ollama.api.OllamaApiOptions;
+
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.MessageType;
@@ -71,7 +72,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		return this;
 	}
 
-	public OllamaChatClient withOptions(OllamaApiOptions.Options options) {
+	public OllamaChatClient withOptions(OllamaOptions options) {
 		this.clientOptions = options.toMap();
 		return this;
 	}

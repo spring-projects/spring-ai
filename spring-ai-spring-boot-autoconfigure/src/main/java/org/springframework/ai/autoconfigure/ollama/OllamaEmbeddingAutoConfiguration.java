@@ -35,7 +35,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  */
 @AutoConfiguration
 @ConditionalOnClass(OllamaApi.class)
-@EnableConfigurationProperties({ OllamaEmbeddingProperties.class })
+@EnableConfigurationProperties({ OllamaEmbeddingProperties.class, OllamaConnectionProperties.class })
 @ConditionalOnProperty(prefix = OllamaEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @ImportRuntimeHints(NativeHints.class)
@@ -43,7 +43,7 @@ public class OllamaEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaEmbeddingProperties properties) {
+	public OllamaApi ollamaApi(OllamaConnectionProperties properties) {
 		return new OllamaApi(properties.getBaseUrl());
 	}
 

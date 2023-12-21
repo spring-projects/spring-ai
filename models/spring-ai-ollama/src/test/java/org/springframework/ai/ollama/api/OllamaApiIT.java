@@ -38,7 +38,6 @@ import org.springframework.ai.ollama.api.OllamaApi.GenerateRequest;
 import org.springframework.ai.ollama.api.OllamaApi.GenerateResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-import org.springframework.ai.ollama.api.OllamaApiOptions.Options;
 
 import static org.assertj.core.api.Assertions.assertThat;;
 
@@ -52,7 +51,7 @@ public class OllamaApiIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.15").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
 
 	static OllamaApi ollamaApi;
 
@@ -91,7 +90,7 @@ public class OllamaApiIT {
 			.withMessages(List.of(Message.builder(Role.user)
 				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.withOptions(Options.builder().withTemperature(0.9f).build())
+			.withOptions(OllamaOptions.create().withTemperature(0.9f))
 			.build();
 
 		ChatResponse response = ollamaApi.chat(request);
@@ -113,7 +112,7 @@ public class OllamaApiIT {
 			.withMessages(List.of(Message.builder(Role.user)
 				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.withOptions(Options.builder().withTemperature(0.9f).build().toMap())
+			.withOptions(OllamaOptions.create().withTemperature(0.9f).toMap())
 			.build();
 
 		Flux<ChatResponse> response = ollamaApi.streamingChat(request);

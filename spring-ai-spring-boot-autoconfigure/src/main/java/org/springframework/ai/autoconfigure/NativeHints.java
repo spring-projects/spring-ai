@@ -12,7 +12,7 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApiOptions;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.aot.hint.MemberCategory;
@@ -80,7 +80,7 @@ public class NativeHints implements RuntimeHintsRegistrar {
 			var mcs = MemberCategory.values();
 			for (var tr : findJsonAnnotatedClasses(OllamaApi.class))
 				hints.reflection().registerType(tr, mcs);
-			for (var tr : findJsonAnnotatedClasses(OllamaApiOptions.class))
+			for (var tr : findJsonAnnotatedClasses(OllamaOptions.class))
 				hints.reflection().registerType(tr, mcs);
 		}
 

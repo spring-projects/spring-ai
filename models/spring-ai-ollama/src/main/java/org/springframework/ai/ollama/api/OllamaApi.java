@@ -31,7 +31,6 @@ import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.ollama.api.OllamaApiOptions.Options;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
@@ -213,7 +212,7 @@ public class OllamaApi {
 				return this;
 			}
 
-			public Builder withOptions(Options options) {
+			public Builder withOptions(OllamaOptions options) {
 				this.options = options.toMap();
 				return this;
 			}
@@ -450,7 +449,7 @@ public class OllamaApi {
 				return this;
 			}
 
-			public Builder withOptions(Options options) {
+			public Builder withOptions(OllamaOptions options) {
 				this.options = options.toMap();
 				return this;
 			}

@@ -33,21 +33,29 @@ public class OllamaChatAutoConfigurationTests {
 	@Test
 	public void propertiesTest() {
 
-		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.ollama.chat.enabled=true", "spring.ai.ollama.chat.model=MODEL_XYZ",
-					"spring.ai.ollama.chat.temperature=0.55", "spring.ai.ollama.chat.topP=0.55",
-					"spring.ai.ollama.chat.topK=123")
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+				"spring.ai.ollama.base-url=TEST_BASE_URL",
+				"spring.ai.ollama.chat.enabled=true",
+				"spring.ai.ollama.chat.model=MODEL_XYZ",
+				"spring.ai.ollama.chat.options.temperature=0.55",
+				"spring.ai.ollama.chat.options.topP=0.56",
+				"spring.ai.ollama.chat.options.topK=123")
+			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OllamaChatProperties.class);
+				var connectionProperties = context.getBean(OllamaConnectionProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(chatProperties.isEnabled()).isTrue();
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getTopP()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
 
-				assertThat(chatProperties.getTopK()).isEqualTo(123);
+				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(123);
 			});
 	}
 

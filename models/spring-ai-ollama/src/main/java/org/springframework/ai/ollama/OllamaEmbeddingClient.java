@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
@@ -28,7 +27,7 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingRequest;
-import org.springframework.ai.ollama.api.OllamaApiOptions;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.util.Assert;
 
 /**
@@ -70,7 +69,7 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 		return this;
 	}
 
-	public OllamaEmbeddingClient withOptions(OllamaApiOptions.Options options) {
+	public OllamaEmbeddingClient withOptions(OllamaOptions options) {
 		this.clientOptions = options.toMap();
 		return this;
 	}

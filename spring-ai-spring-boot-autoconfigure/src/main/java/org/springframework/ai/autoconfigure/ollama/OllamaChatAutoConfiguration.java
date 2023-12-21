@@ -18,7 +18,6 @@ package org.springframework.ai.autoconfigure.ollama;
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.ollama.OllamaChatClient;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApiOptions;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,7 +34,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  */
 @AutoConfiguration
 @ConditionalOnClass(OllamaApi.class)
-@EnableConfigurationProperties({ OllamaChatProperties.class })
+@EnableConfigurationProperties({ OllamaChatProperties.class, OllamaConnectionProperties.class })
 @ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @ImportRuntimeHints(NativeHints.class)
@@ -43,32 +42,14 @@ public class OllamaChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaChatProperties properties) {
+	public OllamaApi ollamaApi(OllamaConnectionProperties properties) {
 		return new OllamaApi(properties.getBaseUrl());
 	}
 
 	@Bean
 	public OllamaChatClient ollamaChatClient(OllamaApi ollamaApi, OllamaChatProperties properties) {
 
-		var optionsBuilder = OllamaApiOptions.Options.builder();
-
-		if (properties.getTemperature() != null) {
-			optionsBuilder.withTemperature(properties.getTemperature());
-		}
-		if (properties.getTopK() != null) {
-			optionsBuilder.withTopK(properties.getTopK());
-		}
-		if (properties.getTopP() != null) {
-			optionsBuilder.withTopP(properties.getTopP());
-		}
-
-		var options = optionsBuilder.build().toMap();
-
-		if (properties.getOptions() != null) {
-			options.putAll(properties.getOptions());
-		}
-
-		return new OllamaChatClient(ollamaApi).withModel(properties.getModel()).withOptions(options);
+		return new OllamaChatClient(ollamaApi).withModel(properties.getModel()).withOptions(properties.getOptions());
 	}
 
 }

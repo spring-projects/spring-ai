@@ -16,8 +16,7 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
-import java.util.Map;
-
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -37,16 +36,16 @@ public class OllamaEmbeddingProperties {
 	private boolean enabled = true;
 
 	/**
-	 * Base URL where Ollama API server is running.
-	 */
-	private String baseUrl = "http://localhost:11434";
-
-	/**
 	 * Ollama Embedding model name. Defaults to 'llama2'.
 	 */
 	private String model = "llama2";
 
-	private Map<String, Object> options;
+	/**
+	 * Client lever Ollama options. Use this property to configure model temperature, topK
+	 * and topP and alike parameters. The null values are ignored defaulting to the
+	 * model's defaults.
+	 */
+	private OllamaOptions options = new OllamaOptions();
 
 	public boolean isEnabled() {
 		return enabled;
@@ -64,19 +63,7 @@ public class OllamaEmbeddingProperties {
 		this.model = model;
 	}
 
-	public String getBaseUrl() {
-		return baseUrl;
-	}
-
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
-
-	public void setOptions(Map<String, Object> clientOptions) {
-		this.options = clientOptions;
-	}
-
-	public Map<String, Object> getOptions() {
+	public OllamaOptions getOptions() {
 		return options;
 	}
 
