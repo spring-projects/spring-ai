@@ -51,13 +51,13 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * @author Christian Tzolov
  * @since 0.7.0
  */
-@RestClientTest(OpenAiClientWithGenerationMetadata2Tests.Config.class)
-public class OpenAiClientWithGenerationMetadata2Tests {
+@RestClientTest(OpenAiChatClientWithGenerationMetadataTests.Config.class)
+public class OpenAiChatClientWithGenerationMetadataTests {
 
 	private static String TEST_API_KEY = "sk-1234567890";
 
 	@Autowired
-	private OpenAiClient openAiClient;
+	private OpenAiChatClient openAiChatClient;
 
 	@Autowired
 	private MockRestServiceServer server;
@@ -74,7 +74,7 @@ public class OpenAiClientWithGenerationMetadata2Tests {
 
 		Prompt prompt = new Prompt("Reach for the sky.");
 
-		ChatResponse response = this.openAiClient.generate(prompt);
+		ChatResponse response = this.openAiChatClient.generate(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -171,8 +171,8 @@ public class OpenAiClientWithGenerationMetadata2Tests {
 		}
 
 		@Bean
-		public OpenAiClient openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiClient(openAiApi);
+		public OpenAiChatClient openAiClient(OpenAiApi openAiApi) {
+			return new OpenAiChatClient(openAiApi);
 		}
 
 	}

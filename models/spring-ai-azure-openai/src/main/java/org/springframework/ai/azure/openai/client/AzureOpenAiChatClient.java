@@ -51,7 +51,7 @@ import org.springframework.util.Assert;
  * @see ChatClient
  * @see com.azure.ai.openai.OpenAIClient
  */
-public class AzureOpenAiClient implements ChatClient {
+public class AzureOpenAiChatClient implements ChatClient {
 
 	private Double temperature = 0.7;
 
@@ -61,9 +61,9 @@ public class AzureOpenAiClient implements ChatClient {
 
 	private final OpenAIClient openAIClient;
 
-	public AzureOpenAiClient(OpenAIClient microsoftOpenAiClient) {
-		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
-		this.openAIClient = microsoftOpenAiClient;
+	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiChatClient) {
+		Assert.notNull(microsoftOpenAiChatClient, "com.azure.ai.openai.OpenAIClient must not be null");
+		this.openAIClient = microsoftOpenAiChatClient;
 	}
 
 	public String getModel() {

@@ -39,7 +39,7 @@ public class BasicEvaluationTest {
 	private static final Logger logger = LoggerFactory.getLogger(BasicEvaluationTest.class);
 
 	@Autowired
-	protected ChatClient openAiClient;
+	protected ChatClient openAiChatClient;
 
 	@Value("classpath:/prompts/spring/test/evaluation/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
@@ -69,12 +69,12 @@ public class BasicEvaluationTest {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = openAiClient.generate(prompt).getGeneration().getContent();
+		String yesOrNo = openAiChatClient.generate(prompt).getGeneration().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = openAiClient.generate(prompt).getGeneration().getContent();
+			String reasonForFailure = openAiChatClient.generate(prompt).getGeneration().getContent();
 			fail(reasonForFailure);
 		}
 		else {

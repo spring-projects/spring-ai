@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ClientIT {
 
 	@Autowired
-	protected HuggingfaceAiClient huggingfaceAiClient;
+	protected HuggingfaceChatClient huggingfaceChatClient;
 
 	@Test
 	void helloWorldCompletion() {
@@ -46,7 +46,7 @@ public class ClientIT {
 				[/INST]
 				 """;
 		Prompt prompt = new Prompt(mistral7bInstruct);
-		ChatResponse chatResponse = huggingfaceAiClient.generate(prompt);
+		ChatResponse chatResponse = huggingfaceChatClient.generate(prompt);
 		assertThat(chatResponse.getGeneration().getContent()).isNotEmpty();
 		String expectedResponse = """
 				```json

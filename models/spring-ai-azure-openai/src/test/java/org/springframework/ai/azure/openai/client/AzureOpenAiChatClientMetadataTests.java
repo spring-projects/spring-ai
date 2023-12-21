@@ -54,19 +54,19 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
 
 /**
- * Unit Tests for {@link AzureOpenAiClient} asserting AI metadata.
+ * Unit Tests for {@link AzureOpenAiChatClient} asserting AI metadata.
  *
  * @author John Blum
  * @since 0.7.0
  */
 @SpringBootTest
 @ActiveProfiles("spring-ai-azure-openai-mocks")
-@ContextConfiguration(classes = AzureOpenAiClientMetadataTests.TestConfiguration.class)
+@ContextConfiguration(classes = AzureOpenAiChatClientMetadataTests.TestConfiguration.class)
 @SuppressWarnings("unused")
-class AzureOpenAiClientMetadataTests {
+class AzureOpenAiChatClientMetadataTests {
 
 	@Autowired
-	private AzureOpenAiClient aiClient;
+	private AzureOpenAiChatClient aiClient;
 
 	@Test
 	void azureOpenAiMetadataCapturedDuringGeneration() {

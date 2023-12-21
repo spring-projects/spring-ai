@@ -31,7 +31,7 @@ You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggi
 
 [source,java]
 ----
-HuggingfaceAiClient client = new HuggingfaceAiClient(apiKey, basePath);
+HuggingfaceChatClient client = new HuggingfaceChatClient(apiKey, basePath);
 Prompt prompt = new Prompt("Your text here...");
 AiResponse response = client.generate(prompt);
 System.out.println(response.getGeneration().getText());
@@ -51,7 +51,7 @@ String mistral7bInstruct = """
         Just generate the JSON object without explanations:
         [/INST]""";
 Prompt prompt = new Prompt(mistral7bInstruct);
-AiResponse aiResponse = huggingfaceAiClient.generate(prompt);
+AiResponse aiResponse = huggingfaceChatClient.generate(prompt);
 System.out.println(response.getGeneration().getText());
 ----
 Will produce the output

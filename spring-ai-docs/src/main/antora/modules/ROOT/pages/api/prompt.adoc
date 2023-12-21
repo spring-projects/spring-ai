@@ -11,7 +11,7 @@ Another analogy is with SQL statement that contain placeholders for certain expr
 
 As Spring AI evolves, it will introduce higher levels of abstraction for interacting with AI models.
 The foundational classes described in this section can be likened to JDBC in terms of their role and functionality.
-The `AiClient` class, for instance, is analogous to the core JDBC library in the JDK.
+The `ChatClient` class, for instance, is analogous to the core JDBC library in the JDK.
 Building upon this, Spring AI can provide helper classes similar to `JdbcTemplate`, Spring Data Repositories, and eventually, more advanced constructs like ChatEngines and Agents that consider past interactions with the model.
 
 The structure of prompts has evolved over time within the AI field.
@@ -24,7 +24,7 @@ OpenAI have introduced even more structure to prompts by categorizing multiple m
 
 === Prompt
 
-It is common to use `AiClient`s `generate` method which takes a `Prompt` instance and returns an `AiResponse`.
+It is common to use `ChatClient`s `generate` method which takes a `Prompt` instance and returns an `AiResponse`.
 
 The Prompt class functions as a container for an organized series of Message objects, with each one forming a segment of the overall prompt.
 Every Message embodies a unique role within the prompt, differing in its content and intent.
@@ -139,7 +139,7 @@ The interfaces implemented by this class support different aspects of prompt cre
 
 `PromptTemplateMessageActions` is tailored for prompt creation through the generation and manipulation of Message objects.
 
-`PromptTemplateActions` is designed to return the Prompt object, which can be passed to AiClient for generating a response.
+`PromptTemplateActions` is designed to return the Prompt object, which can be passed to ChatClient for generating a response.
 
 While these interfaces might not be used extensively in many projects, they show the different approaches to prompt creation.
 
@@ -230,7 +230,7 @@ List<Generation> response = aiClient.generate(prompt).getGenerations();
 
 This shows how you can build up the `Prompt` instance by using the `SystemPromptTemplate` to create a `Message` with the system role passing in placeholder values.
 The message with the role `user` is then combined with the message of the role `system` to form the prompt.
-The prompt is then passed to the AiClient to get a generative response.
+The prompt is then passed to the ChatClient to get a generative response.
 
 
 === Using resources instead of raw Strings

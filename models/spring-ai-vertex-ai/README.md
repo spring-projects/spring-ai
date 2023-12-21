@@ -12,7 +12,7 @@ Note: Currently it is not available outside US, but you can use VPN for testing.
 
 ## PaLM API
 
-The VertexAI, AiClient and EmbeddingClient are built on top the [VertexAiApi.java](./src/main/java/org/springframework/ai/vertex/api/VertexAiApi.java) client library:
+The VertexAI, ChatClient and EmbeddingClient are built on top the [VertexAiApi.java](./src/main/java/org/springframework/ai/vertex/api/VertexAiApi.java) client library:
 
 ![PaLM API](./src/test/resources/Google%20Generative%20AI%20-%20PaLM2%20REST%20API.jpg)
 

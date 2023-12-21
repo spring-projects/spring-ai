@@ -8,7 +8,7 @@ The project was founded with the belief that the next wave of Generative AI appl
 
 At its core, Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.
-For example, Spring AI introduces the `AiClient` interface with implementations for OpenAI and Azure OpenAI.
+For example, Spring AI introduces the `ChatClient` interface with implementations for OpenAI and Azure OpenAI.
 
 In addition to these core abstractions, Spring AI aims to provide higher-level functionalities to address common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
 As the complexity of the use cases increases, the Spring AI project will integrate with other projects in the Spring Ecosystem, such as Spring Integration, Spring Batch, and Spring Data.

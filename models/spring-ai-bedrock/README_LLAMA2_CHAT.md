@@ -43,7 +43,7 @@ Follow the [Llama2ChatBedrockApi.java](./src/main/java/org/springframework/ai/be
 
 ## 1.2 BedrockLlama2ChatClient
 
-[BedrockLlama2ChatClient](./src/main/java/org/springframework/ai/bedrock/llama2/BedrockLlama2ChatClient.java) implements the Spring-Ai `AiClient` and `AiStreamingClient` on top of the `Llama2ChatBedrockApi`.
+[BedrockLlama2ChatClient](./src/main/java/org/springframework/ai/bedrock/llama2/BedrockLlama2ChatClient.java) implements the Spring-Ai `ChatClient` and `StreamingChatClient` on top of the `Llama2ChatBedrockApi`.
 
 You can use like this:
 

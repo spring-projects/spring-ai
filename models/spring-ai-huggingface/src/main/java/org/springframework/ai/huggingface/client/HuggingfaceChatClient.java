@@ -40,7 +40,7 @@ import org.springframework.ai.prompt.Prompt;
  *
  * @author Mark Pollack
  */
-public class HuggingfaceAiClient implements ChatClient {
+public class HuggingfaceChatClient implements ChatClient {
 
 	/**
 	 * Token required for authenticating with the HuggingFace Inference API.
@@ -69,11 +69,11 @@ public class HuggingfaceAiClient implements ChatClient {
 	private int maxNewTokens = 1000;
 
 	/**
-	 * Constructs a new HuggingfaceAiClient with the specified API token and base path.
+	 * Constructs a new HuggingfaceChatClient with the specified API token and base path.
 	 * @param apiToken The API token for HuggingFace.
 	 * @param basePath The base path for API requests.
 	 */
-	public HuggingfaceAiClient(final String apiToken, String basePath) {
+	public HuggingfaceChatClient(final String apiToken, String basePath) {
 		this.apiToken = apiToken;
 		this.apiClient.setBasePath(basePath);
 		this.apiClient.addDefaultHeader("Authorization", "Bearer " + this.apiToken);

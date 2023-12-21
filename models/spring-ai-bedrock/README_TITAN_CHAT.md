@@ -37,7 +37,7 @@ assertThat(results.stream().map(TitanChatResponseChunk::outputText).collect(Coll
 
 ## 1.2 BedrockTitanChatClient
 
-[BedrockTitanChatClient](./src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatClient.java) implements the Spring-Ai `AiClient` and `AiStreamingClient` on top of the `TitanChatBedrockApi`.
+[BedrockTitanChatClient](./src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatClient.java) implements the Spring-Ai `ChatClient` and `StreamingChatClient` on top of the `TitanChatBedrockApi`.
 
 You can use like this:
 

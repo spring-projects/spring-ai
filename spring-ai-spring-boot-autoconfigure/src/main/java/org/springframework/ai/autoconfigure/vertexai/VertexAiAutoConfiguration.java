@@ -37,7 +37,7 @@ public class VertexAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VertexAiChatClient vertexAiClient(VertexAiApi vertexAiApi, VertexAiChatProperties chatProperties) {
+	public VertexAiChatClient vertexAiChatClient(VertexAiApi vertexAiApi, VertexAiChatProperties chatProperties) {
 
 		VertexAiChatClient client = new VertexAiChatClient(vertexAiApi).withTemperature(chatProperties.getTemperature())
 			.withTopP(chatProperties.getTopP())

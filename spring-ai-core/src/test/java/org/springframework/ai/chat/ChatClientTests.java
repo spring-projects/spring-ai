@@ -42,7 +42,7 @@ import org.springframework.ai.prompt.Prompt;
  * @author John Blum
  * @since 0.2.0
  */
-class AiClientTests {
+class ChatClientTests {
 
 	@Test
 	void generateWithStringCallsGenerateWithPromptAndReturnsResponseCorrectly() {

@@ -19,7 +19,7 @@ package org.springframework.ai.autoconfigure.azure.openai;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
-import org.springframework.ai.azure.openai.client.AzureOpenAiClient;
+import org.springframework.ai.azure.openai.client.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.embedding.AzureOpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -53,11 +53,11 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
-	public AzureOpenAiClient azureOpenAiClient(OpenAIClient msoftSdkOpenAiClient) {
-		AzureOpenAiClient azureOpenAiClient = new AzureOpenAiClient(msoftSdkOpenAiClient);
-		azureOpenAiClient.setTemperature(this.azureOpenAiProperties.getTemperature());
-		azureOpenAiClient.setModel(this.azureOpenAiProperties.getModel());
-		return azureOpenAiClient;
+	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient msoftSdkOpenAiClient) {
+		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(msoftSdkOpenAiClient);
+		azureOpenAiChatClient.setTemperature(this.azureOpenAiProperties.getTemperature());
+		azureOpenAiChatClient.setModel(this.azureOpenAiProperties.getModel());
+		return azureOpenAiChatClient;
 	}
 
 	@Bean

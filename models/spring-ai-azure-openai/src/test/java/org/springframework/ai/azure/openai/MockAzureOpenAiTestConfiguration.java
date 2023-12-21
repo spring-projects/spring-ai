@@ -21,7 +21,7 @@ import static org.springframework.ai.test.config.MockAiTestConfiguration.SPRING_
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 
-import org.springframework.ai.azure.openai.client.AzureOpenAiClient;
+import org.springframework.ai.azure.openai.client.AzureOpenAiChatClient;
 import org.springframework.ai.test.config.MockAiTestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -64,8 +64,8 @@ public class MockAzureOpenAiTestConfiguration {
 	}
 
 	@Bean
-	AzureOpenAiClient azureOpenAiClient(OpenAIClient microsoftAzureOpenAiClient) {
-		return new AzureOpenAiClient(microsoftAzureOpenAiClient);
+	AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient microsoftAzureOpenAiClient) {
+		return new AzureOpenAiChatClient(microsoftAzureOpenAiClient);
 	}
 
 }

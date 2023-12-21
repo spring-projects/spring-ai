@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.openai.client.OpenAiChatClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.prompt.Prompt;
@@ -47,13 +47,13 @@ public class AcmeIT extends AbstractIT {
 	private OpenAiEmbeddingClient embeddingClient;
 
 	@Autowired
-	private OpenAiClient aiClient;
+	private OpenAiChatClient chatClient;
 
 	@Test
 	void beanTest() {
 		assertThat(bikesResource).isNotNull();
 		assertThat(embeddingClient).isNotNull();
-		assertThat(aiClient).isNotNull();
+		assertThat(chatClient).isNotNull();
 	}
 
 	// @Test
@@ -96,7 +96,7 @@ public class AcmeIT extends AbstractIT {
 		logger.info("Asking AI model to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
-		ChatResponse response = aiClient.generate(prompt);
+		ChatResponse response = chatClient.generate(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
 	}

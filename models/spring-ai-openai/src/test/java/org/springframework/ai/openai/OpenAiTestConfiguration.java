@@ -2,7 +2,7 @@ package org.springframework.ai.openai;
 
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.openai.client.OpenAiChatClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -28,10 +28,10 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
-	public OpenAiClient openAiClient(OpenAiApi api) {
-		OpenAiClient openAiClient = new OpenAiClient(api);
-		openAiClient.setTemperature(0.3);
-		return openAiClient;
+	public OpenAiChatClient openAiChatClient(OpenAiApi api) {
+		OpenAiChatClient openAiChatClient = new OpenAiChatClient(api);
+		openAiChatClient.setTemperature(0.3);
+		return openAiChatClient;
 	}
 
 	@Bean

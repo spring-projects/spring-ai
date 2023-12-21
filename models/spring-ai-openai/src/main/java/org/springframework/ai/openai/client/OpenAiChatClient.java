@@ -55,7 +55,7 @@ import org.springframework.util.Assert;
  * @see StreamingChatClient
  * @see OpenAiApi
  */
-public class OpenAiClient implements ChatClient, StreamingChatClient {
+public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private Double temperature = 0.7;
 
@@ -71,7 +71,7 @@ public class OpenAiClient implements ChatClient, StreamingChatClient {
 
 	private final OpenAiApi openAiApi;
 
-	public OpenAiClient(OpenAiApi openAiApi) {
+	public OpenAiChatClient(OpenAiApi openAiApi) {
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		this.openAiApi = openAiApi;
 	}

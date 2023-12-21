@@ -262,7 +262,7 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 **AI Client:** A foundational feature of Spring AI is a standardized client API for interfacing with generative AI models. With this common API, you can initially target g [OpenAI's Chat endpoint](https://platform.openai.com/docs/api-reference/chat) and easily swap about the implementation to use other platforms, such as [HuggingFace's Inference Endpoints](https://huggingface.co/inference-endpoints)
 
 Dive deeper into [Models](https://docs.spring.io/spring-ai/reference/concepts.html#_models). in our concept guide.
-For usage details, consult the  [AiClient API guide](https://docs.spring.io/spring-ai/reference/api/aiclient.html)
+For usage details, consult the  [ChatClient API guide](https://docs.spring.io/spring-ai/reference/api/aiclient.html)
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.

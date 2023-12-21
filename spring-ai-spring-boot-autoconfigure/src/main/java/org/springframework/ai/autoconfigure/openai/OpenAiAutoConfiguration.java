@@ -19,7 +19,7 @@ package org.springframework.ai.autoconfigure.openai;
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.openai.client.OpenAiChatClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -43,12 +43,12 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiClient openAiClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
-		OpenAiClient openAiClient = new OpenAiClient(openAiApi);
-		openAiClient.setTemperature(openAiProperties.getTemperature());
-		openAiClient.setModel(openAiProperties.getModel());
+	public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
+		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
+		openAiChatClient.setTemperature(openAiProperties.getTemperature());
+		openAiChatClient.setModel(openAiProperties.getModel());
 
-		return openAiClient;
+		return openAiChatClient;
 	}
 
 	@Bean

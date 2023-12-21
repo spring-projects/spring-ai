@@ -45,7 +45,7 @@ Follow the [AnthropicChatBedrockApi.java](./src/main/java/org/springframework/ai
 
 ## 1.2 BedrockAnthropicChatClient
 
-[BedrockAnthropicChatClient](./src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java) implements the Spring-Ai `AiClient` and `AiStreamingClient` on top of the `AnthropicChatBedrockApi`.
+[BedrockAnthropicChatClient](./src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java) implements the Spring-Ai `ChatClient` and `StreamingChatClient` on top of the `AnthropicChatBedrockApi`.
 
 You can use like this:
 

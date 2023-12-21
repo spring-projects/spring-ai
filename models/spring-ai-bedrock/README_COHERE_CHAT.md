@@ -55,7 +55,7 @@ List<CohereChatResponse.Generation> responses = responseStream.collectList().blo
 
 ## 1.2 BedrockCohereChatClient
 
-[BedrockCohereChatClient](./src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClient.java) implements the Spring-Ai `AiClient` and `AiStreamingClient` on top of the `CohereChatBedrockApi`.
+[BedrockCohereChatClient](./src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClient.java) implements the Spring-Ai `ChatClient` and `StreamingChatClient` on top of the `CohereChatBedrockApi`.
 
 You can use like this:
 

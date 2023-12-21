@@ -16,7 +16,7 @@
 
 package org.springframework.ai.huggingface;
 
-import org.springframework.ai.huggingface.client.HuggingfaceAiClient;
+import org.springframework.ai.huggingface.client.HuggingfaceChatClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
 public class HuggingfaceTestConfiguration {
 
 	@Bean
-	public HuggingfaceAiClient huggingfaceAiClient() {
+	public HuggingfaceChatClient huggingfaceChatClient() {
 		String apiKey = System.getenv("HUGGINGFACE_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
@@ -33,9 +33,9 @@ public class HuggingfaceTestConfiguration {
 		}
 		// Created aws-mistral-7b-instruct-v0-1-805 via
 		// https://ui.endpoints.huggingface.co/
-		HuggingfaceAiClient huggingfaceAiClient = new HuggingfaceAiClient(apiKey,
+		HuggingfaceChatClient huggingfaceChatClient = new HuggingfaceChatClient(apiKey,
 				"https://f6hg7b3cvlmntp5i.us-east-1.aws.endpoints.huggingface.cloud");
-		return huggingfaceAiClient;
+		return huggingfaceChatClient;
 	}
 
 }

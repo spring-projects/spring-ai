@@ -1,28 +1,28 @@
-[[AiClient]]
-= AiClient
+[[ChatClient]]
+= ChatClient
 
-The `AiClient` interface streamlines interactions with xref:concepts.adoc#_models[AI Models].
+The `ChatClient` interface streamlines interactions with xref:concepts.adoc#_models[AI Models].
 It simplifies connecting to various AI Models -— each with potentially unique APIs -— by offering a uniform interface for interaction.
 
 Currently, the interface supports only text-based input and output.
 You should expect some of the classes and interfaces to change as we add other input and output types.
 
-The design of the `AiClient` interface centers around two primary goals:
+The design of the `ChatClient` interface centers around two primary goals:
 
 * *Portability*: It allows easy integration with different AI Models, letting developers switch between differing AI models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability.
 
-* *Simplicity*: By using companion classes like `Prompt` for input encapsulation and `AiResponse` for output handling, the `AiClient` interface simplifies communication with AI Models. It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
+* *Simplicity*: By using companion classes like `Prompt` for input encapsulation and `AiResponse` for output handling, the `ChatClient` interface simplifies communication with AI Models. It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
 
 == API Overview
 
-This section provides a guide to the `AiClient` interface and associated classes.
+This section provides a guide to the `ChatClient` interface and associated classes.
 
-=== AiClient
-Here is the `AiClient` interface definition:
+=== ChatClient
+Here is the `ChatClient` interface definition:
 
 ```java
-public interface AiClient {
+public interface ChatClient {
 
     default String generate(String message) { // implementation omitted
     }
@@ -108,7 +108,7 @@ public class Generation {
 
 == Available Implementations
 
-The `AiClient` interface has the following available implementations:
+The `ChatClient` interface has the following available implementations:
 
 * OpenAI: Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
 * Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
@@ -151,7 +151,7 @@ Add the Spring Boot starter to you project's dependencies:
     </dependency>
 ----
 
-This makes an instance of the `AiClient` that is backed by the https://github.com/TheoKanning/openai-java[Theo Kanning client library] available for injection in your application classes.
+This makes an instance of the `ChatClient` that is backed by the https://github.com/TheoKanning/openai-java[Theo Kanning client library] available for injection in your application classes.
 
 The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from `openai.com`.
 
@@ -165,7 +165,7 @@ export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 [[azure-openai-api]]
 === Azure OpenAI
 
-This makes an instance of the `AiClient` that is backed by https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library] available for injection in your application classes.
+This makes an instance of the `ChatClient` that is backed by https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library] available for injection in your application classes.
 
 The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
 There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
@@ -215,23 +215,23 @@ There is not yet a Spring Boot Starter for this client implementation, so you sh
 
 == Example Usage
 
-The following listing shows a simple "Hello, world" example. It uses the `AiClient.generate` method that takes a `String` as input and returns a `String` as output:
+The following listing shows a simple "Hello, world" example. It uses the `ChatClient.generate` method that takes a `String` as input and returns a `String` as output:
 
 [source,java]
 ----
 @RestController
 public class SimpleAiController {
 
-    private final AiClient aiClient;
+    private final ChatClient chatClient;
 
     @Autowired
-    public SimpleAiController(AiClient aiClient) {
-        this.aiClient = aiClient;
+    public SimpleAiController(ChatClient chatClient) {
+        this.chatClient = chatClient;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", aiClient.generate(message));
+        return Map.of("generation", chatClient.generate(message));
     }
 }
 ----

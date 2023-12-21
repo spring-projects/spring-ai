@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.openai.client.OpenAiClient;
+import org.springframework.ai.openai.client.OpenAiChatClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -43,7 +43,7 @@ public class OpenAiAutoConfigurationIT {
 	@Test
 	void generate() {
 		contextRunner.run(context -> {
-			OpenAiClient client = context.getBean(OpenAiClient.class);
+			OpenAiChatClient client = context.getBean(OpenAiChatClient.class);
 			String response = client.generate("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
