@@ -400,8 +400,8 @@ public class OllamaApi {
 	 * @param stream Whether to stream the response.
 	 * @param format The format to return the response in. Currently the only accepted
 	 * value is "json".
-	 * @param options Additional model parameters. You can use the {@link Options} builder
-	 * to create the options then {@link Options#toMap()} to convert the options into a
+	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
+	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
 	 * map.
 	 */
 	@JsonInclude(Include.NON_NULL)
