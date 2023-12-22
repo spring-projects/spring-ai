@@ -1,17 +1,19 @@
-package org.springframework.ai.openai.client;
+package org.springframework.ai.azure.openai;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
@@ -20,31 +22,39 @@ import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = OpenAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class OpenAiChatClientIT extends AbstractIT {
+@SpringBootTest(classes = AzureOpenAiChatClientIT.TestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
+class AzureOpenAiChatClientIT {
 
-	@Value("classpath:/prompts/system-message.st")
-	private Resource systemResource;
+	@Autowired
+	private AzureOpenAiChatClient chatClient;
+
+	record ActorsFilms(String actor, List<String> movies) {
+	}
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
+		Message systemMessage = new SystemPromptTemplate("""
+				You are a helpful AI assistant. Your name is {name}.
+				You are an AI assistant that helps people find information.
+				Your name is {name}
+				You should reply to the user's request with your name and also in the style of a {voice}.
+				""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
+
+		UserMessage userMessage = new UserMessage("Generate the names of 5 famous pirates.");
+
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = openAiChatClient.generate(prompt);
-		assertThat(response.getGenerations()).hasSize(1);
-		assertThat(response.getGenerations().get(0).getContent()).contains("Blackbeard");
-		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
+		ChatResponse response = chatClient.generate(prompt);
+		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 	}
 
 	@Test
@@ -60,7 +70,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.openAiChatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.generate(prompt).getGeneration();
 
 		List<String> list = outputParser.parse(generation.getContent());
 		assertThat(list).hasSize(5);
@@ -79,7 +89,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiChatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.generate(prompt).getGeneration();
 
 		Map<String, Object> result = outputParser.parse(generation.getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -98,9 +108,10 @@ class OpenAiChatClientIT extends AbstractIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiChatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.generate(prompt).getGeneration();
 
 		ActorsFilms actorsFilms = outputParser.parse(generation.getContent());
+		assertThat(actorsFilms.actor()).isNotNull();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
@@ -118,7 +129,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiChatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.generate(prompt).getGeneration();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getContent());
 		System.out.println(actorsFilms);
@@ -139,19 +150,37 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = openStreamingChatClient.generateStream(prompt)
+		String generationTextFromStream = chatClient.generateStream(prompt)
 			.collectList()
 			.block()
 			.stream()
 			.map(ChatResponse::getGenerations)
 			.flatMap(List::stream)
 			.map(Generation::getContent)
+			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
 		System.out.println(actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@SpringBootConfiguration
+	public static class TestConfiguration {
+
+		@Bean
+		public OpenAIClient openAIClient() {
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.buildClient();
+		}
+
+		@Bean
+		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient) {
+			return new AzureOpenAiChatClient(openAIClient).withModel("gpt-35-turbo").withMaxTokens(200);
+		}
+
 	}
 
 }

@@ -1,4 +1,4 @@
-package org.springframework.ai.openai.client;
+package org.springframework.ai.openai.chat;
 
 import java.util.List;
 

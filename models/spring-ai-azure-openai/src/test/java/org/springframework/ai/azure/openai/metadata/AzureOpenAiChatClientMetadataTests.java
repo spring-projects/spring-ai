@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai.client;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package org.springframework.ai.azure.openai.metadata;
 
 import java.nio.charset.StandardCharsets;
 
 import com.azure.ai.openai.models.ContentFilterResult;
 import com.azure.ai.openai.models.ContentFilterResultDetailsForPrompt;
 import com.azure.ai.openai.models.ContentFilterResultsForChoice;
-import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
-// import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.ContentFilterSeverity;
-
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -55,6 +51,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit Tests for {@link AzureOpenAiChatClient} asserting AI metadata.

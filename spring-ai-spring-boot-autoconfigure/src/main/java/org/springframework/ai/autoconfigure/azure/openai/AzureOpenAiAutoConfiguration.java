@@ -19,50 +19,51 @@ package org.springframework.ai.autoconfigure.azure.openai;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
-import org.springframework.ai.azure.openai.client.AzureOpenAiChatClient;
-import org.springframework.ai.azure.openai.embedding.AzureOpenAiEmbeddingClient;
+
+import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
+import org.springframework.util.Assert;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAIClientBuilder.class)
-@EnableConfigurationProperties(AzureOpenAiProperties.class)
+@EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
+		AzureOpenAiConnectionProperties.class })
 public class AzureOpenAiAutoConfiguration {
-
-	private final AzureOpenAiProperties azureOpenAiProperties;
-
-	public AzureOpenAiAutoConfiguration(AzureOpenAiProperties azureOpenAiProperties) {
-		this.azureOpenAiProperties = azureOpenAiProperties;
-	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAIClient msoftSdkOpenAiClient(AzureOpenAiProperties azureOpenAiProperties) {
-		if (!StringUtils.hasText(azureOpenAiProperties.getApiKey())) {
-			throw new IllegalArgumentException("You must provide an API key with the property name "
-					+ AzureOpenAiProperties.CONFIG_PREFIX + ".api-key");
-		}
-		OpenAIClient msoftSdkOpenAiClient = new OpenAIClientBuilder().endpoint(this.azureOpenAiProperties.getEndpoint())
-			.credential(new AzureKeyCredential(this.azureOpenAiProperties.getApiKey()))
+	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
+
+		Assert.hasText(connectionProperties.getApiKey(), "API key must not be empty");
+		Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
+
+		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
+			.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
 			.buildClient();
-		return msoftSdkOpenAiClient;
 	}
 
 	@Bean
-	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient msoftSdkOpenAiClient) {
-		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(msoftSdkOpenAiClient);
-		azureOpenAiChatClient.setTemperature(this.azureOpenAiProperties.getTemperature());
-		azureOpenAiChatClient.setModel(this.azureOpenAiProperties.getModel());
+	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient,
+			AzureOpenAiChatProperties chatProperties) {
+
+		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(openAIClient)
+			.withModel(chatProperties.getModel())
+			.withTemperature(chatProperties.getTemperature())
+			.withMaxTokens(chatProperties.getMaxTokens())
+			.withTopP(chatProperties.getTopP());
+
 		return azureOpenAiChatClient;
 	}
 
 	@Bean
-	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient msoftSdkOpenAiClient) {
-		return new AzureOpenAiEmbeddingClient(msoftSdkOpenAiClient, this.azureOpenAiProperties.getEmbeddingModel());
+	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient openAIClient,
+			AzureOpenAiEmbeddingProperties embeddingProperties) {
+		return new AzureOpenAiEmbeddingClient(openAIClient, embeddingProperties.getModel());
 	}
 
 }
