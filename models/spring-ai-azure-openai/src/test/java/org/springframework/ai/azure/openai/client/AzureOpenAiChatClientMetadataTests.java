@@ -21,7 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.charset.StandardCharsets;
 
 import com.azure.ai.openai.models.ContentFilterResult;
-import com.azure.ai.openai.models.ContentFilterResults;
+import com.azure.ai.openai.models.ContentFilterResultDetailsForPrompt;
+import com.azure.ai.openai.models.ContentFilterResultsForChoice;
+import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
+// import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.ContentFilterSeverity;
 
 import org.junit.jupiter.api.Test;
@@ -57,6 +60,7 @@ import org.springframework.web.context.request.WebRequest;
  * Unit Tests for {@link AzureOpenAiChatClient} asserting AI metadata.
  *
  * @author John Blum
+ * @author Christian Tzolov
  * @since 0.7.0
  */
 @SpringBootTest
@@ -98,7 +102,8 @@ class AzureOpenAiChatClientMetadataTests {
 
 		assertThat(promptFilterMetadata).isNotNull();
 		assertThat(promptFilterMetadata.getPromptIndex()).isZero();
-		assertContentFilterResults(promptFilterMetadata.getContentFilterMetadata(), ContentFilterSeverity.HIGH);
+		assertContentFilterResultsForPrompt(promptFilterMetadata.getContentFilterMetadata(),
+				ContentFilterSeverity.HIGH);
 	}
 
 	private void assertGenerationMetadata(ChatResponse response) {
@@ -126,11 +131,22 @@ class AzureOpenAiChatClientMetadataTests {
 		assertContentFilterResults(choiceMetadata.getContentFilterMetadata());
 	}
 
-	private void assertContentFilterResults(ContentFilterResults contentFilterResults) {
+	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,
+			ContentFilterSeverity selfHarmSeverity) {
+
+		assertThat(contentFilterResultForPrompt).isNotNull();
+		assertContentFilterResult(contentFilterResultForPrompt.getHate());
+		assertContentFilterResult(contentFilterResultForPrompt.getSelfHarm(), selfHarmSeverity);
+		assertContentFilterResult(contentFilterResultForPrompt.getSexual());
+		assertContentFilterResult(contentFilterResultForPrompt.getViolence());
+
+	}
+
+	private void assertContentFilterResults(ContentFilterResultsForChoice contentFilterResults) {
 		assertContentFilterResults(contentFilterResults, ContentFilterSeverity.SAFE);
 	}
 
-	private void assertContentFilterResults(ContentFilterResults contentFilterResults,
+	private void assertContentFilterResults(ContentFilterResultsForChoice contentFilterResults,
 			ContentFilterSeverity selfHarmSeverity) {
 
 		assertThat(contentFilterResults).isNotNull();

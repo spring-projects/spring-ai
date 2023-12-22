@@ -24,12 +24,15 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
-import com.azure.ai.openai.models.ChatMessage;
-import com.azure.ai.openai.models.ChatRole;
-import com.azure.ai.openai.models.PromptFilterResult;
-
+import com.azure.ai.openai.models.ChatRequestAssistantMessage;
+import com.azure.ai.openai.models.ChatRequestMessage;
+import com.azure.ai.openai.models.ChatRequestSystemMessage;
+import com.azure.ai.openai.models.ChatRequestUserMessage;
+import com.azure.ai.openai.models.ChatResponseMessage;
+import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiGenerationMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
@@ -48,6 +51,7 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Ueibin Kim
  * @author John Blum
+ * @author Christian Tzolov
  * @see ChatClient
  * @see com.azure.ai.openai.OpenAIClient
  */
@@ -85,7 +89,7 @@ public class AzureOpenAiChatClient implements ChatClient {
 	@Override
 	public String generate(String text) {
 
-		ChatMessage azureChatMessage = new ChatMessage(ChatRole.USER, text);
+		ChatRequestMessage azureChatMessage = new ChatRequestUserMessage(text);
 
 		ChatCompletionsOptions options = new ChatCompletionsOptions(List.of(azureChatMessage));
 		options.setTemperature(this.getTemperature());
@@ -98,7 +102,7 @@ public class AzureOpenAiChatClient implements ChatClient {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		for (ChatChoice choice : chatCompletions.getChoices()) {
-			ChatMessage message = choice.getMessage();
+			ChatResponseMessage message = choice.getMessage();
 			if (message != null && message.getContent() != null) {
 				stringBuilder.append(message.getContent());
 			}
@@ -110,34 +114,42 @@ public class AzureOpenAiChatClient implements ChatClient {
 	@Override
 	public ChatResponse generate(Prompt prompt) {
 
-		List<Message> messages = prompt.getMessages();
-		List<ChatMessage> azureMessages = new ArrayList<>();
-
-		for (Message message : messages) {
-			String messageType = message.getMessageType().getValue();
-			ChatRole chatRole = ChatRole.fromString(messageType);
-			azureMessages.add(new ChatMessage(chatRole, message.getContent()));
-		}
+		List<ChatRequestMessage> azureMessages = prompt.getMessages().stream().map(this::fromSpringAiMessage).toList();
 
 		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
+
 		options.setTemperature(this.getTemperature());
 		options.setModel(this.getModel());
+
 		logger.trace("Azure ChatCompletionsOptions: {}", options);
 
 		ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(this.getModel(), options);
+
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
-		List<Generation> generations = new ArrayList<>();
-
-		for (ChatChoice choice : chatCompletions.getChoices()) {
-			ChatMessage choiceMessage = choice.getMessage();
-			Generation generation = new Generation(choiceMessage.getContent())
-				.withChoiceMetadata(generateChoiceMetadata(choice));
-			generations.add(generation);
-		}
+		List<Generation> generations = chatCompletions.getChoices()
+			.stream()
+			.map(choice -> new Generation(choice.getMessage().getContent())
+				.withChoiceMetadata(generateChoiceMetadata(choice)))
+			.toList();
 
 		return new ChatResponse(generations, AzureOpenAiGenerationMetadata.from(chatCompletions))
 			.withPromptMetadata(generatePromptMetadata(chatCompletions));
+	}
+
+	private ChatRequestMessage fromSpringAiMessage(Message message) {
+
+		switch (message.getMessageType()) {
+			case USER:
+				return new ChatRequestUserMessage(message.getContent());
+			case SYSTEM:
+				return new ChatRequestSystemMessage(message.getContent());
+			case ASSISTANT:
+				return new ChatRequestAssistantMessage(message.getContent());
+			default:
+				throw new IllegalArgumentException("Unknown message type " + message.getMessageType());
+		}
+
 	}
 
 	private ChoiceMetadata generateChoiceMetadata(ChatChoice choice) {
@@ -146,7 +158,8 @@ public class AzureOpenAiChatClient implements ChatClient {
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {
 
-		List<PromptFilterResult> promptFilterResults = nullSafeList(chatCompletions.getPromptFilterResults());
+		List<ContentFilterResultsForPrompt> promptFilterResults = nullSafeList(
+				chatCompletions.getPromptFilterResults());
 
 		return PromptMetadata.of(promptFilterResults.stream()
 			.map(promptFilterResult -> PromptFilterMetadata.from(promptFilterResult.getPromptIndex(),

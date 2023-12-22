@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.test.config;
+package org.springframework.ai.azure.openai;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

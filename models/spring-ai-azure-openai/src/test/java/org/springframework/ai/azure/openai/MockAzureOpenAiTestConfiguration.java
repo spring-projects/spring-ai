@@ -16,13 +16,10 @@
 
 package org.springframework.ai.azure.openai;
 
-import static org.springframework.ai.test.config.MockAiTestConfiguration.SPRING_AI_API_PATH;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 
 import org.springframework.ai.azure.openai.client.AzureOpenAiChatClient;
-import org.springframework.ai.test.config.MockAiTestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -58,7 +55,7 @@ public class MockAzureOpenAiTestConfiguration {
 	@Bean
 	OpenAIClient microsoftAzureOpenAiClient(MockWebServer webServer) {
 
-		HttpUrl baseUrl = webServer.url(SPRING_AI_API_PATH);
+		HttpUrl baseUrl = webServer.url(MockAiTestConfiguration.SPRING_AI_API_PATH);
 
 		return new OpenAIClientBuilder().endpoint(baseUrl.toString()).buildClient();
 	}
