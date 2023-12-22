@@ -194,13 +194,13 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	private static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
+	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
-	private static final String DEFAULT_LABEL = "Document";
+	public static final String DEFAULT_LABEL = "Document";
 
 	private static final String INDEX_NAME = "spring-ai-document-index";
 
-	private static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
+	public static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
 
 	private final Driver driver;
 

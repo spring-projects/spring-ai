@@ -170,6 +170,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Neo4j Vector Store-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-neo4j-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- test dependencies -->
 
 		<dependency>
@@ -220,6 +228,13 @@
 		<dependency>
 			<groupId>org.awaitility</groupId>
 			<artifactId>awaitility</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>neo4j</artifactId>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 
