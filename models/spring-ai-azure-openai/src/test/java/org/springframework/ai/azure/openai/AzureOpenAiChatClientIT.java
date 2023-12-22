@@ -50,7 +50,7 @@ class AzureOpenAiChatClientIT {
 				You should reply to the user's request with your name and also in the style of a {voice}.
 				""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
-		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy?");
+		UserMessage userMessage = new UserMessage("Generate the names of 5 famous pirates.");
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = chatClient.generate(prompt);
