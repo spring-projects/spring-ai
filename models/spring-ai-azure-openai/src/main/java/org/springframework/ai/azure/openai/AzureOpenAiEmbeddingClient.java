@@ -1,4 +1,4 @@
-package org.springframework.ai.azure.openai.embedding;
+package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
 import java.util.HashMap;

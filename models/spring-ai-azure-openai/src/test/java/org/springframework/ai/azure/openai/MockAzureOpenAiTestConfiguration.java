@@ -19,7 +19,6 @@ package org.springframework.ai.azure.openai;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 
-import org.springframework.ai.azure.openai.client.AzureOpenAiChatClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
