@@ -20,7 +20,6 @@ import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -41,7 +40,6 @@ public class OpenAiGenerationMetadata implements GenerationMetadata {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
 		OpenAiUsage usage = OpenAiUsage.from(result.usage());
 		OpenAiGenerationMetadata generationMetadata = new OpenAiGenerationMetadata(result.id(), usage);
-		OpenAiHttpResponseHeadersInterceptor.applyTo(generationMetadata);
 		return generationMetadata;
 	}
 

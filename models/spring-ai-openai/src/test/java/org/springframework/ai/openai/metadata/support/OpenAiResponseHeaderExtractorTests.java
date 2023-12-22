@@ -22,15 +22,16 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.openai.metadata.support.OpenAiHttpResponseHeadersInterceptor.DurationFormatter;
+import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor.DurationFormatter;
 
 /**
  * Unit Tests for {@link OpenAiHttpResponseHeadersInterceptor}.
  *
  * @author John Blum
+ * @author Christian Tzolov
  * @since 0.7.0
  */
-public class OpenAiHttpResponseHeadersInterceptorTests {
+public class OpenAiResponseHeaderExtractorTests {
 
 	@Test
 	void parseTimeAsDurationWithDaysHoursMinutesSeconds() {
