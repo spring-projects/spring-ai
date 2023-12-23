@@ -20,12 +20,11 @@ import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.PgVectorStore.PgDistanceType;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import static org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreProperties.CONFIG_PREFIX;
 
 /**
  * @author Christian Tzolov
  */
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(PgVectorStoreProperties.CONFIG_PREFIX)
 public class PgVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.pgvector";
@@ -37,10 +36,6 @@ public class PgVectorStoreProperties {
 	private PgDistanceType distanceType = PgDistanceType.CosineDistance;
 
 	private boolean removeExistingVectorStoreTable = false;
-
-	public static String getConfigPrefix() {
-		return CONFIG_PREFIX;
-	}
 
 	public int getDimensions() {
 		return dimensions;

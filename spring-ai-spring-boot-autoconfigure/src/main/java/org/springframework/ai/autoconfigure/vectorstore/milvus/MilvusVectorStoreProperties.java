@@ -16,19 +16,14 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
-import io.milvus.param.IndexType;
-import io.milvus.param.MetricType;
-
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
-import static org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreProperties.CONFIG_PREFIX;
-
 /**
  * @author Christian Tzolov
  */
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(MilvusVectorStoreProperties.CONFIG_PREFIX)
 public class MilvusVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.milvus";
@@ -42,14 +37,46 @@ public class MilvusVectorStoreProperties {
 
 	private int embeddingDimension = MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
 
-	private IndexType indexType = IndexType.IVF_FLAT;
+	private MilvusIndexType indexType = MilvusIndexType.IVF_FLAT;
 
-	private MetricType metricType = MetricType.COSINE;
+	private MilvusMetricType metricType = MilvusMetricType.COSINE;
 
 	private String indexParameters = "{\"nlist\":1024}";
 
-	public static String getConfigPrefix() {
-		return CONFIG_PREFIX;
+	public enum MilvusMetricType {
+
+		/**
+		 * Invalid metric type
+		 */
+		INVALID,
+		/**
+		 * Euclidean distance
+		 */
+		L2,
+		/**
+		 * Inner product
+		 */
+		IP,
+		/**
+		 * Cosine distance
+		 */
+		COSINE,
+		/**
+		 * Hamming distance
+		 */
+		HAMMING,
+		/**
+		 * Jaccard distance
+		 */
+		JACCARD;
+
+	}
+
+	public enum MilvusIndexType {
+
+		INVALID, FLAT, IVF_FLAT, IVF_SQ8, IVF_PQ, HNSW, DISKANN, AUTOINDEX, SCANN, GPU_IVF_FLAT, GPU_IVF_PQ, BIN_FLAT,
+		BIN_IVF_FLAT, TRIE, STL_SORT;
+
 	}
 
 	public String getDatabaseName() {
@@ -79,20 +106,20 @@ public class MilvusVectorStoreProperties {
 		this.embeddingDimension = embeddingDimension;
 	}
 
-	public IndexType getIndexType() {
+	public MilvusIndexType getIndexType() {
 		return indexType;
 	}
 
-	public void setIndexType(IndexType indexType) {
+	public void setIndexType(MilvusIndexType indexType) {
 		Assert.notNull(indexType, "Index type can not be null");
 		this.indexType = indexType;
 	}
 
-	public MetricType getMetricType() {
+	public MilvusMetricType getMetricType() {
 		return metricType;
 	}
 
-	public void setMetricType(MetricType metricType) {
+	public void setMetricType(MilvusMetricType metricType) {
 		Assert.notNull(metricType, "MetricType can not be null");
 		this.metricType = metricType;
 	}

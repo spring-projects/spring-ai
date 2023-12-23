@@ -17,7 +17,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
 import javax.sql.DataSource;
-
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;

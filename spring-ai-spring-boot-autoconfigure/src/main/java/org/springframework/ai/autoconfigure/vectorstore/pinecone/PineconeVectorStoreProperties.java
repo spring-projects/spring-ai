@@ -19,12 +19,11 @@ package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import static org.springframework.ai.autoconfigure.vectorstore.pinecone.PineconeVectorStoreProperties.CONFIG_PREFIX;
 
 /**
  * @author Christian Tzolov
  */
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(PineconeVectorStoreProperties.CONFIG_PREFIX)
 public class PineconeVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.pinecone";

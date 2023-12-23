@@ -20,14 +20,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import static org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusServiceClientProperties.CONFIG_PREFIX;
-
 /**
  * Parameters for Milvus client connection.
  *
  * @author Christian Tzolov
  */
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(MilvusServiceClientProperties.CONFIG_PREFIX)
 public class MilvusServiceClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.milvus.client";

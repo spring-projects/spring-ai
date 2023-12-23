@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
+import io.milvus.param.IndexType;
+import io.milvus.param.MetricType;
 
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
@@ -48,8 +50,8 @@ public class MilvusVectorStoreAutoConfiguration {
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
 			.withCollectionName(properties.getCollectionName())
 			.withDatabaseName(properties.getDatabaseName())
-			.withIndexType(properties.getIndexType())
-			.withMetricType(properties.getMetricType())
+			.withIndexType(IndexType.valueOf(properties.getIndexType().name()))
+			.withMetricType(MetricType.valueOf(properties.getMetricType().name()))
 			.withIndexParameters(properties.getIndexParameters())
 			.build();
 
