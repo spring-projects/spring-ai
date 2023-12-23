@@ -16,30 +16,18 @@
 
 package org.springframework.ai.autoconfigure.neo4j;
 
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.internal.Scheme;
-import org.neo4j.driver.net.ServerAddressResolver;
-import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.source.InvalidConfigurationPropertyValueException;
-import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-
-import static org.springframework.ai.autoconfigure.neo4j.Neo4jDriverProperties.CONFIG_PREFIX;
 
 /**
  * Properties for Neo4j driver
  *
  * @author Jingzhou Ou
  */
-@ConfigurationProperties(CONFIG_PREFIX)
+@ConfigurationProperties(Neo4jDriverProperties.CONFIG_PREFIX)
 public class Neo4jDriverProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.neo4j.driver";
@@ -96,31 +84,6 @@ public class Neo4jDriverProperties {
 		this.config = config;
 	}
 
-	public AuthToken getAuthToken() {
-		return this.authentication.asAuthToken();
-	}
-
-	public Config asDriverConfig() {
-		Config.ConfigBuilder builder = Config.builder();
-		this.pool.applyTo(builder);
-		String scheme = uri == null ? "bolt" : uri.getScheme();
-		this.config.applyTo(builder, isSimpleScheme(scheme));
-		return builder.build();
-	}
-
-	static boolean isSimpleScheme(String scheme) {
-
-		String lowerCaseScheme = scheme.toLowerCase(Locale.ENGLISH);
-		try {
-			Scheme.validateScheme(lowerCaseScheme);
-		}
-		catch (IllegalArgumentException ex) {
-			throw new IllegalArgumentException(String.format("'%s' is not a supported scheme.", scheme));
-		}
-
-		return lowerCaseScheme.equals("bolt") || lowerCaseScheme.equals("neo4j");
-	}
-
 	public static class Authentication {
 
 		private String username;
@@ -164,30 +127,6 @@ public class Neo4jDriverProperties {
 
 		public void setKerberosTicket(String kerberosTicket) {
 			this.kerberosTicket = kerberosTicket;
-		}
-
-		AuthToken asAuthToken() {
-
-			boolean hasUsername = StringUtils.hasText(this.username);
-			boolean hasPassword = StringUtils.hasText(this.password);
-			boolean hasKerberosTicket = StringUtils.hasText(this.kerberosTicket);
-
-			if (hasUsername && hasKerberosTicket) {
-				throw new InvalidConfigurationPropertyValueException(
-						"spring.ai.vectorstore.neo4j.driver.authentication",
-						"username=" + username + ",kerberos-ticket=" + kerberosTicket,
-						"Cannot specify both username and kerberos ticket.");
-			}
-
-			if (hasUsername && hasPassword) {
-				return AuthTokens.basic(this.username, this.password, this.realm);
-			}
-
-			if (hasKerberosTicket) {
-				return AuthTokens.kerberos(this.kerberosTicket);
-			}
-
-			return AuthTokens.none();
 		}
 
 	}
@@ -256,28 +195,6 @@ public class Neo4jDriverProperties {
 			this.metricsEnabled = metricsEnabled;
 		}
 
-		private void applyTo(Config.ConfigBuilder builder) {
-
-			if (this.logLeakedSessions) {
-				builder.withLeakedSessionsLogging();
-			}
-			builder.withMaxConnectionPoolSize(this.maxConnectionPoolSize);
-			if (this.idleTimeBeforeConnectionTest != null) {
-				builder.withConnectionLivenessCheckTimeout(this.idleTimeBeforeConnectionTest.toMillis(),
-						TimeUnit.MILLISECONDS);
-			}
-			builder.withMaxConnectionLifetime(this.maxConnectionLifetime.toMillis(), TimeUnit.MILLISECONDS);
-			builder.withConnectionAcquisitionTimeout(this.connectionAcquisitionTimeout.toMillis(),
-					TimeUnit.MILLISECONDS);
-
-			if (metricsEnabled) {
-				builder.withDriverMetrics();
-			}
-			else {
-				builder.withoutDriverMetrics();
-			}
-		}
-
 	}
 
 	public static class DriverSettings {
@@ -290,8 +207,6 @@ public class Neo4jDriverProperties {
 
 		private Duration maxTransactionRetryTime = Duration
 			.ofMillis(org.neo4j.driver.internal.retry.RetrySettings.DEFAULT.maxRetryTimeMs());
-
-		private Class<? extends ServerAddressResolver> serverAddressResolverClass;
 
 		public boolean isEncrypted() {
 			return this.encrypted;
@@ -323,38 +238,6 @@ public class Neo4jDriverProperties {
 
 		public void setMaxTransactionRetryTime(Duration maxTransactionRetryTime) {
 			this.maxTransactionRetryTime = maxTransactionRetryTime;
-		}
-
-		public Class<? extends ServerAddressResolver> getServerAddressResolverClass() {
-			return this.serverAddressResolverClass;
-		}
-
-		public void setServerAddressResolverClass(Class<? extends ServerAddressResolver> serverAddressResolverClass) {
-			this.serverAddressResolverClass = serverAddressResolverClass;
-		}
-
-		private void applyTo(Config.ConfigBuilder builder, boolean withEncryptionAndTrustSettings) {
-
-			if (withEncryptionAndTrustSettings) {
-				applyEncryptionAndTrustSettings(builder);
-			}
-
-			builder.withConnectionTimeout(this.connectionTimeout.toMillis(), TimeUnit.MILLISECONDS);
-			builder.withMaxTransactionRetryTime(this.maxTransactionRetryTime.toMillis(), TimeUnit.MILLISECONDS);
-
-			if (this.serverAddressResolverClass != null) {
-				builder.withResolver(BeanUtils.instantiateClass(this.serverAddressResolverClass));
-			}
-		}
-
-		private void applyEncryptionAndTrustSettings(Config.ConfigBuilder builder) {
-			if (this.encrypted) {
-				builder.withEncryption();
-			}
-			else {
-				builder.withoutEncryption();
-			}
-			builder.withTrustStrategy(this.trustSettings.toInternalRepresentation());
 		}
 
 	}
@@ -399,39 +282,6 @@ public class Neo4jDriverProperties {
 
 		public void setHostnameVerificationEnabled(boolean hostnameVerificationEnabled) {
 			this.hostnameVerificationEnabled = hostnameVerificationEnabled;
-		}
-
-		Config.TrustStrategy toInternalRepresentation() {
-			String propertyName = "spring.ai.vectorstore.neo4j.driver.config.trust-settings";
-
-			Config.TrustStrategy internalRepresentation;
-			switch (this.strategy) {
-				case TRUST_ALL_CERTIFICATES:
-					internalRepresentation = Config.TrustStrategy.trustAllCertificates();
-					break;
-				case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-					internalRepresentation = Config.TrustStrategy.trustSystemCertificates();
-					break;
-				case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-					if (this.certFile == null || !this.certFile.isFile()) {
-						throw new InvalidConfigurationPropertyValueException(propertyName, this.strategy.name(),
-								"Configured trust strategy requires a certificate file.");
-					}
-					internalRepresentation = Config.TrustStrategy.trustCustomCertificateSignedBy(this.certFile);
-					break;
-				default:
-					throw new InvalidConfigurationPropertyValueException(propertyName, this.strategy.name(),
-							"Unknown strategy.");
-			}
-
-			if (this.hostnameVerificationEnabled) {
-				internalRepresentation.withHostnameVerification();
-			}
-			else {
-				internalRepresentation.withoutHostnameVerification();
-			}
-
-			return internalRepresentation;
 		}
 
 	}
