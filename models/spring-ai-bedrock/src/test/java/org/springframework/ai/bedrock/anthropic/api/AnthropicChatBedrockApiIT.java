@@ -52,15 +52,12 @@ public class AnthropicChatBedrockApiIT {
 
 		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
 
-		System.out.println(response.completion());
 		assertThat(response).isNotNull();
 		assertThat(response.completion()).isNotEmpty();
 		assertThat(response.completion()).contains("Blackbeard");
 		assertThat(response.stopReason()).isEqualTo("stop_sequence");
 		assertThat(response.stop()).isEqualTo("\n\nHuman:");
 		assertThat(response.amazonBedrockInvocationMetrics()).isNull();
-
-		System.out.println(response);
 	}
 
 	@Test

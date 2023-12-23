@@ -29,14 +29,10 @@ Llama2ChatRequest request = Llama2ChatRequest.builder("Hello, my name is")
 
 Llama2ChatResponse response = llama2ChatApi.chatCompletion(request);
 
-System.out.println(response.generation());
-
 // Streaming response
 Flux<Llama2ChatResponse> responseStream = llama2ChatApi.chatCompletionStream(request);
 
 List<Llama2ChatResponse> responses = responseStream.collectList().block();
-
-System.out.println(responses);
 ```
 
 Follow the [Llama2ChatBedrockApi.java](./src/main/java/org/springframework/ai/bedrock/llama2/api/Llama2ChatBedrockApi.java)'s JavaDoc for further information.

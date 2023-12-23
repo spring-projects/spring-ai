@@ -55,7 +55,6 @@ class PromptTests {
 		Prompt prompt = pt.create(model);
 		assertThat(prompt.getContents()).isNotNull();
 		assertThat(prompt.getMessages()).isNotEmpty().hasSize(1);
-		System.out.println(prompt.getContents());
 
 		String systemTemplate = "You are a helpful assistant that translates {input_language} to {output_language}.";
 		// system_message_prompt = SystemMessagePromptTemplate.from_template(template)

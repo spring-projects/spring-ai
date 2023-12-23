@@ -30,7 +30,6 @@ class AzureOpenAiEmbeddingClientIT {
 		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getData()).hasSize(1);
 		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
-		System.out.println(embeddingClient.dimensions());
 		assertThat(embeddingClient.dimensions()).isEqualTo(1536);
 	}
 

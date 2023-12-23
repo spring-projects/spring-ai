@@ -75,8 +75,6 @@ public class OllamaApiIT {
 
 		GenerateResponse response = ollamaApi.generate(request);
 
-		System.out.println(response);
-
 		assertThat(response).isNotNull();
 		assertThat(response.model()).isEqualTo(response.model());
 		assertThat(response.response()).contains("Sofia");
@@ -94,8 +92,6 @@ public class OllamaApiIT {
 			.build();
 
 		ChatResponse response = ollamaApi.chat(request);
-
-		System.out.println(response);
 
 		assertThat(response).isNotNull();
 		assertThat(response.model()).isEqualTo(response.model());
@@ -118,7 +114,6 @@ public class OllamaApiIT {
 		Flux<ChatResponse> response = ollamaApi.streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(response).isNotNull();
 		assertThat(responses.stream()

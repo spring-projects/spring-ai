@@ -31,14 +31,10 @@ AnthropicChatRequest request = AnthropicChatRequest
 
 AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
 
-System.out.println(response.completion());
-
 // Streaming response
 Flux<AnthropicChatResponse> responseStream = anthropicChatApi.chatCompletionStream(request);
 
 List<AnthropicChatResponse> responses = responseStream.collectList().block();
-
-System.out.println(responses);
 ```
 
 Follow the [AnthropicChatBedrockApi.java](./src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java)'s JavaDoc for further information.

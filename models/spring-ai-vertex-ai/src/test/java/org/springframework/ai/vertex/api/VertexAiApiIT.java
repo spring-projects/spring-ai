@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.vertex.api.VertexAiApi.Embedding;
 import org.springframework.ai.vertex.api.VertexAiApi.GenerateMessageRequest;
@@ -38,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".*")
 public class VertexAiApiIT {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	VertexAiApi vertexAiApi = new VertexAiApi(System.getenv("PALM_API_KEY"));
 
@@ -106,7 +110,7 @@ public class VertexAiApiIT {
 		assertThat(response).hasSizeGreaterThan(0);
 		assertThat(response).contains("models/chat-bison-001", "models/text-bison-001", "models/embedding-gecko-001");
 
-		System.out.println(" - " + response.stream()
+		logger.info(" - " + response.stream()
 			.map(vertexAiApi::getModel)
 			.map(VertexAiApi.Model::toString)
 			.collect(Collectors.joining("\n - ")));
@@ -117,7 +121,6 @@ public class VertexAiApiIT {
 
 		VertexAiApi.Model model = vertexAiApi.getModel("models/chat-bison-001");
 
-		System.out.println(model);
 		assertThat(model).isNotNull();
 		assertThat(model.displayName()).isEqualTo("PaLM 2 Chat (Legacy)");
 	}

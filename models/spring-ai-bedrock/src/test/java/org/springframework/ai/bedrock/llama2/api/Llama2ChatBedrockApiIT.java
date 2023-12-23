@@ -50,7 +50,6 @@ public class Llama2ChatBedrockApiIT {
 
 		Llama2ChatResponse response = llama2ChatApi.chatCompletion(request);
 
-		System.out.println(response.generation());
 		assertThat(response).isNotNull();
 		assertThat(response.generation()).isNotEmpty();
 		assertThat(response.promptTokenCount()).isEqualTo(6);

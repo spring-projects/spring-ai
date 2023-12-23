@@ -16,7 +16,6 @@
 
 package org.springframework.ai.azure.openai;
 
-import java.util.Collections;
 import java.util.List;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -192,13 +191,11 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		return Flux.fromStream(chatCompletionsStream.stream()
 			// Note: the first chat completions can be ignored when using Azure OpenAI
-			// service which is a
-			// known service bug.
+			// service which is a known service bug.
 			.skip(1)
 			.map(ChatCompletions::getChoices)
 			.flatMap(List::stream)
 			.map(choice -> {
-				System.out.println(choice.getDelta());
 				var content = (choice.getDelta() != null) ? choice.getDelta().getContent() : null;
 				var generation = new Generation(content).withChoiceMetadata(generateChoiceMetadata(choice));
 				return new ChatResponse(List.of(generation));
@@ -250,7 +247,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	private <T> List<T> nullSafeList(List<T> list) {
-		return list != null ? list : Collections.emptyList();
+		return list != null ? list : List.of();
 	}
 
 }

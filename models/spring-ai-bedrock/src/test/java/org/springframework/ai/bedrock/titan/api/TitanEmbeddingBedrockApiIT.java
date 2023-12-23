@@ -62,7 +62,6 @@ public class TitanEmbeddingBedrockApiIT {
 			.getContentAsByteArray();
 
 		String imageBase64 = Base64.getEncoder().encodeToString(image);
-		System.out.println(imageBase64.length());
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputImage(imageBase64).build();
 
