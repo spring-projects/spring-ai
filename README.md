@@ -209,15 +209,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-<<<<<<< HEAD
-<<<<<<< HEAD
-        <groupId>org.springframework.ai</groupId>
-=======
         <groupId>org.springframework.ai</groupId> 
->>>>>>> 3818823 (Adds Spring boot starter for Neo4j Store)
-=======
-        <groupId>org.springframework.ai</groupId> 
->>>>>>> caed8b3 (Adds Spring boot starter for Ne04j Store)
         <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>
