@@ -120,7 +120,7 @@ Now add the documents to your vector store:
 
 [source,java]
 ----
-vectorStore.add(List.of(documents));
+vectorStore.add(documents);
 ----
 
 And finally, retrieve documents similar to a query:
