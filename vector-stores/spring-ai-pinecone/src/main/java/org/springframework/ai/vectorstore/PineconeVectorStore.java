@@ -60,9 +60,18 @@ public class PineconeVectorStore implements VectorStore {
 
 	private final PineconeConnection pineconeConnection;
 
-	private final String pineconeNamespace;
-
 	private final ObjectMapper objectMapper;
+
+	private String pineconeNamespace;
+
+	/**
+	 * Change the Index Name.
+	 * @param pineconeNamespace The Azure VectorStore index name to use.
+	 */
+	public void setPineconeNamespace(String pineconeNamespace) {
+		Assert.hasText(pineconeNamespace, "The Pinecone namespace can not be empty.");
+		this.pineconeNamespace = pineconeNamespace;
+	}
 
 	/**
 	 * Configuration class for the PineconeVectorStore.
