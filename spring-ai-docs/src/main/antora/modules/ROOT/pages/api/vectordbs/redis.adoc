@@ -68,7 +68,7 @@ export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-redis-store</artifactId>
+  <artifactId>spring-ai-redis</artifactId>
   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 
@@ -120,7 +120,7 @@ Now add the documents to your vector store:
 
 [source,java]
 ----
-vectorStore.add(List.of(document));
+vectorStore.add(documents);
 ----
 
 And finally, retrieve documents similar to a query:
