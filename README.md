@@ -145,7 +145,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId>
+        <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
