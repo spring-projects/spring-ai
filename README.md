@@ -14,6 +14,11 @@ Let's make your `@Beans` intelligent!
 
 ### Breaking Changes
 
+December 27, 2023 Update
+
+Merge SimplePersistentVectorStore and InMemoryVectorStore into SimpleVectorStore
+- Replace InMemoryVectorStore with SimpleVectorStore
+
 December 20, 2023 Update
 
 Refactor the Ollama client and related classes and package names
