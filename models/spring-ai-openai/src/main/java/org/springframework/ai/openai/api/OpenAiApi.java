@@ -31,6 +31,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.model.RawResponse;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -162,6 +165,7 @@ public class OpenAiApi {
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
+		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.function, function);
 		}
@@ -186,6 +190,7 @@ public class OpenAiApi {
 		 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
 		 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
 		 */
+		@JsonInclude(Include.NON_NULL)
 		public record Function(
 				@JsonProperty("description") String description,
 				@JsonProperty("name") String name,
@@ -198,6 +203,7 @@ public class OpenAiApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
+			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, parseJson(jsonSchema));
 			}
@@ -248,96 +254,68 @@ public class OpenAiApi {
 	 *
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest(
+	public record ChatCompletionRequest (
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Float frequencyPenalty,
-			@JsonProperty("logit_bias") Map<String, Object> logitBias,
+			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("n") Integer n,
 			@JsonProperty("presence_penalty") Float presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("seed") Integer seed,
-			@JsonProperty("stop") String stop,
+			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") ToolChoice toolChoice,
-			@JsonProperty("user") String user) {
+			@JsonProperty("user") String user) implements ModelOptions, ModelOptions.PortableOptions {
 
-		/**
-		 * Shortcut constructor for a chat completion request with the given messages and model.
-		 *
-		 * @param messages A list of messages comprising the conversation so far.
-		 * @param model ID of the model to use.
-		 * @param temperature What sampling temperature to use, between 0 and 1.
-		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(messages, model, 0.0f, null, null, 1, 0.0f,
-					null, null, null, false, temperature, null,
-					null, null, null);
-		}
-
-		/**
-		 * Shortcut constructor for a chat completion request with the given messages, model and control for streaming.
-		 *
-		 * @param messages A list of messages comprising the conversation so far.
-		 * @param model ID of the model to use.
-		 * @param temperature What sampling temperature to use, between 0 and 1.
-		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
-		 * as they become available, with the stream terminated by a data: [DONE] message.
-		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
-			this(messages, model, 0.0f, null, null, 1, 0.0f,
-					null, null, null, stream, temperature, null,
-					null, null, null);
-		}
-
-		/**
-		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
-		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
-		 *
-		 * @param messages A list of messages comprising the conversation so far.
-		 * @param model ID of the model to use.
-		 * @param tools A list of tools the model may call. Currently, only functions are supported as a tool.
-		 * @param toolChoice Controls which (if any) function is called by the model.
-		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
-				List<FunctionTool> tools, ToolChoice toolChoice) {
-			this(messages, model, 0.0f, null, null, 1, 0.0f,
-					null, null, null, false, 0.8f, null,
-					tools, toolChoice, null);
-		}
-
-		/**
-		 * Specifies a tool the model should use. Use to force the model to call a specific function.
-		 *
-		 * @param type The type of the tool. Currently, only 'function' is supported.
-		 * @param function single field map for type 'name':'your function name'.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ToolChoice(
-				@JsonProperty("type") String type,
-				@JsonProperty("function") Map<String, String> function) {
-
-			/**
-			 * Create a tool choice of type 'function' and name 'functionName'.
-			 * @param functionName Function name of the tool.
-			 */
-			public ToolChoice(String functionName) {
-				this("function", Map.of("name", functionName));
+			@Override
+			public PortableOptions getPortableOptions() {
+				return this;
 			}
-		}
+
+			@Override
+			public Double getTemperature() {
+				return (this.temperature() != null ? this.temperature().doubleValue() : null);
+			}
+
+			@Override
+			public String getModel() {
+				return this.model();
+			}
+	}
+
+	/**
+	 * Specifies a tool the model should use. Use to force the model to call a specific function.
+	 *
+	 * @param type The type of the tool. Currently, only 'function' is supported.
+	 * @param function single field map for type 'name':'your function name'.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoice(
+			@JsonProperty("type") String type,
+			@JsonProperty("function") Map<String, String> function) {
 
 		/**
-		 * An object specifying the format that the model must output.
-		 * @param type Must be one of 'text' or 'json_object'.
+		 * Create a tool choice of type 'function' and name 'functionName'.
+		 * @param functionName Function name of the tool.
 		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(
-				@JsonProperty("type") String type) {
+		@ConstructorBinding
+		public ToolChoice(String functionName) {
+			this("function", Map.of("name", functionName));
 		}
+	}
+
+	/**
+	 * An object specifying the format that the model must output.
+	 * @param type Must be one of 'text' or 'json_object'.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ResponseFormat(
+			@JsonProperty("type") String type) {
 	}
 
 	/**
@@ -351,8 +329,6 @@ public class OpenAiApi {
 	 * and null otherwise.
 	 * @param toolCalls The tool calls generated by the model, such as function calls. Applicable only for
 	 * {@link Role#assistant} role and null otherwise.
-	 * @param functionCall Deprecated and replaced by tool_calls. The name and arguments of a function that should be
-	 * called, as generated by the model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionMessage(
@@ -360,8 +336,7 @@ public class OpenAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("function_call") ChatCompletionFunction functionCall) {
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
 		/**
 		 * Create a chat completion message with the given content and role. All other fields are null.
@@ -369,7 +344,16 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(String content, Role role) {
-			this(content, role, null, null, null, null);
+			this(content, role, null, null, null);
+		}
+
+		/**
+		 * Create a chat completion message with the given content, role and tool call ID. All other fields are null.
+		 * @param content The contents of the message.
+		 * @param toolCallId Tool call that this message is responding to. Only applicable for the {@link Role#tool}.
+		 */
+		public ChatCompletionMessage(String content, String toolCallId) {
+			this(content, Role.tool, null, toolCallId, null);
 		}
 
 		/**
@@ -469,7 +453,7 @@ public class OpenAiApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
 			@JsonProperty("object") String object,
-			@JsonProperty("usage") Usage usage) {
+			@JsonProperty("usage") Usage usage) implements RawResponse {
 
 		/**
 		 * Chat completion choice.
@@ -503,13 +487,11 @@ public class OpenAiApi {
 		 *
 		 * @param token The token.
 		 * @param logprob The log probability of the token.
-		 * @param probBytes A list of integers representing the UTF-8 bytes representation
-		 * of the token. Useful in instances where characters are represented by multiple
-		 * tokens and their byte representations must be combined to generate the correct
-		 * text representation. Can be null if there is no bytes representation for the token.
-		 * @param topLogprobs List of the most likely tokens and their log probability,
-		 * at this token position. In rare cases, there may be fewer than the number of
-		 * requested top_logprobs returned.
+		 * @param probBytes A list of integers representing the UTF-8 bytes representation of the token. Useful in
+		 * instances where characters are represented by multiple tokens and their byte representations must be combined
+		 * to generate the correct text representation. Can be null if there is no bytes representation for the token.
+		 * @param topLogprobs List of the most likely tokens and their log probability, at this token position. In rare
+		 * cases, there may be fewer than the number of requested top_logprobs returned.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Content(
@@ -523,10 +505,10 @@ public class OpenAiApi {
 			 *
 			 * @param token The token.
 			 * @param logprob The log probability of the token.
-			 * @param probBytes A list of integers representing the UTF-8 bytes representation
-			 * of the token. Useful in instances where characters are represented by multiple
-			 * tokens and their byte representations must be combined to generate the correct
-			 * text representation. Can be null if there is no bytes representation for the token.
+			 * @param probBytes A list of integers representing the UTF-8 bytes representation of the token. Useful in
+			 * instances where characters are represented by multiple tokens and their byte representations must be
+			 * combined to generate the correct text representation. Can be null if there is no bytes representation for
+			 * the token.
 			 */
 			@JsonInclude(Include.NON_NULL)
 			public record TopLogProbs(
@@ -572,7 +554,7 @@ public class OpenAiApi {
 			@JsonProperty("created") Long created,
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) {
+			@JsonProperty("object") String object) implements RawResponse {
 
 		/**
 		 * Chat completion choice.
@@ -600,6 +582,7 @@ public class OpenAiApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
+		// Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
 
 		return this.restClient.post()
@@ -749,7 +732,7 @@ public class OpenAiApi {
 				});
 	}
 
-	private static Map<String, Object> parseJson(String jsonSchema) {
+	public static Map<String, Object> parseJson(String jsonSchema) {
 		try {
 			return new ObjectMapper().readValue(jsonSchema,
 					new TypeReference<Map<String, Object>>() {

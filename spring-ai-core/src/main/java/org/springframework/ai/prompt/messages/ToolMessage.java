@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.prompt.messages;
 
-/**
- *
- * @author Christian Tzolov
- */
-public interface PromptOptions {
+import java.util.Map;
 
-	public Double getTemperature();
+public class ToolMessage extends AbstractMessage {
+
+	public ToolMessage(String content) {
+		super(MessageType.TOOL, content);
+	}
+
+	public ToolMessage(String content, Map<String, Object> properties) {
+		super(MessageType.TOOL, content, properties);
+	}
+
+	@Override
+	public String toString() {
+		return "ToolMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+				+ messageType + '}';
+	}
 
 }

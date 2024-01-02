@@ -16,8 +16,10 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import java.util.List;
+
 import org.springframework.ai.autoconfigure.NativeHints;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.client.OpenAiChatClient;
 import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
@@ -27,34 +29,40 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestClient;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAiApi.class)
-@EnableConfigurationProperties(OpenAiProperties.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
+		OpenAiEmbeddingProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiApi openAiApi(OpenAiProperties openAiProperties) {
+	public OpenAiApi openAiApi(OpenAiConnectionProperties openAiProperties) {
 		return new OpenAiApi(openAiProperties.getBaseUrl(), openAiProperties.getApiKey(), RestClient.builder());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
-		openAiChatClient.setTemperature(openAiProperties.getTemperature());
-		openAiChatClient.setModel(openAiProperties.getModel());
+	public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi, OpenAiChatProperties chatProperties,
+			List<ToolFunctionCallback> toolFunctionCallbacks) {
+		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi)
+			.withDefaultOptions(chatProperties.getOptions());
 
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			toolFunctionCallbacks.stream().forEach(tool -> openAiChatClient.withFunctionCallback(tool));
+		}
 		return openAiChatClient;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
-		return new OpenAiEmbeddingClient(openAiApi, openAiProperties.getEmbedding().getModel());
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiApi openAiApi,
+			OpenAiEmbeddingProperties embeddingProperties) {
+		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getModel());
 	}
 
 }

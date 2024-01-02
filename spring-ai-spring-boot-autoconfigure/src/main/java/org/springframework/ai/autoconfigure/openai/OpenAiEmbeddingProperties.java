@@ -13,37 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.prompt.messages;
 
-public enum MessageType {
+package org.springframework.ai.autoconfigure.openai;
 
-	USER("user"),
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-	ASSISTANT("assistant"),
+@ConfigurationProperties(OpenAiEmbeddingProperties.CONFIG_PREFIX)
+public class OpenAiEmbeddingProperties {
 
-	SYSTEM("system"),
+	public static final String CONFIG_PREFIX = "spring.ai.openai.embedding";
 
-	FUNCTION("function"),
+	private String model = "text-embedding-ada-002";
 
-	TOOL("tool");
-
-	private final String value;
-
-	MessageType(String value) {
-		this.value = value;
+	public String getModel() {
+		return this.model;
 	}
 
-	public String getValue() {
-		return value;
-	}
-
-	public static MessageType fromValue(String value) {
-		for (MessageType messageType : MessageType.values()) {
-			if (messageType.getValue().equals(value)) {
-				return messageType;
-			}
-		}
-		throw new IllegalArgumentException("Invalid MessageType value: " + value);
+	public void setModel(String model) {
+		this.model = model;
 	}
 
 }

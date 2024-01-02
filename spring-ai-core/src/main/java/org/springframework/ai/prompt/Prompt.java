@@ -16,6 +16,7 @@
 
 package org.springframework.ai.prompt;
 
+import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
 
@@ -23,9 +24,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A prompt is a list of messages that are used as input to the AI provider.
+ */
 public class Prompt {
 
+	/**
+	 * List of messages that make up the prompt.
+	 */
 	private final List<Message> messages;
+
+	/**
+	 * Per-request, provider specific prompt options (e.g. temperature, topK, topP, etc.).
+	 * Depending on the provider, the options may be ignored. When available, the options
+	 * are used to override the default provider options. Note that using specific
+	 * provider options may make the prompt non-portable.
+	 * @see ModelOptions
+	 */
+	private ModelOptions options;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -49,6 +65,19 @@ public class Prompt {
 
 	public List<Message> getMessages() {
 		return this.messages;
+	}
+
+	public ModelOptions getOptions() {
+		return options;
+	}
+
+	public void setOptions(ModelOptions options) {
+		this.options = options;
+	}
+
+	public Prompt withOptions(ModelOptions options) {
+		this.options = options;
+		return this;
 	}
 
 	@Override

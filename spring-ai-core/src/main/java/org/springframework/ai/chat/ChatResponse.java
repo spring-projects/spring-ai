@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
+import org.springframework.ai.model.RawResponse;
 import org.springframework.lang.Nullable;
 
 /**
@@ -26,14 +27,26 @@ import org.springframework.lang.Nullable;
  */
 public class ChatResponse {
 
-	private final GenerationMetadata metadata;
-
 	/**
 	 * List of generated messages returned by the AI provider.
 	 */
 	private final List<Generation> generations;
 
+	/**
+	 * Metadata returned by the AI provider when processing the prompt.
+	 */
 	private PromptMetadata promptMetadata;
+
+	/**
+	 * Raw response content. Depends on the AI provider this could be null. If not null
+	 * you would have to cast it to the provider's specific response type.
+	 */
+	private RawResponse rawResponse;
+
+	/**
+	 * Common AI provider metadata returned in an AI response.
+	 */
+	private final GenerationMetadata metadata;
 
 	/**
 	 * Construct a new {@link ChatResponse} instance without metadata.
@@ -102,6 +115,15 @@ public class ChatResponse {
 	public ChatResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
 		this.promptMetadata = promptMetadata;
 		return this;
+	}
+
+	public ChatResponse withRawResponse(RawResponse rawResponse) {
+		this.rawResponse = rawResponse;
+		return this;
+	}
+
+	public RawResponse getRawResponse() {
+		return rawResponse;
 	}
 
 }

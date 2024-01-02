@@ -166,7 +166,7 @@ public class MetadataTransformerIT {
 		@Bean
 		public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi) {
 			OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
-			openAiChatClient.setTemperature(0.3);
+			// openAiChatClient.getDefaultOptions().setTemperature(0.3f);
 			return openAiChatClient;
 		}
 

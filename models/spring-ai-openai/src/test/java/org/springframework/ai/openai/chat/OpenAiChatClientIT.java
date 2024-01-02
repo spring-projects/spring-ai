@@ -11,6 +11,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.api.ChatCompletionRequestBuilder;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -40,7 +41,12 @@ class OpenAiChatClientIT extends AbstractIT {
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+
+		// Prompt prompt = new Prompt(List.of(userMessage, systemMessage))
+		// .withOptions(OpenAiOptionsBuilder.builder().withTemperature(0.77f).withMaxTokens(300).build());
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage))
+			.withOptions(ChatCompletionRequestBuilder.builder().withTemperature(0.77f).withMaxTokens(300).build());
+
 		ChatResponse response = openAiChatClient.generate(prompt);
 		assertThat(response.getGenerations()).hasSize(1);
 		assertThat(response.getGenerations().get(0).getContent()).contains("Blackbeard");

@@ -13,37 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.prompt.messages;
 
-public enum MessageType {
+package org.springframework.ai.autoconfigure.openai;
 
-	USER("user"),
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-	ASSISTANT("assistant"),
+@ConfigurationProperties(OpenAiConnectionProperties.CONFIG_PREFIX)
+public class OpenAiConnectionProperties {
 
-	SYSTEM("system"),
+	public static final String CONFIG_PREFIX = "spring.ai.openai";
 
-	FUNCTION("function"),
+	private String apiKey;
 
-	TOOL("tool");
+	private String baseUrl = "https://api.openai.com";
 
-	private final String value;
-
-	MessageType(String value) {
-		this.value = value;
+	public String getApiKey() {
+		return this.apiKey;
 	}
 
-	public String getValue() {
-		return value;
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
-	public static MessageType fromValue(String value) {
-		for (MessageType messageType : MessageType.values()) {
-			if (messageType.getValue().equals(value)) {
-				return messageType;
-			}
-		}
-		throw new IllegalArgumentException("Invalid MessageType value: " + value);
+	public String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 }

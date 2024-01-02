@@ -14,29 +14,32 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.api;
+package org.springframework.ai.model;
 
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
+ * Marker interface for prompt options.
  *
  * @author Christian Tzolov
+ * @since 0.8.0
  */
-@JsonInclude(Include.NON_NULL)
-public class ChatCompletionRequest2 extends  OpenAiOptions {
+public interface ModelOptions {
 
-	// @formatter:off
-	@JsonProperty("tools") List<FunctionTool> tools;
-	@JsonProperty("tool_choice") ToolChoice toolChoice;
-	// @formatter:on
+	@JsonIgnore
+	public PortableOptions getPortableOptions();
 
+	/**
+	 * All models should implement the portable options interface.
+	 */
+	public interface PortableOptions {
+
+		@JsonIgnore
+		public String getModel();
+
+		@JsonIgnore
+		public Double getTemperature();
+
+	}
 
 }

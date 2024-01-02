@@ -30,7 +30,7 @@ public class OpenAiTestConfiguration {
 	@Bean
 	public OpenAiChatClient openAiChatClient(OpenAiApi api) {
 		OpenAiChatClient openAiChatClient = new OpenAiChatClient(api);
-		openAiChatClient.setTemperature(0.3);
+		// openAiChatClient.getDefaultOptions().setTemperature(0.3f);
 		return openAiChatClient;
 	}
 
