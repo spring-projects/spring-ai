@@ -53,6 +53,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withIndexType(IndexType.valueOf(properties.getIndexType().name()))
 			.withMetricType(MetricType.valueOf(properties.getMetricType().name()))
 			.withIndexParameters(properties.getIndexParameters())
+			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
 		return new MilvusVectorStore(milvusClient, embeddingClient, config);
