@@ -27,17 +27,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TikaDocumentReaderTests {
 
 	@ParameterizedTest
-	@CsvSource({
-			"classpath:/word-sample.docx,word-sample.docx,Two kinds of links are possible, those that refer to an external website",
-			"classpath:/word-sample.doc,word-sample.doc,The limited permissions granted above are perpetual and will not be revoked by OASIS",
-			"classpath:/sample2.pdf,sample2.pdf,Consult doc/pdftex/manual.pdf from your tetex distribution for more",
-			"classpath:/sample.ppt,sample.ppt,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
-			"classpath:/sample.pptx,sample.pptx,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-			"https://docs.spring.io/spring-ai/reference/,https://docs.spring.io/spring-ai/reference/,help set up essential dependencies and classes." })
-	public void testDocx(String resourceUri, String resourceName, String contentSnipped) {
+	@CsvSource({ "classpath:/word-sample.docx,word-sample.docx,3,This document has embedded the Ubuntu font family.",
+			"classpath:/word-sample.doc,word-sample.doc,3,The paper size is set to Letter, which is 8 ½ x 11.",
+			"classpath:/sample2.pdf,sample2.pdf,3,put all source .tex files in one directory, then chdir to the directory",
+			"classpath:/sample.ppt,sample.ppt,1,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
+			"classpath:/sample.pptx,sample.pptx,1,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+			"https://docs.spring.io/spring-ai/reference/,https://docs.spring.io/spring-ai/reference/,2,help set up essential dependencies and classes." })
+	public void testDocx(String resourceUri, String resourceName, int documentCount, String contentSnipped) {
 
 		var docs = new TikaDocumentReader(resourceUri).get();
-		assertThat(docs).hasSize(1);
+		assertThat(docs).hasSize(documentCount);
 
 		var doc = docs.get(0);
 

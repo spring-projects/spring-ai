@@ -18,6 +18,8 @@ package org.springframework.ai.reader.tika;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,6 +27,8 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
+import org.springframework.ai.transformer.splitter.TextSplitter;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.xml.sax.ContentHandler;
 
 import org.springframework.ai.document.Document;
@@ -56,6 +60,11 @@ public class TikaDocumentReader implements DocumentReader {
 	public static final String METADATA_SOURCE = "source";
 
 	/**
+	 * Default chunk size for splitting the extracted text.
+	 */
+	private static final int DEFAULT_CHUNK_SIZE = 800;
+
+	/**
 	 * Parser to automatically detect the type of document and extract text.
 	 */
 	private final AutoDetectParser parser;
@@ -81,9 +90,16 @@ public class TikaDocumentReader implements DocumentReader {
 	private final Resource resource;
 
 	/**
+	 * Chunk size for splitting the extracted text.
+	 */
+	private int chunkSize = DEFAULT_CHUNK_SIZE;
+
+	/**
 	 * Formatter for the extracted text.
 	 */
 	private final ExtractedTextFormatter textFormatter;
+
+	private final TokenTextSplitter textSplitter = new TokenTextSplitter();
 
 	/**
 	 * Constructor initializing the reader with a given resource URL.
@@ -138,6 +154,14 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	/**
+	 * Sets the chunk size for splitting the extracted text.
+	 * @param chunkSize Chunk size for splitting the extracted text
+	 */
+	public void setChunkSize(int chunkSize) {
+		this.chunkSize = chunkSize;
+	}
+
+	/**
 	 * Extracts and returns the list of documents from the resource.
 	 * @return List of extracted {@link Document}
 	 */
@@ -145,7 +169,11 @@ public class TikaDocumentReader implements DocumentReader {
 	public List<Document> get() {
 		try (InputStream stream = this.resource.getInputStream()) {
 			this.parser.parse(stream, this.handler, this.metadata, this.context);
-			return List.of(toDocument(this.handler.toString()));
+			return textSplitter.split(this.handler.toString(), chunkSize)
+				.stream()
+				.filter(StringUtils::hasText)
+				.map(this::toDocument)
+				.toList();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
