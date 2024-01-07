@@ -139,6 +139,8 @@
 		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
+		<google-cloud-vertexai.version>0.1.0</google-cloud-vertexai.version>
+		<spring-retry.version>2.0.4</spring-retry.version>
 
 	</properties>
 

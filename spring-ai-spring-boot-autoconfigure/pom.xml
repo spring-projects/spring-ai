@@ -153,6 +153,12 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vertex-ai</artifactId>
 			<version>${project.parent.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>grpc-core</artifactId>
+					<groupId>io.grpc</groupId>
+				</exclusion>
+			</exclusions>
 			<optional>true</optional>
 		</dependency>
 
