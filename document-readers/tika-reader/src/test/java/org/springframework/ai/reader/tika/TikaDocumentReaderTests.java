@@ -18,6 +18,7 @@ package org.springframework.ai.reader.tika;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,6 +39,28 @@ public class TikaDocumentReaderTests {
 
 		var docs = new TikaDocumentReader(resourceUri).get();
 		assertThat(docs).hasSize(1);
+
+		var doc = docs.get(0);
+
+		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE);
+		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)).isEqualTo(resourceName);
+		assertThat(doc.getContent()).contains(contentSnipped);
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "classpath:/word-sample.docx,word-sample.docx,3,This document has embedded the Ubuntu font family.",
+			"classpath:/word-sample.doc,word-sample.doc,3,The paper size is set to Letter, which is 8 ½ x 11.",
+			"classpath:/sample2.pdf,sample2.pdf,3,put all source .tex files in one directory, then chdir to the directory",
+			"classpath:/sample.ppt,sample.ppt,1,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
+			"classpath:/sample.pptx,sample.pptx,1,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+			"https://docs.spring.io/spring-ai/reference/,https://docs.spring.io/spring-ai/reference/,2,help set up essential dependencies and classes." })
+	public void testDocsWithTextSplitter(String resourceUri, String resourceName, int documentCount,
+			String contentSnipped) {
+
+		TikaDocumentReader reader = new TikaDocumentReader(resourceUri);
+		reader.setTextSplitter(new TokenTextSplitter());
+		var docs = reader.get();
+		assertThat(docs).hasSize(documentCount);
 
 		var doc = docs.get(0);
 
