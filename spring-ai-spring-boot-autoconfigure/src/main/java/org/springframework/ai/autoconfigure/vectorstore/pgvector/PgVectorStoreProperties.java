@@ -33,7 +33,7 @@ public class PgVectorStoreProperties {
 
 	private PgIndexType indexType = PgIndexType.HNSW;
 
-	private PgDistanceType distanceType = PgDistanceType.CosineDistance;
+	private PgDistanceType distanceType = PgDistanceType.COSINE_DISTANCE;
 
 	private boolean removeExistingVectorStoreTable = false;
 
