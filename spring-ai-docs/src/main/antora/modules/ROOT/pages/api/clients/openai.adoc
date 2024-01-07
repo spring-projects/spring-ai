@@ -1,0 +1,103 @@
+= OpenAI
+
+Spring AI supports ChatGPT, the AI language model by OpenAI. ChatGPT has been instrumental in sparking interest in AI-driven text generation, thanks to its creation of industry-leading text generation models and embeddings.
+
+== Getting Started
+
+You will need to create an API with OpenAI to access ChatGPT models.
+
+Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
+
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
+
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
+----
+
+== Project Dependencies
+
+Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` build file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+
+== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+== OpenAI Properties
+
+The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com"
+| spring.ai.openai.model      | The model to use      | gpt-3.5-turbo
+| spring.ai.openai.api-key    | The API Key           | -
+|====
+
+The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the `ChatClient` implementation for OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.openai.chat.model | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | gpt-35-turbo
+| spring.ai.azure.openai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
+| spring.ai.azure.openai.chat.top-p | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. As an example, a value of 0.15 will cause only the tokens comprising the top  15% of probability mass to be considered. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | -
+|====
+
+
+The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingClient` implementation for OpenAI.
+
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+| spring.ai.openai.embedding.base-url   | The URL to connect to | https://api.openai.com"
+| spring.ai.openai.embedding.model      | The model to use      | text-embedding-ada-002
+| spring.ai.openai.embedding.api-key    | The API Key           | -
+|====

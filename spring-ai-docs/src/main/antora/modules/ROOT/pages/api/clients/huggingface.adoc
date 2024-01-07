@@ -1,6 +1,10 @@
 = HuggingFace
 
-HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API. Further details on HuggingFace Inference Endpoints can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
+HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
+
+== Getting Started
+
+Further details on HuggingFace Inference Endpoints can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
 
 == Prerequisites
 

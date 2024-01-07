@@ -23,6 +23,6 @@ import org.springframework.ai.prompt.Prompt;
 @FunctionalInterface
 public interface StreamingChatClient {
 
-	public Flux<ChatResponse> generateStream(Prompt prompt);
+	Flux<ChatResponse> generateStream(Prompt prompt);
 
 }

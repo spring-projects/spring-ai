@@ -2,43 +2,19 @@
 
 Ollama lets you get up and running with large language models locally.
 
-Refer to the official link:https://github.com/jmorganca/ollama[README] to get started.
+== Getting Started
+
+You first need to run Ollama on your local machine.
+
+Refer to the official Ollama project link:https://github.com/jmorganca/ollama[README] to get started running models on your local machine.
 
 Note, installing `ollama run llama2` will download a 4GB docker image.
 
-You can run the disabled test in `OllamaClientTests.java` to kick the tires.
+== Project Dependencies
 
-== How to use
+Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Add the `spring-ai-ollama` dependency to your project's pom:
-
-[source,xml]
-----
-<dependency>
-   <groupId>org.springframework.ai</groupId>
-   <artifactId>spring-ai-ollama</artifactId>
-   <version>0.8.0-SNAPSHOT</version>
-</dependency>
-----
-
-then create a client and use generate response:
-
-[source,java]
-----
-var ollamaClient = new OllamaClient("http://127.0.0.1:11434", "llama2",
-      ollamaResult -> {
-         if (ollamaResult.getDone()) {
-            ....
-         }
-      });
-
-AiResponse aiResponse = ollamaClient.generate(new Prompt("Hello"));
-----
-
-=== Spring Boot Starter
-
-For convenience, you can opt for the Ollama Boot starter.
-For this add the following dependency:
+Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` build file:
 
 [source,xml]
 ----
@@ -49,13 +25,140 @@ For this add the following dependency:
 </dependency>
 ----
 
-and use the `spring.ai.ollama.*` properties to configure it if you want to use something other than the default values.
+or to your Gradle `build.gradle` build file.
 
-The complete list of supported properties are:
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+=== Ollama Properties
+
+The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama
 
 [cols="3,5,3"]
 |====
 | Property | Description | Default
+
 | spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
 | spring.ai.ollama.model | Language model to use. | `llama2`
+|====
+
+[NOTE]
+====
+The list of options for chat and embedding is to be reviewd. This https://github.com/spring-projects/spring-ai/issues/230[issue] will track progress.
+====
+
+The prefix `spring.ai.ollama.chat` is the property prefix that configures the `ChatClient` implementation for Ollama.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.ollama.chat.enabled                   | Enable the Ollama Chat Client | true
+| spring.ai.ollama.chat.model                     | The name of the model to use  | llama2
+| spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
+| spring.ai.ollama.chat.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
+| spring.ai.ollama.chat.options.num-batch         | ???                                                             | -
+| spring.ai.ollama.chat.options.num-gqa           | The number of GQA groups in the transformer layer. Required for some models, for example, it is 8 for llama2:70b. | -
+| spring.ai.ollama.chat.options.num-gpu           | The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable. | -
+| spring.ai.ollama.chat.options.main-gpu          | ???                                                             | -
+| spring.ai.ollama.chat.options.low-vram          | ???                                                             | -
+| spring.ai.ollama.chat.options.f16-kv            | ???                                                             | -
+| spring.ai.ollama.chat.options.logits-all        | ???                                                             | -
+| spring.ai.ollama.chat.options.vocab-only        | ???                                                             | -
+| spring.ai.ollama.chat.options.use-mmap          | ???                                                             | -
+| spring.ai.ollama.chat.options.use-mlock         | ???                                                             | -
+| spring.ai.ollama.chat.options.embedding-only    | ???                                                             | -
+| spring.ai.ollama.chat.options.rope-frequency-base | ???                                                           | -
+| spring.ai.ollama.chat.options.rope-frequency-scale | ???                                                          | -
+| spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). | -
+| spring.ai.ollama.chat.options.num-keep          | ???                                                             | -
+| spring.ai.ollama.chat.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | 0
+| spring.ai.ollama.chat.options.num-predict       | Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context) | 128
+| spring.ai.ollama.chat.options.top-k             | Reduces the probability of generating nonsense. A higher value (e.g., 100) will give more diverse answers, while a lower value (e.g., 10) will be more conservative.  | 40
+| spring.ai.ollama.chat.options.top-p             | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.  | 0.9
+| spring.ai.ollama.chat.options.tfs-z             | Tail-free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. | 1
+| spring.ai.ollama.chat.options.typical-p         | ???                                                             | -
+| spring.ai.ollama.chat.options.repeat-last-n      | Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx) | 64
+| spring.ai.ollama.chat.options.temperature       | The temperature of the model. Increasing the temperature will make the model answer more creatively. | 0.8
+| spring.ai.ollama.chat.options.repeat-penalty    | Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. | 1.1
+| spring.ai.ollama.chat.options.presence-penalty  | ???                                                             | -
+| spring.ai.ollama.chat.options.frequency-penalty | ???                                                             | -
+| spring.ai.ollama.chat.options.mirostat          | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0) | 0
+| spring.ai.ollama.chat.options.mirostat-tau      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
+| spring.ai.ollama.chat.options.mirostat-eta      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 5.0
+| spring.ai.ollama.chat.options.penalize-newline  | ???                                                             | -
+| spring.ai.ollama.chat.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
+|====
+
+
+The prefix `spring.ai.ollama.embedding` is the property prefix that configures the `EmbeddingClient` implementation for Ollama.
+
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.ollama.embedding.enabled             | Enable the Ollama Chat Client | true
+| spring.ai.ollama.embedding.model               | The name of the model to use  | llama2
+| spring.ai.ollama.embedding.options.numa              | Whether to use NUMA.                                           | false
+| spring.ai.ollama.embedding.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
+| spring.ai.ollama.embedding.options.num-batch         | ???                                                             | -
+| spring.ai.ollama.embedding.options.num-gqa           | The number of GQA groups in the transformer layer. Required for some models, for example, it is 8 for llama2:70b. | -
+| spring.ai.ollama.embedding.options.num-gpu           | The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable. | -
+| spring.ai.ollama.embedding.options.main-gpu          | ???                                                             | -
+| spring.ai.ollama.embedding.options.low-vram          | ???                                                             | -
+| spring.ai.ollama.embedding.options.f16-kv            | ???                                                             | -
+| spring.ai.ollama.embedding.options.logits-all        | ???                                                             | -
+| spring.ai.ollama.embedding.options.vocab-only        | ???                                                             | -
+| spring.ai.ollama.embedding.options.use-mmap          | ???                                                             | -
+| spring.ai.ollama.embedding.options.use-mlock         | ???                                                             | -
+| spring.ai.ollama.embedding.options.embedding-only    | ???                                                             | -
+| spring.ai.ollama.embedding.options.rope-frequency-base | ???                                                           | -
+| spring.ai.ollama.embedding.options.rope-frequency-scale | ???                                                          | -
+| spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). | -
+| spring.ai.ollama.embedding.options.num-keep          | ???                                                             | -
+| spring.ai.ollama.embedding.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | 0
+| spring.ai.ollama.embedding.options.num-predict       | Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context) | 128
+| spring.ai.ollama.embedding.options.top-k             | Reduces the probability of generating nonsense. A higher value (e.g., 100) will give more diverse answers, while a lower value (e.g., 10) will be more conservative.  | 40
+| spring.ai.ollama.embedding.options.top-p             | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.  | 0.9
+| spring.ai.ollama.embedding.options.tfs-z             | Tail-free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. | 1
+| spring.ai.ollama.embedding.options.typical-p         | ???                                                             | -
+| spring.ai.ollama.embedding.options.repeat-last-n      | Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx) | 64
+| spring.ai.ollama.embedding.options.temperature       | The temperature of the model. Increasing the temperature will make the model answer more creatively. | 0.8
+| spring.ai.ollama.embedding.options.repeat-penalty    | Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. | 1.1
+| spring.ai.ollama.embedding.options.presence-penalty  | ???                                                             | -
+| spring.ai.ollama.embedding.options.frequency-penalty | ???                                                             | -
+| spring.ai.ollama.embedding.options.mirostat          | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0) | 0
+| spring.ai.ollama.embedding.options.mirostat-tau      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
+| spring.ai.ollama.embedding.options.mirostat-eta      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 5.0
+| spring.ai.ollama.embedding.options.penalize-newline  | ???                                                             | -
+| spring.ai.ollama.embedding.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
 |====

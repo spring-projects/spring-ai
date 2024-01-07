@@ -1,48 +1,27 @@
 [[getting-started]]
 = Getting Started
 
-This section offers quick guidance on how to get started with using Spring AI.
+This section offers jumping off points for how to get started using Spring AI.
 
-== API Keys
+== Dependency Management
 
-To use OpenAI or Azure OpenAI, you need to generate an API key.
+The Spring AI project provides artifacts in the Spring Milestone and Snapshot repositories.
 
-=== OpenAI
+You need to add configuration to add a reference to the Spring Milestone or Snapshot repository in your build file.
 
-Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
-
-The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
-
-Exporting an environment variable is one way to set that configuration property:
-
-[source,shell]
-----
-export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
-----
-
-=== Azure OpenAI
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
-
-The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
-There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
-
-Exporting environment variables is one way to set these configuration properties:
-
-[source,shell]
-----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
-export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
-----
-
-== Dependencies
-
-The Spring AI project provides artifacts in the Spring Milestone Repository.
-You need to add configuration to add a reference to the Spring Milestone repository in your build file.
-For example, in Maven, add the following repository definition:
+For Maven, add the following repository definitions as needed:
 
 [source,xml]
 ----
   <repositories>
+    <repository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
     <repository>
       <id>spring-snapshots</id>
       <name>Spring Snapshots</name>
@@ -54,27 +33,31 @@ For example, in Maven, add the following repository definition:
   </repositories>
 ----
 
-Add the Spring Boot Starter, depending on whether you use Azure Open AI or Open AI:
+For Gradle, add the following repository definitions as needed:
 
-* Azure OpenAI
-[source, xml]
+[source,groovy]
 ----
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
+repositories {
+  mavenCentral()
+  maven { url 'https://repo.spring.io/milestone' }
+  maven { url 'https://repo.spring.io/snapshot' }
+}
 ----
 
-* OpenAI
-[source, xml]
-----
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-----
+
+
+== Chat Models
+
+* xref:api/clients/openai.adoc#_getting_started[OpenAI]
+* xref:api/clients/azure-openai.adoc#_gettting_started[Azure OpenAI]
+* xref:api/clients/huggingface.adoc#_getting_started[HuggingFace]
+* xref:api/clients/bedrock.adoc
+* xref:api/clients/ollama.adoc#_getting_started[Ollama]
+*
+
+== Embedding Models
+
+
 
 == Spring CLI
 

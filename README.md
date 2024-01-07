@@ -135,7 +135,7 @@ Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
 * Azure OpenAI
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId>
+        <groupId>org.springframework.experimental.ai</groupId>
         <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
@@ -337,7 +337,7 @@ Examples of Vector Databases include Chroma, Postgres, Pinecone, Weaviate, Mongo
 
 ## Building
 
-To build with only unit tests
+To build with running unit tests
 
 ```shell
 ./mvnw clean package

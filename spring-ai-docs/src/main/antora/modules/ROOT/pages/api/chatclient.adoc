@@ -108,9 +108,9 @@ public class Generation {
 
 == Available Implementations
 
-The `ChatClient` interface has the following available implementations:
+There is a `ChatClient` implementation for the following Model providers:
 
-* OpenAI: Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
+* OpenAI
 * Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
 * Hugging Face: Using the https://huggingface.co/inference-endpoints[Hugging Face Hosted Inference Service].  This gives you access to hundreds of models.
 * https://ollama.ai/[Ollama]: Run large language models locally.
@@ -236,13 +236,13 @@ public class SimpleAiController {
 }
 ----
 
-== Best Practices
-
-TBD
-
-== Troubleshooting
-
-TBD
+// == Best Practices
+//
+// TBD
+//
+// == Troubleshooting
+//
+// TBD
 
 == API Docs
 
@@ -252,6 +252,6 @@ You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/
 
 The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
 
-== Related Resources
-
-TBD
+// == Related Resources
+//
+// TBD

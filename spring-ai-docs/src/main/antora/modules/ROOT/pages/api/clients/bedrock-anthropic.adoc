@@ -1,0 +1,109 @@
+= Amazon Bedrock Anthropic
+
+https://www.anthropic.com/product[Anthropic's Claude] is an AI assistant based on Anthropic’s research into training helpful, honest, and harmless AI systems.
+
+The Claude model has the following high level features
+
+* 200k Token Context Window: Claude boasts a generous token capacity of 200,000, making it ideal for handling extensive information in applications like technical documentation, codebases, and literary works.
+* Supported Tasks: Claude's versatility spans tasks such as summarization, Q&A, trend forecasting, and document comparisons, enabling a wide range of applications from dialogues to content generation.
+* AI Safety Features: Built on Anthropic's safety research, Claude prioritizes helpfulness, honesty, and harmlessness in its interactions, reducing brand risk and ensuring responsible AI behavior.
+
+The https://aws.amazon.com/bedrock/claude[AWS Bedrock Anthropic Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
+
+== Getting Started
+
+Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+
+== Project Dependencies
+
+Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` build file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+== Enable Anthropic Support
+
+Spring AI defines a configuration property named `spring.ai.bedrock.llama2.chat.enabled` that you should set to `true` to enable support for Llama2.
+
+Exporting environment variables in one way to set this configuration property.
+
+[source,shell]
+----
+export SPRING_AI_BEDROCK_LLAMA2_CHAT_ENABLED=true
+----
+
+== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+== Bedrock Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+
+[cols="3,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+|====
+
+
+The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the `ChatClient` implementation for Claude.
+
+[cols="8,4,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.anthropic.chat.enabled              | Enable or disable support for Anthropic  | false
+| spring.ai.bedrock.anthropic.chat.model                | The model id to use (See Below) | anthropic.claude-v2
+| spring.ai.bedrock.anthropic.chat.anthropic-version                | The version of the model to use | bedrock-2023-05-31
+| spring.ai.bedrock.anthropic.chat.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model.  This value specifies default to be used by the backend while making the call to the model.| 0.7
+| spring.ai.bedrock.anthropic.chat.top-p                | The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.| AWS Bedrock default
+| spring.ai.bedrock.anthropic.chat.max-tokens-to-sample | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | 300
+| spring.ai.bedrock.anthropic.chat.top-k                | Specify the number of token choices the model uses to generate the next token. | 10
+| spring.ai.bedrock.anthropic.chat.stop-sequences       | Configure up to four sequences that the model recognizes. After a stop sequence, the model stops generating further tokens. The returned text doesn't contain the stop sequence. | "\n\Human:"
+|====
+
+Look at the Spring AI enumeration `AnthropicChatModel` for other model IDs.  The other value supported is `anthropic.claude-instant-v1`.
+
+Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
