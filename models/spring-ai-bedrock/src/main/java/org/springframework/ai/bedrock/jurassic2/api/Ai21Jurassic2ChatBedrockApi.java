@@ -41,7 +41,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * Create a new Ai21Jurassic2ChatBedrockApi instance using the default credentials provider chain, the default
 	 * object mapper, default temperature and topP values.
 	 *
-	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatCompletionModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public Ai21Jurassic2ChatBedrockApi(String modelId, String region) {
@@ -243,7 +243,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	/**
 	 * Ai21 Jurassic2 models version.
 	 */
-	public enum Ai21Jurassic2ChatCompletionModel {
+	public enum Ai21Jurassic2ChatModel {
 
 		/**
 		 * ai21.j2-mid-v1
@@ -264,7 +264,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 			return id;
 		}
 
-		Ai21Jurassic2ChatCompletionModel(String value) {
+		Ai21Jurassic2ChatModel(String value) {
 			this.id = value;
 		}
 	}

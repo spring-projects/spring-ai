@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.bedrock.llama2;
 
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatCompletionModel;
+import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -58,10 +58,9 @@ public class BedrockLlama2ChatProperties {
 	private Integer maxGenLen = 300;
 
 	/**
-	 * The model id to use. See the {@link Llama2ChatCompletionModel} for the supported
-	 * models.
+	 * The model id to use. See the {@link Llama2ChatModel} for the supported models.
 	 */
-	private String model = Llama2ChatCompletionModel.LLAMA2_70B_CHAT_V1.id();
+	private String model = Llama2ChatModel.LLAMA2_70B_CHAT_V1.id();
 
 	public boolean isEnabled() {
 		return this.enabled;

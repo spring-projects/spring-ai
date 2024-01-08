@@ -23,7 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatCompletionModel;
+import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
 
@@ -36,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class Llama2ChatBedrockApiIT {
 
-	private Llama2ChatBedrockApi llama2ChatApi = new Llama2ChatBedrockApi(
-			Llama2ChatCompletionModel.LLAMA2_70B_CHAT_V1.id(), Region.US_EAST_1.id());
+	private Llama2ChatBedrockApi llama2ChatApi = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+			Region.US_EAST_1.id());
 
 	@Test
 	public void chatCompletion() {
