@@ -28,7 +28,7 @@ import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatClient;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatCompletionModel;
+import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.ai.prompt.SystemPromptTemplate;
@@ -52,7 +52,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.llama2.chat.model=" + Llama2ChatCompletionModel.LLAMA2_70B_CHAT_V1.id(),
+				"spring.ai.bedrock.llama2.chat.model=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
 				"spring.ai.bedrock.llama2.chat.temperature=0.5", "spring.ai.bedrock.llama2.chat.maxGenLen=500")
 		.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class));
 

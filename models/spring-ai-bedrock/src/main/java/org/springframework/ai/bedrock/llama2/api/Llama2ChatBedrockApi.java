@@ -42,7 +42,7 @@ public class Llama2ChatBedrockApi extends
 	 * Create a new Llama2ChatBedrockApi instance using the default credentials provider chain, the default object
 	 * mapper, default temperature and topP values.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatCompletionModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public Llama2ChatBedrockApi(String modelId, String region) {
@@ -52,7 +52,7 @@ public class Llama2ChatBedrockApi extends
 	/**
 	 * Create a new Llama2ChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatCompletionModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -161,7 +161,7 @@ public class Llama2ChatBedrockApi extends
 	/**
 	 * Llama2 models version.
 	 */
-	public enum Llama2ChatCompletionModel {
+	public enum Llama2ChatModel {
 
 		/**
 		 * meta.llama2-13b-chat-v1
@@ -182,7 +182,7 @@ public class Llama2ChatBedrockApi extends
 			return id;
 		}
 
-		Llama2ChatCompletionModel(String value) {
+		Llama2ChatModel(String value) {
 			this.id = value;
 		}
 	}

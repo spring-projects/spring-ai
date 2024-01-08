@@ -101,6 +101,6 @@ The prefix `spring.ai.bedrock.llama2.chat` is the property prefix that configure
 | spring.ai.bedrock.llama2.chat.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | 300
 |====
 
-Look at the Spring AI enumeration, `Llama2ChatCompletionModel`  for other model IDs.  The other value supported is `meta.llama2-13b-chat-v1`.
+Look at the Spring AI enumeration, `Llama2ChatModel`  for other model IDs.  The other value supported is `meta.llama2-13b-chat-v1`.
 
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].

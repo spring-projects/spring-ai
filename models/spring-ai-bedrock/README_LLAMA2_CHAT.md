@@ -18,7 +18,7 @@ Here is a simple snippet how to use the api programmatically:
 
 ```java
 Llama2ChatBedrockApi llama2ChatApi = new Llama2ChatBedrockApi(
-			Llama2ChatCompletionModel.LLAMA2_70B_CHAT_V1.id(),
+			Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
 			Region.US_EAST_1.id());
 
 Llama2ChatRequest request = Llama2ChatRequest.builder("Hello, my name is")
@@ -51,7 +51,7 @@ You can use like this:
 @Bean
 public Llama2ChatBedrockApi llama2Api() {
 	return new Llama2ChatBedrockApi(
-		Llama2ChatCompletionModel.LLAMA2_70B_CHAT_V1.id(),
+		Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
 		EnvironmentVariableCredentialsProvider.create(),
 		Region.US_EAST_1.id(),
 		new ObjectMapper());
@@ -87,5 +87,5 @@ Use the `BedrockLlama2ChatProperties` to configure the Bedrock Llama2 Chat clien
 | spring.ai.bedrock.llama2.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7 |
 | spring.ai.bedrock.llama2.chat.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default |
 | spring.ai.bedrock.llama2.chat.maxGenLen  | Specify the maximum number of tokens to use in the generated response. | 300 |
-| spring.ai.bedrock.llama2.chat.model  | The model id to use. See the `Llama2ChatCompletionModel` for the supported models.  | meta.llama2-70b-chat-v1 |
+| spring.ai.bedrock.llama2.chat.model  | The model id to use. See the `Llama2ChatModel` for the supported models.  | meta.llama2-70b-chat-v1 |
 

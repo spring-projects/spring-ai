@@ -89,4 +89,4 @@ Use the `BedrockAnthropicChatProperties` to configure the Bedrock Llama2 Chat cl
 | spring.ai.bedrock.anthropic.chat.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8 |
 | spring.ai.bedrock.anthropic.chat.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default |
 | spring.ai.bedrock.anthropic.chat.maxGenLen  | Specify the maximum number of tokens to use in the generated response. | 300 |
-| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the `Llama2ChatCompletionModel` for the supported models.  | meta.llama2-70b-chat-v1 |
+| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the `Llama2ChatModel` for the supported models.  | meta.llama2-70b-chat-v1 |

@@ -14,7 +14,7 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatCompletionModel;
+import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -158,7 +158,7 @@ class BedrockLlama2ChatClientIT {
 
 		@Bean
 		public Llama2ChatBedrockApi llama2Api() {
-			return new Llama2ChatBedrockApi(Llama2ChatCompletionModel.LLAMA2_70B_CHAT_V1.id(),
+			return new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
 		}
 
