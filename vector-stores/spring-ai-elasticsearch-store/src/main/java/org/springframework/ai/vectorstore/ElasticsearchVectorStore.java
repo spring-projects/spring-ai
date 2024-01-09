@@ -1,5 +1,6 @@
 package org.springframework.ai.vectorstore;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -14,7 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.List;
@@ -74,12 +78,18 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
                 @JsonProperty("script_score")
                 ScriptScore scriptScore
         ) {
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+
             public record ScriptScore(
                     @JsonProperty("query")
                     Map<String, Object> query,
 
                     @JsonProperty("script")
-                    Script script
+                    Script script,
+                    @JsonProperty("min_score")
+                    Float minScore,
+                    @JsonProperty("boost")
+                    Float boost
             ) {
                 public record Script(
                         @JsonProperty("source")
@@ -152,6 +162,8 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
     private final RestClient restClient;
     private final String index;
 
+    private final FilterExpressionConverter filterExpressionConverter;
+
     public ElasticsearchVectorStore(RestClient restClient, EmbeddingClient embeddingClient) {
         this(INDEX_NAME, restClient, embeddingClient);
     }
@@ -163,6 +175,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
         this.embeddingClient = embeddingClient;
         this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.index = index;
+        this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
     }
 
     @Override
@@ -175,11 +188,10 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
         }
 
         Request request = new Request("POST", "/_bulk");
-        String collect = documents.stream()
+        request.setJsonEntity(documents.stream()
                 .map(document -> buildBulkActionJson(document.getId()) + NEW_LINE +
                         buildJsonString(new ElasticsearchUpsertDocumentBody(document)))
-                .collect(Collectors.joining(NEW_LINE, "", NEW_LINE));
-        request.setEntity(new StringEntity(collect, ContentType.APPLICATION_JSON));
+                .collect(Collectors.joining(NEW_LINE, "", NEW_LINE)));
         requestToElasticsearch(request);
     }
 
@@ -216,22 +228,38 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
     @Override
     public List<Document> similaritySearch(SearchRequest searchRequest) {
-        if (searchRequest.getFilterExpression() != null) {
-            throw new UnsupportedOperationException(
-                    "The [" + this.getClass() + "] doesn't support metadata filtering!");
-        }
-        return similaritySearch(this.embeddingClient.embed(searchRequest.getQuery()));
+        Assert.notNull(searchRequest, "The search request must not be null.");
+        return similaritySearch(this.embeddingClient.embed(searchRequest.getQuery()), searchRequest.getTopK(),
+                Double.valueOf(searchRequest.getSimilarityThreshold()).floatValue(),
+                searchRequest.getFilterExpression());
     }
 
-    public List<Document> similaritySearch(List<Double> embedding) {
-        Request request = new Request("GET", "/" + index + "/_search");
-        String matchAll = buildJsonBody(new ElasticsearchScriptScoreQuery(5, new Query(
-                new ScriptScore(Map.of("match_all", Map.of()),
+    public List<Document> similaritySearch(List<Double> embedding, int topK, float similarityThreshold,
+            Filter.Expression filterExpression) {
+        ElasticsearchScriptScoreQuery elasticsearchSimilarityQuery = getElasticsearchSimilarityQuery(embedding, topK,
+                similarityThreshold, filterExpression);
+        return similaritySearch(elasticsearchSimilarityQuery);
+    }
+
+    private ElasticsearchScriptScoreQuery getElasticsearchSimilarityQuery(List<Double> embedding, int topK,
+            float similarityThreshold, Filter.Expression filterExpression) {
+        return new ElasticsearchScriptScoreQuery(topK, new Query(
+                new ScriptScore(Map.of("query_string", Map.of("query", getElasticsearchQueryString(filterExpression))),
                         // divided by 2 to get score in the range [0, 1]
                         new Script("(cosineSimilarity(params.query_vector, 'embedding') + 1.0) / 2",
-                                new Params(embedding))))));
-        request.setJsonEntity(matchAll);
+                                new Params(embedding)), similarityThreshold, null))
+        );
+    }
 
+    private String getElasticsearchQueryString(Filter.Expression filterExpression) {
+        return Objects.isNull(filterExpression) ? "*" : this.filterExpressionConverter.convertExpression(
+                filterExpression);
+
+    }
+
+    public List<Document> similaritySearch(ElasticsearchScriptScoreQuery elasticsearchScriptScoreQuery) {
+        Request request = new Request("GET", "/" + index + "/_search");
+        request.setJsonEntity(buildJsonBody(elasticsearchScriptScoreQuery));
         Response response = requestToElasticsearch(request);
         logger.debug("similaritySearch result - " + response);
         try {
@@ -255,7 +283,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
     private Document toDocument(ElasticsearchVectorSearchResponse.Hits.Hit hit) {
         Document document = hit.source();
-        document.getMetadata().put("distance", hit.score());
+        document.getMetadata().put("distance", 1 - hit.score());
         return document;
     }
 
@@ -278,23 +306,22 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
         }
     }
 
-
     @Override
     public void afterPropertiesSet() {
         if (!exists(this.index)) {
             putIndexMapping(this.index, """
-                {
-                  "mappings": {
-                    "properties": {
-                      "embedding": {
-                        "type": "dense_vector",
-                        "dims": 1536,
-                        "index": true,
-                        "similarity": "cosine"
+                    {
+                      "mappings": {
+                        "properties": {
+                          "embedding": {
+                            "type": "dense_vector",
+                            "dims": 1536,
+                            "index": true,
+                            "similarity": "cosine"
+                          }
+                        }
                       }
-                    }
-                  }
-                }""");
+                    }""");
         }
     }
 
