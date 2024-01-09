@@ -20,7 +20,7 @@ Flux<ChatResponse> streamingChat(ChatRequest chatRequest)
 EmbeddingResponse embeddings(EmbeddingRequest embeddingRequest)
 ```
 
-> NOTE: OllamaApi expose also the Ollama `generation` endpoint but later if inferior compared to the Ollama `chat` endpoint.
+> NOTE: OllamaApi expose also the Ollama `generation` endpoint but later is inferior compared to the Ollama `chat` endpoint.
 
 The `OllamaOptions` is helper class used as type-safe option builder.
 It provides `toMap` to convert the content into `Map<String, Object>`.
