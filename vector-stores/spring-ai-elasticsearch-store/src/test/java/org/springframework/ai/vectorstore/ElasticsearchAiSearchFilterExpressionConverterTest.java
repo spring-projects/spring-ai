@@ -11,12 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.*;
 
 class ElasticsearchAiSearchFilterExpressionConverterTest {
-    FilterExpressionConverter converter = new ElasticsearchAiSearchFilterExpressionConverter();
+    final FilterExpressionConverter converter = new ElasticsearchAiSearchFilterExpressionConverter();
 
     @Test
     public void testDate() {
-        FilterExpressionConverter converter = new ElasticsearchAiSearchFilterExpressionConverter();
-
         String vectorExpr = converter
                 .convertExpression(
                         new Filter.Expression(EQ, new Filter.Key("activationDate"),
