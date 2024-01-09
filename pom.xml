@@ -27,7 +27,6 @@
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-anthropic</module>
-
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -67,6 +66,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+		<module>vector-stores/spring-ai-elasticsearch-store</module>
 	</modules>
 
 	<organization>
