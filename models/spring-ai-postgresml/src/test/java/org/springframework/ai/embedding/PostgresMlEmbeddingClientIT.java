@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.postgresml.embedding.PostgresMlEmbeddingClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -18,7 +19,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.PostgresMlEmbeddingClient.VectorType;
+import org.springframework.ai.postgresml.embedding.PostgresMlEmbeddingClient.VectorType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -27,8 +28,8 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.embedding.PostgresMlEmbeddingClient.VectorType.PG_ARRAY;
-import static org.springframework.ai.embedding.PostgresMlEmbeddingClient.VectorType.PG_VECTOR;
+import static org.springframework.ai.postgresml.embedding.PostgresMlEmbeddingClient.VectorType.PG_ARRAY;
+import static org.springframework.ai.postgresml.embedding.PostgresMlEmbeddingClient.VectorType.PG_VECTOR;
 
 /**
  * @author Toshiaki Maki

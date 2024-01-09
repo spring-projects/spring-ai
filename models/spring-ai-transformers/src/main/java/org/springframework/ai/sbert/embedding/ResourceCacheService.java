@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.embedding;
+package org.springframework.ai.sbert.embedding;
 
 import java.io.File;
 import java.io.IOException;
