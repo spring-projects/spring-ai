@@ -79,6 +79,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			this.st = new ST(this.template, '{', '}');
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
+				dynamicModel.put(entry.getKey(), entry.getValue());
 			}
 		}
 		catch (Exception ex) {
@@ -98,6 +99,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			this.st = new ST(this.template, '{', '}');
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
+				dynamicModel.put(entry.getKey(), entry.getValue());
 			}
 		}
 		catch (Exception ex) {
@@ -130,6 +132,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	// Render Methods
 	@Override
 	public String render() {
+		validate(this.dynamicModel);
 		return st.render();
 	}
 
@@ -137,25 +140,33 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	public String render(Map<String, Object> model) {
 		validate(model);
 		for (Entry<String, Object> entry : model.entrySet()) {
-			if (st.getAttribute(entry.getKey()) == null) {
-				if (entry.getValue() instanceof Resource) {
-					st.add(entry.getKey(), renderResource((Resource) entry.getValue()));
-				}
-				else {
-					st.add(entry.getKey(), entry.getValue());
-				}
+			if (st.getAttribute(entry.getKey()) != null) {
+				st.remove(entry.getKey());
 			}
+			if (entry.getValue() instanceof Resource) {
+				st.add(entry.getKey(), renderResource((Resource) entry.getValue()));
+			}
+			else {
+				st.add(entry.getKey(), entry.getValue());
+			}
+
 		}
 		return st.render();
 	}
 
 	private String renderResource(Resource resource) {
-		try (InputStream inputStream = resource.getInputStream()) {
-			return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		try {
+			return resource.getContentAsString(Charset.defaultCharset());
 		}
-		catch (IOException ex) {
-			throw new RuntimeException(ex);
+		catch (IOException e) {
+			throw new RuntimeException(e);
 		}
+		// try (InputStream inputStream = resource.getInputStream()) {
+		// return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+		// }
+		// catch (IOException ex) {
+		// throw new RuntimeException(ex);
+		// }
 	}
 
 	@Override
