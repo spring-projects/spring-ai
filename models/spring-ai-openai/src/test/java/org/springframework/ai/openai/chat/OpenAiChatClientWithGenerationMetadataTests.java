@@ -28,7 +28,7 @@ import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.client.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.ai.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;

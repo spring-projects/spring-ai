@@ -17,6 +17,7 @@ package org.springframework.ai.openai.embedding;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 

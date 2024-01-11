@@ -17,11 +17,11 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.ollama.OllamaChatClient;
+import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
@@ -34,11 +34,10 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  */
 @AutoConfiguration
 @ConditionalOnClass(OllamaApi.class)
-@EnableConfigurationProperties({ OllamaChatProperties.class, OllamaConnectionProperties.class })
-@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
+		OllamaConnectionProperties.class })
 @ImportRuntimeHints(NativeHints.class)
-public class OllamaChatAutoConfiguration {
+public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -50,6 +49,14 @@ public class OllamaChatAutoConfiguration {
 	public OllamaChatClient ollamaChatClient(OllamaApi ollamaApi, OllamaChatProperties properties) {
 
 		return new OllamaChatClient(ollamaApi).withModel(properties.getModel()).withOptions(properties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OllamaEmbeddingClient ollamaEmbeddingClient(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
+
+		return new OllamaEmbeddingClient(ollamaApi).withModel(properties.getModel())
+			.withOptions(properties.getOptions());
 	}
 
 }

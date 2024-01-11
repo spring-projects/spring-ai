@@ -42,7 +42,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 import org.springframework.ai.vertex.api.VertexAiApi;
-import org.springframework.ai.vertex.embedding.VertexAiEmbeddingClient;
+import org.springframework.ai.vertex.VertexAiEmbeddingClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;

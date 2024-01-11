@@ -31,11 +31,6 @@ public class OllamaEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.embedding";
 
 	/**
-	 * Enable Ollama Embedding Client. True by default.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Ollama Embedding model name. Defaults to 'llama2'.
 	 */
 	private String model = "llama2";
@@ -46,14 +41,6 @@ public class OllamaEmbeddingProperties {
 	 * model's defaults.
 	 */
 	private OllamaOptions options = new OllamaOptions();
-
-	public boolean isEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public String getModel() {
 		return model;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertex.embedding;
+package org.springframework.ai.vertex;
 
 import java.util.List;
 import java.util.Map;

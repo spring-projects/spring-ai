@@ -48,7 +48,7 @@ public class BedrockTitanChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TitanChatBedrockApi titanApi(AwsCredentialsProvider credentialsProvider,
+	public TitanChatBedrockApi titanChatBedrockApi(AwsCredentialsProvider credentialsProvider,
 			BedrockTitanChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 
 		return new TitanChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),

@@ -29,7 +29,7 @@ import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

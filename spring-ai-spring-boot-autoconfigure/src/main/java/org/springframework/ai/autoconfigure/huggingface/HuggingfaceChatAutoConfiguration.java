@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.huggingface;
 
-import org.springframework.ai.huggingface.client.HuggingfaceChatClient;
+import org.springframework.ai.huggingface.HuggingfaceChatClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,11 +25,11 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @ConditionalOnClass(HuggingfaceChatClient.class)
 @EnableConfigurationProperties(HuggingfaceChatProperties.class)
-public class HuggingfaceAutoConfiguration {
+public class HuggingfaceChatAutoConfiguration {
 
 	private final HuggingfaceChatProperties huggingfaceChatProperties;
 
-	public HuggingfaceAutoConfiguration(HuggingfaceChatProperties huggingfaceChatProperties) {
+	public HuggingfaceChatAutoConfiguration(HuggingfaceChatProperties huggingfaceChatProperties) {
 		this.huggingfaceChatProperties = huggingfaceChatProperties;
 	}
 

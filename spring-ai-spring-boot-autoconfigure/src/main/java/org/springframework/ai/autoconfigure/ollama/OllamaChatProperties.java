@@ -31,11 +31,6 @@ public class OllamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
 	/**
-	 * Enable Ollama Chat Client. True by default.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Ollama Chat model name. Defaults to 'llama2'.
 	 */
 	private String model = "llama2";
@@ -46,14 +41,6 @@ public class OllamaChatProperties {
 	 * model's defaults.
 	 */
 	private OllamaOptions options = new OllamaOptions();
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public String getModel() {
 		return this.model;

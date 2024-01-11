@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertex.embedding.VertexAiEmbeddingClient;
-import org.springframework.ai.vertex.generation.VertexAiChatClient;
+import org.springframework.ai.vertex.VertexAiEmbeddingClient;
+import org.springframework.ai.vertex.VertexAiChatClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

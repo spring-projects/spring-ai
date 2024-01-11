@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.huggingface.client;
+package org.springframework.ai.huggingface;
 
 import java.util.ArrayList;
 import java.util.List;

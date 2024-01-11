@@ -16,21 +16,11 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.ollama.OllamaChatClient;
@@ -40,6 +30,15 @@ import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Flux;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,9 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Disabled("For manual smoke testing only.")
 @Testcontainers
-public class OllamaChatAutoConfigurationIT {
+public class OllamaAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OllamaChatAutoConfigurationIT.class);
+	private static final Log logger = LogFactory.getLog(OllamaAutoConfigurationIT.class);
 
 	private static String MODEL_NAME = "orca-mini";
 
@@ -73,7 +72,7 @@ public class OllamaChatAutoConfigurationIT {
 		.withPropertyValues("spring.ai.ollama.chat.enabled=true", "spring.ai.ollama.chat.model=" + MODEL_NAME,
 				"spring.ai.ollama.baseUrl=" + baseUrl, "spring.ai.ollama.chat.temperature=0.5",
 				"spring.ai.ollama.chat.topK=10")
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.

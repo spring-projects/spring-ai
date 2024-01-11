@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertex.generation;
+package org.springframework.ai.vertex;
 
 import java.util.List;
 import java.util.stream.Collectors;

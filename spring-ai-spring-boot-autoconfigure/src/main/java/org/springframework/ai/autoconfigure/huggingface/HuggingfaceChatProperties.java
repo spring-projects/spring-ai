@@ -2,10 +2,10 @@ package org.springframework.ai.autoconfigure.huggingface;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(HuggingfaceProperties.CONFIG_PREFIX)
-public class HuggingfaceProperties {
+@ConfigurationProperties(HuggingfaceChatProperties.CONFIG_PREFIX)
+public class HuggingfaceChatProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.huggingface";
+	public static final String CONFIG_PREFIX = "spring.ai.huggingface.chat";
 
 	private String apiKey;
 

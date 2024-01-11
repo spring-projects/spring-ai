@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.client.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.transformer.ContentFormatTransformer;
 import org.springframework.ai.transformer.KeywordMetadataEnricher;
 import org.springframework.ai.transformer.SummaryMetadataEnricher;

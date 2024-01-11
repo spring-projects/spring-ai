@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.client;
+package org.springframework.ai.openai;
 
 import java.time.Duration;
 import java.util.List;

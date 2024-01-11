@@ -17,6 +17,7 @@ import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.vertex.VertexAiChatClient;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
