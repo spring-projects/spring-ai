@@ -24,18 +24,18 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnClass(HuggingfaceChatClient.class)
-@EnableConfigurationProperties(HuggingfaceProperties.class)
+@EnableConfigurationProperties(HuggingfaceChatProperties.class)
 public class HuggingfaceAutoConfiguration {
 
-	private final HuggingfaceProperties huggingfaceProperties;
+	private final HuggingfaceChatProperties huggingfaceChatProperties;
 
-	public HuggingfaceAutoConfiguration(HuggingfaceProperties huggingfaceProperties) {
-		this.huggingfaceProperties = huggingfaceProperties;
+	public HuggingfaceAutoConfiguration(HuggingfaceChatProperties huggingfaceChatProperties) {
+		this.huggingfaceChatProperties = huggingfaceChatProperties;
 	}
 
 	@Bean
-	public HuggingfaceChatClient huggingfaceChatClient(HuggingfaceProperties huggingfaceProperties) {
-		return new HuggingfaceChatClient(huggingfaceProperties.getApiKey(), huggingfaceProperties.getUrl());
+	public HuggingfaceChatClient huggingfaceChatClient(HuggingfaceChatProperties huggingfaceChatProperties) {
+		return new HuggingfaceChatClient(huggingfaceChatProperties.getApiKey(), huggingfaceChatProperties.getUrl());
 	}
 
 }
