@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
-
-//TODO: Shouldn't the FormatProvider be inside the parser package?
+package org.springframework.ai.parser;
 
 /**
  * Implementations of this interface provides instructions for how the output of a
