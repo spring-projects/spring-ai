@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -25,9 +26,11 @@ public class OpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai";
 
+	private static final String BASE_URL = "https://api.openai.com";
+
 	private Double temperature = 0.7;
 
-	private final Embedding embedding = new Embedding(this);
+	private final Embedding embedding = new Embedding(BASE_URL);
 
 	private final Metadata metadata = new Metadata();
 
@@ -35,7 +38,7 @@ public class OpenAiProperties {
 
 	private String model = "gpt-3.5-turbo";
 
-	private String baseUrl = "https://api.openai.com";
+	private String baseUrl = BASE_URL;
 
 	public String getApiKey() {
 		return this.apiKey;
@@ -43,6 +46,7 @@ public class OpenAiProperties {
 
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
+		this.embedding.setApiKeyFromParent(apiKey);
 	}
 
 	public String getModel() {
@@ -59,6 +63,7 @@ public class OpenAiProperties {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+		this.embedding.setBaseUrlFromParent(baseUrl);
 	}
 
 	public Double getTemperature() {
@@ -79,25 +84,22 @@ public class OpenAiProperties {
 
 	public static class Embedding {
 
-		private final OpenAiProperties openAiProperties;
-
 		private String apiKey;
+
+		private String apiKeyFromParent;
 
 		private String model = "text-embedding-ada-002";
 
 		private String baseUrl;
 
-		protected Embedding(OpenAiProperties openAiProperties) {
-			Assert.notNull(openAiProperties, "OpenAiProperties must not be null");
-			this.openAiProperties = openAiProperties;
-		}
+		private String baseUrlFromParent;
 
-		public OpenAiProperties getOpenAiProperties() {
-			return openAiProperties;
+		private Embedding(String baseUrl) {
+			this.baseUrlFromParent = baseUrl;
 		}
 
 		public String getApiKey() {
-			return StringUtils.hasText(this.apiKey) ? this.apiKey : getOpenAiProperties().getApiKey();
+			return StringUtils.hasText(this.apiKey) ? this.apiKey : apiKeyFromParent;
 		}
 
 		public void setApiKey(String embeddingApiKey) {
@@ -113,11 +115,19 @@ public class OpenAiProperties {
 		}
 
 		public String getBaseUrl() {
-			return StringUtils.hasText(this.baseUrl) ? this.baseUrl : getOpenAiProperties().getBaseUrl();
+			return StringUtils.hasText(this.baseUrl) ? this.baseUrl : baseUrlFromParent;
 		}
 
 		public void setBaseUrl(String baseUrl) {
 			this.baseUrl = baseUrl;
+		}
+
+		private void setApiKeyFromParent(String apiKey) {
+			this.apiKeyFromParent = apiKey;
+		}
+
+		private void setBaseUrlFromParent(String baseUrl) {
+			this.baseUrlFromParent = baseUrl;
 		}
 
 	}

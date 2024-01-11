@@ -39,6 +39,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SuppressWarnings("unused")
 class OpenAiPropertiesTests {
 
+	private static final String EMBEDDING_API_KEY = "test-embedding-api-key";
+	private static final String EMBEDDING_BASE_URL = "https://api.openai.spring.io/embedding";
+	private static final String OPENAI_API_KEY = "abc123";
+	private static final String OPENAI_BASE_URL = "https://api.openai.spring.io/eieioh";
+
 	@Autowired
 	private OpenAiProperties openAiProperties;
 
@@ -46,9 +51,9 @@ class OpenAiPropertiesTests {
 	void openAiPropertiesAreCorrect() {
 
 		assertThat(this.openAiProperties).isNotNull();
-		assertThat(this.openAiProperties.getApiKey()).isEqualTo("abc123");
+		assertThat(this.openAiProperties.getApiKey()).isEqualTo(OPENAI_API_KEY);
 		assertThat(this.openAiProperties.getModel()).isEqualTo("claudia-shiffer-5");
-		assertThat(this.openAiProperties.getBaseUrl()).isEqualTo("https://api.openai.spring.io/eieioh");
+		assertThat(this.openAiProperties.getBaseUrl()).isEqualTo(OPENAI_BASE_URL);
 		assertThat(this.openAiProperties.getTemperature()).isEqualTo(0.5d);
 
 		OpenAiProperties.Embedding embedding = this.openAiProperties.getEmbedding();
@@ -56,7 +61,42 @@ class OpenAiPropertiesTests {
 		assertThat(embedding).isNotNull();
 		assertThat(embedding.getApiKey()).isEqualTo(this.openAiProperties.getApiKey());
 		assertThat(embedding.getModel()).isEqualTo("text-embedding-ada-002");
-		assertThat(embedding.getBaseUrl()).isEqualTo("https://api.openai.spring.io/embedding");
+		assertThat(embedding.getBaseUrl()).isEqualTo(EMBEDDING_BASE_URL);
+	}
+
+	@Test
+	void embeddingApiKeyAndBaseURLAreCorrect_whenNotSetOpenAiProperties() {
+		OpenAiProperties openAiProperties = new OpenAiProperties();
+		OpenAiProperties.Embedding embedding = openAiProperties.getEmbedding();
+
+		assertThat(embedding.getApiKey()).isEqualTo(openAiProperties.getApiKey());
+		assertThat(embedding.getBaseUrl()).isEqualTo(openAiProperties.getBaseUrl());
+	}
+
+	@Test
+	void embeddingApiKeyAndBaseURLAreCorrect_whenSetOpenAiProperties() {
+		OpenAiProperties openAiProperties = new OpenAiProperties();
+		openAiProperties.setApiKey(OPENAI_API_KEY);
+		openAiProperties.setBaseUrl(OPENAI_BASE_URL);
+		OpenAiProperties.Embedding embedding = openAiProperties.getEmbedding();
+
+		assertThat(embedding.getApiKey()).isEqualTo(openAiProperties.getApiKey());
+		assertThat(embedding.getBaseUrl()).isEqualTo(openAiProperties.getBaseUrl());
+	}
+
+	@Test
+	void embeddingApiKeyAndBaseURLAreCorrect_whenEmbeddingPropertiesAndAfterSetOpenAiProperties() {
+		OpenAiProperties openAiProperties = new OpenAiProperties();
+
+		OpenAiProperties.Embedding embedding = openAiProperties.getEmbedding();
+		embedding.setApiKey(EMBEDDING_API_KEY);
+		embedding.setBaseUrl(EMBEDDING_BASE_URL);
+
+		openAiProperties.setApiKey(OPENAI_API_KEY);
+		openAiProperties.setBaseUrl(OPENAI_BASE_URL);
+
+		assertThat(embedding.getApiKey()).isEqualTo(EMBEDDING_API_KEY);
+		assertThat(embedding.getBaseUrl()).isEqualTo(EMBEDDING_BASE_URL);
 	}
 
 	@SpringBootConfiguration
