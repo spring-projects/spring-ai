@@ -53,6 +53,8 @@ public interface StreamingChatClient extends StreamingModelClient<Prompt, ChatRe
 
 The `stream` method takes a `Prompt` request similar to `ChatClient` but it streams the responses using the reactive Flux API.
 
+In real-world applications, it is more common to use the `generate` method that takes a `Prompt` instance and returns an `AiResponse`.
+
 === Prompt
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/Prompt.java[Prompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] objects and optional model request options.
@@ -96,6 +98,7 @@ The `Message` interface has various implementations that correspond to the categ
 Some models, like OpenAI's chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.
 
 For instance, OpenAI recognizes message categories for distinct conversational roles such as `system`,`user`, `function` or `assistant`.
+
 While the term `MessageType` might imply a specific message format, in this context it effectively designates the role a message plays in the dialogue.
 
 For AI models that do not use specific roles, the `UserMessage` implementation acts as a standard category, typically representing user-generated inquiries or instructions.
@@ -105,6 +108,7 @@ To understand the practical application and the relationship between `Prompt` an
 
 Represents the options that can be passed to the AI model. The `ChatOptions` class is a subclass of `ModelOptions` and is used to define few portable options that can be passed to the AI model.
 The `ChatOptions` class is defined as follows:
+
 
 [source,java]
 ----
