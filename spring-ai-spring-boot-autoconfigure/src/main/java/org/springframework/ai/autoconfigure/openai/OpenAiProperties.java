@@ -16,9 +16,7 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 @ConfigurationProperties(OpenAiProperties.CONFIG_PREFIX)
