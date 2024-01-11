@@ -1,10 +1,10 @@
 = ETL Pipeline
 
-The Extraction, Transformation, and Loading (ETL) framework serves as the backbone of data processing within the Retrieval-Augmented Generation (RAG) use case.
+The Extract, Transform, and Load (ETL) framework serves as the backbone of data processing within the Retrieval Augmented Generation (RAG) use case.
 
 The ETL pipeline orchestrates the flow from raw data sources to a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
 
-The RAG use-case is text to augment the capabilities of generative models by retrieving relevant information from a body of data to enhancing the quality and relevance of the generated output.
+The RAG use case is text to augment the capabilities of generative models by retrieving relevant information from a body of data to enhance the quality and relevance of the generated output.
 
 
 == API Overview
@@ -20,16 +20,20 @@ public interface DocumentReader extends Supplier<List<Document>> {
 
 ==== Available Implementations
 
-*JsonReader*: Parses documents in JSON format.
+*JsonReader*::
++ Parses documents in JSON format.
 
-*TextReader*: Processes plain text documents.
+*TextReader*::
++ Processes plain text documents.
 
-*PagePdfDocumentReader*: Uses Apache PdfBox library to parse PDF documents
+*PagePdfDocumentReader*::
++ Uses Apache PdfBox library to parse PDF documents
 
-*ParagraphPdfDocumentReader*: Uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
+*ParagraphPdfDocumentReader*::
++ Uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
 
-*TikaDocumentReader*: Uses Apache Tika to extract text from a variety of document
- * formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
+*TikaDocumentReader*::
++ Uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
 
 === DocumentTransformer
 

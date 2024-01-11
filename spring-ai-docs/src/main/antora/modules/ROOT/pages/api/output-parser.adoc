@@ -54,7 +54,7 @@ The `OutputParser` interface has the following available implementations.
 
 * `BeanOutputParser`: Specifies the JSON schema for Java class and uses `DRAFT_2020_12` of the JSON schema specification as OpenAI has indicated this would give the best results.
 The JSON output of the AI Model is then deserialized to a Java object, aka `JavaBean`.
-* MapOutputParser:  Similar to BeanOutputParser but the JSON payload is deserialized into a `java.util.Map<String, Object> instance.
+* `MapOutputParser`: Similar to `BeanOutputParser` but the JSON payload is deserialized into a `java.util.Map<String, Object>` instance.
 * `ListOutputParser`: Specifies the output to be a comma delimited list.
 
 
@@ -66,7 +66,7 @@ There has been considerable effort in recent OpenAI models to improve the model'
 You can run a fully working example that demonstrates the use of `BeanOutputParser` as part of the https://github.com/Azure-Samples/spring-ai-azure-workshop[Spring AI Azure Workshop].
 Part of this workshop code is reproduced below.
 
-The use case for the example is to as the AI Model to generate the filmography for an actor.
+The use case for the example is to use the AI Model to generate the filmography for an actor.
 
 The User prompt used is
 
