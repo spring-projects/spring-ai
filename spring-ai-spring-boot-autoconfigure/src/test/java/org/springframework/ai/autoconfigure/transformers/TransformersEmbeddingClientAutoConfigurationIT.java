@@ -22,10 +22,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.springframework.ai.autoconfigure.embedding.transformer.TransformersEmbeddingClientAutoConfiguration;
-import org.springframework.ai.autoconfigure.embedding.transformer.TransformersEmbeddingClientProperties;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

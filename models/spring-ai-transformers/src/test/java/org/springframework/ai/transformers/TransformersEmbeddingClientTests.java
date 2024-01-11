@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.embedding;
+package org.springframework.ai.transformers;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -22,6 +22,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

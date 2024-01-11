@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.embedding.transformer;
+package org.springframework.ai.autoconfigure.transformers;
 
 import java.io.File;
 import java.util.HashMap;
@@ -25,10 +25,10 @@ import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import static org.springframework.ai.autoconfigure.embedding.transformer.TransformersEmbeddingClientProperties.CONFIG_PREFIX;
+import static org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingClientProperties.CONFIG_PREFIX;
 
 /**
  * @author Christian Tzolov

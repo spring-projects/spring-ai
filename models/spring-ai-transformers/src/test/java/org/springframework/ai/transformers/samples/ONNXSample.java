@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.embedding.samples;
+package org.springframework.ai.transformers.samples;
 
 import java.nio.FloatBuffer;
 import java.util.HashMap;

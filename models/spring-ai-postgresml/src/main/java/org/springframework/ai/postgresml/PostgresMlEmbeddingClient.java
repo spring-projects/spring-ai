@@ -1,4 +1,4 @@
-package org.springframework.ai.embedding;
+package org.springframework.ai.postgresml;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.AbstractEmbeddingClient;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;

@@ -1,15 +1,17 @@
-package org.springframework.ai.embedding;
+package org.springframework.ai.postgresml;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -18,7 +20,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.PostgresMlEmbeddingClient.VectorType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -27,8 +28,6 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.embedding.PostgresMlEmbeddingClient.VectorType.PG_ARRAY;
-import static org.springframework.ai.embedding.PostgresMlEmbeddingClient.VectorType.PG_VECTOR;
 
 /**
  * @author Toshiaki Maki
@@ -72,7 +71,7 @@ class PostgresMlEmbeddingClientIT {
 	@Test
 	void embedWithPgVector() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"distilbert-base-uncased", PG_VECTOR);
+				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.PG_VECTOR);
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 		assertThat(embed).hasSize(768);
@@ -92,7 +91,8 @@ class PostgresMlEmbeddingClientIT {
 	@Test
 	void embedWithKwargs() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"distilbert-base-uncased", PG_ARRAY, Map.of("device", "cpu"), MetadataMode.EMBED);
+				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.PG_ARRAY, Map.of("device", "cpu"),
+				MetadataMode.EMBED);
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 		assertThat(embed).hasSize(768);
@@ -103,7 +103,7 @@ class PostgresMlEmbeddingClientIT {
 	@ValueSource(strings = { "PG_ARRAY", "PG_VECTOR" })
 	void embedForResponse(String vectorType) {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"distilbert-base-uncased", VectorType.valueOf(vectorType));
+				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.valueOf(vectorType));
 		embeddingClient.afterPropertiesSet();
 		EmbeddingResponse embeddingResponse = embeddingClient
 			.embedForResponse(List.of("Hello World!", "Spring AI!", "LLM!"));
@@ -124,9 +124,9 @@ class PostgresMlEmbeddingClientIT {
 	void dimensions() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate);
 		embeddingClient.afterPropertiesSet();
-		assertThat(embeddingClient.dimensions()).isEqualTo(768);
+		Assertions.assertThat(embeddingClient.dimensions()).isEqualTo(768);
 		// cached
-		assertThat(embeddingClient.dimensions()).isEqualTo(768);
+		Assertions.assertThat(embeddingClient.dimensions()).isEqualTo(768);
 	}
 
 	@SpringBootApplication

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.embedding.transformer;
+package org.springframework.ai.autoconfigure.transformers;
 
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import ai.onnxruntime.OrtSession;
 
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

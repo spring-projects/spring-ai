@@ -1,4 +1,4 @@
-package org.springframework.ai.embedding;
+package org.springframework.ai.transformers;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -23,6 +23,9 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.AbstractEmbeddingClient;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
