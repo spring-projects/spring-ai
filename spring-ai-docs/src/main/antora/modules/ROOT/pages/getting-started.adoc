@@ -139,6 +139,7 @@ You can clone these projects on GitHub to get started.
 === OpenAI
 
 * https://github.com/rd-1-2022/ai-openai-helloworld
+* https://github.com/krushnatkhawale/springai-openai-hello-world
 
 === Azure OpenAI
 
