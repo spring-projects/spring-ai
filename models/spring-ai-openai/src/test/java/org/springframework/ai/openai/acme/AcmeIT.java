@@ -20,7 +20,6 @@ import org.springframework.ai.prompt.SystemPromptTemplate;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.ai.reader.JsonReader;
-import org.springframework.ai.retriever.VectorStoreRetriever;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -73,8 +72,6 @@ public class AcmeIT extends AbstractIT {
 
 		// Now user query
 
-		VectorStoreRetriever vectorStoreRetriever = new VectorStoreRetriever(vectorStore);
-
 		logger.info("Retrieving relevant documents");
 		String userQuery = "What bike is good for city commuting?";
 
@@ -82,7 +79,7 @@ public class AcmeIT extends AbstractIT {
 		// "How much does the SonicRide 8S cost?";
 
 		// Eventually include metadata in query.
-		List<Document> similarDocuments = vectorStoreRetriever.retrieve(userQuery);
+		List<Document> similarDocuments = vectorStore.similaritySearch(userQuery);
 		logger.info(String.format("Found %s relevant documents.", similarDocuments.size()));
 
 		// Try the case where not product was specified, so query over whatever docs might
