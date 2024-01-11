@@ -1,6 +1,6 @@
 = Azure AI Service
 
-This section will walk you through setting up the AzureVectorStore to store document embeddings and perform similarity searches using the Azure AI Search Service.
+This section will walk you through setting up the `AzureVectorStore` to store document embeddings and perform similarity searches using the Azure AI Search Service.
 
 link:https://azure.microsoft.com/en-us/products/ai-services/cognitive-search[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
 
@@ -12,7 +12,7 @@ link:https://azure.microsoft.com/en-us/products/ai-services/cognitive-search[Azu
 
 == Configuration
 
-On startup, the AzureVectorStore will attempt to create a new index within your AI Search service instance. Alternatively, you can create the index manually as explained in <<appendix-a, Appendix A>>.
+On startup, the AzureVectorStore will attempt to create a new index within your AI Search service instance. Alternatively, you can create the index manually.
 
 To set up an AzureVectorStore, you will need the settings retrieved from the prerequisites above along with your index name:
 
@@ -32,7 +32,7 @@ export OPENAI_API_KEY=<My Azure AI API Key> (Optional)
 
 [NOTE]
 ====
-You can replace Azure Open AI implementation with any valid OpenAI implementation that supports the Embeddings interface. For example, you could use Spring AI's Open AI or TransformersEmbedding implementations for embeddings instead of the Azure implementation.
+You can replace Azure Open AI implementation with any valid OpenAI implementation that supports the Embeddings interface. For example, you could use Spring AI's Open AI or `TransformersEmbedding` implementations for embeddings instead of the Azure implementation.
 ====
 
 == Dependencies
@@ -41,7 +41,7 @@ Add these dependencies to your project:
 
 1. Select an Embeddings interface implementation. You can choose between:
 
-* or OpenAI Embedding:
+* OpenAI Embedding:
 
    [source,xml]
    ----
@@ -189,7 +189,7 @@ The portable filter expressions get automatically converted into the proprietary
 country in ['UK', 'NL'] && year >= 2020
 ----
 
-is converted into Azure OData link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[filter expression]:
+is converted into the following Azure OData link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[filter expression]:
 
 [source,graphql]
 ----

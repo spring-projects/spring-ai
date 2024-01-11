@@ -14,8 +14,7 @@ In addition to these core abstractions, Spring AI aims to provide higher-level f
 As the complexity of the use cases increases, the Spring AI project will integrate with other projects in the Spring Ecosystem, such as Spring Integration, Spring Batch, and Spring Data.
 
 To simplify setup, Spring Boot starters are available to help set up essential dependencies and classes.
-There is also a collection of sample applications to help you explore the project's features.
-Lastly, the new Spring CLI project also enables you to get started quickly by using the `spring boot new ai` command for new projects or `spring boot add ai` for adding AI capabilities to your existing application.
+There is also a collection of sample applications to help you explore the project's features. Lastly, the new Spring CLI project also enables you to get started quickly by using the `spring boot new ai` command for new projects or `spring boot add ai` for adding AI capabilities to your existing application.
 
 The xref:concepts.adoc[next section] provides a high-level overview of AI concepts and their representation in Spring AI.
 The xref:getting-started.adoc[Getting Started] section shows you how to create your first AI application.

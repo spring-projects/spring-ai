@@ -5,7 +5,7 @@ Azure's OpenAI offering, powered by ChatGPT, extends beyond traditional OpenAI c
 Azure offers Java developers the opportunity to leverage AI's full potential by integrating it with an array of Azure services, which includes AI-related resources such as Vector Stores on Azure.
 
 
-== Gettting Started
+== Getting Started
 
 Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
 

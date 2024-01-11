@@ -21,8 +21,7 @@ This section provides a guide to the `EmbeddingClient` interface and associated 
 === EmbeddingClient
 Here is the `EmbeddingClient` interface definition:
 
-java
-Copy code
+```java
 public interface EmbeddingClient {
 
     List<Double> embed(String text);
@@ -36,9 +35,10 @@ public interface EmbeddingClient {
     default int dimensions() {
         return embed("Test String").size();
     }
-
 }
-The embed methods offer various options for converting text into embeddings, accommodating single strings, structured Document objects, or batches of text.
+```
+
+The embed methods offer various options for converting text into embeddings, accommodating single strings, structured `Document` objects, or batches of text.
 The returned values are lists of doubles, representing the embeddings in a numerical vector format.
 
 The `embedForResponse` method provides a more comprehensive output, potentially including additional information about the embeddings.
