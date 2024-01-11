@@ -56,14 +56,6 @@ class OllamaEmbeddingClientIT {
 		assertThat(embeddingClient.dimensions()).isEqualTo(3200);
 	}
 
-	@Test
-	void batchEmbedding() {
-		assertThatThrownBy(
-				() -> embeddingClient.embedForResponse(List.of("Hello World", "World is big and salvation is near")))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Ollama Embedding does not support batch embedding!");
-	}
-
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 

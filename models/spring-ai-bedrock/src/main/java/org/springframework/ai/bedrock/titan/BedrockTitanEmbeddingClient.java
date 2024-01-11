@@ -16,9 +16,12 @@
 
 package org.springframework.ai.bedrock.titan;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
@@ -40,6 +43,8 @@ import org.springframework.util.Assert;
  * @since 0.8.0
  */
 public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final TitanEmbeddingBedrockApi embeddingApi;
 
@@ -90,17 +95,20 @@ public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
 	@Override
 	public List<List<Double>> embed(List<String> inputContents) {
 		Assert.notEmpty(inputContents, "At least one text is required!");
-		Assert.isTrue(inputContents.size() == 1, "Titan Embedding does not support batch embedding!");
+		if (inputContents.size() != 1) {
+			logger.warn(
+					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
+		}
 
-		String inputContent = inputContents.iterator().next();
-
-		var request = (this.inputType == InputType.IMAGE)
-				? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
-				: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
-
-		TitanEmbeddingResponse response = this.embeddingApi.embedding(request);
-
-		return List.of(response.embedding());
+		List<List<Double>> embeddingList = new ArrayList<>();
+		for (String inputContent : inputContents) {
+			var request = (this.inputType == InputType.IMAGE)
+					? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
+					: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
+			TitanEmbeddingResponse response = this.embeddingApi.embedding(request);
+			embeddingList.add(response.embedding());
+		}
+		return embeddingList;
 	}
 
 	@Override

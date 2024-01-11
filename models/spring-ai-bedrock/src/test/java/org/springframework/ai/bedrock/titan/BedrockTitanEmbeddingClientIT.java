@@ -38,14 +38,6 @@ class BedrockTitanEmbeddingClientIT {
 	}
 
 	@Test
-	void batchEmbedding() {
-		assertThatThrownBy(
-				() -> embeddingClient.embedForResponse(List.of("Hello World", "World is big and salvation is near")))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Titan Embedding does not support batch embedding!");
-	}
-
-	@Test
 	void imageEmbedding() throws IOException {
 
 		byte[] image = new DefaultResourceLoader().getResource("classpath:/spring_framework.png")

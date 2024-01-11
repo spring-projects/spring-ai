@@ -16,10 +16,13 @@
 
 package org.springframework.ai.ollama;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
@@ -48,6 +51,8 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final OllamaApi ollamaApi;
 
@@ -87,14 +92,18 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 	@Override
 	public List<List<Double>> embed(List<String> texts) {
 		Assert.notEmpty(texts, "At least one text is required!");
-		Assert.isTrue(texts.size() == 1, "Ollama Embedding does not support batch embedding!");
+		if (texts.size() != 1) {
+			logger.warn(
+					"Ollama Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
+		}
 
-		String inputContent = texts.iterator().next();
-
-		OllamaApi.EmbeddingResponse response = this.ollamaApi
-			.embeddings(new EmbeddingRequest(this.model, inputContent, this.clientOptions));
-
-		return List.of(response.embedding());
+		List<List<Double>> embeddingList = new ArrayList<>();
+		for (String inputContent : texts) {
+			OllamaApi.EmbeddingResponse response = this.ollamaApi
+				.embeddings(new EmbeddingRequest(this.model, inputContent, this.clientOptions));
+			embeddingList.add(response.embedding());
+		}
+		return embeddingList;
 	}
 
 	@Override
