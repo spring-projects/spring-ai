@@ -63,6 +63,12 @@ public class ChatController {
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         return Map.of("generation", chatClient.generate(message));
     }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(P@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatClient.generateStream(prompt);
+    }
 }
 ----
 
@@ -74,9 +80,8 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com"
-| spring.ai.openai.model      | The model to use      | gpt-3.5-turbo
-| spring.ai.openai.api-key    | The API Key           | -
+| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.api-key    | The API Key           |  -
 |====
 
 The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the `ChatClient` implementation for OpenAI.
@@ -85,19 +90,26 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 |====
 | Property | Description | Default
 
-| spring.ai.azure.openai.chat.model | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | gpt-35-turbo
-| spring.ai.azure.openai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
-| spring.ai.azure.openai.chat.top-p | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. As an example, a value of 0.15 will cause only the tokens comprising the top  15% of probability mass to be considered. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | -
+| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
+| spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
+| spring.ai.openai.chat.model | This is the OpenAI Chat model to use | gpt-35-turbo
+| spring.ai.openai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 |====
 
 
 The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingClient` implementation for OpenAI.
 
-
 [cols="3,5,3"]
 |====
 | Property | Description | Default
-| spring.ai.openai.embedding.base-url   | The URL to connect to | https://api.openai.com"
+| spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url | -
+| spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key  | -
 | spring.ai.openai.embedding.model      | The model to use      | text-embedding-ada-002
-| spring.ai.openai.embedding.api-key    | The API Key           | -
 |====
+
+NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-key` properties if set take precedence over the common properties.
+This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
+
+Also by default, the `spring.ai.openai.chat.model` is set to `gpt-35-turbo` and the `spring.ai.openai.embedding.model` is set to `text-embedding-ada-002`.

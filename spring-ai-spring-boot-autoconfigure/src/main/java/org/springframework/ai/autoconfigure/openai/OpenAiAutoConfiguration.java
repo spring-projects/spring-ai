@@ -18,43 +18,65 @@ package org.springframework.ai.autoconfigure.openai;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAiApi.class)
-@EnableConfigurationProperties(OpenAiProperties.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
+		OpenAiEmbeddingProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiApi openAiApi(OpenAiProperties openAiProperties) {
-		return new OpenAiApi(openAiProperties.getBaseUrl(), openAiProperties.getApiKey(), RestClient.builder());
-	}
+	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
+			OpenAiChatProperties chatProperties) {
 
-	@Bean
-	@ConditionalOnMissingBean
-	public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
+		String apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(chatProperties.getBaseUrl()) ? chatProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
+
 		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
-		openAiChatClient.setTemperature(openAiProperties.getTemperature());
-		openAiChatClient.setModel(openAiProperties.getModel());
+		openAiChatClient.setTemperature(chatProperties.getTemperature());
+		openAiChatClient.setModel(chatProperties.getModel());
 
 		return openAiChatClient;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
-		return new OpenAiEmbeddingClient(openAiApi, openAiProperties.getEmbedding().getModel());
+	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+			OpenAiEmbeddingProperties embeddingProperties) {
+
+		String apiKey = StringUtils.hasText(embeddingProperties.getApiKey()) ? embeddingProperties.getApiKey()
+				: commonProperties.getApiKey();
+		String baseUrl = StringUtils.hasText(embeddingProperties.getBaseUrl()) ? embeddingProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
+
+		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getModel());
 	}
 
 }

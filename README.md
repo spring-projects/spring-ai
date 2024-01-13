@@ -14,6 +14,15 @@ Let's make your `@Beans` intelligent!
 
 ### Breaking Changes
 
+January 13, 2024 Update
+
+The following OpenAi Autoconfiguration chat properties has changed
+
+ - from `spring.ai.openai.model` to `spring.ai.openai.chat.model`.
+ - from `spring.ai.openai.temperature` to `spring.ai.openai.chat.temperature`.
+
+Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/clients/openai.html
+
 December 27, 2023 Update
 
 Merge SimplePersistentVectorStore and InMemoryVectorStore into SimpleVectorStore
@@ -214,7 +223,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>

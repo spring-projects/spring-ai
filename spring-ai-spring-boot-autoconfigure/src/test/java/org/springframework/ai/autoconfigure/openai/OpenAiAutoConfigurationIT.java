@@ -17,15 +17,20 @@
 package org.springframework.ai.autoconfigure.openai;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.prompt.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -45,6 +50,21 @@ public class OpenAiAutoConfigurationIT {
 		contextRunner.run(context -> {
 			OpenAiChatClient client = context.getBean(OpenAiChatClient.class);
 			String response = client.generate("Hello");
+			assertThat(response).isNotEmpty();
+			logger.info("Response: " + response);
+		});
+	}
+
+	@Test
+	void generateStreaming() {
+		contextRunner.run(context -> {
+			OpenAiChatClient client = context.getBean(OpenAiChatClient.class);
+			Flux<ChatResponse> responseFlux = client.generateStream(new Prompt(new UserMessage("Hello")));
+
+			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
+				return chatResponse.getGenerations().get(0).getContent();
+			}).collect(Collectors.joining());
+
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});

@@ -143,22 +143,6 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			// An alternative implementation that returns Flux<Generation> instead of
-			// Flux<ChatResponse>.
-			// Flux<Generation> generationFlux = completionChunks.map(chunk -> {
-			// String chunkId = chunk.id();
-			// return chunk.choices().stream()
-			// .map(choice -> {
-			// if (choice.delta().role() != null) {
-			// roleMap.putIfAbsent(chunkId, choice.delta().role().name());
-			// }
-			// return new Generation(choice.delta().content(),
-			// Map.of("role", roleMap.get(chunkId)));
-			// })
-			// .toList();
-			// }).flatMapIterable(generations -> generations);
-			// return generationFlux;
-
 			return completionChunks.map(chunk -> {
 				String chunkId = chunk.id();
 				List<Generation> generations = chunk.choices().stream().map(choice -> {
