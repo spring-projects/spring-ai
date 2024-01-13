@@ -110,6 +110,9 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 			this.resourceFileName = pdfResource.getFile();
 		}
+		catch (IllegalArgumentException iae) {
+			throw iae;
+		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}

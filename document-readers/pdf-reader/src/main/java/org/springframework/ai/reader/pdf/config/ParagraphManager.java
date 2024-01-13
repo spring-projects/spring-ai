@@ -28,6 +28,7 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPa
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode;
 
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -75,6 +76,13 @@ public class ParagraphManager {
 	private final PDDocument document;
 
 	public ParagraphManager(PDDocument document) {
+
+		Assert.notNull(document, "PDDocument must not be null");
+		Assert.notNull(document.getDocumentCatalog().getDocumentOutline(),
+				"Document outline (e.g. TOC) is null. "
+						+ "Make sure the PDF document has a table of contents (TOC). If not, consider the "
+						+ "PagePdfDocumentReader or the TikaDocumentReader instead.");
+
 		try {
 
 			this.document = document;
