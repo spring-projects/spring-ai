@@ -94,6 +94,10 @@ public class OpenAiApi {
 			@Override
 			public void handleError(ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
+					if (response.getStatusCode().is4xxClientError()) {
+						throw new OpenAiApiClientErrorException(String.format("%s - %s", response.getStatusCode().value(),
+							new ObjectMapper().readValue(response.getBody(), ResponseError.class)));
+					}
 					throw new OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
 							new ObjectMapper().readValue(response.getBody(), ResponseError.class)));
 				}
@@ -120,6 +124,23 @@ public class OpenAiApi {
 		}
 
 		public OpenAiApiException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
+
+	/**
+	 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
+	 * 401 - You must be a member of an organization to use the API,
+	 * 429 - Rate limit reached for requests, 429 - You exceeded your current quota
+	 * , please check your plan and billing details.
+	 */
+	public static class OpenAiApiClientErrorException extends RuntimeException {
+
+		public OpenAiApiClientErrorException(String message) {
+			super(message);
+		}
+
+		public OpenAiApiClientErrorException(String message, Throwable cause) {
 			super(message, cause);
 		}
 	}
