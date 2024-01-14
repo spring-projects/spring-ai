@@ -3,7 +3,8 @@ package org.springframework.ai.vectorstore;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -32,6 +33,8 @@ import static org.hamcrest.Matchers.hasSize;
 @Testcontainers
 //@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 abstract class BaseElasticsearchVectorStoreIT {
+
+    private static final String DEFAULT = "default cosine similarity";
 
     protected abstract ApplicationContextRunner getContextRunner();
 
@@ -114,12 +117,20 @@ abstract class BaseElasticsearchVectorStoreIT {
         });
     }
 
-    @Test
-    public void addAndSearchTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {DEFAULT,
+            """
+                      double value = dotProduct(params.query_vector, 'embedding');
+                      return sigmoid(1, Math.E, -value);
+                    """,
+            "1 / (1 + l1norm(params.query_vector, 'embedding'))",
+            "1 / (1 + l2norm(params.query_vector, 'embedding'))"})
+    public void addAndSearchTest(String similarityFunction) {
 
         getContextRunner().run(context -> {
-
             ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+            if (!DEFAULT.equals(similarityFunction))
+                vectorStore.withSimilarityFunction(similarityFunction);
 
             this.documents = objectMapper.readValue(ResourceUtils.getText("documents.json"),
                     new TypeReference<List<Document>>() {});
@@ -150,11 +161,20 @@ abstract class BaseElasticsearchVectorStoreIT {
         });
     }
 
-    @Test
-    public void searchWithFilters() {
+    @ParameterizedTest
+    @ValueSource(strings = {DEFAULT,
+            """
+                      double value = dotProduct(params.query_vector, 'embedding');
+                      return sigmoid(1, Math.E, -value);
+                    """,
+            "1 / (1 + l1norm(params.query_vector, 'embedding'))",
+            "1 / (1 + l2norm(params.query_vector, 'embedding'))"})
+    public void searchWithFilters(String similarityFunction) {
 
         getContextRunner().run(context -> {
             ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+            if (!DEFAULT.equals(similarityFunction))
+                vectorStore.withSimilarityFunction(similarityFunction);
 
             var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
                     Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
@@ -267,12 +287,20 @@ abstract class BaseElasticsearchVectorStoreIT {
         });
     }
 
-    @Test
-    public void documentUpdateTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {DEFAULT,
+            """
+                      double value = dotProduct(params.query_vector, 'embedding');
+                      return sigmoid(1, Math.E, -value);
+                    """,
+            "1 / (1 + l1norm(params.query_vector, 'embedding'))",
+            "1 / (1 + l2norm(params.query_vector, 'embedding'))"})
+    public void documentUpdateTest(String similarityFunction) {
 
         getContextRunner().run(context -> {
-
             ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+            if (!DEFAULT.equals(similarityFunction))
+                vectorStore.withSimilarityFunction(similarityFunction);
 
 //            Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 //                    Collections.singletonMap("meta1", "meta1"));
@@ -328,12 +356,20 @@ abstract class BaseElasticsearchVectorStoreIT {
         });
     }
 
-    @Test
-    public void searchThresholdTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {DEFAULT,
+            """
+                      double value = dotProduct(params.query_vector, 'embedding');
+                      return sigmoid(1, Math.E, -value);
+                    """,
+            "1 / (1 + l1norm(params.query_vector, 'embedding'))",
+            "1 / (1 + l2norm(params.query_vector, 'embedding'))"})
+    public void searchThresholdTest(String similarityFunction) {
 
         getContextRunner().run(context -> {
-
             ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+            if (!DEFAULT.equals(similarityFunction))
+                vectorStore.withSimilarityFunction(similarityFunction);
 
             this.documents = objectMapper.readValue(ResourceUtils.getText("documents.json"),
                     new TypeReference<List<Document>>() {});

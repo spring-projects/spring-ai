@@ -32,6 +32,10 @@ import static org.springframework.ai.vectorstore.ElasticsearchVectorStore.Elasti
 
 public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
+    // divided by 2 to get score in the range [0, 1]
+    public static final String COSINE_SIMILARITY_FUNCTION =
+            "(cosineSimilarity(params.query_vector, 'embedding') + 1.0) / 2";
+
     public record ElasticsearchBulkIndexId(
             @JsonProperty("_index")
             String index,
@@ -162,6 +166,8 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
     private final FilterExpressionConverter filterExpressionConverter;
 
+    private String similarityFunction;
+
     public ElasticsearchVectorStore(RestClient restClient, EmbeddingClient embeddingClient) {
         this(INDEX_NAME, restClient, embeddingClient);
     }
@@ -174,6 +180,13 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
         this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.index = index;
         this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
+        // the potential functions for vector fields at https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-score-query.html#vector-functions
+        this.similarityFunction = COSINE_SIMILARITY_FUNCTION;
+    }
+
+    public ElasticsearchVectorStore withSimilarityFunction(String similarityFunction) {
+        this.similarityFunction = similarityFunction;
+        return this;
     }
 
     @Override
@@ -242,9 +255,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
             float similarityThreshold, Filter.Expression filterExpression) {
         return new ElasticsearchScriptScoreQuery(topK, new Query(
                 new ScriptScore(Map.of("query_string", Map.of("query", getElasticsearchQueryString(filterExpression))),
-                        // divided by 2 to get score in the range [0, 1]
-                        new Script("(cosineSimilarity(params.query_vector, 'embedding') + 1.0) / 2",
-                                new Params(embedding)), similarityThreshold, null))
+                        new Script(this.similarityFunction, new Params(embedding)), similarityThreshold, null))
         );
     }
 
