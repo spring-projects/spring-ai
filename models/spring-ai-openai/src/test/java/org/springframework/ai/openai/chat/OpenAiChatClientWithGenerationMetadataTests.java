@@ -117,7 +117,7 @@ public class OpenAiChatClientWithGenerationMetadataTests {
 		response.getGenerations().forEach(generation -> {
 			ChoiceMetadata choiceMetadata = generation.getChoiceMetadata();
 			assertThat(choiceMetadata).isNotNull();
-			assertThat(choiceMetadata.getFinishReason()).isEqualTo("stop");
+			assertThat(choiceMetadata.getFinishReason()).isEqualTo("STOP");
 			assertThat(choiceMetadata.<Object>getContentFilterMetadata()).isNull();
 		});
 	}
