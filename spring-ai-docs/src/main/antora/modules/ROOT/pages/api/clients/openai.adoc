@@ -92,10 +92,9 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
-| spring.ai.openai.chat.model | This is the OpenAI Chat model to use | gpt-35-turbo
+| spring.ai.openai.chat.model | This is the OpenAI Chat model to use | `gpt-35-turbo` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)
 | spring.ai.openai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 |====
-
 
 The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingClient` implementation for OpenAI.
 
