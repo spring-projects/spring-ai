@@ -72,7 +72,7 @@ public class PgVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(PgVectorStoreAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=CosineDistance",
+		.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
 				// JdbcTemplate configuration
 				String.format("spring.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
 						postgresContainer.getMappedPort(5432), "postgres"),

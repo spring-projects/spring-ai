@@ -198,7 +198,6 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 			.map(ChatCompletions::getChoices)
 			.flatMap(List::stream)
 			.map(choice -> {
-				System.out.println(choice.getDelta());
 				var content = (choice.getDelta() != null) ? choice.getDelta().getContent() : null;
 				var generation = new Generation(content).withChoiceMetadata(generateChoiceMetadata(choice));
 				return new ChatResponse(List.of(generation));

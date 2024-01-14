@@ -138,11 +138,11 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
 		switch (message.getMessageType()) {
 			case USER:
-				return Role.user;
+				return Role.USER;
 			case ASSISTANT:
-				return Role.assistant;
+				return Role.ASSISTANT;
 			case SYSTEM:
-				return Role.system;
+				return Role.SYSTEM;
 			default:
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 		}

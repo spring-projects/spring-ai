@@ -48,7 +48,7 @@ public class BedrockCohereEmbeddingProperties {
 	 * retrieval. In this case, embed your corpus with the search_document type and
 	 * embedded queries with type search_query type.
 	 */
-	private InputType inputType = InputType.search_document;
+	private InputType inputType = InputType.SEARCH_DOCUMENT;
 
 	/**
 	 * Specifies how the API handles inputs longer than the maximum token length.

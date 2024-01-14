@@ -87,7 +87,7 @@ public class OllamaApiIT {
 
 		var request = ChatRequest.builder("orca-mini")
 			.withStream(false)
-			.withMessages(List.of(Message.builder(Role.user)
+			.withMessages(List.of(Message.builder(Role.USER)
 				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
 			.withOptions(OllamaOptions.create().withTemperature(0.9f))
@@ -100,7 +100,7 @@ public class OllamaApiIT {
 		assertThat(response).isNotNull();
 		assertThat(response.model()).isEqualTo(response.model());
 		assertThat(response.done()).isTrue();
-		assertThat(response.message().role()).isEqualTo(Role.assistant);
+		assertThat(response.message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(response.message().content()).contains("Sofia");
 	}
 
@@ -109,7 +109,7 @@ public class OllamaApiIT {
 
 		var request = ChatRequest.builder("orca-mini")
 			.withStream(true)
-			.withMessages(List.of(Message.builder(Role.user)
+			.withMessages(List.of(Message.builder(Role.USER)
 				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
 			.withOptions(OllamaOptions.create().withTemperature(0.9f).toMap())

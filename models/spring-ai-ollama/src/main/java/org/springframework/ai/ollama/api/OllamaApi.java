@@ -349,15 +349,15 @@ public class OllamaApi {
 			/**
 			 * System message type used as instructions to the model.
 			 */
-			system,
+			@JsonProperty("system") SYSTEM,
 			/**
 			 * User message type.
 			 */
-			user,
+			@JsonProperty("user") USER,
 			/**
 			 * Assistant message type. Usually the response from the model.
 			 */
-			assistant;
+			@JsonProperty("assistant") ASSISTANT;
 
 		}
 
@@ -466,7 +466,7 @@ public class OllamaApi {
 	 *
 	 * @param model The model name used for completion.
 	 * @param createdAt When the request was made.
-	 * @param message The response {@link Message} with {@link Message.Role#assistant}.
+	 * @param message The response {@link Message} with {@link Message.Role#ASSISTANT}.
 	 * @param done Whether this is the final response. For streaming response only the
 	 * last message is marked as done. If true, this response may be followed by another
 	 * response with the following, additional fields: context, prompt_eval_count,

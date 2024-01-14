@@ -40,7 +40,7 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final CohereEmbeddingBedrockApi embeddingApi;
 
-	private CohereEmbeddingRequest.InputType inputType = CohereEmbeddingRequest.InputType.search_document;
+	private CohereEmbeddingRequest.InputType inputType = CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT;
 
 	private CohereEmbeddingRequest.Truncate truncate = CohereEmbeddingRequest.Truncate.NONE;
 

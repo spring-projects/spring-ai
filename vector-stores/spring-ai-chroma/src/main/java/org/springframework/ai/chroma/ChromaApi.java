@@ -196,9 +196,19 @@ public class ChromaApi {
 
 		public enum Include {
 
-			metadatas, documents, distances, embeddings;
+			@JsonProperty("metadatas")
+			METADATAS,
 
-			public static final List<Include> all = List.of(metadatas, documents, distances, embeddings);
+			@JsonProperty("documents")
+			DOCUMENTS,
+
+			@JsonProperty("distances")
+			DISTANCES,
+
+			@JsonProperty("embeddings")
+			EMBEDDINGS;
+
+			public static final List<Include> all = List.of(METADATAS, DOCUMENTS, DISTANCES, EMBEDDINGS);
 
 		}
 

@@ -90,19 +90,19 @@ public class CohereEmbeddingBedrockApi extends
 			 * In search use-cases, use search_document when you encode documents for embeddings that you store in a
 			 * vector database.
 			 */
-			search_document,
+			@JsonProperty("search_document") SEARCH_DOCUMENT,
 			/**
 			 * Use search_query when querying your vector DB to find relevant documents.
 			 */
-			search_query,
+			@JsonProperty("search_query") SEARCH_QUERY,
 			/**
 			 * Use classification when using embeddings as an input to a text classifier.
 			 */
-			classification,
+			@JsonProperty("classification") CLASSIFICATION,
 			/**
 			 * Use clustering to cluster the embeddings.
 			 */
-			clustering
+			@JsonProperty("clustering") CLUSTERING
 		}
 
 		/**

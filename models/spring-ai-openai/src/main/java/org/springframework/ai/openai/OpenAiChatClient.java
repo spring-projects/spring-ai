@@ -100,7 +100,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
 				.map(m -> new ChatCompletionMessage(m.getContent(),
-						ChatCompletionMessage.Role.valueOf(m.getMessageType().getValue())))
+						ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
 				.toList();
 
 			ResponseEntity<ChatCompletion> completionEntity = this.openAiApi
@@ -132,7 +132,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
 				.map(m -> new ChatCompletionMessage(m.getContent(),
-						ChatCompletionMessage.Role.valueOf(m.getMessageType().getValue())))
+						ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
 				.toList();
 
 			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi
