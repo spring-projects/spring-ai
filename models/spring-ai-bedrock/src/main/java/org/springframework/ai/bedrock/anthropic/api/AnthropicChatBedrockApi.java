@@ -40,14 +40,14 @@ public class AnthropicChatBedrockApi extends
 	public static final String PROMPT_TEMPLATE = "\n\nHuman:%s\n\nAssistant:";
 
 	/**
-	 * Default version of the Anthropic chat model.
+	 * Default version of the Anthropic chat generative.
 	 */
 	public static final String DEFAULT_ANTHROPIC_VERSION = "bedrock-2023-05-31";
 
 
 	/**
 	 * Create a new AnthropicChatBedrockApi instance using the default credentials provider chain, the default object.
-	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param modelId The generative id to use. See the {@link AnthropicChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public AnthropicChatBedrockApi(String modelId, String region) {
@@ -57,7 +57,7 @@ public class AnthropicChatBedrockApi extends
 	/**
 	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param modelId The generative id to use. See the {@link AnthropicChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -76,7 +76,7 @@ public class AnthropicChatBedrockApi extends
 	// Anthropic Claude models: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
 
 	/**
-	 * AnthropicChatRequest encapsulates the request parameters for the Anthropic chat model.
+	 * AnthropicChatRequest encapsulates the request parameters for the Anthropic chat generative.
 	 * https://docs.anthropic.com/claude/reference/complete_post
 	 *
 	 * @param prompt The prompt to use for the chat.
@@ -85,14 +85,14 @@ public class AnthropicChatBedrockApi extends
 	 * @param maxTokensToSample (default 200) Specify the maximum number of tokens to use in the generated response.
 	 * Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum
 	 * number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance.
-	 * @param topK (default 250) Specify the number of token choices the model uses to generate the next token.
+	 * @param topK (default 250) Specify the number of token choices the generative uses to generate the next token.
 	 * @param topP (default 1) Nucleus sampling to specify the cumulative probability of the next token in range [0,1].
 	 * In nucleus sampling, we compute the cumulative distribution over all the options for each subsequent token in
 	 * decreasing probability order and cut it off once it reaches a particular probability specified by top_p. You
 	 * should either alter temperature or top_p, but not both.
-	 * @param stopSequences (defaults to "\n\nHuman:") Configure up to four sequences that the model recognizes. After a
-	 * stop sequence, the model stops generating further tokens. The returned text doesn't contain the stop sequence.
-	 * @param anthropicVersion The version of the model to use. The default value is bedrock-2023-05-31.
+	 * @param stopSequences (defaults to "\n\nHuman:") Configure up to four sequences that the generative recognizes. After a
+	 * stop sequence, the generative stops generating further tokens. The returned text doesn't contain the stop sequence.
+	 * @param anthropicVersion The version of the generative to use. The default value is bedrock-2023-05-31.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatRequest(
@@ -166,12 +166,12 @@ public class AnthropicChatBedrockApi extends
 	}
 
 	/**
-	 * AnthropicChatResponse encapsulates the response parameters for the Anthropic chat model.
+	 * AnthropicChatResponse encapsulates the response parameters for the Anthropic chat generative.
 	 *
 	 * @param completion The generated text.
-	 * @param stopReason The reason the model stopped generating text.
-	 * @param stop The stop sequence that caused the model to stop generating text.
-	 * @param amazonBedrockInvocationMetrics Metrics about the model invocation.
+	 * @param stopReason The reason the generative stopped generating text.
+	 * @param stop The stop sequence that caused the generative to stop generating text.
+	 * @param amazonBedrockInvocationMetrics Metrics about the generative invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatResponse(
@@ -197,7 +197,7 @@ public class AnthropicChatBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The model id.
+		 * @return The generative id.
 		 */
 		public String id() {
 			return id;

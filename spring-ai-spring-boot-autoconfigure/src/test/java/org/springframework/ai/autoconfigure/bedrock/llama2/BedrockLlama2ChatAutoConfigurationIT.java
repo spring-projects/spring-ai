@@ -52,7 +52,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.llama2.chat.model=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+				"spring.ai.bedrock.llama2.chat.generative=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
 				"spring.ai.bedrock.llama2.chat.temperature=0.5", "spring.ai.bedrock.llama2.chat.maxGenLen=500")
 		.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class));
 
@@ -103,7 +103,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.bedrock.llama2.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.llama2.chat.model=MODEL_XYZ",
+					"spring.ai.bedrock.llama2.chat.generative=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.llama2.chat.temperature=0.55", "spring.ai.bedrock.llama2.chat.maxGenLen=123")
 			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))

@@ -19,9 +19,9 @@ package org.springframework.ai.prompt.messages;
 import java.util.Map;
 
 /**
- * Lets the model know the content was generated as a response to the user. This role
- * indicates messages that the model has previously generated in the conversation. By
- * including assistant messages in the series, you provide context to the model about
+ * Lets the generative know the content was generated as a response to the user. This role
+ * indicates messages that the generative has previously generated in the conversation. By
+ * including assistant messages in the series, you provide context to the generative about
  * prior exchanges in the conversation.
  */
 public class AssistantMessage extends AbstractMessage {

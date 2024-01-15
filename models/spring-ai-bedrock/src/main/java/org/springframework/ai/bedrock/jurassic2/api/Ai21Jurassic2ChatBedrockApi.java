@@ -28,7 +28,7 @@ import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.
 
 
 /**
- * Java client for the Bedrock Jurassic2 chat model.
+ * Java client for the Bedrock Jurassic2 chat generative.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html
  *
  * @author Christian Tzolov
@@ -41,7 +41,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * Create a new Ai21Jurassic2ChatBedrockApi instance using the default credentials provider chain, the default
 	 * object mapper, default temperature and topP values.
 	 *
-	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatModel} for the supported models.
+	 * @param modelId The generative id to use. See the {@link Ai21Jurassic2ChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public Ai21Jurassic2ChatBedrockApi(String modelId, String region) {
@@ -56,7 +56,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * @param topP The topP value controls the diversity of the generated text. Use a lower value to ignore less
 	 * probable options.
 	 * @param maxTokens Specify the maximum number of tokens to use in the generated response.
-	 * @param stopSequences Configure stop sequences that the model recognizes and after which it stops generating
+	 * @param stopSequences Configure stop sequences that the generative recognizes and after which it stops generating
 	 * further tokens. Press the Enter key to insert a newline character in a stop sequence. Use the Tab key to finish
 	 * inserting a stop sequence.
 	 * @param countPenalty Control repetition in the generated response. Use a higher value to lower the probability of
@@ -137,7 +137,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 *
 	 * @param id The unique identifier of the response.
 	 * @param prompt The prompt used for the chat.
-	 * @param amazonBedrockInvocationMetrics The metrics about the model invocation.
+	 * @param amazonBedrockInvocationMetrics The metrics about the generative invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Ai21Jurassic2ChatResponse(
@@ -258,7 +258,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The model id.
+		 * @return The generative id.
 		 */
 		public String id() {
 			return id;

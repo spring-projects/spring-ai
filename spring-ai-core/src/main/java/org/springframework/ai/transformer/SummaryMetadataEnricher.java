@@ -31,8 +31,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Title extractor with adjacent sharing that uses model to extract 'section_summary',
- * 'prev_section_summary', 'next_section_summary' metadata fields.
+ * Title extractor with adjacent sharing that uses generative to extract
+ * 'section_summary', 'prev_section_summary', 'next_section_summary' metadata fields.
  *
  * @author Christian Tzolov
  */

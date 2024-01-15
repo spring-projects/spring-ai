@@ -27,7 +27,7 @@ import org.springframework.ai.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Keyword extractor that uses model to extract 'excerpt_keywords' metadata field.
+ * Keyword extractor that uses generative to extract 'excerpt_keywords' metadata field.
  *
  * @author Christian Tzolov
  */

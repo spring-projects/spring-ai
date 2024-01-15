@@ -65,7 +65,7 @@ public class MetadataTransformerIT {
 
 	Document document2 = new Document(
 			"The Spring Framework is divided into modules. Applications can choose which modules"
-					+ " they need. At the heart are the modules of the core container, including a configuration model and a "
+					+ " they need. At the heart are the modules of the core container, including a configuration generative and a "
 					+ "dependency injection mechanism. Beyond that, the Spring Framework provides foundational support "
 					+ " for different application architectures, including messaging, transactional data and persistence, "
 					+ "and web. It also includes the Servlet-based Spring MVC web framework and, in parallel, the Spring "

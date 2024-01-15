@@ -122,11 +122,11 @@ public class OllamaApi {
 	/**
 	 * The request object sent to the /generate endpoint.
 	 *
-	 * @param model (required) The model to use for completion.
+	 * @param model (required) The generative to use for completion.
 	 * @param prompt (required) The prompt(s) to generate completions for.
 	 * @param format (optional) The format to return the response in. Currently the only
 	 * accepted value is "json".
-	 * @param options (optional) additional model parameters listed in the documentation
+	 * @param options (optional) additional generative parameters listed in the documentation
 	 * for the Modelfile such as temperature.
 	 * @param system (optional) system prompt to (overrides what is defined in the Modelfile).
 	 * @param template (optional) the full prompt or prompt template (overrides what is
@@ -142,7 +142,7 @@ public class OllamaApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateRequest(
-			@JsonProperty("model") String model,
+			@JsonProperty("generative") String model,
 			@JsonProperty("prompt") String prompt,
 			@JsonProperty("format") String format,
 			@JsonProperty("options") Map<String, Object> options,
@@ -154,7 +154,7 @@ public class OllamaApi {
 
 		/**
 		 * Short cut constructor to create a CompletionRequest without options.
-		 * @param model The model used for completion.
+		 * @param model The generative used for completion.
 		 * @param prompt The prompt(s) to generate completions for.
 		 * @param stream Whether to stream the response.
 		 */
@@ -164,7 +164,7 @@ public class OllamaApi {
 
 		/**
 		 * Short cut constructor to create a CompletionRequest without options.
-		 * @param model The model used for completion.
+		 * @param model The generative used for completion.
 		 * @param prompt The prompt(s) to generate completions for.
 		 * @param enableJsonFormat Whether to return the response in json format.
 		 * @param stream Whether to stream the response.
@@ -254,7 +254,7 @@ public class OllamaApi {
 	 * response is generated in tokens per second (token/s), divide eval_count /
 	 * eval_duration.
 	 *
-	 * @param model The model used for completion.
+	 * @param model The generative used for completion.
 	 * @param createdAt When the request was made.
 	 * @param response The completion response. Empty if the response was streamed, if not
 	 * streamed, this will contain the full response
@@ -264,7 +264,7 @@ public class OllamaApi {
 	 * @param context Encoding of the conversation used in this response, this can be sent
 	 * in the next request to keep a conversational memory.
 	 * @param totalDuration Time spent generating the response.
-	 * @param loadDuration Time spent loading the model.
+	 * @param loadDuration Time spent loading the generative.
 	 * @param promptEvalCount Number of times the prompt was evaluated.
 	 * @param promptEvalDuration Time spent evaluating the prompt.
 	 * @param evalCount Number of tokens in the response.
@@ -272,7 +272,7 @@ public class OllamaApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateResponse(
-			@JsonProperty("model") String model,
+			@JsonProperty("generative") String model,
 			@JsonProperty("created_at") Instant createdAt,
 			@JsonProperty("response") String response,
 			@JsonProperty("done") Boolean done,
@@ -347,7 +347,7 @@ public class OllamaApi {
 		public enum Role {
 
 			/**
-			 * System message type used as instructions to the model.
+			 * System message type used as instructions to the generative.
 			 */
 			system,
 			/**
@@ -355,7 +355,7 @@ public class OllamaApi {
 			 */
 			user,
 			/**
-			 * Assistant message type. Usually the response from the model.
+			 * Assistant message type. Usually the response from the generative.
 			 */
 			assistant;
 
@@ -395,18 +395,18 @@ public class OllamaApi {
 	/**
 	 * Chat request object.
 	 *
-	 * @param model The model to use for completion.
+	 * @param model The generative to use for completion.
 	 * @param messages The list of messages to chat with.
 	 * @param stream Whether to stream the response.
 	 * @param format The format to return the response in. Currently the only accepted
 	 * value is "json".
-	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
+	 * @param options Additional generative parameters. You can use the {@link OllamaOptions} builder
 	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
 	 * map.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatRequest(
-			@JsonProperty("model") String model,
+			@JsonProperty("generative") String model,
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
@@ -425,7 +425,7 @@ public class OllamaApi {
 			private Map<String, Object> options = Map.of();
 
 			public Builder(String model) {
-				Assert.notNull(model, "The model can not be null.");
+				Assert.notNull(model, "The generative can not be null.");
 				this.model = model;
 			}
 
@@ -464,7 +464,7 @@ public class OllamaApi {
 	/**
 	 * Ollama chat response object.
 	 *
-	 * @param model The model name used for completion.
+	 * @param model The generative name used for completion.
 	 * @param createdAt When the request was made.
 	 * @param message The response {@link Message} with {@link Message.Role#assistant}.
 	 * @param done Whether this is the final response. For streaming response only the
@@ -472,7 +472,7 @@ public class OllamaApi {
 	 * response with the following, additional fields: context, prompt_eval_count,
 	 * prompt_eval_duration, eval_count, eval_duration.
 	 * @param totalDuration Time spent generating the response.
-	 * @param loadDuration Time spent loading the model.
+	 * @param loadDuration Time spent loading the generative.
 	 * @param promptEvalCount number of tokens in the prompt.(*)
 	 * @param promptEvalDuration time spent evaluating the prompt.
 	 * @param evalCount number of tokens in the response.
@@ -485,7 +485,7 @@ public class OllamaApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatResponse(
-			@JsonProperty("model") String model,
+			@JsonProperty("generative") String model,
 			@JsonProperty("created_at") Instant createdAt,
 			@JsonProperty("message") Message message,
 			@JsonProperty("done") Boolean done,
@@ -498,7 +498,7 @@ public class OllamaApi {
 	}
 
 	/**
-	 * Generate the next message in a chat with a provided model.
+	 * Generate the next message in a chat with a provided generative.
 	 *
 	 * This is a streaming endpoint (controlled by the 'stream' request property), so
 	 * there will be a series of responses. The final response object will include
@@ -544,22 +544,22 @@ public class OllamaApi {
 	// Embeddings
 	// --------------------------------------------------------------------------
 	/**
-	 * Generate embeddings from a model.
+	 * Generate embeddings from a generative.
 	 *
-	 * @param model The name of model to generate embeddings from.
+	 * @param model The name of generative to generate embeddings from.
 	 * @param prompt The text to generate embeddings for.
-	 * @param options Additional model parameters listed in the documentation for the
+	 * @param options Additional generative parameters listed in the documentation for the
 	 * Modelfile such as temperature.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest(
-			@JsonProperty("model") String model,
+			@JsonProperty("generative") String model,
 			@JsonProperty("prompt") String prompt,
 			@JsonProperty("options") Map<String, Object> options) {
 
 		/**
 		 * short cut constructor to create a EmbeddingRequest without options.
-		 * @param model The name of model to generate embeddings from.
+		 * @param model The name of generative to generate embeddings from.
 		 * @param prompt The text to generate embeddings for.
 		 */
 		public EmbeddingRequest(String model, String prompt) {
@@ -570,7 +570,7 @@ public class OllamaApi {
 	/**
 	 * The response object returned from the /embedding endpoint.
 	 *
-	 * @param embedding The embedding generated from the model.
+	 * @param embedding The embedding generated from the generative.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingResponse(
@@ -578,7 +578,7 @@ public class OllamaApi {
 	}
 
 	/**
-	 * Generate embeddings from a model.
+	 * Generate embeddings from a generative.
 	 * @param embeddingRequest Embedding request.
 	 * @return Embedding response.
 	 */

@@ -57,7 +57,7 @@ public class OllamaApiIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the 'orca-mini' model (3GB) ... would take several minutes ...");
+		logger.info("Start pulling the 'orca-mini' generative (3GB) ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", "orca-mini");
 		logger.info("orca-mini pulling competed!");
 

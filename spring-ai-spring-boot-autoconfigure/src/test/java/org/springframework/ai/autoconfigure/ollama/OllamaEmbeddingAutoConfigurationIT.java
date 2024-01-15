@@ -53,7 +53,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
 		logger.info(MODEL_NAME + " pulling competed!");
 
@@ -61,7 +61,8 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.embedding.model=" + MODEL_NAME, "spring.ai.ollama.base-url=" + baseUrl)
+		.withPropertyValues("spring.ai.ollama.embedding.generative=" + MODEL_NAME,
+				"spring.ai.ollama.base-url=" + baseUrl)
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	@Test

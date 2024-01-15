@@ -34,12 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiGenerationMetadata;
+import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.ai.metadata.GenerationChoiceMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.prompt.Prompt;
@@ -70,11 +70,11 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	/**
 	 * An alternative to sampling with temperature called nucleus sampling. This value
-	 * causes the model to consider the results of tokens with the provided probability
-	 * mass. As an example, a value of 0.15 will cause only the tokens comprising the top
-	 * 15% of probability mass to be considered. It is not recommended to modify
-	 * temperature and top_p for the same completions request as the interaction of these
-	 * two settings is difficult to predict.
+	 * causes the generative to consider the results of tokens with the provided
+	 * probability mass. As an example, a value of 0.15 will cause only the tokens
+	 * comprising the top 15% of probability mass to be considered. It is not recommended
+	 * to modify temperature and top_p for the same completions request as the interaction
+	 * of these two settings is difficult to predict.
 	 */
 	private Double topP;
 
@@ -177,8 +177,9 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 				.withChoiceMetadata(generateChoiceMetadata(choice)))
 			.toList();
 
-		return new ChatResponse(generations, AzureOpenAiGenerationMetadata.from(chatCompletions))
-			.withPromptMetadata(generatePromptMetadata(chatCompletions));
+		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
+		return new ChatResponse(generations,
+				AzureOpenAiChatResponseMetadata.from(chatCompletions, promptFilterMetadata));
 	}
 
 	@Override
@@ -234,8 +235,9 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	}
 
-	private ChoiceMetadata generateChoiceMetadata(ChatChoice choice) {
-		return ChoiceMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
+	private GenerationChoiceMetadata generateChoiceMetadata(ChatChoice choice) {
+		return GenerationChoiceMetadata.from(String.valueOf(choice.getFinishReason()),
+				choice.getContentFilterResults());
 	}
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {

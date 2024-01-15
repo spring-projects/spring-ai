@@ -84,7 +84,7 @@ public class ResourceCacheServiceTests {
 
 		// Attempt to cache the same resource again should return the already cached
 		// resource.
-		var originalResourceUri2 = "file:src/main/resources/onnx/all-MiniLM-L6-v2/model.png";
+		var originalResourceUri2 = "file:src/main/resources/onnx/all-MiniLM-L6-v2/generative.png";
 		var cachedResource2 = cache.getCachedResource(originalResourceUri2);
 
 		assertThat(cachedResource2).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri1));

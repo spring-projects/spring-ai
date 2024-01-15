@@ -11,6 +11,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.ChatOptionsBuilder;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -51,7 +52,7 @@ class OllamaChatClientIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL);
 		logger.info(MODEL + " pulling competed!");
 
@@ -72,7 +73,14 @@ class OllamaChatClientIT {
 
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		// portable/generic options
+		var chatOptionsBuilder = ChatOptionsBuilder.builder();
+
+		// ollama specific options
+		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
+
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
+				chatOptionsBuilder.withTemperature(0.7f).build());
 		ChatResponse response = client.generate(prompt);
 		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
 	}

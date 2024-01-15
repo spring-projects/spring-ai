@@ -28,12 +28,12 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.ai.metadata.GenerationChoiceMetadata;
 import org.springframework.ai.prompt.Prompt;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Anthropic chat
- * model.
+ * generative.
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -126,8 +126,8 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
 			var generation = new Generation(response.completion());
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation
-					.withChoiceMetadata(ChoiceMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+				generation = generation.withChoiceMetadata(
+						GenerationChoiceMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
 			}
 			return new ChatResponse(List.of(generation));
 		});

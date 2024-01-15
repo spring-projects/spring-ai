@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.ai.chat.ChatOptions;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -38,7 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions {
+public class OllamaOptions implements ChatOptions {
 
 	// @formatter:off
 	/**
@@ -133,7 +134,7 @@ public class OllamaOptions {
 
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
-	 * specific number will make the model generate the same text for the same prompt.
+	 * specific number will make the generative generate the same text for the same prompt.
 	 * (Default: 0)
 	 */
 	@JsonProperty("seed") private Integer seed;
@@ -171,14 +172,14 @@ public class OllamaOptions {
 	@JsonProperty("typical_p") private Float typicalP;
 
 	/**
-	 * Sets how far back for the model to look back to prevent
+	 * Sets how far back for the generative to look back to prevent
 	 * repetition. (Default: 64, 0 = disabled, -1 = num_ctx)
 	 */
 	@JsonProperty("repeat_last_n") private Integer repeatLastN;
 
 	/**
-	 * The temperature of the model. Increasing the temperature will
-	 * make the model answer more creatively. (Default: 0.8)
+	 * The temperature of the generative. Increasing the temperature will
+	 * make the generative answer more creatively. (Default: 0.8)
 	 */
 	@JsonProperty("temperature") private Float temperature;
 

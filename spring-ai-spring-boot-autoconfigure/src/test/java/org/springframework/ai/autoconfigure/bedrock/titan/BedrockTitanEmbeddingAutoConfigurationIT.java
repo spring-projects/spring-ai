@@ -47,7 +47,7 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.titan.embedding.model=" + TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id())
+				"spring.ai.bedrock.titan.embedding.generative=" + TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id())
 		.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class));
 
 	@Test
@@ -84,10 +84,12 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 	@Test
 	public void propertiesTest() {
 
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=true",
-				"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-				"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-				"spring.ai.bedrock.titan.embedding.model=MODEL_XYZ", "spring.ai.bedrock.titan.embedding.inputType=TEXT")
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=true",
+					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
+					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
+					"spring.ai.bedrock.titan.embedding.generative=MODEL_XYZ",
+					"spring.ai.bedrock.titan.embedding.inputType=TEXT")
 			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var properties = context.getBean(BedrockTitanEmbeddingProperties.class);

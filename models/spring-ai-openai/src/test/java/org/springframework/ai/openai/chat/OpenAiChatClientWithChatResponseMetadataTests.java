@@ -22,8 +22,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.ChatResponseMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
@@ -52,8 +52,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * @author Christian Tzolov
  * @since 0.7.0
  */
-@RestClientTest(OpenAiChatClientWithGenerationMetadataTests.Config.class)
-public class OpenAiChatClientWithGenerationMetadataTests {
+@RestClientTest(OpenAiChatClientWithChatResponseMetadataTests.Config.class)
+public class OpenAiChatClientWithChatResponseMetadataTests {
 
 	private static String TEST_API_KEY = "sk-1234567890";
 
@@ -79,18 +79,18 @@ public class OpenAiChatClientWithGenerationMetadataTests {
 
 		assertThat(response).isNotNull();
 
-		GenerationMetadata generationMetadata = response.getGenerationMetadata();
+		ChatResponseMetadata chatResponseMetadata = response.getChatResponseMetadata();
 
-		assertThat(generationMetadata).isNotNull();
+		assertThat(chatResponseMetadata).isNotNull();
 
-		Usage usage = generationMetadata.getUsage();
+		Usage usage = chatResponseMetadata.getUsage();
 
 		assertThat(usage).isNotNull();
 		assertThat(usage.getPromptTokens()).isEqualTo(9L);
 		assertThat(usage.getGenerationTokens()).isEqualTo(12L);
 		assertThat(usage.getTotalTokens()).isEqualTo(21L);
 
-		RateLimit rateLimit = generationMetadata.getRateLimit();
+		RateLimit rateLimit = chatResponseMetadata.getRateLimit();
 
 		Duration expectedRequestsReset = Duration.ofDays(2L)
 			.plus(Duration.ofHours(16L))
@@ -109,16 +109,16 @@ public class OpenAiChatClientWithGenerationMetadataTests {
 		assertThat(rateLimit.getTokensRemaining()).isEqualTo(112_358L);
 		assertThat(rateLimit.getTokensReset()).isEqualTo(expectedTokensReset);
 
-		PromptMetadata promptMetadata = response.getPromptMetadata();
+		PromptMetadata promptMetadata = response.getChatResponseMetadata().getPromptMetadata();
 
 		assertThat(promptMetadata).isNotNull();
 		assertThat(promptMetadata).isEmpty();
 
 		response.getGenerations().forEach(generation -> {
-			ChoiceMetadata choiceMetadata = generation.getChoiceMetadata();
-			assertThat(choiceMetadata).isNotNull();
-			assertThat(choiceMetadata.getFinishReason()).isEqualTo("stop");
-			assertThat(choiceMetadata.<Object>getContentFilterMetadata()).isNull();
+			GenerationChoiceMetadata generationChoiceMetadata = generation.getChoiceMetadata();
+			assertThat(generationChoiceMetadata).isNotNull();
+			assertThat(generationChoiceMetadata.getFinishReason()).isEqualTo("stop");
+			assertThat(generationChoiceMetadata.<Object>getContentFilterMetadata()).isNull();
 		});
 	}
 

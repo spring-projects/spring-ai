@@ -17,12 +17,13 @@
 package org.springframework.ai.vectorstore.filter;
 
 /**
- * Portable runtime model for metadata filter expressions. This generic model is used to
- * define store agnostic filter expressions than later can be converted into vector-store
- * specific, native, expressions.
+ * Portable runtime generative for metadata filter expressions. This generic generative is
+ * used to define store agnostic filter expressions than later can be converted into
+ * vector-store specific, native, expressions.
  *
- * The expression model supports constant comparison {@code (e.g. ==, !=, <, <=, >, >=) },
- * IN/NON-IN checks and AND and OR to compose multiple expressions.
+ * The expression generative supports constant comparison
+ * {@code (e.g. ==, !=, <, <=, >, >=) }, IN/NON-IN checks and AND and OR to compose
+ * multiple expressions.
  *
  * For example:
  *

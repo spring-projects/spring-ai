@@ -18,38 +18,44 @@ package org.springframework.ai.azure.openai.metadata;
 
 import com.azure.ai.openai.models.ChatCompletions;
 
-import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.ChatResponseMetadata;
+import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**
- * {@link GenerationMetadata} implementation for
+ * {@link ChatResponseMetadata} implementation for
  * {@literal Microsoft Azure OpenAI Service}.
  *
  * @author John Blum
- * @see org.springframework.ai.metadata.GenerationMetadata
+ * @see ChatResponseMetadata
  * @since 0.7.1
  */
-public class AzureOpenAiGenerationMetadata implements GenerationMetadata {
+public class AzureOpenAiChatResponseMetadata implements ChatResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 
 	@SuppressWarnings("all")
-	public static AzureOpenAiGenerationMetadata from(ChatCompletions chatCompletions) {
+	public static AzureOpenAiChatResponseMetadata from(ChatCompletions chatCompletions,
+			PromptMetadata promptFilterMetadata) {
 		Assert.notNull(chatCompletions, "Azure OpenAI ChatCompletions must not be null");
 		String id = chatCompletions.getId();
 		AzureOpenAiUsage usage = AzureOpenAiUsage.from(chatCompletions);
-		AzureOpenAiGenerationMetadata generationMetadata = new AzureOpenAiGenerationMetadata(id, usage);
-		return generationMetadata;
+		AzureOpenAiChatResponseMetadata chatResponseMetadata = new AzureOpenAiChatResponseMetadata(id, usage,
+				promptFilterMetadata);
+		return chatResponseMetadata;
 	}
 
 	private final String id;
 
 	private final Usage usage;
 
-	protected AzureOpenAiGenerationMetadata(String id, AzureOpenAiUsage usage) {
+	private final PromptMetadata promptMetadata;
+
+	protected AzureOpenAiChatResponseMetadata(String id, AzureOpenAiUsage usage, PromptMetadata promptMetadata) {
 		this.id = id;
 		this.usage = usage;
+		this.promptMetadata = promptMetadata;
 	}
 
 	public String getId() {
@@ -59,6 +65,11 @@ public class AzureOpenAiGenerationMetadata implements GenerationMetadata {
 	@Override
 	public Usage getUsage() {
 		return this.usage;
+	}
+
+	@Override
+	public PromptMetadata getPromptMetadata() {
+		return this.promptMetadata;
 	}
 
 	@Override

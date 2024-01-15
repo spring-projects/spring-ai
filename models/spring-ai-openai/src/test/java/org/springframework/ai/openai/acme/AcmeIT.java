@@ -90,7 +90,7 @@ public class AcmeIT extends AbstractIT {
 
 		// Create the prompt ad-hoc for now, need to put in system message and user
 		// message via ChatPromptTemplate or some other message building mechanic;
-		logger.info("Asking AI model to reply to question.");
+		logger.info("Asking AI generative to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
 		ChatResponse response = chatClient.generate(prompt);

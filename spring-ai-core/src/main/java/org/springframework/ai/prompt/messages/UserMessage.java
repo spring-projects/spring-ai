@@ -21,7 +21,7 @@ import org.springframework.core.io.Resource;
 /**
  * A message of the type 'user' passed as input Messages with the user role are from the
  * end-user or developer. They represent questions, prompts, or any input that you want
- * the model to respond to.
+ * the generative to respond to.
  */
 public class UserMessage extends AbstractMessage {
 

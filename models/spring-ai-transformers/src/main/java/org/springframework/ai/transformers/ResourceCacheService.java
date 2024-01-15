@@ -56,7 +56,7 @@ public class ResourceCacheService {
 	private List<String> excludedUriSchemas = new ArrayList<>(List.of("file", "classpath"));
 
 	public ResourceCacheService() {
-		this(new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-model").getAbsolutePath());
+		this(new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
 	}
 
 	public ResourceCacheService(String rootCacheDirectory) {

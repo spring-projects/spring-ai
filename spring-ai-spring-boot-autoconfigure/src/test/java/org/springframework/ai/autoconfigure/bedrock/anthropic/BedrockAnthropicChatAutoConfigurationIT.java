@@ -51,7 +51,7 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 		.withPropertyValues("spring.ai.bedrock.anthropic.chat.enabled=true",
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-				"spring.ai.bedrock.anthropic.chat.model=" + AnthropicChatModel.CLAUDE_V2.id(),
+				"spring.ai.bedrock.anthropic.chat.generative=" + AnthropicChatModel.CLAUDE_V2.id(),
 				"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 				"spring.ai.bedrock.anthropic.chat.temperature=0.5", "spring.ai.bedrock.anthropic.chat.maxGenLen=500")
 		.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class));
@@ -103,7 +103,7 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.bedrock.anthropic.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.anthropic.chat.model=MODEL_XYZ",
+					"spring.ai.bedrock.anthropic.chat.generative=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.anthropic.chat.temperature=0.55")
 			.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class))

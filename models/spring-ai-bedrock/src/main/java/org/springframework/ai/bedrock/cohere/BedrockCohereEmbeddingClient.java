@@ -60,8 +60,8 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 
 	/**
 	 * Specifies how the API handles inputs longer than the maximum token length. If you
-	 * specify LEFT or RIGHT, the model discards the input until the remaining input is
-	 * exactly the maximum input token length for the model.
+	 * specify LEFT or RIGHT, the generative discards the input until the remaining input
+	 * is exactly the maximum input token length for the generative.
 	 * @param truncate the truncate option to use.
 	 * @return this client.
 	 */

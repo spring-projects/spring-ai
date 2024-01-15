@@ -31,7 +31,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
 
 /**
- * Java client for the Bedrock Titan chat model.
+ * Java client for the Bedrock Titan chat generative.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-titan-text.html
  * <p>
  * https://docs.aws.amazon.com/bedrock/latest/userguide/titan-text-models.html
@@ -50,7 +50,7 @@ public class TitanChatBedrockApi extends
 	/**
 	 * Create a new TitanChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The model id to use. See the {@link TitanChatModel} for the supported models.
+	 * @param modelId The generative id to use. See the {@link TitanChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -61,7 +61,7 @@ public class TitanChatBedrockApi extends
 	}
 
 	/**
-	 * TitanChatRequest encapsulates the request parameters for the Titan chat model.
+	 * TitanChatRequest encapsulates the request parameters for the Titan chat generative.
 	 *
 	 * @param inputText The prompt to use for the chat.
 	 * @param textGenerationConfig The text generation configuration.
@@ -80,7 +80,7 @@ public class TitanChatBedrockApi extends
 		 * probable options.
 		 * @param maxTokenCount The maximum number of tokens to generate.
 		 * @param stopSequences A list of sequences to stop the generation at. Specify character sequences to indicate
-		 * where the model should stop. Use the | (pipe) character to separate different sequences (maximum 20
+		 * where the generative should stop. Use the | (pipe) character to separate different sequences (maximum 20
 		 * characters).
 		 */
 		@JsonInclude(Include.NON_NULL)
@@ -150,7 +150,7 @@ public class TitanChatBedrockApi extends
 	}
 
 	/**
-	 * TitanChatResponse encapsulates the response parameters for the Titan chat model.
+	 * TitanChatResponse encapsulates the response parameters for the Titan chat generative.
 	 *
 	 * @param inputTextTokenCount The number of tokens in the input text.
 	 * @param results The list of generated responses.
@@ -196,7 +196,7 @@ public class TitanChatBedrockApi extends
 	}
 
 	/**
-	 * Titan chat model streaming response.
+	 * Titan chat generative streaming response.
 	 *
 	 * @param outputText The generated text in this chunk.
 	 * @param index The index of the chunk in the streaming response.
@@ -232,7 +232,7 @@ public class TitanChatBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The model id.
+		 * @return The generative id.
 		 */
 		public String id() {
 			return id;

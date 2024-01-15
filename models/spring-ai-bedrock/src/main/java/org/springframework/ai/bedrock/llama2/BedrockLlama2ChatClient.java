@@ -28,13 +28,13 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2Chat
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.ai.metadata.GenerationChoiceMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.prompt.Prompt;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Llama2 chat
- * model.
+ * generative.
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -81,7 +81,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 		Llama2ChatResponse response = this.chatApi.chatCompletion(request);
 
 		return new ChatResponse(List.of(new Generation(response.generation())
-			.withChoiceMetadata(ChoiceMetadata.from(response.stopReason().name(), extractUsage(response)))));
+			.withChoiceMetadata(GenerationChoiceMetadata.from(response.stopReason().name(), extractUsage(response)))));
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
 			return new ChatResponse(List.of(new Generation(response.generation())
-				.withChoiceMetadata(ChoiceMetadata.from(stopReason, extractUsage(response)))));
+				.withChoiceMetadata(GenerationChoiceMetadata.from(stopReason, extractUsage(response)))));
 		});
 	}
 

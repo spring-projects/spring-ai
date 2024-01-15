@@ -31,7 +31,7 @@ public abstract class AbstractMessage implements Message {
 	protected String content;
 
 	/**
-	 * Additional options for the message to influence the response, not a model map.
+	 * Additional options for the message to influence the response, not a generative map.
 	 */
 	protected Map<String, Object> properties = new HashMap<>();
 

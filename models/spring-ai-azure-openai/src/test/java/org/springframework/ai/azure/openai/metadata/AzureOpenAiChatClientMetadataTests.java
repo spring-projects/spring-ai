@@ -28,8 +28,8 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.GenerationMetadata;
+import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.ChatResponseMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.metadata.Usage;
@@ -92,7 +92,7 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertPromptMetadata(ChatResponse response) {
 
-		PromptMetadata promptMetadata = response.getPromptMetadata();
+		PromptMetadata promptMetadata = response.getChatResponseMetadata().getPromptMetadata();
 
 		assertThat(promptMetadata).isNotNull();
 
@@ -106,12 +106,12 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertGenerationMetadata(ChatResponse response) {
 
-		GenerationMetadata generationMetadata = response.getGenerationMetadata();
+		ChatResponseMetadata chatResponseMetadata = response.getChatResponseMetadata();
 
-		assertThat(generationMetadata).isNotNull();
-		assertThat(generationMetadata.getRateLimit()).isEqualTo(RateLimit.NULL);
+		assertThat(chatResponseMetadata).isNotNull();
+		assertThat(chatResponseMetadata.getRateLimit()).isEqualTo(RateLimit.NULL);
 
-		Usage usage = generationMetadata.getUsage();
+		Usage usage = chatResponseMetadata.getUsage();
 
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotEqualTo(Usage.NULL);
@@ -122,11 +122,11 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertChoiceMetadata(Generation generation) {
 
-		ChoiceMetadata choiceMetadata = generation.getChoiceMetadata();
+		GenerationChoiceMetadata generationChoiceMetadata = generation.getChoiceMetadata();
 
-		assertThat(choiceMetadata).isNotNull();
-		assertThat(choiceMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(choiceMetadata.getContentFilterMetadata());
+		assertThat(generationChoiceMetadata).isNotNull();
+		assertThat(generationChoiceMetadata.getFinishReason()).isEqualTo("stop");
+		assertContentFilterResults(generationChoiceMetadata.getContentFilterMetadata());
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,

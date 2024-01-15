@@ -29,7 +29,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
+import org.springframework.ai.metadata.GenerationChoiceMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.prompt.Prompt;
 
@@ -91,12 +91,13 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
 				String completionReason = chunk.completionReason().name();
-				generation = generation
-					.withChoiceMetadata(ChoiceMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
+				generation = generation.withChoiceMetadata(
+						GenerationChoiceMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
 				String completionReason = chunk.completionReason().name();
-				generation = generation.withChoiceMetadata(ChoiceMetadata.from(completionReason, extractUsage(chunk)));
+				generation = generation
+					.withChoiceMetadata(GenerationChoiceMetadata.from(completionReason, extractUsage(chunk)));
 
 			}
 			return new ChatResponse(List.of(generation));

@@ -18,7 +18,7 @@ package org.springframework.ai.parser;
 
 /**
  * Implementations of this interface provides instructions for how the output of a
- * language model should be formatted.
+ * language generative should be formatted.
  *
  * @author Mark Pollack
  */
@@ -26,7 +26,7 @@ public interface FormatProvider {
 
 	/**
 	 * @return Returns a string containing instructions for how the output of a language
-	 * model should be formatted.
+	 * generative should be formatted.
 	 */
 	String getFormat();
 

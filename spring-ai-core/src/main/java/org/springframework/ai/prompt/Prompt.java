@@ -16,6 +16,7 @@
 
 package org.springframework.ai.prompt;
 
+import org.springframework.ai.generative.Options;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
 
@@ -26,6 +27,8 @@ import java.util.Objects;
 public class Prompt {
 
 	private final List<Message> messages;
+
+	private Options options;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -39,6 +42,19 @@ public class Prompt {
 		this.messages = messages;
 	}
 
+	public Prompt(String contents, Options options) {
+		this(new UserMessage(contents), options);
+	}
+
+	public Prompt(Message message, Options options) {
+		this(Collections.singletonList(message), options);
+	}
+
+	public Prompt(List<Message> messages, Options options) {
+		this.messages = messages;
+		this.options = options;
+	}
+
 	public String getContents() {
 		StringBuilder sb = new StringBuilder();
 		for (Message message : getMessages()) {
@@ -47,28 +63,31 @@ public class Prompt {
 		return sb.toString();
 	}
 
+	public Options getOptions() {
+		return options;
+	}
+
 	public List<Message> getMessages() {
 		return this.messages;
 	}
 
 	@Override
 	public String toString() {
-		return "Prompt{" + "messages=" + messages + '}';
+		return "Prompt{" + "messages=" + messages + ", options=" + options + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (o == null || getClass() != o.getClass())
+		if (!(o instanceof Prompt prompt))
 			return false;
-		Prompt prompt = (Prompt) o;
-		return Objects.equals(messages, prompt.messages);
+		return Objects.equals(messages, prompt.messages) && Objects.equals(options, prompt.options);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(messages);
+		return Objects.hash(messages, options);
 	}
 
 }

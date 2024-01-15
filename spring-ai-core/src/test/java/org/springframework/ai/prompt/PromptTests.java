@@ -86,7 +86,7 @@ class PromptTests {
 
 		// ChatPromptTemplate chatPromptTemplate = new ChatPromptTemplate(systemPrompt,
 		// humanPrompt);
-		// Prompt chatPrompt chatPromptTemplate.create(model);
+		// Prompt chatPrompt chatPromptTemplate.create(generative);
 
 	}
 

@@ -46,7 +46,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
+				"spring.ai.bedrock.cohere.embedding.generative="
+						+ CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
 				"spring.ai.bedrock.cohere.embedding.inputType=search_document",
 				"spring.ai.bedrock.cohere.embedding.truncate=NONE")
 		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class));
@@ -90,7 +91,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-					"spring.ai.bedrock.cohere.embedding.model=MODEL_XYZ",
+					"spring.ai.bedrock.cohere.embedding.generative=MODEL_XYZ",
 					"spring.ai.bedrock.cohere.embedding.inputType=classification",
 					"spring.ai.bedrock.cohere.embedding.truncate=RIGHT")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))

@@ -23,9 +23,9 @@ package org.springframework.ai.metadata;
  * @author John Blum
  * @since 0.7.0
  */
-public interface GenerationMetadata {
+public interface ChatResponseMetadata {
 
-	GenerationMetadata NULL = new GenerationMetadata() {
+	ChatResponseMetadata NULL = new ChatResponseMetadata() {
 	};
 
 	/**
@@ -44,6 +44,10 @@ public interface GenerationMetadata {
 	 */
 	default Usage getUsage() {
 		return Usage.NULL;
+	}
+
+	default PromptMetadata getPromptMetadata() {
+		return PromptMetadata.empty();
 	}
 
 }

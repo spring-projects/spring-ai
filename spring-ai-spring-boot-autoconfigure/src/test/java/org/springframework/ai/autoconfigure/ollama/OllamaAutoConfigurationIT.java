@@ -61,7 +61,7 @@ public class OllamaAutoConfigurationIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
 		logger.info(MODEL_NAME + " pulling competed!");
 
@@ -69,7 +69,7 @@ public class OllamaAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.chat.enabled=true", "spring.ai.ollama.chat.model=" + MODEL_NAME,
+		.withPropertyValues("spring.ai.ollama.chat.enabled=true", "spring.ai.ollama.chat.generative=" + MODEL_NAME,
 				"spring.ai.ollama.baseUrl=" + baseUrl, "spring.ai.ollama.chat.temperature=0.5",
 				"spring.ai.ollama.chat.topK=10")
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
