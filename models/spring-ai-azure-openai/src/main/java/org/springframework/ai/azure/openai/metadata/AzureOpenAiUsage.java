@@ -19,7 +19,7 @@ package org.springframework.ai.azure.openai.metadata;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.CompletionsUsage;
 
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**

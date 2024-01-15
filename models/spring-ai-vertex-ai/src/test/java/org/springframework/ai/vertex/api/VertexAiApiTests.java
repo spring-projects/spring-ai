@@ -78,7 +78,7 @@ public class VertexAiApiTests {
 				List.of(new VertexAiApi.GenerateMessageResponse.ContentFilter(BlockedReason.SAFETY, "reason")));
 
 		server
-			.expect(requestToUriTemplate("/models/{model}:generateMessage?key={apiKey}",
+			.expect(requestToUriTemplate("/models/{generative}:generateMessage?key={apiKey}",
 					VertexAiApi.DEFAULT_GENERATE_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(content().json(objectMapper.writeValueAsString(request)))
@@ -99,8 +99,8 @@ public class VertexAiApiTests {
 		Embedding expectedEmbedding = new Embedding(List.of(0.1, 0.2, 0.3));
 
 		server
-			.expect(requestToUriTemplate("/models/{model}:embedText?key={apiKey}", VertexAiApi.DEFAULT_EMBEDDING_MODEL,
-					TEST_API_KEY))
+			.expect(requestToUriTemplate("/models/{generative}:embedText?key={apiKey}",
+					VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("text", text))))
 			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embedding", expectedEmbedding)),
@@ -122,7 +122,7 @@ public class VertexAiApiTests {
 				new Embedding(List.of(0.4, 0.5, 0.6)));
 
 		server
-			.expect(requestToUriTemplate("/models/{model}:batchEmbedText?key={apiKey}",
+			.expect(requestToUriTemplate("/models/{generative}:batchEmbedText?key={apiKey}",
 					VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("texts", texts))))

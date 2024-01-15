@@ -24,7 +24,7 @@ public class AzureOpenAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
 	/**
-	 * The text embedding model to use for the embedding client.
+	 * The text embedding generative to use for the embedding client.
 	 */
 	private String model = "text-embedding-ada-002";
 

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.ai.chat.ChatOptions;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -38,7 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions {
+public class OllamaOptions implements ChatOptions {
 
 	// @formatter:off
 	/**

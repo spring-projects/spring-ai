@@ -17,7 +17,7 @@
 package org.springframework.ai.bedrock;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetrics;
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**

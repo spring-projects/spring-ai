@@ -156,6 +156,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Stability AI LLM -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-stability-ai</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Bedrock -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

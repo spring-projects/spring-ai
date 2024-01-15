@@ -22,12 +22,12 @@ import java.util.Map;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Keyword extractor that uses model to extract 'excerpt_keywords' metadata field.
+ * Keyword extractor that uses generative to extract 'excerpt_keywords' metadata field.
  *
  * @author Christian Tzolov
  */
@@ -65,7 +65,7 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 
 			var template = new PromptTemplate(String.format(KEYWORDS_TEMPLATE, keywordCount));
 			Prompt prompt = template.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getContent()));
-			String keywords = this.chatClient.generate(prompt).getGeneration().getContent();
+			String keywords = this.chatClient.call(prompt).getResult().getOutput().getContent();
 			document.getMetadata().putAll(Map.of(EXCERPT_KEYWORDS_METADATA_KEY, keywords));
 		}
 		return documents;

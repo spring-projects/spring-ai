@@ -71,7 +71,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 	private final List<String> excludedInferenceMetadataKeys;
 
 	/**
-	 * Metadata keys that are excluded from text for the embed model.
+	 * Metadata keys that are excluded from text for the embed generative.
 	 */
 	private final List<String> excludedEmbedMetadataKeys;
 
@@ -157,7 +157,8 @@ public class DefaultContentFormatter implements ContentFormatter {
 		}
 
 		/**
-		 * Configures the excluded Inference metadata keys to filter out from the model.
+		 * Configures the excluded Inference metadata keys to filter out from the
+		 * generative.
 		 * @param excludedInferenceMetadataKeys Excluded inference metadata keys to use.
 		 * @return this builder
 		 */
@@ -174,7 +175,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		}
 
 		/**
-		 * Configures the excluded Embed metadata keys to filter out from the model.
+		 * Configures the excluded Embed metadata keys to filter out from the generative.
 		 * @param excludedEmbedMetadataKeys Excluded Embed metadata keys to use.
 		 * @return this builder
 		 */

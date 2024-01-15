@@ -25,14 +25,14 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Title extractor with adjacent sharing that uses model to extract 'section_summary',
- * 'prev_section_summary', 'next_section_summary' metadata fields.
+ * Title extractor with adjacent sharing that uses generative to extract
+ * 'section_summary', 'prev_section_summary', 'next_section_summary' metadata fields.
  *
  * @author Christian Tzolov
  */
@@ -102,7 +102,7 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 
 			Prompt prompt = new PromptTemplate(this.summaryTemplate)
 				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
-			documentSummaries.add(this.chatClient.generate(prompt).getGeneration().getContent());
+			documentSummaries.add(this.chatClient.call(prompt).getResult().getOutput().getContent());
 		}
 
 		for (int i = 0; i < documentSummaries.size(); i++) {

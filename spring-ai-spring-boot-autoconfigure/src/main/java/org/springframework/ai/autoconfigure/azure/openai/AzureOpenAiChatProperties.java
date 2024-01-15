@@ -34,11 +34,11 @@ public class AzureOpenAiChatProperties {
 
 	/**
 	 * An alternative to sampling with temperature called nucleus sampling. This value
-	 * causes the model to consider the results of tokens with the provided probability
-	 * mass. As an example, a value of 0.15 will cause only the tokens comprising the top
-	 * 15% of probability mass to be considered. It is not recommended to modify
-	 * temperature and top_p for the same completions request as the interaction of these
-	 * two settings is difficult to predict.
+	 * causes the generative to consider the results of tokens with the provided
+	 * probability mass. As an example, a value of 0.15 will cause only the tokens
+	 * comprising the top 15% of probability mass to be considered. It is not recommended
+	 * to modify temperature and top_p for the same completions request as the interaction
+	 * of these two settings is difficult to predict.
 	 */
 	private Double topP;
 

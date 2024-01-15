@@ -38,7 +38,8 @@ public interface EmbeddingClient {
 	EmbeddingResponse embedForResponse(List<String> texts);
 
 	/**
-	 * @return the number of dimensions of the embedded vectors. It is model specific.
+	 * @return the number of dimensions of the embedded vectors. It is generative
+	 * specific.
 	 */
 	default int dimensions() {
 		return embed("Test String").size();

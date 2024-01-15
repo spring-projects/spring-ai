@@ -45,8 +45,8 @@ public class TransformersEmbeddingClientAutoConfigurationIT {
 		contextRunner.run(context -> {
 			var properties = context.getBean(TransformersEmbeddingClientProperties.class);
 			assertThat(properties.getCache().isEnabled()).isTrue();
-			assertThat(properties.getCache().getDirectory())
-				.isEqualTo(new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-model").getAbsolutePath());
+			assertThat(properties.getCache().getDirectory()).isEqualTo(
+					new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
 
 			EmbeddingClient embeddingClient = context.getBean(EmbeddingClient.class);
 			assertThat(embeddingClient).isInstanceOf(TransformersEmbeddingClient.class);

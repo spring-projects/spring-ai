@@ -49,7 +49,7 @@ public class OpenAiAutoConfigurationIT {
 	void generate() {
 		contextRunner.run(context -> {
 			OpenAiChatClient client = context.getBean(OpenAiChatClient.class);
-			String response = client.generate("Hello");
+			String response = client.call("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});

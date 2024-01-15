@@ -39,8 +39,8 @@ public class VertexAiAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.baseUrl=https://generativelanguage.googleapis.com/v1beta3",
 				"spring.ai.vertex.ai.apiKey=" + System.getenv("PALM_API_KEY"),
-				"spring.ai.vertex.ai.chat.model=chat-bison-001",
-				"spring.ai.vertex.ai.embedding.model=embedding-gecko-001")
+				"spring.ai.vertex.ai.chat.generative=chat-bison-001",
+				"spring.ai.vertex.ai.embedding.generative=embedding-gecko-001")
 		.withConfiguration(AutoConfigurations.of(VertexAiAutoConfiguration.class));
 
 	@Test
@@ -48,7 +48,7 @@ public class VertexAiAutoConfigurationIT {
 		contextRunner.run(context -> {
 			VertexAiChatClient client = context.getBean(VertexAiChatClient.class);
 
-			String response = client.generate("Hello");
+			String response = client.call("Hello");
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);

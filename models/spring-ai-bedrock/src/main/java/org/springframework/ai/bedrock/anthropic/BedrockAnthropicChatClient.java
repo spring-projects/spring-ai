@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -28,12 +29,11 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Anthropic chat
- * model.
+ * generative.
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -89,8 +89,8 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+	public ChatResponse call(Prompt prompt) {
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -109,7 +109,7 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	@Override
 	public Flux<ChatResponse> generateStream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -126,8 +126,8 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
 			var generation = new Generation(response.completion());
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation
-					.withChoiceMetadata(ChoiceMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+				generation = generation.withGenerationMetadata(
+						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
 			}
 			return new ChatResponse(List.of(generation));
 		});

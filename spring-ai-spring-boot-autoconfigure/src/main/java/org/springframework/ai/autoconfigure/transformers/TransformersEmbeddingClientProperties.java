@@ -39,7 +39,7 @@ public class TransformersEmbeddingClientProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.embedding.transformer";
 
 	public static final String DEFAULT_CACHE_DIRECTORY = new File(System.getProperty("java.io.tmpdir"),
-			"spring-ai-onnx-model")
+			"spring-ai-onnx-generative")
 		.getAbsolutePath();
 
 	/**
@@ -91,7 +91,7 @@ public class TransformersEmbeddingClientProperties {
 		/**
 		 * Resource cache directory. Used to cache remote resources, such as the ONNX
 		 * models, to the local file system. Applicable only for cache.enabled == true.
-		 * Defaults to {java.io.tmpdir}/spring-ai-onnx-model.
+		 * Defaults to {java.io.tmpdir}/spring-ai-onnx-generative.
 		 */
 		private String directory = DEFAULT_CACHE_DIRECTORY;
 
@@ -125,7 +125,7 @@ public class TransformersEmbeddingClientProperties {
 	public static class Onnx {
 
 		/**
-		 * Existing, pre-trained ONNX model. Commonly exported from
+		 * Existing, pre-trained ONNX generative. Commonly exported from
 		 * https://sbert.net/docs/pretrained_models.html. Defaults to
 		 * sentence-transformers/all-MiniLM-L6-v2.
 		 */

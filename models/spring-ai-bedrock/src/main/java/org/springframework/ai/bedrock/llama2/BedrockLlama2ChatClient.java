@@ -28,13 +28,13 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2Chat
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Llama2 chat
- * model.
+ * generative.
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -69,8 +69,8 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+	public ChatResponse call(Prompt prompt) {
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = Llama2ChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -80,14 +80,14 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 
 		Llama2ChatResponse response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.generation())
-			.withChoiceMetadata(ChoiceMetadata.from(response.stopReason().name(), extractUsage(response)))));
+		return new ChatResponse(List.of(new Generation(response.generation()).withGenerationMetadata(
+				ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
 	}
 
 	@Override
 	public Flux<ChatResponse> generateStream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = Llama2ChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -100,7 +100,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
 			return new ChatResponse(List.of(new Generation(response.generation())
-				.withChoiceMetadata(ChoiceMetadata.from(stopReason, extractUsage(response)))));
+				.withGenerationMetadata(ChatGenerationMetadata.from(stopReason, extractUsage(response)))));
 		});
 	}
 

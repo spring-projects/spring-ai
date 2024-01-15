@@ -32,18 +32,18 @@ import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiGenerationMetadata;
+import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
 
 /**
@@ -134,7 +134,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public String generate(String text) {
+	public String call(String text) {
 
 		ChatRequestMessage azureChatMessage = new ChatRequestUserMessage(text);
 
@@ -160,7 +160,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(false);
@@ -174,11 +174,12 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		List<Generation> generations = chatCompletions.getChoices()
 			.stream()
 			.map(choice -> new Generation(choice.getMessage().getContent())
-				.withChoiceMetadata(generateChoiceMetadata(choice)))
+				.withGenerationMetadata(generateChoiceMetadata(choice)))
 			.toList();
 
-		return new ChatResponse(generations, AzureOpenAiGenerationMetadata.from(chatCompletions))
-			.withPromptMetadata(generatePromptMetadata(chatCompletions));
+		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
+		return new ChatResponse(generations,
+				AzureOpenAiChatResponseMetadata.from(chatCompletions, promptFilterMetadata));
 	}
 
 	@Override
@@ -199,14 +200,17 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 			.flatMap(List::stream)
 			.map(choice -> {
 				var content = (choice.getDelta() != null) ? choice.getDelta().getContent() : null;
-				var generation = new Generation(content).withChoiceMetadata(generateChoiceMetadata(choice));
+				var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
 				return new ChatResponse(List.of(generation));
 			}));
 	}
 
 	private ChatCompletionsOptions toAzureChatCompletionsOptions(Prompt prompt) {
 
-		List<ChatRequestMessage> azureMessages = prompt.getMessages().stream().map(this::fromSpringAiMessage).toList();
+		List<ChatRequestMessage> azureMessages = prompt.getInstructions()
+			.stream()
+			.map(this::fromSpringAiMessage)
+			.toList();
 
 		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
 
@@ -233,8 +237,8 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	}
 
-	private ChoiceMetadata generateChoiceMetadata(ChatChoice choice) {
-		return ChoiceMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
+	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {
+		return ChatGenerationMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
 	}
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {

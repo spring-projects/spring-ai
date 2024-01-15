@@ -1,5 +1,6 @@
 org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
+org.springframework.ai.autoconfigure.stabilityai.StabilityAiImageAutoConfiguration
 org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingClientAutoConfiguration
 org.springframework.ai.autoconfigure.huggingface.HuggingfaceChatAutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.VertexAiAutoConfiguration

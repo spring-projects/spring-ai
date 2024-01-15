@@ -58,7 +58,7 @@ public class ONNXSample {
 
 	public static void main(String[] args) throws Exception {
 		String TOKENIZER_URI = "classpath:/onnx/tokenizer.json";
-		String MODEL_URI = "classpath:/onnx/model.onnx";
+		String MODEL_URI = "classpath:/onnx/generative.onnx";
 
 		var tokenizerResource = new DefaultResourceLoader().getResource(TOKENIZER_URI);
 		var modelResource = new DefaultResourceLoader().getResource(MODEL_URI);

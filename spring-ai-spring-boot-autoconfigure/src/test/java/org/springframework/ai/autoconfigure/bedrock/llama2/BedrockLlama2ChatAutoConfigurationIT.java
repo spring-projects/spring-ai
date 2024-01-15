@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
@@ -30,10 +31,10 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperti
 import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatClient;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -52,7 +53,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.llama2.chat.model=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+				"spring.ai.bedrock.llama2.chat.generative=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
 				"spring.ai.bedrock.llama2.chat.temperature=0.5", "spring.ai.bedrock.llama2.chat.maxGenLen=500")
 		.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class));
 
@@ -70,8 +71,8 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockLlama2ChatClient llama2ChatClient = context.getBean(BedrockLlama2ChatClient.class);
-			ChatResponse response = llama2ChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+			ChatResponse response = llama2ChatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -88,9 +89,10 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 			assertThat(responses.size()).isGreaterThan(2);
 
 			String stitchedResponseContent = responses.stream()
-				.map(ChatResponse::getGenerations)
+				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
-				.map(Generation::getContent)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -103,7 +105,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.bedrock.llama2.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.llama2.chat.model=MODEL_XYZ",
+					"spring.ai.bedrock.llama2.chat.generative=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.llama2.chat.temperature=0.55", "spring.ai.bedrock.llama2.chat.maxGenLen=123")
 			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))

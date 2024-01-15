@@ -14,14 +14,15 @@
 
 	<modules>
 		<module>spring-ai-core</module>
+		<module>models/spring-ai-transformers</module>
+		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-vertex-ai</module>
-		<module>models/spring-ai-transformers</module>
-		<module>models/spring-ai-postgresml</module>
+		<module>models/spring-ai-stabilityai</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
