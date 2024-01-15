@@ -56,7 +56,7 @@ public class EmbeddingUtil {
 		try {
 			Properties properties = new Properties();
 			properties.load(new DefaultResourceLoader()
-				.getResource("classpath:/embedding/embedding-generative-dimensions.properties")
+				.getResource("classpath:/embedding/embedding-model-dimensions.properties")
 				.getInputStream());
 			return properties.entrySet()
 				.stream()
