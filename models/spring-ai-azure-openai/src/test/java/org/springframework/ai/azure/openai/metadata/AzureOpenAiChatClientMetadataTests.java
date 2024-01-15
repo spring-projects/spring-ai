@@ -28,7 +28,7 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.ChatResponseMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
@@ -92,7 +92,7 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertPromptMetadata(ChatResponse response) {
 
-		PromptMetadata promptMetadata = response.getChatResponseMetadata().getPromptMetadata();
+		PromptMetadata promptMetadata = response.getMetadata().getPromptMetadata();
 
 		assertThat(promptMetadata).isNotNull();
 
@@ -106,7 +106,7 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertGenerationMetadata(ChatResponse response) {
 
-		ChatResponseMetadata chatResponseMetadata = response.getChatResponseMetadata();
+		ChatResponseMetadata chatResponseMetadata = response.getMetadata();
 
 		assertThat(chatResponseMetadata).isNotNull();
 		assertThat(chatResponseMetadata.getRateLimit()).isEqualTo(RateLimit.NULL);
@@ -122,11 +122,11 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertChoiceMetadata(Generation generation) {
 
-		GenerationChoiceMetadata generationChoiceMetadata = generation.getChoiceMetadata();
+		GenerationMetadata generationMetadata = generation.getGenerationMetadata();
 
-		assertThat(generationChoiceMetadata).isNotNull();
-		assertThat(generationChoiceMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(generationChoiceMetadata.getContentFilterMetadata());
+		assertThat(generationMetadata).isNotNull();
+		assertThat(generationMetadata.getFinishReason()).isEqualTo("stop");
+		assertContentFilterResults(generationMetadata.getContentFilterMetadata());
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,

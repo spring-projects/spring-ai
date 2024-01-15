@@ -22,7 +22,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.ChatResponseMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.RateLimit;
@@ -52,8 +52,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * @author Christian Tzolov
  * @since 0.7.0
  */
-@RestClientTest(OpenAiChatClientWithChatResponseMetadataTests.Config.class)
-public class OpenAiChatClientWithChatResponseMetadataTests {
+@RestClientTest(OpenAiChatClientWithChatGenerativeMetadataTests.Config.class)
+public class OpenAiChatClientWithChatGenerativeMetadataTests {
 
 	private static String TEST_API_KEY = "sk-1234567890";
 
@@ -79,7 +79,7 @@ public class OpenAiChatClientWithChatResponseMetadataTests {
 
 		assertThat(response).isNotNull();
 
-		ChatResponseMetadata chatResponseMetadata = response.getChatResponseMetadata();
+		ChatResponseMetadata chatResponseMetadata = response.getMetadata();
 
 		assertThat(chatResponseMetadata).isNotNull();
 
@@ -109,16 +109,16 @@ public class OpenAiChatClientWithChatResponseMetadataTests {
 		assertThat(rateLimit.getTokensRemaining()).isEqualTo(112_358L);
 		assertThat(rateLimit.getTokensReset()).isEqualTo(expectedTokensReset);
 
-		PromptMetadata promptMetadata = response.getChatResponseMetadata().getPromptMetadata();
+		PromptMetadata promptMetadata = response.getMetadata().getPromptMetadata();
 
 		assertThat(promptMetadata).isNotNull();
 		assertThat(promptMetadata).isEmpty();
 
 		response.getGenerations().forEach(generation -> {
-			GenerationChoiceMetadata generationChoiceMetadata = generation.getChoiceMetadata();
-			assertThat(generationChoiceMetadata).isNotNull();
-			assertThat(generationChoiceMetadata.getFinishReason()).isEqualTo("stop");
-			assertThat(generationChoiceMetadata.<Object>getContentFilterMetadata()).isNull();
+			GenerationMetadata generationMetadata = generation.getGenerationMetadata();
+			assertThat(generationMetadata).isNotNull();
+			assertThat(generationMetadata.getFinishReason()).isEqualTo("stop");
+			assertThat(generationMetadata.<Object>getContentFilterMetadata()).isNull();
 		});
 	}
 

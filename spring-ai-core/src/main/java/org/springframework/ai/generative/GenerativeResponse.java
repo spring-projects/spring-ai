@@ -8,6 +8,6 @@ public interface GenerativeResponse<T> {
 
 	List<T> getGenerations();
 
-	GenerativeMetadata getMetadata();
+	ResponseMetadata getMetadata();
 
 }

@@ -73,13 +73,13 @@ public class VertexAiChatClient implements ChatClient {
 	@Override
 	public ChatResponse generate(Prompt prompt) {
 
-		String vertexContext = prompt.getMessages()
+		String vertexContext = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.map(m -> m.getContent())
 			.collect(Collectors.joining("\n"));
 
-		List<VertexAiApi.Message> vertexMessages = prompt.getMessages()
+		List<VertexAiApi.Message> vertexMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(m -> new VertexAiApi.Message(m.getMessageType().getValue(), m.getContent()))

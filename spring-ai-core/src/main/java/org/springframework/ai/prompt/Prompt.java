@@ -16,6 +16,7 @@
 
 package org.springframework.ai.prompt;
 
+import org.springframework.ai.generative.GenerativePrompt;
 import org.springframework.ai.generative.Options;
 import org.springframework.ai.prompt.messages.Message;
 import org.springframework.ai.prompt.messages.UserMessage;
@@ -24,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class Prompt {
+public class Prompt implements GenerativePrompt<List<Message>> {
 
 	private final List<Message> messages;
 
@@ -57,7 +58,7 @@ public class Prompt {
 
 	public String getContents() {
 		StringBuilder sb = new StringBuilder();
-		for (Message message : getMessages()) {
+		for (Message message : getInstructions()) {
 			sb.append(message.getContent());
 		}
 		return sb.toString();
@@ -67,7 +68,8 @@ public class Prompt {
 		return options;
 	}
 
-	public List<Message> getMessages() {
+	@Override
+	public List<Message> getInstructions() {
 		return this.messages;
 	}
 

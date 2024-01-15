@@ -28,7 +28,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -96,7 +96,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	public ChatResponse generate(Prompt prompt) {
 
 		return this.retryTemplate.execute(ctx -> {
-			List<Message> messages = prompt.getMessages();
+			List<Message> messages = prompt.getInstructions();
 
 			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
 				.map(m -> new ChatCompletionMessage(m.getContent(),
@@ -117,7 +117,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
 				return new Generation(choice.message().content(), Map.of("role", choice.message().role().name()))
-					.withChoiceMetadata(GenerationChoiceMetadata.from(choice.finishReason().name(), null));
+					.withGenerationMetadata(GenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();
 
 			return new ChatResponse(generations,
@@ -128,7 +128,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	@Override
 	public Flux<ChatResponse> generateStream(Prompt prompt) {
 		return this.retryTemplate.execute(ctx -> {
-			List<Message> messages = prompt.getMessages();
+			List<Message> messages = prompt.getInstructions();
 
 			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
 				.map(m -> new ChatCompletionMessage(m.getContent(),
@@ -168,7 +168,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
 					if (choice.finishReason() != null) {
 						generation = generation
-							.withChoiceMetadata(GenerationChoiceMetadata.from(choice.finishReason().name(), null));
+							.withGenerationMetadata(GenerationMetadata.from(choice.finishReason().name(), null));
 					}
 					return generation;
 				}).toList();

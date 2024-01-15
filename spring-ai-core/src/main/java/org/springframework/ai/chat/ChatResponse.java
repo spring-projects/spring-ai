@@ -17,12 +17,14 @@ package org.springframework.ai.chat;
 
 import java.util.List;
 
+import org.springframework.ai.generative.GenerativeResponse;
 import org.springframework.ai.metadata.ChatResponseMetadata;
+import org.springframework.ai.prompt.messages.Message;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
  */
-public class ChatResponse {
+public class ChatResponse implements GenerativeResponse<Generation> {
 
 	private final ChatResponseMetadata chatResponseMetadata;
 
@@ -59,6 +61,8 @@ public class ChatResponse {
 	 * multiple output {@link Generation generations}.
 	 * @return the {@link List} of {@link Generation generated outputs}.
 	 */
+
+	@Override
 	public List<Generation> getGenerations() {
 		return this.generations;
 	}
@@ -74,30 +78,8 @@ public class ChatResponse {
 	 * @return Returns {@link ChatResponseMetadata} containing information about the use
 	 * of the AI provider's API.
 	 */
-	public ChatResponseMetadata getChatResponseMetadata() {
+	public ChatResponseMetadata getMetadata() {
 		return this.chatResponseMetadata;
 	}
-
-	// /**
-	// * @return {@link PromptMetadata} containing information on prompt processing by the
-	// * AI.
-	// */
-	// public PromptMetadata getPromptMetadata() {
-	// PromptMetadata promptMetadata = this.promptMetadata;
-	// return promptMetadata != null ? promptMetadata : PromptMetadata.empty();
-	// }
-	//
-	// /**
-	// * Builder method used to include {@link PromptMetadata} returned in the AI response
-	// * when processing the prompt.
-	// * @param promptMetadata {@link PromptMetadata} returned by the AI in the response
-	// * when processing the prompt.
-	// * @return this {@link ChatResponse}.
-	// * @see #getPromptMetadata()
-	// */
-	// public ChatResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
-	// this.chatResponseMetadata.setPromptMetadata(promptMetadata);
-	// return this;
-	// }
 
 }

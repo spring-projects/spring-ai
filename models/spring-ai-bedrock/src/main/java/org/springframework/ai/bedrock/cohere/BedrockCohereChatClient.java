@@ -32,7 +32,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.prompt.Prompt;
 
@@ -128,14 +128,14 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
 				return new ChatResponse(List
-					.of(new Generation("").withChoiceMetadata(GenerationChoiceMetadata.from(finishReason, usage))));
+					.of(new Generation("").withGenerationMetadata(GenerationMetadata.from(finishReason, usage))));
 			}
 			return new ChatResponse(List.of(new Generation(g.text())));
 		});
 	}
 
 	private CohereChatRequest createRequest(Prompt prompt, boolean stream) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		return CohereChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)

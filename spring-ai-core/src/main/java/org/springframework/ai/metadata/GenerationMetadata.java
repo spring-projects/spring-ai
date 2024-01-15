@@ -25,21 +25,21 @@ import org.springframework.lang.Nullable;
  * @author John Blum
  * @since 0.7.0
  */
-public interface GenerationChoiceMetadata {
+public interface GenerationMetadata {
 
-	GenerationChoiceMetadata NULL = GenerationChoiceMetadata.from(null, null);
+	GenerationMetadata NULL = GenerationMetadata.from(null, null);
 
 	/**
-	 * Factory method used to construct a new {@link GenerationChoiceMetadata} from the
-	 * given {@link String finish reason} and content filter metadata.
+	 * Factory method used to construct a new {@link GenerationMetadata} from the given
+	 * {@link String finish reason} and content filter metadata.
 	 * @param finishReason {@link String} contain the reason for the choice completion.
 	 * @param contentFilterMetadata underlying AI provider metadata for filtering applied
 	 * to generation content.
-	 * @return a new {@link GenerationChoiceMetadata} from the given {@link String finish
+	 * @return a new {@link GenerationMetadata} from the given {@link String finish
 	 * reason} and content filter metadata.
 	 */
-	static GenerationChoiceMetadata from(String finishReason, Object contentFilterMetadata) {
-		return new GenerationChoiceMetadata() {
+	static GenerationMetadata from(String finishReason, Object contentFilterMetadata) {
+		return new GenerationMetadata() {
 
 			@Override
 			@SuppressWarnings("unchecked")

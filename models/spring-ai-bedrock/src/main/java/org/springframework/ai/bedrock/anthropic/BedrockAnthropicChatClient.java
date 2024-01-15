@@ -28,7 +28,7 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.prompt.Prompt;
 
 /**
@@ -90,7 +90,7 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 
 	@Override
 	public ChatResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -109,7 +109,7 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	@Override
 	public Flux<ChatResponse> generateStream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -126,8 +126,8 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
 			var generation = new Generation(response.completion());
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation.withChoiceMetadata(
-						GenerationChoiceMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+				generation = generation.withGenerationMetadata(
+						GenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
 			}
 			return new ChatResponse(List.of(generation));
 		});

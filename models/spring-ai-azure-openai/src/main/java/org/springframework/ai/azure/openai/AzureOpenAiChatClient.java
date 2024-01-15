@@ -39,7 +39,7 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.PromptMetadata;
 import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.prompt.Prompt;
@@ -174,7 +174,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		List<Generation> generations = chatCompletions.getChoices()
 			.stream()
 			.map(choice -> new Generation(choice.getMessage().getContent())
-				.withChoiceMetadata(generateChoiceMetadata(choice)))
+				.withGenerationMetadata(generateChoiceMetadata(choice)))
 			.toList();
 
 		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
@@ -201,14 +201,17 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 			.map(choice -> {
 				System.out.println(choice.getDelta());
 				var content = (choice.getDelta() != null) ? choice.getDelta().getContent() : null;
-				var generation = new Generation(content).withChoiceMetadata(generateChoiceMetadata(choice));
+				var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
 				return new ChatResponse(List.of(generation));
 			}));
 	}
 
 	private ChatCompletionsOptions toAzureChatCompletionsOptions(Prompt prompt) {
 
-		List<ChatRequestMessage> azureMessages = prompt.getMessages().stream().map(this::fromSpringAiMessage).toList();
+		List<ChatRequestMessage> azureMessages = prompt.getInstructions()
+			.stream()
+			.map(this::fromSpringAiMessage)
+			.toList();
 
 		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
 
@@ -235,9 +238,8 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	}
 
-	private GenerationChoiceMetadata generateChoiceMetadata(ChatChoice choice) {
-		return GenerationChoiceMetadata.from(String.valueOf(choice.getFinishReason()),
-				choice.getContentFilterResults());
+	private GenerationMetadata generateChoiceMetadata(ChatChoice choice) {
+		return GenerationMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
 	}
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {

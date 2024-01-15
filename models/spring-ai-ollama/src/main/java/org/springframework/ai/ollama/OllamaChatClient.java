@@ -30,7 +30,7 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
@@ -90,7 +90,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		OllamaApi.ChatResponse response = this.chatApi.chat(request(prompt, this.model, false));
 		var generator = new Generation(response.message().content());
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator.withChoiceMetadata(GenerationChoiceMetadata.from("unknown", extractUsage(response)));
+			generator = generator.withGenerationMetadata(GenerationMetadata.from("unknown", extractUsage(response)));
 		}
 		return new ChatResponse(List.of(generator));
 	}
@@ -104,8 +104,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
 					: new Generation("");
 			if (Boolean.TRUE.equals(chunk.done())) {
-				generation = generation
-					.withChoiceMetadata(GenerationChoiceMetadata.from("unknown", extractUsage(chunk)));
+				generation = generation.withGenerationMetadata(GenerationMetadata.from("unknown", extractUsage(chunk)));
 			}
 			return new ChatResponse(List.of(generation));
 		});
@@ -128,7 +127,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
 	private OllamaApi.ChatRequest request(Prompt prompt, String model, boolean stream) {
 
-		List<OllamaApi.Message> ollamaMessages = prompt.getMessages()
+		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() == MessageType.USER
 					|| message.getMessageType() == MessageType.ASSISTANT)

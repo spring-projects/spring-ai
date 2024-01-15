@@ -28,7 +28,7 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2Chat
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.metadata.Usage;
 import org.springframework.ai.prompt.Prompt;
 
@@ -70,7 +70,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 
 	@Override
 	public ChatResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = Llama2ChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -81,13 +81,13 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 		Llama2ChatResponse response = this.chatApi.chatCompletion(request);
 
 		return new ChatResponse(List.of(new Generation(response.generation())
-			.withChoiceMetadata(GenerationChoiceMetadata.from(response.stopReason().name(), extractUsage(response)))));
+			.withGenerationMetadata(GenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
 	}
 
 	@Override
 	public Flux<ChatResponse> generateStream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = Llama2ChatRequest.builder(promptValue)
 			.withTemperature(this.temperature)
@@ -100,7 +100,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
 			return new ChatResponse(List.of(new Generation(response.generation())
-				.withChoiceMetadata(GenerationChoiceMetadata.from(stopReason, extractUsage(response)))));
+				.withGenerationMetadata(GenerationMetadata.from(stopReason, extractUsage(response)))));
 		});
 	}
 

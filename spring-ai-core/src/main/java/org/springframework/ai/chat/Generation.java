@@ -19,7 +19,7 @@ package org.springframework.ai.chat;
 import java.util.Collections;
 import java.util.Map;
 
-import org.springframework.ai.metadata.GenerationChoiceMetadata;
+import org.springframework.ai.metadata.GenerationMetadata;
 import org.springframework.ai.prompt.messages.AbstractMessage;
 import org.springframework.ai.prompt.messages.MessageType;
 import org.springframework.lang.Nullable;
@@ -29,7 +29,7 @@ import org.springframework.lang.Nullable;
  */
 public class Generation extends AbstractMessage {
 
-	private GenerationChoiceMetadata generationChoiceMetadata;
+	private GenerationMetadata generationMetadata;
 
 	public Generation(String text) {
 		this(text, Collections.emptyMap());
@@ -43,13 +43,13 @@ public class Generation extends AbstractMessage {
 		super(type, content, properties);
 	}
 
-	public GenerationChoiceMetadata getChoiceMetadata() {
-		GenerationChoiceMetadata generationChoiceMetadata = this.generationChoiceMetadata;
-		return generationChoiceMetadata != null ? generationChoiceMetadata : GenerationChoiceMetadata.NULL;
+	public GenerationMetadata getGenerationMetadata() {
+		GenerationMetadata generationMetadata = this.generationMetadata;
+		return generationMetadata != null ? generationMetadata : GenerationMetadata.NULL;
 	}
 
-	public Generation withChoiceMetadata(@Nullable GenerationChoiceMetadata generationChoiceMetadata) {
-		this.generationChoiceMetadata = generationChoiceMetadata;
+	public Generation withGenerationMetadata(@Nullable GenerationMetadata generationMetadata) {
+		this.generationMetadata = generationMetadata;
 		return this;
 	}
 

@@ -54,7 +54,7 @@ class PromptTests {
 		// to have access to Messages
 		Prompt prompt = pt.create(model);
 		assertThat(prompt.getContents()).isNotNull();
-		assertThat(prompt.getMessages()).isNotEmpty().hasSize(1);
+		assertThat(prompt.getInstructions()).isNotEmpty().hasSize(1);
 		System.out.println(prompt.getContents());
 
 		String systemTemplate = "You are a helpful assistant that translates {input_language} to {output_language}.";

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.metadata;
 
+import org.springframework.ai.generative.ResponseMetadata;
+
 /**
  * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
  * response.
@@ -23,7 +25,7 @@ package org.springframework.ai.metadata;
  * @author John Blum
  * @since 0.7.0
  */
-public interface ChatResponseMetadata {
+public interface ChatResponseMetadata extends ResponseMetadata {
 
 	ChatResponseMetadata NULL = new ChatResponseMetadata() {
 	};
