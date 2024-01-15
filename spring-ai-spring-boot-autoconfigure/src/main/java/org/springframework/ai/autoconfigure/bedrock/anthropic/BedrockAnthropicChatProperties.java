@@ -39,23 +39,24 @@ public class BedrockAnthropicChatProperties {
 	private boolean enabled = false;
 
 	/**
-	 * The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * The generative id to use. See the {@link AnthropicChatModel} for the supported
+	 * models.
 	 */
 	private String model = AnthropicChatModel.CLAUDE_V2.id();
 
 	/**
 	 * Controls the randomness of the output. Values can range over [0.0,1.0], inclusive.
 	 * A value closer to 1.0 will produce responses that are more varied, while a value
-	 * closer to 0.0 will typically result in less surprising responses from the model.
-	 * This value specifies default to be used by the backend while making the call to the
-	 * model.
+	 * closer to 0.0 will typically result in less surprising responses from the
+	 * generative. This value specifies default to be used by the backend while making the
+	 * call to the generative.
 	 */
 	private Float temperature = 0.7f;
 
 	/**
-	 * The maximum cumulative probability of tokens to consider when sampling. The model
-	 * uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest
-	 * set of tokens whose probability sum is at least topP.
+	 * The maximum cumulative probability of tokens to consider when sampling. The
+	 * generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the
+	 * smallest set of tokens whose probability sum is at least topP.
 	 */
 	private Float topP = null;
 
@@ -68,19 +69,19 @@ public class BedrockAnthropicChatProperties {
 	private Integer maxTokensToSample = 300;
 
 	/**
-	 * Specify the number of token choices the model uses to generate the next token.
+	 * Specify the number of token choices the generative uses to generate the next token.
 	 */
 	private Integer topK = 10;
 
 	/**
-	 * Configure up to four sequences that the model recognizes. After a stop sequence,
-	 * the model stops generating further tokens. The returned text doesn't contain the
-	 * stop sequence.
+	 * Configure up to four sequences that the generative recognizes. After a stop
+	 * sequence, the generative stops generating further tokens. The returned text doesn't
+	 * contain the stop sequence.
 	 */
 	private List<String> stopSequences = List.of("\n\nHuman:");
 
 	/**
-	 * The version of the model to use. The default value is bedrock-2023-05-31.
+	 * The version of the generative to use. The default value is bedrock-2023-05-31.
 	 */
 	private String anthropicVersion = AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION;
 

@@ -38,7 +38,8 @@ public class BedrockCohereEmbeddingProperties {
 	private boolean enabled = false;
 
 	/**
-	 * Bedrock Cohere Embedding model name. Defaults to 'cohere.embed-multilingual-v3'.
+	 * Bedrock Cohere Embedding generative name. Defaults to
+	 * 'cohere.embed-multilingual-v3'.
 	 */
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id();
 

@@ -32,7 +32,7 @@ import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
 import org.springframework.ai.huggingface.model.GenerateParameters;
 import org.springframework.ai.huggingface.model.GenerateRequest;
 import org.springframework.ai.huggingface.model.GenerateResponse;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * An implementation of {@link ChatClient} that interfaces with HuggingFace Inference
@@ -86,7 +86,7 @@ public class HuggingfaceChatClient implements ChatClient {
 	 * @return ChatResponse containing the generated text and other related details.
 	 */
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 		GenerateRequest generateRequest = new GenerateRequest();
 		generateRequest.setInputs(prompt.getContents());
 		GenerateParameters generateParameters = new GenerateParameters();

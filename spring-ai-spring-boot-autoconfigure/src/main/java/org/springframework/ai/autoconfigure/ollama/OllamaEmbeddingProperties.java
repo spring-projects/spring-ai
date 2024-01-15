@@ -31,14 +31,14 @@ public class OllamaEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.embedding";
 
 	/**
-	 * Ollama Embedding model name. Defaults to 'llama2'.
+	 * Ollama Embedding generative name. Defaults to 'llama2'.
 	 */
 	private String model = "llama2";
 
 	/**
-	 * Client lever Ollama options. Use this property to configure model temperature, topK
-	 * and topP and alike parameters. The null values are ignored defaulting to the
-	 * model's defaults.
+	 * Client lever Ollama options. Use this property to configure generative temperature,
+	 * topK and topP and alike parameters. The null values are ignored defaulting to the
+	 * generative's defaults.
 	 */
 	private OllamaOptions options = new OllamaOptions();
 

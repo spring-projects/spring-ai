@@ -41,10 +41,10 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 
 	private static final Log logger = LogFactory.getLog(TransformersEmbeddingClient.class);
 
-	// ONNX tokenizer for the all-MiniLM-L6-v2 model
+	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
 	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
 
-	// ONNX model for all-MiniLM-L6-v2 pre-trained transformer:
+	// ONNX generative for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
 	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects/spring-ai/raw/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
 
@@ -70,7 +70,7 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 	private OrtEnvironment environment;
 
 	/**
-	 * Runtime session that wraps the ONNX model and enables inference calls.
+	 * Runtime session that wraps the ONNX generative and enables inference calls.
 	 */
 	private OrtSession session;
 
@@ -181,7 +181,7 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 		logger.info("Model output names: " + onnxModelOutputs.stream().collect(Collectors.joining(", ")));
 
 		Assert.isTrue(onnxModelOutputs.contains(this.modelOutputName),
-				"The model output names doesn't contain expected: " + this.modelOutputName);
+				"The generative output names doesn't contain expected: " + this.modelOutputName);
 	}
 
 	private Resource getCachedResource(Resource resource) {

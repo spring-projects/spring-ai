@@ -112,7 +112,7 @@ public class VertexAiApi {
 	private final String embeddingModel;
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new chat completion api.
 	 * @param apiKey vertex apiKey.
 	 */
 	public VertexAiApi(String apiKey) {
@@ -120,7 +120,7 @@ public class VertexAiApi {
 	}
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new chat completion api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey vertex apiKey.
 	 * @param model vertex model.

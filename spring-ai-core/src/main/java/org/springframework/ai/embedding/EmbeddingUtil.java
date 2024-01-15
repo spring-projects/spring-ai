@@ -31,11 +31,11 @@ public class EmbeddingUtil {
 	private static Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = loadKnownModelDimensions();
 
 	/**
-	 * Return the dimension of the requested embedding model name. If the model name is
-	 * unknown uses the EmbeddingClient to perform a dummy EmbeddingClient#embed and count
-	 * the response dimensions.
+	 * Return the dimension of the requested embedding generative name. If the generative
+	 * name is unknown uses the EmbeddingClient to perform a dummy EmbeddingClient#embed
+	 * and count the response dimensions.
 	 * @param embeddingClient Fall-back client to determine, empirically the dimensions.
-	 * @param modelName Embedding model name to retrieve the dimensions for.
+	 * @param modelName Embedding generative name to retrieve the dimensions for.
 	 * @param dummyContent Dummy content to use for the empirical dimension calculation.
 	 * @return Returns the embedding dimensions for the modelName.
 	 */

@@ -28,12 +28,13 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.ai.metadata.RateLimit;
-import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -75,14 +76,15 @@ class AzureOpenAiChatClientMetadataTests {
 
 		Prompt prompt = new Prompt("Can I fly like a bird?");
 
-		ChatResponse response = this.aiClient.generate(prompt);
+		ChatResponse response = this.aiClient.call(prompt);
 
 		assertThat(response).isNotNull();
 
-		Generation generation = response.getGeneration();
+		Generation generation = response.getResult();
 
 		assertThat(generation).isNotNull()
-			.extracting(Generation::getContent)
+			.extracting(Generation::getOutput)
+			.extracting(AssistantMessage::getContent)
 			.isEqualTo("No! You will actually land with a resounding thud. This is the way!");
 
 		assertPromptMetadata(response);
@@ -92,7 +94,7 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertPromptMetadata(ChatResponse response) {
 
-		PromptMetadata promptMetadata = response.getPromptMetadata();
+		PromptMetadata promptMetadata = response.getMetadata().getPromptMetadata();
 
 		assertThat(promptMetadata).isNotNull();
 
@@ -106,12 +108,12 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertGenerationMetadata(ChatResponse response) {
 
-		GenerationMetadata generationMetadata = response.getGenerationMetadata();
+		ChatResponseMetadata chatResponseMetadata = response.getMetadata();
 
-		assertThat(generationMetadata).isNotNull();
-		assertThat(generationMetadata.getRateLimit()).isEqualTo(RateLimit.NULL);
+		assertThat(chatResponseMetadata).isNotNull();
+		assertThat(chatResponseMetadata.getRateLimit()).isEqualTo(RateLimit.NULL);
 
-		Usage usage = generationMetadata.getUsage();
+		Usage usage = chatResponseMetadata.getUsage();
 
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotEqualTo(Usage.NULL);
@@ -122,11 +124,11 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertChoiceMetadata(Generation generation) {
 
-		ChoiceMetadata choiceMetadata = generation.getChoiceMetadata();
+		ChatGenerationMetadata chatGenerationMetadata = generation.getMetadata();
 
-		assertThat(choiceMetadata).isNotNull();
-		assertThat(choiceMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(choiceMetadata.getContentFilterMetadata());
+		assertThat(chatGenerationMetadata).isNotNull();
+		assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
+		assertContentFilterResults(chatGenerationMetadata.getContentFilterMetadata());
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,

@@ -16,46 +16,65 @@
 
 package org.springframework.ai.chat;
 
-import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.prompt.messages.AbstractMessage;
-import org.springframework.ai.prompt.messages.MessageType;
+import org.springframework.ai.model.ModelResult;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.lang.Nullable;
 
 /**
  * Represents a response returned by the AI.
  */
-public class Generation extends AbstractMessage {
+public class Generation implements ModelResult<AssistantMessage> {
 
-	private ChoiceMetadata choiceMetadata;
+	private AssistantMessage assistantMessage;
+
+	private ChatGenerationMetadata chatGenerationMetadata;
 
 	public Generation(String text) {
-		this(text, Collections.emptyMap());
+		this.assistantMessage = new AssistantMessage(text);
 	}
 
-	public Generation(String content, Map<String, Object> properties) {
-		super(MessageType.ASSISTANT, content, properties);
+	public Generation(String text, Map<String, Object> properties) {
+		this.assistantMessage = new AssistantMessage(text, properties);
 	}
 
-	public Generation(String content, Map<String, Object> properties, MessageType type) {
-		super(type, content, properties);
+	@Override
+	public AssistantMessage getOutput() {
+		return this.assistantMessage;
 	}
 
-	public ChoiceMetadata getChoiceMetadata() {
-		ChoiceMetadata choiceMetadata = this.choiceMetadata;
-		return choiceMetadata != null ? choiceMetadata : ChoiceMetadata.NULL;
+	public ChatGenerationMetadata getMetadata() {
+		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
+		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
 	}
 
-	public Generation withChoiceMetadata(@Nullable ChoiceMetadata choiceMetadata) {
-		this.choiceMetadata = choiceMetadata;
+	public Generation withGenerationMetadata(@Nullable ChatGenerationMetadata chatGenerationMetadata) {
+		this.chatGenerationMetadata = chatGenerationMetadata;
 		return this;
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof Generation that))
+			return false;
+		return Objects.equals(assistantMessage, that.assistantMessage)
+				&& Objects.equals(chatGenerationMetadata, that.chatGenerationMetadata);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(assistantMessage, chatGenerationMetadata);
+	}
+
+	@Override
 	public String toString() {
-		return "Generation{" + "text='" + content + '\'' + ", info=" + properties + '}';
+		return "Generation{" + "assistantMessage=" + assistantMessage + ", chatGenerationMetadata="
+				+ chatGenerationMetadata + '}';
 	}
 
 }

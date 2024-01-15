@@ -53,7 +53,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
 		logger.info(MODEL_NAME + " pulling competed!");
 

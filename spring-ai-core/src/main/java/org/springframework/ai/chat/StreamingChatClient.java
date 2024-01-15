@@ -18,7 +18,7 @@ package org.springframework.ai.chat;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 
 @FunctionalInterface
 public interface StreamingChatClient {

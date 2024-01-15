@@ -15,10 +15,10 @@ import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.testutils.AbstractIT;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
@@ -90,10 +90,10 @@ public class AcmeIT extends AbstractIT {
 
 		// Create the prompt ad-hoc for now, need to put in system message and user
 		// message via ChatPromptTemplate or some other message building mechanic;
-		logger.info("Asking AI model to reply to question.");
+		logger.info("Asking AI generative to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
-		ChatResponse response = chatClient.generate(prompt);
+		ChatResponse response = chatClient.call(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
 	}

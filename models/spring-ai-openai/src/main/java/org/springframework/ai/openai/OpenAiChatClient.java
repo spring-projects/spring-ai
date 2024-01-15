@@ -28,17 +28,17 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiClientErrorException;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
-import org.springframework.ai.openai.metadata.OpenAiGenerationMetadata;
+import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -94,10 +94,10 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
 		return this.retryTemplate.execute(ctx -> {
-			List<Message> messages = prompt.getMessages();
+			List<Message> messages = prompt.getInstructions();
 
 			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
 				.map(m -> new ChatCompletionMessage(m.getContent(),
@@ -118,18 +118,18 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
 				return new Generation(choice.message().content(), Map.of("role", choice.message().role().name()))
-					.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
+					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();
 
 			return new ChatResponse(generations,
-					OpenAiGenerationMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
+					OpenAiChatResponseMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
 		});
 	}
 
 	@Override
 	public Flux<ChatResponse> generateStream(Prompt prompt) {
 		return this.retryTemplate.execute(ctx -> {
-			List<Message> messages = prompt.getMessages();
+			List<Message> messages = prompt.getInstructions();
 
 			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
 				.map(m -> new ChatCompletionMessage(m.getContent(),
@@ -153,7 +153,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
 					if (choice.finishReason() != null) {
 						generation = generation
-							.withChoiceMetadata(ChoiceMetadata.from(choice.finishReason().name(), null));
+							.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
 					}
 					return generation;
 				}).toList();

@@ -22,7 +22,7 @@ python3 -m venv venv
 source ./venv/bin/activate
 (venv) pip install --upgrade pip
 (venv) pip install optimum onnx onnxruntime
-(venv) optimum-cli export onnx --model sentence-transformers/all-MiniLM-L6-v2 onnx-output-folder
+(venv) optimum-cli export onnx --generative sentence-transformers/all-MiniLM-L6-v2 onnx-output-folder
 ----
 
 The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding client.

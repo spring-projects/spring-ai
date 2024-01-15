@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.MessageType;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.ai.vertex.api.VertexAiApi.GenerateMessageRequest;
 import org.springframework.ai.vertex.api.VertexAiApi.GenerateMessageResponse;
@@ -71,15 +71,15 @@ public class VertexAiChatClient implements ChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
-		String vertexContext = prompt.getMessages()
+		String vertexContext = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.map(m -> m.getContent())
 			.collect(Collectors.joining("\n"));
 
-		List<VertexAiApi.Message> vertexMessages = prompt.getMessages()
+		List<VertexAiApi.Message> vertexMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(m -> new VertexAiApi.Message(m.getMessageType().getValue(), m.getContent()))

@@ -69,7 +69,7 @@ public class OpenAiApi {
 	}
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new chat completion api.
 	 *
 	 * @param baseUrl api base URL.
 	 * @param openAiToken OpenAI apiKey.
