@@ -19,7 +19,7 @@ package org.springframework.ai.chat;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.ai.generative.GenerativeGeneration;
+import org.springframework.ai.model.ModelResult;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.lang.Nullable;
@@ -27,7 +27,7 @@ import org.springframework.lang.Nullable;
 /**
  * Represents a response returned by the AI.
  */
-public class Generation implements GenerativeGeneration<AssistantMessage> {
+public class Generation implements ModelResult<AssistantMessage> {
 
 	private AssistantMessage assistantMessage;
 

@@ -89,7 +89,7 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)

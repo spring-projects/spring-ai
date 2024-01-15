@@ -93,7 +93,7 @@ public class AcmeIT extends AbstractIT {
 		logger.info("Asking AI generative to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
-		ChatResponse response = chatClient.generate(prompt);
+		ChatResponse response = chatClient.call(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
 	}

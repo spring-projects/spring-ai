@@ -64,7 +64,7 @@ public class HuggingfaceChatClient implements ChatClient {
 
 	/**
 	 * The maximum number of new tokens to be generated. Note: The total token size for
-	 * the Mistral7b instruct generative should be less than 1500.
+	 * the Mistral7b instruct model should be less than 1500.
 	 */
 	private int maxNewTokens = 1000;
 
@@ -86,7 +86,7 @@ public class HuggingfaceChatClient implements ChatClient {
 	 * @return ChatResponse containing the generated text and other related details.
 	 */
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 		GenerateRequest generateRequest = new GenerateRequest();
 		generateRequest.setInputs(prompt.getContents());
 		GenerateParameters generateParameters = new GenerateParameters();

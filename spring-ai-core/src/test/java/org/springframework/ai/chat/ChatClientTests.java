@@ -23,8 +23,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.*;
 
-import java.util.Collections;
-
 import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
@@ -56,13 +54,13 @@ class ChatClientTests {
 
 		// Create a mock ChatResponse with the mock Generation
 		ChatResponse response = Mockito.mock(ChatResponse.class);
-		when(response.getGeneration()).thenReturn(generation);
+		when(response.getResult()).thenReturn(generation);
 
 		// Generation generation = spy(new Generation(responseMessage));
 		// ChatResponse response = spy(new
 		// ChatResponse(Collections.singletonList(generation)));
 
-		doCallRealMethod().when(mockClient).generate(anyString());
+		doCallRealMethod().when(mockClient).call(anyString());
 
 		doAnswer(invocationOnMock -> {
 
@@ -73,13 +71,13 @@ class ChatClientTests {
 
 			return response;
 
-		}).when(mockClient).generate(any(Prompt.class));
+		}).when(mockClient).call(any(Prompt.class));
 
-		assertThat(mockClient.generate(userMessage)).isEqualTo(responseMessage);
+		assertThat(mockClient.call(userMessage)).isEqualTo(responseMessage);
 
-		verify(mockClient, times(1)).generate(eq(userMessage));
-		verify(mockClient, times(1)).generate(isA(Prompt.class));
-		verify(response, times(1)).getGeneration();
+		verify(mockClient, times(1)).call(eq(userMessage));
+		verify(mockClient, times(1)).call(isA(Prompt.class));
+		verify(response, times(1)).getResult();
 		verify(generation, times(1)).getOutput();
 		verify(mockAssistantMessage, times(1)).getContent();
 		verifyNoMoreInteractions(mockClient, generation, response);

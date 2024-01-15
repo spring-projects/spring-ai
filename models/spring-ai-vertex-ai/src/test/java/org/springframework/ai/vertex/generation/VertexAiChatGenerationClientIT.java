@@ -48,8 +48,8 @@ class VertexAiChatGenerationClientIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = client.generate(prompt);
-		assertThat(response.getGeneration().getOutput().getContent()).contains("Bartholomew");
+		ChatResponse response = client.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).contains("Bartholomew");
 	}
 
 	// @Test
@@ -65,7 +65,7 @@ class VertexAiChatGenerationClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors.", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.client.generate(prompt).getGeneration();
+		Generation generation = this.client.call(prompt).getResult();
 
 		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
@@ -84,7 +84,7 @@ class VertexAiChatGenerationClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = client.generate(prompt).getGeneration();
+		Generation generation = client.call(prompt).getResult();
 
 		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -106,7 +106,7 @@ class VertexAiChatGenerationClientIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = client.generate(prompt).getGeneration();
+		Generation generation = client.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");

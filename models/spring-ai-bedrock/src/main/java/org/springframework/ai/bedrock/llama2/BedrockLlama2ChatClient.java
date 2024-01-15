@@ -69,7 +69,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
 		var request = Llama2ChatRequest.builder(promptValue)

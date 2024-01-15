@@ -16,7 +16,7 @@
 
 package org.springframework.ai.chat.metadata;
 
-import org.springframework.ai.generative.GenerationMetadata;
+import org.springframework.ai.model.ResultMetadata;
 import org.springframework.lang.Nullable;
 
 /**
@@ -26,7 +26,7 @@ import org.springframework.lang.Nullable;
  * @author John Blum
  * @since 0.7.0
  */
-public interface ChatGenerationMetadata extends GenerationMetadata {
+public interface ChatGenerationMetadata extends ResultMetadata {
 
 	ChatGenerationMetadata NULL = ChatGenerationMetadata.from(null, null);
 

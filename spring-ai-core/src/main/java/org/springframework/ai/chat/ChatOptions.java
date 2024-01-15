@@ -1,11 +1,11 @@
 package org.springframework.ai.chat;
 
-import org.springframework.ai.generative.Options;
+import org.springframework.ai.model.ModelOptions;
 
 /**
  * portable options
  */
-public interface ChatOptions extends Options {
+public interface ChatOptions extends ModelOptions {
 
 	// determine portable optionsb
 

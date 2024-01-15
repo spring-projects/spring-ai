@@ -48,7 +48,7 @@ public class VertexAiAutoConfigurationIT {
 		contextRunner.run(context -> {
 			VertexAiChatClient client = context.getBean(VertexAiChatClient.class);
 
-			String response = client.generate("Hello");
+			String response = client.call("Hello");
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);

@@ -134,7 +134,7 @@ public class OllamaOptions implements ChatOptions {
 
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
-	 * specific number will make the generative generate the same text for the same prompt.
+	 * specific number will make the model generate the same text for the same prompt.
 	 * (Default: 0)
 	 */
 	@JsonProperty("seed") private Integer seed;
@@ -172,14 +172,14 @@ public class OllamaOptions implements ChatOptions {
 	@JsonProperty("typical_p") private Float typicalP;
 
 	/**
-	 * Sets how far back for the generative to look back to prevent
+	 * Sets how far back for the model to look back to prevent
 	 * repetition. (Default: 64, 0 = disabled, -1 = num_ctx)
 	 */
 	@JsonProperty("repeat_last_n") private Integer repeatLastN;
 
 	/**
-	 * The temperature of the generative. Increasing the temperature will
-	 * make the generative answer more creatively. (Default: 0.8)
+	 * The temperature of the model. Increasing the temperature will
+	 * make the model answer more creatively. (Default: 0.8)
 	 */
 	@JsonProperty("temperature") private Float temperature;
 

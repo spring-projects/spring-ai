@@ -71,7 +71,7 @@ public class VertexAiChatClient implements ChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
 		String vertexContext = prompt.getInstructions()
 			.stream()

@@ -42,7 +42,7 @@ public class CohereEmbeddingBedrockApi extends
 	 * Create a new CohereEmbeddingBedrockApi instance using the default credentials provider chain, the default object
 	 * mapper, default temperature and topP values.
 	 *
-	 * @param modelId The generative id to use. See the {@link CohereEmbeddingModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, String region) {
@@ -53,7 +53,7 @@ public class CohereEmbeddingBedrockApi extends
 	 * Create a new CohereEmbeddingBedrockApi instance using the provided credentials provider, region and object
 	 * mapper.
 	 *
-	 * @param modelId The generative id to use. See the {@link CohereEmbeddingModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -64,16 +64,16 @@ public class CohereEmbeddingBedrockApi extends
 	}
 
 	/**
-	 * The Cohere Embed generative request.
+	 * The Cohere Embed model request.
 	 *
-	 * @param texts An array of strings for the generative to embed. For optimal performance, we recommend reducing the
+	 * @param texts An array of strings for the model to embed. For optimal performance, we recommend reducing the
 	 * length of each text to less than 512 tokens. 1 token is about 4 characters.
 	 * @param inputType Prepends special tokens to differentiate each type from one another. You should not mix
 	 * different types together, except when mixing types for for search and retrieval. In this case, embed your corpus
 	 * with the search_document type and embedded queries with type search_query type.
 	 * @param truncate Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or
-	 * RIGHT, the generative discards the input until the remaining input is exactly the maximum input token length for the
-	 * generative.
+	 * RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the
+	 * model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record CohereEmbeddingRequest(
@@ -107,7 +107,7 @@ public class CohereEmbeddingBedrockApi extends
 
 		/**
 		 * Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or RIGHT, the
-		 * generative discards the input until the remaining input is exactly the maximum input token length for the generative.
+		 * model discards the input until the remaining input is exactly the maximum input token length for the model.
 		 */
 		public enum Truncate {
 			/**
@@ -133,19 +133,19 @@ public class CohereEmbeddingBedrockApi extends
 	 * length of the embeddings array will be the same as the length of the original texts array.
 	 * @param texts An array containing the text entries for which embeddings were returned.
 	 * @param amazonBedrockInvocationMetrics Bedrock invocation metrics. Currently bedrock doesn't return
-	 * invocationMetrics for the cohere embedding generative.
+	 * invocationMetrics for the cohere embedding model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record CohereEmbeddingResponse(
 			@JsonProperty("id") String id,
 			@JsonProperty("embeddings") List<List<Double>> embeddings,
 			@JsonProperty("texts") List<String> texts,
-			// For future use: Currently bedrock doesn't return invocationMetrics for the cohere embedding generative.
+			// For future use: Currently bedrock doesn't return invocationMetrics for the cohere embedding model.
 			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
 	}
 
 	/**
-	 * Cohere Embedding generative ids. https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html
+	 * Cohere Embedding model ids. https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html
 	 */
 	public enum CohereEmbeddingModel {
 		/**
@@ -160,7 +160,7 @@ public class CohereEmbeddingBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The generative id.
+		 * @return The model id.
 		 */
 		public String id() {
 			return id;

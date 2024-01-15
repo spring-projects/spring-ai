@@ -30,7 +30,7 @@ import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEm
 import org.springframework.util.Assert;
 
 /**
- * Java client for the Bedrock Titan Embedding generative.
+ * Java client for the Bedrock Titan Embedding model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/titan-multiemb-models.html
  *
  * @author Christian Tzolov
@@ -43,7 +43,7 @@ public class TitanEmbeddingBedrockApi extends
 	/**
 	 * Create a new TitanEmbeddingBedrockApi instance using the default credentials provider and default object
 	 * mapper.
-	 * @param modelId The generative id to use. See the {@link TitanEmbeddingModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link TitanEmbeddingModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public TitanEmbeddingBedrockApi(String modelId, String region) {
@@ -53,7 +53,7 @@ public class TitanEmbeddingBedrockApi extends
 	/**
 	 * Create a new TitanEmbeddingBedrockApi instance.
 	 *
-	 * @param modelId The generative id to use. See the {@link TitanEmbeddingModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link TitanEmbeddingModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -68,7 +68,7 @@ public class TitanEmbeddingBedrockApi extends
 	 *
 	 * @param inputText The text to compute the embedding for.
 	 * @param inputImage The image to compute the embedding for. Only applicable for the 'Titan Multimodal Embeddings
-	 * G1' generative.
+	 * G1' model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TitanEmbeddingRequest(
@@ -125,7 +125,7 @@ public class TitanEmbeddingBedrockApi extends
 	}
 
 	/**
-	 * Titan Embedding generative ids.
+	 * Titan Embedding model ids.
 	 */
 	public enum TitanEmbeddingModel {
 		/**
@@ -140,7 +140,7 @@ public class TitanEmbeddingBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The generative id.
+		 * @return The model id.
 		 */
 		public String id() {
 			return id;

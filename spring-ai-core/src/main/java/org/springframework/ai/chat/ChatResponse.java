@@ -17,13 +17,13 @@ package org.springframework.ai.chat;
 
 import java.util.List;
 
-import org.springframework.ai.generative.GenerativeResponse;
+import org.springframework.ai.model.ModelResponse;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
  */
-public class ChatResponse implements GenerativeResponse<Generation> {
+public class ChatResponse implements ModelResponse<Generation> {
 
 	private final ChatResponseMetadata chatResponseMetadata;
 
@@ -62,14 +62,14 @@ public class ChatResponse implements GenerativeResponse<Generation> {
 	 */
 
 	@Override
-	public List<Generation> getGenerations() {
+	public List<Generation> getResults() {
 		return this.generations;
 	}
 
 	/**
 	 * @return Returns the first {@link Generation} in the generations list.
 	 */
-	public Generation getGeneration() {
+	public Generation getResult() {
 		return this.generations.get(0);
 	}
 

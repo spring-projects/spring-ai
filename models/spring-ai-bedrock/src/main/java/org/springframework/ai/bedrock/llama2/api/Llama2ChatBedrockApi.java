@@ -29,7 +29,7 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2Chat
 
 // @formatter:off
 /**
- * Java client for the Bedrock Llama2 chat generative.
+ * Java client for the Bedrock Llama2 chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
  *
  * @author Christian Tzolov
@@ -42,7 +42,7 @@ public class Llama2ChatBedrockApi extends
 	 * Create a new Llama2ChatBedrockApi instance using the default credentials provider chain, the default object
 	 * mapper, default temperature and topP values.
 	 *
-	 * @param modelId The generative id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public Llama2ChatBedrockApi(String modelId, String region) {
@@ -52,7 +52,7 @@ public class Llama2ChatBedrockApi extends
 	/**
 	 * Create a new Llama2ChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The generative id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -63,7 +63,7 @@ public class Llama2ChatBedrockApi extends
 	}
 
 	/**
-	 * Llama2ChatRequest encapsulates the request parameters for the Meta Llama2 chat generative.
+	 * Llama2ChatRequest encapsulates the request parameters for the Meta Llama2 chat model.
 	 *
 	 * @param prompt The prompt to use for the chat.
 	 * @param temperature The temperature value controls the randomness of the generated text. Use a lower value to
@@ -125,12 +125,12 @@ public class Llama2ChatBedrockApi extends
 	}
 
 	/**
-	 * Llama2ChatResponse encapsulates the response parameters for the Meta Llama2 chat generative.
+	 * Llama2ChatResponse encapsulates the response parameters for the Meta Llama2 chat model.
 	 *
 	 * @param generation The generated text.
 	 * @param promptTokenCount The number of tokens in the prompt.
 	 * @param generationTokenCount The number of tokens in the response.
-	 * @param stopReason The reason why the response stopped generating text. Possible values are: (1) stop – The generative
+	 * @param stopReason The reason why the response stopped generating text. Possible values are: (1) stop – The model
 	 * has finished generating text for the input prompt. (2) length – The length of the tokens for the generated text
 	 * exceeds the value of max_gen_len in the call. The response is truncated to max_gen_len tokens. Consider
 	 * increasing the value of max_gen_len and trying again.
@@ -148,7 +148,7 @@ public class Llama2ChatBedrockApi extends
 		 */
 		public enum StopReason {
 			/**
-			 * The generative has finished generating text for the input prompt.
+			 * The model has finished generating text for the input prompt.
 			 */
 			stop,
 			/**
@@ -176,7 +176,7 @@ public class Llama2ChatBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The generative id.
+		 * @return The model id.
 		 */
 		public String id() {
 			return id;

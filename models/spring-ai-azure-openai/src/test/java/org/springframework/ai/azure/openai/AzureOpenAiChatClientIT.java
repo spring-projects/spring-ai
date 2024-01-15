@@ -54,8 +54,8 @@ class AzureOpenAiChatClientIT {
 		UserMessage userMessage = new UserMessage("Generate the names of 5 famous pirates.");
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatClient.generate(prompt);
-		assertThat(response.getGeneration().getOutput().getContent()).contains("Blackbeard");
+		ChatResponse response = chatClient.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
 	@Test
@@ -71,7 +71,7 @@ class AzureOpenAiChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
@@ -90,7 +90,7 @@ class AzureOpenAiChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -109,7 +109,7 @@ class AzureOpenAiChatClientIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isNotNull();
@@ -130,7 +130,7 @@ class AzureOpenAiChatClientIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.generate(prompt).getGeneration();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		System.out.println(actorsFilms);
@@ -155,7 +155,7 @@ class AzureOpenAiChatClientIT {
 			.collectList()
 			.block()
 			.stream()
-			.map(ChatResponse::getGenerations)
+			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getContent)

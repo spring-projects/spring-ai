@@ -93,7 +93,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
 		return this.retryTemplate.execute(ctx -> {
 			List<Message> messages = prompt.getInstructions();

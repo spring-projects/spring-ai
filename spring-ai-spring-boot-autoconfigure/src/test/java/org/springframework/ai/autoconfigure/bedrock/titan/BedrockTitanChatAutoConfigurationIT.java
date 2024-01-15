@@ -71,8 +71,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockTitanChatClient chatClient = context.getBean(BedrockTitanChatClient.class);
-			ChatResponse response = chatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getOutput().getContent()).contains("Blackbeard");
+			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -88,7 +88,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 			assertThat(responses.size()).isGreaterThan(1);
 
 			String stitchedResponseContent = responses.stream()
-				.map(ChatResponse::getGenerations)
+				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getContent)

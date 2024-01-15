@@ -43,7 +43,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithRespo
 import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 
 /**
- * Abstract class for the Bedrock API. It provides the basic functionality to invoke the chat completion generative and
+ * Abstract class for the Bedrock API. It provides the basic functionality to invoke the chat completion model and
  * receive the response for streaming and non-streaming requests.
  * <p>
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html
@@ -74,7 +74,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
 	 *
-	 * @param modelId The generative id to use.
+	 * @param modelId The model id to use.
 	 * @param region The AWS region to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region) {
@@ -84,7 +84,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	/**
 	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The generative id to use.
+	 * @param modelId The model id to use.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -111,7 +111,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
-	 * @return The generative id.
+	 * @return The model id.
 	 */
 	public String getModelId() {
 		return modelId;
@@ -125,7 +125,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
-	 * Encapsulates the metrics about the generative invocation.
+	 * Encapsulates the metrics about the model invocation.
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
 	 *
 	 * @param inputTokenCount The number of tokens in the input prompt.
@@ -149,7 +149,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @return Returns the embedding response.
 	 */
 	protected O embedding(I request) {
-		throw new UnsupportedOperationException("Embedding is not supported for this generative: " + this.modelId);
+		throw new UnsupportedOperationException("Embedding is not supported for this model: " + this.modelId);
 	}
 
 	/**
@@ -159,7 +159,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @return The chat completion response.
 	 */
 	protected O chatCompletion(I request) {
-		throw new UnsupportedOperationException("Chat completion is not supported for this generative: " + this.modelId);
+		throw new UnsupportedOperationException("Chat completion is not supported for this model: " + this.modelId);
 	}
 
 	/**
@@ -170,18 +170,18 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 */
 	protected Flux<SO> chatCompletionStream(I request) {
 		throw new UnsupportedOperationException(
-				"Streaming chat completion is not supported for this generative: " + this.modelId);
+				"Streaming chat completion is not supported for this model: " + this.modelId);
 	}
 
 	/**
-	 * Internal method to invoke the generative and return the response.
+	 * Internal method to invoke the model and return the response.
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
 	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InvokeModel.html
 	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeClient.html#invokeModel
 	 *
 	 * @param request Model invocation request.
 	 * @param clazz The response class type
-	 * @return The generative invocation response.
+	 * @return The model invocation response.
 	 *
 	 */
 	protected O internalInvocation(I request, Class<O> clazz) {
@@ -213,11 +213,11 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
-	 * Internal method to invoke the generative and return the response stream.
+	 * Internal method to invoke the model and return the response stream.
 	 *
 	 * @param request Model invocation request.
 	 * @param clazz Response class type.
-	 * @return The generative invocation response stream.
+	 * @return The model invocation response stream.
 	 */
 	protected Flux<SO> internalInvocationStream(I request, Class<SO> clazz) {
 

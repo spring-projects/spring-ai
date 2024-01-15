@@ -47,8 +47,8 @@ public class ClientIT {
 				[/INST]
 				 """;
 		Prompt prompt = new Prompt(mistral7bInstruct);
-		ChatResponse chatResponse = huggingfaceChatClient.generate(prompt);
-		assertThat(chatResponse.getGeneration().getOutput().getContent()).isNotEmpty();
+		ChatResponse chatResponse = huggingfaceChatClient.call(prompt);
+		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
 		String expectedResponse = """
 				```json
 				{
@@ -57,9 +57,9 @@ public class ClientIT {
 				    "address": "#1 Samuel St."
 				}
 				```""";
-		assertThat(chatResponse.getGeneration().getOutput().getContent()).isEqualTo(expectedResponse);
-		assertThat(chatResponse.getGeneration().getOutput().getProperties()).containsKey("generated_tokens");
-		assertThat(chatResponse.getGeneration().getOutput().getProperties()).containsEntry("generated_tokens", 39);
+		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo(expectedResponse);
+		assertThat(chatResponse.getResult().getOutput().getProperties()).containsKey("generated_tokens");
+		assertThat(chatResponse.getResult().getOutput().getProperties()).containsEntry("generated_tokens", 39);
 
 	}
 

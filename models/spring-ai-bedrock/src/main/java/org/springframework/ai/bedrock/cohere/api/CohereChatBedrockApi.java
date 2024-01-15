@@ -31,7 +31,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.util.Assert;
 
 /**
- * Java client for the Bedrock Cohere chat generative.
+ * Java client for the Bedrock Cohere chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere.html
  *
  * @author Christian Tzolov
@@ -44,7 +44,7 @@ public class CohereChatBedrockApi extends
 	 * Create a new CohereChatBedrockApi instance using the default credentials provider chain, the default object
 	 * mapper, default temperature and topP values.
 	 *
-	 * @param modelId The generative id to use. See the {@link CohereChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
 	public CohereChatBedrockApi(String modelId, String region) {
@@ -54,7 +54,7 @@ public class CohereChatBedrockApi extends
 	/**
 	 * Create a new CohereChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The generative id to use. See the {@link CohereChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
@@ -65,20 +65,20 @@ public class CohereChatBedrockApi extends
 	}
 
 	/**
-	 * CohereChatRequest encapsulates the request parameters for the Cohere command generative.
+	 * CohereChatRequest encapsulates the request parameters for the Cohere command model.
 	 *
 	 * @param prompt The input prompt to generate the response from.
 	 * @param temperature (optional) Use a lower value to decrease randomness in the response.
 	 * @param topP (optional) Use a lower value to ignore less probable options. Set to 0 or 1.0 to disable.
-	 * @param topK (optional) Specify the number of token choices the generative uses to generate the next token.
+	 * @param topK (optional) Specify the number of token choices the model uses to generate the next token.
 	 * @param maxTokens (optional) Specify the maximum number of tokens to use in the generated response.
-	 * @param stopSequences (optional) Configure up to four sequences that the generative recognizes. After a stop sequence,
-	 * the generative stops generating further tokens. The returned text doesn't contain the stop sequence.
+	 * @param stopSequences (optional) Configure up to four sequences that the model recognizes. After a stop sequence,
+	 * the model stops generating further tokens. The returned text doesn't contain the stop sequence.
 	 * @param returnLikelihoods (optional) Specify how and if the token likelihoods are returned with the response.
 	 * @param stream (optional) Specify true to return the response piece-by-piece in real-time and false to return the
 	 * complete response after the process finishes.
-	 * @param numGenerations (optional) The maximum number of generations that the generative should return.
-	 * @param logitBias (optional) prevents the generative from generating unwanted tokens or incentivize the generative to
+	 * @param numGenerations (optional) The maximum number of generations that the model should return.
+	 * @param logitBias (optional) prevents the model from generating unwanted tokens or incentivize the model to
 	 * include desired tokens. The format is {token_id: bias} where bias is a float between -10 and 10. Tokens can be
 	 * obtained from text using any tokenization service, such as Cohere’s Tokenize endpoint.
 	 * @param truncate (optional) Specifies how the API handles inputs longer than the maximum token length.
@@ -98,7 +98,7 @@ public class CohereChatBedrockApi extends
 			@JsonProperty("truncate") Truncate truncate) {
 
 		/**
-		 * Prevents the generative from generating unwanted tokens or incentivize the generative to include desired tokens.
+		 * Prevents the model from generating unwanted tokens or incentivize the model to include desired tokens.
 		 *
 		 * @param token The token likelihoods.
 		 * @param bias A float between -10 and 10.
@@ -129,7 +129,7 @@ public class CohereChatBedrockApi extends
 
 		/**
 		 * Specifies how the API handles inputs longer than the maximum token length. If you specify START or END, the
-		 * generative discards the input until the remaining input is exactly the maximum input token length for the generative.
+		 * model discards the input until the remaining input is exactly the maximum input token length for the model.
 		 */
 		public enum Truncate {
 			/**
@@ -244,7 +244,7 @@ public class CohereChatBedrockApi extends
 	}
 
 	/**
-	 * CohereChatResponse encapsulates the response parameters for the Cohere command generative.
+	 * CohereChatResponse encapsulates the response parameters for the Cohere command model.
 	 *
 	 * @param id An identifier for the request (always returned).
 	 * @param prompt The prompt from the input request. (Always returned).
@@ -265,14 +265,14 @@ public class CohereChatBedrockApi extends
 		 * token_likelihoods. Returned if you specify the return_likelihoods input parameter.
 		 * @param tokenLikelihoods An array of per token likelihoods. Returned if you specify the return_likelihoods
 		 * input parameter.
-		 * @param finishReason states the reason why the generative finished generating tokens.
+		 * @param finishReason states the reason why the model finished generating tokens.
 		 * @param isFinished A boolean field used only when stream is true, signifying whether or not there are
 		 * additional tokens that will be generated as part of the streaming response. (Not always returned).
 		 * @param text The generated text.
 		 * @param index In a streaming response, use to determine which generation a given token belongs to. When only
 		 * one response is streamed, all tokens belong to the same generation and index is not returned. index therefore
 		 * is only returned in a streaming request with a value for num_generations that is larger than one.
-		 * @param amazonBedrockInvocationMetrics Encapsulates the metrics about the generative invocation.
+		 * @param amazonBedrockInvocationMetrics Encapsulates the metrics about the model invocation.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Generation(
@@ -300,11 +300,11 @@ public class CohereChatBedrockApi extends
 			 */
 			public enum FinishReason {
 				/**
-				 * The generative sent back a finished reply.
+				 * The model sent back a finished reply.
 				 */
 				COMPLETE,
 				/**
-				 * The reply was cut off because the generative reached the maximum number of tokens for its context length.
+				 * The reply was cut off because the model reached the maximum number of tokens for its context length.
 				 */
 				MAX_TOKENS,
 				/**
@@ -312,7 +312,7 @@ public class CohereChatBedrockApi extends
 				 */
 				ERROR,
 				/**
-				 * the generative generated a reply that was deemed toxic. finish_reason is returned only when
+				 * the model generated a reply that was deemed toxic. finish_reason is returned only when
 				 * is_finished=true. (Not always returned).
 				 */
 				ERROR_TOXIC
@@ -338,7 +338,7 @@ public class CohereChatBedrockApi extends
 		private final String id;
 
 		/**
-		 * @return The generative id.
+		 * @return The model id.
 		 */
 		public String id() {
 			return id;

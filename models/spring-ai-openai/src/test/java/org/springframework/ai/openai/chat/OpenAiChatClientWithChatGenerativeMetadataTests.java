@@ -71,7 +71,7 @@ public class OpenAiChatClientWithChatGenerativeMetadataTests {
 
 		Prompt prompt = new Prompt("Reach for the sky.");
 
-		ChatResponse response = this.openAiChatClient.generate(prompt);
+		ChatResponse response = this.openAiChatClient.call(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -110,7 +110,7 @@ public class OpenAiChatClientWithChatGenerativeMetadataTests {
 		assertThat(promptMetadata).isNotNull();
 		assertThat(promptMetadata).isEmpty();
 
-		response.getGenerations().forEach(generation -> {
+		response.getResults().forEach(generation -> {
 			ChatGenerationMetadata chatGenerationMetadata = generation.getGenerationMetadata();
 			assertThat(chatGenerationMetadata).isNotNull();
 			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");

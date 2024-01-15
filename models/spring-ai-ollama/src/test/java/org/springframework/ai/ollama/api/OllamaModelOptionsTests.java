@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-public class OllamaOptionsTests {
+public class OllamaModelOptionsTests {
 
 	@Test
 	public void testOptions() {

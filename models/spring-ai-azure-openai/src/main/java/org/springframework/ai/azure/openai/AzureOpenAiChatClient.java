@@ -70,11 +70,11 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	/**
 	 * An alternative to sampling with temperature called nucleus sampling. This value
-	 * causes the generative to consider the results of tokens with the provided
-	 * probability mass. As an example, a value of 0.15 will cause only the tokens
-	 * comprising the top 15% of probability mass to be considered. It is not recommended
-	 * to modify temperature and top_p for the same completions request as the interaction
-	 * of these two settings is difficult to predict.
+	 * causes the model to consider the results of tokens with the provided probability
+	 * mass. As an example, a value of 0.15 will cause only the tokens comprising the top
+	 * 15% of probability mass to be considered. It is not recommended to modify
+	 * temperature and top_p for the same completions request as the interaction of these
+	 * two settings is difficult to predict.
 	 */
 	private Double topP;
 
@@ -134,7 +134,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public String generate(String text) {
+	public String call(String text) {
 
 		ChatRequestMessage azureChatMessage = new ChatRequestUserMessage(text);
 
@@ -160,7 +160,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(false);

@@ -76,11 +76,11 @@ class AzureOpenAiChatClientMetadataTests {
 
 		Prompt prompt = new Prompt("Can I fly like a bird?");
 
-		ChatResponse response = this.aiClient.generate(prompt);
+		ChatResponse response = this.aiClient.call(prompt);
 
 		assertThat(response).isNotNull();
 
-		Generation generation = response.getGeneration();
+		Generation generation = response.getResult();
 
 		assertThat(generation).isNotNull()
 			.extracting(Generation::getOutput)

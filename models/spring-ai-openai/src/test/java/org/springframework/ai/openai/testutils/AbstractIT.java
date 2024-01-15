@@ -44,7 +44,7 @@ public abstract class AbstractIT {
 
 	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
 		assertThat(response).isNotNull();
-		String answer = response.getGeneration().getOutput().getContent();
+		String answer = response.getResult().getOutput().getContent();
 		logger.info("Question: " + question);
 		logger.info("Answer:" + answer);
 		PromptTemplate userPromptTemplate = new PromptTemplate(userEvaluatorResource,
@@ -58,12 +58,12 @@ public abstract class AbstractIT {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = openAiChatClient.generate(prompt).getGeneration().getOutput().getContent();
+		String yesOrNo = openAiChatClient.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = openAiChatClient.generate(prompt).getGeneration().getOutput().getContent();
+			String reasonForFailure = openAiChatClient.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);
 		}
 		else {

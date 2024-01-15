@@ -85,7 +85,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
 		OllamaApi.ChatResponse response = this.chatApi.chat(request(prompt, this.model, false));
 		var generator = new Generation(response.message().content());

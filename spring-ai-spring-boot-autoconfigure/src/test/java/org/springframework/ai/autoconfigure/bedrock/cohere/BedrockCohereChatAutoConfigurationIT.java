@@ -73,8 +73,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockCohereChatClient cohereChatClient = context.getBean(BedrockCohereChatClient.class);
-			ChatResponse response = cohereChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getOutput().getContent()).contains("Blackbeard");
+			ChatResponse response = cohereChatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -91,7 +91,7 @@ public class BedrockCohereChatAutoConfigurationIT {
 			assertThat(responses.size()).isGreaterThan(2);
 
 			String stitchedResponseContent = responses.stream()
-				.map(ChatResponse::getGenerations)
+				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getContent)

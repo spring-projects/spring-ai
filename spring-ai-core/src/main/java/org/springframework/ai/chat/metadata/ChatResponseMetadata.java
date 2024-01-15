@@ -16,7 +16,7 @@
 
 package org.springframework.ai.chat.metadata;
 
-import org.springframework.ai.generative.ResponseMetadata;
+import org.springframework.ai.model.ResponseMetadata;
 
 /**
  * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
