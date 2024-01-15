@@ -14,26 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt.messages;
+package org.springframework.ai.chat.prompt;
 
-import java.util.Map;
+public class FunctionPromptTemplate extends PromptTemplate {
 
-public class ChatMessage extends AbstractMessage {
+	private String name;
 
-	public ChatMessage(String role, String content) {
-		super(MessageType.valueOf(role), content);
-	}
-
-	public ChatMessage(String role, String content, Map<String, Object> properties) {
-		super(MessageType.valueOf(role), content, properties);
-	}
-
-	public ChatMessage(MessageType messageType, String content) {
-		super(messageType, content);
-	}
-
-	public ChatMessage(MessageType messageType, String content, Map<String, Object> properties) {
-		super(messageType, content, properties);
+	public FunctionPromptTemplate(String template) {
+		super(template);
 	}
 
 }

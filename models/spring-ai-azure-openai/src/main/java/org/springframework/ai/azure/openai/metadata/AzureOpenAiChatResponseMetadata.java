@@ -18,9 +18,9 @@ package org.springframework.ai.azure.openai.metadata;
 
 import com.azure.ai.openai.models.ChatCompletions;
 
-import org.springframework.ai.metadata.ChatResponseMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**

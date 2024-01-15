@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -18,11 +19,11 @@ import org.springframework.ai.chat.Generation;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -54,7 +55,7 @@ class BedrockCohereChatClientIT {
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = client.generate(prompt);
-		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+		assertThat(response.getGeneration().getOutput().getContent()).contains("Blackbeard");
 	}
 
 	@Test
@@ -72,7 +73,7 @@ class BedrockCohereChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.client.generate(prompt).getGeneration();
 
-		List<String> list = outputParser.parse(generation.getContent());
+		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 
@@ -91,7 +92,7 @@ class BedrockCohereChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = client.generate(prompt).getGeneration();
 
-		Map<String, Object> result = outputParser.parse(generation.getContent());
+		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -114,7 +115,7 @@ class BedrockCohereChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = client.generate(prompt).getGeneration();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getContent());
+		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -139,7 +140,8 @@ class BedrockCohereChatClientIT {
 			.stream()
 			.map(ChatResponse::getGenerations)
 			.flatMap(List::stream)
-			.map(Generation::getContent)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);

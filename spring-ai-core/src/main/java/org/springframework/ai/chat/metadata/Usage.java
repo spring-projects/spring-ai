@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.metadata;
+package org.springframework.ai.chat.metadata;
 
 /**
  * Abstract Data Type (ADT) encapsulating metadata on the usage of an AI provider's API

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt.messages;
+package org.springframework.ai.chat.messages;
 
 import org.springframework.core.io.Resource;
 

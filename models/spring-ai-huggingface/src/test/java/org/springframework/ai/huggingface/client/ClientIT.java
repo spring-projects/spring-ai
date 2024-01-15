@@ -22,7 +22,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.huggingface.HuggingfaceChatClient;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -48,7 +48,7 @@ public class ClientIT {
 				 """;
 		Prompt prompt = new Prompt(mistral7bInstruct);
 		ChatResponse chatResponse = huggingfaceChatClient.generate(prompt);
-		assertThat(chatResponse.getGeneration().getContent()).isNotEmpty();
+		assertThat(chatResponse.getGeneration().getOutput().getContent()).isNotEmpty();
 		String expectedResponse = """
 				```json
 				{
@@ -57,9 +57,9 @@ public class ClientIT {
 				    "address": "#1 Samuel St."
 				}
 				```""";
-		assertThat(chatResponse.getGeneration().getContent()).isEqualTo(expectedResponse);
-		assertThat(chatResponse.getGeneration().getProperties()).containsKey("generated_tokens");
-		assertThat(chatResponse.getGeneration().getProperties()).containsEntry("generated_tokens", 39);
+		assertThat(chatResponse.getGeneration().getOutput().getContent()).isEqualTo(expectedResponse);
+		assertThat(chatResponse.getGeneration().getOutput().getProperties()).containsKey("generated_tokens");
+		assertThat(chatResponse.getGeneration().getOutput().getProperties()).containsEntry("generated_tokens", 39);
 
 	}
 

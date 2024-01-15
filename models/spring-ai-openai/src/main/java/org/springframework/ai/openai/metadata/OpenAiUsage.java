@@ -16,7 +16,7 @@
 
 package org.springframework.ai.openai.metadata;
 
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.util.Assert;
 

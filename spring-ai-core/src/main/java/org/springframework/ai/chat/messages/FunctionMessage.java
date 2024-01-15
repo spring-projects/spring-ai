@@ -14,29 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.messages;
 
-public enum TemplateFormat {
+import java.util.Map;
 
-	ST("ST");
+public class FunctionMessage extends AbstractMessage {
 
-	private final String value;
-
-	TemplateFormat(String value) {
-		this.value = value;
+	public FunctionMessage(String content) {
+		super(MessageType.SYSTEM, content);
 	}
 
-	public String getValue() {
-		return value;
+	public FunctionMessage(String content, Map<String, Object> properties) {
+		super(MessageType.SYSTEM, content, properties);
 	}
 
-	public static TemplateFormat fromValue(String value) {
-		for (TemplateFormat templateFormat : TemplateFormat.values()) {
-			if (templateFormat.getValue().equals(value)) {
-				return templateFormat;
-			}
-		}
-		throw new IllegalArgumentException("Invalid TemplateFormat value: " + value);
+	@Override
+	public String toString() {
+		return "FunctionMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+				+ messageType + '}';
 	}
 
 }

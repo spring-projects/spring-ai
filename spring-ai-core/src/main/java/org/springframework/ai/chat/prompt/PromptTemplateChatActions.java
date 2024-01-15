@@ -1,6 +1,6 @@
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
-import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.chat.messages.Message;
 
 import java.util.List;
 import java.util.Map;

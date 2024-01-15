@@ -13,21 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.prompt.messages;
 
-public enum MessageType {
+package org.springframework.ai.chat.prompt;
 
-	USER("user"),
+public enum TemplateFormat {
 
-	ASSISTANT("assistant"),
-
-	SYSTEM("system"),
-
-	FUNCTION("function");
+	ST("ST");
 
 	private final String value;
 
-	MessageType(String value) {
+	TemplateFormat(String value) {
 		this.value = value;
 	}
 
@@ -35,13 +30,13 @@ public enum MessageType {
 		return value;
 	}
 
-	public static MessageType fromValue(String value) {
-		for (MessageType messageType : MessageType.values()) {
-			if (messageType.getValue().equals(value)) {
-				return messageType;
+	public static TemplateFormat fromValue(String value) {
+		for (TemplateFormat templateFormat : TemplateFormat.values()) {
+			if (templateFormat.getValue().equals(value)) {
+				return templateFormat;
 			}
 		}
-		throw new IllegalArgumentException("Invalid MessageType value: " + value);
+		throw new IllegalArgumentException("Invalid TemplateFormat value: " + value);
 	}
 
 }

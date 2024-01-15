@@ -17,15 +17,15 @@
 package org.springframework.ai.chat;
 
 import org.springframework.ai.generative.GenerativeClient;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.UserMessage;
 
 @FunctionalInterface
 public interface ChatClient extends GenerativeClient<Prompt, ChatResponse> {
 
 	default String generate(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
-		return generate(prompt).getGeneration().getContent();
+		return generate(prompt).getGeneration().getOutput().getContent();
 	}
 
 	ChatResponse generate(Prompt prompt);

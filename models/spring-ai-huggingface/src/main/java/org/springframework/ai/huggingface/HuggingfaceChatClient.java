@@ -32,7 +32,7 @@ import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
 import org.springframework.ai.huggingface.model.GenerateParameters;
 import org.springframework.ai.huggingface.model.GenerateRequest;
 import org.springframework.ai.huggingface.model.GenerateResponse;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * An implementation of {@link ChatClient} that interfaces with HuggingFace Inference

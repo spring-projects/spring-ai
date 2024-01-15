@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.cohere;
 import java.util.List;
 
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.BedrockUsage;
@@ -32,9 +33,8 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * @author Christian Tzolov
@@ -128,7 +128,7 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 				String finishReason = g.finishReason().name();
 				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
 				return new ChatResponse(List
-					.of(new Generation("").withGenerationMetadata(GenerationMetadata.from(finishReason, usage))));
+					.of(new Generation("").withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
 			}
 			return new ChatResponse(List.of(new Generation(g.text())));
 		});

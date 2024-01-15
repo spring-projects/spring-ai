@@ -24,22 +24,22 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.MessageType;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 
 /**
  * {@link ChatClient} implementation for {@literal Ollma}.
@@ -90,7 +90,8 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		OllamaApi.ChatResponse response = this.chatApi.chat(request(prompt, this.model, false));
 		var generator = new Generation(response.message().content());
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator.withGenerationMetadata(GenerationMetadata.from("unknown", extractUsage(response)));
+			generator = generator
+				.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(response)));
 		}
 		return new ChatResponse(List.of(generator));
 	}
@@ -104,7 +105,8 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
 					: new Generation("");
 			if (Boolean.TRUE.equals(chunk.done())) {
-				generation = generation.withGenerationMetadata(GenerationMetadata.from("unknown", extractUsage(chunk)));
+				generation = generation
+					.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(chunk)));
 			}
 			return new ChatResponse(List.of(generation));
 		});

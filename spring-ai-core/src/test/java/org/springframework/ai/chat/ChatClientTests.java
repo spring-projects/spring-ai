@@ -21,20 +21,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * Unit Tests for {@link ChatClient}.
@@ -51,8 +46,21 @@ class ChatClientTests {
 		String responseMessage = "All your bases are belong to us";
 
 		ChatClient mockClient = Mockito.mock(ChatClient.class);
-		Generation generation = spy(new Generation(responseMessage));
-		ChatResponse response = spy(new ChatResponse(Collections.singletonList(generation)));
+
+		AssistantMessage mockAssistantMessage = Mockito.mock(AssistantMessage.class);
+		when(mockAssistantMessage.getContent()).thenReturn(responseMessage);
+
+		// Create a mock Generation
+		Generation generation = Mockito.mock(Generation.class);
+		when(generation.getOutput()).thenReturn(mockAssistantMessage);
+
+		// Create a mock ChatResponse with the mock Generation
+		ChatResponse response = Mockito.mock(ChatResponse.class);
+		when(response.getGeneration()).thenReturn(generation);
+
+		// Generation generation = spy(new Generation(responseMessage));
+		// ChatResponse response = spy(new
+		// ChatResponse(Collections.singletonList(generation)));
 
 		doCallRealMethod().when(mockClient).generate(anyString());
 
@@ -72,7 +80,8 @@ class ChatClientTests {
 		verify(mockClient, times(1)).generate(eq(userMessage));
 		verify(mockClient, times(1)).generate(isA(Prompt.class));
 		verify(response, times(1)).getGeneration();
-		verify(generation, times(1)).getContent();
+		verify(generation, times(1)).getOutput();
+		verify(mockAssistantMessage, times(1)).getContent();
 		verifyNoMoreInteractions(mockClient, generation, response);
 	}
 

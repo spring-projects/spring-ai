@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -28,8 +29,7 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Anthropic chat
@@ -127,7 +127,7 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 			var generation = new Generation(response.completion());
 			if (response.amazonBedrockInvocationMetrics() != null) {
 				generation = generation.withGenerationMetadata(
-						GenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
 			}
 			return new ChatResponse(List.of(generation));
 		});

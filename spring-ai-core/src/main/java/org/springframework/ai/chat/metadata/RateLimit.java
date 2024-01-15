@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.metadata;
+package org.springframework.ai.chat.metadata;
 
 import java.time.Duration;
 

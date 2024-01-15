@@ -14,42 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.SystemMessage;
-import org.springframework.core.io.Resource;
+import org.springframework.ai.chat.messages.AssistantMessage;
 
 import java.util.Map;
 
-public class SystemPromptTemplate extends PromptTemplate {
+public class AssistantPromptTemplate extends PromptTemplate {
 
-	public SystemPromptTemplate(String template) {
+	public AssistantPromptTemplate(String template) {
 		super(template);
-	}
-
-	public SystemPromptTemplate(Resource resource) {
-		super(resource);
-	}
-
-	@Override
-	public Message createMessage() {
-		return new SystemMessage(render());
-	}
-
-	@Override
-	public Message createMessage(Map<String, Object> model) {
-		return new SystemMessage(render(model));
 	}
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new SystemMessage(render()));
+		return new Prompt(new AssistantMessage(render()));
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new SystemMessage(render(model)));
+		return new Prompt(new AssistantMessage(render(model)));
 	}
 
 }

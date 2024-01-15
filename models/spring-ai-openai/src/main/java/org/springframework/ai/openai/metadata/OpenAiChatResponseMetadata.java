@@ -16,9 +16,9 @@
 
 package org.springframework.ai.openai.metadata;
 
-import org.springframework.ai.metadata.ChatResponseMetadata;
-import org.springframework.ai.metadata.RateLimit;
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -28,8 +28,8 @@ import org.springframework.util.Assert;
  *
  * @author John Blum
  * @see ChatResponseMetadata
- * @see org.springframework.ai.metadata.RateLimit
- * @see org.springframework.ai.metadata.Usage
+ * @see RateLimit
+ * @see Usage
  * @since 0.7.0
  */
 public class OpenAiChatResponseMetadata implements ChatResponseMetadata {

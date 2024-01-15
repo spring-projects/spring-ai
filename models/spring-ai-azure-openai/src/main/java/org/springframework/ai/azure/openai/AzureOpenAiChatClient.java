@@ -32,6 +32,7 @@ import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
@@ -39,11 +40,10 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
 
 /**
@@ -238,8 +238,8 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	}
 
-	private GenerationMetadata generateChoiceMetadata(ChatChoice choice) {
-		return GenerationMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
+	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {
+		return ChatGenerationMetadata.from(String.valueOf(choice.getFinishReason()), choice.getContentFilterResults());
 	}
 
 	private PromptMetadata generatePromptMetadata(ChatCompletions chatCompletions) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.metadata;
+package org.springframework.ai.chat.metadata;
 
 import java.util.Arrays;
 import java.util.Optional;

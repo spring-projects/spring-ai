@@ -28,12 +28,13 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.ChatResponseMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.ai.metadata.RateLimit;
-import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -82,7 +83,8 @@ class AzureOpenAiChatClientMetadataTests {
 		Generation generation = response.getGeneration();
 
 		assertThat(generation).isNotNull()
-			.extracting(Generation::getContent)
+			.extracting(Generation::getOutput)
+			.extracting(AssistantMessage::getContent)
 			.isEqualTo("No! You will actually land with a resounding thud. This is the way!");
 
 		assertPromptMetadata(response);
@@ -122,11 +124,11 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertChoiceMetadata(Generation generation) {
 
-		GenerationMetadata generationMetadata = generation.getGenerationMetadata();
+		ChatGenerationMetadata chatGenerationMetadata = generation.getGenerationMetadata();
 
-		assertThat(generationMetadata).isNotNull();
-		assertThat(generationMetadata.getFinishReason()).isEqualTo("stop");
-		assertContentFilterResults(generationMetadata.getContentFilterMetadata());
+		assertThat(chatGenerationMetadata).isNotNull();
+		assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
+		assertContentFilterResults(chatGenerationMetadata.getContentFilterMetadata());
 	}
 
 	private void assertContentFilterResultsForPrompt(ContentFilterResultDetailsForPrompt contentFilterResultForPrompt,

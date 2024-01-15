@@ -19,8 +19,8 @@ package org.springframework.ai.bedrock;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.MessageType;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 
 /**
  * Converts a list of messages to a prompt for bedrock models.

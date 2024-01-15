@@ -22,15 +22,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.ChatResponseMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.ai.metadata.RateLimit;
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.metadata.*;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -115,10 +111,10 @@ public class OpenAiChatClientWithChatGenerativeMetadataTests {
 		assertThat(promptMetadata).isEmpty();
 
 		response.getGenerations().forEach(generation -> {
-			GenerationMetadata generationMetadata = generation.getGenerationMetadata();
-			assertThat(generationMetadata).isNotNull();
-			assertThat(generationMetadata.getFinishReason()).isEqualTo("stop");
-			assertThat(generationMetadata.<Object>getContentFilterMetadata()).isNull();
+			ChatGenerationMetadata chatGenerationMetadata = generation.getGenerationMetadata();
+			assertThat(chatGenerationMetadata).isNotNull();
+			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
+			assertThat(chatGenerationMetadata.<Object>getContentFilterMetadata()).isNull();
 		});
 	}
 

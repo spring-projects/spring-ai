@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
-public class FunctionPromptTemplate extends PromptTemplate {
+import java.util.Map;
 
-	private String name;
+public interface PromptTemplateActions extends PromptTemplateStringActions {
 
-	public FunctionPromptTemplate(String template) {
-		super(template);
-	}
+	Prompt create();
+
+	Prompt create(Map<String, Object> model);
 
 }

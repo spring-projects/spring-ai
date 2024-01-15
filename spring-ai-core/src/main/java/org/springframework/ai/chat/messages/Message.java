@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.messages;
 
 import java.util.Map;
 
-public interface PromptTemplateActions extends PromptTemplateStringActions {
+public interface Message {
 
-	Prompt create();
+	String getContent();
 
-	Prompt create(Map<String, Object> model);
+	Map<String, Object> getProperties();
+
+	MessageType getMessageType();
 
 }

@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.metadata;
+package org.springframework.ai.chat.messages;
 
-/**
- * Abstract base class used as a foundation for implementing {@link Usage}.
- *
- * @author John Blum
- * @since 0.7.0
- */
-public abstract class AbstractUsage implements Usage {
+import java.util.Map;
 
-	@Override
-	public Long getPromptTokens() {
-		return 0L;
+public class ChatMessage extends AbstractMessage {
+
+	public ChatMessage(String role, String content) {
+		super(MessageType.valueOf(role), content);
 	}
 
-	@Override
-	public Long getGenerationTokens() {
-		return 0L;
+	public ChatMessage(String role, String content, Map<String, Object> properties) {
+		super(MessageType.valueOf(role), content, properties);
+	}
+
+	public ChatMessage(MessageType messageType, String content) {
+		super(messageType, content);
+	}
+
+	public ChatMessage(MessageType messageType, String content, Map<String, Object> properties) {
+		super(messageType, content, properties);
 	}
 
 }

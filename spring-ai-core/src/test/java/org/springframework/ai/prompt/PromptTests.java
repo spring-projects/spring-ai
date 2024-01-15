@@ -18,6 +18,9 @@ package org.springframework.ai.prompt;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import java.util.HashMap;
 import java.util.Map;

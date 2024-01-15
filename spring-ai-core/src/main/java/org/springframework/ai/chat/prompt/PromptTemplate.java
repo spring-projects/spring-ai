@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.springframework.ai.parser.OutputParser;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 import org.stringtemplate.v4.ST;
@@ -189,7 +189,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		return new Prompt(render(model));
 	}
 
-	protected Set<String> getInputVariables() {
+	public Set<String> getInputVariables() {
 		TokenStream tokens = this.st.impl.tokens;
 		return IntStream.range(0, tokens.range())
 			.mapToObj(tokens::get)

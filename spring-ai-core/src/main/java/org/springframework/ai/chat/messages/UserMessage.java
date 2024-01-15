@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt.messages;
+package org.springframework.ai.chat.messages;
 
-import java.util.Map;
+import org.springframework.core.io.Resource;
 
-public class FunctionMessage extends AbstractMessage {
+/**
+ * A message of the type 'user' passed as input Messages with the user role are from the
+ * end-user or developer. They represent questions, prompts, or any input that you want
+ * the generative to respond to.
+ */
+public class UserMessage extends AbstractMessage {
 
-	public FunctionMessage(String content) {
-		super(MessageType.SYSTEM, content);
+	public UserMessage(String message) {
+		super(MessageType.USER, message);
 	}
 
-	public FunctionMessage(String content, Map<String, Object> properties) {
-		super(MessageType.SYSTEM, content, properties);
+	public UserMessage(Resource resource) {
+		super(MessageType.USER, resource);
 	}
 
 	@Override
 	public String toString() {
-		return "FunctionMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+		return "UserMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
 				+ messageType + '}';
 	}
 

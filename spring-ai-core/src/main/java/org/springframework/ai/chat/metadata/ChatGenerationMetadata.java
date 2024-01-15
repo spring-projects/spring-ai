@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.metadata;
+package org.springframework.ai.chat.metadata;
 
+import org.springframework.ai.generative.GenerationMetadata;
 import org.springframework.lang.Nullable;
 
 /**
@@ -25,21 +26,21 @@ import org.springframework.lang.Nullable;
  * @author John Blum
  * @since 0.7.0
  */
-public interface GenerationMetadata {
+public interface ChatGenerationMetadata extends GenerationMetadata {
 
-	GenerationMetadata NULL = GenerationMetadata.from(null, null);
+	ChatGenerationMetadata NULL = ChatGenerationMetadata.from(null, null);
 
 	/**
-	 * Factory method used to construct a new {@link GenerationMetadata} from the given
-	 * {@link String finish reason} and content filter metadata.
+	 * Factory method used to construct a new {@link ChatGenerationMetadata} from the
+	 * given {@link String finish reason} and content filter metadata.
 	 * @param finishReason {@link String} contain the reason for the choice completion.
 	 * @param contentFilterMetadata underlying AI provider metadata for filtering applied
 	 * to generation content.
-	 * @return a new {@link GenerationMetadata} from the given {@link String finish
+	 * @return a new {@link ChatGenerationMetadata} from the given {@link String finish
 	 * reason} and content filter metadata.
 	 */
-	static GenerationMetadata from(String finishReason, Object contentFilterMetadata) {
-		return new GenerationMetadata() {
+	static ChatGenerationMetadata from(String finishReason, Object contentFilterMetadata) {
+		return new ChatGenerationMetadata() {
 
 			@Override
 			@SuppressWarnings("unchecked")

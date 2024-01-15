@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
-import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.chat.messages.Message;
 
 import java.util.ArrayList;
 import java.util.List;

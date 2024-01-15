@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
@@ -30,10 +31,10 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperti
 import org.springframework.ai.bedrock.titan.BedrockTitanChatClient;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -71,7 +72,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 		contextRunner.run(context -> {
 			BedrockTitanChatClient chatClient = context.getBean(BedrockTitanChatClient.class);
 			ChatResponse response = chatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+			assertThat(response.getGeneration().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -89,7 +90,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 			String stitchedResponseContent = responses.stream()
 				.map(ChatResponse::getGenerations)
 				.flatMap(List::stream)
-				.map(Generation::getContent)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");

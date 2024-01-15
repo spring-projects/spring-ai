@@ -18,8 +18,7 @@ package org.springframework.ai.chat;
 import java.util.List;
 
 import org.springframework.ai.generative.GenerativeResponse;
-import org.springframework.ai.metadata.ChatResponseMetadata;
-import org.springframework.ai.prompt.messages.Message;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.

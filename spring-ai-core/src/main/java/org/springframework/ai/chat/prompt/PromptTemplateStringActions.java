@@ -1,4 +1,4 @@
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
 import java.util.Map;
 

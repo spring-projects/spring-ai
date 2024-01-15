@@ -14,46 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.metadata;
-
-import java.time.Duration;
+package org.springframework.ai.chat.metadata;
 
 /**
- * Abstract base class used as a foundation for implementing {@link RateLimit}.
+ * Abstract base class used as a foundation for implementing {@link Usage}.
  *
  * @author John Blum
  * @since 0.7.0
  */
-public abstract class AbstractRateLimit implements RateLimit {
+public abstract class AbstractUsage implements Usage {
 
 	@Override
-	public Long getRequestsLimit() {
+	public Long getPromptTokens() {
 		return 0L;
 	}
 
 	@Override
-	public Long getRequestsRemaining() {
+	public Long getGenerationTokens() {
 		return 0L;
-	}
-
-	@Override
-	public Duration getRequestsReset() {
-		return Duration.ZERO;
-	}
-
-	@Override
-	public Long getTokensLimit() {
-		return 0L;
-	}
-
-	@Override
-	public Long getTokensRemaining() {
-		return 0L;
-	}
-
-	@Override
-	public Duration getTokensReset() {
-		return Duration.ZERO;
 	}
 
 }

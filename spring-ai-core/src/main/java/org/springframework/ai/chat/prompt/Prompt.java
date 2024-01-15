@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.prompt;
+package org.springframework.ai.chat.prompt;
 
 import org.springframework.ai.generative.GenerativePrompt;
 import org.springframework.ai.generative.Options;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.Collections;
 import java.util.List;

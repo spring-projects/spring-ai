@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.titan;
 import java.util.List;
 
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -29,9 +30,8 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * @author Christian Tzolov
@@ -92,12 +92,12 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
 				String completionReason = chunk.completionReason().name();
 				generation = generation.withGenerationMetadata(
-						GenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
+						ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
 				String completionReason = chunk.completionReason().name();
 				generation = generation
-					.withGenerationMetadata(GenerationMetadata.from(completionReason, extractUsage(chunk)));
+					.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
 
 			}
 			return new ChatResponse(List.of(generation));
