@@ -48,8 +48,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * @author Christian Tzolov
  * @since 0.7.0
  */
-@RestClientTest(OpenAiChatClientWithChatGenerativeMetadataTests.Config.class)
-public class OpenAiChatClientWithChatGenerativeMetadataTests {
+@RestClientTest(OpenAiChatClientWithChatResponseMetadataTests.Config.class)
+public class OpenAiChatClientWithChatResponseMetadataTests {
 
 	private static String TEST_API_KEY = "sk-1234567890";
 
@@ -111,7 +111,7 @@ public class OpenAiChatClientWithChatGenerativeMetadataTests {
 		assertThat(promptMetadata).isEmpty();
 
 		response.getResults().forEach(generation -> {
-			ChatGenerationMetadata chatGenerationMetadata = generation.getGenerationMetadata();
+			ChatGenerationMetadata chatGenerationMetadata = generation.getResultMetadata();
 			assertThat(chatGenerationMetadata).isNotNull();
 			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
 			assertThat(chatGenerationMetadata.<Object>getContentFilterMetadata()).isNull();

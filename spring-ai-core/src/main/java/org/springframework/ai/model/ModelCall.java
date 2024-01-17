@@ -14,6 +14,13 @@ package org.springframework.ai.model;
  */
 public interface ModelCall<TReq extends ModelRequest<?>, TRes extends ModelResponse<?>> {
 
+	/**
+	 * Executes a method call to the AI model.
+	 * @param request the request object to be sent to the AI model
+	 * @param <TReq> the generic type of the request object
+	 * @param <TRes> the generic type of the response from the AI model
+	 * @return the response from the AI model
+	 */
 	TRes call(TReq request);
 
 }

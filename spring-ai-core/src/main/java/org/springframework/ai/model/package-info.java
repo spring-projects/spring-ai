@@ -1,13 +1,11 @@
 /**
- * This package contains the core domain for the AI generative models. It includes
- * interfaces that define the aggregate root, entities, and value objects central to the
- * domain-driven design of the generative AI system.
+ * Provides a set of interfaces and classes for a generic API designed to interact with
+ * various AI models. This package includes interfaces for handling AI model calls,
+ * requests, responses, results, and associated metadata. It is designed to offer a
+ * flexible and adaptable framework for interacting with different types of AI models,
+ * abstracting the complexities involved in model invocation and result processing. The
+ * use of generics enhances the API's capability to work with a wide range of models,
+ * ensuring a broad applicability across diverse AI scenarios.
  *
- * The ubiquitous language of AI generation is encapsulated within these interfaces,
- * reflecting the core concepts such as ModelCall (Aggregate Root), ModelResult and
- * ModelResponse (Entities), and ResultMetadata and ModelOptions (Value Objects).
- *
- * This package serves as the foundation for implementing various generative AI models,
- * ensuring a consistent and domain-focused approach in line with DDD principles.
  */
 package org.springframework.ai.model;

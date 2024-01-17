@@ -124,7 +124,7 @@ class AzureOpenAiChatClientMetadataTests {
 
 	private void assertChoiceMetadata(Generation generation) {
 
-		ChatGenerationMetadata chatGenerationMetadata = generation.getGenerationMetadata();
+		ChatGenerationMetadata chatGenerationMetadata = generation.getResultMetadata();
 
 		assertThat(chatGenerationMetadata).isNotNull();
 		assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("stop");
