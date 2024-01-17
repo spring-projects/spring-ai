@@ -13,7 +13,7 @@ import java.util.List;
  * @author Mark Pollack
  * @since 0.8.0
  */
-public interface ModelResponse<T> {
+public interface ModelResponse<T extends ModelResult<?>> {
 
 	/**
 	 * Retrieves the result of the AI model.
