@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.*;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.OpenAiImageOptions;
+import org.springframework.ai.openai.api.OpenAiImageOptionsBuilder;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.http.ResponseEntity;
@@ -44,13 +46,11 @@ public class OpenAiImageClient implements ImageClient {
 	@Override
 	public ImageResponse call(ImagePrompt prompt) {
 		return this.retryTemplate.execute(ctx -> {
-			ImagePrompt promptToUse = createUpdatedPrompt(prompt);
-			ImageModelOptions promptToUseOptions = promptToUse.getOptions();
+			OpenAiImageOptions imageOptionsToUse = updateImageOptions(prompt.getOptions());
 			OpenAiImageApi.OpenAiImageRequest openAiImageRequest = new OpenAiImageApi.OpenAiImageRequest(
-					promptToUse.getInstructions(), promptToUseOptions.getModel(), promptToUseOptions.getN(),
-					promptToUseOptions.getQuality(), promptToUseOptions.getSize(),
-					promptToUseOptions.getResponseFormat(), promptToUseOptions.getStyle(),
-					promptToUseOptions.getUser());
+					prompt.getInstructions(), imageOptionsToUse.getModel(), imageOptionsToUse.getN(),
+					imageOptionsToUse.getQuality(), imageOptionsToUse.getWidth() + "x" + imageOptionsToUse.getHeight(),
+					imageOptionsToUse.getResponseFormat(), imageOptionsToUse.getStyle(), imageOptionsToUse.getUser());
 			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.openAiImageApi
 				.createImage(openAiImageRequest);
 			OpenAiImageApi.OpenAiImageResponse imageApiResponse = imageResponseEntity.getBody();
@@ -70,34 +70,41 @@ public class OpenAiImageClient implements ImageClient {
 		});
 	}
 
-	private ImagePrompt createUpdatedPrompt(ImagePrompt prompt) {
-		ImageModelOptions runtimeImageModelOptions = prompt.getOptions();
-		ImageOptionsBuilder imageOptionsBuilder = ImageOptionsBuilder.builder();
-		if (runtimeImageModelOptions != null) {
-			if (runtimeImageModelOptions.getN() != null) {
-				imageOptionsBuilder.withN(runtimeImageModelOptions.getN());
+	private OpenAiImageOptions updateImageOptions(ImageOptions runtimeImageOptions) {
+		OpenAiImageOptionsBuilder openAiImageOptionsBuilder = OpenAiImageOptionsBuilder.builder();
+		if (runtimeImageOptions != null) {
+			// Handle portable image options
+			if (runtimeImageOptions.getN() != null) {
+				openAiImageOptionsBuilder.withN(runtimeImageOptions.getN());
 			}
-			if (runtimeImageModelOptions.getModel() != null) {
-				imageOptionsBuilder.withModel(runtimeImageModelOptions.getModel());
+			if (runtimeImageOptions.getModel() != null) {
+				openAiImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
 			}
-			if (runtimeImageModelOptions.getQuality() != null) {
-				imageOptionsBuilder.withQuality(runtimeImageModelOptions.getQuality());
+			if (runtimeImageOptions.getResponseFormat() != null) {
+				openAiImageOptionsBuilder.withResponseFormat(runtimeImageOptions.getResponseFormat());
 			}
-			if (runtimeImageModelOptions.getResponseFormat() != null) {
-				imageOptionsBuilder.withResponseFormat(runtimeImageModelOptions.getResponseFormat());
+			if (runtimeImageOptions.getWidth() != null) {
+				openAiImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
 			}
-			if (runtimeImageModelOptions.getSize() != null) {
-				imageOptionsBuilder.withSize(runtimeImageModelOptions.getSize());
+			if (runtimeImageOptions.getHeight() != null) {
+				openAiImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
 			}
-			if (runtimeImageModelOptions.getStyle() != null) {
-				imageOptionsBuilder.withStyle(runtimeImageModelOptions.getStyle());
-			}
-			if (runtimeImageModelOptions.getUser() != null) {
-				imageOptionsBuilder.withUser(runtimeImageModelOptions.getUser());
+			// Handle OpenAI specific image options
+			if (runtimeImageOptions instanceof OpenAiImageOptions) {
+				OpenAiImageOptions runtimeOpenAiImageOptions = (OpenAiImageOptions) runtimeImageOptions;
+				if (runtimeOpenAiImageOptions.getQuality() != null) {
+					openAiImageOptionsBuilder.withQuality(runtimeOpenAiImageOptions.getQuality());
+				}
+				if (runtimeOpenAiImageOptions.getStyle() != null) {
+					openAiImageOptionsBuilder.withStyle(runtimeOpenAiImageOptions.getStyle());
+				}
+				if (runtimeOpenAiImageOptions.getUser() != null) {
+					openAiImageOptionsBuilder.withUser(runtimeOpenAiImageOptions.getUser());
+				}
 			}
 		}
-		ImageModelOptions updatedImageModelOptions = imageOptionsBuilder.build();
-		return new ImagePrompt(prompt.getInstructions(), updatedImageModelOptions);
+		OpenAiImageOptions updatedOpenAiImageOptions = openAiImageOptionsBuilder.build();
+		return updatedOpenAiImageOptions;
 	}
 
 }

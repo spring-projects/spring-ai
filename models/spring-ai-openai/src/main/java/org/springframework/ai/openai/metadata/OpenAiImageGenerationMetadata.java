@@ -12,8 +12,7 @@ public class OpenAiImageGenerationMetadata implements ImageGenerationMetadata {
 		this.revisedPrompt = revisedPrompt;
 	}
 
-	@Override
-	public String revisedPrompt() {
+	public String getRevisedPrompt() {
 		return revisedPrompt;
 	}
 

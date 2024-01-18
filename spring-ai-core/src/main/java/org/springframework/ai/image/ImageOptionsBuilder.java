@@ -2,21 +2,17 @@ package org.springframework.ai.image;
 
 public class ImageOptionsBuilder {
 
-	private class ImageModelOptionsImpl implements ImageModelOptions {
+	private class ImageModelOptionsImpl implements ImageOptions {
 
 		private Integer n;
 
 		private String model;
 
-		private String quality;
+		private Integer width;
+
+		private Integer height;
 
 		private String responseFormat;
-
-		private String size;
-
-		private String style;
-
-		private String user;
 
 		@Override
 		public Integer getN() {
@@ -37,15 +33,6 @@ public class ImageOptionsBuilder {
 		}
 
 		@Override
-		public String getQuality() {
-			return quality;
-		}
-
-		public void setQuality(String quality) {
-			this.quality = quality;
-		}
-
-		@Override
 		public String getResponseFormat() {
 			return responseFormat;
 		}
@@ -55,30 +42,21 @@ public class ImageOptionsBuilder {
 		}
 
 		@Override
-		public String getSize() {
-			return size;
+		public Integer getWidth() {
+			return width;
 		}
 
-		public void setSize(String size) {
-			this.size = size;
-		}
-
-		@Override
-		public String getStyle() {
-			return style;
-		}
-
-		public void setStyle(String style) {
-			this.style = style;
+		public void setWidth(Integer width) {
+			this.width = width;
 		}
 
 		@Override
-		public String getUser() {
-			return user;
+		public Integer getHeight() {
+			return height;
 		}
 
-		public void setUser(String user) {
-			this.user = user;
+		public void setHeight(Integer height) {
+			this.height = height;
 		}
 
 	}
@@ -103,32 +81,22 @@ public class ImageOptionsBuilder {
 		return this;
 	}
 
-	public ImageOptionsBuilder withQuality(String quality) {
-		options.setQuality(quality);
-		return this;
-	}
-
 	public ImageOptionsBuilder withResponseFormat(String responseFormat) {
 		options.setResponseFormat(responseFormat);
 		return this;
 	}
 
-	public ImageOptionsBuilder withSize(String size) {
-		options.setSize(size);
+	public ImageOptionsBuilder withWidth(Integer width) {
+		options.setWidth(width);
 		return this;
 	}
 
-	public ImageOptionsBuilder withStyle(String style) {
-		options.setStyle(style);
+	public ImageOptionsBuilder withHeight(Integer height) {
+		options.setHeight(height);
 		return this;
 	}
 
-	public ImageOptionsBuilder withUser(String user) {
-		options.setUser(user);
-		return this;
-	}
-
-	public ImageModelOptions build() {
+	public ImageOptions build() {
 		return options;
 	}
 

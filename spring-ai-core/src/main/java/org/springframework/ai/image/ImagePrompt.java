@@ -8,13 +8,13 @@ public class ImagePrompt implements ModelRequest<String> {
 
 	private String prompt;
 
-	private ImageModelOptions imageModelOptions;
+	private ImageOptions imageModelOptions;
 
 	public ImagePrompt(String prompt) {
 		this.prompt = prompt;
 	}
 
-	public ImagePrompt(String prompt, ImageModelOptions imageModelOptions) {
+	public ImagePrompt(String prompt, ImageOptions imageModelOptions) {
 		this.prompt = prompt;
 		this.imageModelOptions = imageModelOptions;
 	}
@@ -25,7 +25,7 @@ public class ImagePrompt implements ModelRequest<String> {
 	}
 
 	@Override
-	public ImageModelOptions getOptions() {
+	public ImageOptions getOptions() {
 		return imageModelOptions;
 	}
 
