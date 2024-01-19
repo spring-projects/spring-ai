@@ -96,7 +96,7 @@ public class StabilityAiApi {
 			@JsonProperty("height") Integer height, @JsonProperty("width") Integer width,
 			@JsonProperty("cfg_scale") Float cfgScale, @JsonProperty("clip_guidance_preset") String clipGuidancePreset,
 			@JsonProperty("sampler") String sampler, @JsonProperty("samples") Integer samples,
-			@JsonProperty("seed") Integer seed, @JsonProperty("steps") Integer steps,
+			@JsonProperty("seed") Long seed, @JsonProperty("steps") Integer steps,
 			@JsonProperty("style_present") String stylePreset) {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -124,7 +124,7 @@ public class StabilityAiApi {
 
 			Integer samples;
 
-			Integer seed;
+			Long seed;
 
 			Integer steps;
 
@@ -169,7 +169,7 @@ public class StabilityAiApi {
 				return this;
 			}
 
-			public Builder withSeed(Integer seed) {
+			public Builder withSeed(Long seed) {
 				this.seed = seed;
 				return this;
 			}
@@ -195,7 +195,7 @@ public class StabilityAiApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record GenerateImageResponse(@JsonProperty("result") String result,
 			@JsonProperty("artifacts") List<Artifacts> artifacts) {
-		public record Artifacts(@JsonProperty("seed") int seed, @JsonProperty("base64") String base64,
+		public record Artifacts(@JsonProperty("seed") long seed, @JsonProperty("base64") String base64,
 				@JsonProperty("finishReason") String finishReason) {
 		}
 	}

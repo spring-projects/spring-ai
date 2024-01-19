@@ -3,10 +3,8 @@ package org.springframework.ai.openai;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.*;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiImageApi;
-import org.springframework.ai.openai.api.OpenAiImageOptions;
-import org.springframework.ai.openai.api.OpenAiImageOptionsBuilder;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.openai.api.*;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +18,7 @@ public class OpenAiImageClient implements ImageClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private String model = OpenAiImageApi.DEFAULT_IMAGE_MODEL;
+	private OpenAiImageOptions options;
 
 	private final OpenAiImageApi openAiImageApi;
 
@@ -35,39 +33,57 @@ public class OpenAiImageClient implements ImageClient {
 		this.openAiImageApi = openAiImageApi;
 	}
 
-	public String getModel() {
-		return model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
+	public OpenAiImageOptions getOptions() {
+		return options;
 	}
 
 	@Override
-	public ImageResponse call(ImagePrompt prompt) {
+	public ImageResponse call(ImagePrompt imagePrompt) {
 		return this.retryTemplate.execute(ctx -> {
-			OpenAiImageOptions imageOptionsToUse = updateImageOptions(prompt.getOptions());
-			OpenAiImageApi.OpenAiImageRequest openAiImageRequest = new OpenAiImageApi.OpenAiImageRequest(
-					prompt.getInstructions(), imageOptionsToUse.getModel(), imageOptionsToUse.getN(),
-					imageOptionsToUse.getQuality(), imageOptionsToUse.getWidth() + "x" + imageOptionsToUse.getHeight(),
+			ImageOptions runtimeOptions = imagePrompt.getOptions();
+			OpenAiImageOptions imageOptionsToUse = updateImageOptions(imagePrompt.getOptions());
+
+			// Merge the runtime options passed via the prompt with the
+			// StabilityAiImageClient
+			// options configured via Autoconfiguration.
+			// Runtime options overwrite StabilityAiImageClient options
+			OpenAiImageOptions optionsToUse = ModelOptionsUtils.merge(runtimeOptions, this.options,
+					OpenAiImageOptionsImpl.class);
+
+			// Copy the org.springframework.ai.model derived ImagePrompt and ImageOptions
+			// data
+			// types to the data types used in OpenAiImageApi
+			String instructions = imagePrompt.getInstructions().get(0).getText();
+			OpenAiImageApi.OpenAiImageRequest openAiImageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
+					imageOptionsToUse.getModel(), imageOptionsToUse.getN(), imageOptionsToUse.getQuality(),
+					imageOptionsToUse.getWidth() + "x" + imageOptionsToUse.getHeight(),
 					imageOptionsToUse.getResponseFormat(), imageOptionsToUse.getStyle(), imageOptionsToUse.getUser());
+
+			// Make the request
 			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.openAiImageApi
 				.createImage(openAiImageRequest);
-			OpenAiImageApi.OpenAiImageResponse imageApiResponse = imageResponseEntity.getBody();
-			if (imageApiResponse == null) {
-				logger.warn("No image response returned for request: {}", openAiImageRequest);
-				return new ImageResponse(List.of());
-			}
 
-			List<ImageGeneration> imageGenerationList = imageApiResponse.data().stream().map(entry -> {
-				return new ImageGeneration(new Image(entry.url(), entry.b64Json()),
-						new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
-			}).toList();
-
-			ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(imageApiResponse);
-			return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
+			// Convert to org.springframework.ai.model derived ImageResponse data type
+			return convertResponse(imageResponseEntity, openAiImageRequest);
 
 		});
+	}
+
+	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,
+			OpenAiImageApi.OpenAiImageRequest openAiImageRequest) {
+		OpenAiImageApi.OpenAiImageResponse imageApiResponse = imageResponseEntity.getBody();
+		if (imageApiResponse == null) {
+			logger.warn("No image response returned for request: {}", openAiImageRequest);
+			return new ImageResponse(List.of());
+		}
+
+		List<ImageGeneration> imageGenerationList = imageApiResponse.data().stream().map(entry -> {
+			return new ImageGeneration(new Image(entry.url(), entry.b64Json()),
+					new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
+		}).toList();
+
+		ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(imageApiResponse);
+		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
 	}
 
 	private OpenAiImageOptions updateImageOptions(ImageOptions runtimeImageOptions) {

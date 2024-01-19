@@ -20,7 +20,7 @@ public class StabilityAiImageOptionsImpl implements StabilityAiImageOptions {
 
 	private Integer samples;
 
-	private Integer seed;
+	private Long seed;
 
 	private Integer steps;
 
@@ -111,11 +111,11 @@ public class StabilityAiImageOptionsImpl implements StabilityAiImageOptions {
 	}
 
 	@Override
-	public Integer getSeed() {
+	public Long getSeed() {
 		return this.seed;
 	}
 
-	public void setSeed(Integer seed) {
+	public void setSeed(Long seed) {
 		this.seed = seed;
 	}
 

@@ -22,15 +22,14 @@ public class StabilityAiApiIT {
 
 		List<StabilityAiApi.GenerateImageRequest.TextPrompts> textPrompts = List
 			.of(new StabilityAiApi.GenerateImageRequest.TextPrompts(
-					"A light cream colored mini golden doodle holding a sign that says 'I want to go with you on vacation!'",
-					0.5f));
+					"A light cream colored mini golden doodle holding a sign that says 'Heading to BARCADE !'", 0.5f));
 		var builder = StabilityAiApi.GenerateImageRequest.builder()
 			.withTextPrompts(textPrompts)
 			.withHeight(1024)
 			.withWidth(1024)
 			.withCfgScale(7f)
 			.withSamples(1)
-			.withSeed(123)
+			.withSeed(123L)
 			.withSteps(30)
 			.withStylePreset("photographic");
 		StabilityAiApi.GenerateImageRequest request = builder.build();
@@ -38,7 +37,7 @@ public class StabilityAiApiIT {
 
 		assertThat(response).isNotNull();
 		List<StabilityAiApi.GenerateImageResponse.Artifacts> artifacts = response.artifacts();
-		// writeToFile(artifacts);
+		writeToFile(artifacts);
 		assertThat(artifacts).hasSize(1);
 		var firstArtifact = artifacts.get(0);
 		assertThat(firstArtifact.base64()).isNotEmpty();

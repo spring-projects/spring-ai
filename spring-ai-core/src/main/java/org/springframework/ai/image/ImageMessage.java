@@ -1,18 +1,18 @@
-package org.springframework.ai.stabilityai;
+package org.springframework.ai.image;
 
 import java.util.Objects;
 
-public class StabilityAiImageMessage {
+public class ImageMessage {
 
 	private String text;
 
 	private Float weight;
 
-	public StabilityAiImageMessage(String text) {
+	public ImageMessage(String text) {
 		this.text = text;
 	}
 
-	public StabilityAiImageMessage(String text, Float weight) {
+	public ImageMessage(String text, Float weight) {
 		this.text = text;
 		this.weight = weight;
 	}
@@ -27,14 +27,14 @@ public class StabilityAiImageMessage {
 
 	@Override
 	public String toString() {
-		return "StabilityAiImageMessage{" + "text='" + text + '\'' + ", weight=" + weight + '}';
+		return "mageMessage{" + "text='" + text + '\'' + ", weight=" + weight + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (!(o instanceof StabilityAiImageMessage that))
+		if (!(o instanceof ImageMessage that))
 			return false;
 		return Objects.equals(text, that.text) && Objects.equals(weight, that.weight);
 	}

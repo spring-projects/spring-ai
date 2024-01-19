@@ -19,8 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "STABILITYAI_API_KEY", matches = ".*")
 public class StabilityAiImageClientIT {
 
-	StabilityAiApi stabilityAiApi = new StabilityAiApi(System.getenv("STABILITYAI_API_KEY"));
-
 	@Autowired
 	protected ImageClient stabilityAiImageClient;
 
@@ -36,7 +34,7 @@ public class StabilityAiImageClientIT {
 
 		assertThat(image.getB64Json()).isNotEmpty();
 
-		// writeFile(image);
+		writeFile(image);
 	}
 
 	private static void writeFile(Image image) throws IOException {

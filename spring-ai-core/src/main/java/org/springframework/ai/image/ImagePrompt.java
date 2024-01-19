@@ -2,26 +2,40 @@ package org.springframework.ai.image;
 
 import org.springframework.ai.model.ModelRequest;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
-public class ImagePrompt implements ModelRequest<String> {
+public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
-	private String prompt;
+	private final List<ImageMessage> messages;
 
 	private ImageOptions imageModelOptions;
 
-	public ImagePrompt(String prompt) {
-		this.prompt = prompt;
+	public ImagePrompt(List<ImageMessage> messages) {
+		this.messages = messages;
 	}
 
-	public ImagePrompt(String prompt, ImageOptions imageModelOptions) {
-		this.prompt = prompt;
+	public ImagePrompt(List<ImageMessage> messages, ImageOptions imageModelOptions) {
+		this.messages = messages;
 		this.imageModelOptions = imageModelOptions;
 	}
 
+	public ImagePrompt(ImageMessage imageMessage, ImageOptions imageOptions) {
+		this(Collections.singletonList(imageMessage), imageOptions);
+	}
+
+	public ImagePrompt(String instructions, ImageOptions imageOptions) {
+		this(new ImageMessage(instructions), imageOptions);
+	}
+
+	public ImagePrompt(String instructions) {
+		this(new ImageMessage(instructions), ImageOptionsBuilder.builder().build());
+	}
+
 	@Override
-	public String getInstructions() {
-		return prompt;
+	public List<ImageMessage> getInstructions() {
+		return messages;
 	}
 
 	@Override
@@ -31,7 +45,7 @@ public class ImagePrompt implements ModelRequest<String> {
 
 	@Override
 	public String toString() {
-		return "ImagePrompt{" + "prompt='" + prompt + '\'' + ", imageModelOptions=" + imageModelOptions + '}';
+		return "NewImagePrompt{" + "messages=" + messages + ", imageModelOptions=" + imageModelOptions + '}';
 	}
 
 	@Override
@@ -40,12 +54,12 @@ public class ImagePrompt implements ModelRequest<String> {
 			return true;
 		if (!(o instanceof ImagePrompt that))
 			return false;
-		return Objects.equals(prompt, that.prompt) && Objects.equals(imageModelOptions, that.imageModelOptions);
+		return Objects.equals(messages, that.messages) && Objects.equals(imageModelOptions, that.imageModelOptions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(prompt, imageModelOptions);
+		return Objects.hash(messages, imageModelOptions);
 	}
 
 }

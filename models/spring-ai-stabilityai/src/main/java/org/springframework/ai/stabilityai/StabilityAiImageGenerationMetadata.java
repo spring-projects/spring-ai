@@ -8,9 +8,9 @@ public class StabilityAiImageGenerationMetadata implements ImageGenerationMetada
 
 	private String finishReason;
 
-	private Integer seed;
+	private Long seed;
 
-	public StabilityAiImageGenerationMetadata(String finishReason, Integer seed) {
+	public StabilityAiImageGenerationMetadata(String finishReason, Long seed) {
 		this.finishReason = finishReason;
 		this.seed = seed;
 	}
@@ -19,7 +19,7 @@ public class StabilityAiImageGenerationMetadata implements ImageGenerationMetada
 		return finishReason;
 	}
 
-	public Integer getSeed() {
+	public Long getSeed() {
 		return seed;
 	}
 

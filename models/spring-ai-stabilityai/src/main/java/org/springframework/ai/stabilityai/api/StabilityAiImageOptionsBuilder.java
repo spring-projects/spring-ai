@@ -52,7 +52,7 @@ public class StabilityAiImageOptionsBuilder {
 		return this;
 	}
 
-	public StabilityAiImageOptionsBuilder withSeed(Integer seed) {
+	public StabilityAiImageOptionsBuilder withSeed(Long seed) {
 		options.setSeed(seed);
 		return this;
 	}

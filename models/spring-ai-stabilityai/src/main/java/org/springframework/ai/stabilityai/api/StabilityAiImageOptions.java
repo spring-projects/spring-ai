@@ -12,7 +12,7 @@ public interface StabilityAiImageOptions extends ImageOptions {
 
 	Integer getSamples();
 
-	Integer getSeed();
+	Long getSeed();
 
 	Integer getSteps();
 
