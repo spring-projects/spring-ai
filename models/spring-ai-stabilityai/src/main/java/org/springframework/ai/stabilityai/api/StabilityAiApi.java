@@ -24,26 +24,34 @@ public class StabilityAiApi {
 
 	private final String apiKey;
 
-	private final String generateModel;
+	private final String model;
 
 	/**
 	 * Create a new StabilityAI API.
 	 * @param apiKey StabilityAI apiKey.
 	 */
 	public StabilityAiApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey, DEFAULT_IMAGE_MODEL, RestClient.builder());
+		this(apiKey, DEFAULT_IMAGE_MODEL, DEFAULT_BASE_URL, RestClient.builder());
+	}
+
+	public StabilityAiApi(String apiKey, String model) {
+		this(apiKey, model, DEFAULT_BASE_URL, RestClient.builder());
+	}
+
+	public StabilityAiApi(String apiKey, String model, String baseUrl) {
+		this(apiKey, model, baseUrl, RestClient.builder());
 	}
 
 	/**
 	 * Create a new StabilityAI API.
-	 * @param baseUrl api base URL.
 	 * @param apiKey StabilityAI apiKey.
 	 * @param model StabilityAI model.
+	 * @param baseUrl api base URL.
 	 * @param restClientBuilder RestClient builder.
 	 */
-	public StabilityAiApi(String baseUrl, String apiKey, String model, RestClient.Builder restClientBuilder) {
+	public StabilityAiApi(String apiKey, String model, String baseUrl, RestClient.Builder restClientBuilder) {
 
-		this.generateModel = model;
+		this.model = model;
 		this.apiKey = apiKey;
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
@@ -195,7 +203,7 @@ public class StabilityAiApi {
 	public GenerateImageResponse generateImage(GenerateImageRequest request) {
 		Assert.notNull(request, "The request body can not be null.");
 		return this.restClient.post()
-			.uri("/generation/{model}/text-to-image", this.generateModel)
+			.uri("/generation/{model}/text-to-image", this.model)
 			.body(request)
 			.retrieve()
 			.body(GenerateImageResponse.class);

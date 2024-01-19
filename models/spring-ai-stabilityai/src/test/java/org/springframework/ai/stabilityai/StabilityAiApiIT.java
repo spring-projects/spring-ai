@@ -1,7 +1,8 @@
-package org.springframework.ai.stabilityai.api;
+package org.springframework.ai.stabilityai;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.stabilityai.api.StabilityAiApi;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,6 +41,7 @@ public class StabilityAiApiIT {
 		// writeToFile(artifacts);
 		assertThat(artifacts).hasSize(1);
 		var firstArtifact = artifacts.get(0);
+		assertThat(firstArtifact.base64()).isNotEmpty();
 		assertThat(firstArtifact.seed()).isPositive();
 		assertThat(firstArtifact.finishReason()).isEqualTo("SUCCESS");
 
@@ -47,14 +49,16 @@ public class StabilityAiApiIT {
 
 	private static void writeToFile(List<StabilityAiApi.GenerateImageResponse.Artifacts> artifacts) throws IOException {
 		int counter = 0;
+		String systemTempDir = System.getProperty("java.io.tmpdir");
 		for (StabilityAiApi.GenerateImageResponse.Artifacts artifact : artifacts) {
 			counter++;
 			byte[] imageBytes = Base64.getDecoder().decode(artifact.base64());
-			File file = new File("/tmp/dog" + counter + ".png");
+			String fileName = String.format("dog%d.png", counter);
+			String filePath = systemTempDir + File.separator + fileName;
+			File file = new File(filePath);
 			try (FileOutputStream fos = new FileOutputStream(file)) {
 				fos.write(imageBytes);
 			}
-
 		}
 	}
 
