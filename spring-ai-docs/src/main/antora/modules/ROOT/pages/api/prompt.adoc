@@ -24,7 +24,7 @@ OpenAI have introduced even more structure to prompts by categorizing multiple m
 
 === Prompt
 
-It is common to use the `generate` method of `ChatClient` that takes a `Prompt` instance and returns an `AiResponse`.
+It is common to use the `generate` method of `ChatClient` that takes a `Prompt` instance and returns an `ChatResponse`.
 
 The Prompt class functions as a container for an organized series of Message objects, with each one forming a segment of the overall prompt.
 Every Message embodies a unique role within the prompt, differing in its content and intent.
