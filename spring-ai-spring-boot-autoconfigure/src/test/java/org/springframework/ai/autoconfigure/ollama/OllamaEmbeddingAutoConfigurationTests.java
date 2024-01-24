@@ -33,8 +33,7 @@ public class OllamaEmbeddingAutoConfigurationTests {
 	public void propertiesTest() {
 
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.ollama.base-url=TEST_BASE_URL",
-					"spring.ai.ollama.embedding.generative=MODEL_XYZ",
+			.withPropertyValues("spring.ai.ollama.base-url=TEST_BASE_URL", "spring.ai.ollama.embedding.model=MODEL_XYZ",
 					"spring.ai.ollama.embedding.options.temperature=0.13", "spring.ai.ollama.embedding.options.topK=13")
 			.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class))
 			.run(context -> {
