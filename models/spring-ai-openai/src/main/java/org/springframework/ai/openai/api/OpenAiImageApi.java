@@ -1,10 +1,18 @@
 package org.springframework.ai.openai.api;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.image.ImageResponse;
+
+import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiClientErrorException;
+import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
+import org.springframework.ai.openai.api.OpenAiApi.ResponseError;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,12 +20,6 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
 
 public class OpenAiImageApi {
 
@@ -27,8 +29,6 @@ public class OpenAiImageApi {
 
 	// Assuming RestClient and WebClient are properly defined somewhere
 	private final RestClient restClient;
-
-	private final WebClient webClient;
 
 	private final ObjectMapper objectMapper;
 
@@ -59,8 +59,13 @@ public class OpenAiImageApi {
 			@Override
 			public void handleError(ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
-					throw new OpenAiApi.OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
-							new ObjectMapper().readValue(response.getBody(), OpenAiApi.ResponseError.class)));
+					if (response.getStatusCode().is4xxClientError()) {
+						throw new OpenAiApiClientErrorException(String.format("%s - %s",
+								response.getStatusCode().value(),
+								OpenAiImageApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+					}
+					throw new OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
+							OpenAiImageApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
 				}
 			}
 		};
@@ -69,35 +74,6 @@ public class OpenAiImageApi {
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
-
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
-	}
-
-	public static class OpenAiImageApiException extends RuntimeException {
-
-		public OpenAiImageApiException(String message) {
-			super(message);
-		}
-
-		public OpenAiImageApiException(String message, Throwable cause) {
-			super(message, cause);
-		}
-
-	}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public static class ImageResponseError {
-
-		private final Error error;
-
-		public ImageResponseError(@JsonProperty("error") Error error) {
-			this.error = error;
-		}
-
-		public Error getError() {
-			return error;
-		}
-
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

@@ -32,7 +32,9 @@ public class OpenAiImageClientIT extends AbstractIT {
 
 	@Test
 	void imageAsUrlTest() {
-		ImagePrompt imagePrompt = new ImagePrompt("Create an image of a mini golden doodle dog.");
+		var options = ImageOptionsBuilder.builder().withHeight(256).withWidth(256).build();
+
+		ImagePrompt imagePrompt = new ImagePrompt("Create an image of a mini golden doodle dog.", options);
 
 		ImageResponse imageResponse = openaiImageClient.call(imagePrompt);
 
