@@ -17,7 +17,7 @@
 package org.springframework.ai.autoconfigure.ollama;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.ollama.OllamaEmbeddingClient;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

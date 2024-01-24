@@ -61,8 +61,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.embedding.generative=" + MODEL_NAME,
-				"spring.ai.ollama.base-url=" + baseUrl)
+		.withPropertyValues("spring.ai.ollama.embedding.model=" + MODEL_NAME, "spring.ai.ollama.base-url=" + baseUrl)
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	@Test

@@ -17,7 +17,7 @@
 package org.springframework.ai.autoconfigure.ollama;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.ollama.OllamaChatClient;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -35,7 +35,7 @@ public class OllamaAutoConfigurationTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
-				"spring.ai.ollama.chat.generative=MODEL_XYZ",
+				"spring.ai.ollama.chat.model=MODEL_XYZ",
 				"spring.ai.ollama.chat.options.temperature=0.55",
 				"spring.ai.ollama.chat.options.topP=0.56",
 				"spring.ai.ollama.chat.options.topK=123")

@@ -53,7 +53,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.titan.chat.generative=" + TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
+				"spring.ai.bedrock.titan.chat.model=" + TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
 				"spring.ai.bedrock.titan.chat.temperature=0.5", "spring.ai.bedrock.titan.chat.maxTokens=500")
 		.withConfiguration(AutoConfigurations.of(BedrockTitanChatAutoConfiguration.class));
 
@@ -104,7 +104,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.bedrock.titan.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.titan.chat.generative=MODEL_XYZ",
+					"spring.ai.bedrock.titan.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.titan.chat.temperature=0.55", "spring.ai.bedrock.titan.chat.topP=0.55",
 					"spring.ai.bedrock.titan.chat.stopSequences=END1,END2",
