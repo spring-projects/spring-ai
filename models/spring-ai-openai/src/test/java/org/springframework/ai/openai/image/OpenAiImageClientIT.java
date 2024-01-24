@@ -32,9 +32,12 @@ public class OpenAiImageClientIT extends AbstractIT {
 
 	@Test
 	void imageAsUrlTest() {
-		var options = ImageOptionsBuilder.builder().withHeight(256).withWidth(256).build();
+		var options = ImageOptionsBuilder.builder().withHeight(1024).withWidth(1024).build();
 
-		ImagePrompt imagePrompt = new ImagePrompt("Create an image of a mini golden doodle dog.", options);
+		var instructions = """
+				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
+
+		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
 
 		ImageResponse imageResponse = openaiImageClient.call(imagePrompt);
 
@@ -46,6 +49,7 @@ public class OpenAiImageClientIT extends AbstractIT {
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
 		assertThat(image.getUrl()).isNotEmpty();
+		// System.out.println(image.getUrl());
 		assertThat(image.getB64Json()).isNull();
 
 		var imageGenerationMetadata = generation.getMetadata();
