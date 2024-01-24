@@ -22,6 +22,6 @@ public interface ModelResult<T> {
 	 * Retrieves the metadata associated with the result of an AI model.
 	 * @return the metadata associated with the result
 	 */
-	ResultMetadata getResultMetadata();
+	ResultMetadata getMetadata();
 
 }

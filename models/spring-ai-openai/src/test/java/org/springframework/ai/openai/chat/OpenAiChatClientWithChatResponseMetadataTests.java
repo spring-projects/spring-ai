@@ -111,7 +111,7 @@ public class OpenAiChatClientWithChatResponseMetadataTests {
 		assertThat(promptMetadata).isEmpty();
 
 		response.getResults().forEach(generation -> {
-			ChatGenerationMetadata chatGenerationMetadata = generation.getResultMetadata();
+			ChatGenerationMetadata chatGenerationMetadata = generation.getMetadata();
 			assertThat(chatGenerationMetadata).isNotNull();
 			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("STOP");
 			assertThat(chatGenerationMetadata.<Object>getContentFilterMetadata()).isNull();

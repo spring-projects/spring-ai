@@ -46,7 +46,7 @@ public class Generation implements ModelResult<AssistantMessage> {
 		return this.assistantMessage;
 	}
 
-	public ChatGenerationMetadata getResultMetadata() {
+	public ChatGenerationMetadata getMetadata() {
 		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
 		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
 	}

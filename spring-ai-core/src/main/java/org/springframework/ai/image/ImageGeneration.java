@@ -23,7 +23,7 @@ public class ImageGeneration implements ModelResult<Image> {
 	}
 
 	@Override
-	public ImageGenerationMetadata getResultMetadata() {
+	public ImageGenerationMetadata getMetadata() {
 		return imageGenerationMetadata;
 	}
 
