@@ -66,8 +66,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.azure.openai.api-key=TEST_API_KEY",
-					"spring.ai.azure.openai.endpoint=TEST_ENDPOINT",
-					"spring.ai.azure.openai.embedding.generative=MODEL_XYZ")
+					"spring.ai.azure.openai.endpoint=TEST_ENDPOINT", "spring.ai.azure.openai.embedding.model=MODEL_XYZ")
 			.withConfiguration(AutoConfigurations.of(AzureOpenAiAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiEmbeddingProperties.class);
