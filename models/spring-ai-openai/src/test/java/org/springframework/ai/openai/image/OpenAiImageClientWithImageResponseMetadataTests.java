@@ -63,7 +63,7 @@ public class OpenAiImageClientWithImageResponseMetadataTests {
 	}
 
 	@Test
-	void aiResponseContainsImageRespoinseMetadata() {
+	void aiResponseContainsImageResponseMetadata() {
 
 		prepareMock();
 
