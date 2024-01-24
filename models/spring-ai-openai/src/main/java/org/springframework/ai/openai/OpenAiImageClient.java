@@ -70,9 +70,15 @@ public class OpenAiImageClient implements ImageClient {
 			// data
 			// types to the data types used in OpenAiImageApi
 			String instructions = imagePrompt.getInstructions().get(0).getText();
+			String size;
+			if (imageOptionsToUse.getWidth() != null && imageOptionsToUse.getHeight() != null) {
+				size = imageOptionsToUse.getWidth() + "x" + imageOptionsToUse.getHeight();
+			}
+			else {
+				size = null;
+			}
 			OpenAiImageApi.OpenAiImageRequest openAiImageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
-					imageOptionsToUse.getModel(), imageOptionsToUse.getN(), imageOptionsToUse.getQuality(),
-					imageOptionsToUse.getWidth() + "x" + imageOptionsToUse.getHeight(),
+					imageOptionsToUse.getModel(), imageOptionsToUse.getN(), imageOptionsToUse.getQuality(), size,
 					imageOptionsToUse.getResponseFormat(), imageOptionsToUse.getStyle(), imageOptionsToUse.getUser());
 
 			// Make the request

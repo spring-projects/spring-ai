@@ -15,13 +15,16 @@
  */
 package org.springframework.ai.openai.image;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.*;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -33,8 +36,23 @@ public class OpenAiImageClientIT extends AbstractIT {
 
 		ImageResponse imageResponse = openaiImageClient.call(imagePrompt);
 
-		System.out.println(imageResponse);
+		assertThat(imageResponse.getResults()).hasSize(1);
 
+		ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
+		assertThat(imageResponseMetadata.created()).isPositive();
+
+		var generation = imageResponse.getResult();
+		Image image = generation.getOutput();
+		assertThat(image.getUrl()).isNotEmpty();
+		assertThat(image.getB64Json()).isNull();
+
+		var imageGenerationMetadata = generation.getMetadata();
+		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
+
+		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
+
+		assertThat(openAiImageGenerationMetadata).isNotNull();
+		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNull();
 	}
 
 }

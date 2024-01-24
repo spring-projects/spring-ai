@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -58,6 +59,9 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> objectToMap(Object source) {
+		if (source == null) {
+			return new HashMap<>();
+		}
 		try {
 			String json = OBJECT_MAPPER.writeValueAsString(source);
 			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
