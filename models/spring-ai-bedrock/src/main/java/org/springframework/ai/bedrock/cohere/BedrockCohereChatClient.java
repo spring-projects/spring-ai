@@ -122,7 +122,7 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 	}
 
 	@Override
-	public Flux<ChatResponse> streamingCall(Prompt prompt) {
+	public Flux<ChatResponse> stream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(g -> {
 			if (g.isFinished()) {
 				String finishReason = g.finishReason().name();

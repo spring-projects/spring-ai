@@ -82,7 +82,7 @@ public class BedrockTitanChatAutoConfigurationIT {
 
 			BedrockTitanChatClient chatClient = context.getBean(BedrockTitanChatClient.class);
 
-			Flux<ChatResponse> response = chatClient.streamingCall(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(1);

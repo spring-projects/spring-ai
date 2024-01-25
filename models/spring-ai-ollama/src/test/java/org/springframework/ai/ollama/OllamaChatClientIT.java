@@ -167,7 +167,7 @@ class OllamaChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.streamingCall(prompt)
+		String generationTextFromStream = client.stream(prompt)
 			.collectList()
 			.block()
 			.stream()

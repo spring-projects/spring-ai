@@ -38,6 +38,6 @@ public interface StreamingModelClient<TReq extends ModelRequest<?>, TResChunk ex
 	 * @param request the request object to be sent to the AI model
 	 * @return the streaming response from the AI model
 	 */
-	Flux<TResChunk> streamingCall(TReq request);
+	Flux<TResChunk> stream(TReq request);
 
 }
