@@ -1,6 +1,6 @@
 = Azure OpenAI
 
-Azure's OpenAI offering, powered by ChatGPT, extends beyond traditional OpenAI capabilities, delivering AI-driven text generation with enhanced functionality. Azure offers additional AI safety and responsible AI features, as highlighted in their recent update https://techcommunity.microsoft.com/t5/ai-azure-ai-services-blog/announcing-new-ai-safety-amp-responsible-ai-features-in-azure/ba-p/3983686[here]
+Azure's OpenAI offering, powered by ChatGPT, extends beyond traditional OpenAI capabilities, delivering AI-driven text generation with enhanced functionality. Azure offers additional AI safety and responsible AI features, as highlighted in their recent update https://techcommunity.microsoft.com/t5/ai-azure-ai-services-blog/announcing-new-ai-safety-amp-responsible-ai-features-in-azure/ba-p/3983686[here].
 
 Azure offers Java developers the opportunity to leverage AI's full potential by integrating it with an array of Azure services, which includes AI-related resources such as Vector Stores on Azure.
 
