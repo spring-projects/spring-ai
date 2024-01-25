@@ -12,7 +12,7 @@ The design of the `ChatClient` interface centers around two primary goals:
 * *Portability*: It allows easy integration with different AI Models, letting developers switch between differing AI models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability.
 
-* *Simplicity*: By using companion classes like `Prompt` for input encapsulation and `AiResponse` for output handling, the `ChatClient` interface simplifies communication with AI Models. It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
+* *Simplicity*: By using companion classes like `Prompt` for input encapsulation and `ChatResponse` for output handling, the `ChatClient` interface simplifies communication with AI Models. It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
 
 == API Overview
 
@@ -27,14 +27,14 @@ public interface ChatClient {
     default String generate(String message) { // implementation omitted
     }
 
-    AiResponse generate(Prompt prompt);
+    ChatResponse generate(Prompt prompt);
 
 }
 ```
 
-The `generate` method with a `String` parameter simplifies initial use, avoiding the complexities of the more sophisticated `Prompt` and `AiResponse` classes.
+The `generate` method with a `String` parameter simplifies initial use, avoiding the complexities of the more sophisticated `Prompt` and `ChatResponse` classes.
 
-In real-world applications, it is more common to use the `generate` method that takes a `Prompt` instance and returns an `AiResponse`.
+In real-world applications, it is more common to use the `generate` method that takes a `Prompt` instance and returns an `ChatResponse`.
 
 === Prompt
 
@@ -75,12 +75,12 @@ While the term `MessageType` might imply a specific message format, in this cont
 For AI models that do not use specific roles, the `UserMessage` implementation acts as a standard category, typically representing user-generated inquiries or instructions.
 To understand the practical application and the relationship between `Prompt` and `Message`, especially in the context of these roles or message categories, see the detailed explanations in the xref:api/prompt.adoc[Prompts] section.
 
-=== AiResponse
+=== ChatResponse
 
-The structure of the `AiResponse` class is as follows:
+The structure of the `ChatResponse` class is as follows:
 
 ```java
-public class AiResponse {
+public class ChatResponse {
 
 	private final List<Generation> generations;
 
@@ -88,9 +88,9 @@ public class AiResponse {
 }
 ```
 
-The `AiResponse` class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs resulting from a single prompt.
+The `ChatResponse` class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs resulting from a single prompt.
 
-The `AiResponse` class also carries a map of key-value pairs providing metadata about the AI Model's response. This feature is still in progress and is not elaborated on in this document.
+The `ChatResponse` class also carries a map of key-value pairs providing metadata about the AI Model's response. This feature is still in progress and is not elaborated on in this document.
 
 === Generation
 
