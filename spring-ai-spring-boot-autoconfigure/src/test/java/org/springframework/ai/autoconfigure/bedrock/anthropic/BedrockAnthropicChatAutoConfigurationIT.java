@@ -82,8 +82,7 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 
 			BedrockAnthropicChatClient anthropicChatClient = context.getBean(BedrockAnthropicChatClient.class);
 
-			Flux<ChatResponse> response = anthropicChatClient
-				.streamingCall(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = anthropicChatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);

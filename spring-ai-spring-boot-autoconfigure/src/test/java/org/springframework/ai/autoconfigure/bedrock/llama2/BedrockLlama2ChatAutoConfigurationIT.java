@@ -82,8 +82,7 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 
 			BedrockLlama2ChatClient llama2ChatClient = context.getBean(BedrockLlama2ChatClient.class);
 
-			Flux<ChatResponse> response = llama2ChatClient
-				.streamingCall(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = llama2ChatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);

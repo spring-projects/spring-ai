@@ -84,7 +84,7 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public Flux<ChatResponse> streamingCall(Prompt prompt) {
+	public Flux<ChatResponse> stream(Prompt prompt) {
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(chunk -> {
 
 			Generation generation = new Generation(chunk.outputText());

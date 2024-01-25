@@ -151,7 +151,7 @@ class AzureOpenAiChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatClient.streamingCall(prompt)
+		String generationTextFromStream = chatClient.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
