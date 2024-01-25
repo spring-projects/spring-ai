@@ -39,8 +39,8 @@ public class EmbeddingResponseMetadata extends HashMap<String, Object> implement
 		super(initialCapacity, loadFactor);
 	}
 
-	public EmbeddingResponseMetadata(Map<? extends String, ?> m) {
-		super(m);
+	public EmbeddingResponseMetadata(Map<String, ?> metadata) {
+		super(metadata);
 	}
 
 }
