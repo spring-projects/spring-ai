@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
@@ -32,8 +31,8 @@ class BedrockTitanEmbeddingClientIT {
 	void singleEmbedding() {
 		assertThat(embeddingClient).isNotNull();
 		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
-		assertThat(embeddingResponse.getData()).hasSize(1);
-		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+		assertThat(embeddingResponse.getResults()).hasSize(1);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingClient.dimensions()).isEqualTo(1024);
 	}
 
@@ -45,8 +44,8 @@ class BedrockTitanEmbeddingClientIT {
 
 		EmbeddingResponse embeddingResponse = embeddingClient
 			.embedForResponse(List.of(Base64.getEncoder().encodeToString(image)));
-		assertThat(embeddingResponse.getData()).hasSize(1);
-		assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+		assertThat(embeddingResponse.getResults()).hasSize(1);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingClient.dimensions()).isEqualTo(1024);
 	}
 

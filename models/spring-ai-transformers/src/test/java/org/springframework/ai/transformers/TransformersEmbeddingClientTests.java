@@ -76,16 +76,16 @@ public class TransformersEmbeddingClientTests {
 		TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient();
 		embeddingClient.afterPropertiesSet();
 		EmbeddingResponse embed = embeddingClient.embedForResponse(List.of("Hello world", "World is big"));
-		assertThat(embed.getData()).hasSize(2);
+		assertThat(embed.getResults()).hasSize(2);
 		assertThat(embed.getMetadata()).isEmpty();
 
-		assertThat(embed.getData().get(0).getEmbedding()).hasSize(384);
-		assertThat(DF.format(embed.getData().get(0).getEmbedding().get(0))).isEqualTo(DF.format(-0.19744634628295898));
-		assertThat(DF.format(embed.getData().get(0).getEmbedding().get(383))).isEqualTo(DF.format(0.17298996448516846));
+		assertThat(embed.getResults().get(0).getOutput()).hasSize(384);
+		assertThat(DF.format(embed.getResults().get(0).getOutput().get(0))).isEqualTo(DF.format(-0.19744634628295898));
+		assertThat(DF.format(embed.getResults().get(0).getOutput().get(383))).isEqualTo(DF.format(0.17298996448516846));
 
-		assertThat(embed.getData().get(1).getEmbedding()).hasSize(384);
-		assertThat(DF.format(embed.getData().get(1).getEmbedding().get(0))).isEqualTo(DF.format(0.4293745160102844));
-		assertThat(DF.format(embed.getData().get(1).getEmbedding().get(383))).isEqualTo(DF.format(0.05501303821802139));
+		assertThat(embed.getResults().get(1).getOutput()).hasSize(384);
+		assertThat(DF.format(embed.getResults().get(1).getOutput().get(0))).isEqualTo(DF.format(0.4293745160102844));
+		assertThat(DF.format(embed.getResults().get(1).getOutput().get(383))).isEqualTo(DF.format(0.05501303821802139));
 	}
 
 	@Test

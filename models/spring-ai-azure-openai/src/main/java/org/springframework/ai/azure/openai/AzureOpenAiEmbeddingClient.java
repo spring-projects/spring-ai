@@ -1,9 +1,7 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
@@ -17,7 +15,9 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.util.Assert;
 
 public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
@@ -48,14 +48,6 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<Double> embed(String text) {
-		logger.debug("Retrieving embeddings");
-		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model, new EmbeddingsOptions(List.of(text)));
-		logger.debug("Embeddings retrieved");
-		return extractEmbeddingsList(embeddings);
-	}
-
-	@Override
 	public List<Double> embed(Document document) {
 		logger.debug("Retrieving embeddings");
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model,
@@ -69,33 +61,18 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> texts) {
+	public EmbeddingResponse call(EmbeddingRequest request) {
 		logger.debug("Retrieving embeddings");
-		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model, new EmbeddingsOptions(texts));
-		logger.debug("Embeddings retrieved");
-		return embeddings.getData().stream().map(emb -> emb.getEmbedding()).toList();
-	}
-
-	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
-		logger.debug("Retrieving embeddings");
-		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model, new EmbeddingsOptions(texts));
+		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(this.model,
+				new EmbeddingsOptions(request.getInstructions()));
 		logger.debug("Embeddings retrieved");
 		return generateEmbeddingResponse(embeddings);
 	}
 
 	private EmbeddingResponse generateEmbeddingResponse(Embeddings embeddings) {
 		List<Embedding> data = generateEmbeddingList(embeddings.getData());
-		Map<String, Object> metadata = generateMetadata(this.model, embeddings.getUsage());
+		EmbeddingResponseMetadata metadata = generateMetadata(this.model, embeddings.getUsage());
 		return new EmbeddingResponse(data, metadata);
-	}
-
-	private Map<String, Object> generateMetadata(String model, EmbeddingsUsage embeddingsUsage) {
-		Map<String, Object> metadata = new HashMap<>();
-		metadata.put("model", model);
-		metadata.put("prompt-tokens", embeddingsUsage.getPromptTokens());
-		metadata.put("total-tokens", embeddingsUsage.getTotalTokens());
-		return metadata;
 	}
 
 	private List<Embedding> generateEmbeddingList(List<EmbeddingItem> nativeData) {
@@ -107,6 +84,14 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 			data.add(embedding);
 		}
 		return data;
+	}
+
+	private EmbeddingResponseMetadata generateMetadata(String model, EmbeddingsUsage embeddingsUsage) {
+		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+		metadata.put("model", model);
+		metadata.put("prompt-tokens", embeddingsUsage.getPromptTokens());
+		metadata.put("total-tokens", embeddingsUsage.getTotalTokens());
+		return metadata;
 	}
 
 }

@@ -14,7 +14,10 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -153,13 +156,20 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 	@Override
 	public EmbeddingResponse embedForResponse(List<String> texts) {
+		return this.call(new EmbeddingRequest(texts, new EmbeddingOptions()));
+	}
+
+	@Override
+	public EmbeddingResponse call(EmbeddingRequest request) {
 		List<Embedding> data = new ArrayList<>();
-		List<List<Double>> embed = this.embed(texts);
+		List<List<Double>> embed = this.embed(request.getInstructions());
 		for (int i = 0; i < embed.size(); i++) {
 			data.add(new Embedding(embed.get(i), i));
 		}
-		return new EmbeddingResponse(data,
+		var metadata = new EmbeddingResponseMetadata(
 				Map.of("transformer", this.transformer, "vector-type", this.vectorType.name(), "kwargs", this.kwargs));
+
+		return new EmbeddingResponse(data, metadata);
 	}
 
 	@Override

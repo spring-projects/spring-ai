@@ -25,6 +25,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.util.Assert;
 
@@ -71,28 +72,18 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<Double> embed(String text) {
-		return this.embed(List.of(text)).iterator().next();
-	}
-
-	@Override
 	public List<Double> embed(Document document) {
 		return embed(document.getContent());
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> texts) {
-		Assert.notEmpty(texts, "At least one text is required!");
+	public EmbeddingResponse call(EmbeddingRequest request) {
+		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
-		var request = new CohereEmbeddingRequest(texts, this.inputType, this.truncate);
-		CohereEmbeddingResponse response = this.embeddingApi.embedding(request);
-		return response.embeddings();
-	}
-
-	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
+		var apiRequest = new CohereEmbeddingRequest(request.getInstructions(), this.inputType, this.truncate);
+		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
 		var indexCounter = new AtomicInteger(0);
-		List<Embedding> embeddings = this.embed(texts)
+		List<Embedding> embeddings = apiResponse.embeddings()
 			.stream()
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 			.toList();

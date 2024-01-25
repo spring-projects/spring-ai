@@ -22,14 +22,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
 
 /**
@@ -73,49 +74,38 @@ public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<Double> embed(String inputContent) {
-		return this.embed(List.of(inputContent)).iterator().next();
-	}
-
-	@Override
 	public List<Double> embed(Document document) {
 		return embed(document.getContent());
 	}
 
 	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
+	public EmbeddingResponse call(EmbeddingRequest request) {
+		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
+		if (request.getInstructions().size() != 1) {
+			logger.warn(
+					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
+		}
+
+		List<List<Double>> embeddingList = new ArrayList<>();
+		for (String inputContent : request.getInstructions()) {
+			var apiRequest = (this.inputType == InputType.IMAGE)
+					? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
+					: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
+			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);
+			embeddingList.add(response.embedding());
+		}
 		var indexCounter = new AtomicInteger(0);
-		List<Embedding> embeddings = this.embed(texts)
-			.stream()
+		List<Embedding> embeddings = embeddingList.stream()
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 			.toList();
 		return new EmbeddingResponse(embeddings);
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> inputContents) {
-		Assert.notEmpty(inputContents, "At least one text is required!");
-		if (inputContents.size() != 1) {
-			logger.warn(
-					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
-		}
-
-		List<List<Double>> embeddingList = new ArrayList<>();
-		for (String inputContent : inputContents) {
-			var request = (this.inputType == InputType.IMAGE)
-					? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
-					: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
-			TitanEmbeddingResponse response = this.embeddingApi.embedding(request);
-			embeddingList.add(response.embedding());
-		}
-		return embeddingList;
-	}
-
-	@Override
 	public int dimensions() {
 		if (this.inputType == InputType.IMAGE) {
 			if (this.embeddingDimensions.get() < 0) {
-				this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, embeddingApi.getModelId(),
+				this.embeddingDimensions.set(dimensions(this, embeddingApi.getModelId(),
 						// small base64 encoded image
 						"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
 			}
