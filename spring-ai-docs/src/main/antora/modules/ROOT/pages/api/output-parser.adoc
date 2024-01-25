@@ -2,7 +2,7 @@
 
 = Output Parsers
 
-The `OutputParser` interface allows you to obtain structured output, for example mapping the output to a Java class or an array of values from the String based ouput of AI Models.
+The `OutputParser` interface allows you to obtain structured output, for example mapping the output to a Java class or an array of values from the String based output of AI Models.
 
 You can think of it in terms similar to Spring JDBC's concept of a `RowMapper` or `ResultSetExtractor`.
 Developers want to quickly turn results from an AI model into data types that can be passed to other functions and methods in their application.
