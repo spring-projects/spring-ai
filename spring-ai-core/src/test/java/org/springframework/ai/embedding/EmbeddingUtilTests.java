@@ -18,7 +18,6 @@ package org.springframework.ai.embedding;
 
 import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,6 +66,11 @@ public class EmbeddingUtilTests {
 			@Override
 			public EmbeddingResponse embedForResponse(List<String> texts) {
 				throw new UnsupportedOperationException("Unimplemented method 'embedForResponse'");
+			}
+
+			@Override
+			public EmbeddingResponse call(EmbeddingRequest request) {
+				throw new UnsupportedOperationException("Unimplemented method 'call'");
 			}
 		};
 

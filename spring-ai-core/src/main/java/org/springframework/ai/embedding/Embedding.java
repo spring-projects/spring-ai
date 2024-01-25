@@ -3,14 +3,18 @@ package org.springframework.ai.embedding;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.ai.model.ModelResult;
+
 /**
  * Represents a single embedding vector.
  */
-public class Embedding {
+public class Embedding implements ModelResult<List<Double>> {
 
 	private List<Double> embedding;
 
 	private Integer index;
+
+	private EmbeddingResultMetadata metadata;
 
 	/**
 	 * Creates a new {@link Embedding} instance.
@@ -25,7 +29,8 @@ public class Embedding {
 	/**
 	 * @return Get the embedding vector values.
 	 */
-	public List<Double> getEmbedding() {
+	@Override
+	public List<Double> getOutput() {
 		return embedding;
 	}
 
@@ -34,6 +39,13 @@ public class Embedding {
 	 */
 	public Integer getIndex() {
 		return index;
+	}
+
+	/**
+	 * @return Get the metadata associated with the embedding.
+	 */
+	public EmbeddingResultMetadata getMetadata() {
+		return metadata;
 	}
 
 	@Override

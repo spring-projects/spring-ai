@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import ai.djl.huggingface.tokenizers.Encoding;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.djl.modality.nlp.preprocess.Tokenizer;
 import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDManager;
 import ai.djl.ndarray.types.DataType;
@@ -25,6 +27,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -205,17 +209,26 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 		for (int i = 0; i < embed.size(); i++) {
 			data.add(new Embedding(embed.get(i), i));
 		}
-		return new EmbeddingResponse(data, Map.of());
+		return new EmbeddingResponse(data);
 	}
 
 	@Override
 	public List<List<Double>> embed(List<String> texts) {
+		return this.call(new EmbeddingRequest(texts, new EmbeddingOptions()))
+			.getResults()
+			.stream()
+			.map(e -> e.getOutput())
+			.toList();
+	}
+
+	@Override
+	public EmbeddingResponse call(EmbeddingRequest request) {
 
 		List<List<Double>> resultEmbeddings = new ArrayList<>();
 
 		try {
 
-			Encoding[] encodings = this.tokenizer.batchEncode(texts);
+			Encoding[] encodings = this.tokenizer.batchEncode(request.getInstructions());
 
 			long[][] input_ids0 = new long[encodings.length][];
 			long[][] attention_mask0 = new long[encodings.length][];
@@ -265,7 +278,9 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 			throw new RuntimeException(ex);
 		}
 
-		return resultEmbeddings;
+		var indexCounter = new AtomicInteger(0);
+		return new EmbeddingResponse(
+				resultEmbeddings.stream().map(e -> new Embedding(e, indexCounter.incrementAndGet())).toList());
 	}
 
 	private Map<String, OnnxTensor> removeUnknownModelInputs(Map<String, OnnxTensor> modelInputs) {

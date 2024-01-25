@@ -17,9 +17,7 @@
 package org.springframework.ai.openai;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +26,11 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
-import org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.api.OpenAiApi.Usage;
 import org.springframework.retry.support.RetryTemplate;
@@ -84,53 +83,33 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<Double> embed(String text) {
-		Assert.notNull(text, "Text must not be null");
-		return this.embed(List.of(text)).iterator().next();
-	}
-
-	@Override
-	public List<List<Double>> embed(List<String> texts) {
-		Assert.notNull(texts, "Texts must not be null");
-		EmbeddingRequest<List<String>> request = new EmbeddingRequest<>(texts, this.embeddingModelName);
-		return this.retryTemplate.execute(ctx -> {
-			EmbeddingList<OpenAiApi.Embedding> body = this.openAiApi.embeddings(request).getBody();
-			if (body == null) {
-				logger.warn("No embeddings returned for request: {}", request);
-				return List.of();
-			}
-			return body.data().stream().map(embedding -> embedding.embedding()).toList();
-		});
-	}
-
-	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
-
-		Assert.notNull(texts, "Texts must not be null");
+	public EmbeddingResponse call(EmbeddingRequest request) {
 
 		return this.retryTemplate.execute(ctx -> {
-			EmbeddingRequest<List<String>> request = new EmbeddingRequest<>(texts, this.embeddingModelName);
+			org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(
+					request.getInstructions(), this.embeddingModelName);
 
-			EmbeddingList<OpenAiApi.Embedding> embeddingResponse = this.openAiApi.embeddings(request).getBody();
+			EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = this.openAiApi.embeddings(apiRequest).getBody();
 
-			if (embeddingResponse == null) {
+			if (apiEmbeddingResponse == null) {
 				logger.warn("No embeddings returned for request: {}", request);
-				return new EmbeddingResponse(List.of(), Map.of());
+				return new EmbeddingResponse(List.of());
 			}
 
-			Map<String, Object> metadata = generateMetadata(embeddingResponse.model(), embeddingResponse.usage());
+			var metadata = generateMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
 
-			List<Embedding> embeddings = embeddingResponse.data()
+			List<Embedding> embeddings = apiEmbeddingResponse.data()
 				.stream()
 				.map(e -> new Embedding(e.embedding(), e.index()))
 				.toList();
 
 			return new EmbeddingResponse(embeddings, metadata);
+
 		});
 	}
 
-	private Map<String, Object> generateMetadata(String model, Usage usage) {
-		Map<String, Object> metadata = new HashMap<>();
+	private EmbeddingResponseMetadata generateMetadata(String model, Usage usage) {
+		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 		metadata.put("model", model);
 		metadata.put("prompt-tokens", usage.promptTokens());
 		metadata.put("completion-tokens", usage.completionTokens());

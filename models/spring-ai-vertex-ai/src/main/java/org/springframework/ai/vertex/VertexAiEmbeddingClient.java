@@ -17,12 +17,12 @@
 package org.springframework.ai.vertex;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vertex.api.VertexAiApi;
 
@@ -38,29 +38,19 @@ public class VertexAiEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<Double> embed(String text) {
-		return this.vertexAiApi.embedText(text).value();
-	}
-
-	@Override
 	public List<Double> embed(Document document) {
 		return embed(document.getContent());
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> texts) {
-		List<VertexAiApi.Embedding> vertexEmbeddings = this.vertexAiApi.batchEmbedText(texts);
-		return vertexEmbeddings.stream().map(e -> e.value()).toList();
-	}
-
-	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
-		List<VertexAiApi.Embedding> vertexEmbeddings = this.vertexAiApi.batchEmbedText(texts);
+	public EmbeddingResponse call(EmbeddingRequest request) {
+		List<VertexAiApi.Embedding> vertexEmbeddings = this.vertexAiApi.batchEmbedText(request.getInstructions());
 		AtomicInteger indexCounter = new AtomicInteger(0);
 		List<Embedding> embeddings = vertexEmbeddings.stream()
 			.map(vm -> new Embedding(vm.value(), indexCounter.getAndIncrement()))
 			.toList();
-		return new EmbeddingResponse(embeddings, Map.of());
+		return new EmbeddingResponse(embeddings);
+
 	}
 
 }
