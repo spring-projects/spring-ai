@@ -16,13 +16,10 @@
 
 package org.springframework.ai.chat;
 
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.StreamingModelClient;
 
 @FunctionalInterface
-public interface StreamingChatClient {
-
-	Flux<ChatResponse> generateStream(Prompt prompt);
+public interface StreamingChatClient extends StreamingModelClient<Prompt, ChatResponse> {
 
 }

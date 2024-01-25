@@ -85,7 +85,7 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> streamingCall(Prompt prompt) {
 
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 

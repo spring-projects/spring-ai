@@ -140,7 +140,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = openStreamingChatClient.generateStream(prompt)
+		String generationTextFromStream = openStreamingChatClient.streamingCall(prompt)
 			.collectList()
 			.block()
 			.stream()

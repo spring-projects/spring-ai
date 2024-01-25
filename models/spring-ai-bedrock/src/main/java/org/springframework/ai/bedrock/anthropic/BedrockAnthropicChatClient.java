@@ -107,7 +107,7 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> streamingCall(Prompt prompt) {
 
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 

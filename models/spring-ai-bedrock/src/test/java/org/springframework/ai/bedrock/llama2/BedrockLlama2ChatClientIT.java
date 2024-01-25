@@ -139,7 +139,7 @@ class BedrockLlama2ChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.generateStream(prompt)
+		String generationTextFromStream = client.streamingCall(prompt)
 			.collectList()
 			.block()
 			.stream()

@@ -90,7 +90,7 @@ public class AzureOpenAiAutoConfigurationIT {
 
 			AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
 
-			Flux<ChatResponse> response = chatClient.generateStream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatClient.streamingCall(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(1);

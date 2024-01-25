@@ -85,7 +85,7 @@ public class BedrockCohereChatAutoConfigurationIT {
 			BedrockCohereChatClient cohereChatClient = context.getBean(BedrockCohereChatClient.class);
 
 			Flux<ChatResponse> response = cohereChatClient
-				.generateStream(new Prompt(List.of(userMessage, systemMessage)));
+				.streamingCall(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
