@@ -22,7 +22,7 @@ The following table categorizes several models based on their input and output t
 
 |Language/Code/Images (Multi-Modal)
 |Language/Code
-|GPT4 - OpenAI
+|GPT4 - OpenAI, Google Gemini
 
 |Language/Code
 |Language/Code
