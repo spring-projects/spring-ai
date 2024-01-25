@@ -22,6 +22,7 @@
 	<properties>
 		<jsonschema.version>4.31.1</jsonschema.version>
 		<antlr.version>4.13.1</antlr.version>
+		<commons.codec.version>1.16.0</commons.codec.version>
 	</properties>
 
 	<dependencies>
@@ -64,6 +65,12 @@
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-jackson</artifactId>
 			<version>${jsonschema.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>${commons.codec.version}</version>
 		</dependency>
 
 		<!-- test dependencies -->

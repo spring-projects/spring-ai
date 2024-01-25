@@ -20,13 +20,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.document.id.IdGenerator;
+import org.springframework.ai.document.id.IdGeneratorProvider;
 import org.springframework.util.Assert;
 
 @JsonIgnoreProperties({ "contentFormatter" })
@@ -68,7 +69,11 @@ public class Document {
 	}
 
 	public Document(String content, Map<String, Object> metadata) {
-		this(UUID.randomUUID().toString(), content, metadata);
+		this(content, metadata, IdGeneratorProvider.getInstance().getDefault());
+	}
+
+	public Document(String content, Map<String, Object> metadata, IdGenerator idGenerator) {
+		this(idGenerator.generateIdFrom(content, metadata), content, metadata);
 	}
 
 	public Document(String id, String content, Map<String, Object> metadata) {
