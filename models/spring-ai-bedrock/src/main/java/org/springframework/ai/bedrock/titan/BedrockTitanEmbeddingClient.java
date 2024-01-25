@@ -31,7 +31,6 @@ import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingUtil;
 import org.springframework.util.Assert;
 
 /**
@@ -106,7 +105,7 @@ public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
 	public int dimensions() {
 		if (this.inputType == InputType.IMAGE) {
 			if (this.embeddingDimensions.get() < 0) {
-				this.embeddingDimensions.set(EmbeddingUtil.dimensions(this, embeddingApi.getModelId(),
+				this.embeddingDimensions.set(dimensions(this, embeddingApi.getModelId(),
 						// small base64 encoded image
 						"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
 			}

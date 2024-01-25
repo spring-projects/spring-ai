@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  */
 @ExtendWith(MockitoExtension.class)
-public class EmbeddingUtilTests {
+public class AbstractEmbeddingClientTests {
 
 	@Mock
 	private EmbeddingClient embeddingClient;
@@ -80,7 +80,7 @@ public class EmbeddingUtilTests {
 	@ParameterizedTest
 	@CsvFileSource(resources = "/embedding/embedding-model-dimensions.properties", numLinesToSkip = 1, delimiter = '=')
 	public void testKnownEmbeddingModelDimensions(String model, String dimension) {
-		assertThat(EmbeddingUtil.dimensions(embeddingClient, model, "Hello world!"))
+		assertThat(AbstractEmbeddingClient.dimensions(embeddingClient, model, "Hello world!"))
 			.isEqualTo(Integer.valueOf(dimension));
 		verify(embeddingClient, never()).embed(any(String.class));
 		verify(embeddingClient, never()).embed(any(Document.class));
@@ -89,7 +89,7 @@ public class EmbeddingUtilTests {
 	@Test
 	public void testUnknownModelDimension() {
 		when(embeddingClient.embed(eq("Hello world!"))).thenReturn(List.of(0.1, 0.1, 0.1));
-		assertThat(EmbeddingUtil.dimensions(embeddingClient, "unknown_model", "Hello world!")).isEqualTo(3);
+		assertThat(AbstractEmbeddingClient.dimensions(embeddingClient, "unknown_model", "Hello world!")).isEqualTo(3);
 	}
 
 }
