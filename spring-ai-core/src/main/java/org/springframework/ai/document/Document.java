@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.document.id.IdGenerator;
+import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.util.Assert;
 
+/**
+ * A document is a container for the content and metadata of a document. It also contains
+ * the document's unique ID and an optional embedding.
+ * <p>
+ */
 @JsonIgnoreProperties({ "contentFormatter" })
 public class Document {
 
@@ -68,7 +74,11 @@ public class Document {
 	}
 
 	public Document(String content, Map<String, Object> metadata) {
-		this(UUID.randomUUID().toString(), content, metadata);
+		this(content, metadata, new RandomIdGenerator());
+	}
+
+	public Document(String content, Map<String, Object> metadata, IdGenerator idGenerator) {
+		this(idGenerator.generateId(content, metadata), content, metadata);
 	}
 
 	public Document(String id, String content, Map<String, Object> metadata) {
