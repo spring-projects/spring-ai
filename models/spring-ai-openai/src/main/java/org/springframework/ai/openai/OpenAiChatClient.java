@@ -127,7 +127,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> streamingCall(Prompt prompt) {
 		return this.retryTemplate.execute(ctx -> {
 			List<Message> messages = prompt.getInstructions();
 

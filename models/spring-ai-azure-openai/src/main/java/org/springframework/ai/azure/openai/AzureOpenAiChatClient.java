@@ -183,7 +183,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> streamingCall(Prompt prompt) {
 
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(true);
