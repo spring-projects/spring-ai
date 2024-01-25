@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Ollama Embedding autoconfiguration properties.
@@ -40,6 +41,7 @@ public class OllamaEmbeddingProperties {
 	 * topK and topP and alike parameters. The null values are ignored defaulting to the
 	 * generative's defaults.
 	 */
+	@NestedConfigurationProperty
 	private OllamaOptions options = new OllamaOptions();
 
 	public String getModel() {
