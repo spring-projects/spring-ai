@@ -97,17 +97,31 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	public T parse(String text) {
 		try {
 			// If the response is a JSON Schema, extract the properties and use them as
-			// the
-			// response.
-			Map<String, Object> map = this.objectMapper.readValue(text, Map.class);
-			if (map.containsKey("$schema")) {
-				text = this.objectMapper.writeValueAsString(map.get("properties"));
-			}
+			// the response.
+			text = this.jsonSchemaToInstance(text);
 			return (T) this.objectMapper.readValue(text, this.clazz);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * If the response is a JSON Schema, extract the properties and use them as the
+	 * response.
+	 * @param text
+	 * @return
+	 */
+	private String jsonSchemaToInstance(String text) {
+		try {
+			Map<String, Object> map = this.objectMapper.readValue(text, Map.class);
+			if (map.containsKey("$schema")) {
+				return this.objectMapper.writeValueAsString(map.get("properties"));
+			}
+		}
+		catch (Exception e) {
+		}
+		return text;
 	}
 
 	/**

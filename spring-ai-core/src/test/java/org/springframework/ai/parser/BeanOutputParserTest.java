@@ -69,6 +69,7 @@ class BeanOutputParserTest {
 					"""
 							Your response should be in JSON format.
 							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+							Do not include markdown code blocks in your response.
 							Here is the JSON Schema instance your output must adhere to:
 							```{
 							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
