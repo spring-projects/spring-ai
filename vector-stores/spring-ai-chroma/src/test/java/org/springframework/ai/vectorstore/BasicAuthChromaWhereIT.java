@@ -55,7 +55,7 @@ public class BasicAuthChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#basic-authentication
 	 */
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
+	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")

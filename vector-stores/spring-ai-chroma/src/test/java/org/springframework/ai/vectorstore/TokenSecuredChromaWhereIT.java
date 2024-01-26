@@ -57,7 +57,7 @@ public class TokenSecuredChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#static-api-token-authentication
 	 */
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
+	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.token.TokenConfigServerAuthCredentialsProvider")

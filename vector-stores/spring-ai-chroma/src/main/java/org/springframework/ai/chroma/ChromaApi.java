@@ -316,9 +316,9 @@ public class ChromaApi {
 	// Chroma Collection API (https://docs.trychroma.com/js_reference/Collection)
 	//
 
-	public Boolean upsertEmbeddings(String collectionId, AddEmbeddingsRequest embedding) {
+	public void upsertEmbeddings(String collectionId, AddEmbeddingsRequest embedding) {
 
-		return this.restTemplate
+		this.restTemplate
 			.exchange(this.baseUrl + "/api/v1/collections/{collection_id}/upsert", HttpMethod.POST,
 					this.getHttpEntityFor(embedding), Boolean.class, collectionId)
 			.getBody();

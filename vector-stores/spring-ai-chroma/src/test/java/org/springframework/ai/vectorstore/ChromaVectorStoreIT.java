@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ChromaVectorStoreIT {
 
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
+	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
 		.withExposedPorts(8000);
 
 	List<Document> documents = List.of(
