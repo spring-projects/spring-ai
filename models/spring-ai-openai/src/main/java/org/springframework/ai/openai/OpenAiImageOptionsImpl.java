@@ -1,4 +1,4 @@
-package org.springframework.ai.openai.api;
+package org.springframework.ai.openai;
 
 public class OpenAiImageOptionsImpl implements OpenAiImageOptions {
 

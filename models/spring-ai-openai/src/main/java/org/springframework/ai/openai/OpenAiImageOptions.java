@@ -1,4 +1,4 @@
-package org.springframework.ai.openai.api;
+package org.springframework.ai.openai;
 
 import org.springframework.ai.image.ImageOptions;
 
