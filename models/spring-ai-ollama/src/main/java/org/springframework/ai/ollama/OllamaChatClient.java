@@ -132,13 +132,13 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() == MessageType.USER
-					|| message.getMessageType() == MessageType.ASSISTANT)
+					|| message.getMessageType() == MessageType.ASSISTANT
+					|| message.getMessageType() == MessageType.SYSTEM)
 			.map(m -> OllamaApi.Message.builder(toRole(m)).withContent(m.getContent()).build())
 			.toList();
 
 		// runtime options
-		Map<String, Object> promptOptions = objectToMap(prompt.getOptions());
-		Map<String, Object> clientOptionsToUse = merge(promptOptions, this.clientOptions, HashMap.class);
+		Map<String, Object> clientOptionsToUse = merge(prompt.getOptions(), this.clientOptions, HashMap.class);
 
 		return ChatRequest.builder(model)
 			.withStream(stream)
@@ -169,6 +169,9 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	public static <T> T merge(Object source, Object target, Class<T> clazz) {
+		if (source == null) {
+			source = Map.of();
+		}
 		Map<String, Object> sourceMap = objectToMap(source);
 		Map<String, Object> targetMap = objectToMap(target);
 

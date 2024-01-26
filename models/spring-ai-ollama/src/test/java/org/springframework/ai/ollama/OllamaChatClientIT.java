@@ -47,7 +47,7 @@ class OllamaChatClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.21").withExposedPorts(11434);
 
 	static String baseUrl;
 
@@ -86,7 +86,6 @@ class OllamaChatClientIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void outputParser() {
 		DefaultConversionService conversionService = new DefaultConversionService();
@@ -106,7 +105,6 @@ class OllamaChatClientIT {
 		assertThat(list).hasSize(5);
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void mapOutputParser() {
 		MapOutputParser outputParser = new MapOutputParser();
@@ -131,7 +129,6 @@ class OllamaChatClientIT {
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void beanOutputParserRecords() {
 
@@ -141,7 +138,6 @@ class OllamaChatClientIT {
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
-				Remove Markdown code blocks from the output.
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
@@ -152,7 +148,6 @@ class OllamaChatClientIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void beanStreamOutputParserRecords() {
 

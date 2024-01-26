@@ -51,7 +51,7 @@ public class OllamaApiIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.21").withExposedPorts(11434);
 
 	static OllamaApi ollamaApi;
 
@@ -87,9 +87,14 @@ public class OllamaApiIT {
 
 		var request = ChatRequest.builder("orca-mini")
 			.withStream(false)
-			.withMessages(List.of(Message.builder(Role.USER)
-				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
-				.build()))
+			.withMessages(List.of(
+					Message.builder(Role.SYSTEM)
+						.withContent("You are geography teacher. You are talking to a student.")
+						.build(),
+					Message.builder(Role.USER)
+						.withContent("What is the capital of Bulgaria and what is the size? "
+								+ "What it the national anthem?")
+						.build()))
 			.withOptions(OllamaOptions.create().withTemperature(0.9f))
 			.build();
 
@@ -127,7 +132,7 @@ public class OllamaApiIT {
 			.collect(Collectors.joining("\n"))).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
-		assertThat(lastResponse.message()).isNull();
+		assertThat(lastResponse.message().content()).isEmpty();
 		assertThat(lastResponse.done()).isTrue();
 	}
 
