@@ -101,6 +101,10 @@ public VectorStore vectorStore(EmbeddingClient embeddingClient) {
 ----
 
 > [NOTE]
+> It is more convenient and preferred to create the `RedisVectorStore` as a Bean.
+> But if you decide to create it manually, then you must call the `RedisVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
+
+> [NOTE]
 > You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
 > The `withMetadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
 >
