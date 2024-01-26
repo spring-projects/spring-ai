@@ -22,23 +22,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiClientErrorException;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;

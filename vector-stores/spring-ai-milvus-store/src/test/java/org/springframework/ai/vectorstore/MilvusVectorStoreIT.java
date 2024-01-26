@@ -40,9 +40,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
-import org.springframework.ai.vertex.api.VertexAiApi;
-import org.springframework.ai.vertex.VertexAiEmbeddingClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -58,8 +58,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @Testcontainers
-// @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+// @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".+")
 public class MilvusVectorStoreIT {
 
 	private static DockerComposeContainer milvusContainer;
@@ -307,9 +307,9 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public EmbeddingClient embeddingClient() {
-			return new VertexAiEmbeddingClient(new VertexAiApi(System.getenv("PALM_API_KEY")));
-			// return new OpenAiEmbeddingClient(new
-			// OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			// return new VertexAiEmbeddingClient(new
+			// VertexAiApi(System.getenv("PALM_API_KEY")));
+			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

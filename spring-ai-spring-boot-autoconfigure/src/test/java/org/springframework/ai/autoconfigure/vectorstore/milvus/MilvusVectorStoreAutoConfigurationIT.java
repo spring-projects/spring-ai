@@ -24,7 +24,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -47,7 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-@Disabled("Disabled until https://github.com/milvus-io/milvus-sdk-java/issues/704")
 @Testcontainers
 public class MilvusVectorStoreAutoConfigurationIT {
 
