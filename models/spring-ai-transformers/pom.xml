@@ -20,11 +20,6 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<djl.version>0.25.0</djl.version>
-		<onnxruntime.version>1.16.2</onnxruntime.version>
-	</properties>
-
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
