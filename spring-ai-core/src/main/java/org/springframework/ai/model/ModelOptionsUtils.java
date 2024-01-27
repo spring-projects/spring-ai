@@ -24,7 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public abstract class ModelOptionsUtils {
+/**
+ * Utility class for manipulating {@link ModelOptions} objects.
+ *
+ * @author Christian Tzolov
+ */
+public final class ModelOptionsUtils {
 
 	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

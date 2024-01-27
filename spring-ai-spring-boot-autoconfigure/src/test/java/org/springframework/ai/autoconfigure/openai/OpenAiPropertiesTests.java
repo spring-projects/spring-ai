@@ -16,8 +16,13 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
+import org.springframework.ai.openai.api.OpenAiChatOptions.ResponseFormat;
+import org.springframework.ai.openai.api.OpenAiChatOptions.ToolChoice;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -39,8 +44,8 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=TEST_BASE_URL",
 				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.chat.model=MODEL_XYZ",
-				"spring.ai.openai.chat.temperature=0.55")
+				"spring.ai.openai.chat.options.model=MODEL_XYZ",
+				"spring.ai.openai.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.run(context -> {
@@ -53,8 +58,8 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isNull();
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
-				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 			});
 	}
 
@@ -67,8 +72,8 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.api-key=abc123",
 				"spring.ai.openai.chat.base-url=TEST_BASE_URL2",
 				"spring.ai.openai.chat.api-key=456",
-				"spring.ai.openai.chat.model=MODEL_XYZ",
-				"spring.ai.openai.chat.temperature=0.55")
+				"spring.ai.openai.chat.options.model=MODEL_XYZ",
+				"spring.ai.openai.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.run(context -> {
@@ -81,8 +86,8 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isEqualTo("456");
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
-				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 			});
 	}
 
@@ -133,6 +138,94 @@ public class OpenAiPropertiesTests {
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+			});
+	}
+
+	@Test
+	public void optionsTest() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=TEST_BASE_URL",
+
+				"spring.ai.openai.chat.options.model=MODEL_XYZ",
+				"spring.ai.openai.chat.options.frequencyPenalty=-1.5",
+				"spring.ai.openai.chat.options.logitBias.myTokenId=-5",
+				"spring.ai.openai.chat.options.maxTokens=123",
+				"spring.ai.openai.chat.options.n=10",
+				"spring.ai.openai.chat.options.presencePenalty=0",
+				"spring.ai.openai.chat.options.responseFormat.type=json",
+				"spring.ai.openai.chat.options.seed=66",
+				"spring.ai.openai.chat.options.stop=boza,koza",
+				"spring.ai.openai.chat.options.temperature=0.55",
+				"spring.ai.openai.chat.options.topP=0.56",
+
+				"spring.ai.openai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
+
+				"spring.ai.openai.chat.options.tools[0].function.name=myFunction1",
+				"spring.ai.openai.chat.options.tools[0].function.description=function description",
+				"spring.ai.openai.chat.options.tools[0].function.jsonSchema=" + """
+					{
+						"type": "object",
+						"properties": {
+							"location": {
+								"type": "string",
+								"description": "The city and state e.g. San Francisco, CA"
+							},
+							"lat": {
+								"type": "number",
+								"description": "The city latitude"
+							},
+							"lon": {
+								"type": "number",
+								"description": "The city longitude"
+							},
+							"unit": {
+								"type": "string",
+								"enum": ["c", "f"]
+							}
+						},
+						"required": ["location", "lat", "lon", "unit"]
+					}
+					""",
+					"spring.ai.openai.chat.options.user=userXYZ"
+				)
+			// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(embeddingProperties.getModel()).isEqualTo("text-embedding-ada-002");
+
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
+				assertThat(chatProperties.getOptions().getLogitBias().get("myTokenId")).isEqualTo(-5);
+				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
+				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
+				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
+				assertThat(chatProperties.getOptions().getResponseFormat()).isEqualTo(new ResponseFormat("json"));
+				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(66);
+				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+
+				assertThat(chatProperties.getOptions().getToolChoice())
+					.isEqualTo(new ToolChoice("function", Map.of("name", "toolChoiceFunctionName")));
+				assertThat(chatProperties.getOptions().getUser()).isEqualTo("userXYZ");
+
+				assertThat(chatProperties.getOptions().getTools()).hasSize(1);
+				var tool = chatProperties.getOptions().getTools().get(0);
+				assertThat(tool.type()).isEqualTo(Type.FUNCTION);
+				var function = tool.function();
+				assertThat(function.name()).isEqualTo("myFunction1");
+				assertThat(function.description()).isEqualTo("function description");
+				assertThat(function.parameters()).isNotEmpty();
 			});
 	}
 
