@@ -23,7 +23,10 @@ import org.springframework.ai.model.ModelOptions;
  */
 public interface EmbeddingOptions extends ModelOptions {
 
-	public static EmbeddingOptions EMPTY = new EmbeddingOptions() {
-	};
+	public static class EmptyEmbeddingOptions implements EmbeddingOptions {
+
+	}
+
+	public static EmbeddingOptions EMPTY = new EmptyEmbeddingOptions();
 
 }

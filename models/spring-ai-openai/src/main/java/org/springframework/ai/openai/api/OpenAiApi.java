@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -183,6 +184,7 @@ public class OpenAiApi {
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
+		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.FUNCTION, function);
 		}
@@ -219,13 +221,14 @@ public class OpenAiApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
+			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, parseJson(jsonSchema));
 			}
 		}
 	}
 
-	/**
+/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -269,17 +272,17 @@ public class OpenAiApi {
 	 *
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest(
+	public record ChatCompletionRequest (
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Float frequencyPenalty,
-			@JsonProperty("logit_bias") Map<String, Object> logitBias,
+			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("n") Integer n,
 			@JsonProperty("presence_penalty") Float presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("seed") Integer seed,
-			@JsonProperty("stop") String stop,
+			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
@@ -331,6 +334,20 @@ public class OpenAiApi {
 					tools, toolChoice, null);
 		}
 
+				/**
+		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
+		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
+		 *
+		 * @param messages A list of messages comprising the conversation so far.
+		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
+		 * as they become available, with the stream terminated by a data: [DONE] message.
+		 */
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
+			this(messages, null, null, null, null, null, null,
+					null, null, null, stream, null, null,
+					null, null, null);
+		}
+
 		/**
 		 * Specifies a tool the model should use. Use to force the model to call a specific function.
 		 *
@@ -346,6 +363,7 @@ public class OpenAiApi {
 			 * Create a tool choice of type 'function' and name 'functionName'.
 			 * @param functionName Function name of the tool.
 			 */
+			@ConstructorBinding
 			public ToolChoice(String functionName) {
 				this("function", Map.of("name", functionName));
 			}

@@ -16,7 +16,9 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
 public class OpenAiChatProperties extends OpenAiParentProperties {
@@ -25,24 +27,20 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
 
-	private Double temperature = 0.7;
+	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	private String model = DEFAULT_CHAT_MODEL;
+	@NestedConfigurationProperty
+	private OpenAiChatOptions options = OpenAiChatOptions.builder()
+		.withModel(DEFAULT_CHAT_MODEL)
+		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.build();
 
-	public String getModel() {
-		return model;
+	public OpenAiChatOptions getOptions() {
+		return options;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public Double getTemperature() {
-		return temperature;
-	}
-
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
+	public void setOptions(OpenAiChatOptions options) {
+		this.options = options;
 	}
 
 }

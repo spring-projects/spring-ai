@@ -54,9 +54,8 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
 
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
-		openAiChatClient.setTemperature(chatProperties.getTemperature());
-		openAiChatClient.setModel(chatProperties.getModel());
+		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi)
+			.withDefaultOptions(chatProperties.getOptions());
 
 		return openAiChatClient;
 	}
@@ -76,7 +75,7 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
 
-		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getModel());
+		return new OpenAiEmbeddingClient(openAiApi).withDefaultOptions(embeddingProperties.getOptions());
 	}
 
 }

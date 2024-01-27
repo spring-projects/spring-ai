@@ -28,13 +28,14 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
@@ -57,11 +58,12 @@ import org.springframework.util.Assert;
  */
 public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
-	private Double temperature = 0.7;
-
-	private String model = "gpt-3.5-turbo";
-
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
+		.withModel("gpt-3.5-turbo")
+		.withTemperature(0.7f)
+		.build();
 
 	public final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
@@ -76,40 +78,23 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		this.openAiApi = openAiApi;
 	}
 
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public Double getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
+	public OpenAiChatClient withDefaultOptions(OpenAiChatOptions options) {
+		this.defaultOptions = options;
+		return this;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
 		return this.retryTemplate.execute(ctx -> {
-			List<Message> messages = prompt.getInstructions();
 
-			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
-				.map(m -> new ChatCompletionMessage(m.getContent(),
-						ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-				.toList();
+			ChatCompletionRequest request = createRequest(prompt, false);
 
-			ResponseEntity<ChatCompletion> completionEntity = this.openAiApi
-				.chatCompletionEntity(new OpenAiApi.ChatCompletionRequest(chatCompletionMessages, this.model,
-						this.temperature.floatValue()));
+			ResponseEntity<ChatCompletion> completionEntity = this.openAiApi.chatCompletionEntity(request);
 
 			var chatCompletion = completionEntity.getBody();
 			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for request: {}", chatCompletionMessages);
+				logger.warn("No chat completion returned for request: {}", prompt);
 				return new ChatResponse(List.of());
 			}
 
@@ -128,16 +113,9 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		return this.retryTemplate.execute(ctx -> {
-			List<Message> messages = prompt.getInstructions();
+			ChatCompletionRequest request = createRequest(prompt, true);
 
-			List<ChatCompletionMessage> chatCompletionMessages = messages.stream()
-				.map(m -> new ChatCompletionMessage(m.getContent(),
-						ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-				.toList();
-
-			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi
-				.chatCompletionStream(new OpenAiApi.ChatCompletionRequest(chatCompletionMessages, this.model,
-						this.temperature.floatValue(), true));
+			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request);
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
@@ -159,6 +137,36 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 				return new ChatResponse(generations);
 			});
 		});
+	}
+
+	/**
+	 * Accessible for testing.
+	 */
+	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
+
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
+			.stream()
+			.map(m -> new ChatCompletionMessage(m.getContent(),
+					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
+			.toList();
+
+		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
+
+		if (this.defaultOptions != null) {
+			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+		}
+
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof OpenAiChatOptions runtimeOptions) {
+				request = ModelOptionsUtils.merge(runtimeOptions, request, ChatCompletionRequest.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionRequest:"
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
+
+		return request;
 	}
 
 }
