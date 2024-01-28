@@ -27,7 +27,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
-public class OpenAiEmbeddingOptions extends EmbeddingOptions {
+public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 
 	// @formatter:off
 	/**
