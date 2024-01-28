@@ -16,7 +16,9 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(OpenAiEmbeddingProperties.CONFIG_PREFIX)
 public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
@@ -25,14 +27,17 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 
-	private String model = DEFAULT_EMBEDDING_MODEL;
+	@NestedConfigurationProperty
+	private OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+		.withModel(DEFAULT_EMBEDDING_MODEL)
+		.build();
 
-	public String getModel() {
-		return model;
+	public OpenAiEmbeddingOptions getOptions() {
+		return options;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	public void setOptions(OpenAiEmbeddingOptions options) {
+		this.options = options;
 	}
 
 }

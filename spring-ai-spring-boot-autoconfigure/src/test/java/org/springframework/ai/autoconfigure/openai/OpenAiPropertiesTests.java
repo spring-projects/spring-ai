@@ -98,7 +98,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=TEST_BASE_URL",
 				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.embedding.model=MODEL_XYZ")
+				"spring.ai.openai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.run(context -> {
@@ -111,7 +111,7 @@ public class OpenAiPropertiesTests {
 				assertThat(embeddingProperties.getApiKey()).isNull();
 				assertThat(embeddingProperties.getBaseUrl()).isNull();
 
-				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -124,7 +124,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.api-key=abc123",
 				"spring.ai.openai.embedding.base-url=TEST_BASE_URL2",
 				"spring.ai.openai.embedding.api-key=456",
-				"spring.ai.openai.embedding.model=MODEL_XYZ")
+				"spring.ai.openai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 			.run(context -> {
@@ -137,12 +137,12 @@ public class OpenAiPropertiesTests {
 				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
-				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
 	@Test
-	public void optionsTest() {
+	public void chatOptionsTest() {
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
@@ -201,7 +201,7 @@ public class OpenAiPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getModel()).isEqualTo("text-embedding-ada-002");
+				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("text-embedding-ada-002");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
@@ -226,6 +226,33 @@ public class OpenAiPropertiesTests {
 				assertThat(function.name()).isEqualTo("myFunction1");
 				assertThat(function.description()).isEqualTo("function description");
 				assertThat(function.parameters()).isNotEmpty();
+			});
+	}
+
+	@Test
+	public void embeddingOptionsTest() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=TEST_BASE_URL",
+
+				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
+				"spring.ai.openai.embedding.options.encodingFormat=MyEncodingFormat",
+				"spring.ai.openai.embedding.options.user=userXYZ"
+				)
+			// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
+				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
 			});
 	}
 

@@ -29,6 +29,7 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
@@ -45,9 +46,16 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingClient.class);
 
+	private static final List<String> REQUEST_JSON_FIELD_NAMES = ModelOptionsUtils
+		.getJsonPropertyValues(org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
+
 	public static final String DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002";
 
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
+	private OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
+		.withModel(DEFAULT_OPENAI_EMBEDDING_MODEL)
+		.build();
+
+	private final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(OpenAiApiException.class)
 		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
@@ -55,25 +63,22 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final OpenAiApi openAiApi;
 
-	private final String embeddingModelName;
-
 	private final MetadataMode metadataMode;
 
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi) {
-		this(openAiApi, DEFAULT_OPENAI_EMBEDDING_MODEL);
+		this(openAiApi, MetadataMode.EMBED);
 	}
 
-	public OpenAiEmbeddingClient(OpenAiApi openAiApi, String embeddingModel) {
-		this(openAiApi, embeddingModel, MetadataMode.EMBED);
-	}
-
-	public OpenAiEmbeddingClient(OpenAiApi openAiApi, String model, MetadataMode metadataMode) {
+	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode) {
 		Assert.notNull(openAiApi, "OpenAiService must not be null");
-		Assert.notNull(model, "Model must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");
 		this.openAiApi = openAiApi;
-		this.embeddingModelName = model;
 		this.metadataMode = metadataMode;
+	}
+
+	public OpenAiEmbeddingClient withDefaultOptions(OpenAiEmbeddingOptions options) {
+		this.defaultOptions = options;
+		return this;
 	}
 
 	@Override
@@ -87,7 +92,17 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 		return this.retryTemplate.execute(ctx -> {
 			org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(
-					request.getInstructions(), this.embeddingModelName);
+					request.getInstructions(), DEFAULT_OPENAI_EMBEDDING_MODEL);
+
+			if (this.defaultOptions != null) {
+				apiRequest = ModelOptionsUtils.merge(apiRequest, this.defaultOptions,
+						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class, REQUEST_JSON_FIELD_NAMES);
+			}
+
+			if (request.getOptions() != null) {
+				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
+						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class, REQUEST_JSON_FIELD_NAMES);
+			}
 
 			EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = this.openAiApi.embeddings(apiRequest).getBody();
 
@@ -96,7 +111,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 				return new EmbeddingResponse(List.of());
 			}
 
-			var metadata = generateMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
+			var metadata = generateResponseMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
 
 			List<Embedding> embeddings = apiEmbeddingResponse.data()
 				.stream()
@@ -108,7 +123,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 		});
 	}
 
-	private EmbeddingResponseMetadata generateMetadata(String model, Usage usage) {
+	private EmbeddingResponseMetadata generateResponseMetadata(String model, Usage usage) {
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 		metadata.put("model", model);
 		metadata.put("prompt-tokens", usage.promptTokens());

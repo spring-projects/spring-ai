@@ -27,8 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 
 /**
@@ -42,12 +40,12 @@ public class OpenAiChatOptions implements ChatOptions {
 	/**
 	 * ID of the model to use.
 	 */
-	@JsonProperty("model") String model;
+	private @JsonProperty("model") String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	@JsonProperty("frequency_penalty") Float frequencyPenalty = 0.0f;
+	private @JsonProperty("frequency_penalty") Float frequencyPenalty = 0.0f;
 	/**
 	 * Modify the likelihood of specified tokens appearing in the completion. Accepts a JSON object
 	 * that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
@@ -55,55 +53,55 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * vary per model, but values between -1 and 1 should decrease or increase likelihood of selection; values like -100
 	 * or 100 should result in a ban or exclusive selection of the relevant token.
 	 */
-	@JsonProperty("logit_bias") Map<String, Integer> logitBias;
+	private @JsonProperty("logit_bias") Map<String, Integer> logitBias;
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
-	@JsonProperty("max_tokens") Integer maxTokens;
+	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
-	@JsonProperty("n") Integer n = 1;
+	private @JsonProperty("n") Integer n = 1;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	@JsonProperty("presence_penalty") Float presencePenalty;
+	private @JsonProperty("presence_penalty") Float presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	@JsonProperty("response_format") ResponseFormat responseFormat;
+	private @JsonProperty("response_format") ResponseFormat responseFormat;
 	/**
 	 * This feature is in Beta. If specified, our system will make a best effort to sample
 	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
 	 * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor
 	 * changes in the backend.
 	 */
-	@JsonProperty("seed") Integer seed;
+	private @JsonProperty("seed") Integer seed;
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
-	@JsonProperty("stop") List<String> stop;
+	private @JsonProperty("stop") List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	@JsonProperty("temperature") Float temperature = 0.8f;
+	private @JsonProperty("temperature") Float temperature = 0.8f;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	@JsonProperty("top_p") Float topP;
+	private @JsonProperty("top_p") Float topP;
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	@JsonProperty("tools") List<FunctionTool> tools;
+	private @JsonProperty("tools") List<FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -111,11 +109,11 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present.
 	 */
-	@JsonProperty("tool_choice") ToolChoice toolChoice;
+	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
-	@JsonProperty("user") String user;
+	private @JsonProperty("user") String user;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -140,78 +138,78 @@ public class OpenAiChatOptions implements ChatOptions {
 		}
 
 		public Builder withFrequencyPenalty(Float frequencyPenalty) {
-			options.frequencyPenalty = frequencyPenalty;
+			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
 		public Builder withLogitBias(Map<String, Integer> logitBias) {
-			options.logitBias = logitBias;
+			this.options.logitBias = logitBias;
 			return this;
 		}
 
 		public Builder withMaxTokens(Integer maxTokens) {
-			options.maxTokens = maxTokens;
+			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
 		public Builder withN(Integer n) {
-			options.n = n;
+			this.options.n = n;
 			return this;
 		}
 
 		public Builder withPresencePenalty(Float presencePenalty) {
-			options.presencePenalty = presencePenalty;
+			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
 		public Builder withResponseFormat(ResponseFormat responseFormat) {
-			options.responseFormat = responseFormat;
+			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
 		public Builder withSeed(Integer seed) {
-			options.seed = seed;
+			this.options.seed = seed;
 			return this;
 		}
 
 		public Builder withStop(List<String> stop) {
-			options.stop = stop;
+			this.options.stop = stop;
 			return this;
 		}
 
 		public Builder withTemperature(Float temperature) {
-			options.temperature = temperature;
+			this.options.temperature = temperature;
 			return this;
 		}
 
 		public Builder withTopP(Float topP) {
-			options.topP = topP;
+			this.options.topP = topP;
 			return this;
 		}
 
 		public Builder withTools(List<FunctionTool> tools) {
-			options.tools = tools;
+			this.options.tools = tools;
 			return this;
 		}
 
 		public Builder withToolChoice(ToolChoice toolChoice) {
-			options.toolChoice = toolChoice;
+			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
 		public Builder withUser(String user) {
-			options.user = user;
+			this.options.user = user;
 			return this;
 		}
 
 		public OpenAiChatOptions build() {
-			return options;
+			return this.options;
 		}
 
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -219,7 +217,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Float getFrequencyPenalty() {
-		return frequencyPenalty;
+		return this.frequencyPenalty;
 	}
 
 	public void setFrequencyPenalty(Float frequencyPenalty) {
@@ -227,7 +225,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Map<String, Integer> getLogitBias() {
-		return logitBias;
+		return this.logitBias;
 	}
 
 	public void setLogitBias(Map<String, Integer> logitBias) {
@@ -235,7 +233,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Integer getMaxTokens() {
-		return maxTokens;
+		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
@@ -243,7 +241,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Integer getN() {
-		return n;
+		return this.n;
 	}
 
 	public void setN(Integer n) {
@@ -251,7 +249,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Float getPresencePenalty() {
-		return presencePenalty;
+		return this.presencePenalty;
 	}
 
 	public void setPresencePenalty(Float presencePenalty) {
@@ -259,7 +257,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public ResponseFormat getResponseFormat() {
-		return responseFormat;
+		return this.responseFormat;
 	}
 
 	public void setResponseFormat(ResponseFormat responseFormat) {
@@ -267,7 +265,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Integer getSeed() {
-		return seed;
+		return this.seed;
 	}
 
 	public void setSeed(Integer seed) {
@@ -275,7 +273,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public List<String> getStop() {
-		return stop;
+		return this.stop;
 	}
 
 	public void setStop(List<String> stop) {
@@ -283,7 +281,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Float getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	public void setTemperature(Float temperature) {
@@ -291,7 +289,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public Float getTopP() {
-		return topP;
+		return this.topP;
 	}
 
 	public void setTopP(Float topP) {
@@ -299,7 +297,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public List<FunctionTool> getTools() {
-		return tools;
+		return this.tools;
 	}
 
 	public void setTools(List<FunctionTool> tools) {
@@ -307,7 +305,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public ToolChoice getToolChoice() {
-		return toolChoice;
+		return this.toolChoice;
 	}
 
 	public void setToolChoice(ToolChoice toolChoice) {
@@ -315,7 +313,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	}
 
 	public String getUser() {
-		return user;
+		return this.user;
 	}
 
 	public void setUser(String user) {
@@ -352,89 +350,89 @@ public class OpenAiChatOptions implements ChatOptions {
 		if (getClass() != obj.getClass())
 			return false;
 		OpenAiChatOptions other = (OpenAiChatOptions) obj;
-		if (model == null) {
+		if (this.model == null) {
 			if (other.model != null)
 				return false;
 		}
 		else if (!model.equals(other.model))
 			return false;
-		if (frequencyPenalty == null) {
+		if (this.frequencyPenalty == null) {
 			if (other.frequencyPenalty != null)
 				return false;
 		}
-		else if (!frequencyPenalty.equals(other.frequencyPenalty))
+		else if (!this.frequencyPenalty.equals(other.frequencyPenalty))
 			return false;
-		if (logitBias == null) {
+		if (this.logitBias == null) {
 			if (other.logitBias != null)
 				return false;
 		}
-		else if (!logitBias.equals(other.logitBias))
+		else if (!this.logitBias.equals(other.logitBias))
 			return false;
-		if (maxTokens == null) {
+		if (this.maxTokens == null) {
 			if (other.maxTokens != null)
 				return false;
 		}
-		else if (!maxTokens.equals(other.maxTokens))
+		else if (!this.maxTokens.equals(other.maxTokens))
 			return false;
-		if (n == null) {
+		if (this.n == null) {
 			if (other.n != null)
 				return false;
 		}
-		else if (!n.equals(other.n))
+		else if (!this.n.equals(other.n))
 			return false;
-		if (presencePenalty == null) {
+		if (this.presencePenalty == null) {
 			if (other.presencePenalty != null)
 				return false;
 		}
-		else if (!presencePenalty.equals(other.presencePenalty))
+		else if (!this.presencePenalty.equals(other.presencePenalty))
 			return false;
-		if (responseFormat == null) {
+		if (this.responseFormat == null) {
 			if (other.responseFormat != null)
 				return false;
 		}
-		else if (!responseFormat.equals(other.responseFormat))
+		else if (!this.responseFormat.equals(other.responseFormat))
 			return false;
-		if (seed == null) {
+		if (this.seed == null) {
 			if (other.seed != null)
 				return false;
 		}
-		else if (!seed.equals(other.seed))
+		else if (!this.seed.equals(other.seed))
 			return false;
-		if (stop == null) {
+		if (this.stop == null) {
 			if (other.stop != null)
 				return false;
 		}
 		else if (!stop.equals(other.stop))
 			return false;
-		if (temperature == null) {
+		if (this.temperature == null) {
 			if (other.temperature != null)
 				return false;
 		}
-		else if (!temperature.equals(other.temperature))
+		else if (!this.temperature.equals(other.temperature))
 			return false;
-		if (topP == null) {
+		if (this.topP == null) {
 			if (other.topP != null)
 				return false;
 		}
 		else if (!topP.equals(other.topP))
 			return false;
-		if (tools == null) {
+		if (this.tools == null) {
 			if (other.tools != null)
 				return false;
 		}
 		else if (!tools.equals(other.tools))
 			return false;
-		if (toolChoice == null) {
+		if (this.toolChoice == null) {
 			if (other.toolChoice != null)
 				return false;
 		}
 		else if (!toolChoice.equals(other.toolChoice))
 			return false;
-		if (user == null) {
+		if (this.user == null) {
 			if (other.user != null)
 				return false;
 		}
-		else if (!user.equals(other.user))
+		else if (!this.user.equals(other.user))
 			return false;
 		return true;
 	}
@@ -442,14 +440,12 @@ public class OpenAiChatOptions implements ChatOptions {
 	@Override
 	@JsonIgnore
 	public Integer getTopK() {
-		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
 	}
 
 	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
-		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
