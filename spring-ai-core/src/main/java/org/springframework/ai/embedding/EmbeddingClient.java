@@ -50,7 +50,7 @@ public interface EmbeddingClient extends ModelClient<EmbeddingRequest, Embedding
 	 */
 	default List<List<Double>> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, new EmbeddingOptions()))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()
 			.stream()
 			.map(Embedding::getOutput)
@@ -64,7 +64,7 @@ public interface EmbeddingClient extends ModelClient<EmbeddingRequest, Embedding
 	 */
 	default EmbeddingResponse embedForResponse(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, new EmbeddingOptions()));
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY));
 	}
 
 	/**

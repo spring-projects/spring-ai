@@ -156,7 +156,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 	@Override
 	public EmbeddingResponse embedForResponse(List<String> texts) {
-		return this.call(new EmbeddingRequest(texts, new EmbeddingOptions()));
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY));
 	}
 
 	@Override

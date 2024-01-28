@@ -214,7 +214,7 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 
 	@Override
 	public List<List<Double>> embed(List<String> texts) {
-		return this.call(new EmbeddingRequest(texts, new EmbeddingOptions()))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()
 			.stream()
 			.map(e -> e.getOutput())
