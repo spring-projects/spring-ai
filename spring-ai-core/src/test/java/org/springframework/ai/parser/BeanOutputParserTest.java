@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.parser;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,14 +25,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.util.LineEndingsNormalizer;
+import org.springframework.ai.util.StandardLineEnding;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.contains;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * @author Sebastian Ullrich
+ * @author Kirk Lund
  */
 @ExtendWith(MockitoExtension.class)
 class BeanOutputParserTest {
@@ -98,6 +120,30 @@ class BeanOutputParserTest {
 					  }
 					}```
 					""");
+		}
+
+		@Test
+		void usesLineEndingsNormalizer() {
+			LineEndingsNormalizer normalizer = mock(LineEndingsNormalizer.class);
+			var parser = new BeanOutputParser<>(TestClass.class, null, normalizer);
+
+			parser.getFormat();
+
+			verify(normalizer).normalize(contains("someString"));
+		}
+
+		@Test
+		void normalizesLineEndingsOnWindows() {
+			assumeThat(System.lineSeparator()).isEqualTo(StandardLineEnding.CRLF.lineSeparator());
+
+			BeanOutputParser<TestClass> parser = new BeanOutputParser<>(TestClass.class);
+
+			String formatOutput = parser.getFormat();
+
+			// validate that output contains CR line endings
+			assertThat(formatOutput).contains(StandardLineEnding.LF.lineSeparator())
+				.doesNotContain(StandardLineEnding.CRLF.lineSeparator())
+				.doesNotContain(StandardLineEnding.CR.lineSeparator());
 		}
 
 	}

@@ -24,6 +24,8 @@ import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import org.springframework.ai.util.LineEndingsNormalizer;
+import org.springframework.ai.util.StandardLineEnding;
 
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +43,7 @@ import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Sebastian Ullrich
+ * @author Kirk Lund
  */
 public class BeanOutputParser<T> implements OutputParser<T> {
 
@@ -56,6 +59,12 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	private ObjectMapper objectMapper;
 
 	/**
+	 * The line endings normalizer used to ensure consistent line endings in the parser
+	 * output on any platform.
+	 */
+	private final LineEndingsNormalizer lineEndingsNormalizer;
+
+	/**
 	 * Constructor to initialize with the target type's class.
 	 * @param clazz The target type's class.
 	 */
@@ -69,9 +78,23 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 * @param objectMapper Custom object mapper for JSON operations.
 	 */
 	public BeanOutputParser(Class<T> clazz, ObjectMapper objectMapper) {
+		this(clazz, objectMapper, new LineEndingsNormalizer(StandardLineEnding.LF));
+	}
+
+	/**
+	 * Constructor to initialize with the target type's class, a custom object mapper, and
+	 * a line endings normalizer to ensure consistent line endings on any platform.
+	 * @param clazz The target type's class.
+	 * @param objectMapper Custom object mapper for JSON operations.
+	 * @param lineEndingsNormalizer Line endings normalizer to ensure consistent line
+	 * endings.
+	 */
+	BeanOutputParser(Class<T> clazz, ObjectMapper objectMapper, LineEndingsNormalizer lineEndingsNormalizer) {
 		Objects.requireNonNull(clazz, "Java Class cannot be null;");
+		Objects.requireNonNull(lineEndingsNormalizer, "LineEndingsNormalizer cannot be null;");
 		this.clazz = clazz;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
+		this.lineEndingsNormalizer = lineEndingsNormalizer;
 		generateSchema();
 	}
 
@@ -148,7 +171,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 				Here is the JSON Schema instance your output must adhere to:
 				```%s```
 				""";
-		return String.format(template, this.jsonSchema);
+		return lineEndingsNormalizer.normalize(String.format(template, this.jsonSchema));
 	}
 
 }
