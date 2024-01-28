@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.springframework.ai.openai.api.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

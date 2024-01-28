@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
