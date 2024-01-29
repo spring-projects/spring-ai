@@ -18,40 +18,31 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Set;
 
 @Configuration
-@ConditionalOnClass({
-        Ai21Jurassic2ChatBedrockApi.class, CohereChatBedrockApi.class,
-        CohereEmbeddingBedrockApi.class, Llama2ChatBedrockApi.class,
-        TitanChatBedrockApi.class, TitanEmbeddingBedrockApi.class,
-        AnthropicChatBedrockApi.class
-})
+@ConditionalOnClass({ Ai21Jurassic2ChatBedrockApi.class, CohereChatBedrockApi.class, CohereEmbeddingBedrockApi.class,
+		Llama2ChatBedrockApi.class, TitanChatBedrockApi.class, TitanEmbeddingBedrockApi.class,
+		AnthropicChatBedrockApi.class })
 class BedrockAotAutoConfiguration {
 
-    @Bean
-    static BedrockAiHints bedrockAiHints() {
-        return new BedrockAiHints();
-    }
+	@Bean
+	static BedrockAiHints bedrockAiHints() {
+		return new BedrockAiHints();
+	}
 
-    static class BedrockAiHints implements BeanRegistrationAotProcessor {
+	static class BedrockAiHints implements BeanRegistrationAotProcessor {
 
-        @Override
-        public BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
-            return (generationContext, beanRegistrationCode) -> {
-                var hints = generationContext.getRuntimeHints();
-                var mcs = MemberCategory.values();
-                for (var c : Set.of(
-                        Ai21Jurassic2ChatBedrockApi.class,
-                        CohereChatBedrockApi.class,
-                        CohereEmbeddingBedrockApi.class,
-                        Llama2ChatBedrockApi.class,
-                        TitanChatBedrockApi.class,
-                        TitanEmbeddingBedrockApi.class,
-                        AnthropicChatBedrockApi.class))
-                    hints.reflection().registerType(c, mcs);
+		@Override
+		public BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
+			return (generationContext, beanRegistrationCode) -> {
+				var hints = generationContext.getRuntimeHints();
+				var mcs = MemberCategory.values();
+				for (var c : Set.of(Ai21Jurassic2ChatBedrockApi.class, CohereChatBedrockApi.class,
+						CohereEmbeddingBedrockApi.class, Llama2ChatBedrockApi.class, TitanChatBedrockApi.class,
+						TitanEmbeddingBedrockApi.class, AnthropicChatBedrockApi.class))
+					hints.reflection().registerType(c, mcs);
 
-            };
-        }
+			};
+		}
 
-
-    }
+	}
 
 }

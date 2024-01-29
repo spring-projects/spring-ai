@@ -56,12 +56,13 @@ public class OpenAiAutoConfiguration {
 		@Override
 		public BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
 			return (generationContext, beanRegistrationCode) -> {
-                var mcs = MemberCategory.values();
-                var hints = generationContext.getRuntimeHints();
-                for (var tr : findJsonAnnotatedClasses(OpenAiApi.class))
-                    hints.reflection().registerType(tr, mcs);
-            };
+				var mcs = MemberCategory.values();
+				var hints = generationContext.getRuntimeHints();
+				for (var tr : findJsonAnnotatedClasses(OpenAiApi.class))
+					hints.reflection().registerType(tr, mcs);
+			};
 		}
+
 	}
 
 	@Bean

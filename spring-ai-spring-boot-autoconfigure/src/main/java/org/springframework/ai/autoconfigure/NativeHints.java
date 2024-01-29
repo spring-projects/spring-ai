@@ -17,8 +17,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /***
- * AOT hints (for GraalVM native images) for resources common to multiple modules across different dependencies.
- * For integration-specific hints, see the respective auto configurations.
+ * AOT hints (for GraalVM native images) for resources common to multiple modules across
+ * different dependencies. For integration-specific hints, see the respective auto
+ * configurations.
  *
  * @author Josh Long
  */
@@ -49,16 +50,14 @@ public class NativeHints implements RuntimeHintsRegistrar {
 			.collect(Collectors.toUnmodifiableSet());
 	}
 
-
-
-
 	static class KnuddelsHints implements RuntimeHintsRegistrar {
 
 		@Override
 		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 			try {
 				hints.resources().registerResource(new ClassPathResource("/com/knuddels/jtokkit/cl100k_base.tiktoken"));
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}

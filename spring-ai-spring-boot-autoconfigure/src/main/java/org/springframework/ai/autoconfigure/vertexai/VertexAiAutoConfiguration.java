@@ -55,6 +55,7 @@ public class VertexAiAutoConfiguration {
 					hints.reflection().registerType(tr, mcs);
 			};
 		}
+
 	}
 
 	@Bean

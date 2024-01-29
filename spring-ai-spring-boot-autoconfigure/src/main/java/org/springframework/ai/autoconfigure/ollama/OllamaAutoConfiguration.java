@@ -49,7 +49,6 @@ import static org.springframework.ai.autoconfigure.NativeHints.findJsonAnnotated
 @ImportRuntimeHints(NativeHints.class)
 public class OllamaAutoConfiguration {
 
-
 	@Bean
 	static OllamaHints ollamaHints() {
 		return new OllamaHints();
@@ -61,18 +60,16 @@ public class OllamaAutoConfiguration {
 		public BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
 
 			return (generationContext, beanRegistrationCode) -> {
-                var mcs = MemberCategory.values();
-                var hints = generationContext.getRuntimeHints();
-                for (var tr : findJsonAnnotatedClasses(OllamaApi.class))
-                    hints.reflection().registerType(tr, mcs);
-                for (var tr : findJsonAnnotatedClasses(OllamaOptions.class))
-                    hints.reflection().registerType(tr, mcs);
-            };
+				var mcs = MemberCategory.values();
+				var hints = generationContext.getRuntimeHints();
+				for (var tr : findJsonAnnotatedClasses(OllamaApi.class))
+					hints.reflection().registerType(tr, mcs);
+				for (var tr : findJsonAnnotatedClasses(OllamaOptions.class))
+					hints.reflection().registerType(tr, mcs);
+			};
 		}
 
-
 	}
-
 
 	@Bean
 	@ConditionalOnMissingBean
