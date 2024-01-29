@@ -60,9 +60,6 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private static final List<String> REQUEST_JSON_FIELD_NAMES = ModelOptionsUtils
-		.getJsonPropertyValues(ChatCompletionRequest.class);
-
 	private OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
 		.withModel("gpt-3.5-turbo")
 		.withTemperature(0.7f)
@@ -156,14 +153,12 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (this.defaultOptions != null) {
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class,
-					REQUEST_JSON_FIELD_NAMES);
+			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 		}
 
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof OpenAiChatOptions runtimeOptions) {
-				request = ModelOptionsUtils.merge(runtimeOptions, request, ChatCompletionRequest.class,
-						REQUEST_JSON_FIELD_NAMES);
+				request = ModelOptionsUtils.merge(runtimeOptions, request, ChatCompletionRequest.class);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionRequest:"

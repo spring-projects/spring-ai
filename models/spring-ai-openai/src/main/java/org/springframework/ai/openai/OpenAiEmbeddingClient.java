@@ -46,9 +46,6 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingClient.class);
 
-	private static final List<String> REQUEST_JSON_FIELD_NAMES = ModelOptionsUtils
-		.getJsonPropertyValues(org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
-
 	public static final String DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002";
 
 	private OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
@@ -96,12 +93,12 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 			if (this.defaultOptions != null) {
 				apiRequest = ModelOptionsUtils.merge(apiRequest, this.defaultOptions,
-						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class, REQUEST_JSON_FIELD_NAMES);
+						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
 			}
 
 			if (request.getOptions() != null) {
 				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
-						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class, REQUEST_JSON_FIELD_NAMES);
+						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
 			}
 
 			EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = this.openAiApi.embeddings(apiRequest).getBody();

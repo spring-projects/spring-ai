@@ -16,19 +16,21 @@
 
 package org.springframework.ai.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.springframework.util.CollectionUtils;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import org.springframework.util.CollectionUtils;
 
 /**
  * Utility class for manipulating {@link ModelOptions} objects.
@@ -37,7 +39,8 @@ import java.util.stream.Collectors;
  */
 public final class ModelOptionsUtils {
 
-	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
 	private ModelOptionsUtils() {
 
@@ -54,6 +57,11 @@ public final class ModelOptionsUtils {
 	 * @return the merged object represented by the given class.
 	 */
 	public static <T> T merge(Object source, Object target, Class<T> clazz, List<String> acceptedFieldNames) {
+
+		List<String> requestFieldNames = CollectionUtils.isEmpty(acceptedFieldNames)
+				? REQUEST_FIELD_NAMES_PER_CLASS.computeIfAbsent(clazz, ModelOptionsUtils::getJsonPropertyValues)
+				: acceptedFieldNames;
+
 		Map<String, Object> sourceMap = objectToMap(source);
 		Map<String, Object> targetMap = objectToMap(target);
 
@@ -62,15 +70,17 @@ public final class ModelOptionsUtils {
 			.filter(e -> e.getValue() != null)
 			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
 
-		if (!CollectionUtils.isEmpty(acceptedFieldNames)) {
+		if (!CollectionUtils.isEmpty(requestFieldNames)) {
 			targetMap = targetMap.entrySet()
 				.stream()
-				.filter(e -> acceptedFieldNames.contains(e.getKey()))
+				.filter(e -> requestFieldNames.contains(e.getKey()))
 				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 		}
 
 		return mapToClass(targetMap, clazz);
 	}
+
+	private static ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
 
 	/**
 	 * Merges the source object into the target object and returns an object represented
