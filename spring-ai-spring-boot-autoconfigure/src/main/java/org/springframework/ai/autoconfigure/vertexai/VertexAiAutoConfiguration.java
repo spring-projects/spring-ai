@@ -17,9 +17,13 @@
 package org.springframework.ai.autoconfigure.vertexai;
 
 import org.springframework.ai.autoconfigure.NativeHints;
-import org.springframework.ai.vertex.api.VertexAiApi;
-import org.springframework.ai.vertex.VertexAiEmbeddingClient;
 import org.springframework.ai.vertex.VertexAiChatClient;
+import org.springframework.ai.vertex.VertexAiEmbeddingClient;
+import org.springframework.ai.vertex.api.VertexAiApi;
+import org.springframework.aot.hint.MemberCategory;
+import org.springframework.beans.factory.aot.BeanRegistrationAotContribution;
+import org.springframework.beans.factory.aot.BeanRegistrationAotProcessor;
+import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -34,6 +38,24 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({ VertexAiConnectionProperties.class, VertexAiChatProperties.class,
 		VertexAiEmbeddingProperties.class })
 public class VertexAiAutoConfiguration {
+
+	@Bean
+	static VertexAiHints vertexAiHints() {
+		return new VertexAiHints();
+	}
+
+	static class VertexAiHints implements BeanRegistrationAotProcessor {
+
+		@Override
+		public BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
+			return (generationContext, beanRegistrationCode) -> {
+				var hints = generationContext.getRuntimeHints();
+				var mcs = MemberCategory.values();
+				for (var tr : NativeHints.findJsonAnnotatedClasses(VertexAiApi.class))
+					hints.reflection().registerType(tr, mcs);
+			};
+		}
+	}
 
 	@Bean
 	@ConditionalOnMissingBean

@@ -19,6 +19,13 @@ import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.ollama.OllamaChatClient;
 import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.aot.generate.GenerationContext;
+import org.springframework.aot.hint.MemberCategory;
+import org.springframework.beans.factory.aot.BeanRegistrationAotContribution;
+import org.springframework.beans.factory.aot.BeanRegistrationAotProcessor;
+import org.springframework.beans.factory.aot.BeanRegistrationCode;
+import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,10 +33,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
+import static org.springframework.ai.autoconfigure.NativeHints.findJsonAnnotatedClasses;
+
 /**
  * {@link AutoConfiguration Auto-configuration} for Ollama Chat Client.
  *
  * @author Christian Tzolov
+ * @author Josh Long
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -38,6 +48,31 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 		OllamaConnectionProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 public class OllamaAutoConfiguration {
+
+
+	@Bean
+	static OllamaHints ollamaHints() {
+		return new OllamaHints();
+	}
+
+	static class OllamaHints implements BeanRegistrationAotProcessor {
+
+		@Override
+		public BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
+
+			return (generationContext, beanRegistrationCode) -> {
+                var mcs = MemberCategory.values();
+                var hints = generationContext.getRuntimeHints();
+                for (var tr : findJsonAnnotatedClasses(OllamaApi.class))
+                    hints.reflection().registerType(tr, mcs);
+                for (var tr : findJsonAnnotatedClasses(OllamaOptions.class))
+                    hints.reflection().registerType(tr, mcs);
+            };
+		}
+
+
+	}
+
 
 	@Bean
 	@ConditionalOnMissingBean
