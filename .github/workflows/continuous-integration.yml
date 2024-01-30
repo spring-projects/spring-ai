@@ -19,6 +19,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Check license headers
+        run: mvn -fae license:check
+
       - name: Build with Maven and deploy to Artifactory
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
