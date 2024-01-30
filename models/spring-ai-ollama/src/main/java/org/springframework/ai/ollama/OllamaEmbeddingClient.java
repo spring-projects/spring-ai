@@ -16,10 +16,13 @@
 
 package org.springframework.ai.ollama;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
@@ -49,6 +52,8 @@ import org.springframework.util.Assert;
  */
 public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	private final OllamaApi ollamaApi;
 
 	private String model = "orca-mini";
@@ -75,33 +80,26 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	@Override
-	public List<Double> embed(String text) {
-		return this.embed(List.of(text)).iterator().next();
-	}
-
-	@Override
 	public List<Double> embed(Document document) {
 		return embed(document.getContent());
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> texts) {
-		Assert.notEmpty(texts, "At least one text is required!");
-		Assert.isTrue(texts.size() == 1, "Ollama Embedding does not support batch embedding!");
+	public EmbeddingResponse call(org.springframework.ai.embedding.EmbeddingRequest request) {
+		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
+		if (request.getInstructions().size() != 1) {
+			logger.warn(
+					"Ollama Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
+		}
 
-		String inputContent = texts.iterator().next();
-
-		OllamaApi.EmbeddingResponse response = this.ollamaApi
-			.embeddings(new EmbeddingRequest(this.model, inputContent, this.clientOptions));
-
-		return List.of(response.embedding());
-	}
-
-	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
+		List<List<Double>> embeddingList = new ArrayList<>();
+		for (String inputContent : request.getInstructions()) {
+			OllamaApi.EmbeddingResponse response = this.ollamaApi
+				.embeddings(new EmbeddingRequest(this.model, inputContent, this.clientOptions));
+			embeddingList.add(response.embedding());
+		}
 		var indexCounter = new AtomicInteger(0);
-		List<Embedding> embeddings = this.embed(texts)
-			.stream()
+		List<Embedding> embeddings = embeddingList.stream()
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 			.toList();
 		return new EmbeddingResponse(embeddings);

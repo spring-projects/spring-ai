@@ -18,6 +18,9 @@ package org.springframework.ai.prompt;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +57,7 @@ class PromptTests {
 		// to have access to Messages
 		Prompt prompt = pt.create(model);
 		assertThat(prompt.getContents()).isNotNull();
-		assertThat(prompt.getMessages()).isNotEmpty().hasSize(1);
+		assertThat(prompt.getInstructions()).isNotEmpty().hasSize(1);
 		System.out.println(prompt.getContents());
 
 		String systemTemplate = "You are a helpful assistant that translates {input_language} to {output_language}.";
@@ -86,7 +89,7 @@ class PromptTests {
 
 		// ChatPromptTemplate chatPromptTemplate = new ChatPromptTemplate(systemPrompt,
 		// humanPrompt);
-		// Prompt chatPrompt chatPromptTemplate.create(model);
+		// Prompt chatPrompt chatPromptTemplate.create(generative);
 
 	}
 

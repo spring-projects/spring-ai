@@ -22,7 +22,8 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.metadata.PromptMetadata.PromptFilterMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
 
 /**
  * Unit Tests for {@link PromptMetadata}.

@@ -81,7 +81,6 @@ The prefix `spring.ai.ollama.chat` is the property prefix that configures the `C
 |====
 | Property | Description | Default
 
-| spring.ai.ollama.chat.enabled                   | Enable the Ollama Chat Client | true
 | spring.ai.ollama.chat.model                     | The name of the model to use  | llama2
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.chat.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
@@ -126,7 +125,6 @@ The prefix `spring.ai.ollama.embedding` is the property prefix that configures t
 |====
 | Property | Description | Default
 
-| spring.ai.ollama.embedding.enabled             | Enable the Ollama Chat Client | true
 | spring.ai.ollama.embedding.model               | The name of the model to use  | llama2
 | spring.ai.ollama.embedding.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.embedding.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048

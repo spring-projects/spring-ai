@@ -38,7 +38,7 @@ public class BedrockTitanChatProperties {
 	private boolean enabled = false;
 
 	/**
-	 * Bedrock Titan Chat model name. Defaults to 'amazon.titan-text-express-v1'.
+	 * Bedrock Titan Chat generative name. Defaults to 'amazon.titan-text-express-v1'.
 	 */
 	private String model = TitanChatModel.TITAN_TEXT_EXPRESS_V1.id();
 
@@ -50,8 +50,8 @@ public class BedrockTitanChatProperties {
 
 	/**
 	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
-	 * The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the
-	 * smallest set of tokens whose probability sum is at least topP.
+	 * The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers
+	 * the smallest set of tokens whose probability sum is at least topP.
 	 */
 	private Float topP;
 
@@ -61,9 +61,9 @@ public class BedrockTitanChatProperties {
 	private Integer maxTokenCount;
 
 	/**
-	 * (optional) Configure up to four sequences that the model recognizes. After a stop
-	 * sequence, the model stops generating further tokens. The returned text doesn't
-	 * contain the stop sequence.
+	 * (optional) Configure up to four sequences that the generative recognizes. After a
+	 * stop sequence, the generative stops generating further tokens. The returned text
+	 * doesn't contain the stop sequence.
 	 */
 	private List<String> stopSequences;
 

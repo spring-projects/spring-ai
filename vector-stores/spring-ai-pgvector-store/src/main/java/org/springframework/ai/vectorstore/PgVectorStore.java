@@ -116,17 +116,17 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
-		EuclideanDistance("<->", "vector_l2_ops",
+		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
 		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
-		NegativeInnerProduct("<#>", "vector_ip_ops",
+		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
 				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 
-		CosineDistance("<=>", "vector_cosine_ops",
+		COSINE_DISTANCE("<=>", "vector_cosine_ops",
 				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
@@ -197,12 +197,12 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-		this(jdbcTemplate, embeddingClient, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.CosineDistance,
+		this(jdbcTemplate, embeddingClient, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE,
 				false, PgIndexType.NONE);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions) {
-		this(jdbcTemplate, embeddingClient, dimensions, PgVectorStore.PgDistanceType.CosineDistance, false,
+		this(jdbcTemplate, embeddingClient, dimensions, PgVectorStore.PgDistanceType.COSINE_DISTANCE, false,
 				PgIndexType.NONE);
 	}
 

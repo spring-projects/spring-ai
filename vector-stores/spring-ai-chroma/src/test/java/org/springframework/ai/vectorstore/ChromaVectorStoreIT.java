@@ -30,7 +30,7 @@ import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ChromaVectorStoreIT {
 
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
+	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
 		.withExposedPorts(8000);
 
 	List<Document> documents = List.of(

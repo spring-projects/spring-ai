@@ -40,7 +40,7 @@ public class BedrockCohereChatProperties {
 	private boolean enabled = false;
 
 	/**
-	 * Bedrock Cohere Chat model name. Defaults to 'cohere-command-v14'.
+	 * Bedrock Cohere Chat generative name. Defaults to 'cohere-command-v14'.
 	 */
 	private String model = CohereChatBedrockApi.CohereChatModel.COHERE_COMMAND_V14.id();
 
@@ -52,14 +52,14 @@ public class BedrockCohereChatProperties {
 
 	/**
 	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
-	 * The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the
-	 * smallest set of tokens whose probability sum is at least topP.
+	 * The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers
+	 * the smallest set of tokens whose probability sum is at least topP.
 	 */
 	private Float topP;
 
 	/**
-	 * (optional) Specify the number of token choices the model uses to generate the next
-	 * token.
+	 * (optional) Specify the number of token choices the generative uses to generate the
+	 * next token.
 	 */
 	private Integer topK;
 
@@ -69,9 +69,9 @@ public class BedrockCohereChatProperties {
 	private Integer maxTokens;
 
 	/**
-	 * (optional) Configure up to four sequences that the model recognizes. After a stop
-	 * sequence, the model stops generating further tokens. The returned text doesn't
-	 * contain the stop sequence.
+	 * (optional) Configure up to four sequences that the generative recognizes. After a
+	 * stop sequence, the generative stops generating further tokens. The returned text
+	 * doesn't contain the stop sequence.
 	 */
 	private List<String> stopSequences;
 
@@ -81,19 +81,19 @@ public class BedrockCohereChatProperties {
 	private ReturnLikelihoods returnLikelihoods;
 
 	/**
-	 * (optional) The maximum number of generations that the model should return.
+	 * (optional) The maximum number of generations that the generative should return.
 	 */
 	private Integer numGenerations;
 
 	/**
-	 * LogitBias prevents the model from generating unwanted tokens or incentivize the
-	 * model to include desired tokens. The token likelihoods.
+	 * LogitBias prevents the generative from generating unwanted tokens or incentivize
+	 * the generative to include desired tokens. The token likelihoods.
 	 */
 	private String logitBiasToken;
 
 	/**
-	 * LogitBias prevents the model from generating unwanted tokens or incentivize the
-	 * model to include desired tokens. A float between -10 and 10.
+	 * LogitBias prevents the generative from generating unwanted tokens or incentivize
+	 * the generative to include desired tokens. A float between -10 and 10.
 	 */
 	private Float logitBiasBias;
 

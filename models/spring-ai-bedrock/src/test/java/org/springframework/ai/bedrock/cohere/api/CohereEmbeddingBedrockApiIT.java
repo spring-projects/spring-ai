@@ -46,7 +46,7 @@ public class CohereEmbeddingBedrockApiIT {
 
 		CohereEmbeddingRequest request = new CohereEmbeddingRequest(
 				List.of("I like to eat apples", "I like to eat oranges"),
-				CohereEmbeddingRequest.InputType.search_document, CohereEmbeddingRequest.Truncate.NONE);
+				CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT, CohereEmbeddingRequest.Truncate.NONE);
 
 		CohereEmbeddingResponse response = api.embedding(request);
 

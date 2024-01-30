@@ -100,12 +100,8 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 			embeddings.add(JsonUtils.toFloatArray(document.getEmbedding()));
 		}
 
-		var success = this.chromaApi.upsertEmbeddings(this.collectionId,
+		this.chromaApi.upsertEmbeddings(this.collectionId,
 				new AddEmbeddingsRequest(ids, embeddings, metadatas, contents));
-
-		if (!success) {
-			throw new RuntimeException("Unsuccessful storing!");
-		}
 	}
 
 	@Override

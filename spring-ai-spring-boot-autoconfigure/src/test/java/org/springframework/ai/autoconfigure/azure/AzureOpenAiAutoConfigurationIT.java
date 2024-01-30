@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
@@ -30,10 +31,10 @@ import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -78,8 +79,8 @@ public class AzureOpenAiAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
-			ChatResponse response = chatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -89,15 +90,16 @@ public class AzureOpenAiAutoConfigurationIT {
 
 			AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
 
-			Flux<ChatResponse> response = chatClient.generateStream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(1);
 
 			String stitchedResponseContent = responses.stream()
-				.map(ChatResponse::getGenerations)
+				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
-				.map(Generation::getContent)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -111,11 +113,11 @@ public class AzureOpenAiAutoConfigurationIT {
 
 			EmbeddingResponse embeddingResponse = embeddingClient
 				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getData()).hasSize(2);
-			assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
-			assertThat(embeddingResponse.getData().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getData().get(1).getEmbedding()).isNotEmpty();
-			assertThat(embeddingResponse.getData().get(1).getIndex()).isEqualTo(1);
+			assertThat(embeddingResponse.getResults()).hasSize(2);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 			assertThat(embeddingClient.dimensions()).isEqualTo(1536);
 		});

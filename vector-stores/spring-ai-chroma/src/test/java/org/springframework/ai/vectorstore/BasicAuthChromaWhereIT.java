@@ -29,7 +29,7 @@ import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -55,7 +55,7 @@ public class BasicAuthChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#basic-authentication
 	 */
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
+	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")

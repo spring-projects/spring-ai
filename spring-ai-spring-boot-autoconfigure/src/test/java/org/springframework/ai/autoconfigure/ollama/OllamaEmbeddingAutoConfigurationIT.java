@@ -16,22 +16,21 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +53,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
 		logger.info(MODEL_NAME + " pulling competed!");
 
@@ -62,9 +61,8 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.embedding.enabled=true", "spring.ai.ollama.embedding.model=" + MODEL_NAME,
-				"spring.ai.ollama.base-url=" + baseUrl)
-		.withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class));
+		.withPropertyValues("spring.ai.ollama.embedding.model=" + MODEL_NAME, "spring.ai.ollama.base-url=" + baseUrl)
+		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	@Test
 	public void singleTextEmbedding() {
@@ -72,8 +70,8 @@ public class OllamaEmbeddingAutoConfigurationIT {
 			OllamaEmbeddingClient embeddingClient = context.getBean(OllamaEmbeddingClient.class);
 			assertThat(embeddingClient).isNotNull();
 			EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
-			assertThat(embeddingResponse.getData()).hasSize(1);
-			assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+			assertThat(embeddingResponse.getResults()).hasSize(1);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingClient.dimensions()).isEqualTo(3200);
 		});
 	}

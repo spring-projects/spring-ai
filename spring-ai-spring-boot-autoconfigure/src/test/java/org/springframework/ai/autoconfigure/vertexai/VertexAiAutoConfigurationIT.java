@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertex.embedding.VertexAiEmbeddingClient;
-import org.springframework.ai.vertex.generation.VertexAiChatClient;
+import org.springframework.ai.vertex.VertexAiEmbeddingClient;
+import org.springframework.ai.vertex.VertexAiChatClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -48,7 +48,7 @@ public class VertexAiAutoConfigurationIT {
 		contextRunner.run(context -> {
 			VertexAiChatClient client = context.getBean(VertexAiChatClient.class);
 
-			String response = client.generate("Hello");
+			String response = client.call("Hello");
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
@@ -62,11 +62,11 @@ public class VertexAiAutoConfigurationIT {
 
 			EmbeddingResponse embeddingResponse = embeddingClient
 				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getData()).hasSize(2);
-			assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
-			assertThat(embeddingResponse.getData().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getData().get(1).getEmbedding()).isNotEmpty();
-			assertThat(embeddingResponse.getData().get(1).getIndex()).isEqualTo(1);
+			assertThat(embeddingResponse.getResults()).hasSize(2);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 			assertThat(embeddingClient.dimensions()).isEqualTo(768);
 		});

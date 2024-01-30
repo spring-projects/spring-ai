@@ -7,7 +7,7 @@ Your rate limits are directly determined by your plan when you signed up with yo
 
 To help garner insight into your AI (model) consumption and general usage, Spring AI provides an API to introspect the metadata that is returned by AI providers in their APIs.
 
-Spring AI defines 3 primary interfaces to examine these metrics: `GenerationMetadata`, `RateLimit` and `Usage`. All of these interface can be accessed programmatically from the `AiResponse` returned and initiated by an AI request.
+Spring AI defines 3 primary interfaces to examine these metrics: `GenerationMetadata`, `RateLimit` and `Usage`. All of these interface can be accessed programmatically from the `ChatResponse` returned and initiated by an AI request.
 
 [[AiMetadata-GenerationMetadata]]
 == `GenerationMetadata` interface
@@ -30,9 +30,9 @@ interface GenerationMetadata {
 }
 ----
 
-An instance of `GenerationMetadata` is automatically created by Spring AI when an AI request is made through the AI provider's API and an AI response is returned. You can get access to the AI provider metadata from the `AiResponse` using:
+An instance of `GenerationMetadata` is automatically created by Spring AI when an AI request is made through the AI provider's API and an AI response is returned. You can get access to the AI provider metadata from the `ChatResponse` using:
 
-.Get access to `GenerationMetadata` from `AiResponse`
+.Get access to `GenerationMetadata` from `ChatResponse`
 [source,java]
 ----
 @Service
@@ -42,13 +42,13 @@ class MyService {
 
         Prompt prompt = createPrompt(request);
 
-        AiResponse response = aiClient.generate(prompt)
+        ChatResponse response = chatClient.generate(prompt);
 
-        // Process the AI response
+        // Process the chat response
 
         GenerationMetadata metadata = response.getMetadata();
 
-        // Inspect the AI metadata returned in the AI response of the AI providers API
+        // Inspect the AI metadata returned in the chat response of the AI providers API
 
         Long totalTokensUsedInAiPromptAndResponse = metadata.getUsage().getTotalTokens();
 

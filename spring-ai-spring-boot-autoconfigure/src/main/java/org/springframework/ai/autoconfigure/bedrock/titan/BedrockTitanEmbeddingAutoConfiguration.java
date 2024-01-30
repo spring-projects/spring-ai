@@ -49,7 +49,7 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TitanEmbeddingBedrockApi titanApi(AwsCredentialsProvider credentialsProvider,
+	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
 			BedrockTitanEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
 				new ObjectMapper());

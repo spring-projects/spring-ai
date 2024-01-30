@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -69,7 +70,7 @@ public class OpenAiApi {
 	}
 
 	/**
-	 * Create an new chat completion api.
+	 * Create a new chat completion api.
 	 *
 	 * @param baseUrl api base URL.
 	 * @param openAiToken OpenAI apiKey.
@@ -94,8 +95,12 @@ public class OpenAiApi {
 			@Override
 			public void handleError(ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
+					if (response.getStatusCode().is4xxClientError()) {
+						throw new OpenAiApiClientErrorException(String.format("%s - %s", response.getStatusCode().value(),
+							OpenAiApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+					}
 					throw new OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
-							new ObjectMapper().readValue(response.getBody(), ResponseError.class)));
+							OpenAiApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
 				}
 			}
 		};
@@ -120,6 +125,23 @@ public class OpenAiApi {
 		}
 
 		public OpenAiApiException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
+
+	/**
+	 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
+	 * 401 - You must be a member of an organization to use the API,
+	 * 429 - Rate limit reached for requests, 429 - You exceeded your current quota
+	 * , please check your plan and billing details.
+	 */
+	public static class OpenAiApiClientErrorException extends RuntimeException {
+
+		public OpenAiApiClientErrorException(String message) {
+			super(message);
+		}
+
+		public OpenAiApiClientErrorException(String message, Throwable cause) {
 			super(message, cause);
 		}
 	}
@@ -162,8 +184,9 @@ public class OpenAiApi {
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
+		@ConstructorBinding
 		public FunctionTool(Function function) {
-			this(Type.function, function);
+			this(Type.FUNCTION, function);
 		}
 
 		/**
@@ -173,7 +196,7 @@ public class OpenAiApi {
 			/**
 			 * Function tool type.
 			 */
-			function
+			@JsonProperty("function") FUNCTION
 		}
 
 		/**
@@ -198,13 +221,14 @@ public class OpenAiApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
+			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, parseJson(jsonSchema));
 			}
 		}
 	}
 
-	/**
+/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -248,17 +272,17 @@ public class OpenAiApi {
 	 *
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest(
+	public record ChatCompletionRequest (
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("frequency_penalty") Float frequencyPenalty,
-			@JsonProperty("logit_bias") Map<String, Object> logitBias,
+			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("max_tokens") Integer maxTokens,
 			@JsonProperty("n") Integer n,
 			@JsonProperty("presence_penalty") Float presencePenalty,
 			@JsonProperty("response_format") ResponseFormat responseFormat,
 			@JsonProperty("seed") Integer seed,
-			@JsonProperty("stop") String stop,
+			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
@@ -310,6 +334,20 @@ public class OpenAiApi {
 					tools, toolChoice, null);
 		}
 
+				/**
+		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
+		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
+		 *
+		 * @param messages A list of messages comprising the conversation so far.
+		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
+		 * as they become available, with the stream terminated by a data: [DONE] message.
+		 */
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
+			this(messages, null, null, null, null, null, null,
+					null, null, null, stream, null, null,
+					null, null, null);
+		}
+
 		/**
 		 * Specifies a tool the model should use. Use to force the model to call a specific function.
 		 *
@@ -325,6 +363,7 @@ public class OpenAiApi {
 			 * Create a tool choice of type 'function' and name 'functionName'.
 			 * @param functionName Function name of the tool.
 			 */
+			@ConstructorBinding
 			public ToolChoice(String functionName) {
 				this("function", Map.of("name", functionName));
 			}
@@ -347,10 +386,10 @@ public class OpenAiApi {
 	 * @param role The role of the messages author. Could be one of the {@link Role} types.
 	 * @param name An optional name for the participant. Provides the model information to differentiate between
 	 * participants of the same role.
-	 * @param toolCallId Tool call that this message is responding to. Only applicable for the {@link Role#tool} role
+	 * @param toolCallId Tool call that this message is responding to. Only applicable for the {@link Role#TOOL} role
 	 * and null otherwise.
 	 * @param toolCalls The tool calls generated by the model, such as function calls. Applicable only for
-	 * {@link Role#assistant} role and null otherwise.
+	 * {@link Role#ASSISTANT} role and null otherwise.
 	 * @param functionCall Deprecated and replaced by tool_calls. The name and arguments of a function that should be
 	 * called, as generated by the model.
 	 */
@@ -379,19 +418,19 @@ public class OpenAiApi {
 			/**
 			 * System message.
 			 */
-			system,
+			@JsonProperty("system") SYSTEM,
 			/**
 			 * User message.
 			 */
-			user,
+			@JsonProperty("user") USER,
 			/**
 			 * Assistant message.
 			 */
-			assistant,
+			@JsonProperty("assistant") ASSISTANT,
 			/**
 			 * Tool message.
 			 */
-			tool
+			@JsonProperty("tool") TOOL
 		}
 
 		/**
@@ -429,23 +468,23 @@ public class OpenAiApi {
 		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
-		stop,
+		@JsonProperty("stop") STOP,
 		/**
 		 * The maximum number of tokens specified in the request was reached.
 		 */
-		length,
+		@JsonProperty("length") LENGTH,
 		/**
 		 * The content was omitted due to a flag from our content filters.
 		 */
-		content_filter,
+		@JsonProperty("content_filter") CONTENT_FILTER,
 		/**
 		 * The model called a tool.
 		 */
-		tool_calls,
+		@JsonProperty("tool_calls") TOOL_CALLS,
 		/**
 		 * (deprecated) The model called a function.
 		 */
-		function_call
+		@JsonProperty("function_call") FUNCTION_CALL
 	}
 
 	/**

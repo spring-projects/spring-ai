@@ -14,6 +14,23 @@ Let's make your `@Beans` intelligent!
 
 ### Breaking Changes
 
+January 24, 2024 Update
+
+* Moving the `prompt` and `messages` and `metadata` packages to subpackages of `org.sf.ai.chat`
+* New functionality is **text to image** clients.  Classes are `OpenAiImageClient` and `StabilityAiImageClient`.  See the integration tests for usage, docs are coming soon.
+* A new package `model` that contains interfaces and base classes to support creating AI Model Clients for any input/output data type combination. At the moment the chat and image model packages implement this.  We will be updating the embedding package to this new model soon.
+* A new "portable options" design pattern.  We wanted to provide as much portability in the `ChatClient` as possible across different chat based AI Models.  There is a common set of generation options and then those that are specific to a model provider.  A sort of `duck typing` approach is used.  `ModelOptions` in the model package is a marker interface indicating implementations of this class will provide the options for a model.  See `ImageOptions`, a subinterface that defines portable options across all text->image `ImageClient` implementations.  Then `StabilityAiImageOptions` and `OpenAiImageOptions` provide the options specific to each model provider.  All options classes are created via a fluent API builder all can be passed into the portable `ImageClient` API.  These option data types are using in autoconfiguration/configurationproperties for the `ImageClient` implementations.
+
+
+January 13, 2024 Update
+
+The following OpenAi Autoconfiguration chat properties has changed
+
+ - from `spring.ai.openai.model` to `spring.ai.openai.chat.model`.
+ - from `spring.ai.openai.temperature` to `spring.ai.openai.chat.temperature`.
+
+Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/clients/openai.html
+
 December 27, 2023 Update
 
 Merge SimplePersistentVectorStore and InMemoryVectorStore into SimpleVectorStore
@@ -214,7 +231,7 @@ Following vector stores are supported:
 
 ```xml
     <dependency>
-        <groupId>org.springframework.ai</groupId> 
+        <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
         <version>0.8.0-SNAPSHOT</version>
     </dependency>

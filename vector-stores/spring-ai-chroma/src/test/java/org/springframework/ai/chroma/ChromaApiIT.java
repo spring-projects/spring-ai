@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ChromaApiIT {
 
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
+	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22.dev44")
 		.withExposedPorts(8000);
 
 	@Autowired
@@ -85,9 +85,7 @@ public class ChromaApiIT {
 				List.of(Map.of(), Map.of("key1", "value1", "key2", true, "key3", 23.4)),
 				List.of("Hello World", "Big World"));
 
-		var success = chroma.upsertEmbeddings(newCollection.id(), addEmbeddingRequest);
-
-		assertThat(success).isTrue();
+		chroma.upsertEmbeddings(newCollection.id(), addEmbeddingRequest);
 
 		var addEmbeddingRequest2 = new AddEmbeddingsRequest("id3", new float[] { 3f, 3f, 3f },
 				Map.of("key1", "value1", "key2", true, "key3", 23.4), "Big World");
@@ -96,6 +94,15 @@ public class ChromaApiIT {
 
 		assertThat(chroma.countEmbeddings(newCollection.id())).isEqualTo(3);
 
+		var queryResult = chroma.queryCollection(newCollection.id(),
+				new QueryRequest(List.of(1f, 1f, 1f), 3, chroma.where("""
+						{
+							"key2" : { "$eq": true }
+						}
+						""")));
+		assertThat(queryResult.ids().get(0)).hasSize(2);
+		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id2", "id3");
+
 		// Update existing embedding.
 		chroma.upsertEmbeddings(newCollection.id(), new AddEmbeddingsRequest("id3", new float[] { 6f, 6f, 6f },
 				Map.of("key1", "value2", "key2", false, "key4", 23.4), "Small World"));
@@ -103,11 +110,14 @@ public class ChromaApiIT {
 		var result = chroma.getEmbeddings(newCollection.id(), new GetEmbeddingsRequest(List.of("id2")));
 		assertThat(result.ids().get(0)).isEqualTo("id2");
 
-		result = chroma.getEmbeddings(newCollection.id(), new GetEmbeddingsRequest(List.of(), chroma.where("""
-				{ "key2" : { "$eq": true} }
-				""")));
-
-		assertThat(result.ids()).containsExactlyInAnyOrder("id2");
+		queryResult = chroma.queryCollection(newCollection.id(),
+				new QueryRequest(List.of(1f, 1f, 1f), 3, chroma.where("""
+						{
+							"key2" : { "$eq": true }
+						}
+						""")));
+		assertThat(queryResult.ids().get(0)).hasSize(1);
+		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id2");
 	}
 
 	@Test

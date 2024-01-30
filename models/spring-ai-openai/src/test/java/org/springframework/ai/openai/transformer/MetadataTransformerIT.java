@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.client.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.transformer.ContentFormatTransformer;
 import org.springframework.ai.transformer.KeywordMetadataEnricher;
 import org.springframework.ai.transformer.SummaryMetadataEnricher;
@@ -65,7 +65,7 @@ public class MetadataTransformerIT {
 
 	Document document2 = new Document(
 			"The Spring Framework is divided into modules. Applications can choose which modules"
-					+ " they need. At the heart are the modules of the core container, including a configuration model and a "
+					+ " they need. At the heart are the modules of the core container, including a configuration generative and a "
 					+ "dependency injection mechanism. Beyond that, the Spring Framework provides foundational support "
 					+ " for different application architectures, including messaging, transactional data and persistence, "
 					+ "and web. It also includes the Servlet-based Spring MVC web framework and, in parallel, the Spring "
@@ -166,7 +166,6 @@ public class MetadataTransformerIT {
 		@Bean
 		public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi) {
 			OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
-			openAiChatClient.setTemperature(0.3);
 			return openAiChatClient;
 		}
 

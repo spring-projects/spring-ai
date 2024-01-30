@@ -25,6 +25,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
@@ -95,11 +96,32 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 */
 	public T parse(String text) {
 		try {
+			// If the response is a JSON Schema, extract the properties and use them as
+			// the response.
+			text = this.jsonSchemaToInstance(text);
 			return (T) this.objectMapper.readValue(text, this.clazz);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * If the response is a JSON Schema, extract the properties and use them as the
+	 * response.
+	 * @param text
+	 * @return
+	 */
+	private String jsonSchemaToInstance(String text) {
+		try {
+			Map<String, Object> map = this.objectMapper.readValue(text, Map.class);
+			if (map.containsKey("$schema")) {
+				return this.objectMapper.writeValueAsString(map.get("properties"));
+			}
+		}
+		catch (Exception e) {
+		}
+		return text;
 	}
 
 	/**
@@ -122,6 +144,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 		String template = """
 				Your response should be in JSON format.
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+				Do not include markdown code blocks in your response.
 				Here is the JSON Schema instance your output must adhere to:
 				```%s```
 				""";

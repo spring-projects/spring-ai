@@ -17,23 +17,20 @@ package org.springframework.ai.chat;
 
 import java.util.List;
 
-import org.springframework.ai.metadata.GenerationMetadata;
-import org.springframework.ai.metadata.PromptMetadata;
-import org.springframework.lang.Nullable;
+import org.springframework.ai.model.ModelResponse;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
  */
-public class ChatResponse {
+public class ChatResponse implements ModelResponse<Generation> {
 
-	private final GenerationMetadata metadata;
+	private final ChatResponseMetadata chatResponseMetadata;
 
 	/**
 	 * List of generated messages returned by the AI provider.
 	 */
 	private final List<Generation> generations;
-
-	private PromptMetadata promptMetadata;
 
 	/**
 	 * Construct a new {@link ChatResponse} instance without metadata.
@@ -41,18 +38,18 @@ public class ChatResponse {
 	 * provider.
 	 */
 	public ChatResponse(List<Generation> generations) {
-		this(generations, GenerationMetadata.NULL);
+		this(generations, ChatResponseMetadata.NULL);
 	}
 
 	/**
 	 * Construct a new {@link ChatResponse} instance.
 	 * @param generations the {@link List} of {@link Generation} returned by the AI
 	 * provider.
-	 * @param metadata {@link GenerationMetadata} containing information about the use of
-	 * the AI provider's API.
+	 * @param chatResponseMetadata {@link ChatResponseMetadata} containing information
+	 * about the use of the AI provider's API.
 	 */
-	public ChatResponse(List<Generation> generations, GenerationMetadata metadata) {
-		this.metadata = metadata;
+	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
+		this.chatResponseMetadata = chatResponseMetadata;
 		this.generations = List.copyOf(generations);
 	}
 
@@ -63,45 +60,25 @@ public class ChatResponse {
 	 * multiple output {@link Generation generations}.
 	 * @return the {@link List} of {@link Generation generated outputs}.
 	 */
-	public List<Generation> getGenerations() {
+
+	@Override
+	public List<Generation> getResults() {
 		return this.generations;
 	}
 
 	/**
 	 * @return Returns the first {@link Generation} in the generations list.
 	 */
-	public Generation getGeneration() {
+	public Generation getResult() {
 		return this.generations.get(0);
 	}
 
 	/**
-	 * @return Returns {@link GenerationMetadata} containing information about the use of
-	 * the AI provider's API.
+	 * @return Returns {@link ChatResponseMetadata} containing information about the use
+	 * of the AI provider's API.
 	 */
-	public GenerationMetadata getGenerationMetadata() {
-		return this.metadata;
-	}
-
-	/**
-	 * @return {@link PromptMetadata} containing information on prompt processing by the
-	 * AI.
-	 */
-	public PromptMetadata getPromptMetadata() {
-		PromptMetadata promptMetadata = this.promptMetadata;
-		return promptMetadata != null ? promptMetadata : PromptMetadata.empty();
-	}
-
-	/**
-	 * Builder method used to include {@link PromptMetadata} returned in the AI response
-	 * when processing the prompt.
-	 * @param promptMetadata {@link PromptMetadata} returned by the AI in the response
-	 * when processing the prompt.
-	 * @return this {@link ChatResponse}.
-	 * @see #getPromptMetadata()
-	 */
-	public ChatResponse withPromptMetadata(@Nullable PromptMetadata promptMetadata) {
-		this.promptMetadata = promptMetadata;
-		return this;
+	public ChatResponseMetadata getMetadata() {
+		return this.chatResponseMetadata;
 	}
 
 }

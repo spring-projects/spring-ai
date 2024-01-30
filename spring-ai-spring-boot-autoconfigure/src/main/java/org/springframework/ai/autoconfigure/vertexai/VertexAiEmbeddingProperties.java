@@ -25,7 +25,7 @@ public class VertexAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding";
 
 	/**
-	 * Vertex AI PaLM API embedding model name. Defaults to embedding-gecko-001.
+	 * Vertex AI PaLM API embedding generative name. Defaults to embedding-gecko-001.
 	 */
 	private String model = VertexAiApi.DEFAULT_EMBEDDING_MODEL;
 

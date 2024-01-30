@@ -18,8 +18,8 @@ package org.springframework.ai.autoconfigure.vertexai;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.vertex.api.VertexAiApi;
-import org.springframework.ai.vertex.embedding.VertexAiEmbeddingClient;
-import org.springframework.ai.vertex.generation.VertexAiChatClient;
+import org.springframework.ai.vertex.VertexAiEmbeddingClient;
+import org.springframework.ai.vertex.VertexAiChatClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
