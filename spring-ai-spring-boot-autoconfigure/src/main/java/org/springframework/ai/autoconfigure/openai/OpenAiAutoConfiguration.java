@@ -38,6 +38,9 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
 @ImportRuntimeHints(NativeHints.class)
+/**
+ * @author Christian Tzolov
+ */
 public class OpenAiAutoConfiguration {
 
 	@Bean

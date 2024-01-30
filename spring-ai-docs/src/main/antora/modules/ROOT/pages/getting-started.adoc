@@ -56,8 +56,9 @@ repositories {
 
 == Embedding Models
 
-* xref:api/embeddings/openai-embeddings.adoc#_getting_started[OpenAI]
-* xref:api/embeddings/ollama-embeddings.adoc#_getting_started[Ollama]
+* xref:api/embeddings/openai-embeddings.adoc#_getting_started[OpenAI Embeddings]
+* xref:api/embeddings/azure-openai-embeddings.adoc#_getting_started[Azure OpenAI Embeddings]
+* xref:api/embeddings/ollama-embeddings.adoc#_getting_started[Ollama Embeddings]
 
 
 == Spring CLI

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,72 +16,31 @@
 
 package org.springframework.ai.autoconfigure.azure.openai;
 
+import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(AzureOpenAiChatProperties.CONFIG_PREFIX)
 public class AzureOpenAiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.chat";
 
-	/**
-	 * The sampling temperature to use that controls the apparent creativity of generated
-	 * completions. Higher values will make output more random while lower values will
-	 * make results more focused and deterministic. It is not recommended to modify
-	 * temperature and top_p for the same completions request as the interaction of these
-	 * two settings is difficult to predict.
-	 */
-	private Double temperature = 0.7;
+	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
 
-	/**
-	 * An alternative to sampling with temperature called nucleus sampling. This value
-	 * causes the generative to consider the results of tokens with the provided
-	 * probability mass. As an example, a value of 0.15 will cause only the tokens
-	 * comprising the top 15% of probability mass to be considered. It is not recommended
-	 * to modify temperature and top_p for the same completions request as the interaction
-	 * of these two settings is difficult to predict.
-	 */
-	private Double topP;
+	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	/**
-	 * Creates an instance of ChatCompletionsOptions class.
-	 */
-	private String model = "gpt-35-turbo";
+	@NestedConfigurationProperty
+	private AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+		.withModel(DEFAULT_CHAT_MODEL)
+		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.build();
 
-	/**
-	 * The maximum number of tokens to generate.
-	 */
-	private Integer maxTokens;
-
-	public Double getTemperature() {
-		return temperature;
+	public AzureOpenAiChatOptions getOptions() {
+		return this.options;
 	}
 
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
-	public String getModel() {
-		return model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public Double getTopP() {
-		return topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
-	}
-
-	public Integer getMaxTokens() {
-		return maxTokens;
-	}
-
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
+	public void setOptions(AzureOpenAiChatOptions options) {
+		this.options = options;
 	}
 
 }

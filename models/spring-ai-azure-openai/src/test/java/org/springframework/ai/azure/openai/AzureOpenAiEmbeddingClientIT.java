@@ -60,7 +60,7 @@ class AzureOpenAiEmbeddingClientIT {
 
 		@Bean
 		public AzureOpenAiEmbeddingClient azureEmbeddingClient(OpenAIClient openAIClient) {
-			return new AzureOpenAiEmbeddingClient(openAIClient, "text-embedding-ada-002");
+			return new AzureOpenAiEmbeddingClient(openAIClient);
 		}
 
 	}

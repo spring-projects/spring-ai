@@ -1,0 +1,176 @@
+= Azure OpenAI Chat
+
+Azure's OpenAI offering, powered by ChatGPT, extends beyond traditional OpenAI capabilities, delivering AI-driven text generation with enhanced functionality. Azure offers additional AI safety and responsible AI features, as highlighted in their recent update https://techcommunity.microsoft.com/t5/ai-azure-ai-services-blog/announcing-new-ai-safety-amp-responsible-ai-features-in-azure/ba-p/3983686[here].
+
+Azure offers Java developers the opportunity to leverage AI's full potential by integrating it with an array of Azure services, which includes AI-related resources such as Vector Stores on Azure.
+
+== Getting Started
+
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
+
+=== Configure the Azure OpenAI Chat Client Manually
+
+Add the `spring-ai-azure-openai` dependency to your project's Maven `pom.xml` file:
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-openai:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../clients/azure-openai-chat.html[Azure OpenAI Chat] section.
+
+Next, create an `AzureOpenAiChatClient` instance and use it to generate text responses:
+
+[source,java]
+----
+var openAIClient = OpenAIClientBuilder()
+        .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+		.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+		.buildClient();
+
+var chatClient = new AzureOpenAiChatClient(openAIClient).withDefaultOptions(
+		AzureOpenAiChatOptions.builder()
+            .withModel("gpt-35-turbo")
+            .withTemperature(0.4)
+            .withMaxTokens(200)
+        .build());
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> response = chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+----
+
+NOTE: the `gpt-35-turbo` is actually the `Deployment Name` as presented in the Azure AI Portal.
+
+The `AzureOpenAiChatOptions` provides the configuration information for the chat requests.
+The `AzureOpenAiChatOptions` offers a builder to create the options.
+
+At start time use the `AzureOpenAiChatClient#withDefaultOptions()` to configure the  default options used for all char requests.
+Furthermore, at runtime, you can override the default options by passing a `AzureOpenAiChatOptions` instance with your to the  `Prompt` request.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        AzureOpenAiChatOptions.builder().withModel("gpt-4-32k").build()
+    ));
+----
+
+=== Spring Boot Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
+There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
+
+Exporting environment variables is one way to set these configuration properties:
+
+[source,shell]
+----
+export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+----
+
+The `spring.ai.azure.openai.chat.options.*` properties are used to configure the default options used for all chat requests.
+
+==== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,application.properties]
+----
+spring.ai.azure.openai.api-key=YOUR_API_KEY
+spring.ai.azure.openai.endpoint=YOUR_ENDPOINT
+spring.ai.azure.openai.chat.options.model=gpt-35-turbo
+spring.ai.azure.openai.chat.options.temperature=0.7
+----
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+== Azure OpenAI Chat Properties
+
+The prefix `spring.ai.azure.openai` is the property prefix to configure the connection to Azure OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.openai.api-key |  The Key from Azure AI OpenAI `Keys and Endpoint` section under `Resource Management`  | -
+| spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
+|====
+
+
+The prefix `spring.ai.azure.openai.chat` is the property prefix that configures the `ChatClient` implementation for Azure OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.openai.chat.options.model | 	 * The model name to provide as part of this completions request. Not applicable to Azure OpenAI, where deployment information should be included in the Azure resource URI that's connected to.
+ | gpt-35-turbo
+| spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate. | -
+| spring.ai.azure.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
+| spring.ai.azure.openai.chat.options.topP | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. | -
+| spring.ai.azure.openai.chat.options.logitBias | A map between GPT token IDs and bias scores that influences the probability of specific tokens appearing in a completions response. Token IDs are computed via external tokenizer tools, while bias scores reside in the range of -100 to 100 with minimum and maximum values corresponding to a full ban or exclusive selection of a token, respectively. The exact behavior of a given bias score varies by model. | -
+| spring.ai.azure.openai.chat.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -
+| spring.ai.azure.openai.chat.options.n | The number of chat completions choices that should be generated for a chat completions response. | -
+| spring.ai.azure.openai.chat.options.stop | A collection of textual sequences that will end completions generation. | -
+| spring.ai.azure.openai.chat.options.presencePenalty |  A value that influences the probability of generated tokens appearing based on their existing presence in generated text. Positive values will make tokens less likely to appear when they already exist and increase the model's likelihood to output new topics. | -
+| spring.ai.azure.openai.chat.options.frequencyPenalty | A value that influences the probability of generated tokens appearing based on their cumulative frequency in generated text. Positive values will make tokens less likely to appear as their frequency increases and decrease the likelihood of the model repeating the same statements verbatim. | -
+|====
