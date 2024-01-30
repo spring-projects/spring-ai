@@ -13,6 +13,7 @@
 ** xref:api/etl-pipeline.adoc[]
 ** xref:api/embeddings.adoc[]
 *** xref:api/embeddings/onnx.adoc[]
+*** xref:api/embeddings/openai-embeddings.adoc[]
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]

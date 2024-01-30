@@ -1,0 +1,179 @@
+= OpenAI Embeddings
+
+Spring AI supports the OpenAI's text embeddings models.
+OpenAI’s text embeddings measure the relatedness of text strings.
+An embedding is a vector (list) of floating point numbers. The distance between two vectors measures their relatedness. Small distances suggest high relatedness and large distances suggest low relatedness.
+
+== Getting Started
+
+You will need to create an API with OpenAI to access OpenAI embeddings models.
+
+Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
+
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
+
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
+----
+
+== Configure the OpenAI Embedding Client Manually
+
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../Clients/openai.html[OpenAI Chat Client] section.
+
+Next, create an `OpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
+
+[source,java]
+----
+var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+
+var embeddingClient = new OpenAiEmbeddingClient(openAiApi)
+    .withDefaultOptions(OpenAiEmbeddingOptions.builder()
+        .withModel("text-embedding-ada-002")
+        .withUser("user-6")
+        .build());
+
+EmbeddingResponse embeddingResponse = embeddingClient
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
+The options class offers a `builder()` for easy options creation.
+
+== OpenAiEmbeddingOptions
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provide the OpenAI configures, such as the model to use, the temperature, the frequency penalty, etc.
+
+The default options can be configured using the `spring.ai.openai.embedding.options` properties as well.
+
+At start-time use the `OpenAiEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
+At run-time you can override the default options, using a `OpenAiEmbeddingOptions` instance as part of your `EmbeddingRequest``.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        OpenAiEmbeddingOptions.builder()
+            .withModel("Different-Embedding-Model-Deployment-Name")
+        .build()));
+----
+
+== Spring Boot Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
+
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
+----
+
+The `spring.ai.openai.embedding.options.*` properties are used to configure the default options used for all embedding requests.
+
+=== Sample Code
+
+This will create a `EmbeddingClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+
+[source,application.properties]
+----
+spring.ai.openai.api-key=YOUR_API_KEY
+spring.ai.openai.embedding.options.model=text-embedding-ada-002
+----
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingClient embeddingClient;
+
+    @Autowired
+    public ChatController(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== OpenAI Embedding Properties
+
+The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.api-key    | The API Key           |  -
+|====
+
+
+The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingClient` implementation for OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+| spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
+| spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
+| spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-ada-002
+| spring.ai.openai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
+| spring.ai.openai.embedding.options.user   | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.  | -
+|====
+
+NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+The `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-key` properties if set take precedence over the common properties.
+This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
