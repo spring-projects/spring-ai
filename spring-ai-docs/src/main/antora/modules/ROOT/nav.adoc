@@ -3,7 +3,7 @@
 * xref:getting-started.adoc[Getting Started]
 * xref:api/index.adoc[]
 ** xref:api/chatclient.adoc[]
-*** xref:api/clients/openai.adoc[]
+*** xref:api/clients/openai-chat.adoc[]
 *** xref:api/clients/azure-openai.adoc[]
 *** xref:api/clients/bedrock.adoc[]
 *** xref:api/clients/huggingface.adoc[]

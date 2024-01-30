@@ -19,7 +19,7 @@ Exporting an environment variable is one way to set that configuration property:
 export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 ----
 
-== Configure the OpenAI Embedding Client Manually
+=== Configure the OpenAI Embedding Client Manually
 
 Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
 [source, xml]
@@ -40,7 +40,7 @@ dependencies {
 }
 ----
 
-NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../Clients/openai.html[OpenAI Chat Client] section.
+NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`. For more information about the `OpenAiChatClient` refer to the link:../clients/openai-chat.html[OpenAI Chat Client] section.
 
 Next, create an `OpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
 
@@ -61,9 +61,9 @@ EmbeddingResponse embeddingResponse = embeddingClient
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
 The options class offers a `builder()` for easy options creation.
 
-== OpenAiEmbeddingOptions
+==== OpenAiEmbeddingOptions
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provide the OpenAI configures, such as the model to use, the temperature, the frequency penalty, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configures, such as the model to use, the temperature, the frequency penalty, etc.
 
 The default options can be configured using the `spring.ai.openai.embedding.options` properties as well.
 
@@ -81,7 +81,7 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
         .build()));
 ----
 
-== Spring Boot Auto-configuration
+=== OpenAiEmbeddingClient Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -117,7 +117,7 @@ export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 
 The `spring.ai.openai.embedding.options.*` properties are used to configure the default options used for all embedding requests.
 
-=== Sample Code
+==== Sample Embedding Controller
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
@@ -136,7 +136,7 @@ public class EmbeddingController {
     private final EmbeddingClient embeddingClient;
 
     @Autowired
-    public ChatController(EmbeddingClient embeddingClient) {
+    public EmbeddingController(EmbeddingClient embeddingClient) {
         this.embeddingClient = embeddingClient;
     }
 
@@ -152,7 +152,7 @@ public class EmbeddingController {
 
 The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
 
-[cols="3,5,3"]
+[cols="3,5,1"]
 |====
 | Property | Description | Default
 
@@ -163,7 +163,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 
 The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingClient` implementation for OpenAI.
 
-[cols="3,5,3"]
+[cols="3,5,1"]
 |====
 | Property | Description | Default
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
