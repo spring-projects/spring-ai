@@ -56,7 +56,8 @@ repositories {
 
 == Embedding Models
 
-
+* xref:api/embeddings/openai-embeddings.adoc#_getting_started[OpenAI Embeddings]
+* xref:api/embeddings/azure-openai-embeddings.adoc#_getting_started[Azure OpenAI Embeddings]
 
 == Spring CLI
 
