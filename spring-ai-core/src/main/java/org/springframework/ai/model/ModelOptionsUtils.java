@@ -130,7 +130,11 @@ public final class ModelOptionsUtils {
 		try {
 			String json = OBJECT_MAPPER.writeValueAsString(source);
 			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
-			});
+			})
+				.entrySet()
+				.stream()
+				.filter(e -> e.getValue() != null)
+				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

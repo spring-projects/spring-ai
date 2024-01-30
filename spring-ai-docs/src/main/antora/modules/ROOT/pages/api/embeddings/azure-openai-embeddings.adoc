@@ -1,0 +1,167 @@
+= Azure OpenAI Embeddings
+
+Azure's OpenAI extends the OpenAI capabilities, offering safe text generation and Embeddings computation models for various task:
+
+- Similarity embeddings are good at capturing semantic similarity between two or more pieces of text.
+- Text search embeddings help measure whether long documents are relevant to a short query.
+- Code search embeddings are useful for embedding code snippets and embedding natural language search queries.
+
+The Azure OpenAI embeddings rely on `cosine similarity` to compute similarity between documents and a query.
+
+== Getting Started
+
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
+
+
+=== Configure the Azure OpenAI Embedding Client Manually
+
+Add the `spring-ai-azure-openai` dependency to your project's Maven `pom.xml` file:
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-openai:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiEmbeddingClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../embeddings/azure-openai-embeddings.html[Azure OpenAI Embeddings] section.
+
+Next, create an `AzureOpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
+
+[source,java]
+----
+var openAIClient = OpenAIClientBuilder()
+        .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+		.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+		.buildClient();
+
+var embeddingClient = new AzureOpenAiEmbeddingClient(openAIClient)
+    .withDefaultOptions(AzureOpenAiEmbeddingOptions.builder()
+        .withModel("text-embedding-ada-002")
+        .withUser("user-6")
+        .build());
+
+EmbeddingResponse embeddingResponse = embeddingClient
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+NOTE: the `text-embedding-ada-002` is actually the `Deployment Name` as presented in the Azure AI Portal.
+
+The `AzureOpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
+The `AzureOpenAiEmbeddingOptions` offers a builder to create the options.
+
+At start time use the `AzureOpenAiEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
+Furthermore you can override the default options, at runtime, by passing a `AzureOpenAiEmbeddingOptions` instance with your to the  `EmbeddingRequest` request.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        AzureOpenAiEmbeddingOptions.builder()
+        .withModel("Different-Embedding-Model-Deployment-Name")
+        .build()));
+----
+
+=== Spring Boot Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
+There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
+
+Exporting environment variables is one way to set these configuration properties:
+
+[source,shell]
+----
+export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+----
+
+The `spring.ai.azure.openai.embedding.options.*` properties are used to configure the default options used for all embedding requests.
+
+==== Sample Code
+
+This will create a `EmbeddingClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+
+[source,application.properties]
+----
+spring.ai.azure.openai.api-key=YOUR_API_KEY
+spring.ai.azure.openai.endpoint=YOUR_ENDPOINT
+spring.ai.azure.openai.embedding.options.model=text-embedding-ada-002
+----
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingClient embeddingClient;
+
+    @Autowired
+    public ChatController(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+
+== Azure OpenAI Embedding Properties
+
+The prefix `spring.ai.azure.openai` is the property prefix to configure the connection to Azure OpenAI.
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.openai.api-key |  The Key from Azure AI OpenAI `Keys and Endpoint` section under `Resource Management`  | -
+| spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
+|====
+
+
+The prefix `spring.ai.azure.openai.embeddings` is the property prefix that configures the `EmbeddingClient` implementation for Azure OpenAI
+
+[cols="3,5,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.openai.embedding.options.model | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | text-embedding-ada-002
+| spring.ai.azure.openai.embedding.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -
+|====

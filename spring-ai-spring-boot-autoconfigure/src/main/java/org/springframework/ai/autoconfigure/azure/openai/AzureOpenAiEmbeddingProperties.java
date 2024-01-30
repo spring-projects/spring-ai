@@ -16,24 +16,26 @@
 
 package org.springframework.ai.autoconfigure.azure.openai;
 
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.Assert;
 
 @ConfigurationProperties(AzureOpenAiEmbeddingProperties.CONFIG_PREFIX)
 public class AzureOpenAiEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
-	/**
-	 * The text embedding generative to use for the embedding client.
-	 */
-	private String model = "text-embedding-ada-002";
+	private AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
+		.withModel("text-embedding-ada-002")
+		.build();
 
-	public String getModel() {
-		return model;
+	public AzureOpenAiEmbeddingOptions getOptions() {
+		return options;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	public void setOptions(AzureOpenAiEmbeddingOptions options) {
+		Assert.notNull(options, "Options must not be null");
+		this.options = options;
 	}
 
 }

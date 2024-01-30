@@ -180,7 +180,9 @@ class AzureOpenAiChatClientIT {
 
 		@Bean
 		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient) {
-			return new AzureOpenAiChatClient(openAIClient).withModel("gpt-35-turbo").withMaxTokens(200);
+			return new AzureOpenAiChatClient(openAIClient).withDefaultOptions(
+					AzureOpenAiChatOptions.builder().withModel("gpt-35-turbo").withMaxTokens(200).build());
+
 		}
 
 	}
