@@ -16,11 +16,22 @@
 
 package org.springframework.ai.openai;
 
+import java.time.Duration;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.image.*;
+
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageClient;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.openai.api.*;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.http.ResponseEntity;
@@ -30,14 +41,19 @@ import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
-import java.time.Duration;
-import java.util.List;
-
+/**
+ * OpenAiImageClient is a class that implements the ImageClient interface. It provides a
+ * client for calling the OpenAI image generation API.
+ *
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @since 0.8.0
+ */
 public class OpenAiImageClient implements ImageClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private OpenAiImageOptions options;
+	private OpenAiImageOptions defaultOptions;
 
 	private final OpenAiImageApi openAiImageApi;
 
@@ -58,45 +74,40 @@ public class OpenAiImageClient implements ImageClient {
 		this.openAiImageApi = openAiImageApi;
 	}
 
-	public OpenAiImageOptions getOptions() {
-		return options;
+	public OpenAiImageOptions getDefaultOptions() {
+		return this.defaultOptions;
+	}
+
+	public OpenAiImageClient withDefaultOptions(OpenAiImageOptions defaultOptions) {
+		this.defaultOptions = defaultOptions;
+		return this;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
 		return this.retryTemplate.execute(ctx -> {
-			ImageOptions runtimeOptions = imagePrompt.getOptions();
-			OpenAiImageOptions imageOptionsToUse = updateImageOptions(imagePrompt.getOptions());
 
-			// Merge the runtime options passed via the prompt with the
-			// StabilityAiImageClient
-			// options configured via Autoconfiguration.
-			// Runtime options overwrite StabilityAiImageClient options
-			OpenAiImageOptions optionsToUse = ModelOptionsUtils.merge(runtimeOptions, this.options,
-					OpenAiImageOptionsImpl.class);
-
-			// Copy the org.springframework.ai.model derived ImagePrompt and ImageOptions
-			// data
-			// types to the data types used in OpenAiImageApi
 			String instructions = imagePrompt.getInstructions().get(0).getText();
-			String size;
-			if (imageOptionsToUse.getWidth() != null && imageOptionsToUse.getHeight() != null) {
-				size = imageOptionsToUse.getWidth() + "x" + imageOptionsToUse.getHeight();
+
+			OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
+					OpenAiImageApi.DEFAULT_IMAGE_MODEL);
+
+			if (this.defaultOptions != null) {
+				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
+						OpenAiImageApi.OpenAiImageRequest.class);
 			}
-			else {
-				size = null;
+
+			if (imagePrompt.getOptions() != null) {
+				imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
+						OpenAiImageApi.OpenAiImageRequest.class);
 			}
-			OpenAiImageApi.OpenAiImageRequest openAiImageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
-					imageOptionsToUse.getModel(), imageOptionsToUse.getN(), imageOptionsToUse.getQuality(), size,
-					imageOptionsToUse.getResponseFormat(), imageOptionsToUse.getStyle(), imageOptionsToUse.getUser());
 
 			// Make the request
 			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.openAiImageApi
-				.createImage(openAiImageRequest);
+				.createImage(imageRequest);
 
 			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, openAiImageRequest);
-
+			return convertResponse(imageResponseEntity, imageRequest);
 		});
 	}
 
@@ -117,8 +128,13 @@ public class OpenAiImageClient implements ImageClient {
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
 	}
 
-	private OpenAiImageOptions updateImageOptions(ImageOptions runtimeImageOptions) {
-		OpenAiImageOptionsBuilder openAiImageOptionsBuilder = OpenAiImageOptionsBuilder.builder();
+	/**
+	 * Convert the {@link ImageOptions} into {@link OpenAiImageOptions}.
+	 * @param defaultOptions the image options to use.
+	 * @return the converted {@link OpenAiImageOptions}.
+	 */
+	private OpenAiImageOptions toOpenAiImageOptions(ImageOptions runtimeImageOptions) {
+		OpenAiImageOptions.Builder openAiImageOptionsBuilder = OpenAiImageOptions.builder();
 		if (runtimeImageOptions != null) {
 			// Handle portable image options
 			if (runtimeImageOptions.getN() != null) {
@@ -150,8 +166,7 @@ public class OpenAiImageClient implements ImageClient {
 				}
 			}
 		}
-		OpenAiImageOptions updatedOpenAiImageOptions = openAiImageOptionsBuilder.build();
-		return updatedOpenAiImageOptions;
+		return openAiImageOptionsBuilder.build();
 	}
 
 }

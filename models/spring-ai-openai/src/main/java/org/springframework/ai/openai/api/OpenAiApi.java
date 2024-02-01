@@ -45,8 +45,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 // @formatter:off
 /**
- * Single class implementation of the OpenAI Chat Completion API: https://beta.openai.com/docs/api-reference/chat and
- * OpenAI Embedding API: https://beta.openai.com/docs/api-reference/embeddings.
+ * Single class implementation of the OpenAI Chat Completion API: https://platform.openai.com/docs/api-reference/chat and
+ * OpenAI Embedding API: https://platform.openai.com/docs/api-reference/embeddings.
  *
  * @author Christian Tzolov
  */
