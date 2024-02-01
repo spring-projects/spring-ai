@@ -40,6 +40,9 @@ import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -69,6 +72,12 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		.maxAttempts(10)
 		.retryOn(OpenAiApiException.class)
 		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
+		.withListener(new RetryListener() {
+			public <T extends Object, E extends Throwable> void onError(RetryContext context,
+					RetryCallback<T, E> callback, Throwable throwable) {
+				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
+			};
+		})
 		.build();
 
 	private final OpenAiApi openAiApi;

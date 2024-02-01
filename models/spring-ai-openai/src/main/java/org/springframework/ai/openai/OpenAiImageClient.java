@@ -24,6 +24,9 @@ import org.springframework.ai.openai.api.*;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -42,6 +45,12 @@ public class OpenAiImageClient implements ImageClient {
 		.maxAttempts(10)
 		.retryOn(OpenAiApi.OpenAiApiException.class)
 		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
+		.withListener(new RetryListener() {
+			public <T extends Object, E extends Throwable> void onError(RetryContext context,
+					RetryCallback<T, E> callback, Throwable throwable) {
+				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
+			};
+		})
 		.build();
 
 	public OpenAiImageClient(OpenAiImageApi openAiImageApi) {
