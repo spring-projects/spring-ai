@@ -16,7 +16,10 @@
 
 package org.springframework.ai.chat;
 
+import java.util.List;
+
 import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.model.ToolFunctionCallback;
 
 /**
  * The ChatOptions represent the common options, portable across different chat models.

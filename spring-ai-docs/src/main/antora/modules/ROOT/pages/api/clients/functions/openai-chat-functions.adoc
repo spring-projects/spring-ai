@@ -1,0 +1,152 @@
+= Function Calling
+
+You can register custom Java functions with the `OpenAiChatClient` and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+The models have been trained to detect when a function should to be called and to respond with JSON that adheres to the function signature.
+
+Note that the OpenAI API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
+
+To register your custom function you need to specify a function `name`, function `description` that helps the model to understand when to call the function, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.
+Then you can implement a function that takes the function call arguments from the model interacts with the external, 3rd party, services and returns the result back to the model.
+
+Spring AI offers a generic link:../../../spring-ai-core/src/main/java/org/springframework/ai/model/ToolFunctionCallback.java[ToolFunctionCallback.java] interface and the companion link:../../../spring-ai-core/src/main/java/org/springframework/ai/model/AbstractToolFunctionCallback.java[AbstractToolFunctionCallback.java] utility class to simplify the implementation and registration of Java callback functions.
+
+== Quick Start
+
+Lets create a chatbot that answer questions by calling external tools.
+For example lets register a custom function that takes a location and returns the current weather in that location.
+Question such as "What’s the weather like in Boston?" should trigger the model to call the function providing the location as an argument.
+The function uses some weather service API and returns the weather response back to the model to complete the conversation.
+
+Let the link:../../../models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/tool/MockWeatherService.java[MockWeatherService.java] represent the 3-rd party weather service API:
+
+[source,java]
+----
+public class MockWeatherService implements Function<Request, Response> {
+
+	public enum Unit { C, F }
+	public record Request(String location, Unit unit) {}
+	public record Response(double temp, Unit unit) {}
+
+	public Response apply(Request request) {
+		return new Response("30", Unit.C);
+	}
+}
+----
+
+Then extend link:../../../spring-ai-core/src/main/java/org/springframework/ai/model/AbstractToolFunctionCallback.java[AbstractToolFunctionCallback] to implement our weather function like this:
+
+[source,java]
+----
+public class WeatherFunctionCallback
+		extends AbstractToolFunctionCallback<Request, Response> {
+
+	private final MockWeatherService weatherService = new MockWeatherService();
+
+	public WeatherFunctionCallback(String name, String description, Class<Request> inputType) {
+		super(name, // (1)
+			description, // (2)
+			inputType, // (3)
+			(response) -> "" + response.temp() + response.unit()); // (4)
+	}
+
+	@Override
+	public Response apply(Request request) {
+		return this.weatherService.apply(request);
+	}
+};
+----
+
+The constructor takes a function name (1), description (2), input type signature (3) and a converter (4) to convert the `Response` into a text.
+The Spring AI auto-generates the JSON Scheme for the `MockWeatherService.Request.class` signature.
+
+=== Registering Functions as Beans
+
+If you enable the link:../openai-chat.html#_openaichatclient_auto_configuration[OpenAiChatClient Auto-Configuration], the easiest way to register a function is to created it as a bean in the Spring context:
+
+[source,java,linenums]
+----
+@Configuration
+static class Config {
+	@Bean
+	public WeatherFunctionCallback weatherFunctionInfo() {
+		return new WeatherFunctionCallback(
+			"CurrentWeather", // (1) name
+			"Get the weather in location", // (2) description
+			MockWeatherService.Request.class); // (3) signature
+	}
+	...
+}
+----
+
+Now you can enable the `CurrentWeather` function in your prompt calls:
+
+[source,java]
+----
+OpenAiChatClient chatClient = ...
+
+UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+		OpenAiChatOptions.builder().withEnabledFunction("CurrentWeather").build())); // (1) Enable the function
+
+logger.info("Response: {}", response);
+----
+
+NOTE: you must enable, explicitly, the functions to be used in the prompt request using the `OpenAiChatOptions.builder().withEnabledFunction(...)` method (1).
+
+Above user question will trigger 3 calls to `CurrentWeather` function (one for each city) and the final response will be something like this:
+
+----
+Here is the current weather for the requested cities:
+- San Francisco, CA: 30.0°C
+- Tokyo, Japan: 10.0°C
+- Paris, France: 15.0°C
+----
+
+The [ToolCallWithPromptFunctionRegistrationIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatClient` using the auto-configuration.
+
+=== Register/Call Functions with Prompt Options
+
+In addition to the auto-configuration you can register callback functions, dynamically, with your Prompt requests:
+
+[source,java]
+----
+OpenAiChatClient chatClient = ...
+
+UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+var promptOptions = OpenAiChatOptions.builder()
+	.withToolCallbacks(List.of(new WeatherFunctionCallback(
+			"CurrentWeather",
+			"Get the weather in location",
+			MockWeatherService.Request.class)))
+	.build();
+
+ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
+
+logger.info("Response: {}", response);
+----
+
+NOTE: The in-prompt registered functions are enabled by default for the duration of this request.
+
+This approach allows to dynamically chose different functions to be called based on the user input.
+
+The [ToolCallWithPromptFunctionRegistrationIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatClient` and use it in a prompt request.
+
+=== Function Calling Flow
+
+The following diagram illustrates the flow of the OpenAiChatClient Function Calling:
+
+image:openai-chatclient-function-call.png[Chat Client Function Calling Flow]
+
+== Appendices:
+
+=== OpenAI API Function Calling Flow
+
+The following diagram illustrates the flow of the OpenAI API https://platform.openai.com/docs/guides/function-calling[Function Calling]:
+
+image:openai-function-calling-flow.png[OpenAI API Function Calling Flow]
+
+[org.springframework.ai.openai.chat.api.tool.OpenAiApiToolFunctionCallTests] provides a complete example of how to call a function using the OpenAI API.
+It is based on the https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling tutorial].

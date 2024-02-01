@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,6 +32,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.github.victools.jsonschema.generator.OptionPreset;
+import com.github.victools.jsonschema.generator.SchemaGenerator;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import com.github.victools.jsonschema.module.jackson.JacksonOption;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
@@ -51,6 +59,8 @@ public final class ModelOptionsUtils {
 	private final static List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
 	private static ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
+
+	private static AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
 	private ModelOptionsUtils() {
 
@@ -106,12 +116,10 @@ public final class ModelOptionsUtils {
 			.filter(e -> e.getValue() != null)
 			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
 
-		if (!CollectionUtils.isEmpty(requestFieldNames)) {
-			targetMap = targetMap.entrySet()
-				.stream()
-				.filter(e -> requestFieldNames.contains(e.getKey()))
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-		}
+		targetMap = targetMap.entrySet()
+			.stream()
+			.filter(e -> requestFieldNames.contains(e.getKey()))
+			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
 		return ModelOptionsUtils.mapToClass(targetMap, clazz);
 	}
@@ -278,6 +286,29 @@ public final class ModelOptionsUtils {
 
 	private static String toGetName(String name) {
 		return "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+	}
+
+	/**
+	 * Generates JSON Schema (version 2020_12) for the given class.
+	 * @param clazz the class to generate JSON Schema for.
+	 * @return the generated JSON Schema as a String.
+	 */
+	public static String getJsonSchema(Class<?> clazz) {
+
+		if (SCHEMA_GENERATOR_CACHE.get() == null) {
+
+			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+
+			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+					OptionPreset.PLAIN_JSON)
+				.with(jacksonModule);
+
+			SchemaGeneratorConfig config = configBuilder.build();
+			SchemaGenerator generator = new SchemaGenerator(config);
+			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
+		}
+
+		return SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz).toPrettyString();
 	}
 
 }

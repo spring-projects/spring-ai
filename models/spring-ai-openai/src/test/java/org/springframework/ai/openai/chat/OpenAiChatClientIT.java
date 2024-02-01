@@ -1,5 +1,6 @@
 package org.springframework.ai.openai.chat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -13,16 +14,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.model.AbstractToolFunctionCallback;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -158,6 +162,38 @@ class OpenAiChatClientIT extends AbstractIT {
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void functionCallTest() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.withModel("gpt-4-1106-preview")
+			.withToolCallbacks(
+					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
+							"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class,
+							(response) -> "" + response.temp() + response.unit()) {
+
+						private final MockWeatherService weatherService = new MockWeatherService();
+
+						@Override
+						public MockWeatherService.Response apply(MockWeatherService.Request request) {
+							return weatherService.apply(request);
+						}
+
+					}))
+			.build();
+
+		ChatResponse response = openAiChatClient.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getContent()).contains("30.0", "10.0", "15.0");
+
 	}
 
 }

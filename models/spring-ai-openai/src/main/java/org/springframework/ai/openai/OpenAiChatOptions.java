@@ -16,8 +16,11 @@
 
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -25,8 +28,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.util.Assert;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 
 /**
@@ -114,6 +119,27 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
 	private @JsonProperty("user") String user;
+
+	/**
+	 * OpenAI Tool Function Callbacks to register with the ChatClient.
+	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * from the registry to be used by the ChatClient chat completion requests.
+	 */
+	@JsonIgnore
+	private List<ToolFunctionCallback> toolCallbacks = new ArrayList<>();
+
+	/**
+	 * List of functions, identified by their names, to configure for function calling in
+	 * the chat completion requests.
+	 * Functions with those names must exist in the toolCallbacks registry.
+	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 *
+	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
+	 * If the enabledFunctions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
+	 */
+	@JsonIgnore
+	private Set<String> enabledFunctions = new HashSet<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -202,6 +228,23 @@ public class OpenAiChatOptions implements ChatOptions {
 			return this;
 		}
 
+		public Builder withToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
+			this.options.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder withEnabledFunctions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.enabledFunctions = functionNames;
+			return this;
+		}
+
+		public Builder withEnabledFunction(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.enabledFunctions.add(functionName);
+			return this;
+		}
+
 		public OpenAiChatOptions build() {
 			return this.options;
 		}
@@ -280,18 +323,22 @@ public class OpenAiChatOptions implements ChatOptions {
 		this.stop = stop;
 	}
 
+	@Override
 	public Float getTemperature() {
 		return this.temperature;
 	}
 
+	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
 
+	@Override
 	public Float getTopP() {
 		return this.topP;
 	}
 
+	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -318,6 +365,22 @@ public class OpenAiChatOptions implements ChatOptions {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public List<ToolFunctionCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	public void setToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	public Set<String> getEnabledFunctions() {
+		return enabledFunctions;
+	}
+
+	public void setEnabledFunctions(Set<String> functionNames) {
+		this.enabledFunctions = functionNames;
 	}
 
 	@Override

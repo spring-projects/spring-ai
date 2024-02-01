@@ -14,6 +14,7 @@
 *** xref:api/embeddings/onnx.adoc[]
 ** xref:api/chatclient.adoc[]
 *** xref:api/clients/openai-chat.adoc[]
+**** xref:api/clients/functions/openai-chat-functions.adoc[]
 *** xref:api/clients/azure-openai-chat.adoc[]
 *** xref:api/clients/ollama-chat.adoc[]
 *** xref:api/bedrock.adoc[Amazon Bedrock Chat]
