@@ -66,7 +66,17 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String openAiToken) {
-		this(DEFAULT_BASE_URL, openAiToken, RestClient.builder());
+		this(DEFAULT_BASE_URL, openAiToken);
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 *
+	 * @param baseUrl api base URL.
+	 * @param openAiToken OpenAI apiKey.
+	 */
+	public OpenAiApi(String baseUrl, String openAiToken) {
+		this(baseUrl, openAiToken, RestClient.builder());
 	}
 
 	/**
