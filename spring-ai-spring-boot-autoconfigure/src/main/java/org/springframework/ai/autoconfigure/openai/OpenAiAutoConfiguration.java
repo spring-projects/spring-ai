@@ -16,8 +16,11 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import java.util.List;
+
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
@@ -31,6 +34,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
@@ -47,7 +51,8 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
-			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder) {
+			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder, List<ToolFunctionCallback> toolFunctionCallbacks) {
+
 
 		String apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -61,6 +66,10 @@ public class OpenAiAutoConfiguration {
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
 		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi, chatProperties.getOptions());
+
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			toolFunctionCallbacks.stream().forEach(tool -> openAiChatClient.withFunctionCallback(tool));
+		}
 
 		return openAiChatClient;
 	}

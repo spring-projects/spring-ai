@@ -16,6 +16,8 @@
 package org.springframework.ai.openai;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,9 +35,12 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
@@ -46,6 +51,7 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * {@link ChatClient} implementation for {@literal OpenAI} backed by {@link OpenAiApi}.
@@ -65,6 +71,8 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private OpenAiChatOptions defaultOptions;
+
+	private Map<String, ToolFunctionCallback> toolCallbacks = new ConcurrentHashMap<>();
 
 	public final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
@@ -99,6 +107,42 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	public OpenAiChatClient withDefaultOptions(OpenAiChatOptions options) {
 		this.defaultOptions = options;
 		return this;
+	}
+
+	public ChatResponse call2(Prompt prompt) {
+
+		return this.retryTemplate.execute(ctx -> {
+
+			List<ChatCompletionMessage> promptChatCompletionMessages = prompt.getInstructions().stream().map(m -> {
+				String content = m.getContent();
+				var role = ChatCompletionMessage.Role.valueOf(m.getMessageType().name());
+				String toolCallId = null;
+				List<ToolCall> toolCalls = null;
+				return new ChatCompletionMessage(content, role, null, toolCallId, toolCalls);
+			}).toList();
+
+			OpenAiChatOptions promptOptions = (prompt.getOptions() != null
+					&& prompt.getOptions() instanceof OpenAiChatOptions options) ? options : null;
+
+			ResponseEntity<ChatCompletion> completionEntity = this.chatCompletionWithTools(promptChatCompletionMessages,
+					promptOptions);
+
+			var chatCompletion = completionEntity.getBody();
+			if (chatCompletion == null) {
+				logger.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
+
+			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+
+			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+				return new Generation(choice.message().content(), toMap(choice.message()))
+					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
+			}).toList();
+
+			return new ChatResponse(generations,
+					OpenAiChatResponseMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
+		});
 	}
 
 	@Override
@@ -185,6 +229,137 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 						+ prompt.getOptions().getClass().getSimpleName());
 			}
 		}
+
+		return request;
+	}
+
+	private Map<String, Object> toMap(ChatCompletionMessage message) {
+		Map<String, Object> map = new HashMap<>();
+		if (message.toolCalls() != null) {
+			map.put("tool_calls", message.toolCalls());
+		}
+		if (message.toolCallId() != null) {
+			map.put("tool_call_id", message.toolCallId());
+		}
+		if (message.role() != null) {
+			map.put("role", message.role().name());
+		}
+		return map;
+	}
+
+	public OpenAiChatClient withFunctionCallback(ToolFunctionCallback functionCallback) {
+
+		var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
+				functionCallback.getName(), functionCallback.getInputTypeSchema());
+
+		var updatedDefaults = OpenAiChatOptions.builder()
+			.withTools(List.of(new OpenAiApi.FunctionTool(function)))
+			.build();
+
+		this.defaultOptions = ModelOptionsUtils.merge(updatedDefaults, this.defaultOptions, OpenAiChatOptions.class);
+
+		this.toolCallbacks.put(functionCallback.getName(), functionCallback);
+
+		return this;
+	}
+
+	private Boolean isToolCall(ResponseEntity<ChatCompletion> chatCompletion) {
+		var body = chatCompletion.getBody();
+		if (body == null) {
+			return false;
+		}
+
+		var choices = body.choices();
+		if (CollectionUtils.isEmpty(choices)) {
+			return false;
+		}
+
+		return choices.get(0).message().toolCalls() != null;
+	}
+
+	private ResponseEntity<ChatCompletion> chatCompletionWithTools(
+			List<ChatCompletionMessage> promptChatCompletionMessages, OpenAiChatOptions promptOptions) {
+
+		List<ToolFunctionCallback> promptToolCallbacks = (promptOptions != null) ? promptOptions.getToolCallbacks()
+				: null;
+		// Add the prompt tool callbacks to the tool callbacks catalog
+		if (!CollectionUtils.isEmpty(promptToolCallbacks)) {
+			promptToolCallbacks.stream().forEach(toolCallback -> this.withFunctionCallback(toolCallback));
+		}
+
+		OpenAiApi.ChatCompletionRequest request = this.createChatCompletionRequest(promptChatCompletionMessages,
+				promptOptions, false);
+
+		List<ChatCompletionMessage> conversationMessages = new ArrayList<>(request.messages());
+
+		ResponseEntity<ChatCompletion> chatCompletion = this.openAiApi.chatCompletionEntity(request);
+
+		// Return if the model doesn't call a function.
+		if (!isToolCall(chatCompletion)) {
+			return chatCompletion;
+		}
+
+		// TODO: handle multiple choices response
+		ChatCompletionMessage responseMessage = chatCompletion.getBody().choices().get(0).message();
+
+		// Add the assistant response to the message conversation history.
+		conversationMessages.add(responseMessage);
+
+		// Send the info for each function call and function response to the model.
+		for (ToolCall toolCall : responseMessage.toolCalls()) {
+			var functionName = toolCall.function().name();
+
+			String functionArguments = toolCall.function().arguments();
+			ToolFunctionCallback functionCallback = this.toolCallbacks.get(functionName);
+			String functionResponse = functionCallback.call(functionArguments);
+
+			// extend conversation with function response.
+			conversationMessages.add(new ChatCompletionMessage(functionResponse, Role.TOOL, null, toolCall.id(), null));
+		}
+
+		// Recursively call chatCompletionWithTools until the model doesn't call a
+		// functions anymore.
+		return chatCompletionWithTools(conversationMessages, promptOptions);
+	}
+
+	private OpenAiApi.ChatCompletionRequest createChatCompletionRequest(
+			List<ChatCompletionMessage> promptChatCompletionMessages, OpenAiChatOptions promptOptions, boolean stream) {
+
+		ChatCompletionRequest request = new ChatCompletionRequest(promptChatCompletionMessages, stream);
+
+		// Merges any default options into the request's options.
+		if (this.defaultOptions != null) {
+			// Only the non-null option values are merged.
+			request = ModelOptionsUtils.merge(this.defaultOptions, request, ChatCompletionRequest.class);
+		}
+
+		// Merges any prompt options into the request's options.
+		if (promptOptions != null) {
+			request = ModelOptionsUtils.merge(promptOptions, request, ChatCompletionRequest.class);
+		}
+
+		// Merges any default messages (defined in the defaultOptions#messages) with the
+		// prompt messages.
+		// Note that the prompt messages are always added after the default messages.
+		// if (request.messages() != null) {
+		// var mergedMessages = new ArrayList<>(request.messages());
+		// mergedMessages.addAll(promptChatCompletionMessages);
+		// promptChatCompletionMessages = mergedMessages;
+		// }
+
+		// // If the te
+		// var temperature = request.temperature();
+		// if (temperature == null) {
+		// if (request.getTemperature() != null) {
+		// temperature = request.getTemperature().floatValue();
+		// }
+		// }
+
+		// request = ModelOptionsUtils.merge(ChatCompletionRequestBuilder.builder()
+		// .withMessages(promptChatCompletionMessages)
+		// .withStream(stream)
+		// .withTemperature(temperature)
+		// .build(), request, ChatCompletionRequest.class);
 
 		return request;
 	}

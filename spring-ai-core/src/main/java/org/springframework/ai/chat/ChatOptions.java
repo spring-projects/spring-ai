@@ -16,7 +16,10 @@
 
 package org.springframework.ai.chat;
 
+import java.util.List;
+
 import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.model.ToolFunctionCallback;
 
 /**
  * The ChatOptions represent the common options, portable across different chat models.
@@ -34,5 +37,13 @@ public interface ChatOptions extends ModelOptions {
 	Integer getTopK();
 
 	void setTopK(Integer topK);
+
+	default List<ToolFunctionCallback> getToolCallbacks() {
+		throw new UnsupportedOperationException("ToolCallbacks is not supported by this model");
+	}
+
+	default void setToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
+		throw new UnsupportedOperationException("ToolCallbacks is not supported by this model");
+	}
 
 }

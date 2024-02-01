@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
@@ -114,6 +116,12 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
 	private @JsonProperty("user") String user;
+
+	/**
+	 * OpenAi Tool Function Callbacks.
+	 */
+	@JsonIgnore
+	private List<ToolFunctionCallback> toolCallbacks = new ArrayList<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -202,6 +210,11 @@ public class OpenAiChatOptions implements ChatOptions {
 			return this;
 		}
 
+		public Builder withToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
+			this.options.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
 		public OpenAiChatOptions build() {
 			return this.options;
 		}
@@ -280,18 +293,22 @@ public class OpenAiChatOptions implements ChatOptions {
 		this.stop = stop;
 	}
 
+	@Override
 	public Float getTemperature() {
 		return this.temperature;
 	}
 
+	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
 
+	@Override
 	public Float getTopP() {
 		return this.topP;
 	}
 
+	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -318,6 +335,16 @@ public class OpenAiChatOptions implements ChatOptions {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	@Override
+	public List<ToolFunctionCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	public void setToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
