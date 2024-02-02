@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.openai.OpenAiImageClient;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
@@ -83,6 +86,17 @@ public class OpenAiAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 			assertThat(embeddingClient.dimensions()).isEqualTo(1536);
+		});
+	}
+
+	@Test
+	void generateImage() {
+		contextRunner.withPropertyValues("spring.ai.openai.image.options.size=256x256").run(context -> {
+			OpenAiImageClient client = context.getBean(OpenAiImageClient.class);
+			ImageResponse imageResponse = client.call(new ImagePrompt("forest"));
+			assertThat(imageResponse.getResults()).hasSize(1);
+			assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
+			logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
 		});
 	}
 
