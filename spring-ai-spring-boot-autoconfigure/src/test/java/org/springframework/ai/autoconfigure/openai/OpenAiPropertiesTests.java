@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link OpenAiEmbeddingProperties}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class OpenAiPropertiesTests {
@@ -138,6 +139,58 @@ public class OpenAiPropertiesTests {
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+			});
+	}
+
+	@Test
+	public void imageProperties() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.image.options.model=MODEL_XYZ",
+						"spring.ai.openai.image.options.n=3")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var imageProperties = context.getBean(OpenAiImageProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(imageProperties.getApiKey()).isNull();
+				assertThat(imageProperties.getBaseUrl()).isNull();
+
+				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
+			});
+	}
+
+	@Test
+	public void imageOverrideConnectionProperties() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.image.base-url=TEST_BASE_URL2",
+						"spring.ai.openai.image.api-key=456",
+						"spring.ai.openai.image.options.model=MODEL_XYZ",
+						"spring.ai.openai.image.options.n=3")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var imageProperties = context.getBean(OpenAiImageProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(imageProperties.getApiKey()).isEqualTo("456");
+				assertThat(imageProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+
+				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
 			});
 	}
 
@@ -253,6 +306,44 @@ public class OpenAiPropertiesTests {
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
 				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
+			});
+	}
+
+	@Test
+	public void imageOptionsTest() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.api-key=API_KEY",
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+
+						"spring.ai.openai.image.options.n=3",
+						"spring.ai.openai.image.options.model=MODEL_XYZ",
+						"spring.ai.openai.image.options.quality=hd",
+						"spring.ai.openai.image.options.response_format=url",
+						"spring.ai.openai.image.options.size=1024x1024",
+						"spring.ai.openai.image.options.width=1024",
+						"spring.ai.openai.image.options.height=1024",
+						"spring.ai.openai.image.options.style=vivid",
+						"spring.ai.openai.image.options.user=userXYZ"
+				)
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var imageProperties = context.getBean(OpenAiImageProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
+				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getOptions().getQuality()).isEqualTo("hd");
+				assertThat(imageProperties.getOptions().getResponseFormat()).isEqualTo("url");
+				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1024");
+				assertThat(imageProperties.getOptions().getWidth()).isEqualTo(1024);
+				assertThat(imageProperties.getOptions().getHeight()).isEqualTo(1024);
+				assertThat(imageProperties.getOptions().getStyle()).isEqualTo("vivid");
+				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
 			});
 	}
 

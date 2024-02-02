@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -34,7 +36,7 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class })
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 public class OpenAiAutoConfiguration {
 
@@ -76,6 +78,24 @@ public class OpenAiAutoConfiguration {
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
 
 		return new OpenAiEmbeddingClient(openAiApi).withDefaultOptions(embeddingProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
+			OpenAiImageProperties imageProperties) {
+		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, RestClient.builder());
+
+		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
 	}
 
 }
