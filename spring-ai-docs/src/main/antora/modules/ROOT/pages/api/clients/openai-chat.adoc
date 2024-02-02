@@ -64,7 +64,7 @@ Flux<ChatResponse> response = chatClient.stream(
 The `OpenAiChatOptions` provides the configuration information for the chat requests.
 The `OpenAiChatOptions.Builder` is fluent options builder.
 
-==== OpenAiChatOptions
+==== ChatOptions and OpenAiChatOptions
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] provides provides the configuration information for the chat requests, such as the model to use, the temperature, the frequency penalty, etc.
 
@@ -86,6 +86,9 @@ ChatResponse response = chatClient.call(
         .build()
     ));
 ----
+
+You can use as prompt options any instance that implements the portable `ChatOptions` interface.
+For example you can use the `ChatOptionsBuilder` to create a portable prompt options.
 
 === OpenAiChatClient Auto-configuration
 
