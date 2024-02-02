@@ -35,6 +35,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
@@ -43,6 +44,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -128,8 +130,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		return Flux.fromStream(chatCompletionsStream.stream()
 			// Note: the first chat completions can be ignored when using Azure OpenAI
-			// service which is a
-			// known service bug.
+			// service which is a known service bug.
 			.skip(1)
 			.map(ChatCompletions::getChoices)
 			.flatMap(List::stream)
@@ -161,12 +162,14 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof AzureOpenAiChatOptions runtimeOptions) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				AzureOpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, AzureOpenAiChatOptions.class);
 				// JSON merge doesn't due to Azure OpenAI service bug:
 				// https://github.com/Azure/azure-sdk-for-java/issues/38183
 				// options = ModelOptionsUtils.merge(runtimeOptions, options,
 				// ChatCompletionsOptions.class);
-				options = merge(runtimeOptions, options);
+				options = merge(updatedRuntimeOptions, options);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionsOptions:"
