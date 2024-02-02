@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
@@ -166,8 +167,10 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof OpenAiChatOptions runtimeOptions) {
-				request = ModelOptionsUtils.merge(runtimeOptions, request, ChatCompletionRequest.class);
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, OpenAiChatOptions.class);
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionRequest:"

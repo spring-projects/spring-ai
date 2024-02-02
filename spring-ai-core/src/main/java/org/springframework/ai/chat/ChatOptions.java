@@ -19,11 +19,9 @@ package org.springframework.ai.chat;
 import org.springframework.ai.model.ModelOptions;
 
 /**
- * portable options
+ * The ChatOptions represent the common options, portable across different chat models.
  */
 public interface ChatOptions extends ModelOptions {
-
-	// determine portable optionsb
 
 	Float getTemperature();
 
