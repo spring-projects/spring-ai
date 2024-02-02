@@ -15,15 +15,9 @@
  */
 package org.springframework.ai.openai;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
@@ -46,6 +40,14 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import reactor.core.publisher.Flux;
+
+import java.lang.reflect.Method;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatClient} implementation for {@literal OpenAI} backed by {@link OpenAiApi}.
@@ -64,8 +66,10 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	private static final String MODEL = "gpt-3.5-turbo";
+
 	private OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
-		.withModel("gpt-3.5-turbo")
+		.withModel(MODEL)
 		.withTemperature(0.7f)
 		.build();
 
@@ -95,18 +99,103 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.call(prompt, null, null, MODEL);
+	}
+
+	/**
+	 * This method supports function calling and can be included in the
+	 * <code>ChatClient</code> interface eventually and implemented by clients that
+	 * support this feature and UnsupportedException for others.
+	 * @param prompt Promt for the model.
+	 * @param toolList List of OpenAiApi.FunctionTool objects.
+	 * @param functionService The service that contains the function calls needed to
+	 * support this prompt.
+	 * @return ChatResponse
+	 */
+	public ChatResponse call(Prompt prompt, List<OpenAiApi.FunctionTool> toolList, Object functionService,
+			String model) {
 
 		return this.retryTemplate.execute(ctx -> {
+			List<ChatCompletionMessage> cumulativeMessageList = new ArrayList<>();
+			List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
+				.stream()
+				.map(m -> new ChatCompletionMessage(m.getContent(),
+						ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
+				.toList();
+			cumulativeMessageList.addAll(chatCompletionMessages);
 
-			ChatCompletionRequest request = createRequest(prompt, false);
+			ResponseEntity<ChatCompletion> completionEntity;
+			ChatCompletion chatCompletion;
 
-			ResponseEntity<ChatCompletion> completionEntity = this.openAiApi.chatCompletionEntity(request);
+			do {
+				OpenAiApi.ChatCompletionRequest ccr;
+				if (toolList != null && toolList.size() > 0) {
+					ccr = new OpenAiApi.ChatCompletionRequest(cumulativeMessageList, (model == null ? MODEL : model),
+							toolList, null);
+				}
+				else {
+					ccr = new OpenAiApi.ChatCompletionRequest(cumulativeMessageList, (model == null ? MODEL : model),
+							this.defaultOptions.getTemperature());
+				}
+				ccr = this.mergeRequest(prompt, ccr);
+				completionEntity = this.openAiApi.chatCompletionEntity(ccr);
 
-			var chatCompletion = completionEntity.getBody();
-			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for request: {}", prompt);
-				return new ChatResponse(List.of());
+				chatCompletion = completionEntity.getBody();
+				if (logger.isDebugEnabled() && chatCompletion.choices() != null) {
+					for (ChatCompletion.Choice c : chatCompletion.choices()) {
+						if ((c.message() != null
+								&& StringUtils.equalsIgnoreCase(c.message().role().name(), "assistant"))) {
+							logger.debug("Response: " + c.message().content());
+						}
+					}
+				}
+				if ((chatCompletion != null) && (chatCompletion.choices() != null)
+						&& (chatCompletion.choices().size() > 0)) {
+					if (chatCompletion.choices()
+						.get(0)
+						.finishReason() == OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS) {
+						if (chatCompletion.choices().get(0).message().toolCalls() != null) {
+							chatCompletion.choices()
+								.get(0)
+								.message()
+								.toolCalls()
+								.stream()
+								.filter(ccm -> (StringUtils.equalsIgnoreCase(ccm.type(), "function")))
+								.forEach(tc -> {
+									String name = tc.function().name();
+									String arguments = tc.function().arguments();
+									String id = tc.id();
+
+									// Create an assistant message with the returned
+									// function to call with the returned arguments. Use
+									// the returned toolCallId also.
+									List<ChatCompletionMessage.ToolCall> toolCalls = List
+										.of(new ChatCompletionMessage.ToolCall(id, "function",
+												new ChatCompletionMessage.ChatCompletionFunction(name, arguments)));
+									ChatCompletionMessage chatCompletionMessageAsAssistant = new ChatCompletionMessage(
+											"none", ChatCompletionMessage.Role.ASSISTANT, name, id, toolCalls);
+									cumulativeMessageList.add(chatCompletionMessageAsAssistant);
+
+									String answerAsJsonString = processFunctionWithArguments(name, arguments,
+											functionService);
+
+									// Create a ToolMessage with the response to the
+									// function call. Use the same ToolCallId
+									ChatCompletionMessage chatCompletionMessageAsTool = new ChatCompletionMessage(
+											answerAsJsonString, ChatCompletionMessage.Role.TOOL, name, id, null);
+									cumulativeMessageList.add(chatCompletionMessageAsTool);
+								});
+						}
+					}
+				}
+				else {
+					logger.warn("No chat completion returned for request: {}", cumulativeMessageList);
+					return new ChatResponse(List.of());
+				}
 			}
+			while (chatCompletion.choices() != null && chatCompletion.choices().size() > 0
+					&& chatCompletion.choices().get(0).finishReason() == OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS
+					&& (chatCompletion.choices().get(0).message().toolCalls() != null));
 
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
@@ -162,6 +251,12 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
+		request = mergeRequest(prompt, request);
+
+		return request;
+	}
+
+	private ChatCompletionRequest mergeRequest(Prompt prompt, ChatCompletionRequest request) {
 		if (this.defaultOptions != null) {
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 		}
@@ -177,8 +272,26 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 						+ prompt.getOptions().getClass().getSimpleName());
 			}
 		}
-
 		return request;
+	}
+
+	private String processFunctionWithArguments(String name, String arguments, Object functionService) {
+
+		String answerAsJsonString;
+		try {
+			Method methodToInvoke = functionService.getClass().getMethod(name, String.class);
+
+			Method methodToExtractArguments = functionService.getClass()
+				.getMethod("argumentValueExtractor", String.class, String.class);
+			String argumentValue = (String) methodToExtractArguments.invoke(functionService, name, arguments);
+
+			answerAsJsonString = (String) methodToInvoke.invoke(functionService, argumentValue);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(String.format("Error calling function %s with arguments %s", name, arguments),
+					e);
+		}
+		return answerAsJsonString;
 	}
 
 }

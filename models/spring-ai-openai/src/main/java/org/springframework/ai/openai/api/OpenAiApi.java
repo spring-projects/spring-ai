@@ -422,6 +422,20 @@ public class OpenAiApi {
 		}
 
 		/**
+		 * Create a chat completion message with the given content, role, toolCallId and toolCall list.
+		 * All other fields are null.
+		 *
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 * @param name The name of the function to call.
+		 * @param toolCallId The id of the toolCall
+		 * @param toolCalls A list of ToolCalls.
+		 */
+		public ChatCompletionMessage(String content, ChatCompletionMessage.Role role, String name, String toolCallId, List<ChatCompletionMessage.ToolCall> toolCalls) {
+			this(content, role, name, toolCallId, toolCalls, null);
+		}
+
+		/**
 		 * The role of the author of this message.
 		 */
 		public enum Role {
