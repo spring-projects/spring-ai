@@ -122,15 +122,9 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 			if (options instanceof OllamaOptions ollamaOptions) {
 				runtimeOptions = ollamaOptions;
 			}
-			else if (options instanceof EmbeddingOptions embeddingOptions) {
-				// currently EmbeddingOptions does not have any portable options to be
-				// merged.
-				runtimeOptions = null;
-			}
-			else {
-				throw new IllegalArgumentException("Request embedding options are not of type EmbeddingOptions: "
-						+ options.getClass().getSimpleName());
-			}
+			// currently EmbeddingOptions does not have any portable options to be
+			// merged.
+			runtimeOptions = null;
 		}
 
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);

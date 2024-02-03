@@ -52,10 +52,12 @@ repositories {
 * xref:api/clients/azure-openai.adoc#_getting_started[Azure OpenAI]
 * xref:api/clients/huggingface.adoc#_getting_started[HuggingFace]
 * xref:api/clients/bedrock.adoc#_getting_started[Bedrock]
-* xref:api/clients/ollama.adoc#_getting_started[Ollama]
+* xref:api/clients/ollama-chat.adoc#_getting_started[Ollama]
 
 == Embedding Models
 
+* xref:api/embeddings/openai-embeddings.adoc#_getting_started[OpenAI]
+* xref:api/embeddings/ollama-embeddings.adoc#_getting_started[Ollama]
 
 
 == Spring CLI
