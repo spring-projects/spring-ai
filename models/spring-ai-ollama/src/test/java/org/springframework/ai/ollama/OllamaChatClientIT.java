@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.ollama;
 
 import java.io.IOException;
@@ -47,7 +62,7 @@ class OllamaChatClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.21").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
 
 	static String baseUrl;
 
@@ -75,15 +90,19 @@ class OllamaChatClientIT {
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
 		// portable/generic options
-		var chatOptionsBuilder = ChatOptionsBuilder.builder();
+		var portableOptions = ChatOptionsBuilder.builder().withTemperature(0.7f).build();
+
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage), portableOptions);
+
+		ChatResponse response = client.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 
 		// ollama specific options
 		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
 
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				chatOptionsBuilder.withTemperature(0.7f).build());
-		ChatResponse response = client.call(prompt);
+		response = client.call(new Prompt(List.of(userMessage, systemMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+
 	}
 
 	@Test
@@ -189,7 +208,7 @@ class OllamaChatClientIT {
 		@Bean
 		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
 			return new OllamaChatClient(ollamaApi).withModel(MODEL)
-				.withOptions(OllamaOptions.create().withTemperature(0.9f));
+				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
 		}
 
 	}

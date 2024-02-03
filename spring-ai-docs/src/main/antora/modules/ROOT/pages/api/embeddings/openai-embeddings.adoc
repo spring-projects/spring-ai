@@ -40,7 +40,8 @@ dependencies {
 }
 ----
 
-NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`. For more information about the `OpenAiChatClient` refer to the link:../clients/openai-chat.html[OpenAI Chat Client] section.
+NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`.
+For more information about the `OpenAiChatClient` refer to the link:../clients/openai-chat.html[OpenAI Chat Client] section.
 
 Next, create an `OpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
 
@@ -49,7 +50,7 @@ Next, create an `OpenAiEmbeddingClient` instance and use it to compute the simil
 var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 
 var embeddingClient = new OpenAiEmbeddingClient(openAiApi)
-    .withDefaultOptions(OpenAiEmbeddingOptions.builder()
+    .withDefaultOptions(OllamaOptions.create()
         .withModel("text-embedding-ada-002")
         .withUser("user-6")
         .build());
@@ -63,12 +64,12 @@ The options class offers a `builder()` for easy options creation.
 
 ==== OpenAiEmbeddingOptions
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configures, such as the model to use, the temperature, the frequency penalty, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configurations, such as the model to use and etc.
 
 The default options can be configured using the `spring.ai.openai.embedding.options` properties as well.
 
 At start-time use the `OpenAiEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
-At run-time you can override the default options, using a `OpenAiEmbeddingOptions` instance as part of your `EmbeddingRequest``.
+At run-time you can override the default options, using a `OpenAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 

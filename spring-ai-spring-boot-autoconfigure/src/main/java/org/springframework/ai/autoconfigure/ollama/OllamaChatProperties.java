@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,24 +32,19 @@ public class OllamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
 	/**
-	 * Ollama Chat generative name. Defaults to 'llama2'.
-	 */
-	private String model = "llama2";
-
-	/**
 	 * Client lever Ollama options. Use this property to configure generative temperature,
 	 * topK and topP and alike parameters. The null values are ignored defaulting to the
 	 * generative's defaults.
 	 */
 	@NestedConfigurationProperty
-	private OllamaOptions options = new OllamaOptions();
+	private OllamaOptions options = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
 
 	public String getModel() {
-		return this.model;
+		return this.options.getModel();
 	}
 
 	public void setModel(String model) {
-		this.model = model;
+		this.options.setModel(model);
 	}
 
 	public OllamaOptions getOptions() {

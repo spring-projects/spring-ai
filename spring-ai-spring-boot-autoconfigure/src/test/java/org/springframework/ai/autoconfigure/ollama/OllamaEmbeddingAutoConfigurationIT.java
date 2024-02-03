@@ -47,7 +47,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	private static String MODEL_NAME = "orca-mini";
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
 
 	static String baseUrl;
 
@@ -61,7 +61,8 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.embedding.model=" + MODEL_NAME, "spring.ai.ollama.base-url=" + baseUrl)
+		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
+				"spring.ai.ollama.base-url=" + baseUrl)
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	@Test

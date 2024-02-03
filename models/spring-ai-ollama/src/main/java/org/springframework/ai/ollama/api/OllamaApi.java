@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -445,19 +446,21 @@ public class OllamaApi {
 			}
 
 			public Builder withOptions(Map<String, Object> options) {
-				this.options = options;
+				Objects.requireNonNullElse(options, "The options can not be null.");
+
+				this.options = OllamaOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
 			public Builder withOptions(OllamaOptions options) {
-				this.options = options.toMap();
+				Objects.requireNonNullElse(options, "The options can not be null.");
+				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 
 			public ChatRequest build() {
 				return new ChatRequest(model, messages, stream, format, options);
 			}
-
 		}
 	}
 

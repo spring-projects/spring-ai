@@ -173,7 +173,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 			}
 			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionRequest:"
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
 						+ prompt.getOptions().getClass().getSimpleName());
 			}
 		}

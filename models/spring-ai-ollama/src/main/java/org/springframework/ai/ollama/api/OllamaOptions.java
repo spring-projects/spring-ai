@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.ollama.api;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -25,7 +26,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -39,7 +42,9 @@ import org.springframework.ai.chat.ChatOptions;
  * Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions implements ChatOptions {
+public class OllamaOptions implements ChatOptions, EmbeddingOptions {
+
+	public static final String DEFAULT_MODEL = "mistral";
 
 	// @formatter:off
 	/**
@@ -233,6 +238,24 @@ public class OllamaOptions implements ChatOptions {
 	@JsonProperty("stop") private List<String> stop;
 
 
+	/**
+	 * NOTE: Synthetic field not part of the official Ollama API.
+	 * Used to allow overriding the model name with prompt options.
+	 */
+	@JsonProperty("model") private String model;
+
+	public OllamaOptions withModel(String model) {
+		this.model = model;
+		return this;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
 
 	public OllamaOptions withUseNUMA(Boolean useNUMA) {
 		this.useNUMA = useNUMA;
@@ -685,6 +708,18 @@ public class OllamaOptions implements ChatOptions {
 	public static OllamaOptions create() {
 		return new OllamaOptions();
 	}
+
+	/**
+	 * Filter out the non supported fields from the options.
+	 * @param options The options to filter.
+	 * @return The filtered options.
+	 */
+	public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
+		return options.entrySet().stream()
+			.filter(e -> !e.getKey().equals("model"))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
 
 	// @formatter:on
 

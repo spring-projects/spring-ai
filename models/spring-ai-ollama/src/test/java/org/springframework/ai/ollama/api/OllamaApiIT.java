@@ -51,7 +51,7 @@ public class OllamaApiIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.21").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
 
 	static OllamaApi ollamaApi;
 

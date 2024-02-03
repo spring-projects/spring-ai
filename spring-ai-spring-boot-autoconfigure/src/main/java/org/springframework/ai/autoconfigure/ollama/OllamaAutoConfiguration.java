@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,8 @@ public class OllamaAutoConfiguration {
 	@Bean
 	public OllamaChatClient ollamaChatClient(OllamaApi ollamaApi, OllamaChatProperties properties) {
 
-		return new OllamaChatClient(ollamaApi).withModel(properties.getModel()).withOptions(properties.getOptions());
+		return new OllamaChatClient(ollamaApi).withModel(properties.getModel())
+			.withDefaultOptions(properties.getOptions());
 	}
 
 	@Bean
@@ -56,7 +57,7 @@ public class OllamaAutoConfiguration {
 	public OllamaEmbeddingClient ollamaEmbeddingClient(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
 
 		return new OllamaEmbeddingClient(ollamaApi).withModel(properties.getModel())
-			.withOptions(properties.getOptions());
+			.withDefaultOptions(properties.getOptions());
 	}
 
 }

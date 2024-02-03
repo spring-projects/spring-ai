@@ -40,7 +40,7 @@ dependencies {
 
 NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiEmbeddingClient`. For more information about the `OpenAiEmbeddingClient` refer to the link:../embeddings/openai-embeddings.html[OpenAI Embeddings Client] section.
 
-Next, create an `OpenAiChatClient` instance and use it to compute the similarity between two input texts:
+Next, create an `OpenAiChatClient` instance and use it to text generations requests:
 
 [source,java]
 ----

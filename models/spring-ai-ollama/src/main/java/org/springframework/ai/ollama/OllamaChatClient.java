@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,28 @@
 
 package org.springframework.ai.ollama;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
-import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.util.StringUtils;
 
 /**
- * {@link ChatClient} implementation for {@literal Ollma}.
+ * {@link ChatClient} implementation for {@literal Ollama}.
  *
  * Ollama allows developers to run large language models and generate embeddings locally.
  * It supports open-source models available on [Ollama AI
@@ -57,37 +52,38 @@ import org.springframework.ai.chat.messages.MessageType;
  */
 public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
+	/**
+	 * Low-level Ollama API library.
+	 */
 	private final OllamaApi chatApi;
 
-	private String model = "orca-mini";
-
-	private Map<String, Object> clientOptions;
-
-	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	/**
+	 * Default options to be used for all chat requests.
+	 */
+	private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
 
 	public OllamaChatClient(OllamaApi chatApi) {
 		this.chatApi = chatApi;
 	}
 
+	/**
+	 * @deprecated Use {@link OllamaOptions#setModel} instead.
+	 */
+	@Deprecated
 	public OllamaChatClient withModel(String model) {
-		this.model = model;
+		this.defaultOptions.setModel(model);
 		return this;
 	}
 
-	public OllamaChatClient withOptions(Map<String, Object> options) {
-		this.clientOptions = options;
-		return this;
-	}
-
-	public OllamaChatClient withOptions(OllamaOptions options) {
-		this.clientOptions = options.toMap();
+	public OllamaChatClient withDefaultOptions(OllamaOptions options) {
+		this.defaultOptions = options;
 		return this;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
-		OllamaApi.ChatResponse response = this.chatApi.chat(request(prompt, this.model, false));
+		OllamaApi.ChatResponse response = this.chatApi.chat(ollamaChatRequest(prompt, false));
 		var generator = new Generation(response.message().content());
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
 			generator = generator
@@ -99,7 +95,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		Flux<OllamaApi.ChatResponse> response = this.chatApi.streamingChat(request(prompt, this.model, true));
+		Flux<OllamaApi.ChatResponse> response = this.chatApi.streamingChat(ollamaChatRequest(prompt, true));
 
 		return response.map(chunk -> {
 			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
@@ -127,7 +123,10 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		};
 	}
 
-	private OllamaApi.ChatRequest request(Prompt prompt, String model, boolean stream) {
+	/**
+	 * Package access for testing.
+	 */
+	OllamaApi.ChatRequest ollamaChatRequest(Prompt prompt, boolean stream) {
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions()
 			.stream()
@@ -138,49 +137,31 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			.toList();
 
 		// runtime options
-		Map<String, Object> clientOptionsToUse = merge(prompt.getOptions(), this.clientOptions, HashMap.class);
+		OllamaOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(runtimeChatOptions, ChatOptions.class,
+						OllamaOptions.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
 
-		return ChatRequest.builder(model)
+		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
+
+		// Override the model.
+		if (!StringUtils.hasText(mergedOptions.getModel())) {
+			throw new IllegalArgumentException("Model is not set!");
+		}
+
+		String model = mergedOptions.getModel();
+		return OllamaApi.ChatRequest.builder(model)
 			.withStream(stream)
 			.withMessages(ollamaMessages)
-			.withOptions(clientOptionsToUse)
+			.withOptions(mergedOptions)
 			.build();
-	}
-
-	public static Map<String, Object> objectToMap(Object source) {
-		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
-			});
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static <T> T mapToClass(Map<String, Object> source, Class<T> clazz) {
-		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, clazz);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static <T> T merge(Object source, Object target, Class<T> clazz) {
-		if (source == null) {
-			source = Map.of();
-		}
-		Map<String, Object> sourceMap = objectToMap(source);
-		Map<String, Object> targetMap = objectToMap(target);
-
-		targetMap.putAll(sourceMap.entrySet()
-			.stream()
-			.filter(e -> e.getValue() != null)
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
-
-		return mapToClass(targetMap, clazz);
 	}
 
 	private OllamaApi.Message.Role toRole(Message message) {

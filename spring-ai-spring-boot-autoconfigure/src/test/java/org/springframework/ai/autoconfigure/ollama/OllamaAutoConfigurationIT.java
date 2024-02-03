@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,10 +53,10 @@ public class OllamaAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OllamaAutoConfigurationIT.class);
 
-	private static String MODEL_NAME = "orca-mini";
+	private static String MODEL_NAME = "mistral";
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
 
 	static String baseUrl;
 
@@ -69,10 +69,14 @@ public class OllamaAutoConfigurationIT {
 		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
 	}
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.chat.enabled=true", "spring.ai.ollama.chat.model=" + MODEL_NAME,
-				"spring.ai.ollama.baseUrl=" + baseUrl, "spring.ai.ollama.chat.temperature=0.5",
-				"spring.ai.ollama.chat.topK=10")
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
+	// @formatter:off
+				"spring.ai.ollama.chat.enabled=true",
+				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
+				"spring.ai.ollama.baseUrl=" + baseUrl,
+				"spring.ai.ollama.chat.options.temperature=0.5",
+				"spring.ai.ollama.chat.options.topK=10")
+				// @formatter:on
 		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""

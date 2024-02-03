@@ -72,6 +72,10 @@ public final class ModelOptionsUtils {
 	 */
 	public static <T> T merge(Object source, Object target, Class<T> clazz, List<String> acceptedFieldNames) {
 
+		if (source == null) {
+			source = Map.of();
+		}
+
 		List<String> requestFieldNames = CollectionUtils.isEmpty(acceptedFieldNames)
 				? REQUEST_FIELD_NAMES_PER_CLASS.computeIfAbsent(clazz, ModelOptionsUtils::getJsonPropertyValues)
 				: acceptedFieldNames;
