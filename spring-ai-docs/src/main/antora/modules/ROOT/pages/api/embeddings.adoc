@@ -16,27 +16,83 @@ By providing straightforward methods like `embed(String text)` and `embed(Docume
 
 == API Overview
 
-This section provides a guide to the `EmbeddingClient` interface and associated classes.
+The Embedding API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
+As such, the EmbeddingClient interface extends the `ModelClient` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
+
+The Embedding API in turn is used by higher-level components to implement Embedding Clients for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
+
+Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Clients:
+
+image:embeddings-api.png[EmbeddingClient API]
 
 === EmbeddingClient
-Here is the `EmbeddingClient` interface definition:
 
-```java
-public interface EmbeddingClient {
+This section provides a guide to the `EmbeddingClient` interface and associated classes.
 
-    List<Double> embed(String text);
+[source,java]
+----
+public interface EmbeddingClient extends ModelClient<EmbeddingRequest, EmbeddingResponse> {
 
-    List<Double> embed(Document document);
+    // EmbeddingResponse call(EmbeddingRequest request); from ModelClient
 
-    List<List<Double>> embed(List<String> texts);
+    // Call method inherited from ModelClient<EmbeddingRequest, EmbeddingResponse>
+    // and the embed methods defined below are the primary methods of the interface
+    // the user needs to implement.
 
-    EmbeddingResponse embedForResponse(List<String> texts);
 
-    default int dimensions() {
-        return embed("Test String").size();
-    }
+	/**
+	 * Embeds the given document's content into a vector.
+	 * @param document the document to embed.
+	 * @return the embedded vector.
+	 */
+	List<Double> embed(Document document);
+
+	/**
+	 * Embeds the given text into a vector.
+	 * @param text the text to embed.
+	 * @return the embedded vector.
+	 */
+	default List<Double> embed(String text) {
+		Assert.notNull(text, "Text must not be null");
+		return this.embed(List.of(text)).iterator().next();
+	}
+
+	/**
+	 * Embeds a batch of texts into vectors.
+	 * @param texts list of texts to embed.
+	 * @return list of list of embedded vectors.
+	 */
+	default List<List<Double>> embed(List<String> texts) {
+		Assert.notNull(texts, "Texts must not be null");
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
+			.getResults()
+			.stream()
+			.map(Embedding::getOutput)
+			.toList();
+	}
+
+	/**
+	 * Embeds a batch of texts into vectors and returns the {@link EmbeddingResponse}.
+	 * @param texts list of texts to embed.
+	 * @return the embedding response.
+	 */
+	default EmbeddingResponse embedForResponse(List<String> texts) {
+		Assert.notNull(texts, "Texts must not be null");
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY));
+	}
+
+	/**
+	 * @return the number of dimensions of the embedded vectors. It is generative
+	 * specific.
+	 */
+	default int dimensions() {
+		return embed("Test String").size();
+	}
+
 }
-```
+----
+
+
 
 The embed methods offer various options for converting text into embeddings, accommodating single strings, structured `Document` objects, or batches of text.
 The returned values are lists of doubles, representing the embeddings in a numerical vector format.
@@ -48,10 +104,11 @@ The dimensions method is a handy tool for developers to quickly ascertain the si
 
 == Available Implementations
 
-The `EmbeddingClient` interface has the following available implementations:
+Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
 
-* OpenAI: Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
+* OpenAI: Using the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[Sprig AI OpenAiApi library].
 * Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
 * PostgresML: https://postgresml.org/docs/[PostgresML is a complete MLOps platform built on PostgreSQL]
 * Sentence embedding with local ONNX models: The https://djl.ai/[Deep Java Library] and the Microsoft https://onnxruntime.ai/docs/get-started/with-java.html[ONNX Java Runtime] libraries are applied to run the ONNX models and compute the embeddings in Java.
+* Vertex AI: Using the https://cloud.google.com/vertex-ai/docs[Google Cloud Vertex AI] client library.
 

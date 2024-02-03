@@ -1,4 +1,4 @@
-= ONNX
+= Transformers (ONNX) Embeddings
 
 The `TransformersEmbeddingClient` is an `EmbeddingClient` implementation that locally computes https://www.sbert.net/examples/applications/computing-embeddings/README.html#sentence-embeddings-with-transformers[sentence embeddings] using a selected https://www.sbert.net/[sentence transformer].
 
