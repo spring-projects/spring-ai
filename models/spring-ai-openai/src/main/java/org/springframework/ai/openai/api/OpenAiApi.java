@@ -28,6 +28,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.converter.FormHttpMessageConverter;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -56,6 +60,9 @@ public class OpenAiApi {
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
+
+	private final RestClient multipartFormEncodingRestClient;
+
 	private final WebClient webClient;
 	private final ObjectMapper objectMapper;
 
@@ -84,6 +91,12 @@ public class OpenAiApi {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
+
+		Consumer<HttpHeaders> multipartFormDataContentHeaders = multipartFormDataheaders -> {
+			multipartFormDataheaders.setBearerAuth(openAiToken);
+			multipartFormDataheaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+		};
+
 		var responseErrorHandler = new ResponseErrorHandler() {
 
 			@Override
@@ -107,6 +120,12 @@ public class OpenAiApi {
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(jsonContentHeaders)
+				.defaultStatusHandler(responseErrorHandler)
+				.build();
+
+		this.multipartFormEncodingRestClient = restClientBuilder
+				.baseUrl(baseUrl)
+				.defaultHeaders(multipartFormDataContentHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
@@ -361,6 +380,7 @@ public class OpenAiApi {
 		}
 	}
 
+
 	/**
 	 * Message comprising the conversation.
 	 *
@@ -469,7 +489,13 @@ public class OpenAiApi {
 		@JsonProperty("function_call") FUNCTION_CALL
 	}
 
-	/**
+	@JsonInclude(Include.NON_NULL)
+	public record Transcription(
+			@JsonProperty("text") String text) {
+	}
+
+
+		/**
 	 * Represents a chat completion response returned by model, based on the provided input.
 	 *
 	 * @param id A unique identifier for the chat completion.
@@ -628,6 +654,23 @@ public class OpenAiApi {
 				.body(chatRequest)
 				.retrieve()
 				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a model response for the given transcription.
+	 *
+	 * @param transcriptionRequest The transcription request.
+	 * @return Entity response with {@link MultiValueMap} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<Transcription> transcriptionEntity(MultiValueMap<String, Object> transcriptionRequest) {
+
+		Assert.notNull(transcriptionRequest, "The request body can not be null.");
+
+		return this.multipartFormEncodingRestClient.post()
+				.uri("/v1/audio/transcriptions")
+				.body(transcriptionRequest)
+				.retrieve()
+				.toEntity(Transcription.class);
 	}
 
 	/**

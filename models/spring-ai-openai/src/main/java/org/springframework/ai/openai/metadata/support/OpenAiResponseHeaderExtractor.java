@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,7 @@ public class OpenAiResponseHeaderExtractor {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiResponseHeaderExtractor.class);
 
-	public static RateLimit extractAiResponseHeaders(ResponseEntity<ChatCompletion> response) {
+	public static RateLimit extractAiResponseHeaders(ResponseEntity<?> response) {
 
 		Long requestsLimit = getHeaderAsLong(response, REQUESTS_LIMIT_HEADER.getName());
 		Long requestsRemaining = getHeaderAsLong(response, REQUESTS_REMAINING_HEADER.getName());
@@ -66,7 +67,7 @@ public class OpenAiResponseHeaderExtractor {
 				tokensReset);
 	}
 
-	private static Duration getHeaderAsDuration(ResponseEntity<ChatCompletion> response, String headerName) {
+	private static Duration getHeaderAsDuration(ResponseEntity<?> response, String headerName) {
 		var headers = response.getHeaders();
 		if (headers.containsKey(headerName)) {
 			var values = headers.get(headerName);
@@ -77,7 +78,7 @@ public class OpenAiResponseHeaderExtractor {
 		return null;
 	}
 
-	private static Long getHeaderAsLong(ResponseEntity<ChatCompletion> response, String headerName) {
+	private static Long getHeaderAsLong(ResponseEntity<?> response, String headerName) {
 		var headers = response.getHeaders();
 		if (headers.containsKey(headerName)) {
 			var values = headers.get(headerName);

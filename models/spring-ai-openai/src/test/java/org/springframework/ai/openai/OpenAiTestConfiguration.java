@@ -5,6 +5,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.util.StringUtils;
 
 @SpringBootConfiguration
@@ -34,6 +35,14 @@ public class OpenAiTestConfiguration {
 		OpenAiChatClient openAiChatClient = new OpenAiChatClient(api);
 		openAiChatClient.setTemperature(0.3);
 		return openAiChatClient;
+	}
+
+
+	@Bean
+	public OpenAiTranscriptionClient openAiTranscriptionClient(OpenAiApi api) {
+		OpenAiTranscriptionClient openAiTranscriptionClient = new OpenAiTranscriptionClient(api);
+		openAiTranscriptionClient.setTemperature(0.3);
+		return openAiTranscriptionClient;
 	}
 
 	@Bean
