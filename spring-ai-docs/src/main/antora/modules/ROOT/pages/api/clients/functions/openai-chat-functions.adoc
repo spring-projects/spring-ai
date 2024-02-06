@@ -73,7 +73,7 @@ SpringAI also auto-generates the JSON Scheme for the `MockWeatherService.Request
 
 Now you can use the `getCurrentWeather` function in prompt requests:
 
-[source,java,linenums]
+[source,java]
 ----
 OpenAiChatClient chatClient = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
@@ -82,7 +82,6 @@ logger.info("Response: {}", response);
 ----
 
 Above will trigger 3 function calls to `getCurrentWeather` (one for each city) and the response will be:
-
 ----
 Here is the current weather for the requested cities:
 
@@ -119,6 +118,8 @@ This approach allows to dynamically chose different functions to be called based
 The [ToolCallWithPromptFunctionRegistrationIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatClient` and use it in a prompt request.
 
 NOTE: Even without Auto-configuration enabled, you can use the `OpenAiChatOptions.builder().withToolCallbacks(...)` to register functions using the OpenAiChatClient default options using the `#withDefaultOptions(OpenAiChatOptions options)` method.
+
+The following diagram illustrates the flow of the OpenAiChatClient Function Calling:
 
 image:openai-chatclient-function-call.png[Chat Client Function Calling Flow]
 
