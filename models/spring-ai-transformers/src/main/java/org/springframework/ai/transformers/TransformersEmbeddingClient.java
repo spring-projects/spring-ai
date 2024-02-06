@@ -27,7 +27,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.InitializingBean;
@@ -193,32 +192,8 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 	}
 
 	@Override
-	public List<Double> embed(String text) {
-		return embed(List.of(text)).get(0);
-	}
-
-	@Override
 	public List<Double> embed(Document document) {
 		return this.embed(document.getFormattedContent(this.metadataMode));
-	}
-
-	@Override
-	public EmbeddingResponse embedForResponse(List<String> texts) {
-		List<Embedding> data = new ArrayList<>();
-		List<List<Double>> embed = this.embed(texts);
-		for (int i = 0; i < embed.size(); i++) {
-			data.add(new Embedding(embed.get(i), i));
-		}
-		return new EmbeddingResponse(data);
-	}
-
-	@Override
-	public List<List<Double>> embed(List<String> texts) {
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
-			.getResults()
-			.stream()
-			.map(e -> e.getOutput())
-			.toList();
 	}
 
 	@Override

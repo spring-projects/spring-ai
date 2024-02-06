@@ -11,7 +11,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingClient.VectorType;
+
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -36,13 +41,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest(properties = "logging.level.sql=TRACE")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Disabled("Disabled from automatic execution, as it requires an excessive amount of memory (over 9GB)!")
+// @Disabled("Disabled from automatic execution, as it requires an excessive amount of
+// memory (over 9GB)!")
 class PostgresMlEmbeddingClientIT {
 
 	@Container
 	@ServiceConnection
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.7.3").asCompatibleSubstituteFor("postgres"))
+			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.8.1").asCompatibleSubstituteFor("postgres"))
 		.withCommand("sleep", "infinity")
 		.withLabel("org.springframework.boot.service-connection", "postgres")
 		.withUsername("postgresml")
@@ -63,7 +69,9 @@ class PostgresMlEmbeddingClientIT {
 	void embed() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate);
 		embeddingClient.afterPropertiesSet();
+
 		List<Double> embed = embeddingClient.embed("Hello World!");
+
 		assertThat(embed).hasSize(768);
 		// embeddingClient.dropPgmlExtension();
 	}
@@ -71,9 +79,14 @@ class PostgresMlEmbeddingClientIT {
 	@Test
 	void embedWithPgVector() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.PG_VECTOR);
+				PostgresMlEmbeddingOptions.builder()
+					.withTransformer("distilbert-base-uncased")
+					.withVectorType(PostgresMlEmbeddingClient.VectorType.PG_VECTOR)
+					.build());
 		embeddingClient.afterPropertiesSet();
+
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
+
 		assertThat(embed).hasSize(768);
 		// embeddingClient.dropPgmlExtension();
 	}
@@ -81,9 +94,11 @@ class PostgresMlEmbeddingClientIT {
 	@Test
 	void embedWithDifferentModel() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"intfloat/e5-small");
+				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build());
 		embeddingClient.afterPropertiesSet();
+
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
+
 		assertThat(embed).hasSize(384);
 		// embeddingClient.dropPgmlExtension();
 	}
@@ -91,10 +106,16 @@ class PostgresMlEmbeddingClientIT {
 	@Test
 	void embedWithKwargs() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.PG_ARRAY, Map.of("device", "cpu"),
-				MetadataMode.EMBED);
+				PostgresMlEmbeddingOptions.builder()
+					.withTransformer("distilbert-base-uncased")
+					.withVectorType(PostgresMlEmbeddingClient.VectorType.PG_ARRAY)
+					.withKwargs(Map.of("device", "cpu"))
+					.withMetadataMode(MetadataMode.EMBED)
+					.build());
 		embeddingClient.afterPropertiesSet();
+
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
+
 		assertThat(embed).hasSize(768);
 		// embeddingClient.dropPgmlExtension();
 	}
@@ -103,13 +124,18 @@ class PostgresMlEmbeddingClientIT {
 	@ValueSource(strings = { "PG_ARRAY", "PG_VECTOR" })
 	void embedForResponse(String vectorType) {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.valueOf(vectorType));
+				PostgresMlEmbeddingOptions.builder()
+					.withTransformer("distilbert-base-uncased")
+					.withVectorType(VectorType.valueOf(vectorType))
+					.build());
 		embeddingClient.afterPropertiesSet();
+
 		EmbeddingResponse embeddingResponse = embeddingClient
 			.embedForResponse(List.of("Hello World!", "Spring AI!", "LLM!"));
+
 		assertThat(embeddingResponse).isNotNull();
 		assertThat(embeddingResponse.getResults()).hasSize(3);
-		assertThat(embeddingResponse.getMetadata()).containsExactlyEntriesOf(
+		assertThat(embeddingResponse.getMetadata()).containsExactlyInAnyOrderEntriesOf(
 				Map.of("transformer", "distilbert-base-uncased", "vector-type", vectorType, "kwargs", "{}"));
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(768);
@@ -117,6 +143,57 @@ class PostgresMlEmbeddingClientIT {
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(768);
 		assertThat(embeddingResponse.getResults().get(2).getIndex()).isEqualTo(2);
 		assertThat(embeddingResponse.getResults().get(2).getOutput()).hasSize(768);
+		// embeddingClient.dropPgmlExtension();
+	}
+
+	@Test
+	void embedCallWithRequestOptionsOverride() {
+
+		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
+				PostgresMlEmbeddingOptions.builder()
+					.withTransformer("distilbert-base-uncased")
+					.withVectorType(VectorType.PG_VECTOR)
+					.build());
+		embeddingClient.afterPropertiesSet();
+
+		var request1 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"), EmbeddingOptions.EMPTY);
+
+		EmbeddingResponse embeddingResponse = embeddingClient.call(request1);
+
+		assertThat(embeddingResponse).isNotNull();
+		assertThat(embeddingResponse.getResults()).hasSize(3);
+		assertThat(embeddingResponse.getMetadata()).containsExactlyInAnyOrderEntriesOf(Map.of("transformer",
+				"distilbert-base-uncased", "vector-type", VectorType.PG_VECTOR.name(), "kwargs", "{}"));
+		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(768);
+		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(768);
+		assertThat(embeddingResponse.getResults().get(2).getIndex()).isEqualTo(2);
+		assertThat(embeddingResponse.getResults().get(2).getOutput()).hasSize(768);
+
+		// Override the default options in the request
+		var request2 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"),
+				PostgresMlEmbeddingOptions.builder()
+					.withTransformer("intfloat/e5-small")
+					.withVectorType(VectorType.PG_ARRAY)
+					.withMetadataMode(MetadataMode.EMBED)
+					.withKwargs(Map.of("device", "cpu"))
+					.build());
+
+		embeddingResponse = embeddingClient.call(request2);
+
+		assertThat(embeddingResponse).isNotNull();
+		assertThat(embeddingResponse.getResults()).hasSize(3);
+		assertThat(embeddingResponse.getMetadata()).containsExactlyInAnyOrderEntriesOf(Map.of("transformer",
+				"intfloat/e5-small", "vector-type", VectorType.PG_ARRAY.name(), "kwargs", "{\"device\":\"cpu\"}"));
+
+		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(384);
+		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(384);
+		assertThat(embeddingResponse.getResults().get(2).getIndex()).isEqualTo(2);
+		assertThat(embeddingResponse.getResults().get(2).getOutput()).hasSize(384);
+
 		// embeddingClient.dropPgmlExtension();
 	}
 

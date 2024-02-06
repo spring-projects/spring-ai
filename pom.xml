@@ -104,7 +104,7 @@
 		<bedrockruntime.version>2.23.10</bedrockruntime.version>
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
-		<onnxruntime.version>1.16.3</onnxruntime.version>
+		<onnxruntime.version>1.17.0</onnxruntime.version>
 
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.1</pdfbox.version>

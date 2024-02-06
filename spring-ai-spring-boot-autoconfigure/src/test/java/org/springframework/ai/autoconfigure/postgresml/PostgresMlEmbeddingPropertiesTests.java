@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,36 +30,33 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link PostgresMlProperties}.
+ * Unit Tests for {@link PostgresMlEmbeddingProperties}.
  *
  * @author Utkarsh Srivastava
+ * @author Christian Tzolov
  */
-@SpringBootTest(properties = { "spring.ai.postgresml.metadata-mode=all", "spring.ai.postgresml.kwargs.key1=value1",
-		"spring.ai.postgresml.kwargs.key2=value2", "spring.ai.postgresml.embedding.transformer=abc123" })
-class PostgresMlPropertiesTests {
+@SpringBootTest(properties = { "spring.ai.postgresml.embedding.options.metadata-mode=all",
+		"spring.ai.postgresml.embedding.options.kwargs.key1=value1",
+		"spring.ai.postgresml.embedding.options.kwargs.key2=value2",
+		"spring.ai.postgresml.embedding.options.transformer=abc123" })
+class PostgresMlEmbeddingPropertiesTests {
 
 	@Autowired
-	private PostgresMlProperties postgresMlProperties;
+	private PostgresMlEmbeddingProperties postgresMlProperties;
 
 	@Test
 	void postgresMlPropertiesAreCorrect() {
 		assertThat(this.postgresMlProperties).isNotNull();
-		assertThat(this.postgresMlProperties.getTransformer()).isEqualTo("distilbert-base-uncased");
-		assertThat(this.postgresMlProperties.getVectorType()).isEqualTo(PostgresMlEmbeddingClient.VectorType.PG_ARRAY);
-		assertThat(this.postgresMlProperties.getKwargs()).isEqualTo(Map.of("key1", "value1", "key2", "value2"));
-		assertThat(this.postgresMlProperties.getMetadataMode()).isEqualTo(MetadataMode.ALL);
-
-		PostgresMlProperties.Embedding embedding = this.postgresMlProperties.getEmbedding();
-
-		assertThat(embedding).isNotNull();
-		assertThat(embedding.getTransformer()).isEqualTo("abc123");
-		assertThat(embedding.getVectorType()).isEqualTo(PostgresMlEmbeddingClient.VectorType.PG_ARRAY);
-		assertThat(embedding.getKwargs()).isEqualTo(Map.of("key1", "value1", "key2", "value2"));
-		assertThat(embedding.getMetadataMode()).isEqualTo(MetadataMode.ALL);
+		assertThat(this.postgresMlProperties.getOptions().getTransformer()).isEqualTo("abc123");
+		assertThat(this.postgresMlProperties.getOptions().getVectorType())
+			.isEqualTo(PostgresMlEmbeddingClient.VectorType.PG_ARRAY);
+		assertThat(this.postgresMlProperties.getOptions().getKwargs())
+			.isEqualTo(Map.of("key1", "value1", "key2", "value2"));
+		assertThat(this.postgresMlProperties.getOptions().getMetadataMode()).isEqualTo(MetadataMode.ALL);
 	}
 
 	@SpringBootConfiguration
-	@EnableConfigurationProperties(PostgresMlProperties.class)
+	@EnableConfigurationProperties(PostgresMlEmbeddingProperties.class)
 	static class TestConfiguration {
 
 	}

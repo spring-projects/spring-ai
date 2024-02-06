@@ -57,6 +57,20 @@ public final class ModelOptionsUtils {
 	}
 
 	/**
+	 * Converts the given object to a JSON string.
+	 * @param object the object to convert to a JSON string.
+	 * @return the JSON string.
+	 */
+	public static String toJsonString(Object object) {
+		try {
+			return OBJECT_MAPPER.writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
 	 * Merges the source object into the target object and returns an object represented
 	 * by the given class. The JSON property names are used to match the fields to merge.
 	 * The source non-null values override the target values with the same field name. The
