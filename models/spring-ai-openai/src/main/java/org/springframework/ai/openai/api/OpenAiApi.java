@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -57,6 +58,9 @@ public class OpenAiApi {
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
+
+	private final RestClient multipartFormEncodingRestClient;
+
 	private final WebClient webClient;
 	private final ObjectMapper objectMapper;
 
@@ -95,6 +99,11 @@ public class OpenAiApi {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
+		Consumer<HttpHeaders> multipartFormDataContentHeaders = multipartFormDataheaders -> {
+			multipartFormDataheaders.setBearerAuth(openAiToken);
+			multipartFormDataheaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+		};
+
 		var responseErrorHandler = new ResponseErrorHandler() {
 
 			@Override
@@ -118,6 +127,12 @@ public class OpenAiApi {
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(jsonContentHeaders)
+				.defaultStatusHandler(responseErrorHandler)
+				.build();
+
+		this.multipartFormEncodingRestClient = restClientBuilder
+				.baseUrl(baseUrl)
+				.defaultHeaders(multipartFormDataContentHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
@@ -390,6 +405,46 @@ public class OpenAiApi {
 	}
 
 	/**
+	 *
+	 * @param model ID of the model to use.
+	 * @param language The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency.
+	 * @param prompt An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language.
+	 * @param responseFormat An object specifying the format that the model must output.
+	 * @param temperature What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
+	 * more random, while lower values like 0.2 will make it more focused and deterministic. */
+	@JsonInclude(Include.NON_NULL)
+	public record TranscriptionRequest (
+			@JsonProperty("model") String model,
+			@JsonProperty("language") String language,
+			@JsonProperty("prompt") String prompt,
+			@JsonProperty("response_format") ResponseFormat responseFormat,
+			@JsonProperty("temperature") Float temperature) {
+
+		/**
+		 * Shortcut constructor for a transcription request with the given model and temperature
+		 *
+		 * @param model ID of the model to use.
+		 * @param temperature What sampling temperature to use, between 0 and 1.
+		 */
+		public TranscriptionRequest(String model, Float temperature) {
+			this(model, null, null, null, temperature);
+		}
+
+		public TranscriptionRequest() {
+			this(null, null, null, null, null);
+		}
+
+		/**
+		 * An object specifying the format that the model must output.
+		 * @param type Must be one of 'text' or 'json_object'.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ResponseFormat(
+				@JsonProperty("type") String type) {
+		}
+	}
+
+	/**
 	 * Message comprising the conversation.
 	 *
 	 * @param content The contents of the message.
@@ -495,6 +550,11 @@ public class OpenAiApi {
 		 * (deprecated) The model called a function.
 		 */
 		@JsonProperty("function_call") FUNCTION_CALL
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record Transcription(
+			@JsonProperty("text") String text) {
 	}
 
 	/**
@@ -656,6 +716,41 @@ public class OpenAiApi {
 				.body(chatRequest)
 				.retrieve()
 				.toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates a model response for the given transcription.
+	 *
+	 * @param transcriptionRequest The transcription request.
+	 * @return Entity response with {@link Transcription} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<Transcription> transcriptionEntityJson(MultiValueMap<String, Object> transcriptionRequest) {
+
+		Assert.notNull(transcriptionRequest, "The request body can not be null.");
+
+		return this.multipartFormEncodingRestClient.post()
+				.uri("/v1/audio/transcriptions")
+				.body(transcriptionRequest)
+				.retrieve()
+				.toEntity(Transcription.class);
+	}
+
+	/**
+	 * Creates a model response for the given transcription.
+	 *
+	 * @param transcriptionRequest The transcription request.
+	 * @return Entity response with {@link String} as a body and HTTP status code and headers.
+	 */
+	public ResponseEntity<String> transcriptionEntityText(MultiValueMap<String, Object> transcriptionRequest) {
+
+		Assert.notNull(transcriptionRequest, "The request body can not be null.");
+
+		return this.multipartFormEncodingRestClient.post()
+				.uri("/v1/audio/transcriptions")
+				.body(transcriptionRequest)
+				.accept(MediaType.TEXT_PLAIN)
+				.retrieve()
+				.toEntity(String.class);
 	}
 
 	/**

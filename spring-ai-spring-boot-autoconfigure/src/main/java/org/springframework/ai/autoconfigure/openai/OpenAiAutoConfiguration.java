@@ -21,6 +21,7 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiTranscriptionClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -36,7 +37,7 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiTranscriptionProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 /**
  * @author Christian Tzolov
@@ -61,6 +62,28 @@ public class OpenAiAutoConfiguration {
 
 		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi)
 			.withDefaultOptions(chatProperties.getOptions());
+
+		return openAiChatClient;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiTranscriptionClient openAiTranscriptionClient(OpenAiConnectionProperties commonProperties,
+			OpenAiTranscriptionProperties transcriptionProperties) {
+
+		String apiKey = StringUtils.hasText(transcriptionProperties.getApiKey()) ? transcriptionProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(transcriptionProperties.getBaseUrl())
+				? transcriptionProperties.getBaseUrl() : commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
+
+		OpenAiTranscriptionClient openAiChatClient = new OpenAiTranscriptionClient(openAiApi)
+			.withDefaultOptions(transcriptionProperties.getOptions());
 
 		return openAiChatClient;
 	}

@@ -36,6 +36,12 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
+	public OpenAiTranscriptionClient openAiTranscriptionClient(OpenAiApi api) {
+		OpenAiTranscriptionClient openAiTranscriptionClient = new OpenAiTranscriptionClient(api);
+		return openAiTranscriptionClient;
+	}
+
+	@Bean
 	public OpenAiImageClient openAiImageClient(OpenAiImageApi imageApi) {
 		OpenAiImageClient openAiImageClient = new OpenAiImageClient(imageApi);
 		// openAiImageClient.setModel("foobar");

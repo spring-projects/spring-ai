@@ -28,6 +28,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiTranscriptionClient;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
@@ -53,6 +56,17 @@ public class OpenAiAutoConfigurationIT {
 		contextRunner.run(context -> {
 			OpenAiChatClient client = context.getBean(OpenAiChatClient.class);
 			String response = client.call("Hello");
+			assertThat(response).isNotEmpty();
+			logger.info("Response: " + response);
+		});
+	}
+
+	@Test
+	void transcribe() {
+		contextRunner.run(context -> {
+			OpenAiTranscriptionClient client = context.getBean(OpenAiTranscriptionClient.class);
+			Resource audioFile = new ClassPathResource("/speech/jfk.flac");
+			String response = client.call(audioFile);
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
