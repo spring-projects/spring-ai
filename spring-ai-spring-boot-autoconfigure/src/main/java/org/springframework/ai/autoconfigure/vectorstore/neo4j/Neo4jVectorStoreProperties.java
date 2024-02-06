@@ -37,6 +37,8 @@ public class Neo4jVectorStoreProperties {
 
 	private String embeddingProperty = Neo4jVectorStore.DEFAULT_EMBEDDING_PROPERTY;
 
+	private String indexName = Neo4jVectorStore.DEFAULT_INDEX_NAME;
+
 	public String getDatabaseName() {
 		return databaseName;
 	}
@@ -75,6 +77,14 @@ public class Neo4jVectorStoreProperties {
 
 	public void setEmbeddingProperty(String embeddingProperty) {
 		this.embeddingProperty = embeddingProperty;
+	}
+
+	public String getIndexName() {
+		return this.indexName;
+	}
+
+	public void setIndexName(String indexName) {
+		this.indexName = indexName;
 	}
 
 }

@@ -69,6 +69,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 		private final String quotedLabel;
 
+		private final String indexName;
+
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
@@ -97,6 +99,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			this.label = builder.label;
 			this.embeddingProperty = builder.embeddingProperty;
 			this.quotedLabel = SchemaNames.sanitize(this.label).orElseThrow();
+			this.indexName = builder.indexName;
 		}
 
 		public static class Builder {
@@ -110,6 +113,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			private String label = DEFAULT_LABEL;
 
 			private String embeddingProperty = DEFAULT_EMBEDDING_PROPERTY;
+
+			private String indexName = DEFAULT_INDEX_NAME;
 
 			private Builder() {
 			}
@@ -183,6 +188,21 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			}
 
 			/**
+			 * Configures the vector index to be used. Defaults to
+			 * {@literal spring-ai-document-index}.
+			 * @param newIndexName The name of the index to be used for storing and
+			 * searching data.
+			 * @return this builder
+			 */
+			public Builder withIndexName(String newIndexName) {
+
+				Assert.hasText(newIndexName, "Index name may not be null or blank");
+
+				this.indexName = newIndexName;
+				return this;
+			}
+
+			/**
 			 * {@return the immutable configuration}
 			 */
 			public Neo4jVectorStoreConfig build() {
@@ -198,7 +218,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	public static final String DEFAULT_LABEL = "Document";
 
-	private static final String INDEX_NAME = "spring-ai-document-index";
+	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
 	public static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
 
@@ -275,7 +295,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 						WHERE score >= $threshold
 						RETURN node, score
 						""",
-						Map.of("indexName", INDEX_NAME, "numberOfNearestNeighbours", request.getTopK(),
+						Map.of("indexName", this.config.indexName, "numberOfNearestNeighbours", request.getTopK(),
 								"embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
 				.list(Neo4jVectorStore::recordToDocument);
 		}
@@ -292,7 +312,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 				.consume();
 
 			var vectorIndexExists = session
-				.run("SHOW INDEXES YIELD name WHERE name = $name RETURN count(*) > 0", Map.of("name", INDEX_NAME))
+				.run("SHOW INDEXES YIELD name WHERE name = $name RETURN count(*) > 0",
+						Map.of("name", this.config.indexName))
 				.single()
 				.get(0)
 				.asBoolean();
@@ -300,7 +321,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			if (!vectorIndexExists) {
 				var statement = "CALL db.index.vector.createNodeIndex($indexName, $label, $embeddingProperty, $embeddingDimension, $distanceType)";
 				session.run(statement,
-						Map.of("indexName", INDEX_NAME, "label", this.config.label, "embeddingProperty",
+						Map.of("indexName", this.config.indexName, "label", this.config.label, "embeddingProperty",
 								this.config.embeddingProperty, "embeddingDimension", this.config.embeddingDimension,
 								"distanceType", this.config.distanceType.name))
 					.consume();
@@ -323,7 +344,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
 
-		row.put(DEFAULT_EMBEDDING_PROPERTY, Values.value(toFloatArray(embedding)));
+		row.put(this.config.embeddingProperty, Values.value(toFloatArray(embedding)));
 		return row;
 	}
 
