@@ -106,9 +106,9 @@ Here is a controller class that shows these classes in use
 
         PromptTemplate promptTemplate = new PromptTemplate(userMessage, Map.of("actor", actor, "format", outputParser.getFormat() ));
         Prompt prompt = promptTemplate.create();
-        Generation generation = aiClient.generate(prompt).getGeneration();
+        Generation generation = chatClient.call(prompt).getResult();
 
-        ActorsFilms actorsFilms = outputParser.parse(generation.getText());
+        ActorsFilms actorsFilms = outputParser.parse(generation.getOutput().getContent());
         return actorsFilms;
     }
 ```

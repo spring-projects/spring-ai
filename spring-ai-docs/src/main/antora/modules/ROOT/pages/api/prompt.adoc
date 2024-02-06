@@ -200,7 +200,7 @@ PromptTemplate promptTemplate = new PromptTemplate("Tell me a {adjective} joke a
 
 Prompt prompt = promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
 
-return aiClient.generate(prompt).getGeneration();
+return chatClient.call(prompt).getResult();
 ```
 
 Another example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/3-README-prompt-roles.md[AI Workshop on Roles] is shown below.
@@ -224,7 +224,7 @@ Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, 
 
 Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-List<Generation> response = aiClient.generate(prompt).getGenerations();
+List<Generation> response = chatClient.call(prompt).getResults();
 
 ```
 
