@@ -26,6 +26,7 @@ import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
+import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -69,6 +70,32 @@ public class OpenAiPropertiesTests {
 	}
 
 	@Test
+	public void transcriptionProperties() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+			"spring.ai.openai.base-url=TEST_BASE_URL",
+			"spring.ai.openai.api-key=abc123",
+			"spring.ai.openai.audio.transcription.options.model=MODEL_XYZ",
+			"spring.ai.openai.audio.transcription.options.temperature=0.55")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(transcriptionProperties.getApiKey()).isNull();
+				assertThat(transcriptionProperties.getBaseUrl()).isNull();
+
+				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(transcriptionProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+			});
+	}
+
+	@Test
 	public void chatOverrideConnectionProperties() {
 
 		new ApplicationContextRunner().withPropertyValues(
@@ -93,6 +120,34 @@ public class OpenAiPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+			});
+	}
+
+	@Test
+	public void transcriptionOverrideConnectionProperties() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.audio.transcription.base-url=TEST_BASE_URL2",
+						"spring.ai.openai.audio.transcription.api-key=456",
+						"spring.ai.openai.audio.transcription.options.model=MODEL_XYZ",
+						"spring.ai.openai.audio.transcription.options.temperature=0.55")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(transcriptionProperties.getApiKey()).isEqualTo("456");
+				assertThat(transcriptionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+
+				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(transcriptionProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 			});
 	}
 
@@ -285,6 +340,41 @@ public class OpenAiPropertiesTests {
 				assertThat(function.name()).isEqualTo("myFunction1");
 				assertThat(function.description()).isEqualTo("function description");
 				assertThat(function.parameters()).isNotEmpty();
+			});
+	}
+
+	@Test
+	public void transcriptionOptionsTest() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.api-key=API_KEY",
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+
+						"spring.ai.openai.audio.transcription.options.model=MODEL_XYZ",
+						"spring.ai.openai.audio.transcription.options.language=en",
+						"spring.ai.openai.audio.transcription.options.prompt=Er, yes, I think so",
+						"spring.ai.openai.audio.transcription.options.responseFormat=JSON",
+						"spring.ai.openai.audio.transcription.options.temperature=0.55"
+				)
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("text-embedding-ada-002");
+
+				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(transcriptionProperties.getOptions().getLanguage()).isEqualTo("en");
+				assertThat(transcriptionProperties.getOptions().getPrompt()).isEqualTo("Er, yes, I think so");
+				assertThat(transcriptionProperties.getOptions().getResponseFormat())
+					.isEqualTo(OpenAiAudioApi.TranscriptResponseFormat.JSON);
+				assertThat(transcriptionProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 			});
 	}
 

@@ -280,7 +280,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("language") String language,
 		@JsonProperty("prompt") String prompt,
-		@JsonProperty("response_format") TextualResponseFormat responseFormat,
+		@JsonProperty("response_format") TranscriptResponseFormat responseFormat,
 		@JsonProperty("temperature") Float temperature,
 		@JsonProperty("timestamp_granularities") GranularityType granularityType) {
 		// @formatter:on
@@ -318,7 +318,7 @@ public class OpenAiAudioApi {
 
 			private String prompt;
 
-			private TextualResponseFormat responseFormat = TextualResponseFormat.JSON;
+			private TranscriptResponseFormat responseFormat = TranscriptResponseFormat.JSON;
 
 			private Float temperature;
 
@@ -344,7 +344,7 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder withResponseFormat(TextualResponseFormat response_format) {
+			public Builder withResponseFormat(TranscriptResponseFormat response_format) {
 				this.responseFormat = response_format;
 				return this;
 			}
@@ -375,7 +375,7 @@ public class OpenAiAudioApi {
 	 * The format of the transcript and translation outputs, in one of these options:
 	 * json, text, srt, verbose_json, or vtt. Defaults to json.
 	 */
-	public enum TextualResponseFormat {
+	public enum TranscriptResponseFormat {
 
 		// @formatter:off
 		@JsonProperty("json") JSON("json", StructuredResponse.class),
@@ -393,7 +393,7 @@ public class OpenAiAudioApi {
 			return this == JSON || this == VERBOSE_JSON;
 		}
 
-		TextualResponseFormat(String value, Class<?> responseType) {
+		TranscriptResponseFormat(String value, Class<?> responseType) {
 			this.value = value;
 			this.responseType = responseType;
 		}
@@ -429,7 +429,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("file") byte[] file,
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
-		@JsonProperty("response_format") TextualResponseFormat responseFormat,
+		@JsonProperty("response_format") TranscriptResponseFormat responseFormat,
 		@JsonProperty("temperature") Float temperature) {
 		// @formatter:on
 
@@ -445,7 +445,7 @@ public class OpenAiAudioApi {
 
 			private String prompt;
 
-			private TextualResponseFormat responseFormat = TextualResponseFormat.JSON;
+			private TranscriptResponseFormat responseFormat = TranscriptResponseFormat.JSON;
 
 			private Float temperature;
 
@@ -464,7 +464,7 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder withResponseFormat(TextualResponseFormat responseFormat) {
+			public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
@@ -601,7 +601,7 @@ public class OpenAiAudioApi {
 		multipartBody.add("response_format", requestBody.responseFormat().getValue());
 		multipartBody.add("temperature", requestBody.temperature());
 		if (requestBody.granularityType() != null) {
-			Assert.isTrue(requestBody.responseFormat() == TextualResponseFormat.VERBOSE_JSON,
+			Assert.isTrue(requestBody.responseFormat() == TranscriptResponseFormat.VERBOSE_JSON,
 					"response_format must be set to verbose_json to use timestamp granularities.");
 			multipartBody.add("timestamp_granularities[]", requestBody.granularityType().getValue());
 		}

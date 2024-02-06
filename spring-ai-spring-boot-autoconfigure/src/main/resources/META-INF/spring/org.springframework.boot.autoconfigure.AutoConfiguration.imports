@@ -22,3 +22,4 @@ org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfi
 org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
+

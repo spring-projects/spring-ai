@@ -18,13 +18,16 @@ package org.springframework.ai.autoconfigure.openai;
 
 import java.util.List;
 
+import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.audio.transcription.OpenAiAudioTranscriptionClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -38,13 +41,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-@AutoConfiguration(after = { RestClientAutoConfiguration.class })
-@ConditionalOnClass(OpenAiApi.class)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
 /**
  * @author Christian Tzolov
  */
+@AutoConfiguration(after = { RestClientAutoConfiguration.class })
+@ConditionalOnClass(OpenAiApi.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class })
 public class OpenAiAutoConfiguration {
 
 	@Bean
@@ -69,7 +72,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
 
 		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
@@ -109,6 +112,28 @@ public class OpenAiAutoConfiguration {
 		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder);
 
 		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiAudioTranscriptionClient openAiAudioTranscriptionClient(OpenAiConnectionProperties commonProperties,
+			OpenAiAudioTranscriptionProperties transcriptionProperties) {
+
+		String apiKey = StringUtils.hasText(transcriptionProperties.getApiKey()) ? transcriptionProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(transcriptionProperties.getBaseUrl())
+				? transcriptionProperties.getBaseUrl() : commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder());
+
+		OpenAiAudioTranscriptionClient openAiChatClient = new OpenAiAudioTranscriptionClient(openAiAudioApi,
+				transcriptionProperties.getOptions());
+
+		return openAiChatClient;
 	}
 
 	@Bean
