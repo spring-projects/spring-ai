@@ -1,0 +1,169 @@
+= PostgresML Embeddings
+
+Spring AI supports the PostgresML text embeddings models.
+
+Embeddings are a numeric representation of text.
+They are used to represent words and sentences as vectors, an array of numbers.
+Embeddings can be used to find similar pieces of text, by comparing the similarity of the numeric vectors using a distance measure, or they can be used as input features for other machine learning models, since most algorithms can't use text directly.
+
+Many pretrained LLMs can be used to generate embeddings from text within PostgresML.
+You can browse all the https://huggingface.co/models?library=sentence-transformers[models] available to find the best solution on Hugging Face.
+
+== Getting Started
+
+=== Configure the PostgresML Embeddings Client Manually
+
+Add the `spring-ai-postgresml` dependency to your project's Maven `pom.xml` file:
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-postgresml</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-postgresml:0.8.0-SNAPSHOT'
+}
+----
+
+Next, create an `PostgresMlEmbeddingClient` instance and use it to compute the similarity between two input texts:
+
+[source,java]
+----
+var jdbcTemplate = new JdbcTemplate(dataSource); // your posgresml data source
+
+PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
+        PostgresMlEmbeddingOptions.builder()
+            .withTransformer("distilbert-base-uncased") // huggingface transformer model name.
+            .withVectorType(VectorType.PG_VECTOR) //vector type in PostgreSQL.
+            .withKwargs(Map.of("device", "cpu")) // optional arguments.
+            .withMetadataMode(MetadataMode.EMBED) // Document metadata mode.
+            .build());
+
+embeddingClient.afterPropertiesSet(); // initialize the jdbc template and database.
+
+EmbeddingResponse embeddingResponse = embeddingClient
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+NOTE: When created manually, you must call the `afterPropertiesSet()` after setting the properties and before using the client.
+It is more convenient (and preferred) to create the PostgresMlEmbeddingClient as a `@Bean`.
+Then you don’t have to call the `afterPropertiesSet()` manually:
+
+[source,java]
+----
+@Bean
+public EmbeddingClient embeddingClient(JdbcTemplate jdbcTemplate) {
+
+    return new PostgresMlEmbeddingClient(jdbcTemplate,
+        PostgresMlEmbeddingOptions.builder()
+                .withTransformer("distilbert-base-uncased")
+                .withVectorType(VectorType.PG_VECTOR)
+                .withKwargs(Map.of("device", "cpu"))
+                .withMetadataMode(MetadataMode.EMBED)
+            .build());
+}
+----
+
+==== OpenAiEmbeddingOptions
+
+Use the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/postgresml/PostgresMlEmbeddingOptions.java[PostgresMlEmbeddingOptions.java] to configure the `PostgresMlEmbeddingClient` with options, such as the model to use and etc.
+
+
+On start you can pass a `PostgresMlEmbeddingOptions` to the `PostgresMlEmbeddingClient` constructor to configure the default options used for all embedding requests.
+
+At run-time you can override the default options, using a `PostgresMlEmbeddingOptions` in your `EmbeddingRequest`.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+            PostgresMlEmbeddingOptions.builder()
+                .withTransformer("intfloat/e5-small")
+                .withVectorType(VectorType.PG_ARRAY)
+                .withKwargs(Map.of("device", "gpu"))
+                .build()));
+----
+
+=== PostgresMlEmbeddingClient Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Azure PostgresML Embedding Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-postgresml-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-postgresml-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Use the `spring.ai.postgresml.embedding.options.*` properties to configure your `PostgresMlEmbeddingClient`. links
+
+==== Sample Embedding Controller
+
+This will create a `EmbeddingClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+
+[source,application.properties]
+----
+spring.ai.postgres.embedding.options.transformer=distilbert-base-uncased
+spring.ai.postgres.embedding.options.vectorType=PG_ARRAY
+spring.ai.postgres.embedding.options.metadataMode=EMBED
+spring.ai.postgres.embedding.options.kwargs.device=cpu
+----
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingClient embeddingClient;
+
+    @Autowired
+    public EmbeddingController(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== PostgresML Embedding Properties
+
+The prefix `spring.ai.postgres.embedding` is property prefix that configures the `EmbeddingClient` implementation for PostgresML embeddings.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.postgres.embedding.options.transformer  | The Huggingface transformer model to use for the embedding.  | distilbert-base-uncased
+| spring.ai.postgres.embedding.options.kwargs   | Additional transformer specific options.  | empty map
+| spring.ai.postgres.embedding.options.vectorType   | PostgresML vector type to use for the embedding. Two options are supported: `PG_ARRAY` and `PG_VECTOR`. | PG_ARRAY
+| spring.ai.postgres.embedding.options.metadataMode   | Document metadata aggregation mode  | EMBED
+|====
+

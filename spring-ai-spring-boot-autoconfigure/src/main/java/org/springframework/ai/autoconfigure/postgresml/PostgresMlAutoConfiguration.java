@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,19 +27,21 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Auto-configuration class for PostgresMlEmbeddingClient.
+ *
+ * @author Utkarsh Srivastava
+ * @author Christian Tzolov
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass(PostgresMlEmbeddingClient.class)
-@EnableConfigurationProperties(PostgresMlProperties.class)
+@EnableConfigurationProperties(PostgresMlEmbeddingProperties.class)
 public class PostgresMlAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	public EmbeddingClient postgresMlEmbeddingClient(JdbcTemplate jdbcTemplate,
-			PostgresMlProperties postgresMlProperties) {
-		return new PostgresMlEmbeddingClient(jdbcTemplate, postgresMlProperties.getEmbedding().getTransformer(),
-				postgresMlProperties.getEmbedding().getVectorType(), postgresMlProperties.getEmbedding().getKwargs(),
-				postgresMlProperties.getEmbedding().getMetadataMode());
+			PostgresMlEmbeddingProperties embeddingProperties) {
+
+		return new PostgresMlEmbeddingClient(jdbcTemplate, embeddingProperties.getOptions());
 	}
 
 }

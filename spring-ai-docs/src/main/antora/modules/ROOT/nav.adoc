@@ -18,6 +18,7 @@
 *** xref:api/embeddings/openai-embeddings.adoc[]
 *** xref:api/embeddings/ollama-embeddings.adoc[]
 *** xref:api/embeddings/azure-openai-embeddings.adoc[]
+*** xref:api/embeddings/postgresml-embeddings.adoc[]
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]

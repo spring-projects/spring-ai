@@ -27,6 +27,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import static org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingClientProperties.CONFIG_PREFIX;
 
@@ -79,6 +80,7 @@ public class TransformersEmbeddingClientProperties {
 
 	}
 
+	@NestedConfigurationProperty
 	private final Tokenizer tokenizer = new Tokenizer();
 
 	public static class Cache {
@@ -116,6 +118,7 @@ public class TransformersEmbeddingClientProperties {
 	/**
 	 * Controls caching of remote, large resources to local file system.
 	 */
+	@NestedConfigurationProperty
 	private final Cache cache = new Cache();
 
 	public Cache getCache() {
@@ -170,6 +173,7 @@ public class TransformersEmbeddingClientProperties {
 
 	}
 
+	@NestedConfigurationProperty
 	private final Onnx onnx = new Onnx();
 
 	public Onnx getOnnx() {
