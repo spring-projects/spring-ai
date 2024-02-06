@@ -65,7 +65,7 @@ public RestTemplate restTemplate() {
 @Bean
 public ChromaApi chromaApi(RestTemplate restTemplate) {
    String chromaUrl = "http://localhost:8000";
-   ChromaApi chromaApi =  ChromaApi(chromaUrl, restTemplate);
+   ChromaApi chromaApi = new ChromaApi(chromaUrl, restTemplate);
    return chromaApi;
 }
 ----
@@ -101,14 +101,14 @@ Add the documents to your vector store:
 
 [source,java]
 ----
-vectorStore.add(List.of(document));
+vectorStore.add(documents);
 ----
 
 And finally, retrieve documents similar to a query:
 
 [source,java]
 ----
-List<Document> results = vectorStore.similaritySearch("Spring", 5);
+List<Document> results = vectorStore.similaritySearch("Spring");
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
@@ -121,8 +121,12 @@ For example, you can use either the text expression language:
 
 [source,java]
 ----
-vectorStore.similaritySearch("The World", TOP_K, SIMILARITY_THRESHOLD,
-      "author in ['john', 'jill'] && article_type == 'blog'");
+vectorStore.similaritySearch(
+                    SearchRequest.defaults()
+                            .withQuery("The World")
+                            .withTopK(TOP_K)
+                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                            .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -131,10 +135,13 @@ or programmatically using the `Filter.Expression` DSL:
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
-vectorStore.similaritySearch("The World", TOP_K, SIMILARITY_THRESHOLD,
-	b.and(
-		b.in(List.of("john", "jill")),
-		b.eq("article_type", "blog")).build());
+vectorStore.similaritySearch(SearchRequest.defaults()
+                    .withQuery("The World")
+                    .withTopK(TOP_K)
+                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                    .withFilterExpression(b.and(
+                            b.in("john", "jill"),
+                            b.eq("article_type", "blog")).build()));
 ----
 
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary Chroma `where` link:https://docs.trychroma.com/usage-guide#using-where-filters[filter expressions].
