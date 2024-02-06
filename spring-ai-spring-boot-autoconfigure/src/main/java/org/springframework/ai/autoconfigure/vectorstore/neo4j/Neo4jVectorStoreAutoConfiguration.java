@@ -56,6 +56,7 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.withDistanceType(properties.getDistanceType())
 			.withLabel(properties.getLabel())
 			.withEmbeddingProperty(properties.getEmbeddingProperty())
+			.withIndexName(properties.getIndexName())
 			.build();
 
 		return new Neo4jVectorStore(driver, embeddingClient, config);

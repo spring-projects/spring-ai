@@ -66,11 +66,13 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 	void addAndSearch() {
 		contextRunner
 			.withPropertyValues("spring.ai.vectorstore.neo4j.label=my_test_label",
-					"spring.ai.vectorstore.neo4j.embeddingDimension=384")
+					"spring.ai.vectorstore.neo4j.embeddingDimension=384",
+					"spring.ai.vectorstore.neo4j.indexName=customIndexName")
 			.run(context -> {
 				var properties = context.getBean(Neo4jVectorStoreProperties.class);
 				assertThat(properties.getLabel()).isEqualTo("my_test_label");
 				assertThat(properties.getEmbeddingDimension()).isEqualTo(384);
+				assertThat(properties.getIndexName()).isEqualTo("customIndexName");
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				vectorStore.add(documents);
