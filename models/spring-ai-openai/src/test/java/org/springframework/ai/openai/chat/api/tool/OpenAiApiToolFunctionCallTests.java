@@ -46,7 +46,7 @@ public class OpenAiApiToolFunctionCallTests {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiApiToolFunctionCallTests.class);
 
-	FakeWeatherService weatherService = new FakeWeatherService();
+	MockWeatherService weatherService = new MockWeatherService();
 
 	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 
@@ -119,10 +119,10 @@ public class OpenAiApiToolFunctionCallTests {
 			for (ToolCall toolCall : responseMessage.toolCalls()) {
 				var functionName = toolCall.function().name();
 				if ("getCurrentWeather".equals(functionName)) {
-					FakeWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
-							FakeWeatherService.Request.class);
+					MockWeatherService.Request weatherRequest = fromJson(toolCall.function().arguments(),
+							MockWeatherService.Request.class);
 
-					FakeWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
+					MockWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
 
 					// extend conversation with function response.
 					messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(),

@@ -82,4 +82,9 @@ public class ChatResponse implements ModelResponse<Generation> {
 		return this.chatResponseMetadata;
 	}
 
+	@Override
+	public String toString() {
+		return "ChatResponse [metadata=" + chatResponseMetadata + ", generations=" + generations + "]";
+	}
+
 }

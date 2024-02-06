@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 /**
  * @author Christian Tzolov
  */
-public class FakeWeatherService implements Function<FakeWeatherService.Request, FakeWeatherService.Response> {
+public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 
 	/**
 	 * Weather Function request.

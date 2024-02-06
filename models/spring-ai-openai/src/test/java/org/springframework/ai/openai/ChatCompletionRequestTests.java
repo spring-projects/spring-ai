@@ -16,10 +16,16 @@
 
 package org.springframework.ai.openai;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.AbstractToolFunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
+import org.springframework.ai.openai.chat.api.tool.MockWeatherService.Request;
+import org.springframework.ai.openai.chat.api.tool.MockWeatherService.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,6 +56,75 @@ public class ChatCompletionRequestTests {
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.temperature()).isEqualTo(99.9f);
+	}
+
+	@Test
+	public void promptOptionsTools() {
+
+		var client = new OpenAiChatClient(new OpenAiApi("TEST"))
+			.withDefaultOptions(OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").build());
+
+		var request = client.createRequest(new Prompt("Test message content", OpenAiChatOptions.builder()
+			.withModel("PROMPT_MODEL")
+			.withToolCallbacks(
+					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
+							"getCurrentWeather2", "Get the weather in location", MockWeatherService.Request.class) {
+
+						private final MockWeatherService weatherService = new MockWeatherService();
+
+						@Override
+						public Response doCall(Request request) {
+							return weatherService.apply(request);
+						}
+
+						@Override
+						public String doResponseToString(Response response) {
+							return "" + response.temp() + response.unit();
+						}
+
+					}))
+			.build()), false);
+
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.stream()).isFalse();
+		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
+
+		assertThat(request.tools()).hasSize(1);
+		assertThat(request.tools().get(0).function().name()).isEqualTo("getCurrentWeather2");
+	}
+
+	@Test
+	public void defaultOptionsTools() {
+
+		var client = new OpenAiChatClient(new OpenAiApi("TEST")).withDefaultOptions(OpenAiChatOptions.builder()
+			.withModel("DEFAULT_MODEL")
+			.withToolCallbacks(
+					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
+							"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class) {
+
+						private final MockWeatherService weatherService = new MockWeatherService();
+
+						@Override
+						public Response doCall(Request request) {
+							return weatherService.apply(request);
+						}
+
+						@Override
+						public String doResponseToString(Response response) {
+							return "" + response.temp() + response.unit();
+						}
+
+					}))
+			.build());
+
+		var request = client.createRequest(new Prompt("Test message content"), false);
+
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.stream()).isFalse();
+		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
+
+		assertThat(request.tools()).hasSize(1);
+		assertThat(request.tools().get(0).function().name()).isEqualTo("getCurrentWeather");
 	}
 
 }
