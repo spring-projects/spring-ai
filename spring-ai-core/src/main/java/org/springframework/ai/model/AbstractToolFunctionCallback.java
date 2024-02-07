@@ -16,15 +16,30 @@
 
 package org.springframework.ai.model;
 
+import java.util.function.Function;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.util.Assert;
 
 /**
+ * Abstract implementation of the {@link ToolFunctionCallback} for interacting with the
+ * Model's function calling protocol and a {@link Function} wrapping the interaction with
+ * the 3rd party service/function.
+ *
+ * Implement the {@code O apply(I request) } method to implement the interaction with the
+ * 3rd party service/function.
+ *
+ * The {@link #responseConverter} function is responsible to convert the 3rd party
+ * function's output type into a string expected by the LLM model.
+ *
+ * @param <I> the 3rd party service input type.
+ * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-public abstract class AbstractToolFunctionCallback<I, O> implements ToolFunctionCallback {
+public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, O>, ToolFunctionCallback {
 
 	private final String name;
 
@@ -36,15 +51,65 @@ public abstract class AbstractToolFunctionCallback<I, O> implements ToolFunction
 
 	private final ObjectMapper objectMapper;
 
+	private final Function<O, String> responseConverter;
+
+	/**
+	 * Constructs a new {@link AbstractToolFunctionCallback} with the given name,
+	 * description, input type and object mapper.
+	 * @param name Function name. Should be unique within the ChatClient's function
+	 * registry.
+	 * @param description Function description. Used as a "system prompt" by the model to
+	 * decide if the function should be called.
+	 * @param inputType Used to compute, the argument's JSON schema required by the
+	 * Model's function calling protocol.
+	 */
 	public AbstractToolFunctionCallback(String name, String description, Class<I> inputType) {
+		this(name, description, inputType, (response) -> response.toString());
+	}
+
+	/**
+	 * Constructs a new {@link AbstractToolFunctionCallback} with the given name,
+	 * description, input type and object mapper.
+	 * @param name Function name. Should be unique within the ChatClient's function
+	 * registry.
+	 * @param description Function description. Used as a "system prompt" by the model to
+	 * decide if the function should be called.
+	 * @param inputType Used to compute, the argument's JSON schema required by the
+	 * Model's function calling protocol.
+	 * @param responseConverter Used to convert the function's output type to a string.
+	 */
+	public AbstractToolFunctionCallback(String name, String description, Class<I> inputType,
+			Function<O, String> responseConverter) {
+		this(name, description, inputType, responseConverter,
+				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+	}
+
+	/**
+	 * Constructs a new {@link AbstractToolFunctionCallback} with the given name,
+	 * description, input type and default object mapper.
+	 * @param name Function name. Should be unique within the ChatClient's function
+	 * registry.
+	 * @param description Function description. Used as a "system prompt" by the model to
+	 * decide if the function should be called.
+	 * @param inputType Used to compute, the argument's JSON schema required by the
+	 * Model's function calling protocol.
+	 * @param responseConverter Used to convert the function's output type to a string.
+	 * @param objectMapper Used to convert the function's input and output types to and
+	 * from JSON.
+	 */
+	public AbstractToolFunctionCallback(String name, String description, Class<I> inputType,
+			Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(inputType, "InputType must not be null");
+		Assert.notNull(responseConverter, "ResponseConverter must not be null");
+		Assert.notNull(objectMapper, "ObjectMapper must not be null");
 		this.name = name;
 		this.description = description;
 		this.inputType = inputType;
 		this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(inputType);
-		this.objectMapper = new ObjectMapper();
+		this.responseConverter = responseConverter;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override
@@ -68,17 +133,14 @@ public abstract class AbstractToolFunctionCallback<I, O> implements ToolFunction
 		// Convert the tool calls JSON arguments into a Java function request object.
 		I request = fromJson(functionArguments, inputType);
 
-		O response = this.doCall(request);
-
 		// extend conversation with function response.
-		return this.doResponseToString(response);
+		return this.andThen(this.responseConverter).apply(request);
 	}
 
-	abstract public O doCall(I request);
-
-	public String doResponseToString(O response) {
-		return response.toString();
-	}
+	/**
+	 * Implements the interaction with the 3rd party service/function.
+	 */
+	abstract public O apply(I request);
 
 	private <T> T fromJson(String json, Class<T> targetClass) {
 		try {

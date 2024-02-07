@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.openai.tool.MockWeatherService.Response;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -56,20 +55,15 @@ public class ToolCallWithPromptFunctionRegistrationIT {
 			var promptOptions = OpenAiChatOptions.builder()
 				.withToolCallbacks(List
 					.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-							"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class) {
+							"CurrentWeatherService", "Get the weather in location", MockWeatherService.Request.class,
+							(response) -> "" + response.temp() + response.unit()) {
 
 						private final MockWeatherService weatherService = new MockWeatherService();
 
 						@Override
-						public MockWeatherService.Response doCall(MockWeatherService.Request request) {
+						public MockWeatherService.Response apply(MockWeatherService.Request request) {
 							return weatherService.apply(request);
 						}
-
-						@Override
-						public String doResponseToString(Response response) {
-							return "" + response.temp() + response.unit();
-						}
-
 					}))
 				.build();
 

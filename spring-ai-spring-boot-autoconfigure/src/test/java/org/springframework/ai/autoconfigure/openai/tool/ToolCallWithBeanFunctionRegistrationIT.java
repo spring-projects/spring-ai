@@ -30,8 +30,8 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.AbstractToolFunctionCallback;
-import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -57,7 +57,8 @@ public class ToolCallWithBeanFunctionRegistrationIT {
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withEnabledFunction("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -70,24 +71,26 @@ public class ToolCallWithBeanFunctionRegistrationIT {
 	static class Config {
 
 		@Bean
-		public ToolFunctionCallback weatherFunctionInfo() {
-			return new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-					"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class) {
-
-				private final MockWeatherService weatherService = new MockWeatherService();
-
-				@Override
-				public Response doCall(Request request) {
-					return weatherService.apply(request);
-				}
-
-				@Override
-				public String doResponseToString(Response response) {
-					return "" + response.temp() + response.unit();
-				}
-
-			};
+		public WeatherFunctionCallback weatherFunctionInfo() {
+			return new WeatherFunctionCallback("WeatherInfo", "Get the weather in location",
+					MockWeatherService.Request.class);
 		}
+
+		public static class WeatherFunctionCallback
+				extends AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response> {
+
+			public WeatherFunctionCallback(String name, String description, Class<Request> inputType) {
+				super(name, description, inputType, (response) -> "" + response.temp() + response.unit());
+			}
+
+			private final MockWeatherService weatherService = new MockWeatherService();
+
+			@Override
+			public Response apply(Request request) {
+				return weatherService.apply(request);
+			}
+
+		};
 
 	}
 

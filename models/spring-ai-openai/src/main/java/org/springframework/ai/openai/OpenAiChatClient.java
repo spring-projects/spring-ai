@@ -18,8 +18,10 @@ package org.springframework.ai.openai;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -72,7 +74,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private OpenAiChatOptions defaultOptions;
 
-	private Map<String, ToolFunctionCallback> toolCallbacks = new ConcurrentHashMap<>();
+	private Map<String, ToolFunctionCallback> toolCallbackRegister = new ConcurrentHashMap<>();
 
 	public final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
@@ -170,6 +172,8 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
+		Set<String> enabledFunctionsForRequest = new HashSet<>();
+
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
 			.stream()
 			.map(m -> new ChatCompletionMessage(m.getContent(),
@@ -182,64 +186,98 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
 				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
 						ChatOptions.class, OpenAiChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 
-				// Add the prompt tool callbacks to the tool callbacks catalog
-				if (!CollectionUtils.isEmpty(updatedRuntimeOptions.getToolCallbacks())) {
-					updatedRuntimeOptions.getToolCallbacks()
-						.stream()
-						.forEach(toolCallback -> this.withFunctionCallback(toolCallback));
-				}
+				Set<String> promptEnabledFunctions = handleToolFunctionConfigurations(updatedRuntimeOptions, true,
+						true);
+				enabledFunctionsForRequest.addAll(promptEnabledFunctions);
+
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
 						+ prompt.getOptions().getClass().getSimpleName());
 			}
 		}
-		// Note: the default options merge must be done after the prompt options merge or
-		// the tools will be skipped.
+
 		if (this.defaultOptions != null) {
-			if (!CollectionUtils.isEmpty(this.defaultOptions.getToolCallbacks())) {
-				this.defaultOptions.getToolCallbacks()
-					.stream()
-					.forEach(toolCallback -> this.withFunctionCallback(toolCallback));
-			}
+
+			Set<String> defaultEnabledFunctions = handleToolFunctionConfigurations(this.defaultOptions, false, false);
+
+			enabledFunctionsForRequest.addAll(defaultEnabledFunctions);
+
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+		}
+
+		// Add the enabled functions definitions to the request's tools parameter.
+		if (!CollectionUtils.isEmpty(enabledFunctionsForRequest)) {
+
+			if (stream) {
+				throw new IllegalArgumentException("Currently tool functions are not supported in streaming mode");
+			}
+
+			request = ModelOptionsUtils.merge(
+					OpenAiChatOptions.builder().withTools(this.getFunctionTools(enabledFunctionsForRequest)).build(),
+					request, ChatCompletionRequest.class);
 		}
 
 		return request;
 	}
 
-	/**
-	 * Register a function callback to be called when the model calls a function.
-	 * @param functionCallback the function callback to register.
-	 * @return the OpenAiChatClient instance.
-	 */
-	public OpenAiChatClient withFunctionCallback(ToolFunctionCallback functionCallback) {
+	private Set<String> handleToolFunctionConfigurations(OpenAiChatOptions options, boolean autoEnableCallbackFunctions,
+			boolean overrideCallbackFunctionsRegister) {
 
-		if (!this.toolCallbacks.containsKey(functionCallback.getName())) {
+		Set<String> enabledFunctions = new HashSet<>();
 
-			var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
-					functionCallback.getName(), functionCallback.getInputTypeSchema());
+		if (options != null) {
+			if (!CollectionUtils.isEmpty(options.getToolCallbacks())) {
+				options.getToolCallbacks().stream().forEach(toolCallback -> {
 
-			var updatedDefaults = OpenAiChatOptions.builder()
-				.withTools(List.of(new OpenAiApi.FunctionTool(function)))
-				.build();
+					// Register the tool callback.
+					if (overrideCallbackFunctionsRegister) {
+						this.toolCallbackRegister.put(toolCallback.getName(), toolCallback);
+					}
+					else {
+						this.toolCallbackRegister.putIfAbsent(toolCallback.getName(), toolCallback);
+					}
 
-			this.defaultOptions = ModelOptionsUtils.merge(updatedDefaults, this.defaultOptions,
-					OpenAiChatOptions.class);
+					// Automatically enable the function, usually from prompt callback.
+					if (autoEnableCallbackFunctions) {
+						enabledFunctions.add(toolCallback.getName());
+					}
+				});
+			}
 
-			this.toolCallbacks.put(functionCallback.getName(), functionCallback);
+			// Add the explicitly enabled functions.
+			if (!CollectionUtils.isEmpty(options.getEnabledFunctions())) {
+				enabledFunctions.addAll(options.getEnabledFunctions());
+			}
 		}
 
-		return this;
+		return enabledFunctions;
 	}
 
 	/**
 	 * @return returns the registered tool callbacks.
 	 */
-	public Map<String, ToolFunctionCallback> getToolCallbacks() {
-		return toolCallbacks;
+	Map<String, ToolFunctionCallback> getToolCallbackRegister() {
+		return toolCallbackRegister;
+	}
+
+	public List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
+
+		List<OpenAiApi.FunctionTool> functionTools = new ArrayList<>();
+		for (String functionName : functionNames) {
+			if (!this.toolCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+			ToolFunctionCallback functionCallback = this.toolCallbackRegister.get(functionName);
+
+			var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
+					functionCallback.getName(), functionCallback.getInputTypeSchema());
+			functionTools.add(new OpenAiApi.FunctionTool(function));
+		}
+
+		return functionTools;
 	}
 
 	/**
@@ -249,32 +287,45 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	 * @param request the chat completion request
 	 * @return the chat completion response.
 	 */
+	@SuppressWarnings("null")
 	private ResponseEntity<ChatCompletion> chatCompletionWithTools(OpenAiApi.ChatCompletionRequest request) {
 
 		ResponseEntity<ChatCompletion> chatCompletion = this.openAiApi.chatCompletionEntity(request);
 
-		// Return if the model doesn't call a function.
-		if (!isToolCall(chatCompletion)) {
+		// Return the result if the model is not calling a function.
+		if (!this.isToolCall(chatCompletion)) {
 			return chatCompletion;
 		}
 
+		// The OpenAI chat completion tool call API requires the complete conversation
+		// history. Including the initial user message.
 		List<ChatCompletionMessage> conversationMessages = new ArrayList<>(request.messages());
 
-		// TODO: handle multiple choices response
-		ChatCompletionMessage responseMessage = chatCompletion.getBody().choices().get(0).message();
+		// We assume that the tool calling information is inside the response's first
+		// choice.
+		ChatCompletionMessage responseMessage = chatCompletion.getBody().choices().iterator().next().message();
+
+		if (chatCompletion.getBody().choices().size() > 1) {
+			logger.warn("More than one choice returned. Only the first choice is processed.");
+		}
 
 		// Add the assistant response to the message conversation history.
 		conversationMessages.add(responseMessage);
 
-		// Send the info for each function call and function response to the model.
+		// Every tool-call item requires a separate function call and a response (TOOL)
+		// message.
 		for (ToolCall toolCall : responseMessage.toolCalls()) {
+
 			var functionName = toolCall.function().name();
-
 			String functionArguments = toolCall.function().arguments();
-			ToolFunctionCallback functionCallback = this.toolCallbacks.get(functionName);
-			String functionResponse = functionCallback.call(functionArguments);
 
-			// extend conversation with function response.
+			if (!this.toolCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.toolCallbackRegister.get(functionName).call(functionArguments);
+
+			// Add the function response to the conversation.
 			conversationMessages.add(new ChatCompletionMessage(functionResponse, Role.TOOL, null, toolCall.id(), null));
 		}
 
@@ -282,16 +333,16 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		// functions anymore.
 		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationMessages, request.stream());
 		newRequest = ModelOptionsUtils.merge(newRequest, request, ChatCompletionRequest.class);
-		return chatCompletionWithTools(newRequest);
+
+		return this.chatCompletionWithTools(newRequest);
 	}
 
 	private Map<String, Object> toMap(ChatCompletionMessage message) {
 		Map<String, Object> map = new HashMap<>();
 
 		// The tool_calls and tool_call_id are not used by the OpenAiChatClient functions
-		// call support!
-		// Useful only for users that want to use the tool_calls and tool_call_id in their
-		// applications.
+		// call support! Useful only for users that want to use the tool_calls and
+		// tool_call_id in their applications.
 		if (message.toolCalls() != null) {
 			map.put("tool_calls", message.toolCalls());
 		}
@@ -305,6 +356,11 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		return map;
 	}
 
+	/**
+	 * Check if it is a model calls function response.
+	 * @param chatCompletion the chat completion response.
+	 * @return true if the model expects a function call.
+	 */
 	private Boolean isToolCall(ResponseEntity<ChatCompletion> chatCompletion) {
 		var body = chatCompletion.getBody();
 		if (body == null) {

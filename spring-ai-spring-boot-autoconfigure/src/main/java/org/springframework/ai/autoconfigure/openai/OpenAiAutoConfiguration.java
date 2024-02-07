@@ -65,11 +65,11 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi, chatProperties.getOptions());
-
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			toolFunctionCallbacks.stream().forEach(tool -> openAiChatClient.withFunctionCallback(tool));
+			chatProperties.getOptions().getToolCallbacks().addAll(toolFunctionCallbacks);
 		}
+
+		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi, chatProperties.getOptions());
 
 		return openAiChatClient;
 	}

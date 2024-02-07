@@ -23,7 +23,6 @@ import org.springframework.ai.model.AbstractToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
-import org.springframework.ai.openai.chat.api.tool.MockWeatherService.Response;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -176,18 +175,14 @@ class OpenAiChatClientIT extends AbstractIT {
 			.withModel("gpt-4-1106-preview")
 			.withToolCallbacks(
 					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-							"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class) {
+							"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class,
+							(response) -> "" + response.temp() + response.unit()) {
 
 						private final MockWeatherService weatherService = new MockWeatherService();
 
 						@Override
-						public MockWeatherService.Response doCall(MockWeatherService.Request request) {
+						public MockWeatherService.Response apply(MockWeatherService.Request request) {
 							return weatherService.apply(request);
-						}
-
-						@Override
-						public String doResponseToString(Response response) {
-							return "" + response.temp() + response.unit();
 						}
 
 					}))
