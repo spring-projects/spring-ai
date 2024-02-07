@@ -84,11 +84,7 @@ public class IdGeneratorProviderTest {
 		final String content = "Content";
 		final Map<String, Object> metadata = Map.of("metadata", Set.of("META_DATA"));
 
-		final List<String> expectedHashes = List.of("", // No expected value for random
-														// generator
-				"cffcc5cc-b45d-3e8b-8513-7396ffbee27e",
-				"b23eb6bd24f18f5df26cff114608f7ecda6a2b22b852b478372a3f82d1561c71",
-				"fcae28779b7c5d1910155fd8e2355120aaf858800c288610261f6d1a2b49a2b9");
+		final String expectedHashJdkSha256Hex = "cffcc5cc-b45d-3e8b-8513-7396ffbee27e";
 
 		// Run
 		final List<String> actualHashes = Stream.of(idGeneratorTypes)
@@ -100,9 +96,8 @@ public class IdGeneratorProviderTest {
 		// Assert
 		Assertions.assertDoesNotThrow(() -> UUID.fromString(actualHashes.get(0)));
 		Assertions.assertDoesNotThrow(() -> UUID.fromString(actualHashes.get(1)));
-		Assertions.assertEquals(4, actualHashes.size());
-		IntStream.range(1, actualHashes.size())
-			.forEach(i -> Assertions.assertEquals(expectedHashes.get(i), actualHashes.get(i)));
+		Assertions.assertEquals(expectedHashJdkSha256Hex, actualHashes.get(1));
+		Assertions.assertEquals(2, actualHashes.size());
 	}
 
 	@Test
@@ -118,7 +113,7 @@ public class IdGeneratorProviderTest {
 			.collect(Collectors.toUnmodifiableList());
 
 		// Assert
-		Assertions.assertEquals(4, idGeneratorTypes.length);
+		Assertions.assertEquals(2, idGeneratorTypes.length);
 		Assertions.assertEquals(idGeneratorTypes.length, generatorClasses.size());
 	}
 
