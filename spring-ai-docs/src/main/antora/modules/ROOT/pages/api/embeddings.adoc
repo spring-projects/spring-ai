@@ -106,7 +106,7 @@ The dimensions method is a handy tool for developers to quickly ascertain the si
 
 Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
 
-* OpenAI: Using the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[Sprig AI OpenAiApi library].
+* OpenAI: Using the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[Spring AI OpenAiApi library].
 * Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
 * PostgresML: https://postgresml.org/docs/[PostgresML is a complete MLOps platform built on PostgreSQL]
 * Sentence embedding with local ONNX models: The https://djl.ai/[Deep Java Library] and the Microsoft https://onnxruntime.ai/docs/get-started/with-java.html[ONNX Java Runtime] libraries are applied to run the ONNX models and compute the embeddings in Java.
