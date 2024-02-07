@@ -28,7 +28,7 @@ public class IdGeneratorProvider {
 	}
 
 	public IdGenerator getDefault() {
-		return get(IdGeneratorType.JDK_SHA_256_HEX);
+		return get(IdGeneratorType.RANDOM);
 	}
 
 }
