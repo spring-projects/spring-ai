@@ -18,18 +18,18 @@ On startup, the `PgVectorStore` will attempt to install the required database ex
 
 [sql]
 ----
-CREATE EXTENSION IF NOT EXISTS vector
-CREATE EXTENSION IF NOT EXISTS hstore
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS hstore;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS vector_store (
 	id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
 	content text,
 	metadata json,
 	embedding vector(1536)
-)
+);
 
-CREATE INDEX ON vector_store USING HNSW (embedding vector_cosine_ops)
+CREATE INDEX ON vector_store USING HNSW (embedding vector_cosine_ops);
 ----
 
 == Configuration
@@ -111,7 +111,7 @@ Add to `application.yml` (using your DB credentials):
 ----
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/vector_store
+    url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
     password: postgres
 ----
