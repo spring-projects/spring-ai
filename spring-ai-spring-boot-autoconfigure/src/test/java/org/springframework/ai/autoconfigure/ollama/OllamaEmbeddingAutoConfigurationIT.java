@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -63,7 +64,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.base-url=" + baseUrl)
-		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class));
 
 	@Test
 	public void singleTextEmbedding() {

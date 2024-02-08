@@ -26,6 +26,7 @@ import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
@@ -33,7 +34,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-@AutoConfiguration
+@AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
@@ -46,7 +47,7 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
-			OpenAiChatProperties chatProperties) {
+			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder) {
 
 		String apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -57,7 +58,7 @@ public class OpenAiAutoConfiguration {
 		Assert.hasText(apiKey, "OpenAI API key must be set");
 		Assert.hasText(baseUrl, "OpenAI base URL must be set");
 
-		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
+		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
 		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi)
 			.withDefaultOptions(chatProperties.getOptions());
@@ -68,7 +69,7 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties) {
+			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
 
 		String apiKey = StringUtils.hasText(embeddingProperties.getApiKey()) ? embeddingProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -78,7 +79,7 @@ public class OpenAiAutoConfiguration {
 		Assert.hasText(apiKey, "OpenAI API key must be set");
 		Assert.hasText(baseUrl, "OpenAI base URL must be set");
 
-		var openAiApi = new OpenAiApi(baseUrl, apiKey, RestClient.builder());
+		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
 		return new OpenAiEmbeddingClient(openAiApi).withDefaultOptions(embeddingProperties.getOptions());
 	}
@@ -86,7 +87,7 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
-			OpenAiImageProperties imageProperties) {
+			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder) {
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
 
@@ -96,7 +97,7 @@ public class OpenAiAutoConfiguration {
 		Assert.hasText(apiKey, "OpenAI API key must be set");
 		Assert.hasText(baseUrl, "OpenAI base URL must be set");
 
-		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, RestClient.builder());
+		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder);
 
 		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
 	}
