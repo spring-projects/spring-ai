@@ -60,9 +60,8 @@ public class BedrockLlama2ChatAutoConfiguration {
 	@Bean
 	public BedrockLlama2ChatClient llama2ChatClient(Llama2ChatBedrockApi llama2Api,
 			BedrockLlama2ChatProperties properties) {
-		return new BedrockLlama2ChatClient(llama2Api).withTemperature(properties.getTemperature())
-			.withTopP(properties.getTopP())
-			.withMaxGenLen(properties.getMaxGenLen());
+
+		return new BedrockLlama2ChatClient(llama2Api, properties.getOptions());
 	}
 
 }

@@ -166,7 +166,8 @@ class BedrockLlama2ChatClientIT {
 
 		@Bean
 		public BedrockLlama2ChatClient llama2ChatClient(Llama2ChatBedrockApi llama2Api) {
-			return new BedrockLlama2ChatClient(llama2Api);
+			return new BedrockLlama2ChatClient(llama2Api,
+					BedrockLlama2ChatOptions.builder().withTemperature(0.5f).withMaxGenLen(100).withTopP(0.9f).build());
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package org.springframework.ai.autoconfigure.bedrock.llama2;
 
+import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatOptions;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Bedrock Llama2.
@@ -36,31 +38,15 @@ public class BedrockLlama2ChatProperties {
 	private boolean enabled = false;
 
 	/**
-	 * Controls the randomness of the output. Values can range over [0.0,1.0], inclusive.
-	 * A value closer to 1.0 will produce responses that are more varied, while a value
-	 * closer to 0.0 will typically result in less surprising responses from the
-	 * generative. This value specifies default to be used by the backend while making the
-	 * call to the generative.
-	 */
-	private Float temperature = 0.7f;
-
-	/**
-	 * The maximum cumulative probability of tokens to consider when sampling. The
-	 * generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the
-	 * smallest set of tokens whose probability sum is at least topP.
-	 */
-	private Float topP = null;
-
-	/**
-	 * Specify the maximum number of tokens to use in the generated response. The
-	 * generative truncates the response once the generated text exceeds maxGenLen.
-	 */
-	private Integer maxGenLen = 300;
-
-	/**
 	 * The generative id to use. See the {@link Llama2ChatModel} for the supported models.
 	 */
 	private String model = Llama2ChatModel.LLAMA2_70B_CHAT_V1.id();
+
+	@NestedConfigurationProperty
+	private BedrockLlama2ChatOptions options = BedrockLlama2ChatOptions.builder()
+		.withTemperature(0.7f)
+		.withMaxGenLen(300)
+		.build();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -78,28 +64,12 @@ public class BedrockLlama2ChatProperties {
 		this.model = model;
 	}
 
-	public Float getTemperature() {
-		return this.temperature;
+	public BedrockLlama2ChatOptions getOptions() {
+		return this.options;
 	}
 
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-	public Float getTopP() {
-		return this.topP;
-	}
-
-	public void setTopP(Float topP) {
-		this.topP = topP;
-	}
-
-	public Integer getMaxGenLen() {
-		return this.maxGenLen;
-	}
-
-	public void setMaxGenLen(Integer topK) {
-		this.maxGenLen = topK;
+	public void setOptions(BedrockLlama2ChatOptions options) {
+		this.options = options;
 	}
 
 }

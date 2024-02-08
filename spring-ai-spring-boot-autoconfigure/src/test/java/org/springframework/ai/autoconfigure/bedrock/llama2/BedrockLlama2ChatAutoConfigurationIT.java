@@ -54,7 +54,8 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.llama2.chat.model=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-				"spring.ai.bedrock.llama2.chat.temperature=0.5", "spring.ai.bedrock.llama2.chat.maxGenLen=500")
+				"spring.ai.bedrock.llama2.chat.options.temperature=0.5",
+				"spring.ai.bedrock.llama2.chat.options.maxGenLen=500")
 		.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
@@ -106,7 +107,8 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.llama2.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-					"spring.ai.bedrock.llama2.chat.temperature=0.55", "spring.ai.bedrock.llama2.chat.maxGenLen=123")
+					"spring.ai.bedrock.llama2.chat.options.temperature=0.55",
+					"spring.ai.bedrock.llama2.chat.options.maxGenLen=123")
 			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))
 			.run(context -> {
 				var llama2ChatProperties = context.getBean(BedrockLlama2ChatProperties.class);
@@ -115,8 +117,8 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 				assertThat(llama2ChatProperties.isEnabled()).isTrue();
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
 
-				assertThat(llama2ChatProperties.getTemperature()).isEqualTo(0.55f);
-				assertThat(llama2ChatProperties.getMaxGenLen()).isEqualTo(123);
+				assertThat(llama2ChatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(llama2ChatProperties.getOptions().getMaxGenLen()).isEqualTo(123);
 				assertThat(llama2ChatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");

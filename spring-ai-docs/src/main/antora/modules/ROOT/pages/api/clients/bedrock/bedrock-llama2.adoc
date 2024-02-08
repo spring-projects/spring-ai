@@ -1,0 +1,203 @@
+= Bedrock Llama2 Chat
+
+https://ai.meta.com/llama/[Meta's Llama 2 Chat] is part of the Llama 2 collection of large language models.
+It excels in dialogue-based applications with a parameter scale ranging from 7 billion to 70 billion.
+Leveraging public datasets and over 1 million human annotations, Llama Chat offers context-aware dialogues.
+
+Trained on 2 trillion tokens from public data sources, Llama-2-Chat provides extensive knowledge for insightful conversations.
+Rigorous testing, including over 1,000 hours of red-teaming and annotation, ensures both performance and safety, making it a reliable choice for AI-driven dialogues.
+
+The https://aws.amazon.com/bedrock/llama-2/[AWS Llama 2 Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
+
+
+== Getting Started
+
+Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+
+
+Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-bedrock</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+The link:./src/main/java/org/springframework/ai/bedrock/llama2/BedrockLlama2ChatClient.java[BedrockLlama2ChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the `Llama2ChatBedrockApi` library to connect to the Bedrock Llama2 service.
+
+Here is how to create and use a `BedrockLlama2ChatClient`:
+
+[source,java]
+----
+Llama2ChatBedrockApi api = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+	EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+
+BedrockLlama2ChatClient chatClient = new BedrockLlama2ChatClient(api,
+	    BedrockLlama2ChatOptions.builder()
+            .withTemperature(0.5f)
+            .withMaxGenLen(100)
+            .withTopP(0.9f).build());
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> response = chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+=== BedrockLlama2ChatClient Auto-configuration
+
+or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot starter:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+==== Enable Llama2 Chat Support
+
+Spring AI defines a configuration property named `spring.ai.bedrock.llama2.chat.enabled` that you should set to `true` to enable support for Llama2.
+
+Exporting environment variables in one way to set this configuration property.
+
+[source,shell]
+----
+export SPRING_AI_BEDROCK_LLAMA2_CHAT_ENABLED=true
+----
+
+==== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+
+Create an `application.properties` file in the `src/main/resources` directory and add the following properties to configure the Llama2 Chat client.
+
+[source]
+----
+spring.ai.bedrock.llama2.chat.enabled=true
+spring.ai.bedrock.llama2.chat.options.temperature=0.8
+----
+
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+=== Bedrock Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+[cols="3,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+|====
+
+
+The prefix `spring.ai.bedrock.llama2.chat` is the property prefix that configures the `ChatClient` implementation for Llama2.
+
+[cols="2,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.llama2.chat.enabled              | Enable or disable support for Llama2  | false
+| spring.ai.bedrock.llama2.chat.model                | The model id to use (See Below) | meta.llama2-70b-chat-v1
+| spring.ai.bedrock.llama2.chat.options.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model. This value specifies default to be used by the backend while making the call to the model. | 0.7
+| spring.ai.bedrock.llama2.chat.options.top-p                | The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP. | AWS Bedrock default
+| spring.ai.bedrock.llama2.chat.options.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | 300
+|====
+
+Look at the Spring AI enumeration, `Llama2ChatModel`  for other model IDs.  The other value supported is `meta.llama2-13b-chat-v1`.
+
+Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
+
+
+== Appendices
+
+=== Using low-level Llama2ChatBedrockApi Library
+
+link:./src/main/java/org/springframework/ai/bedrock/llama2/api/Llama2ChatBedrockApi.java[Llama2ChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html[Meta Llama 2 and Llama 2 Chat models].
+
+Following class diagram illustrates the Llama2ChatBedrockApi interface and building blocks:
+
+image::bedrock/bedrock-llama2-chat-api.jpg[Llama2ChatBedrockApi Class Diagram]
+
+The Llama2ChatBedrockApi supports the `meta.llama2-13b-chat-v1` and `meta.llama2-70b-chat-v1` models.
+
+Also the Llama2ChatBedrockApi supports both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) responses.
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+Llama2ChatBedrockApi llama2ChatApi = new Llama2ChatBedrockApi(
+			Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+			Region.US_EAST_1.id());
+
+Llama2ChatRequest request = Llama2ChatRequest.builder("Hello, my name is")
+		.withTemperature(0.9f)
+		.withTopP(0.9f)
+		.withMaxGenLen(20)
+		.build();
+
+Llama2ChatResponse response = llama2ChatApi.chatCompletion(request);
+
+System.out.println(response.generation());
+
+// Streaming response
+Flux<Llama2ChatResponse> responseStream = llama2ChatApi.chatCompletionStream(request);
+
+List<Llama2ChatResponse> responses = responseStream.collectList().block();
+
+System.out.println(responses);
+----
+
+Follow the link:./src/main/java/org/springframework/ai/bedrock/llama2/api/Llama2ChatBedrockApi.java[Llama2ChatBedrockApi.java]'s JavaDoc for further information.
+
+

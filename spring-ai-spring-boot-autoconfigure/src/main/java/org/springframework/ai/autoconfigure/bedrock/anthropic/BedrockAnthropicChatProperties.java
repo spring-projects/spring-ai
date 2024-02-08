@@ -21,6 +21,7 @@ import java.util.List;
 import org.springframework.ai.bedrock.anthropic.AnthropicChatOptions;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -45,6 +46,7 @@ public class BedrockAnthropicChatProperties {
 	 */
 	private String model = AnthropicChatModel.CLAUDE_V2.id();
 
+	@NestedConfigurationProperty
 	private AnthropicChatOptions options = AnthropicChatOptions.builder()
 		.withTemperature(0.7f)
 		.withMaxTokensToSample(300)
