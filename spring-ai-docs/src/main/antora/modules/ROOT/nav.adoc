@@ -6,6 +6,7 @@
 *** xref:api/clients/openai-chat.adoc[]
 *** xref:api/clients/azure-openai-chat.adoc[]
 *** xref:api/clients/bedrock.adoc[]
+**** xref:api/clients/bedrock/bedrock-anthropic.adoc[]
 *** xref:api/clients/huggingface.adoc[]
 *** xref:api/clients/ollama-chat.adoc[]
 ** xref:api/prompt.adoc[]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @since 0.8.0
  */
 // @formatter:off
 public class AnthropicChatBedrockApi extends
@@ -110,12 +111,13 @@ public class AnthropicChatBedrockApi extends
 
 		public static class Builder {
 			private final String prompt;
-			private Float temperature = 0.7f;
-			private Integer maxTokensToSample = 500;
-			private Integer topK = 10;
+			private Float temperature;// = 0.7f;
+			private Integer maxTokensToSample;// = 500;
+			private Integer topK;// = 10;
 			private Float topP;
 			private List<String> stopSequences;
-			private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
+			// private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
+			private String anthropicVersion;
 
 			private Builder(String prompt) {
 				this.prompt = prompt;

@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
@@ -37,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 class BedrockAnthropicChatClientIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(BedrockAnthropicChatClientIT.class);
 
 	@Autowired
 	private BedrockAnthropicChatClient client;
@@ -145,7 +150,7 @@ class BedrockAnthropicChatClientIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

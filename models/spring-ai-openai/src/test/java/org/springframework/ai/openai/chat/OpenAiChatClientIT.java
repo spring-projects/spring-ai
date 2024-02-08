@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -31,6 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatClientIT extends AbstractIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -122,7 +126,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		Generation generation = openAiChatClient.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -151,7 +155,7 @@ class OpenAiChatClientIT extends AbstractIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

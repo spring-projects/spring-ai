@@ -84,7 +84,7 @@ Next, you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties 
 
 For more information, refer to the documentation below for each supported model.
 
-* xref:api/clients/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
+* xref:api/clients/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
 * xref:api/clients/bedrock-llama2.adoc[Spring AI Bedrock Llama2 Chat]: `spring.ai.bedrock.llama2.chat.enabled=true`
 
 
