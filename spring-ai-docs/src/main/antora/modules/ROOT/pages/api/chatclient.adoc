@@ -53,8 +53,6 @@ public interface StreamingChatClient extends StreamingModelClient<Prompt, ChatRe
 
 The `stream` method takes a `Prompt` request similar to `ChatClient` but it streams the responses using the reactive Flux API.
 
-In real-world applications, it is more common to use the `generate` method that takes a `Prompt` instance and returns an `AiResponse`.
-
 === Prompt
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/Prompt.java[Prompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] objects and optional model request options.
