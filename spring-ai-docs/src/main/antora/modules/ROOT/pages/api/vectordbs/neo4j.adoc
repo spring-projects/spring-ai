@@ -15,14 +15,14 @@ link:https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/[Neo
 1. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
 
 2. A running Neo4j (5.13+) instance
-a. link:https://hub.docker.com/_/neo4j[Docker] image _neo4j:5.13_
+a. link:https://hub.docker.com/_/neo4j[Docker] image _neo4j:5.15_
 b. link:https://neo4j.com/download/[Neo4j Desktop]
 c. link:https://neo4j.com/cloud/aura-free/[Neo4j Aura]
 d. link:https://neo4j.com/deployment-center/[Neo4j Server] instance
 
 == Configuration
 
-To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide (e.g. via `application.properties`) configurations for your instance.
+To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide (e.g. via `application.properties`, environment variables, etc.) configurations for your instance.
 
 Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
 
@@ -77,5 +77,38 @@ Add these dependencies to your project:
 
 To configure `Neo4jVectorStore` in your application, you can use the following setup:
 
-Add to `application.properties` (using your Neo4j credentials):
+Add to your environment (using your own Neo4j credentials and the appropriate access protocol+endpoint) the following properties either by updating and executing the following commands or creating a shell script to be run from your command prompt (Linux/Mac/WSL2):
 
+[source,bash]
+----
+export SPRING_NEO4J_URI=<uri_for_your_neo4j_instance>
+export SPRING_NEO4J_AUTHENTICATION_USERNAME=<your_username>
+export SPRING_NEO4J_AUTHENTICATION_PASSWORD=<your_password>
+----
+
+NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+
+You'll need a `VectorStore` to store the embeddings. You can use the `Neo4jVectorStore` for this purpose, but first, you must create two beans the `Neo4jVectorStore` constructor requires. Here are examples of all of the beans you'll need:
+
+[source,java]
+----
+@Bean
+public Driver driver() {
+    return GraphDatabase.driver(System.getenv("SPRING_NEO4J_URI"),
+            AuthTokens.basic(System.getenv("SPRING_NEO4J_AUTHENTICATION_USERNAME"),
+                    System.getenv("SPRING_NEO4J_AUTHENTICATION_PASSWORD")));
+}
+
+@Bean
+public EmbeddingClient embeddingClient() {
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
+
+@Bean
+public VectorStore vectorStore(Driver driver, EmbeddingClient embeddingClient) {
+    return new Neo4jVectorStore(driver, embeddingClient,
+            Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig());
+}
+----
+
+The `Neo4jVectorStore` is now ready to be used in your application. You can use it to store embeddings and perform similarity searches.
