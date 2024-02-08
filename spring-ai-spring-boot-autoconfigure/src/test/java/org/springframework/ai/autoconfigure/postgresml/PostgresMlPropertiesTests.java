@@ -35,7 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Utkarsh Srivastava
  */
 @SpringBootTest(properties = { "spring.ai.postgresml.metadata-mode=all", "spring.ai.postgresml.kwargs.key1=value1",
-		"spring.ai.postgresml.kwargs.key2=value2", "spring.ai.postgresml.embedding.transformer=abc123" })
+		"spring.ai.postgresml.kwargs.key2=value2", "spring.ai.postgresml.embedding.transformer=abc123",
+		"spring.ai.postgresml.skip-create-extension=true" })
 class PostgresMlPropertiesTests {
 
 	@Autowired
@@ -48,6 +49,7 @@ class PostgresMlPropertiesTests {
 		assertThat(this.postgresMlProperties.getVectorType()).isEqualTo(PostgresMlEmbeddingClient.VectorType.PG_ARRAY);
 		assertThat(this.postgresMlProperties.getKwargs()).isEqualTo(Map.of("key1", "value1", "key2", "value2"));
 		assertThat(this.postgresMlProperties.getMetadataMode()).isEqualTo(MetadataMode.ALL);
+		assertThat(this.postgresMlProperties.isSkipCreateExtension()).isTrue();
 
 		PostgresMlProperties.Embedding embedding = this.postgresMlProperties.getEmbedding();
 

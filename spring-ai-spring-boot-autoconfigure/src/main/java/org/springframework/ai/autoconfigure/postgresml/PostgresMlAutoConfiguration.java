@@ -39,7 +39,7 @@ public class PostgresMlAutoConfiguration {
 			PostgresMlProperties postgresMlProperties) {
 		return new PostgresMlEmbeddingClient(jdbcTemplate, postgresMlProperties.getEmbedding().getTransformer(),
 				postgresMlProperties.getEmbedding().getVectorType(), postgresMlProperties.getEmbedding().getKwargs(),
-				postgresMlProperties.getEmbedding().getMetadataMode());
+				postgresMlProperties.getEmbedding().getMetadataMode(), postgresMlProperties.isSkipCreateExtension());
 	}
 
 }

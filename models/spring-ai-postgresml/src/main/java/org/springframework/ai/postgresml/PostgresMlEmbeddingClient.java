@@ -42,6 +42,8 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 	private final MetadataMode metadataMode;
 
+	private final boolean skipCreateExtension;
+
 	public enum VectorType {
 
 		PG_ARRAY("", null, (rs, i) -> {
@@ -91,7 +93,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 * @param vectorType vector type in PostgreSQL
 	 */
 	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate, String transformer, VectorType vectorType) {
-		this(jdbcTemplate, transformer, vectorType, Map.of(), MetadataMode.EMBED);
+		this(jdbcTemplate, transformer, vectorType, Map.of(), MetadataMode.EMBED, false);
 	}
 
 	/**
@@ -100,9 +102,10 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 * @param transformer huggingface sentence-transformer name
 	 * @param vectorType vector type in PostgreSQL
 	 * @param kwargs optional arguments
+	 * @param skipCreateExtension whether to skip "CREATE EXTENSION"
 	 */
 	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate, String transformer, VectorType vectorType,
-			Map<String, Object> kwargs, MetadataMode metadataMode) {
+			Map<String, Object> kwargs, MetadataMode metadataMode, boolean skipCreateExtension) {
 		Assert.notNull(jdbcTemplate, "jdbc template must not be null.");
 		Assert.notNull(transformer, "transformer must not be null.");
 		Assert.notNull(vectorType, "vectorType must not be null.");
@@ -119,6 +122,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 		catch (JsonProcessingException e) {
 			throw new IllegalArgumentException(e);
 		}
+		this.skipCreateExtension = skipCreateExtension;
 	}
 
 	@Override
@@ -174,6 +178,9 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 	@Override
 	public void afterPropertiesSet() {
+		if (this.skipCreateExtension) {
+			return;
+		}
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgml");
 		if (StringUtils.hasText(this.vectorType.extensionName)) {
 			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS " + this.vectorType.extensionName);

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,7 +42,7 @@ class PostgresMlEmbeddingClientIT {
 	@Container
 	@ServiceConnection
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.7.3").asCompatibleSubstituteFor("postgres"))
+			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.7.13").asCompatibleSubstituteFor("postgres"))
 		.withCommand("sleep", "infinity")
 		.withLabel("org.springframework.boot.service-connection", "postgres")
 		.withUsername("postgresml")
@@ -54,7 +54,7 @@ class PostgresMlEmbeddingClientIT {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
-	@AfterEach
+	@BeforeEach
 	void dropPgmlExtension() {
 		this.jdbcTemplate.execute("DROP EXTENSION IF EXISTS pgml");
 	}
@@ -65,7 +65,6 @@ class PostgresMlEmbeddingClientIT {
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed("Hello World!");
 		assertThat(embed).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
@@ -75,7 +74,6 @@ class PostgresMlEmbeddingClientIT {
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 		assertThat(embed).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
@@ -85,18 +83,16 @@ class PostgresMlEmbeddingClientIT {
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 		assertThat(embed).hasSize(384);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
 	void embedWithKwargs() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
 				"distilbert-base-uncased", PostgresMlEmbeddingClient.VectorType.PG_ARRAY, Map.of("device", "cpu"),
-				MetadataMode.EMBED);
+				MetadataMode.EMBED, false);
 		embeddingClient.afterPropertiesSet();
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 		assertThat(embed).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@ParameterizedTest
@@ -117,7 +113,6 @@ class PostgresMlEmbeddingClientIT {
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(768);
 		assertThat(embeddingResponse.getResults().get(2).getIndex()).isEqualTo(2);
 		assertThat(embeddingResponse.getResults().get(2).getOutput()).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test

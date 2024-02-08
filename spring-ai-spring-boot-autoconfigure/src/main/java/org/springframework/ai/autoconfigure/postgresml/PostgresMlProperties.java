@@ -42,6 +42,8 @@ public class PostgresMlProperties {
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
+	private boolean skipCreateExtension = false;
+
 	public PostgresMlProperties.Embedding getEmbedding() {
 		return this.embedding;
 	}
@@ -76,6 +78,15 @@ public class PostgresMlProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
+	}
+
+	public boolean isSkipCreateExtension() {
+		return skipCreateExtension;
+	}
+
+	public PostgresMlProperties setSkipCreateExtension(boolean skipCreateExtension) {
+		this.skipCreateExtension = skipCreateExtension;
+		return this;
 	}
 
 	public static class Embedding {
