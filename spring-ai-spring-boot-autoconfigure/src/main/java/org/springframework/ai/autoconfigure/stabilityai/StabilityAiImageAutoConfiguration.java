@@ -24,6 +24,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.web.client.RestClient;
 
 /**
  * @author Mark Pollack
@@ -37,9 +38,10 @@ public class StabilityAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public StabilityAiApi stabilityAiApi(StabilityAiProperties stabilityAiProperties) {
+	public StabilityAiApi stabilityAiApi(StabilityAiProperties stabilityAiProperties,
+			RestClient.Builder restClientBuilder) {
 		return new StabilityAiApi(stabilityAiProperties.getApiKey(), stabilityAiProperties.getBaseUrl(),
-				stabilityAiProperties.getOptions().getModel());
+				stabilityAiProperties.getOptions().getModel(), restClientBuilder);
 	}
 
 	@Bean

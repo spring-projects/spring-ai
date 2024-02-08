@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.web.client.RestClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Ollama Chat Client.
@@ -41,8 +42,8 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaConnectionProperties properties) {
-		return new OllamaApi(properties.getBaseUrl());
+	public OllamaApi ollamaApi(OllamaConnectionProperties properties, RestClient.Builder restClientBuilder) {
+		return new OllamaApi(properties.getBaseUrl(), restClientBuilder);
 	}
 
 	@Bean

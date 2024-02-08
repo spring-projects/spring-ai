@@ -56,10 +56,11 @@ public class VertexAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public VertexAiApi vertexAiApi(VertexAiConnectionProperties connectionProperties,
-			VertexAiEmbeddingProperties embeddingAiProperties, VertexAiChatProperties chatProperties) {
+			VertexAiEmbeddingProperties embeddingAiProperties, VertexAiChatProperties chatProperties,
+			RestClient.Builder restClientBuilder) {
 
 		return new VertexAiApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				chatProperties.getModel(), embeddingAiProperties.getModel(), RestClient.builder());
+				chatProperties.getModel(), embeddingAiProperties.getModel(), restClientBuilder);
 	}
 
 }
