@@ -81,7 +81,8 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
-		return new OpenAiEmbeddingClient(openAiApi).withDefaultOptions(embeddingProperties.getOptions());
+		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions());
 	}
 
 	@Bean

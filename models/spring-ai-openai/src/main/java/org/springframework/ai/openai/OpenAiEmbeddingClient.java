@@ -26,6 +26,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -51,9 +52,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public static final String DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002";
 
-	private OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
-		.withModel(DEFAULT_OPENAI_EMBEDDING_MODEL)
-		.build();
+	private final OpenAiEmbeddingOptions defaultOptions;
 
 	private final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
@@ -76,15 +75,18 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode) {
-		Assert.notNull(openAiApi, "OpenAiService must not be null");
-		Assert.notNull(metadataMode, "metadataMode must not be null");
-		this.openAiApi = openAiApi;
-		this.metadataMode = metadataMode;
+		this(openAiApi, metadataMode,
+				OpenAiEmbeddingOptions.builder().withModel(DEFAULT_OPENAI_EMBEDDING_MODEL).build());
 	}
 
-	public OpenAiEmbeddingClient withDefaultOptions(OpenAiEmbeddingOptions options) {
+	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode, OpenAiEmbeddingOptions options) {
+		Assert.notNull(openAiApi, "OpenAiService must not be null");
+		Assert.notNull(metadataMode, "metadataMode must not be null");
+		Assert.notNull(options, "options must not be null");
+
+		this.openAiApi = openAiApi;
+		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
-		return this;
 	}
 
 	@Override
@@ -93,19 +95,20 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
 		return this.retryTemplate.execute(ctx -> {
-			org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(
-					request.getInstructions(), DEFAULT_OPENAI_EMBEDDING_MODEL);
 
-			if (this.defaultOptions != null) {
-				apiRequest = ModelOptionsUtils.merge(apiRequest, this.defaultOptions,
-						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
-			}
+			org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
+					? new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
+							this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat(),
+							this.defaultOptions.getUser())
+					: new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
+							DEFAULT_OPENAI_EMBEDDING_MODEL);
 
-			if (request.getOptions() != null) {
+			if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
 				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
 						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
 			}
