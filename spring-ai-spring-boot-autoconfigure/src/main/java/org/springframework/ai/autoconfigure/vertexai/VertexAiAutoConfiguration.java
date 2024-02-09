@@ -23,12 +23,13 @@ import org.springframework.ai.vertex.VertexAiChatClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.web.client.RestClient;
 
-@AutoConfiguration
+@AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(VertexAiApi.class)
 @ImportRuntimeHints(NativeHints.class)
 @EnableConfigurationProperties({ VertexAiConnectionProperties.class, VertexAiChatProperties.class,
