@@ -1,4 +1,4 @@
-= Bedrock Llama2 Chat
+= Llama2 Chat
 
 https://ai.meta.com/llama/[Meta's Llama 2 Chat] is part of the Llama 2 collection of large language models.
 It excels in dialogue-based applications with a parameter scale ranging from 7 billion to 70 billion.

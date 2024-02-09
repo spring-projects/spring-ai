@@ -16,7 +16,7 @@ Refer to the official Ollama project link:https://github.com/jmorganca/ollama[RE
 Note, installing `ollama run llama2` will download a 4GB docker image.
 
 
-=== OllamaEmbeddingClient Auto-configuration
+== Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Client.
 To enable it add the following dependency to your Maven `pom.xml` file:
@@ -44,7 +44,7 @@ NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency M
 The `spring.ai.ollama.embedding.options.*` properties are used to configure the default options used for all embedding requests.
 (It is used as `OllamaEmbeddingClient#withDefaultOptions()` instance).
 
-== Embedding Properties
+=== Embedding Properties
 
 The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama
 
@@ -57,7 +57,7 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 
 The prefix `spring.ai.ollama.embedding.options` is the property prefix that configures the `EmbeddingClient` implementation for Ollama.
 
-[cols="3,6,1"]
+[cols="3,5,1"]
 |====
 | Property | Description | Default
 
@@ -168,7 +168,7 @@ EmbeddingResponse embeddingResponse = embeddingClient
 
 The `OllamaOptions` provides the configuration information for all embedding requests.
 
-=== Chat Options
+=== Embedding Options
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tunning, etc.
 

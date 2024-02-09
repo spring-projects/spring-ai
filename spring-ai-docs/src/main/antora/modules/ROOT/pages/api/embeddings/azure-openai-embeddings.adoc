@@ -8,7 +8,7 @@ Azure's OpenAI extends the OpenAI capabilities, offering safe text generation an
 
 The Azure OpenAI embeddings rely on `cosine similarity` to compute similarity between documents and a query.
 
-== Pre-requisites
+== Prerequisites
 
 Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
 
@@ -145,6 +145,8 @@ EmbeddingResponse embeddingResponse = embeddingClient
 ----
 
 NOTE: the `text-embedding-ada-002` is actually the `Deployment Name` as presented in the Azure AI Portal.
+
+=== Embedding Options
 
 The `AzureOpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
 The `AzureOpenAiEmbeddingOptions` offers a builder to create the options.

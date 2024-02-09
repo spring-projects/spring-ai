@@ -18,6 +18,7 @@ package org.springframework.ai.azure.openai;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
@@ -225,20 +226,13 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		ChatCompletionsOptions mergedAzureOptions = new ChatCompletionsOptions(azureOptions.getMessages());
 		mergedAzureOptions.setStream(azureOptions.isStream());
 
-		mergedAzureOptions.setMaxTokens(azureOptions.getMaxTokens());
-		if (mergedAzureOptions.getMaxTokens() == null) {
-			mergedAzureOptions.setMaxTokens(springAiOptions.getMaxTokens());
-		}
+		mergedAzureOptions.setMaxTokens(
+				(azureOptions.getMaxTokens() != null) ? azureOptions.getMaxTokens() : springAiOptions.getMaxTokens());
 
-		mergedAzureOptions.setLogitBias(azureOptions.getLogitBias());
-		if (mergedAzureOptions.getLogitBias() == null) {
-			mergedAzureOptions.setLogitBias(springAiOptions.getLogitBias());
-		}
+		mergedAzureOptions.setLogitBias(
+				azureOptions.getLogitBias() != null ? azureOptions.getLogitBias() : springAiOptions.getLogitBias());
 
-		mergedAzureOptions.setStop(azureOptions.getStop());
-		if (mergedAzureOptions.getStop() == null) {
-			mergedAzureOptions.setStop(springAiOptions.getStop());
-		}
+		mergedAzureOptions.setStop(azureOptions.getStop() != null ? azureOptions.getStop() : springAiOptions.getStop());
 
 		mergedAzureOptions.setTemperature(azureOptions.getTemperature());
 		if (mergedAzureOptions.getTemperature() == null && springAiOptions.getTemperature() != null) {
@@ -260,20 +254,12 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 			mergedAzureOptions.setPresencePenalty(springAiOptions.getPresencePenalty().doubleValue());
 		}
 
-		mergedAzureOptions.setN(azureOptions.getN());
-		if (mergedAzureOptions.getN() == null) {
-			mergedAzureOptions.setN(springAiOptions.getN());
-		}
+		mergedAzureOptions.setN(azureOptions.getN() != null ? azureOptions.getN() : springAiOptions.getN());
 
-		mergedAzureOptions.setUser(azureOptions.getUser());
-		if (mergedAzureOptions.getUser() == null) {
-			mergedAzureOptions.setUser(springAiOptions.getUser());
-		}
+		mergedAzureOptions.setUser(azureOptions.getUser() != null ? azureOptions.getUser() : springAiOptions.getUser());
 
-		mergedAzureOptions.setModel(azureOptions.getModel());
-		if (mergedAzureOptions.getModel() == null) {
-			mergedAzureOptions.setModel(springAiOptions.getModel());
-		}
+		mergedAzureOptions
+			.setModel(azureOptions.getModel() != null ? azureOptions.getModel() : springAiOptions.getModel());
 
 		return mergedAzureOptions;
 	}
