@@ -3,86 +3,14 @@
 With https://ollama.ai/[Ollama] you can run various Large Language Models (LLMs) locally and generate text from them.
 Spring AI supports the Ollama text generation with `OllamaChatClient`.
 
-== Getting Started
+== Prerequisites
 
 You first need to run Ollama on your local machine.
-
 Refer to the official Ollama project link:https://github.com/jmorganca/ollama[README] to get started running models on your local machine.
 
 Note, installing `ollama run llama2` will download a 4GB docker image.
 
-=== Configure the Ollama Chat Client Manually
-
-Add the spring-ai-ollama dependency to your project’s Maven pom.xml file:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-ollama</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-ollama:0.8.0-SNAPSHOT'
-}
-----
-
-NOTE: The `spring-ai-ollama` dependency provides access also to the `OllamaEmbeddingClient`.
-For more information about the `OllamaEmbeddingClient` refer to the link:../embeddings/ollama-embeddings.html[Ollama Embedding Client] section.
-
-Next, create an `OllamaChatClient` instance and use it to text generations requests:
-
-[source,java]
-----
-var ollamaApi = new OllamaApi();
-
-var chatClient = new OllamaChatClient(ollamaApi).withModel(MODEL)
-        .withDefaultOptions(OllamaOptions.create()
-                .withModel(OllamaOptions.DEFAULT_MODEL)
-                .withTemperature(0.9f));
-
-ChatResponse response = chatClient.call(
-    new Prompt("Generate the names of 5 famous pirates."));
-
-// Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
-    new Prompt("Generate the names of 5 famous pirates."));
-----
-
-The `OllamaOptions` provides the configuration information for all chat requests.
-
-==== ChatOptions and OllamaOptions
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides provides configuration information for the chat requests, such as the model to use, the temperature, the frequency penalty, etc.
-
-The default options can be configured using the `spring.ai.ollama.chat.options` properties as well.
-
-On start-time use the `OllamaChatClient#withDefaultOptions()` to set the  default options applicable for all chat completion requests.
-At run-time you can override the default options with `OllamaOptions` instance in the request `Prompt`.
-
-For example to override the default model name and temperature for a specific request:
-
-[source,java]
-----
-ChatResponse response = chatClient.call(
-    new Prompt(
-        "Generate the names of 5 famous pirates.",
-        OllamaOptions.create()
-            .withModel("llama2")
-            .withTemperature(0.4)
-    ));
-----
-
-You can use as prompt options any instance that implements the portable `ChatOptions` interface.
-For example you can use the `ChatOptionsBuilder` to create a portable prompt options.
-
-=== OllamaChatClient Auto-configuration
+== Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the Ollama Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -107,32 +35,7 @@ dependencies {
 
 NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
-
-==== Sample Code
-
-This will create a `ChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
-
-[source,java]
-----
-@RestController
-public class ChatController {
-
-    private final ChatClient chatClient;
-
-    @Autowired
-    public ChatController(ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
-
-    @GetMapping("/ai/generate")
-    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.generate(message));
-    }
-}
-----
-
-=== Ollama Properties
+=== Chat Properties
 
 The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama
 
@@ -191,3 +94,98 @@ NOTE: The listed properties are based on the https://github.com/jmorganca/ollama
 
 NOTE: The list of options for chat is to be reviewed. This https://github.com/spring-projects/spring-ai/issues/230[issue] will track progress.
 
+=== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+== Manual Configuration
+
+If you don't want to use the Spring Boot auto-configuration, you can manually configure the `OllamaChatClient` in your application.
+For this add the spring-ai-ollama dependency to your project’s Maven pom.xml file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-ollama</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-ollama:0.8.0-SNAPSHOT'
+}
+----
+
+NOTE: The `spring-ai-ollama` dependency provides access also to the `OllamaEmbeddingClient`.
+For more information about the `OllamaEmbeddingClient` refer to the link:../embeddings/ollama-embeddings.html[Ollama Embedding Client] section.
+
+Next, create an `OllamaChatClient` instance and use it to text generations requests:
+
+[source,java]
+----
+var ollamaApi = new OllamaApi();
+
+var chatClient = new OllamaChatClient(ollamaApi).withModel(MODEL)
+        .withDefaultOptions(OllamaOptions.create()
+                .withModel(OllamaOptions.DEFAULT_MODEL)
+                .withTemperature(0.9f));
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> response = chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `OllamaOptions` provides the configuration information for all chat requests.
+
+=== Chat Options
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides provides configuration information for the chat requests, such as the model to use, the temperature, the frequency penalty, etc.
+
+The default options can be configured using the `spring.ai.ollama.chat.options` properties as well.
+
+On start-time use the `OllamaChatClient#withDefaultOptions()` to set the  default options applicable for all chat completion requests.
+At run-time you can override the default options with `OllamaOptions` instance in the request `Prompt`.
+
+For example to override the default model name and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        OllamaOptions.create()
+            .withModel("llama2")
+            .withTemperature(0.4)
+    ));
+----
+
+You can use as prompt options any instance that implements the portable `ChatOptions` interface.
+For example you can use the `ChatOptionsBuilder` to create a portable prompt options.
