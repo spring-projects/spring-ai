@@ -10,9 +10,100 @@ The Claude model has the following high level features
 
 The https://aws.amazon.com/bedrock/claude[AWS Bedrock Anthropic Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
 
-== Getting Started
+== Pre-requisites
 
 Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+
+== Auto-configuration
+
+or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot starter:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+=== Enable Anthropic Support
+
+Spring AI defines a configuration property named `spring.ai.bedrock.anthropic.chat.enabled` that you should set to `true` to enable support for Anthropic.
+Exporting environment variables in one way to set this configuration property.
+
+[source,shell]
+----
+export SPRING_AI_BEDROCK_ANTHROPIC_CHAT_ENABLED=true
+----
+
+=== Chat Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+[cols="3,3,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+|====
+
+The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the `ChatClient` implementation for Claude.
+
+[cols="2,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat client. Disabled by default | false
+| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the `AnthropicChatModel` for the supported models.  | anthropic.claude-v2
+| spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8
+| spring.ai.bedrock.anthropic.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
+| spring.ai.bedrock.anthropic.chat.options.topK  | Specify the number of token choices the generative uses to generate the next token.  | AWS Bedrock default
+| spring.ai.bedrock.anthropic.chat.options.stopSequences  | Configure up to four sequences that the generative recognizes. After a stop sequence, the generative stops generating further tokens. The returned text doesn't contain the stop sequence.  | 10
+| spring.ai.bedrock.anthropic.chat.options.anthropicVersion  | The version of the generative to use. | bedrock-2023-05-31
+| spring.ai.bedrock.anthropic.chat.options.maxTokensToSample  | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | 500
+|====
+
+Look at the Spring AI enumeration `AnthropicChatModel` for other model IDs.  The other value supported is `anthropic.claude-instant-v1`.
+
+Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
+
+=== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+
+Create an `application.properties` file in the `src/main/resources` directory and add the following properties to configure the Anthropic Chat client.
+
+[source]
+----
+spring.ai.bedrock.anthropic.chat.enabled=true
+spring.ai.bedrock.anthropic.chat.options.temperature=0.8
+----
+
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+== Manual Configuration
 
 The link:./src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java[BedrockAnthropicChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the `AnthropicChatBedrockApi` library to connect to the Bedrock Anthropic service.
 
@@ -65,95 +156,6 @@ Flux<ChatResponse> response = chatClient.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
-=== AnthropicChatClient Auto-configuration
-
-or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot starter:
-
-[source,xml]
-----
-<dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
-</dependency>
-----
-
-==== Enable Anthropic Support
-
-Spring AI defines a configuration property named `spring.ai.bedrock.anthropic.chat.enabled` that you should set to `true` to enable support for Anthropic.
-
-Exporting environment variables in one way to set this configuration property.
-
-[source,shell]
-----
-export SPRING_AI_BEDROCK_ANTHROPIC_CHAT_ENABLED=true
-----
-
-==== Sample Code
-
-This will create a `ChatClient` implementation that you can inject into your class.
-
-Create an `application.properties` file in the `src/main/resources` directory and add the following properties to configure the Anthropic Chat client.
-
-[source]
-----
-spring.ai.bedrock.anthropic.chat.enabled=true
-spring.ai.bedrock.anthropic.chat.options.temperature=0.8
-----
-
-Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
-
-[source,java]
-----
-@RestController
-public class ChatController {
-
-    private final ChatClient chatClient;
-
-    @Autowired
-    public ChatController(ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
-
-    @GetMapping("/ai/generate")
-    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.generate(message));
-    }
-}
-----
-
-==== Bedrock Properties
-
-The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
-
-[cols="3,3,1"]
-|====
-| Property | Description | Default
-
-| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
-| spring.ai.bedrock.aws.access-key | AWS access key.  | -
-| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
-|====
-
-The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the `ChatClient` implementation for Claude.
-
-[cols="2,5,1"]
-|====
-| Property | Description | Default
-
-| spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat client. Disabled by default | false
-| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the `AnthropicChatModel` for the supported models.  | anthropic.claude-v2
-| spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8
-| spring.ai.bedrock.anthropic.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
-| spring.ai.bedrock.anthropic.chat.options.topK  | Specify the number of token choices the generative uses to generate the next token.  | AWS Bedrock default
-| spring.ai.bedrock.anthropic.chat.options.stopSequences  | Configure up to four sequences that the generative recognizes. After a stop sequence, the generative stops generating further tokens. The returned text doesn't contain the stop sequence.  | 10
-| spring.ai.bedrock.anthropic.chat.options.anthropicVersion  | The version of the generative to use. | bedrock-2023-05-31
-| spring.ai.bedrock.anthropic.chat.options.maxTokensToSample  | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | 500
-|====
-
-Look at the Spring AI enumeration `AnthropicChatModel` for other model IDs.  The other value supported is `anthropic.claude-instant-v1`.
-
-Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 == Appendices
 

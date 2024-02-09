@@ -9,11 +9,107 @@ Rigorous testing, including over 1,000 hours of red-teaming and annotation, ensu
 
 The https://aws.amazon.com/bedrock/llama-2/[AWS Llama 2 Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
 
-
-== Getting Started
+== Prerequisites
 
 Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
 
+== Auto-configuration
+
+or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot starter:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+=== Enable Llama2 Chat Support
+
+Spring AI defines a configuration property named `spring.ai.bedrock.llama2.chat.enabled` that you should set to `true` to enable support for Llama2.
+Exporting environment variables in one way to set this configuration property.
+
+[source,shell]
+----
+export SPRING_AI_BEDROCK_LLAMA2_CHAT_ENABLED=true
+----
+
+=== Chat Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+[cols="3,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+|====
+
+
+The prefix `spring.ai.bedrock.llama2.chat` is the property prefix that configures the `ChatClient` implementation for Llama2.
+
+[cols="2,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.llama2.chat.enabled              | Enable or disable support for Llama2  | false
+| spring.ai.bedrock.llama2.chat.model                | The model id to use (See Below) | meta.llama2-70b-chat-v1
+| spring.ai.bedrock.llama2.chat.options.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model. This value specifies default to be used by the backend while making the call to the model. | 0.7
+| spring.ai.bedrock.llama2.chat.options.top-p                | The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP. | AWS Bedrock default
+| spring.ai.bedrock.llama2.chat.options.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | 300
+|====
+
+Look at the Spring AI enumeration, `Llama2ChatModel`  for other model IDs.  The other value supported is `meta.llama2-13b-chat-v1`.
+
+Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
+
+=== Sample Code
+
+This will create a `ChatClient` implementation that you can inject into your class.
+
+Create an `application.properties` file in the `src/main/resources` directory and add the following properties to configure the Llama2 Chat client.
+
+[source]
+----
+spring.ai.bedrock.llama2.chat.enabled=true
+spring.ai.bedrock.llama2.chat.options.temperature=0.8
+----
+
+Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatClient chatClient;
+
+    @Autowired
+    public ChatController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.generate(message));
+    }
+}
+----
+
+== Manual Configuration
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -59,103 +155,6 @@ ChatResponse response = chatClient.call(
 Flux<ChatResponse> response = chatClient.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
-
-=== BedrockLlama2ChatClient Auto-configuration
-
-or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot starter:
-
-[source,xml]
-----
-<dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,gradle]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
-}
-----
-
-==== Enable Llama2 Chat Support
-
-Spring AI defines a configuration property named `spring.ai.bedrock.llama2.chat.enabled` that you should set to `true` to enable support for Llama2.
-
-Exporting environment variables in one way to set this configuration property.
-
-[source,shell]
-----
-export SPRING_AI_BEDROCK_LLAMA2_CHAT_ENABLED=true
-----
-
-==== Sample Code
-
-This will create a `ChatClient` implementation that you can inject into your class.
-
-Create an `application.properties` file in the `src/main/resources` directory and add the following properties to configure the Llama2 Chat client.
-
-[source]
-----
-spring.ai.bedrock.llama2.chat.enabled=true
-spring.ai.bedrock.llama2.chat.options.temperature=0.8
-----
-
-Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
-
-[source,java]
-----
-@RestController
-public class ChatController {
-
-    private final ChatClient chatClient;
-
-    @Autowired
-    public ChatController(ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
-
-    @GetMapping("/ai/generate")
-    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.generate(message));
-    }
-}
-----
-
-=== Bedrock Properties
-
-The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
-
-[cols="3,3,3"]
-|====
-| Property | Description | Default
-
-| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
-| spring.ai.bedrock.aws.access-key | AWS access key.  | -
-| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
-|====
-
-
-The prefix `spring.ai.bedrock.llama2.chat` is the property prefix that configures the `ChatClient` implementation for Llama2.
-
-[cols="2,5,1"]
-|====
-| Property | Description | Default
-
-| spring.ai.bedrock.llama2.chat.enabled              | Enable or disable support for Llama2  | false
-| spring.ai.bedrock.llama2.chat.model                | The model id to use (See Below) | meta.llama2-70b-chat-v1
-| spring.ai.bedrock.llama2.chat.options.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model. This value specifies default to be used by the backend while making the call to the model. | 0.7
-| spring.ai.bedrock.llama2.chat.options.top-p                | The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP. | AWS Bedrock default
-| spring.ai.bedrock.llama2.chat.options.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | 300
-|====
-
-Look at the Spring AI enumeration, `Llama2ChatModel`  for other model IDs.  The other value supported is `meta.llama2-13b-chat-v1`.
-
-Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 
 == Appendices
