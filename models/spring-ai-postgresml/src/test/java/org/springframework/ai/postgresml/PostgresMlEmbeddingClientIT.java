@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.postgresml;
 
 import java.time.Duration;
@@ -37,12 +52,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Toshiaki Maki
  */
-
 @JdbcTest(properties = "logging.level.sql=TRACE")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-// @Disabled("Disabled from automatic execution, as it requires an excessive amount of
-// memory (over 9GB)!")
+@Disabled("Disabled from automatic execution, as it requires an excessive amount of memory (over 9GB)!")
 class PostgresMlEmbeddingClientIT {
 
 	@Container
@@ -73,7 +86,6 @@ class PostgresMlEmbeddingClientIT {
 		List<Double> embed = embeddingClient.embed("Hello World!");
 
 		assertThat(embed).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
@@ -88,7 +100,6 @@ class PostgresMlEmbeddingClientIT {
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
@@ -100,7 +111,6 @@ class PostgresMlEmbeddingClientIT {
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(384);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
@@ -117,7 +127,6 @@ class PostgresMlEmbeddingClientIT {
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
 
 		assertThat(embed).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@ParameterizedTest
@@ -143,7 +152,6 @@ class PostgresMlEmbeddingClientIT {
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(768);
 		assertThat(embeddingResponse.getResults().get(2).getIndex()).isEqualTo(2);
 		assertThat(embeddingResponse.getResults().get(2).getOutput()).hasSize(768);
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test
@@ -193,8 +201,6 @@ class PostgresMlEmbeddingClientIT {
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(384);
 		assertThat(embeddingResponse.getResults().get(2).getIndex()).isEqualTo(2);
 		assertThat(embeddingResponse.getResults().get(2).getOutput()).hasSize(384);
-
-		// embeddingClient.dropPgmlExtension();
 	}
 
 	@Test

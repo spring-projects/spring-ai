@@ -52,6 +52,25 @@ EmbeddingResponse embeddingResponse = embeddingClient
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
+NOTE: When created manually, you must call the `afterPropertiesSet()` after setting the properties and before using the client.
+It is more convenient (and preferred) to create the PostgresMlEmbeddingClient as a `@Bean`.
+Then you don’t have to call the `afterPropertiesSet()` manually:
+
+[source,java]
+----
+@Bean
+public EmbeddingClient embeddingClient(JdbcTemplate jdbcTemplate) {
+
+    return new PostgresMlEmbeddingClient(jdbcTemplate,
+        PostgresMlEmbeddingOptions.builder()
+                .withTransformer("distilbert-base-uncased")
+                .withVectorType(VectorType.PG_VECTOR)
+                .withKwargs(Map.of("device", "cpu"))
+                .withMetadataMode(MetadataMode.EMBED)
+            .build());
+}
+----
+
 ==== OpenAiEmbeddingOptions
 
 Use the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/postgresml/PostgresMlEmbeddingOptions.java[PostgresMlEmbeddingOptions.java] to configure the `PostgresMlEmbeddingClient` with options, such as the model to use and etc.

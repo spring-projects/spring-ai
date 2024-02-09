@@ -84,13 +84,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 * @param jdbcTemplate JdbcTemplate
 	 */
 	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate) {
-		this(jdbcTemplate,
-				PostgresMlEmbeddingOptions.builder()
-					.withTransformer(DEFAULT_TRANSFORMER_MODEL)
-					.withVectorType(VectorType.PG_ARRAY)
-					.withMetadataMode(MetadataMode.EMBED)
-					.withKwargs(Map.of())
-					.build());
+		this(jdbcTemplate, PostgresMlEmbeddingOptions.builder().build());
 	}
 
 	/**
@@ -220,15 +214,10 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 */
 	PostgresMlEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions) {
 
-		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
-			.withTransformer(DEFAULT_TRANSFORMER_MODEL)
-			.build();
+		PostgresMlEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
+				: PostgresMlEmbeddingOptions.builder().build();
 
-		if (this.defaultOptions != null) {
-			options = ModelOptionsUtils.merge(this.defaultOptions, options, PostgresMlEmbeddingOptions.class);
-		}
-
-		if (requestOptions != null) {
+		if (requestOptions != null && !EmbeddingOptions.EMPTY.equals(requestOptions)) {
 			options = ModelOptionsUtils.merge(requestOptions, options, PostgresMlEmbeddingOptions.class);
 		}
 
