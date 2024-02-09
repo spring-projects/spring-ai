@@ -1,7 +1,7 @@
 # Azure OpenAI
 
 Provides Azure OpenAI Chat and Embedding clients.
-Leverages the native [OpenAIClient](https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview#streaming-chat-completions) to interact with the [Amazon AI Studio models and deployment](https://oai.azure.com/).
+Leverages the native [OpenAIClient](https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview#streaming-chat-completions) to interact with the [Azure AI Studio models and deployment](https://oai.azure.com/).
 
 Find additional information:
 
