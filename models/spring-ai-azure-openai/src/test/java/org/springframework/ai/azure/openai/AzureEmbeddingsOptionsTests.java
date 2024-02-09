@@ -22,6 +22,7 @@ import com.azure.ai.openai.OpenAIClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +37,7 @@ public class AzureEmbeddingsOptionsTests {
 	public void createRequestWithChatOptions() {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
-		var client = new AzureOpenAiEmbeddingClient(mockClient).withDefaultOptions(
+		var client = new AzureOpenAiEmbeddingClient(mockClient, MetadataMode.EMBED,
 				AzureOpenAiEmbeddingOptions.builder().withModel("DEFAULT_MODEL").withUser("USER_TEST").build());
 
 		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"), null));

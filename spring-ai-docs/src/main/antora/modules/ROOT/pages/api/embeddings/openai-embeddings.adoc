@@ -61,7 +61,7 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 | Property | Description | Default
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
-| spring.ai.openai.embedding.metadata-mode      | Document content extraction mode      | EMBED
+| spring.ai.openai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
 | spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-ada-002
 | spring.ai.openai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
 | spring.ai.openai.embedding.options.user   | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.  | -
@@ -153,7 +153,7 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-open
 
 The default options can be configured using the `spring.ai.openai.embedding.options` properties as well.
 
-At start-time use the `OpenAiEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
+At start-time use the `OpenAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
 At run-time you can override the default options, using a `OpenAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:

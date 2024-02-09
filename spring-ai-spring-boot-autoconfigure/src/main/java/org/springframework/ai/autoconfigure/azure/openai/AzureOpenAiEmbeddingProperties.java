@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.azure.openai;
 
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingOptions;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -29,6 +30,8 @@ public class AzureOpenAiEmbeddingProperties {
 		.withModel("text-embedding-ada-002")
 		.build();
 
+	private MetadataMode metadataMode = MetadataMode.EMBED;
+
 	public AzureOpenAiEmbeddingOptions getOptions() {
 		return options;
 	}
@@ -36,6 +39,15 @@ public class AzureOpenAiEmbeddingProperties {
 	public void setOptions(AzureOpenAiEmbeddingOptions options) {
 		Assert.notNull(options, "Options must not be null");
 		this.options = options;
+	}
+
+	public MetadataMode getMetadataMode() {
+		return metadataMode;
+	}
+
+	public void setMetadataMode(MetadataMode metadataMode) {
+		Assert.notNull(metadataMode, "Metadata mode must not be null");
+		this.metadataMode = metadataMode;
 	}
 
 }

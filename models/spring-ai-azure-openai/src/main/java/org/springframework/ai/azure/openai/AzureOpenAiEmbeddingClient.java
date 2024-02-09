@@ -15,6 +15,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -27,9 +28,7 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final OpenAIClient azureOpenAiClient;
 
-	private AzureOpenAiEmbeddingOptions defaultOptions = AzureOpenAiEmbeddingOptions.builder()
-		.withModel("text-embedding-ada-002")
-		.build();
+	private final AzureOpenAiEmbeddingOptions defaultOptions;
 
 	private final MetadataMode metadataMode;
 
@@ -38,10 +37,18 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, MetadataMode metadataMode) {
+		this(azureOpenAiClient, metadataMode,
+				AzureOpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
+	}
+
+	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, MetadataMode metadataMode,
+			AzureOpenAiEmbeddingOptions options) {
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(metadataMode, "Metadata mode must not be null");
+		Assert.notNull(options, "Options must not be null");
 		this.azureOpenAiClient = azureOpenAiClient;
 		this.metadataMode = metadataMode;
+		this.defaultOptions = options;
 	}
 
 	@Override
@@ -58,14 +65,7 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	public EmbeddingResponse call(EmbeddingRequest embeddingRequest) {
 		logger.debug("Retrieving embeddings");
 
-		EmbeddingsOptions azureOptions = new EmbeddingsOptions(embeddingRequest.getInstructions());
-		if (this.defaultOptions != null) {
-			azureOptions = ModelOptionsUtils.merge(azureOptions, this.defaultOptions, EmbeddingsOptions.class);
-		}
-		if (embeddingRequest.getOptions() != null) {
-			azureOptions = ModelOptionsUtils.merge(embeddingRequest.getOptions(), azureOptions,
-					EmbeddingsOptions.class);
-		}
+		EmbeddingsOptions azureOptions = toEmbeddingOptions(embeddingRequest);
 		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(azureOptions.getModel(), azureOptions);
 
 		logger.debug("Embeddings retrieved");
@@ -78,9 +78,10 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	EmbeddingsOptions toEmbeddingOptions(EmbeddingRequest embeddingRequest) {
 		var azureOptions = new EmbeddingsOptions(embeddingRequest.getInstructions());
 		if (this.defaultOptions != null) {
-			azureOptions = ModelOptionsUtils.merge(azureOptions, this.defaultOptions, EmbeddingsOptions.class);
+			azureOptions.setModel(this.defaultOptions.getModel());
+			azureOptions.setUser(this.defaultOptions.getUser());
 		}
-		if (embeddingRequest.getOptions() != null) {
+		if (embeddingRequest.getOptions() != null && !EmbeddingOptions.EMPTY.equals(embeddingRequest.getOptions())) {
 			azureOptions = ModelOptionsUtils.merge(embeddingRequest.getOptions(), azureOptions,
 					EmbeddingsOptions.class);
 		}
@@ -114,16 +115,6 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public AzureOpenAiEmbeddingOptions getDefaultOptions() {
 		return this.defaultOptions;
-	}
-
-	public void setDefaultOptions(AzureOpenAiEmbeddingOptions defaultOptions) {
-		Assert.notNull(defaultOptions, "Default options must not be null");
-		this.defaultOptions = defaultOptions;
-	}
-
-	public AzureOpenAiEmbeddingClient withDefaultOptions(AzureOpenAiEmbeddingOptions options) {
-		this.defaultOptions = options;
-		return this;
 	}
 
 }

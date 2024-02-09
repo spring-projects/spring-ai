@@ -60,7 +60,8 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient openAIClient,
 			AzureOpenAiEmbeddingProperties embeddingProperties) {
-		return new AzureOpenAiEmbeddingClient(openAIClient).withDefaultOptions(embeddingProperties.getOptions());
+		return new AzureOpenAiEmbeddingClient(openAIClient, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions());
 	}
 
 }
