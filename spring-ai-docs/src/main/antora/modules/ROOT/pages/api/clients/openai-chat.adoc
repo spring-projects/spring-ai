@@ -2,7 +2,7 @@
 
 Spring AI supports ChatGPT, the AI language model by OpenAI. ChatGPT has been instrumental in sparking interest in AI-driven text generation, thanks to its creation of industry-leading text generation models and embeddings.
 
-== Pre-requisites
+== Prerequisites
 
 You will need to create an API with OpenAI to access ChatGPT models.
 Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
@@ -37,7 +37,7 @@ dependencies {
 }
 ----
 
-NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
 === Chat Properties
 
@@ -51,7 +51,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | spring.ai.openai.api-key    | The API Key           |  -
 |====
 
-The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the `ChatClient` implementation for OpenAI.
+The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat client implementation for OpenAI.
 
 [cols="3,5,1"]
 |====
@@ -59,7 +59,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
-| spring.ai.openai.chat.options.model | This is the OpenAI Chat model to use | `gpt-35-turbo` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)
+| spring.ai.openai.chat.options.model | This is the OpenAI Chat model to use | `gpt-3.5-turbo` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
@@ -79,30 +79,59 @@ NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.ope
 The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-=== Sample Code
+TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-This will create a `ChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+=== Chat Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `OpenAiChatClient(api, options)` constructor or the `spring.ai.openai.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        OpenAiChatOptions.builder()
+            .withModel("gpt-4-32k")
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+=== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi Chat client:
 
 [source,application.properties]
 ----
 spring.ai.openai.api-key=YOUR_API_KEY
-spring.ai.openai.chat.options.model=gpt-35-turbo
+spring.ai.openai.chat.options.model=gpt-3.5-turbo
 spring.ai.openai.chat.options.temperature=0.7
 ----
+
+TIP: replace the `api-key` with your OpenAI credentials.
+
+This will create a `OpenAiChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final ChatClient chatClient;
-    private final StreamingChatClient streamingChatClient;
+    private final OpenAiChatClient chatClient;
 
     @Autowired
-    public ChatController(ChatClient chatClient, StreamingChatClient streamingChatClient) {
+    public ChatController(OpenAiChatClient chatClient) {
         this.chatClient = chatClient;
-        this.streamingChatClient = streamingChatClient;
     }
 
     @GetMapping("/open-ai/generate")
@@ -113,15 +142,17 @@ public class ChatController {
     @GetMapping("/open-ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return streamingChatClient.stream(prompt);
+        return chatClient.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-If you are not using Spring Boot, you can manually configure the `OpenAiChatClient` by creating the beans in your configuration class.
-For this add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatClient.java[OpenAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the OpenAI service.
+
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+
 [source, xml]
 ----
 <dependency>
@@ -140,9 +171,9 @@ dependencies {
 }
 ----
 
-NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiEmbeddingClient`. For more information about the `OpenAiEmbeddingClient` refer to the link:../embeddings/openai-embeddings.html[OpenAI Embeddings Client] section.
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Next, create an `OpenAiChatClient` instance and use it to text generations requests:
+Next, create a `OpenAiChatClient` and use it for text generations:
 
 [source,java]
 ----
@@ -166,28 +197,35 @@ Flux<ChatResponse> response = chatClient.stream(
 The `OpenAiChatOptions` provides the configuration information for the chat requests.
 The `OpenAiChatOptions.Builder` is fluent options builder.
 
-=== Chat Options
+=== Low-level OpenAiApi Client [[low-level-api]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] provides provides the configuration information for the chat requests, such as the model to use, the temperature, the frequency penalty, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi] provides is lightweight Java client for OpenAI Chat API link:https://platform.openai.com/docs/api-reference/chat[OpenAI Chat API].
 
-The default options can be configured using the `spring.ai.openai.chat.options` properties as well.
-On start-time use the `OpenAiChatClient#withDefaultOptions()` to set the  default options applicable for all chat completion requests.
-At run-time you can override the default options with `OpenAiChatOptions` instance in the request `Prompt`.
+Following class diagram illustrates the `OpenAiApi` chat interfaces and building blocks:
 
-For example to override the default model name and temperature for a specific request:
+image::openai-chat-api.png[OpenAiApi Chat API Diagram]
+
+Here is a simple snippet how to use the api programmatically:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
-    new Prompt(
-        "Generate the names of 5 famous pirates.",
-        AzureOpenAiChatOptions.builder()
-            .withModel("gpt-4-32k")
-            .withTemperature(0.4)
-        .build()
-    ));
+OpenAiApi openAiApi =
+    new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+
+ChatCompletionMessage chatCompletionMessage =
+    new ChatCompletionMessage("Hello world", Role.USER);
+
+// Sync request
+ResponseEntity<ChatCompletion> response = openAiApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8f, false));
+
+// Streaming request
+Flux<ChatCompletionChunk> streamResponse = openAiApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8f, true));
 ----
 
-You can use as prompt options any instance that implements the portable `ChatOptions` interface.
-For example you can use the `ChatOptionsBuilder` to create a portable prompt options.
+Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/OpenAiApiIT.java[OpenAiApiIT.java] integration test for more examples.
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.
+
 

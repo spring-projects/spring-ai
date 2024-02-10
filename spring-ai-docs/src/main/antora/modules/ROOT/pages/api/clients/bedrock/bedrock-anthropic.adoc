@@ -1,22 +1,21 @@
 = Anthropic Chat
 
 https://www.anthropic.com/product[Anthropic's Claude] is an AI assistant based on Anthropic’s research into training helpful, honest, and harmless AI systems.
-
 The Claude model has the following high level features
 
-* 200k Token Context Window: Claude boasts a generous token capacity of 200,000, making it ideal for handling extensive information in applications like technical documentation, codebases, and literary works.
+* 200k Token Context Window: Claude boasts a generous token capacity of 200,000, making it ideal for handling extensive information in applications like technical documentation, codebase, and literary works.
 * Supported Tasks: Claude's versatility spans tasks such as summarization, Q&A, trend forecasting, and document comparisons, enabling a wide range of applications from dialogues to content generation.
 * AI Safety Features: Built on Anthropic's safety research, Claude prioritizes helpfulness, honesty, and harmlessness in its interactions, reducing brand risk and ensuring responsible AI behavior.
 
 The https://aws.amazon.com/bedrock/claude[AWS Bedrock Anthropic Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
 
-== Pre-requisites
+== Prerequisites
 
 Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
 
 == Auto-configuration
 
-or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot starter:
+Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
 ----
@@ -27,10 +26,20 @@ or you can leverage the `spring-ai-bedrock-ai-spring-boot-starter` Spring Boot s
 </dependency>
 ----
 
-=== Enable Anthropic Support
+or to your Gradle `build.gradle` build file.
 
-Spring AI defines a configuration property named `spring.ai.bedrock.anthropic.chat.enabled` that you should set to `true` to enable support for Anthropic.
-Exporting environment variables in one way to set this configuration property.
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+=== Enable Anthropic Chat
+
+By default the Anthropic model is disabled.
+To enable it set the `spring.ai.bedrock.anthropic.chat.enabled` property to `true`.
+Exporting environment variable is one way to set this configuration property:
 
 [source,shell]
 ----
@@ -45,19 +54,19 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
-The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the `ChatClient` implementation for Claude.
+The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the chat client implementation for Claude.
 
 [cols="2,5,1"]
 |====
 | Property | Description | Default
 
 | spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat client. Disabled by default | false
-| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the `AnthropicChatModel` for the supported models.  | anthropic.claude-v2
+| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatModel] for the supported models.  | anthropic.claude-v2
 | spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8
 | spring.ai.bedrock.anthropic.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
 | spring.ai.bedrock.anthropic.chat.options.topK  | Specify the number of token choices the generative uses to generate the next token.  | AWS Bedrock default
@@ -66,46 +75,84 @@ The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that config
 | spring.ai.bedrock.anthropic.chat.options.maxTokensToSample  | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | 500
 |====
 
-Look at the Spring AI enumeration `AnthropicChatModel` for other model IDs.  The other value supported is `anthropic.claude-instant-v1`.
-
+Look at the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatModel] for other model IDs.
+Supported values are: `anthropic.claude-instant-v1`, `anthropic.claude-v2` and `anthropic.claude-v2:1`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
-=== Sample Code
+TIP: All properties prefixed with `spring.ai.bedrock.anthropic.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-This will create a `ChatClient` implementation that you can inject into your class.
+=== Chat Options [[chat-options]]
 
-Create an `application.properties` file in the `src/main/resources` directory and add the following properties to configure the Anthropic Chat client.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] provides model configurations, such as temperature, topK, topP, etc.
+
+On start-up, the default options can be configured with the `BedrockAnthropicChatClient(api, options)` constructor or the `spring.ai.bedrock.anthropic.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        AnthropicChatOptions.builder()
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/AnthropicChatOptions.java[AnthropicChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+=== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic Chat client:
 
 [source]
 ----
+spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
+spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+
 spring.ai.bedrock.anthropic.chat.enabled=true
 spring.ai.bedrock.anthropic.chat.options.temperature=0.8
+spring.ai.bedrock.anthropic.chat.options.top-k=15
 ----
 
-Here is an example of a simple `@Controller` class that uses the `ChatClient` implementation.
+TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
+
+This will create a `BedrockAnthropicChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final ChatClient chatClient;
+    private final BedrockAnthropicChatClient chatClient;
 
     @Autowired
-    public ChatController(ChatClient chatClient) {
+    public ChatController(BedrockAnthropicChatClient chatClient) {
         this.chatClient = chatClient;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.generate(message));
+        return Map.of("generation", chatClient.call(message));
+    }
+
+    @GetMapping("/open-ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatClient.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The link:./src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java[BedrockAnthropicChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the `AnthropicChatBedrockApi` library to connect to the Bedrock Anthropic service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java[BedrockAnthropicChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -127,9 +174,9 @@ dependencies {
 }
 ----
 
-NOTE: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Next, create an `BedrockAnthropicChatClient` instance and use it to text generations requests:
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java[BedrockAnthropicChatClient] and use it for text generations:
 
 [source,java]
 ----
@@ -156,47 +203,36 @@ Flux<ChatResponse> response = chatClient.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
+=== Low-level AnthropicChatBedrockApi Client [[low-level-api]]
 
-== Appendices
-
-=== Using low-level AnthropicChatBedrockApi Library
-
-The link:./src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock link:https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html[Anthropic Claude models].
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock link:https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html[Anthropic Claude models].
 
 Following class diagram illustrates the AnthropicChatBedrockApi interface and building blocks:
 
 image::bedrock/bedrock-anthropic-chat-api.png[AnthropicChatBedrockApi Class Diagram]
 
-The AnthropicChatBedrockApi supports the `anthropic.claude-instant-v1` and `anthropic.claude-v2` models.
-
-Also the AnthropicChatBedrockApi supports both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) responses.
+Client supports the `anthropic.claude-instant-v1`, `anthropic.claude-v2` and `anthropic.claude-v2:1` models for both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) responses.
 
 Here is a simple snippet how to use the api programmatically:
 
 [source,java]
 ----
 AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(
-   AnthropicModel.CLAUDE_V2.id(),
-   Region.EU_CENTRAL_1.id());
+   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id());
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
   .withTemperature(0.8f)
   .withMaxTokensToSample(300)
   .withTopK(10)
-  // .withStopSequences(List.of("\n\nHuman:"))
   .build();
 
+// Sync request
 AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
 
-System.out.println(response.completion());
-
-// Streaming response
+// Streaming request
 Flux<AnthropicChatResponse> responseStream = anthropicChatApi.chatCompletionStream(request);
-
 List<AnthropicChatResponse> responses = responseStream.collectList().block();
-
-System.out.println(responses);
 ----
 
-Follow the link:./src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi.java]'s JavaDoc for further information.
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatBedrockApi.java]'s JavaDoc for further information.

@@ -59,16 +59,7 @@ public class BedrockCohereChatAutoConfiguration {
 	public BedrockCohereChatClient cohereChatClient(CohereChatBedrockApi cohereChatApi,
 			BedrockCohereChatProperties properties) {
 
-		LogitBias logitBiasBias = (properties.getLogitBiasBias() != null && properties.getLogitBiasToken() != null)
-				? new LogitBias(properties.getLogitBiasToken(), properties.getLogitBiasBias()) : null;
-
-		return new BedrockCohereChatClient(cohereChatApi).withTemperature(properties.getTemperature())
-			.withTopP(properties.getTopP())
-			.withTopK(properties.getTopK())
-			.withMaxTokens(properties.getMaxTokens())
-			.withStopSequences(properties.getStopSequences())
-			.withLogitBias(logitBiasBias)
-			.withTruncate(properties.getTruncate());
+		return new BedrockCohereChatClient(cohereChatApi, properties.getOptions());
 	}
 
 }

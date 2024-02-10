@@ -1,4 +1,4 @@
-= Amazon Bedrock
+= Amazon Bedrock Chat
 
 link:https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock] is a managed service that provides foundation models from various AI providers, available through a unified API.
 
@@ -86,6 +86,7 @@ For more information, refer to the documentation below for each supported model.
 
 * xref:api/clients/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
 * xref:api/clients/bedrock/bedrock-llama2.adoc[Spring AI Bedrock Llama2 Chat]: `spring.ai.bedrock.llama2.chat.enabled=true`
+* xref:api/clients/bedrock/bedrock-cohere.adoc[Spring AI Bedrock Cohere Chat]: `spring.ai.bedrock.cohere.chat.enabled=true`
 
 
 // * [Spring AI Bedrock Cohere Chat](./README_COHERE_CHAT.md) - `spring.ai.bedrock.cohere.chat.enabled=true`

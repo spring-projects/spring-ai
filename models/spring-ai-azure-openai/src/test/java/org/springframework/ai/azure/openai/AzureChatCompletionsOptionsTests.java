@@ -33,7 +33,7 @@ public class AzureChatCompletionsOptionsTests {
 	public void createRequestWithChatOptions() {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
-		var client = new AzureOpenAiChatClient(mockClient).withDefaultOptions(
+		var client = new AzureOpenAiChatClient(mockClient,
 				AzureOpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
 
 		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content"));

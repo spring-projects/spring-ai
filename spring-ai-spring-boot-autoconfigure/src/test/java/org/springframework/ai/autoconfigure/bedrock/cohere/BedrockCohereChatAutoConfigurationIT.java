@@ -56,7 +56,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.cohere.chat.model=" + CohereChatModel.COHERE_COMMAND_V14.id(),
-				"spring.ai.bedrock.cohere.chat.temperature=0.5", "spring.ai.bedrock.cohere.chat.maxTokens=500")
+				"spring.ai.bedrock.cohere.chat.options.temperature=0.5",
+				"spring.ai.bedrock.cohere.chat.options.maxTokens=500")
 		.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
@@ -103,14 +104,18 @@ public class BedrockCohereChatAutoConfigurationIT {
 	@Test
 	public void propertiesTest() {
 
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.chat.enabled=true",
-				"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-				"spring.ai.bedrock.cohere.chat.model=MODEL_XYZ",
-				"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-				"spring.ai.bedrock.cohere.chat.temperature=0.55", "spring.ai.bedrock.cohere.chat.topP=0.55",
-				"spring.ai.bedrock.cohere.chat.topK=10", "spring.ai.bedrock.cohere.chat.stopSequences=END1,END2",
-				"spring.ai.bedrock.cohere.chat.returnLikelihoods=ALL", "spring.ai.bedrock.cohere.chat.numGenerations=3",
-				"spring.ai.bedrock.cohere.chat.truncate=START", "spring.ai.bedrock.cohere.chat.maxTokens=123")
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.cohere.chat.enabled=true",
+					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
+					"spring.ai.bedrock.cohere.chat.model=MODEL_XYZ",
+					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
+					"spring.ai.bedrock.cohere.chat.options.temperature=0.55",
+					"spring.ai.bedrock.cohere.chat.options.topP=0.55", "spring.ai.bedrock.cohere.chat.options.topK=10",
+					"spring.ai.bedrock.cohere.chat.options.stopSequences=END1,END2",
+					"spring.ai.bedrock.cohere.chat.options.returnLikelihoods=ALL",
+					"spring.ai.bedrock.cohere.chat.options.numGenerations=3",
+					"spring.ai.bedrock.cohere.chat.options.truncate=START",
+					"spring.ai.bedrock.cohere.chat.options.maxTokens=123")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockCohereChatProperties.class);
@@ -120,14 +125,14 @@ public class BedrockCohereChatAutoConfigurationIT {
 				assertThat(aswProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getTopP()).isEqualTo(0.55f);
-				assertThat(chatProperties.getTopK()).isEqualTo(10);
-				assertThat(chatProperties.getStopSequences()).isEqualTo(List.of("END1", "END2"));
-				assertThat(chatProperties.getReturnLikelihoods()).isEqualTo(ReturnLikelihoods.ALL);
-				assertThat(chatProperties.getNumGenerations()).isEqualTo(3);
-				assertThat(chatProperties.getTruncate()).isEqualTo(Truncate.START);
-				assertThat(chatProperties.getMaxTokens()).isEqualTo(123);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(10);
+				assertThat(chatProperties.getOptions().getStopSequences()).isEqualTo(List.of("END1", "END2"));
+				assertThat(chatProperties.getOptions().getReturnLikelihoods()).isEqualTo(ReturnLikelihoods.ALL);
+				assertThat(chatProperties.getOptions().getNumGenerations()).isEqualTo(3);
+				assertThat(chatProperties.getOptions().getTruncate()).isEqualTo(Truncate.START);
+				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 
 				assertThat(aswProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(aswProperties.getSecretKey()).isEqualTo("SECRET_KEY");

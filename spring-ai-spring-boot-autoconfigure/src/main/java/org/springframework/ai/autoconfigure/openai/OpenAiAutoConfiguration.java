@@ -60,8 +60,7 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi)
-			.withDefaultOptions(chatProperties.getOptions());
+		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi, chatProperties.getOptions());
 
 		return openAiChatClient;
 	}

@@ -64,10 +64,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
-		.withModel("gpt-3.5-turbo")
-		.withTemperature(0.7f)
-		.build();
+	private OpenAiChatOptions defaultOptions;
 
 	public final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
@@ -84,10 +81,21 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	private final OpenAiApi openAiApi;
 
 	public OpenAiChatClient(OpenAiApi openAiApi) {
-		Assert.notNull(openAiApi, "OpenAiApi must not be null");
-		this.openAiApi = openAiApi;
+		this(openAiApi, OpenAiChatOptions.builder().withModel("gpt-3.5-turbo").withTemperature(0.7f).build());
 	}
 
+	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options) {
+		Assert.notNull(openAiApi, "OpenAiApi must not be null");
+		Assert.notNull(options, "Options must not be null");
+		this.openAiApi = openAiApi;
+		this.defaultOptions = options;
+	}
+
+	/**
+	 * @deprecated since 0.8.0, use the
+	 * {@link #OpenAiChatClient(OpenAiApi, OpenAiChatOptions)} constructor instead.
+	 */
+	@Deprecated(since = "0.8.0", forRemoval = true)
 	public OpenAiChatClient withDefaultOptions(OpenAiChatOptions options) {
 		this.defaultOptions = options;
 		return this;

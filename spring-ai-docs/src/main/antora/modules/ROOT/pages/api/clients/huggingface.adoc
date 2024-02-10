@@ -1,4 +1,4 @@
-= HuggingFace
+= HuggingFace Chat
 
 HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
 

@@ -31,8 +31,8 @@ public class ChatCompletionRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new OpenAiChatClient(new OpenAiApi("TEST"))
-			.withDefaultOptions(OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
+		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
+				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
 

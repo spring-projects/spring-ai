@@ -78,14 +78,22 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	private final OpenAIClient openAIClient;
 
 	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiClient) {
-		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
-		this.openAIClient = microsoftOpenAiClient;
-		this.defaultOptions = AzureOpenAiChatOptions.builder()
-			.withModel(DEFAULT_MODEL)
-			.withTemperature(DEFAULT_TEMPERATURE)
-			.build();
+		this(microsoftOpenAiClient,
+				AzureOpenAiChatOptions.builder().withModel(DEFAULT_MODEL).withTemperature(DEFAULT_TEMPERATURE).build());
 	}
 
+	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options) {
+		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
+		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
+		this.openAIClient = microsoftOpenAiClient;
+		this.defaultOptions = options;
+	}
+
+	/**
+	 * @deprecated since 0.8.0, use
+	 * {@link #AzureOpenAiChatClient(OpenAIClient, AzureOpenAiChatOptions)} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "0.8.0")
 	public AzureOpenAiChatClient withDefaultOptions(AzureOpenAiChatOptions defaultOptions) {
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
 		this.defaultOptions = defaultOptions;

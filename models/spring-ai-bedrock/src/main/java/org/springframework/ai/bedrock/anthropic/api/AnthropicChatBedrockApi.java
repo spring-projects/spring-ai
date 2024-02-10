@@ -194,7 +194,11 @@ public class AnthropicChatBedrockApi extends
 		/**
 		 * anthropic.claude-v2
 		 */
-		CLAUDE_V2("anthropic.claude-v2");
+		CLAUDE_V2("anthropic.claude-v2"),
+		/**
+		 * anthropic.claude-v2:1
+		 */
+		CLAUDE_V21("anthropic.claude-v2:1");
 
 		private final String id;
 

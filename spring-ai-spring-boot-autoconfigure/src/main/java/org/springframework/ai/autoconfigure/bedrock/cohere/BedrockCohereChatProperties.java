@@ -16,12 +16,10 @@
 
 package org.springframework.ai.autoconfigure.bedrock.cohere;
 
-import java.util.List;
-
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Bedrock Cohere Chat autoconfiguration properties.
@@ -44,67 +42,11 @@ public class BedrockCohereChatProperties {
 	 */
 	private String model = CohereChatBedrockApi.CohereChatModel.COHERE_COMMAND_V14.id();
 
-	/**
-	 * (optional) Use a lower value to decrease randomness in the response. Defaults to
-	 * 0.7.
-	 */
-	private Float temperature = 0.7f;
-
-	/**
-	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
-	 * The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers
-	 * the smallest set of tokens whose probability sum is at least topP.
-	 */
-	private Float topP;
-
-	/**
-	 * (optional) Specify the number of token choices the generative uses to generate the
-	 * next token.
-	 */
-	private Integer topK;
-
-	/**
-	 * (optional) Specify the maximum number of tokens to use in the generated response.
-	 */
-	private Integer maxTokens;
-
-	/**
-	 * (optional) Configure up to four sequences that the generative recognizes. After a
-	 * stop sequence, the generative stops generating further tokens. The returned text
-	 * doesn't contain the stop sequence.
-	 */
-	private List<String> stopSequences;
-
-	/**
-	 * (optional) Specify how and if the token likelihoods are returned with the response.
-	 */
-	private ReturnLikelihoods returnLikelihoods;
-
-	/**
-	 * (optional) The maximum number of generations that the generative should return.
-	 */
-	private Integer numGenerations;
-
-	/**
-	 * LogitBias prevents the generative from generating unwanted tokens or incentivize
-	 * the generative to include desired tokens. The token likelihoods.
-	 */
-	private String logitBiasToken;
-
-	/**
-	 * LogitBias prevents the generative from generating unwanted tokens or incentivize
-	 * the generative to include desired tokens. A float between -10 and 10.
-	 */
-	private Float logitBiasBias;
-
-	/**
-	 * (optional) Specifies how the API handles inputs longer than the maximum token
-	 * length.
-	 */
-	private Truncate truncate;
+	@NestedConfigurationProperty
+	private BedrockCohereChatOptions options = BedrockCohereChatOptions.builder().build();
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
@@ -112,91 +54,19 @@ public class BedrockCohereChatProperties {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
 	}
 
-	public Float getTemperature() {
-		return temperature;
+	public BedrockCohereChatOptions getOptions() {
+		return this.options;
 	}
 
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-	public Float getTopP() {
-		return topP;
-	}
-
-	public void setTopP(Float topP) {
-		this.topP = topP;
-	}
-
-	public Integer getTopK() {
-		return topK;
-	}
-
-	public void setTopK(Integer topK) {
-		this.topK = topK;
-	}
-
-	public Integer getMaxTokens() {
-		return maxTokens;
-	}
-
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
-	public List<String> getStopSequences() {
-		return stopSequences;
-	}
-
-	public void setStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
-	public ReturnLikelihoods getReturnLikelihoods() {
-		return returnLikelihoods;
-	}
-
-	public void setReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
-		this.returnLikelihoods = returnLikelihoods;
-	}
-
-	public Integer getNumGenerations() {
-		return numGenerations;
-	}
-
-	public void setNumGenerations(Integer numGenerations) {
-		this.numGenerations = numGenerations;
-	}
-
-	public String getLogitBiasToken() {
-		return logitBiasToken;
-	}
-
-	public void setLogitBiasToken(String logitBiasToken) {
-		this.logitBiasToken = logitBiasToken;
-	}
-
-	public Float getLogitBiasBias() {
-		return logitBiasBias;
-	}
-
-	public void setLogitBiasBias(Float logitBiasBias) {
-		this.logitBiasBias = logitBiasBias;
-	}
-
-	public Truncate getTruncate() {
-		return truncate;
-	}
-
-	public void setTruncate(Truncate truncate) {
-		this.truncate = truncate;
+	public void setOptions(BedrockCohereChatOptions options) {
+		this.options = options;
 	}
 
 }

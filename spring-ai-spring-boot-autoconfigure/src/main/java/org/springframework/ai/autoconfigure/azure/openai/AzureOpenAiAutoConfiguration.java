@@ -51,8 +51,8 @@ public class AzureOpenAiAutoConfiguration {
 	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient,
 			AzureOpenAiChatProperties chatProperties) {
 
-		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(openAIClient)
-			.withDefaultOptions(chatProperties.getOptions());
+		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(openAIClient,
+				chatProperties.getOptions());
 
 		return azureOpenAiChatClient;
 	}

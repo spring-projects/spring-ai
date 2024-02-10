@@ -1,0 +1,252 @@
+= Cohere Chat
+
+Provides Bedrock Cohere Chat client.
+Integrate generative AI capabilities into essential apps and workflows that improve business outcomes.
+
+The https://aws.amazon.com/bedrock/cohere-command-embed/[AWS Bedrock Cohere Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
+
+== Prerequisites
+
+Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+
+== Auto-configuration
+
+Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+=== Enable Cohere Chat Support
+
+By default the Cohere model is disabled.
+To enable it set the `spring.ai.bedrock.cohere.chat.enabled` property to `true`.
+Exporting environment variable is one way to set this configuration property:
+
+[source,shell]
+----
+export SPRING_AI_BEDROCK_COHERE_CHAT_ENABLED=true
+----
+
+=== Chat Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+[cols="3,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+|====
+
+The prefix `spring.ai.bedrock.cohere.chat` is the property prefix that configures the chat client implementation for Cohere.
+
+[cols="2,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.cohere.chat.enabled              | Enable or disable support for Cohere  | false
+| spring.ai.bedrock.cohere.chat.model                | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereChatBedrockApi.java#L326C14-L326C29[CohereChatModel] for the supported models.  | cohere.command-text-v14
+| spring.ai.bedrock.cohere.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7
+| spring.ai.bedrock.cohere.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.topK  | Specify the number of token choices the model uses to generate the next token  | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.maxTokens  | Specify the maximum number of tokens to use in the generated response. | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.stopSequences  | Configure up to four sequences that the model recognizes. | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.returnLikelihoods  | The token likelihoods are returned with the response. | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.numGenerations  | The maximum number of generations that the model should return. | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.logitBias  | Prevents the model from generating unwanted tokens or incentivize the model to include desired tokens. | AWS Bedrock default
+| spring.ai.bedrock.cohere.chat.options.truncate  |  Specifies how the API handles inputs longer than the maximum token length | AWS Bedrock default
+|====
+
+Look at the https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereChatBedrockApi.java#L326C14-L326C29[CohereChatModel] for other model IDs.
+Supported values are: `cohere.command-light-text-v14` and `cohere.command-text-v14`.
+Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
+
+TIP: All properties prefixed with `spring.ai.bedrock.cohere.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+=== Chat Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatOptions.java[BedrockCohereChatOptions.java] provides model configurations, such as temperature, topK, topP, etc.
+
+On start-up, the default options can be configured with the `BedrockCohereChatClient(api, options)` constructor or the `spring.ai.bedrock.cohere.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        BedrockCohereChatOptions.builder()
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatOptions.java[BedrockCohereChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+=== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic Chat client:
+
+[source]
+----
+spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
+spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+
+spring.ai.bedrock.cohere.chat.enabled=true
+spring.ai.bedrock.cohere.chat.options.temperature=0.8
+----
+
+TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
+
+This will create a `BedrockCohereChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final BedrockCohereChatClient chatClient;
+
+    @Autowired
+    public ChatController(BedrockCohereChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.call(message));
+    }
+
+    @GetMapping("/open-ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatClient.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClient.java[BedrockCohereChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
+
+Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-bedrock</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock:0.8.0-SNAPSHOT'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClient.java[BedrockCohereChatClient] and use it for text generations:
+
+[source,java]
+----
+CohereChatBedrockApi api = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
+		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+
+BedrockCohereChatClient chatClient = new BedrockCohereChatClient(api,
+	    BedrockCohereChatOptions.builder()
+					.withTemperature(0.6f)
+					.withTopK(10)
+					.withTopP(0.5f)
+					.withMaxTokens(678)
+					.build()
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> response = chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+== Low-level CohereChatBedrockApi Client [[low-level-api]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereChatBedrockApi.java[CohereChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere-command.html[Cohere Command models].
+
+Following class diagram illustrates the CohereChatBedrockApi interface and building blocks:
+
+image::bedrock/bedrock-cohere-chat-api.jpg[CohereChatBedrockApi Class Diagram]
+
+The CohereChatBedrockApi supports the `cohere.command-light-text-v14` and `cohere.command-text-v14` models for both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) requests.
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(
+	CohereChatModel.COHERE_COMMAND_V14.id(),
+	Region.US_EAST_1.id());
+
+var request = CohereChatRequest
+	.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
+	.withStream(false)
+	.withTemperature(0.5f)
+	.withTopP(0.8f)
+	.withTopK(15)
+	.withMaxTokens(100)
+	.withStopSequences(List.of("END"))
+	.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+	.withNumGenerations(3)
+	.withLogitBias(null)
+	.withTruncate(Truncate.NONE)
+	.build();
+
+CohereChatResponse response = cohereChatApi.chatCompletion(request);
+
+var request = CohereChatRequest
+	.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
+	.withStream(true)
+	.withTemperature(0.5f)
+	.withTopP(0.8f)
+	.withTopK(15)
+	.withMaxTokens(100)
+	.withStopSequences(List.of("END"))
+	.withReturnLikelihoods(CohereChatRequest.ReturnLikelihoods.ALL)
+	.withNumGenerations(3)
+	.withLogitBias(null)
+	.withTruncate(Truncate.NONE)
+	.build();
+
+Flux<CohereChatResponse.Generation> responseStream = cohereChatApi.chatCompletionStream(request);
+List<CohereChatResponse.Generation> responses = responseStream.collectList().block();
+----
+
+

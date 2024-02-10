@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
 
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.BedrockUsage;
@@ -27,14 +25,16 @@ import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.LogitBias;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
@@ -44,71 +44,18 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 
 	private final CohereChatBedrockApi chatApi;
 
-	private Float temperature;
-
-	private Float topP;
-
-	private Integer topK;
-
-	private Integer maxTokens;
-
-	private List<String> stopSequences;
-
-	private ReturnLikelihoods returnLikelihoods;
-
-	private Integer numGenerations;
-
-	private LogitBias logitBias;
-
-	private Truncate truncate;
+	private final BedrockCohereChatOptions defaultOptions;
 
 	public BedrockCohereChatClient(CohereChatBedrockApi chatApi) {
+		this(chatApi, BedrockCohereChatOptions.builder().build());
+	}
+
+	public BedrockCohereChatClient(CohereChatBedrockApi chatApi, BedrockCohereChatOptions options) {
+		Assert.notNull(chatApi, "CohereChatBedrockApi must not be null");
+		Assert.notNull(options, "BedrockCohereChatOptions must not be null");
+
 		this.chatApi = chatApi;
-	}
-
-	public BedrockCohereChatClient withTemperature(Float temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	public BedrockCohereChatClient withTopP(Float topP) {
-		this.topP = topP;
-		return this;
-	}
-
-	public BedrockCohereChatClient withTopK(Integer topK) {
-		this.topK = topK;
-		return this;
-	}
-
-	public BedrockCohereChatClient withMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-		return this;
-	}
-
-	public BedrockCohereChatClient withStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-		return this;
-	}
-
-	public BedrockCohereChatClient withReturnLikelihoods(ReturnLikelihoods returnLikelihoods) {
-		this.returnLikelihoods = returnLikelihoods;
-		return this;
-	}
-
-	public BedrockCohereChatClient withNumGenerations(Integer numGenerations) {
-		this.numGenerations = numGenerations;
-		return this;
-	}
-
-	public BedrockCohereChatClient withLogitBias(LogitBias logitBias) {
-		this.logitBias = logitBias;
-		return this;
-	}
-
-	public BedrockCohereChatClient withTruncate(Truncate truncate) {
-		this.truncate = truncate;
-		return this;
+		this.defaultOptions = options;
 	}
 
 	@Override
@@ -134,21 +81,38 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 		});
 	}
 
-	private CohereChatRequest createRequest(Prompt prompt, boolean stream) {
+	/**
+	 * Test access.
+	 */
+	CohereChatRequest createRequest(Prompt prompt, boolean stream) {
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
-		return CohereChatRequest.builder(promptValue)
-			.withTemperature(this.temperature)
-			.withTopP(this.topP)
-			.withTopK(this.topK)
-			.withMaxTokens(this.maxTokens)
-			.withStopSequences(this.stopSequences)
-			.withReturnLikelihoods(this.returnLikelihoods)
+		var request = CohereChatRequest.builder(promptValue)
+			.withTemperature(this.defaultOptions.getTemperature())
+			.withTopP(this.defaultOptions.getTopP())
+			.withTopK(this.defaultOptions.getTopK())
+			.withMaxTokens(this.defaultOptions.getMaxTokens())
+			.withStopSequences(this.defaultOptions.getStopSequences())
+			.withReturnLikelihoods(this.defaultOptions.getReturnLikelihoods())
 			.withStream(stream)
-			.withNumGenerations(this.numGenerations)
-			.withLogitBias(this.logitBias)
-			.withTruncate(this.truncate)
+			.withNumGenerations(this.defaultOptions.getNumGenerations())
+			.withLogitBias(this.defaultOptions.getLogitBias())
+			.withTruncate(this.defaultOptions.getTruncate())
 			.build();
+
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				BedrockCohereChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, BedrockCohereChatOptions.class);
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, CohereChatRequest.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
+
+		return request;
 	}
 
 }
