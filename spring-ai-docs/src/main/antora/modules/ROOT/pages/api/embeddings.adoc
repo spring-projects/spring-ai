@@ -1,5 +1,5 @@
 [[EmbeddingClient]]
-= EmbeddingClient
+= Embedding API
 
 The `EmbeddingClient` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.

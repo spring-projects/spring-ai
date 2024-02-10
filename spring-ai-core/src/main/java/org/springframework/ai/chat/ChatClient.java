@@ -28,6 +28,7 @@ public interface ChatClient extends ModelClient<Prompt, ChatResponse> {
 		return call(prompt).getResult().getOutput().getContent();
 	}
 
+	@Override
 	ChatResponse call(Prompt prompt);
 
 }

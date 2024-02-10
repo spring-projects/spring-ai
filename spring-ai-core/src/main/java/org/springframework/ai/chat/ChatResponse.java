@@ -77,6 +77,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * @return Returns {@link ChatResponseMetadata} containing information about the use
 	 * of the AI provider's API.
 	 */
+	@Override
 	public ChatResponseMetadata getMetadata() {
 		return this.chatResponseMetadata;
 	}

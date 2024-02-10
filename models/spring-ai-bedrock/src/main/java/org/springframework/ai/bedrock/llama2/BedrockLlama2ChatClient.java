@@ -18,19 +18,17 @@ package org.springframework.ai.bedrock.llama2;
 
 import java.util.List;
 
-import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
-import org.springframework.ai.bedrock.anthropic.AnthropicChatOptions;
-import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatOptions;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;

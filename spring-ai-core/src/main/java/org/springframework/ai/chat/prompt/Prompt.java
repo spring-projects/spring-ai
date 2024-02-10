@@ -18,6 +18,7 @@ package org.springframework.ai.chat.prompt;
 
 import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
+import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
@@ -29,7 +30,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	private ModelOptions modelOptions;
+	private ChatOptions modelOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -43,15 +44,15 @@ public class Prompt implements ModelRequest<List<Message>> {
 		this.messages = messages;
 	}
 
-	public Prompt(String contents, ModelOptions modelOptions) {
+	public Prompt(String contents, ChatOptions modelOptions) {
 		this(new UserMessage(contents), modelOptions);
 	}
 
-	public Prompt(Message message, ModelOptions modelOptions) {
+	public Prompt(Message message, ChatOptions modelOptions) {
 		this(Collections.singletonList(message), modelOptions);
 	}
 
-	public Prompt(List<Message> messages, ModelOptions modelOptions) {
+	public Prompt(List<Message> messages, ChatOptions modelOptions) {
 		this.messages = messages;
 		this.modelOptions = modelOptions;
 	}
