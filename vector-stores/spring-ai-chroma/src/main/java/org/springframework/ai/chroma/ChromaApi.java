@@ -307,7 +307,7 @@ public class ChromaApi {
 	public List<Collection> listCollections() {
 
 		return this.restTemplate
-			.exchange(this.baseUrl + "/api/v1/collections/", HttpMethod.GET, new HttpEntity<>(httpHeaders()),
+			.exchange(this.baseUrl + "/api/v1/collections", HttpMethod.GET, new HttpEntity<>(httpHeaders()),
 					CollectionList.class)
 			.getBody();
 	}
