@@ -51,8 +51,8 @@ public class OpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
-			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder, List<ToolFunctionCallback> toolFunctionCallbacks) {
-
+			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			List<ToolFunctionCallback> toolFunctionCallbacks) {
 
 		String apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
 				: commonProperties.getApiKey();

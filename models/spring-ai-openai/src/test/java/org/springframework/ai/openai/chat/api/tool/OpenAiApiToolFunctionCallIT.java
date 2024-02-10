@@ -22,6 +22,7 @@ import java.util.List;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-public class OpenAiApiToolFunctionCallTests {
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+public class OpenAiApiToolFunctionCallIT {
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiApiToolFunctionCallTests.class);
+	private final Logger logger = LoggerFactory.getLogger(OpenAiApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 
