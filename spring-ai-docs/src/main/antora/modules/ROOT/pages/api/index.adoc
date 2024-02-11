@@ -3,3 +3,28 @@
 == Introduction
 
 The following sections introduce each part of the API.
+
+The <<generic-model-api>> can help you understand the basic constructs used implementing all the other APIs.
+
+== APIs
+* xref:api/embeddings.adoc[Embeddings API]
+* xref:api/chatclient.adoc[Chat Completion API]
+* xref:api/[Image Generation API](WIP)
+
+== Spring AI Generic Model API [[generic-model-api]]
+
+image::spring-ai-generic-model-api.jpg[width=900, align="center"]
+
+=== ModelClient
+
+=== StreamingModelClient
+
+=== ModelRequest
+
+=== ModelOptions
+
+=== ModelResponse
+
+=== ModelResult
+
+
