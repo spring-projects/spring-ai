@@ -38,30 +38,24 @@ public class VertexAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VertexAiChatClient vertexAiChatClient(VertexAiApi vertexAiApi, VertexAiChatProperties chatProperties) {
-
-		VertexAiChatClient client = new VertexAiChatClient(vertexAiApi).withTemperature(chatProperties.getTemperature())
-			.withTopP(chatProperties.getTopP())
-			.withTopK(chatProperties.getTopK())
-			.withCandidateCount(chatProperties.getCandidateCount());
-
-		return client;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public VertexAiEmbeddingClient vertexAiEmbeddingClient(VertexAiApi vertexAiApi) {
-		return new VertexAiEmbeddingClient(vertexAiApi);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
 	public VertexAiApi vertexAiApi(VertexAiConnectionProperties connectionProperties,
 			VertexAiEmbeddingProperties embeddingAiProperties, VertexAiChatProperties chatProperties,
 			RestClient.Builder restClientBuilder) {
 
 		return new VertexAiApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
 				chatProperties.getModel(), embeddingAiProperties.getModel(), restClientBuilder);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public VertexAiChatClient vertexAiChatClient(VertexAiApi vertexAiApi, VertexAiChatProperties chatProperties) {
+		return new VertexAiChatClient(vertexAiApi, chatProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public VertexAiEmbeddingClient vertexAiEmbeddingClient(VertexAiApi vertexAiApi) {
+		return new VertexAiEmbeddingClient(vertexAiApi);
 	}
 
 }

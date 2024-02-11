@@ -1,4 +1,4 @@
-package org.springframework.ai.vertex.generation;
+package org.springframework.ai.vertex;
 
 import java.util.Arrays;
 import java.util.List;
@@ -9,15 +9,14 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.vertex.VertexAiChatClient;
+import org.springframework.ai.parser.BeanOutputParser;
+import org.springframework.ai.parser.ListOutputParser;
+import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

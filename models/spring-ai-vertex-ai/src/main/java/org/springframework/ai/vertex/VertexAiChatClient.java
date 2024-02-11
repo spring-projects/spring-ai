@@ -20,9 +20,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.ai.vertex.api.VertexAiApi.GenerateMessageRequest;
@@ -38,40 +40,40 @@ public class VertexAiChatClient implements ChatClient {
 
 	private final VertexAiApi vertexAiApi;
 
-	private Float temperature;
-
-	private Float topP;
-
-	private Integer topK;
-
-	private Integer candidateCount;
+	private final VertexAiChatOptions defaultOptions;
 
 	public VertexAiChatClient(VertexAiApi vertexAiApi) {
+		this(vertexAiApi,
+				VertexAiChatOptions.builder().withTemperature(0.7f).withCandidateCount(1).withTopK(20).build());
+	}
+
+	public VertexAiChatClient(VertexAiApi vertexAiApi, VertexAiChatOptions defaultOptions) {
+		Assert.notNull(defaultOptions, "Default options must not be null!");
+		Assert.notNull(vertexAiApi, "VertexAiApi must not be null!");
+
 		this.vertexAiApi = vertexAiApi;
-	}
-
-	public VertexAiChatClient withTemperature(Float temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	public VertexAiChatClient withTopP(Float topP) {
-		this.topP = topP;
-		return this;
-	}
-
-	public VertexAiChatClient withTopK(Integer topK) {
-		this.topK = topK;
-		return this;
-	}
-
-	public VertexAiChatClient withCandidateCount(Integer maxTokens) {
-		this.candidateCount = maxTokens;
-		return this;
+		this.defaultOptions = defaultOptions;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+
+		GenerateMessageRequest request = createRequest(prompt);
+
+		GenerateMessageResponse response = this.vertexAiApi.generateMessage(request);
+
+		List<Generation> generations = response.candidates()
+			.stream()
+			.map(vmsg -> new Generation(vmsg.content()))
+			.toList();
+
+		return new ChatResponse(generations);
+	}
+
+	/**
+	 * Accessible for testing.
+	 */
+	GenerateMessageRequest createRequest(Prompt prompt) {
 
 		String vertexContext = prompt.getInstructions()
 			.stream()
@@ -89,17 +91,25 @@ public class VertexAiChatClient implements ChatClient {
 
 		var vertexPrompt = new MessagePrompt(vertexContext, vertexMessages);
 
-		GenerateMessageRequest request = new GenerateMessageRequest(vertexPrompt, this.temperature, this.candidateCount,
-				this.topP, this.topK);
+		GenerateMessageRequest request = new GenerateMessageRequest(vertexPrompt);
 
-		GenerateMessageResponse response = this.vertexAiApi.generateMessage(request);
+		if (this.defaultOptions != null) {
+			request = ModelOptionsUtils.merge(request, this.defaultOptions, GenerateMessageRequest.class);
+		}
 
-		List<Generation> generations = response.candidates()
-			.stream()
-			.map(vmsg -> new Generation(vmsg.content()))
-			.toList();
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				VertexAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, VertexAiChatOptions.class);
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, GenerateMessageRequest.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
 
-		return new ChatResponse(generations);
+		return request;
 	}
 
 }

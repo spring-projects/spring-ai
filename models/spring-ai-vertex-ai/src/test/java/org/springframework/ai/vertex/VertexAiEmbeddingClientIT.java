@@ -1,4 +1,4 @@
-package org.springframework.ai.vertex.embedding;
+package org.springframework.ai.vertex;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

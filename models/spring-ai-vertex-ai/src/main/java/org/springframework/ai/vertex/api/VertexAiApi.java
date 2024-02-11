@@ -107,7 +107,7 @@ public class VertexAiApi {
 
 	private final String apiKey;
 
-	private final String generateModel;
+	private final String chatModel;
 
 	private final String embeddingModel;
 
@@ -130,7 +130,7 @@ public class VertexAiApi {
 	public VertexAiApi(String baseUrl, String apiKey, String model, String embeddingModel,
 			RestClient.Builder restClientBuilder) {
 
-		this.generateModel = model;
+		this.chatModel = model;
 		this.embeddingModel = embeddingModel;
 		this.apiKey = apiKey;
 
@@ -165,11 +165,12 @@ public class VertexAiApi {
 	 * @param request Request body.
 	 * @return Response body.
 	 */
+	@SuppressWarnings("null")
 	public GenerateMessageResponse generateMessage(GenerateMessageRequest request) {
 		Assert.notNull(request, "The request body can not be null.");
 
 		return this.restClient.post()
-			.uri("/models/{model}:generateMessage?key={apiKey}", this.generateModel, this.apiKey)
+			.uri("/models/{model}:generateMessage?key={apiKey}", this.chatModel, this.apiKey)
 			.body(request)
 			.retrieve()
 			.body(GenerateMessageResponse.class);
@@ -231,7 +232,7 @@ public class VertexAiApi {
 		}
 
 		TokenCount tokenCountResponse = this.restClient.post()
-				.uri("/models/{model}:countMessageTokens?key={apiKey}", this.generateModel, this.apiKey)
+				.uri("/models/{model}:countMessageTokens?key={apiKey}", this.chatModel, this.apiKey)
 				.body(Map.of("prompt", prompt))
 				.retrieve()
 				.body(TokenCount.class);

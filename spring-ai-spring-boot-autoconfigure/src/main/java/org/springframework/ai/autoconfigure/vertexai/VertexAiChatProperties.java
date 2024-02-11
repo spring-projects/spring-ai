@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vertexai;
 
+import org.springframework.ai.vertex.VertexAiChatOptions;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -25,38 +26,19 @@ public class VertexAiChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.chat";
 
 	/**
-	 * Controls the randomness of the output. Values can range over [0.0,1.0], inclusive.
-	 * A value closer to 1.0 will produce responses that are more varied, while a value
-	 * closer to 0.0 will typically result in less surprising responses from the
-	 * generative. This value specifies default to be used by the backend while making the
-	 * call to the generative.
-	 */
-	private Float temperature = 0.7f;
-
-	/**
-	 * The maximum cumulative probability of tokens to consider when sampling. The
-	 * generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the
-	 * smallest set of tokens whose probability sum is at least topP.
-	 */
-	private Float topP = null;
-
-	/**
-	 * The number of generated response messages to return. This value must be between [1,
-	 * 8], inclusive. Defaults to 1.
-	 */
-	private Integer candidateCount = 1;
-
-	/**
-	 * The maximum number of tokens to consider when sampling. The generative uses
-	 * combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most
-	 * probable tokens.
-	 */
-	private Integer topK = 20;
-
-	/**
 	 * Vertex AI PaLM API generative name. Defaults to chat-bison-001
 	 */
 	private String model = VertexAiApi.DEFAULT_GENERATE_MODEL;
+
+	/**
+	 * Vertex AI PaLM API generative options.
+	 */
+	private VertexAiChatOptions options = VertexAiChatOptions.builder()
+		.withTemperature(0.7f)
+		.withTopP(null)
+		.withCandidateCount(1)
+		.withTopK(20)
+		.build();
 
 	public String getModel() {
 		return this.model;
@@ -66,36 +48,12 @@ public class VertexAiChatProperties {
 		this.model = model;
 	}
 
-	public Float getTemperature() {
-		return this.temperature;
+	public VertexAiChatOptions getOptions() {
+		return this.options;
 	}
 
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-	public Float getTopP() {
-		return this.topP;
-	}
-
-	public void setTopP(Float topP) {
-		this.topP = topP;
-	}
-
-	public Integer getCandidateCount() {
-		return this.candidateCount;
-	}
-
-	public void setCandidateCount(Integer candidateCount) {
-		this.candidateCount = candidateCount;
-	}
-
-	public Integer getTopK() {
-		return this.topK;
-	}
-
-	public void setTopK(Integer topK) {
-		this.topK = topK;
+	public void setOptions(VertexAiChatOptions options) {
+		this.options = options;
 	}
 
 }
