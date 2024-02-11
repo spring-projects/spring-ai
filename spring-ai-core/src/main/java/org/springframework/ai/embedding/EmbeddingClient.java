@@ -26,6 +26,9 @@ import java.util.List;
  */
 public interface EmbeddingClient extends ModelClient<EmbeddingRequest, EmbeddingResponse> {
 
+	@Override
+	EmbeddingResponse call(EmbeddingRequest request);
+
 	/**
 	 * Embeds the given text into a vector.
 	 * @param text the text to embed.

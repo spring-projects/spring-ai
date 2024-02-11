@@ -1,5 +1,5 @@
 [[EmbeddingClient]]
-= Embedding API
+= Embeddings API
 
 The `EmbeddingClient` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
@@ -23,7 +23,7 @@ The Embedding API in turn is used by higher-level components to implement Embedd
 
 Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Clients:
 
-image:embeddings-api.png[EmbeddingClient API]
+image:embeddings-api.jpg[title=Embeddings API,align=center,width=900]
 
 === EmbeddingClient
 
@@ -33,11 +33,8 @@ This section provides a guide to the `EmbeddingClient` interface and associated 
 ----
 public interface EmbeddingClient extends ModelClient<EmbeddingRequest, EmbeddingResponse> {
 
-    // EmbeddingResponse call(EmbeddingRequest request); from ModelClient
-
-    // Call method inherited from ModelClient<EmbeddingRequest, EmbeddingResponse>
-    // and the embed methods defined below are the primary methods of the interface
-    // the user needs to implement.
+	@Override
+	EmbeddingResponse call(EmbeddingRequest request);
 
 
 	/**
@@ -92,23 +89,70 @@ public interface EmbeddingClient extends ModelClient<EmbeddingRequest, Embedding
 }
 ----
 
-
-
 The embed methods offer various options for converting text into embeddings, accommodating single strings, structured `Document` objects, or batches of text.
-The returned values are lists of doubles, representing the embeddings in a numerical vector format.
+
+Multiple shortcut methods are provided for embedding text, including the `embed(String text)` method, which takes a single string and returns the corresponding embedding vector.
+All shortcuts are implemented around the `call` method, which is the primary method for invoking the embedding model.
+
+Typically the embedding returns a lists of doubles, representing the embeddings in a numerical vector format.
 
 The `embedForResponse` method provides a more comprehensive output, potentially including additional information about the embeddings.
 
 The dimensions method is a handy tool for developers to quickly ascertain the size of the embedding vectors, which is important for understanding the embedding space and for subsequent processing steps.
 
+==== EmbeddingRequest
+
+The `EmbeddingRequest` is a `ModelRequest` that takes a list of text objects and optional embedding request options.
+The following listing shows a truncated version of the EmbeddingRequest class, excluding constructors and other utility methods:
+
+[source,java]
+----
+public class EmbeddingRequest implements ModelRequest<List<String>> {
+	private final List<String> inputs;
+	private final EmbeddingOptions options;
+	// other methods omitted
+}
+----
+
+==== EmbeddingResponse
+
+The structure of the `EmbeddingResponse` class is as follows:
+
+[source,java]
+----
+public class EmbeddingResponse implements ModelResponse<Embedding> {
+
+	private List<Embedding> embeddings;
+	private EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+	// other methods omitted
+}
+----
+
+The `EmbeddingResponse` class holds the AI Model's output, with each `Embedding` instance containing the result vector data from a single text input.
+
+The `EmbeddingResponse` class also carries a `EmbeddingResponseMetadata` metadata about the AI Model's response.
+
+==== Embedding
+
+The `Embedding` represents a single embedding vector.
+
+[source,java]
+----
+public class Embedding implements ModelResult<List<Double>> {
+	private List<Double> embedding;
+	private Integer index;
+	private EmbeddingResultMetadata metadata;
+	// other methods omitted
+}
+----
 
 == Available Implementations
 
 Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
 
-* OpenAI: Using the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[Sprig AI OpenAiApi library].
-* Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
-* PostgresML: https://postgresml.org/docs/[PostgresML is a complete MLOps platform built on PostgreSQL]
-* Sentence embedding with local ONNX models: The https://djl.ai/[Deep Java Library] and the Microsoft https://onnxruntime.ai/docs/get-started/with-java.html[ONNX Java Runtime] libraries are applied to run the ONNX models and compute the embeddings in Java.
-* Vertex AI: Using the https://cloud.google.com/vertex-ai/docs[Google Cloud Vertex AI] client library.
-
+* xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
+* xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]
+* xref:api/embeddings/ollama-embeddings.adoc[Spring AI Ollama Embeddings]
+* xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
+* xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
+* xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
