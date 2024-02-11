@@ -1,17 +1,16 @@
 package org.springframework.ai.vertex;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertex.VertexAiEmbeddingClient;
 import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

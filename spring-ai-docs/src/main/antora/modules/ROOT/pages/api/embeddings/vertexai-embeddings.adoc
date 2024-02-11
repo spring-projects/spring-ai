@@ -1,4 +1,4 @@
-= VertexAI Chat
+= VertexAI Embeddings
 
 The link:https://developers.generativeai.google/api/rest/generativelanguage[Generative Language] PaLM API allows developers to build generative AI applications using the PaLM model. Large Language Models (LLMs) are a powerful, versatile type of machine learning model that enables computers to comprehend and generate natural language through a series of prompts. The PaLM API is based on Google's next generation LLM, PaLM. It excels at a variety of different tasks like code generation, reasoning, and writing. You can use the PaLM API to build generative AI applications for use cases like content generation, dialogue agents, summarization and classification systems, and more.
 
@@ -20,7 +20,7 @@ export SPRING_AI_VERTEX_AI_API_KEY=<INSERT KEY HERE>
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the VertexAI Chat Client.
+Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -61,36 +61,9 @@ The prefix `spring.ai.vertex.ai.chat` is the property prefix that lets you confi
 |====
 | Property | Description | Default
 
-| spring.ai.vertex.ai.chat.model | This is the https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/text-chat[Vertex Chat model] to use | chat-bison-001
-| spring.ai.vertex.ai.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.7
-| spring.ai.vertex.ai.chat.options.topK | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | 20
-| spring.ai.vertex.ai.chat.options.topP | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
-| spring.ai.vertex.ai.chat.options.candidateCount | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
+| spring.ai.vertex.ai.chat.model | This is the https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/text-embeddings[Vertex Embedding model] to use | chat-bison-001
 |====
 
-TIP: All properties prefixed with `spring.ai.vertex.ai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
-
-=== Chat Options [[chat-options]]
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertex/VertexAiChatOptions.java[VertexAiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
-
-On start-up, the default options can be configured with the `VertexAiChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
-
-At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
-For example to override the default temperature for a specific request:
-
-[source,java]
-----
-ChatResponse response = chatClient.call(
-    new Prompt(
-        "Generate the names of 5 famous pirates.",
-        VertexAiChatOptions.builder()
-            .withTemperature(0.4)
-        .build()
-    ));
-----
-
-TIP: In addition to the model specific `VertexAiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 === Sample Controller (Auto-configuration)
 
@@ -101,43 +74,37 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.vertex.ai.api-key=YOUR_API_KEY
-spring.ai.vertex.ai.chat.model=chat-bison-001
-spring.ai.vertex.ai.chat.options.temperature=0.5
+spring.ai.vertex.ai.embedding.model=chat-bison-001
 ----
 
 TIP: replace the `api-key` with your VertexAI credentials.
 
-This will create a `VertexAiChatClient` implementation that you can inject into your class.
+This will create a `VertexAiEmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the chat client for text generations.
 
 [source,java]
 ----
 @RestController
-public class ChatController {
+public class EmbeddingController {
 
-    private final VertexAiChatClient chatClient;
+    private final EmbeddingClient embeddingClient;
 
     @Autowired
-    public ChatController(VertexAiChatClient chatClient) {
-        this.chatClient = chatClient;
+    public EmbeddingController(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
     }
 
-    @GetMapping("/ai/generate")
-    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
-    }
-
-    @GetMapping("/ai/generateStream")
-	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/vertex/VertexAiChatClient.java[VertexAiChatClient] implements the `ChatClient` and uses the <<low-level-api>> to connect to the VertexAI service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertex/VertexAiEmbeddingClient.java[VertexAiEmbeddingClient] implements the `EmbeddingClient` and uses the <<low-level-api>> to connect to the VertexAI service.
 
 Add the `spring-ai-vertex-ai` dependency to your project's Maven `pom.xml` file:
 
@@ -161,23 +128,17 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Next, create a `VertexAiChatClient` and use it for text generations:
+Next, create a `VertexAiEmbeddingClient` and use it for text generations:
 
 [source,java]
 ----
 VertexAiApi vertexAiApi = new VertexAiApi(< YOUR PALM_API_KEY>);
 
-var chatClient = new VertexAiChatClient(vertexAiApi,
-    VertexAiChatOptions.builder()
-        .withTemperature(0.4)
-    .build());
+var embeddingClient = new VertexAiEmbeddingClient(vertexAiApi);
 
-ChatResponse response = chatClient.call(
-    new Prompt("Generate the names of 5 famous pirates."));
+EmbeddingResponse embeddingResponse = embeddingClient
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
-
-The `VertexAiChatOptions` provides the configuration information for the chat requests.
-The `VertexAiChatOptions.Builder` is fluent options builder.
 
 === Low-level VertexAiApi Client [[low-level-api]]
 

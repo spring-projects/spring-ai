@@ -140,7 +140,7 @@ public class ChatController {
         return Map.of("generation", chatClient.call(message));
     }
 
-    @GetMapping("/open-ai/generateStream")
+    @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
         return chatClient.stream(prompt);

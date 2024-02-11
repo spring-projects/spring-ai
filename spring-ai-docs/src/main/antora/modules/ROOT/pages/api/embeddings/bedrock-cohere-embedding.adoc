@@ -1,4 +1,4 @@
-= Cohere Embedding
+= Cohere Embeddings
 
 Provides Bedrock Cohere Embedding client.
 Integrate generative AI capabilities into essential apps and workflows that improve business outcomes.
@@ -168,7 +168,7 @@ var cohereEmbeddingApi =new CohereEmbeddingBedrockApi(
 		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
 
 
-var embeddingClient  new BedrockCohereEmbeddingClient(cohereEmbeddingApi);
+var embeddingClient = new BedrockCohereEmbeddingClient(cohereEmbeddingApi);
 
 EmbeddingResponse embeddingResponse = embeddingClient
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));

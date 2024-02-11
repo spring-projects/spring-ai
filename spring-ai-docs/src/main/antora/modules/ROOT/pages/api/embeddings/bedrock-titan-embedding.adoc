@@ -1,4 +1,4 @@
-= Titan Embedding
+= Titan Embeddings
 
 Provides Bedrock Titan Embedding client.
 link:https://aws.amazon.com/bedrock/titan/[Amazon Titan] foundation models (FMs) provide customers with a breadth of high-performing image, multimodal, and text model choices, via a fully managed API.
