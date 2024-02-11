@@ -78,7 +78,7 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 | spring.ai.ollama.embedding.options.embedding-only    | ???                                                             | -
 | spring.ai.ollama.embedding.options.rope-frequency-base | ???                                                           | -
 | spring.ai.ollama.embedding.options.rope-frequency-scale | ???                                                          | -
-| spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). | -
+| spring.ai.ollama.embedding.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). | -
 | spring.ai.ollama.embedding.options.num-keep          | ???                                                             | -
 | spring.ai.ollama.embedding.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | 0
 | spring.ai.ollama.embedding.options.num-predict       | Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context) | 128
@@ -100,7 +100,28 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 
 NOTE: The `spring.ai.ollama.embedding.options.*` properties are based on the https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and https://github.com/jmorganca/ollama/blob/main/api/types.go[Ollama Types]
 
-=== Sample Controller
+TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+=== Embedding Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tunning, etc.
+
+The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
+
+At start-time use the `OllamaEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
+At run-time you can override the default options, using a `OllamaOptions` instance as part of your `EmbeddingRequest`.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        OllamaOptions.create()
+            .withModel("Different-Embedding-Model-Deployment-Name"));
+----
+
+=== Sample Controller (Auto-configuration)
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
@@ -167,22 +188,3 @@ EmbeddingResponse embeddingResponse = embeddingClient
 ----
 
 The `OllamaOptions` provides the configuration information for all embedding requests.
-
-=== Embedding Options
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tunning, etc.
-
-The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
-
-At start-time use the `OllamaEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
-At run-time you can override the default options, using a `OllamaOptions` instance as part of your `EmbeddingRequest`.
-
-For example to override the default model name for a specific request:
-
-[source,java]
-----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
-    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        OllamaOptions.create()
-            .withModel("Different-Embedding-Model-Deployment-Name"));
-----

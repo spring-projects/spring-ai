@@ -69,6 +69,28 @@ The prefix `spring.ai.azure.openai.embeddings` is the property prefix that confi
 | spring.ai.azure.openai.embedding.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -
 |====
 
+TIP: All properties prefixed with `spring.ai.azure.openai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+=== Embedding Options [[embedding-options]]
+
+The `AzureOpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
+The `AzureOpenAiEmbeddingOptions` offers a builder to create the options.
+
+At start time use the `AzureOpenAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
+At run-time you can override the default options, by passing a `AzureOpenAiEmbeddingOptions` instance with your to the  `EmbeddingRequest` request.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        AzureOpenAiEmbeddingOptions.builder()
+        .withModel("Different-Embedding-Model-Deployment-Name")
+        .build()));
+----
+
+
 === Sample Code
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
@@ -89,7 +111,7 @@ public class EmbeddingController {
     private final EmbeddingClient embeddingClient;
 
     @Autowired
-    public ChatController(EmbeddingClient embeddingClient) {
+    public EmbeddingController(EmbeddingClient embeddingClient) {
         this.embeddingClient = embeddingClient;
     }
 
@@ -145,23 +167,4 @@ EmbeddingResponse embeddingResponse = embeddingClient
 ----
 
 NOTE: the `text-embedding-ada-002` is actually the `Deployment Name` as presented in the Azure AI Portal.
-
-=== Embedding Options
-
-The `AzureOpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
-The `AzureOpenAiEmbeddingOptions` offers a builder to create the options.
-
-At start time use the `AzureOpenAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
-At run-time you can override the default options, by passing a `AzureOpenAiEmbeddingOptions` instance with your to the  `EmbeddingRequest` request.
-
-For example to override the default model name for a specific request:
-
-[source,java]
-----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
-    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        AzureOpenAiEmbeddingOptions.builder()
-        .withModel("Different-Embedding-Model-Deployment-Name")
-        .build()));
-----
 

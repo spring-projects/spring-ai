@@ -163,7 +163,7 @@ public class CohereEmbeddingBedrockApi extends
 		 * @return The model id.
 		 */
 		public String id() {
-			return id;
+			return this.id;
 		}
 
 		CohereEmbeddingModel(String value) {

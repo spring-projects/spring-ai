@@ -51,7 +51,7 @@ repositories {
 * xref:api/clients/openai-chat.adoc[OpenAI]
 * xref:api/clients/azure-openai-chat.adoc[Azure OpenAI]
 * xref:api/clients/huggingface.adoc[HuggingFace]
-* xref:api/clients/bedrock.adoc[Bedrock]
+* xref:api/bedrock.adoc[Bedrock]
 * xref:api/clients/ollama-chat.adoc[Ollama]
 
 == Embedding Models

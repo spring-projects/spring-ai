@@ -11,7 +11,7 @@ The https://aws.amazon.com/bedrock/llama-2/[AWS Llama 2 Model Page] and https://
 
 == Prerequisites
 
-Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
 
 == Auto-configuration
 

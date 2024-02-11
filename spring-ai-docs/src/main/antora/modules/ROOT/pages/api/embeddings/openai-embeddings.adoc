@@ -4,7 +4,7 @@ Spring AI supports the OpenAI's text embeddings models.
 OpenAI’s text embeddings measure the relatedness of text strings.
 An embedding is a vector (list) of floating point numbers. The distance between two vectors measures their relatedness. Small distances suggest high relatedness and large distances suggest low relatedness.
 
-== Pre-requisites
+== Prerequisites
 
 You will need to create an API with OpenAI to access OpenAI embeddings models.
 
@@ -72,7 +72,29 @@ The `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-ke
 Similarly, the `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-=== Sample Controller
+TIP: All properties prefixed with `spring.ai.openai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+=== Embedding Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configurations, such as the model to use and etc.
+
+The default options can be configured using the `spring.ai.openai.embedding.options` properties as well.
+
+At start-time use the `OpenAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
+At run-time you can override the default options, using a `OpenAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        OpenAiEmbeddingOptions.builder()
+            .withModel("Different-Embedding-Model-Deployment-Name")
+        .build()));
+----
+
+=== Sample Controller (Auto-configuration)
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
@@ -147,23 +169,4 @@ EmbeddingResponse embeddingResponse = embeddingClient
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
 The options class offers a `builder()` for easy options creation.
 
-=== Embedding Options
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configurations, such as the model to use and etc.
-
-The default options can be configured using the `spring.ai.openai.embedding.options` properties as well.
-
-At start-time use the `OpenAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
-At run-time you can override the default options, using a `OpenAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
-
-For example to override the default model name for a specific request:
-
-[source,java]
-----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
-    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        OpenAiEmbeddingOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name")
-        .build()));
-----
 

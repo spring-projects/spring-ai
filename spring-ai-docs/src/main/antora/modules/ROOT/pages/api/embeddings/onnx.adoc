@@ -29,7 +29,7 @@ The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-
 
 In place of the all-MiniLM-L6-v2 you can pick any huggingface transformer identifier or provide direct file path.
 
-== Using the ONNX models
+== Using the ONNX Transformers models
 
 Add the `spring-ai-transformers` project to your maven dependencies:
 

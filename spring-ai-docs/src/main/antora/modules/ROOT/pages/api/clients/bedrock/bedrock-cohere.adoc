@@ -7,7 +7,7 @@ The https://aws.amazon.com/bedrock/cohere-command-embed/[AWS Bedrock Cohere Mode
 
 == Prerequisites
 
-Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
 
 == Auto-configuration
 
@@ -106,7 +106,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Cohere Chat client:
 
 [source]
 ----
@@ -150,7 +150,7 @@ public class ChatController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClient.java[BedrockCohereChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClient.java[BedrockCohereChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Cohere service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -203,7 +203,7 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedr
 
 Following class diagram illustrates the CohereChatBedrockApi interface and building blocks:
 
-image::bedrock/bedrock-cohere-chat-api.jpg[CohereChatBedrockApi Class Diagram]
+image::bedrock/bedrock-cohere-chat-low-level-api.jpg[align="center", width="800px"]
 
 The CohereChatBedrockApi supports the `cohere.command-light-text-v14` and `cohere.command-text-v14` models for both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) requests.
 

@@ -11,7 +11,7 @@ The https://aws.amazon.com/bedrock/claude[AWS Bedrock Anthropic Model Page] and 
 
 == Prerequisites
 
-Refer to the xref:api/clients/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
 
 == Auto-configuration
 

@@ -25,8 +25,10 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -41,35 +43,54 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final CohereEmbeddingBedrockApi embeddingApi;
 
-	private CohereEmbeddingRequest.InputType inputType = CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT;
+	private final BedrockCohereEmbeddingOptions defaultOptions;
 
-	private CohereEmbeddingRequest.Truncate truncate = CohereEmbeddingRequest.Truncate.NONE;
+	// private CohereEmbeddingRequest.InputType inputType =
+	// CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT;
+
+	// private CohereEmbeddingRequest.Truncate truncate =
+	// CohereEmbeddingRequest.Truncate.NONE;
 
 	public BedrockCohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi) {
+		this(cohereEmbeddingBedrockApi,
+				BedrockCohereEmbeddingOptions.builder()
+					.withInputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
+					.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+					.build());
+	}
+
+	public BedrockCohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi,
+			BedrockCohereEmbeddingOptions options) {
+		Assert.notNull(cohereEmbeddingBedrockApi, "CohereEmbeddingBedrockApi must not be null");
+		Assert.notNull(options, "BedrockCohereEmbeddingOptions must not be null");
 		this.embeddingApi = cohereEmbeddingBedrockApi;
+		this.defaultOptions = options;
 	}
 
-	/**
-	 * Cohere Embedding API input types.
-	 * @param inputType the input type to use.
-	 * @return this client.
-	 */
-	public BedrockCohereEmbeddingClient withInputType(CohereEmbeddingRequest.InputType inputType) {
-		this.inputType = inputType;
-		return this;
-	}
+	// /**
+	// * Cohere Embedding API input types.
+	// * @param inputType the input type to use.
+	// * @return this client.
+	// */
+	// public BedrockCohereEmbeddingClient withInputType(CohereEmbeddingRequest.InputType
+	// inputType) {
+	// this.inputType = inputType;
+	// return this;
+	// }
 
-	/**
-	 * Specifies how the API handles inputs longer than the maximum token length. If you
-	 * specify LEFT or RIGHT, the model discards the input until the remaining input is
-	 * exactly the maximum input token length for the model.
-	 * @param truncate the truncate option to use.
-	 * @return this client.
-	 */
-	public BedrockCohereEmbeddingClient withTruncate(CohereEmbeddingRequest.Truncate truncate) {
-		this.truncate = truncate;
-		return this;
-	}
+	// /**
+	// * Specifies how the API handles inputs longer than the maximum token length. If you
+	// specify LEFT or RIGHT, the
+	// * model discards the input until the remaining input is exactly the maximum input
+	// token length for the model.
+	// * @param truncate the truncate option to use.
+	// * @return this client.
+	// */
+	// public BedrockCohereEmbeddingClient withTruncate(CohereEmbeddingRequest.Truncate
+	// truncate) {
+	// this.truncate = truncate;
+	// return this;
+	// }
 
 	@Override
 	public List<Double> embed(Document document) {
@@ -80,7 +101,10 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
-		var apiRequest = new CohereEmbeddingRequest(request.getInstructions(), this.inputType, this.truncate);
+		final BedrockCohereEmbeddingOptions optionsToUse = this.mergeOptions(request.getOptions());
+
+		var apiRequest = new CohereEmbeddingRequest(request.getInstructions(), optionsToUse.getInputType(),
+				optionsToUse.getTruncate());
 		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
 		var indexCounter = new AtomicInteger(0);
 		List<Embedding> embeddings = apiResponse.embeddings()
@@ -88,6 +112,26 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 			.toList();
 		return new EmbeddingResponse(embeddings);
+	}
+
+	/**
+	 * Merge the default and request options.
+	 * @param requestOptions request options to merge.
+	 * @return the merged options.
+	 */
+	BedrockCohereEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions) {
+
+		BedrockCohereEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
+				: BedrockCohereEmbeddingOptions.builder()
+					.withInputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
+					.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+					.build();
+
+		if (requestOptions != null && !EmbeddingOptions.EMPTY.equals(requestOptions)) {
+			options = ModelOptionsUtils.merge(requestOptions, options, BedrockCohereEmbeddingOptions.class);
+		}
+
+		return options;
 	}
 
 }

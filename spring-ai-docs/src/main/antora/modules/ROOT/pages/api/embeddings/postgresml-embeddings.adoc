@@ -38,28 +38,54 @@ Use the `spring.ai.postgresml.embedding.options.*` properties to configure your 
 
 === Embedding Properties
 
-The prefix `spring.ai.postgres.embedding` is property prefix that configures the `EmbeddingClient` implementation for PostgresML embeddings.
+The prefix `spring.ai.postgresml.embedding` is property prefix that configures the `EmbeddingClient` implementation for PostgresML embeddings.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.postgres.embedding.options.transformer  | The Huggingface transformer model to use for the embedding.  | distilbert-base-uncased
-| spring.ai.postgres.embedding.options.kwargs   | Additional transformer specific options.  | empty map
-| spring.ai.postgres.embedding.options.vectorType   | PostgresML vector type to use for the embedding. Two options are supported: `PG_ARRAY` and `PG_VECTOR`. | PG_ARRAY
-| spring.ai.postgres.embedding.options.metadataMode   | Document metadata aggregation mode  | EMBED
+| spring.ai.postgresml.embedding.options.transformer  | The Huggingface transformer model to use for the embedding.  | distilbert-base-uncased
+| spring.ai.postgresml.embedding.options.kwargs   | Additional transformer specific options.  | empty map
+| spring.ai.postgresml.embedding.options.vectorType   | PostgresML vector type to use for the embedding. Two options are supported: `PG_ARRAY` and `PG_VECTOR`. | PG_ARRAY
+| spring.ai.postgresml.embedding.options.metadataMode   | Document metadata aggregation mode  | EMBED
 |====
 
-=== Sample Controller
+
+TIP: All properties prefixed with `spring.ai.postgresml.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+=== EmbeddingOptions [[embedding-options]]
+
+Use the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/postgresml/PostgresMlEmbeddingOptions.java[PostgresMlEmbeddingOptions.java] to configure the `PostgresMlEmbeddingClient` with options, such as the model to use and etc.
+
+
+On start you can pass a `PostgresMlEmbeddingOptions` to the `PostgresMlEmbeddingClient` constructor to configure the default options used for all embedding requests.
+
+At run-time you can override the default options, using a `PostgresMlEmbeddingOptions` in your `EmbeddingRequest`.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+            PostgresMlEmbeddingOptions.builder()
+                .withTransformer("intfloat/e5-small")
+                .withVectorType(VectorType.PG_ARRAY)
+                .withKwargs(Map.of("device", "gpu"))
+                .build()));
+----
+
+=== Sample Controller (Auto-configuration)
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
 
 [source,application.properties]
 ----
-spring.ai.postgres.embedding.options.transformer=distilbert-base-uncased
-spring.ai.postgres.embedding.options.vectorType=PG_ARRAY
-spring.ai.postgres.embedding.options.metadataMode=EMBED
-spring.ai.postgres.embedding.options.kwargs.device=cpu
+spring.ai.postgresml.embedding.options.transformer=distilbert-base-uncased
+spring.ai.postgresml.embedding.options.vectorType=PG_ARRAY
+spring.ai.postgresml.embedding.options.metadataMode=EMBED
+spring.ai.postgresml.embedding.options.kwargs.device=cpu
 ----
 
 [source,java]
@@ -138,29 +164,6 @@ public EmbeddingClient embeddingClient(JdbcTemplate jdbcTemplate) {
              ....
             .build());
 }
-----
-
-=== EmbeddingOptions
-
-Use the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/postgresml/PostgresMlEmbeddingOptions.java[PostgresMlEmbeddingOptions.java] to configure the `PostgresMlEmbeddingClient` with options, such as the model to use and etc.
-
-
-On start you can pass a `PostgresMlEmbeddingOptions` to the `PostgresMlEmbeddingClient` constructor to configure the default options used for all embedding requests.
-
-At run-time you can override the default options, using a `PostgresMlEmbeddingOptions` in your `EmbeddingRequest`.
-
-For example to override the default model name for a specific request:
-
-[source,java]
-----
-
-EmbeddingResponse embeddingResponse = embeddingClient.call(
-    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-            PostgresMlEmbeddingOptions.builder()
-                .withTransformer("intfloat/e5-small")
-                .withVectorType(VectorType.PG_ARRAY)
-                .withKwargs(Map.of("device", "gpu"))
-                .build()));
 ----
 
 

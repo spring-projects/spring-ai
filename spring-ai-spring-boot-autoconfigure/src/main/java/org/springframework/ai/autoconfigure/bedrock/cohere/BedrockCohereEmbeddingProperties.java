@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package org.springframework.ai.autoconfigure.bedrock.cohere;
 
+import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingOptions;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Bedrock Cohere Embedding autoconfiguration properties.
@@ -43,21 +45,14 @@ public class BedrockCohereEmbeddingProperties {
 	 */
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id();
 
-	/**
-	 * Prepends special tokens to differentiate each type from one another. You should not
-	 * mix different types together, except when mixing types for for search and
-	 * retrieval. In this case, embed your corpus with the search_document type and
-	 * embedded queries with type search_query type.
-	 */
-	private InputType inputType = InputType.SEARCH_DOCUMENT;
-
-	/**
-	 * Specifies how the API handles inputs longer than the maximum token length.
-	 */
-	private CohereEmbeddingRequest.Truncate truncate = CohereEmbeddingRequest.Truncate.NONE;
+	@NestedConfigurationProperty
+	private BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
+		.withInputType(InputType.SEARCH_DOCUMENT)
+		.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+		.build();
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
@@ -65,31 +60,19 @@ public class BedrockCohereEmbeddingProperties {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
 	}
 
-	public static String getConfigPrefix() {
-		return CONFIG_PREFIX;
+	public BedrockCohereEmbeddingOptions getOptions() {
+		return this.options;
 	}
 
-	public void setInputType(InputType inputType) {
-		this.inputType = inputType;
-	}
-
-	public InputType getInputType() {
-		return inputType;
-	}
-
-	public CohereEmbeddingRequest.Truncate getTruncate() {
-		return truncate;
-	}
-
-	public void setTruncate(CohereEmbeddingRequest.Truncate truncate) {
-		this.truncate = truncate;
+	public void setOptions(BedrockCohereEmbeddingOptions options) {
+		this.options = options;
 	}
 
 }

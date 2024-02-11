@@ -1,0 +1,204 @@
+= Cohere Embedding
+
+Provides Bedrock Cohere Embedding client.
+Integrate generative AI capabilities into essential apps and workflows that improve business outcomes.
+
+The https://aws.amazon.com/bedrock/cohere-command-embed/[AWS Bedrock Cohere Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
+
+== Prerequisites
+
+Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
+
+== Auto-configuration
+
+Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+=== Enable Cohere Embedding Support
+
+By default the Cohere model is disabled.
+To enable it set the `spring.ai.bedrock.cohere.embedding.enabled` property to `true`.
+Exporting environment variable is one way to set this configuration property:
+
+[source,shell]
+----
+export SPRING_AI_BEDROCK_COHERE_EMBEDDING_ENABLED=true
+----
+
+=== Embedding Properties
+
+The prefix `spring.ai.bedrock.aws` is the property prefix to configure the connection to AWS Bedrock.
+
+[cols="3,4,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.access-key | AWS access key.  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+|====
+
+The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbeddingProperties`) is the property prefix that configures the embedding client implementation for Cohere.
+
+[cols="3,4,1"]
+|====
+| Property | Description | Default
+| spring.ai.bedrock.cohere.embedding.enabled              | Enable or disable support for Cohere  | false
+| spring.ai.bedrock.cohere.embedding.model                | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/056b95a00efa5b014a1f488329fbd07a46c02378/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereEmbeddingBedrockApi.java#L150[CohereEmbeddingModel] for the supported models.  | cohere.embed-multilingual-v3
+| spring.ai.bedrock.cohere.embedding.options.input-type  | Prepends special tokens to differentiate each type from one another. You should not mix different types together, except when mixing types for for search and retrieval. In this case, embed your corpus with the search_document type and embedded queries with type search_query type.  | SEARCH_DOCUMENT
+| spring.ai.bedrock.cohere.embedding.options.truncate  | Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the model.  | NONE
+|====
+
+Look at the https://github.com/spring-projects/spring-ai/blob/056b95a00efa5b014a1f488329fbd07a46c02378/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereEmbeddingBedrockApi.java#L150[CohereEmbeddingModel] for other model IDs.
+Supported values are: `cohere.embed-multilingual-v3` and `cohere.embed-english-v3`.
+Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
+
+TIP: All properties prefixed with `spring.ai.bedrock.cohere.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+=== Embedding Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingOptions.java[BedrockCohereEmbeddingOptions.java] provides model configurations, such as `input-type` or `truncate`.
+
+On start-up, the default options can be configured with the `BedrockCohereEmbeddingClient(api, options)` constructor or the `spring.ai.bedrock.cohere.embedding.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `EmbeddingRequest` call.
+For example to override the default temperature for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        BedrockCohereEmbeddingOptions.builder()
+        	.withInputType(InputType.SEARCH_DOCUMENT)
+        .build()));
+----
+
+=== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Cohere Embedding client:
+
+[source]
+----
+spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
+spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
+
+spring.ai.bedrock.cohere.embedding.enabled=true
+spring.ai.bedrock.cohere.embedding.options.input-type=search-document
+----
+
+TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
+
+This will create a `BedrockCohereEmbeddingClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingClient embeddingClient;
+
+    @Autowired
+    public EmbeddingController(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingClient.java[BedrockCohereEmbeddingClient] implements the `EmbeddingClient` and uses the <<low-level-api>> to connect to the Bedrock Cohere service.
+
+Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-bedrock</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-bedrock:0.8.0-SNAPSHOT'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingClient.java[BedrockCohereEmbeddingClient] and use it for text embeddings:
+
+[source,java]
+----
+var cohereEmbeddingApi =new CohereEmbeddingBedrockApi(
+		CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
+		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+
+
+var embeddingClient  new BedrockCohereEmbeddingClient(cohereEmbeddingApi);
+
+EmbeddingResponse embeddingResponse = embeddingClient
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+== Low-level CohereEmbeddingBedrockApi Client [[low-level-api]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereEmbeddingBedrockApi.java[CohereEmbeddingBedrockApi] provides is lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere-command.html[Cohere Command models].
+
+Following class diagram illustrates the CohereEmbeddingBedrockApi interface and building blocks:
+
+image::bedrock/bedrock-cohere-embedding-low-level-api.jpg[align="center", width="800px"]
+
+The CohereEmbeddingBedrockApi supports the `cohere.embed-english-v3` and `cohere.embed-multilingual-v3` models for single and batch embedding computation.
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+CohereEmbeddingBedrockApi api = new CohereEmbeddingBedrockApi(
+		CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
+		EnvironmentVariableCredentialsProvider.create(),
+		Region.US_EAST_1.id(), new ObjectMapper());
+
+CohereEmbeddingRequest request = new CohereEmbeddingRequest(
+		List.of("I like to eat apples", "I like to eat oranges"),
+		CohereEmbeddingRequest.InputType.search_document,
+		CohereEmbeddingRequest.Truncate.NONE);
+
+CohereEmbeddingResponse response = api.embedding(request);
+----
+
+
