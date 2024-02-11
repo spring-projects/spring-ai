@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package org.springframework.ai.autoconfigure.bedrock.titan;
 
-import java.util.List;
-
+import org.springframework.ai.bedrock.titan.BedrockTitanChatOptions;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Bedrock Titan Chat autoconfiguration properties.
@@ -42,30 +42,8 @@ public class BedrockTitanChatProperties {
 	 */
 	private String model = TitanChatModel.TITAN_TEXT_EXPRESS_V1.id();
 
-	/**
-	 * (optional) Use a lower value to decrease randomness in the response. Defaults to
-	 * 0.7.
-	 */
-	private Float temperature = 0.7f;
-
-	/**
-	 * (optional) The maximum cumulative probability of tokens to consider when sampling.
-	 * The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers
-	 * the smallest set of tokens whose probability sum is at least topP.
-	 */
-	private Float topP;
-
-	/**
-	 * (optional) Specify the maximum number of tokens to use in the generated response.
-	 */
-	private Integer maxTokenCount;
-
-	/**
-	 * (optional) Configure up to four sequences that the generative recognizes. After a
-	 * stop sequence, the generative stops generating further tokens. The returned text
-	 * doesn't contain the stop sequence.
-	 */
-	private List<String> stopSequences;
+	@NestedConfigurationProperty
+	private BedrockTitanChatOptions options = BedrockTitanChatOptions.builder().withTemperature(0.7f).build();
 
 	public boolean isEnabled() {
 		return enabled;
@@ -83,36 +61,12 @@ public class BedrockTitanChatProperties {
 		this.model = model;
 	}
 
-	public Float getTemperature() {
-		return temperature;
+	public BedrockTitanChatOptions getOptions() {
+		return options;
 	}
 
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-	public Float getTopP() {
-		return topP;
-	}
-
-	public void setTopP(Float topP) {
-		this.topP = topP;
-	}
-
-	public Integer getMaxTokenCount() {
-		return maxTokenCount;
-	}
-
-	public void setMaxTokenCount(Integer maxTokens) {
-		this.maxTokenCount = maxTokens;
-	}
-
-	public List<String> getStopSequences() {
-		return stopSequences;
-	}
-
-	public void setStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
+	public void setOptions(BedrockTitanChatOptions options) {
+		this.options = options;
 	}
 
 }

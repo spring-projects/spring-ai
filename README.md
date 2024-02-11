@@ -6,6 +6,8 @@ The Spring AI project provides a Spring-friendly API and abstractions for develo
 
 Let's make your `@Beans` intelligent!
 
+For further information go to our [Spring AI documentation](https://docs.spring.io/spring-ai/reference/).
+
 ## Project Update
 
 :partying_face: The Spring AI project has graduated out of the repository!

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
 
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -27,11 +25,16 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
@@ -41,41 +44,22 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 
 	private final TitanChatBedrockApi chatApi;
 
-	private Float temperature;
-
-	private Float topP;
-
-	private Integer maxTokenCount;
-
-	private List<String> stopSequences;
+	private final BedrockTitanChatOptions defaultOptions;
 
 	public BedrockTitanChatClient(TitanChatBedrockApi chatApi) {
+		this(chatApi, BedrockTitanChatOptions.builder().withTemperature(0.8f).build());
+	}
+
+	public BedrockTitanChatClient(TitanChatBedrockApi chatApi, BedrockTitanChatOptions defaultOptions) {
+		Assert.notNull(chatApi, "ChatApi must not be null");
+		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
 		this.chatApi = chatApi;
-	}
-
-	public BedrockTitanChatClient withTemperature(Float temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	public BedrockTitanChatClient withTopP(Float topP) {
-		this.topP = topP;
-		return this;
-	}
-
-	public BedrockTitanChatClient withMaxTokenCount(Integer maxTokens) {
-		this.maxTokenCount = maxTokens;
-		return this;
-	}
-
-	public BedrockTitanChatClient withStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-		return this;
+		this.defaultOptions = defaultOptions;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
+		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
 		List<Generation> generations = response.results().stream().map(result -> {
 			return new Generation(result.outputText());
 		}).toList();
@@ -85,7 +69,7 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(chunk -> {
+		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
 
 			Generation generation = new Generation(chunk.outputText());
 
@@ -104,15 +88,48 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 		});
 	}
 
-	private TitanChatRequest createRequest(Prompt prompt, boolean stream) {
+	/**
+	 * Test access.
+	 */
+	TitanChatRequest createRequest(Prompt prompt) {
 		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
 
-		return TitanChatRequest.builder(promptValue)
-			.withTemperature(this.temperature)
-			.withTopP(this.topP)
-			.withMaxTokenCount(this.maxTokenCount)
-			.withStopSequences(this.stopSequences)
-			.build();
+		var requestBuilder = TitanChatRequest.builder(promptValue);
+
+		if (this.defaultOptions != null) {
+			requestBuilder = update(requestBuilder, this.defaultOptions);
+		}
+
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				BedrockTitanChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, BedrockTitanChatOptions.class);
+
+				requestBuilder = update(requestBuilder, updatedRuntimeOptions);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
+
+		return requestBuilder.build();
+	}
+
+	private TitanChatRequest.Builder update(TitanChatRequest.Builder builder, BedrockTitanChatOptions options) {
+		if (options.getTemperature() != null) {
+			builder.withTemperature(options.getTemperature());
+		}
+		if (options.getTopP() != null) {
+			builder.withTopP(options.getTopP());
+		}
+		if (options.getMaxTokenCount() != null) {
+			builder.withMaxTokenCount(options.getMaxTokenCount());
+		}
+		if (options.getStopSequences() != null) {
+			builder.withStopSequences(options.getStopSequences());
+		}
+		return builder;
 	}
 
 	private Usage extractUsage(TitanChatResponseChunk response) {
