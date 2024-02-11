@@ -156,3 +156,4 @@ Internally the various `EmbeddingClient` implementations use different low-level
 * xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
 * xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
+* xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]

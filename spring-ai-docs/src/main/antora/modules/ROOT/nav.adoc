@@ -10,6 +10,7 @@
 *** xref:api/embeddings/postgresml-embeddings.adoc[]
 *** xref:api/bedrock.adoc[Amazon Bedrock Embedding]
 **** xref:api/embeddings/bedrock-cohere-embedding.adoc[]
+**** xref:api/embeddings/bedrock-titan-embedding.adoc[]
 ** xref:api/chatclient.adoc[]
 *** xref:api/clients/openai-chat.adoc[]
 *** xref:api/clients/azure-openai-chat.adoc[]
