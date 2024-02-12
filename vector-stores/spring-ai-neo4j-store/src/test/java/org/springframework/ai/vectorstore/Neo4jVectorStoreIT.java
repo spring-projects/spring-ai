@@ -2,14 +2,17 @@ package org.springframework.ai.vectorstore;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -82,6 +85,89 @@ class Neo4jVectorStoreIT {
 
 			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).isEmpty();
+		});
+	}
+
+	@Test
+	void searchWithFilters() {
+		this.contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020, "foo bar 1", "bar.foo"));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			SearchRequest searchRequest = SearchRequest.query("The World").withTopK(5).withSimilarityThresholdAll();
+
+			List<Document> results = vectorStore.similaritySearch(searchRequest);
+
+			assertThat(results).hasSize(3);
+
+			results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'NL'"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country in ['NL']"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country nin ['BG']"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country not in ['BG']"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'BG'"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+
+			results = vectorStore
+				.similaritySearch(searchRequest.withFilterExpression("country == 'BG' && year == 2020"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			results = vectorStore.similaritySearch(
+					searchRequest.withFilterExpression("(country == 'BG' && year == 2020) || (country == 'NL')"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
+
+			results = vectorStore.similaritySearch(
+					searchRequest.withFilterExpression("NOT((country == 'BG' && year == 2020) || (country == 'NL'))"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("\"foo bar 1\" == 'bar.foo'"));
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			try {
+				vectorStore.similaritySearch(searchRequest.withFilterExpression("country == NL"));
+				Assert.fail("Invalid filter expression should have been cached!");
+			}
+			catch (FilterExpressionTextParser.FilterExpressionParseException e) {
+				assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
+			}
 		});
 	}
 
