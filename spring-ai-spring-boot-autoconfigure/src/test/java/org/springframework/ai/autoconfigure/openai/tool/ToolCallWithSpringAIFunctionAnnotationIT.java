@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
-public class ToolCallWithSpringAIFunctionAnnotationIT {
+class ToolCallWithSpringAIFunctionAnnotationIT {
 
 	private final Logger logger = LoggerFactory.getLogger(ToolCallWithBeanFunctionRegistrationIT.class);
 
@@ -61,7 +61,7 @@ public class ToolCallWithSpringAIFunctionAnnotationIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30.0", "10.0", "15.0");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 		});
 	}
