@@ -34,7 +34,7 @@ public class SpringAiFunctionManager implements ApplicationContextAware {
 		beans.forEach((k, v) -> {
 			if (v instanceof Function<?, ?> function) {
 				SpringAIFunction aiFunction = applicationContext.findAnnotationOnBean(k, SpringAIFunction.class);
-				chatFunctions.add(new GenericFunctionCallback(aiFunction.name(), aiFunction.description(),
+				chatFunctions.add(new AnnotationGeneratedFunctionCallback(aiFunction.name(), aiFunction.description(),
 						aiFunction.classType(), function));
 			}
 		});
@@ -44,11 +44,11 @@ public class SpringAiFunctionManager implements ApplicationContextAware {
 
 }
 
-class GenericFunctionCallback extends AbstractToolFunctionCallback<Object, Object> {
+class AnnotationGeneratedFunctionCallback extends AbstractToolFunctionCallback<Object, Object> {
 
 	private Function function;
 
-	protected GenericFunctionCallback(String name, String description, Class inputType, Function function) {
+	protected AnnotationGeneratedFunctionCallback(String name, String description, Class inputType, Function function) {
 		super(name, description, inputType);
 		this.function = function;
 	}
