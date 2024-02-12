@@ -39,7 +39,7 @@ You can replace Azure Open AI implementation with any valid OpenAI implementatio
 
 Add these dependencies to your project:
 
-1. Select an Embeddings interface implementation. You can choose between:
+=== 1. Select an Embeddings interface implementation. You can choose between:
 
 * OpenAI Embedding:
 
@@ -74,7 +74,7 @@ Add these dependencies to your project:
 </dependency>
 ----
 
-2. Azure (AI Search) Vector Store
+=== 2. Azure (AI Search) Vector Store
 
 [source,xml]
 ----
