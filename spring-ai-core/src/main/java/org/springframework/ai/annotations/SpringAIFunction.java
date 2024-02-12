@@ -1,6 +1,7 @@
 package org.springframework.ai.annotations;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
