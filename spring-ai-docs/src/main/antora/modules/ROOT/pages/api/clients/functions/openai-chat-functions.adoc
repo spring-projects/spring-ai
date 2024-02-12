@@ -148,5 +148,5 @@ The following diagram illustrates the flow of the OpenAI API https://platform.op
 
 image:openai-function-calling-flow.png[OpenAI API Function Calling Flow]
 
-[org.springframework.ai.openai.chat.api.tool.OpenAiApiToolFunctionCallTests] provides a complete example of how to call a function using the OpenAI API.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] provides a complete example on how to use the OpenAI API function calling.
 It is based on the https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling tutorial].
