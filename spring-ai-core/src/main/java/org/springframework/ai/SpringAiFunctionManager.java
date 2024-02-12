@@ -6,18 +6,16 @@ import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.support.GenericApplicationContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-
 public class SpringAiFunctionManager implements ApplicationContextAware {
 
 	private GenericApplicationContext applicationContext;
+
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.applicationContext = (GenericApplicationContext) applicationContext;

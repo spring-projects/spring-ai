@@ -122,7 +122,7 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public SpringAiFunctionManager springAiFunctionManager(ApplicationContext context){
+	public SpringAiFunctionManager springAiFunctionManager(ApplicationContext context) {
 		SpringAiFunctionManager manager = new SpringAiFunctionManager();
 		manager.setApplicationContext(context);
 		return manager;
