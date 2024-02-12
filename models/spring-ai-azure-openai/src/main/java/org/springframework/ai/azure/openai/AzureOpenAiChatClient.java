@@ -18,8 +18,6 @@ package org.springframework.ai.azure.openai;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
@@ -29,6 +27,8 @@ import com.azure.ai.openai.models.ChatRequestMessage;
 import com.azure.ai.openai.models.ChatRequestSystemMessage;
 import com.azure.ai.openai.models.ChatRequestUserMessage;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
+import com.azure.core.http.HttpHeaderName;
+import com.azure.core.http.rest.RequestOptions;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +56,7 @@ import org.springframework.util.Assert;
  * @author Ueibin Kim
  * @author John Blum
  * @author Christian Tzolov
+ * @author Mark Heckler
  * @see ChatClient
  * @see com.azure.ai.openai.OpenAIClient
  */
@@ -64,6 +65,9 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	private static final String DEFAULT_MODEL = "gpt-35-turbo";
 
 	private static final Float DEFAULT_TEMPERATURE = 0.7f;
+
+	private static final RequestOptions DEFAULT_REQUEST_OPTIONS = new RequestOptions()
+		.setHeader(HttpHeaderName.USER_AGENT, "spring-ai");
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -112,7 +116,9 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		logger.trace("Azure ChatCompletionsOptions: {}", options);
 
-		ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
+		ChatCompletions chatCompletions = this.openAIClient
+			.getChatCompletionsWithResponse(options.getModel(), options, DEFAULT_REQUEST_OPTIONS)
+			.getValue();
 
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 

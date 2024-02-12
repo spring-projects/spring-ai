@@ -8,6 +8,9 @@ import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
 import com.azure.ai.openai.models.EmbeddingsOptions;
 import com.azure.ai.openai.models.EmbeddingsUsage;
+import com.azure.core.http.HttpHeaderName;
+import com.azure.core.http.rest.RequestOptions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +32,9 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	private final OpenAIClient azureOpenAiClient;
 
 	private final AzureOpenAiEmbeddingOptions defaultOptions;
+
+	private static final RequestOptions DEFAULT_REQUEST_OPTIONS = new RequestOptions()
+		.setHeader(HttpHeaderName.USER_AGENT, "spring-ai");
 
 	private final MetadataMode metadataMode;
 
@@ -66,7 +72,9 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 		logger.debug("Retrieving embeddings");
 
 		EmbeddingsOptions azureOptions = toEmbeddingOptions(embeddingRequest);
-		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(azureOptions.getModel(), azureOptions);
+		Embeddings embeddings = this.azureOpenAiClient
+			.getEmbeddingsWithResponse(azureOptions.getModel(), azureOptions, DEFAULT_REQUEST_OPTIONS)
+			.getValue();
 
 		logger.debug("Embeddings retrieved");
 		return generateEmbeddingResponse(embeddings);
