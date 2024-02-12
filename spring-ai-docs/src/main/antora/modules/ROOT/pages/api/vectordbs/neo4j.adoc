@@ -24,7 +24,7 @@ d. link:https://neo4j.com/deployment-center/[Neo4j Server] instance
 
 To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide (e.g. via environment variables) access details for your instance.
 
-Additionally, you will need to provide your OpenAI API Key. Set it as an environment variable like sos:
+Additionally, you will need to provide your OpenAI API Key. Set it as an environment variable like so:
 
 [source,bash]
 ----
