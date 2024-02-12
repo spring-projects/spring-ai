@@ -40,7 +40,7 @@ public class Neo4jVectorStoreProperties {
 	private String indexName = Neo4jVectorStore.DEFAULT_INDEX_NAME;
 
 	public String getDatabaseName() {
-		return databaseName;
+		return this.databaseName;
 	}
 
 	public void setDatabaseName(String databaseName) {
@@ -48,7 +48,7 @@ public class Neo4jVectorStoreProperties {
 	}
 
 	public int getEmbeddingDimension() {
-		return embeddingDimension;
+		return this.embeddingDimension;
 	}
 
 	public void setEmbeddingDimension(int embeddingDimension) {
@@ -56,7 +56,7 @@ public class Neo4jVectorStoreProperties {
 	}
 
 	public Neo4jVectorStore.Neo4jDistanceType getDistanceType() {
-		return distanceType;
+		return this.distanceType;
 	}
 
 	public void setDistanceType(Neo4jVectorStore.Neo4jDistanceType distanceType) {
@@ -64,7 +64,7 @@ public class Neo4jVectorStoreProperties {
 	}
 
 	public String getLabel() {
-		return label;
+		return this.label;
 	}
 
 	public void setLabel(String label) {
@@ -72,7 +72,7 @@ public class Neo4jVectorStoreProperties {
 	}
 
 	public String getEmbeddingProperty() {
-		return embeddingProperty;
+		return this.embeddingProperty;
 	}
 
 	public void setEmbeddingProperty(String embeddingProperty) {

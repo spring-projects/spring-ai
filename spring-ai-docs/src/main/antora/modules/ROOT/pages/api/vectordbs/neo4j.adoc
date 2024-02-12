@@ -2,67 +2,32 @@
 
 This section walks you through setting up `Neo4jVectorStore` to store document embeddings and perform similarity searches.
 
-== What is Neo4j?
+link:https://neo4j.com[Neo4j] is an open-source NoSQL graph database.
+It is a fully transactional database (ACID) that stores data structured as graphs consisting of nodes, connected by relationships.
+Inspired by the structure of the real world, it allows for high query performance on complex data while remaining intuitive and simple for the developer.
 
-link:https://neo4j.com[Neo4j] is an open-source NoSQL graph database. It is a fully transactional database (ACID) that stores data structured as graphs consisting of nodes, connected by relationships. Inspired by the structure of the real world, it allows for high query performance on complex data while remaining intuitive and simple for the developer.
+The link:https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/[Neo4j's Vector Search] allows users to query vector embeddings from large datasets. An embedding is a numerical representation of a data object, such as text, image, audio, or document.
+Embeddings can be stored on _Node_ properties and can be queried with the `db.index.vector.queryNodes()` function.
+Those indexes are powered by Lucene using a Hierarchical Navigable Small World Graph (HNSW) to perform a k approximate nearest neighbors (k-ANN) query over the vector fields.
 
-== What is Neo4j Vector Search?
+== Prerequisites
 
-link:https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/[Neo4j's Vector Search] got introduced in Neo4j 5.11 and was considered GA with the release of version 5.13. Embeddings can be stored on _Node_ properties and can be queried with the `db.index.vector.queryNodes()` function. Those indexes are powered by Lucene using a Hierarchical Navigable Small World Graph (HNSW) to perform a k approximate nearest neighbors (k-ANN) query over the vector fields.
-
-=== Prerequisites
-
-1. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
-
-2. A running Neo4j (5.13+) instance
-a. link:https://hub.docker.com/_/neo4j[Docker] image _neo4j:5.15_
-b. link:https://neo4j.com/download/[Neo4j Desktop]
-c. link:https://neo4j.com/cloud/aura-free/[Neo4j Aura]
-d. link:https://neo4j.com/deployment-center/[Neo4j Server] instance
+* You would need an xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored in the `Neo4jVectorStore`.
+* A running Neo4j (5.13+) instance. Following options are available:
+** link:https://hub.docker.com/_/neo4j[Docker] image `neo4j:5.16.0`
+** link:https://neo4j.com/download/[Neo4j Desktop]
+** link:https://neo4j.com/cloud/aura-free/[Neo4j Aura]
+** link:https://neo4j.com/deployment-center/[Neo4j Server] instance
 
 == Configuration
 
 To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide (e.g. via environment variables) access details for your instance.
 
-Additionally, you will need to provide your OpenAI API Key. Set it as an environment variable like so:
-
-[source,bash]
-----
-export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
-----
-
-== Repository
-
-To acquire Spring AI artifacts, declare the Spring Snapshot repository:
-
-[source,xml]
-----
-<repository>
-	<id>spring-snapshots</id>
-	<name>Spring Snapshots</name>
-	<url>https://repo.spring.io/snapshot</url>
-	<releases>
-		<enabled>false</enabled>
-	</releases>
-</repository>
-----
+TIP: Additionally, you will need a configured xref:api/embeddings.adoc#available-implementations[EmbeddingClient].
 
 == Dependencies
 
-Add these dependencies to your project:
-
-* OpenAI: Required for calculating embeddings.
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-	<version>0.8.0-SNAPSHOT</version>
-</dependency>
-----
-
-* Neo4j Vector Store
+Add the Neo4j Vector Store dependency to your project:
 
 [source,xml]
 ----
@@ -72,6 +37,17 @@ Add these dependencies to your project:
 	<version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-neo4j-store:0.8.0-SNAPSHOT'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
 == Sample Code
 
@@ -93,15 +69,16 @@ You'll need a `VectorStore` to store the embeddings. You can use the `Neo4jVecto
 [source,java]
 ----
 @Bean
+public EmbeddingClient embeddingClient() {
+	// Can be any other EmbeddingClient implementation.
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
+
+@Bean
 public Driver driver() {
     return GraphDatabase.driver(System.getenv("SPRING_NEO4J_URI"),
             AuthTokens.basic(System.getenv("SPRING_NEO4J_AUTHENTICATION_USERNAME"),
                     System.getenv("SPRING_NEO4J_AUTHENTICATION_PASSWORD")));
-}
-
-@Bean
-public EmbeddingClient embeddingClient() {
-    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
 }
 
 @Bean
@@ -112,3 +89,77 @@ public VectorStore vectorStore(Driver driver, EmbeddingClient embeddingClient) {
 ----
 
 The `Neo4jVectorStore` is now ready to be used in your application. You can use it to store embeddings and perform similarity searches.
+
+== Metadata filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Neo4j store as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+                    SearchRequest.defaults()
+                            .withQuery("The World")
+                            .withTopK(TOP_K)
+                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                            .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+                    .withQuery("The World")
+                    .withTopK(TOP_K)
+                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                    .withFilterExpression(b.and(
+                            b.in("john", "jill"),
+                            b.eq("article_type", "blog")).build()));
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary Neo4j `WHERE` link:https://neo4j.com/developer/cypher/filtering-query-results/[filter expressions].
+
+For example, this portable filter expression:
+
+```sql
+author in ['john', 'jill'] && 'article_type' == 'blog'
+```
+
+is converted into the proprietary Neo4j filter format:
+
+```
+node.`metadata.author` IN ["john","jill"] AND node.`metadata.'article_type'` = "blog"
+```
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Neo4j Vector Sore.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-neo4j-store-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+TIP: Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Now you can auto-wire the `Neo4jVectorStore` as a vector store in your application.

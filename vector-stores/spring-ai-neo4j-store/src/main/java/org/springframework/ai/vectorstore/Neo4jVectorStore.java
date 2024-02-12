@@ -22,6 +22,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -222,6 +223,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	public static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
 
+	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
+
 	private final Driver driver;
 
 	private final EmbeddingClient embeddingClient;
@@ -277,24 +280,25 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
-		if (request.getFilterExpression() != null) {
-			throw new UnsupportedOperationException(
-					"The [" + this.getClass() + "] doesn't support metadata filtering!");
-		}
-
 		Assert.isTrue(request.getTopK() > 0, "The number of documents to returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
 		var embedding = Values.value(toFloatArray(this.embeddingClient.embed(request.getQuery())));
 		try (var session = this.driver.session(this.config.sessionConfig)) {
+			StringBuilder condition = new StringBuilder("score >= $threshold");
+			if (request.hasFilterExpression()) {
+				condition.append(" AND ")
+					.append(this.filterExpressionConverter.convertExpression(request.getFilterExpression()));
+			}
+			String query = """
+					CALL db.index.vector.queryNodes($indexName, $numberOfNearestNeighbours, $embeddingValue)
+					YIELD node, score
+					WHERE %s
+					RETURN node, score""".formatted(condition);
+
 			return session
-				.run("""
-						CALL db.index.vector.queryNodes($indexName, $numberOfNearestNeighbours, $embeddingValue)
-						YIELD node, score
-						WHERE score >= $threshold
-						RETURN node, score
-						""",
+				.run(query,
 						Map.of("indexName", this.config.indexName, "numberOfNearestNeighbours", request.getTopK(),
 								"embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
 				.list(Neo4jVectorStore::recordToDocument);

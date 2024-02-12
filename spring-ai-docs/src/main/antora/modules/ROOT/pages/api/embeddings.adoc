@@ -146,7 +146,7 @@ public class Embedding implements ModelResult<List<Double>> {
 }
 ----
 
-== Available Implementations
+== Available Implementations [[available-implementations]]
 
 Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
 
