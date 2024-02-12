@@ -4,8 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -127,21 +125,6 @@ class VertexAiChatGenerationClientIT {
 			return new VertexAiChatClient(vertexAiApi);
 		}
 
-	}
-
-	@Test
-	void functionTest() {
-		String request = "Give me the weather for winston";
-
-		UserMessage userMessage = new UserMessage(request);
-		Prompt prompt = new Prompt(List.of(userMessage));
-		var response = openAiClient.generate(prompt);
-		Assertions.assertDoesNotThrow(() -> {
-			var weather = new ObjectMapper().readValue(response.getGeneration().getText(),
-					OpenAiTestConfiguration.Weather.class);
-			Assertions.assertEquals("winston", weather.name());
-			Assertions.assertEquals("90f", weather.temp());
-		});
 	}
 
 }
