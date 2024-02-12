@@ -17,7 +17,7 @@
 **** xref:api/clients/functions/openai-chat-functions.adoc[]
 *** xref:api/clients/azure-openai-chat.adoc[]
 *** xref:api/clients/ollama-chat.adoc[]
-*** xref:api/bedrock.adoc[Amazon Bedrock Chat]
+*** xref:api/bedrock-chat.adoc[Amazon Bedrock Chat]
 **** xref:api/clients/bedrock/bedrock-anthropic.adoc[]
 **** xref:api/clients/bedrock/bedrock-llama2.adoc[]
 **** xref:api/clients/bedrock/bedrock-cohere.adoc[]
