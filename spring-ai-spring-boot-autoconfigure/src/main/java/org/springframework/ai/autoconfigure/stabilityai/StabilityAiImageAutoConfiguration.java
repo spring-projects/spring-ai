@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.stabilityai;
 
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.stabilityai.StabilityAiImageClient;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -24,7 +23,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -34,7 +32,6 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(StabilityAiApi.class)
 @EnableConfigurationProperties({ StabilityAiProperties.class })
-@ImportRuntimeHints(NativeHints.class)
 public class StabilityAiImageAutoConfiguration {
 
 	@Bean
