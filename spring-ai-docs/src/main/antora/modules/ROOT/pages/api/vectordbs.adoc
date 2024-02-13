@@ -6,7 +6,7 @@ A vector databases is a specialized type of database that plays an essential rol
 In vector databases, queries differ from traditional relational databases.
 Instead of exact matches, they perform similarity searches.
 When given a vector as a query, a vector database returns vectors that are "`similar`" to the query vector.
-Further details on how this similarity is calculated at a high-level is provided in a <<vectordbs-similarity,later section>>.
+Further details on how this similarity is calculated at a high-level is provided in a xref:api/vectordbs/understand-vectordbs.adoc#vectordbs-similarity[Vector Similarity].
 
 Vector databases are used to integrate your data with AI models.
 The first step in their usage is to load your data into a vector database.
@@ -49,6 +49,7 @@ public class SearchRequest {
 	private Filter.Expression filterExpression;
 
 	public static SearchRequest query(String query) { return new SearchRequest(query); }
+
 	private SearchRequest(String query) { this.query = query; }
 
 	public SearchRequest withTopK(int topK) {...}
@@ -78,24 +79,23 @@ The `similaritySearch` methods in the interface allow for retrieving documents s
 * `k`: An integer that specifies the maximum number of similar documents to return. This is often referred to as a 'top K' search, or 'K nearest neighbors' (KNN).
 * `threshold`: A double value ranging from 0 to 1, where values closer to 1 indicate higher similarity. By default, if you set a threshold of 0.75, for instance, only documents with a similarity above this value are returned.
 * `Filter.Expression`: A class used for passing a fluent DSL (Domain-Specific Language) expression that functions similarly to a 'where' clause in SQL, but it applies exclusively to the metadata key-value pairs of a `Document`.
-* `filterExpression`: An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and `isActive`, you could use an expression such as
-``` java
-country == 'UK' && year >= 2020 && isActive == true.
-```
+* `filterExpression`: An external DSL based on ANTLR4 that accepts filter expressions as strings. For example, with metadata keys like country, year, and `isActive`, you could use an expression such as: `country == 'UK' && year >= 2020 && isActive == true.`
+
+Find more information on the `Filter.Expression` in the <<metadata-filters>> section.
 
 == Available Implementations
 
 These are the available implementations of the `VectorStore` interface:
 
-* Azure Vector Search [`AzureVectorStore`]: The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store
-* Chroma [`ChromaVectorStore`]: The https://www.trychroma.com/[Chroma] vector store
-* Milvus [`MilvusVectorStore`]: The https://milvus.io/[Milvus] vector store
-* Neo4j [`Neo4jVectorStore`]: The https://neo4j.com/[Neo4j] vector store
-* PgVector [`PgVectorStore`]: The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store
-* Pinecone: https://www.pinecone.io/[PineCone] vector store
-* Redis [`RedisVectorStore`]: The https://redis.io/[Redis] vector store
-* Simple Vector Store [`SimpleVectorStore`]: A simple implementation of persistent vector storage, good for educational purposes
-* Weaviate [`WeaviateVectorStore`] The https://weaviate.io/[Weaviate] vector store
+* xref:api/vectordbs/azure.adoc[ Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
+* xref:api/vectordbs/chroma.adoc[ChromaVectorStore] - The https://www.trychroma.com/[Chroma] vector store.
+* xref:api/vectordbs/milvus.adoc[MilvusVectorStore] - The https://milvus.io/[Milvus] vector store.
+* xref:api/vectordbs/neo4j.adoc[Neo4jVectorStore] - The https://neo4j.com/[Neo4j] vector store.
+* xref:api/vectordbs/pgvector.adoc[PgVectorStore] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
+* xref:api/vectordbs/pinecone.adoc[PineconeVectorStore] - https://www.pinecone.io/[PineCone] vector store.
+* xref:api/vectordbs/redis.adoc[RedisVectorStore] - The https://redis.io/[Redis] vector store.
+* xref:api/vectordbs/weaviate.adoc[WeaviateVectorStore] - The https://weaviate.io/[Weaviate] vector store.
+* link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.
 
 More implementations may be supported in future releases.
 
@@ -137,7 +137,7 @@ Later, when a user question is passed into the AI model, a similarity search is 
 
 Additional options can be passed into the `similaritySearch` method to define how many documents to retrieve and a threshold of the similarity search.
 
-== Metadata Filters
+== Metadata Filters [[metadata-filters]]
 
 This section describes various filters that you can use against the results of a query.
 
@@ -209,99 +209,6 @@ Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 
 == Understanding Vectors
 
-Vectors have dimensionality and a direction.
-For example, the following image depicts a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
+xref:api/vectordbs/understand-vectordbs.adoc[Understanding Vectors]
 
-image::vector_2d_coordinates.png[]
-
-The head of the vector stem:[\vec{a}] is at the point stem:[(a_1, a_2)].
-The *x* coordinate value is stem:[a_1] and the *y* coordinate value is stem:[a_2]. The coordinates are also referred to as the components of the vector.
-
-[[vectordbs-similarity]]
-== Similarity
-
-Several mathematical formulas can be used to determine if two vectors are similar.
-
-One of the most intuitive to visualize and understand is cosine similarity.
-
-Consider the following images that show three sets of graphs:
-
-image::vector_similarity.png[]
-
-The vectors stem:[\vec{A}] and stem:[\vec{B}] are considered similar, when they are pointing close to each other, as in the first diagram.
-The vectors are considered unrelated when pointing perpendicular to each other and opposite when they point away from each other.
-
-The angle between them, stem:[\theta], is a good measure of their similarity.
-How can the angle stem:[\theta] be computed?
-
-We are all familiar with the https://en.wikipedia.org/wiki/Pythagorean_theorem#History[Pythagorean Theorem].
-
-image:pythagorean-triangle.png[]
-
-What about when the angle between *a* and *b* is not 90 degrees?
-
-Enter the https://en.wikipedia.org/wiki/Law_of_cosines[Law of cosines].
-
-
-.Law of Cosines
-****
-stem:[a^2 + b^2 - 2ab\cos\theta = c^2]
-****
-
-The following image shows this approach as a vector diagram:
-
-image:lawofcosines.png[]
-
-
-The magnitude of this vector is defined in terms of its components as:
-
-.Magnitude
-****
-stem:[\vec{A} * \vec{A} = ||\vec{A}||^2 = A_1^2 + A_2^2 ]
-****
-
-The dot product between two vectors stem:[\vec{A}] and stem:[\vec{B}] is defined in terms of its components as:
-
-
-.Dot Product
-****
-stem:[\vec{A} * \vec{B} = A_1B_1 + A_2B_2]
-****
-
-Rewriting the Law of Cosines with vector magnitudes and dot products gives the following:
-
-.Law of Cosines in Vector form
-****
-stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec{C}||^2]
-****
-
-
-Replacing stem:[||\vec{C}||^2] with stem:[||\vec{B} - \vec{A}||^2] gives the following:
-
-.Law of Cosines in Vector form only in terms of stem:[\vec{A}] and stem:[\vec{B}]
-
-****
-stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec{B} - \vec{A}||^2]
-****
-
-
-https://towardsdatascience.com/cosine-similarity-how-does-it-measure-the-similarity-maths-behind-and-usage-in-python-50ad30aad7db[Expanding this out] gives us the formula for https://en.wikipedia.org/wiki/Cosine_similarity[Cosine Similarity].
-
-.Cosine Similarity
-****
-stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{\vec{A}\cdot\vec{B}}{||\vec{A}\||\cdot||\vec{B}||]
-****
-
-This formula works for dimensions higher than 2 or 3, though it is hard to visualize. However, https://projector.tensorflow.org/[it can be visualized to some extent].
-It is common for vectors in AI/ML applications to have hundreds or even thousands of dimensions.
-
-The similarity function in higher dimensions using the components of the vector is shown below.
-It expands the two-dimensional definitions of Magnitude and Dot Product given previously to *N* dimensions by using https://en.wikipedia.org/wiki/Summation[Summation mathematical syntax].
-
-.Cosine Similarity with vector components
-****
-stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{ \sum_{i=1}^{n} {A_i  B_i} }{ \sqrt{\sum_{i=1}^{n}{A_i^2} \cdot \sum_{i=1}^{n}{B_i^2}}]
-****
-
-This is the key formula used in the simple implementation of a vector store and can be found in the `InMemoryVectorStore` implementation.
 

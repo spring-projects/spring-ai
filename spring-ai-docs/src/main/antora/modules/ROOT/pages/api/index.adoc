@@ -9,6 +9,7 @@ The <<generic-model-api>> can help you understand the basic constructs used impl
 == APIs
 * xref:api/embeddings.adoc[Embeddings API]
 * xref:api/chatclient.adoc[Chat Completion API]
+* xref:api/vectordbs.adoc[Vector Database API]
 * xref:api/[Image Generation API](WIP)
 
 == Spring AI Generic Model API [[generic-model-api]]
