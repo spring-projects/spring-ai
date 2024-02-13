@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.ollama;
 
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.ollama.OllamaChatClient;
 import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -25,7 +24,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -38,7 +36,6 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
 		OllamaConnectionProperties.class })
-@ImportRuntimeHints(NativeHints.class)
 public class OllamaAutoConfiguration {
 
 	@Bean
