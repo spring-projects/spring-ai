@@ -13,6 +13,7 @@
 	<description>Building AI applications with Spring Boot</description>
 
 	<modules>
+		<module>spring-ai-bom</module>
 		<module>spring-ai-core</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-postgresml</module>
@@ -51,7 +52,6 @@
 		<module>vector-stores/spring-ai-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
-
 	</modules>
 
 	<organization>
