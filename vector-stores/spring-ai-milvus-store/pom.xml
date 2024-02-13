@@ -36,7 +36,7 @@
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai</artifactId>
+			<artifactId>spring-ai-vertex-ai-palm2</artifactId>
 			<version>${parent.version}</version>
 			<scope>test</scope>
 		</dependency>

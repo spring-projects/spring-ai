@@ -17,17 +17,28 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
+import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
+import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinition;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
+import com.azure.ai.openai.models.ChatCompletionsToolCall;
+import com.azure.ai.openai.models.ChatCompletionsToolDefinition;
 import com.azure.ai.openai.models.ChatRequestAssistantMessage;
 import com.azure.ai.openai.models.ChatRequestMessage;
 import com.azure.ai.openai.models.ChatRequestSystemMessage;
+import com.azure.ai.openai.models.ChatRequestToolMessage;
 import com.azure.ai.openai.models.ChatRequestUserMessage;
+import com.azure.ai.openai.models.ChatResponseMessage;
+import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
+import com.azure.ai.openai.models.FunctionDefinition;
+import com.azure.core.util.BinaryData;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +46,6 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
@@ -43,9 +53,13 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * {@link ChatClient} implementation for {@literal Microsoft Azure AI} backed by
@@ -58,7 +72,9 @@ import org.springframework.util.Assert;
  * @see ChatClient
  * @see com.azure.ai.openai.OpenAIClient
  */
-public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
+public class AzureOpenAiChatClient
+		extends AbstractFunctionCallSupport<ChatRequestMessage, ChatCompletionsOptions, ChatCompletions>
+		implements ChatClient, StreamingChatClient {
 
 	private static final String DEFAULT_MODEL = "gpt-35-turbo";
 
@@ -82,6 +98,12 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options) {
+		this(microsoftOpenAiClient, options, null);
+	}
+
+	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext) {
+		super(functionCallbackContext);
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
@@ -100,7 +122,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	}
 
 	public AzureOpenAiChatOptions getDefaultOptions() {
-		return defaultOptions;
+		return this.defaultOptions;
 	}
 
 	@Override
@@ -111,7 +133,10 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		logger.trace("Azure ChatCompletionsOptions: {}", options);
 
-		ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
+		ChatCompletions chatCompletions = this.callWithFunctionSupport(options);
+
+		// ChatCompletions chatCompletions =
+		// this.openAIClient.getChatCompletions(options.getModel(), options);
 
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
@@ -154,6 +179,8 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 	 */
 	ChatCompletionsOptions toAzureChatCompletionsOptions(Prompt prompt) {
 
+		Set<String> functionsForThisRequest = new HashSet<>();
+
 		List<ChatRequestMessage> azureMessages = prompt.getInstructions()
 			.stream()
 			.map(this::fromSpringAiMessage)
@@ -167,6 +194,10 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 			// options = ModelOptionsUtils.merge(options, this.defaultOptions,
 			// ChatCompletionsOptions.class);
 			options = merge(options, this.defaultOptions);
+
+			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
+					!IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(defaultEnabledFunctions);
 		}
 
 		if (prompt.getOptions() != null) {
@@ -178,6 +209,11 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 				// options = ModelOptionsUtils.merge(runtimeOptions, options,
 				// ChatCompletionsOptions.class);
 				options = merge(updatedRuntimeOptions, options);
+
+				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+						IS_RUNTIME_CALL);
+				functionsForThisRequest.addAll(promptEnabledFunctions);
+
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionsOptions:"
@@ -185,7 +221,29 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 			}
 		}
 
+		// Add the enabled functions definitions to the request's tools parameter.
+
+		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
+			List<ChatCompletionsFunctionToolDefinition> tools = this.getFunctionTools(functionsForThisRequest);
+			List<ChatCompletionsToolDefinition> tools2 = tools.stream()
+				.map(t -> ((ChatCompletionsToolDefinition) t))
+				.toList();
+			options.setTools(tools2);
+		}
+
 		return options;
+	}
+
+	private List<ChatCompletionsFunctionToolDefinition> getFunctionTools(Set<String> functionNames) {
+		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
+
+			FunctionDefinition functionDefinition = new FunctionDefinition(functionCallback.getName());
+			functionDefinition.setDescription(functionCallback.getDescription());
+			BinaryData parameters = BinaryData
+				.fromObject(ModelOptionsUtils.jsonToMap(functionCallback.getInputTypeSchema()));
+			functionDefinition.setParameters(parameters);
+			return new ChatCompletionsFunctionToolDefinition(functionDefinition);
+		}).toList();
 	}
 
 	private ChatRequestMessage fromSpringAiMessage(Message message) {
@@ -281,6 +339,8 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		ChatCompletionsOptions mergedAzureOptions = new ChatCompletionsOptions(azureOptions.getMessages());
 		mergedAzureOptions = merge(azureOptions, mergedAzureOptions);
 
+		mergedAzureOptions.setStream(azureOptions.isStream());
+
 		if (springAiOptions.getMaxTokens() != null) {
 			mergedAzureOptions.setMaxTokens(springAiOptions.getMaxTokens());
 		}
@@ -324,6 +384,8 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		return mergedAzureOptions;
 	}
 
+	// https://github.com/Azure/azure-sdk-for-java/blob/azure-ai-openai_1.0.0-beta.6/sdk/openai/azure-ai-openai/src/samples/java/com/azure/ai/openai/usage/GetChatCompletionsToolCallSample.java
+
 	private ChatCompletionsOptions merge(ChatCompletionsOptions fromOptions, ChatCompletionsOptions toOptions) {
 
 		if (fromOptions == null) {
@@ -365,6 +427,70 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		return mergedOptions;
+	}
+
+	@Override
+	protected ChatCompletionsOptions doCreateToolResponseRequest(ChatCompletionsOptions previousRequest,
+			ChatRequestMessage responseMessage, List<ChatRequestMessage> conversationHistory) {
+
+		// Every tool-call item requires a separate function call and a response (TOOL)
+		// message.
+		for (ChatCompletionsToolCall toolCall : ((ChatRequestAssistantMessage) responseMessage).getToolCalls()) {
+
+			var functionName = ((ChatCompletionsFunctionToolCall) toolCall).getFunction().getName();
+			String functionArguments = ((ChatCompletionsFunctionToolCall) toolCall).getFunction().getArguments();
+
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+
+			// Add the function response to the conversation.
+			conversationHistory.add(new ChatRequestToolMessage(functionResponse, toolCall.getId()));
+		}
+
+		// Recursively call chatCompletionWithTools until the model doesn't call a
+		// functions anymore.
+		ChatCompletionsOptions newRequest = new ChatCompletionsOptions(conversationHistory);
+
+		newRequest = merge(previousRequest, newRequest);
+
+		return newRequest;
+	}
+
+	@Override
+	protected List<ChatRequestMessage> doGetUserMessages(ChatCompletionsOptions request) {
+		return request.getMessages();
+	}
+
+	@Override
+	protected ChatRequestMessage doGetToolResponseMessage(ChatCompletions response) {
+		ChatResponseMessage responseMessage = response.getChoices().get(0).getMessage();
+		ChatRequestAssistantMessage assistantMessage = new ChatRequestAssistantMessage("");
+		assistantMessage.setToolCalls(responseMessage.getToolCalls());
+		return assistantMessage;
+	}
+
+	@Override
+	protected ChatCompletions doChatCompletion(ChatCompletionsOptions request) {
+		return this.openAIClient.getChatCompletions(request.getModel(), request);
+	}
+
+	@Override
+	protected boolean isToolFunctionCall(ChatCompletions chatCompletions) {
+
+		if (chatCompletions == null || CollectionUtils.isEmpty(chatCompletions.getChoices())) {
+			return false;
+		}
+
+		var choice = chatCompletions.getChoices().get(0);
+
+		if (choice == null || choice.getFinishReason() == null) {
+			return false;
+		}
+
+		return choice.getFinishReason() == CompletionsFinishReason.TOOL_CALLS;
 	}
 
 }

@@ -1,0 +1,200 @@
+= VertexAI Gemini Chat
+
+
+
+The https://cloud.google.com/vertex-ai/docs/generative-ai/multimodal/overview[Vertex AI Gemini API] allows developers to build generative AI applications using the Gemini model.
+The Vertex AI Gemini API supports multimodal prompts as input and output text or code.
+A multimodal model is a model that is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
+
+Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to the Gemini 1.0 Pro Vision and Gemini 1.0 Pro models. For specifications of the Vertex AI Gemini API models, see link:https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models#gemini-models[Model information].
+
+link:https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini[Gemini API Reference]
+
+== Prerequisites
+
+Set up your Java Development Environment.
+Authenticate by running the following command. Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project PROJECT_ID &&
+gcloud auth application-default login ACCOUNT
+----
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the VertexAI Gemini Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+The prefix `spring.ai.vertex.ai.gemini` is used as the property prefix that lets you connect to VertexAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.gemini.projectId   | Google Cloud Platform project ID |  -
+| spring.ai.vertex.ai.gemini.location    | Region           |  -
+| spring.ai.vertex.ai.gemini.credentialsUri    | URI to Vertex AI Gemini credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -
+|====
+
+The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets you configure the chat client implementation for VertexAI Gemini Chat.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.gemini.chat.model | This is the https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini[Vertex AI Gemini Chat model] to use | gemini-pro-vision
+| spring.ai.vertex.ai.gemini.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.8
+| spring.ai.vertex.ai.gemini.chat.options.topK | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
+| spring.ai.vertex.ai.gemini.chat.options.topP | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
+| spring.ai.vertex.ai.gemini.chat.options.candidateCount | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | -
+| spring.ai.vertex.ai.gemini.chat.options.candidateCount | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | -
+| spring.ai.vertex.ai.gemini.chat.options.maxOutputTokens | The maximum number of tokens to generate. | -
+| spring.ai.vertex.ai.gemini.chat.options.frequencyPenalty |  | -
+| spring.ai.vertex.ai.gemini.chat.options.presencePenalty |  | -
+| spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
+
+|====
+
+TIP: All properties prefixed with `spring.ai.vertex.ai.gemini.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+=== Chat Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatOptions.java[VertexAiGeminiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
+
+On start-up, the default options can be configured with the `VertexAiGeminiChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        VertexAiChatOptions.builder()
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific `VertexAiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+=== Function Calling
+
+You can register custom Java functions with the VertexAiGeminiChatClient and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/clients/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
+
+
+=== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-plam2-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi Chat client:
+
+[source,application.properties]
+----
+spring.ai.vertex.ai.gemini.project-id=PROJECT_ID
+spring.ai.vertex.ai.gemini.location=LOCATION
+spring.ai.vertex.ai.gemini.chat.options.model=vertex-pro-vision
+spring.ai.vertex.ai.gemini.chat.options.temperature=0.5
+----
+
+TIP: replace the `api-key` with your VertexAI credentials.
+
+This will create a `VertexAiGeminiChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final VertexAiGeminiChatClient chatClient;
+
+    @Autowired
+    public ChatController(VertexAiGeminiChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatClient.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClient.java[VertexAiGeminiChatClient] implements the `ChatClient` and uses the `VertexAI` to connect to the Vertex AI Gemini service.
+
+Add the `spring-ai-vertex-ai-gemini` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-gemini</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-gemini'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `VertexAiGeminiChatClient` and use it for text generations:
+
+[source,java]
+----
+VertexAI vertexApi =  new VertexAI(projectId, location);
+
+var chatClient = new VertexAiGeminiChatClient(vertexApi,
+    VertexAiGeminiChatOptions.builder()
+        .withTemperature(0.4)
+    .build());
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `VertexAiGeminiChatOptions` provides the configuration information for the chat requests.
+The `VertexAiGeminiChatOptions.Builder` is fluent options builder.
+
+=== Multi-modal
+
+https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java]

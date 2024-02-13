@@ -36,7 +36,7 @@ public class AssistantMessage extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "AssistantMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+		return "AssistantMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
 				+ messageType + '}';
 	}
 

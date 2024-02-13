@@ -54,10 +54,11 @@ public class FunctionCallbackInPromptIT {
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 			var promptOptions = OpenAiChatOptions.builder()
-				.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>("CurrentWeatherService", // name
-						"Get the weather in location", // function description
-						(response) -> "" + response.temp() + response.unit(), // responseConverter
-						new MockWeatherService()))) // function code
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+					.withName("CurrentWeatherService")
+					.withDescription("Get the weather in location")
+					.withResponseConverter((response) -> "" + response.temp() + response.unit())
+					.build()))
 				.build();
 
 			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.CollectionUtils;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 
 /**
@@ -71,6 +72,9 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * @return Returns the first {@link Generation} in the generations list.
 	 */
 	public Generation getResult() {
+		if (CollectionUtils.isEmpty(this.generations)) {
+			return null;
+		}
 		return this.generations.get(0);
 	}
 

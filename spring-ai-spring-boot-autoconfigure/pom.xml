@@ -21,6 +21,12 @@
 
 	<dependencies>
 
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>${protobuf-java.version}</version>
+		</dependency>
+
 		<!-- production dependencies -->
 
 		<dependency>
@@ -155,10 +161,18 @@
 			<version>5.1.0</version>
 		</dependency>
 
-		<!-- Vertex AI LLM -->
+		<!-- Vertex AI PaLM2 -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai</artifactId>
+			<artifactId>spring-ai-vertex-ai-palm2</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Vertex AI Gemini -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai-gemini</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>

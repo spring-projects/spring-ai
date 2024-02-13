@@ -34,7 +34,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-vertex-ai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-vertex-ai-plam2-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -43,7 +43,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-vertex-ai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-plam2-spring-boot-starter'
 }
 ----
 
@@ -74,7 +74,7 @@ The prefix `spring.ai.vertex.ai.embedding` is the property prefix that lets you 
 
 === Sample Controller (Auto-configuration)
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-plam2-spring-boot-starter` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi Chat client:
 
@@ -119,7 +119,7 @@ Add the `spring-ai-vertex-ai` dependency to your project's Maven `pom.xml` file:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-vertex-ai</artifactId>
+    <artifactId>spring-ai-vertex-ai-palm2</artifactId>
 </dependency>
 ----
 
