@@ -132,8 +132,8 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	public void testComplexIdentifiers2() {
 		Filter.Expression expr = Filter.parser().parse("author in ['john', 'jill'] && 'article_type' == 'blog'");
 		String vectorExpr = converter.convertExpression(expr);
-		System.out.println(vectorExpr);
-		assertThat(vectorExpr).isEqualTo("node.`metadata.country 1 2 3` = \"BG\"");
+		assertThat(vectorExpr)
+			.isEqualTo("node.`metadata.author` IN [\"john\",\"jill\"] AND node.`metadata.'article_type'` = \"blog\"");
 	}
 
 }
