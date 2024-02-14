@@ -6,24 +6,19 @@ link:https://neo4j.com[Neo4j] is an open-source NoSQL graph database.
 It is a fully transactional database (ACID) that stores data structured as graphs consisting of nodes, connected by relationships.
 Inspired by the structure of the real world, it allows for high query performance on complex data while remaining intuitive and simple for the developer.
 
-The link:https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/[Neo4j's Vector Search] allows users to query vector embeddings from large datasets. An embedding is a numerical representation of a data object, such as text, image, audio, or document.
+The link:https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/[Neo4j's Vector Search] allows users to query vector embeddings from large datasets.
+An embedding is a numerical representation of a data object, such as text, image, audio, or document.
 Embeddings can be stored on _Node_ properties and can be queried with the `db.index.vector.queryNodes()` function.
 Those indexes are powered by Lucene using a Hierarchical Navigable Small World Graph (HNSW) to perform a k approximate nearest neighbors (k-ANN) query over the vector fields.
 
 == Prerequisites
 
-* You would need an xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored in the `Neo4jVectorStore`.
-* A running Neo4j (5.13+) instance. Following options are available:
-** link:https://hub.docker.com/_/neo4j[Docker] image `neo4j:5.16.0`
+* A running Neo4j (5.13+) instance. The following options are available:
+** link:https://hub.docker.com/_/neo4j[Docker] image
 ** link:https://neo4j.com/download/[Neo4j Desktop]
 ** link:https://neo4j.com/cloud/aura-free/[Neo4j Aura]
 ** link:https://neo4j.com/deployment-center/[Neo4j Server] instance
-
-== Configuration
-
-To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide (e.g. via environment variables) access details for your instance.
-
-TIP: Additionally, you will need a configured xref:api/embeddings.adoc#available-implementations[EmbeddingClient].
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `Neo4jVectorStore`.
 
 == Dependencies
 
@@ -49,46 +44,93 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
 
-== Sample Code
+== Configuration
 
-To configure `Neo4jVectorStore` in your application, you can use the following setup:
+To connect to Neo4j and use the `Neo4jVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.properties_,
 
-Add to your environment (using your own Neo4j credentials and the appropriate access protocol+endpoint) the following properties either by updating and executing the following commands or creating a shell script to be run from your command prompt (Linux/Mac/WSL2):
+[source,properties]
+----
+spring.neo4j.uri=<uri_for_your_neo4j_instance>
+spring.neo4j.authentication.username=<your_username>
+spring.neo4j.authentication.password=<your_password>
+# API key if needed, e.g. OpenAI
+spring.ai.openai.api.key=<api-key>
+----
+
+environment variables,
 
 [source,bash]
 ----
 export SPRING_NEO4J_URI=<uri_for_your_neo4j_instance>
 export SPRING_NEO4J_AUTHENTICATION_USERNAME=<your_username>
 export SPRING_NEO4J_AUTHENTICATION_PASSWORD=<your_password>
+# API key if needed, e.g. OpenAI
+export SPRING_AI_OPENAI_API_KEY=<api-key>
 ----
+
+or can be a mix of those.
+For example, if you want to store your API key as an environment variable but keep the rest in the plain _application.properties_ file.
 
 NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
 
-You'll need a `VectorStore` to store the embeddings. You can use the `Neo4jVectorStore` for this purpose, but first, you must create two beans the `Neo4jVectorStore` constructor requires. Here are examples of all of the beans you'll need:
+NOTE: Besides _application.properties_ and environment variables, Spring Boot offers https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config[additional configuration options].
+
+Spring Boot's auto-configuration feature for the Neo4j Driver will create a bean instance that will be used by the `Neo4jVectorStore`.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Neo4j Vector Sore.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-neo4j-store-spring-boot-starter:0.8.0-SNAPSHOT'
+}
+----
+
+Please have a look at the list of xref:#_neo4jvectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+Here is an example of the needed bean:
 
 [source,java]
 ----
 @Bean
 public EmbeddingClient embeddingClient() {
-	// Can be any other EmbeddingClient implementation.
+    // Can be any other EmbeddingClient implementation.
     return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
-}
-
-@Bean
-public Driver driver() {
-    return GraphDatabase.driver(System.getenv("SPRING_NEO4J_URI"),
-            AuthTokens.basic(System.getenv("SPRING_NEO4J_AUTHENTICATION_USERNAME"),
-                    System.getenv("SPRING_NEO4J_AUTHENTICATION_PASSWORD")));
-}
-
-@Bean
-public VectorStore vectorStore(Driver driver, EmbeddingClient embeddingClient) {
-    return new Neo4jVectorStore(driver, embeddingClient,
-            Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig());
 }
 ----
 
-The `Neo4jVectorStore` is now ready to be used in your application. You can use it to store embeddings and perform similarity searches.
+In cases where the Spring Boot auto-configured Neo4j `Driver` bean is not what you want or need, you can still define your own bean.
+Please read the https://neo4j.com/docs/java-manual/current/client-applications/[Neo4j Java Driver reference] for more in-depth information about the configuration of a custom driver.
+
+[source,java]
+----
+@Bean
+public Driver driver() {
+    return GraphDatabase.driver("neo4j://<host>:<bolt-port>",
+            AuthTokens.basic("<username>", "<password>"));
+}
+----
+
+Now you can auto-wire the `Neo4jVectorStore` as a vector store in your application.
 
 == Metadata filtering
 
@@ -135,31 +177,17 @@ is converted into the proprietary Neo4j filter format:
 node.`metadata.author` IN ["john","jill"] AND node.`metadata.'article_type'` = "blog"
 ```
 
-== Auto-configuration
+== Neo4jVectorStore properties
 
-Spring AI provides Spring Boot auto-configuration for the Neo4j Vector Sore.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+You can use the following properties in your Spring Boot configuration to customize the Neo4j vector store.
 
-[source, xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
-</dependency>
-----
+|===
+|Property|Default value
 
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-neo4j-store-spring-boot-starter:0.8.0-SNAPSHOT'
-}
-----
-
-TIP: Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
-
-TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
-
-Now you can auto-wire the `Neo4jVectorStore` as a vector store in your application.
+|`spring.ai.vectorstore.neo4j.database-name`|neo4j
+|`spring.ai.vectorstore.neo4j.embedding-dimension`|1536
+|`spring.ai.vectorstore.neo4j.distance-type`|cosine
+|`spring.ai.vectorstore.neo4j.label`|Document
+|`spring.ai.vectorstore.neo4j.embedding-property`|embedding
+|`spring.ai.vectorstore.neo4j.index-name`|spring-ai-document-index
+|===
