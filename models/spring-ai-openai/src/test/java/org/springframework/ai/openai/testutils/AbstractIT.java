@@ -14,6 +14,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.image.ImageClient;
+import org.springframework.ai.openai.OpenAiModerationClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -30,6 +31,9 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected ImageClient openaiImageClient;
+
+	@Autowired
+	protected OpenAiModerationClient openAiModerationClient;
 
 	@Autowired
 	protected StreamingChatClient openStreamingChatClient;

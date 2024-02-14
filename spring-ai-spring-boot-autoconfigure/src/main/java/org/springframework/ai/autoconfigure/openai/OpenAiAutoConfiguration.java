@@ -25,8 +25,10 @@ import org.springframework.ai.model.ToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiModerationClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -43,7 +45,7 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiModerationProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 /**
  * @author Christian Tzolov
@@ -126,6 +128,24 @@ public class OpenAiAutoConfiguration {
 		SpringAiFunctionAnnotationManager manager = new SpringAiFunctionAnnotationManager();
 		manager.setApplicationContext(context);
 		return manager;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiModerationClient openAiModerationClient(OpenAiConnectionProperties commonProperties,
+			OpenAiModerationProperties moderationProperties, RestClient.Builder restClientBuilder) {
+		String apiKey = StringUtils.hasText(moderationProperties.getApiKey()) ? moderationProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(moderationProperties.getBaseUrl()) ? moderationProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, OPEN_AI_API_KEY_MUST_BE_SET);
+		Assert.hasText(baseUrl, OPEN_AI_BASE_URL_MUST_BE_SET);
+
+		var openAiModerationApi = new OpenAiModerationApi(baseUrl, apiKey, restClientBuilder);
+
+		return new OpenAiModerationClient(openAiModerationApi).withDefaultOptions(moderationProperties.getOptions());
 	}
 
 }

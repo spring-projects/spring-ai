@@ -3,6 +3,7 @@ package org.springframework.ai.openai;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -18,6 +19,11 @@ public class OpenAiTestConfiguration {
 	@Bean
 	public OpenAiImageApi openAiImageApi() {
 		return new OpenAiImageApi(getApiKey());
+	}
+
+	@Bean
+	public OpenAiModerationApi openAiModerationApi() {
+		return new OpenAiModerationApi(getApiKey());
 	}
 
 	private String getApiKey() {
@@ -40,6 +46,12 @@ public class OpenAiTestConfiguration {
 		OpenAiImageClient openAiImageClient = new OpenAiImageClient(imageApi);
 		// openAiImageClient.setModel("foobar");
 		return openAiImageClient;
+	}
+
+	@Bean
+	public OpenAiModerationClient openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
+		OpenAiModerationClient openAiModerationClient = new OpenAiModerationClient(openAiModerationApi);
+		return openAiModerationClient;
 	}
 
 	@Bean
