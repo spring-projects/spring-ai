@@ -47,7 +47,7 @@ public class SpringAiFunctionAnnotationManager implements ApplicationContextAwar
 	}
 
 	/**
-	 * @return a list of all the {@link java.util.Function}s annotated with
+	 * @return a list of all the java.util.Functions annotated with
 	 * {@link SpringAiFunction}.
 	 */
 	public List<ToolFunctionCallback> getAnnotatedToolFunctionCallbacks() {
@@ -79,8 +79,8 @@ public class SpringAiFunctionAnnotationManager implements ApplicationContextAwar
 	/**
 	 * Note that the underlying function is responsible for converting the output into
 	 * format that can be consumed by the Model. The default implementation converts the
-	 * output into String before sending it to the Model. Provide a custom Function<O,
-	 * String> responseConverter implementation to override this.
+	 * output into String before sending it to the Model. Provide a custom function
+	 * responseConverter implementation to override this.
 	 *
 	 */
 	public static class SpringAiFunctionToolFunctionCallback<I, O> extends AbstractToolFunctionCallback<I, O> {

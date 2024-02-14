@@ -33,7 +33,6 @@ import org.springframework.util.Assert;
 /**
  * A document is a container for the content and metadata of a document. It also contains
  * the document's unique ID and an optional embedding.
- * <p>
  */
 @JsonIgnoreProperties({ "contentFormatter" })
 public class Document {
