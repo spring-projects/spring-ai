@@ -68,6 +68,7 @@ class ToolCallWithSpringAIFunctionAnnotationIT {
 
 	@Configuration
 	static class Config {
+
 		@SpringAiFunction(name = "WeatherInfo", description = "Get the weather in location",
 				classType = MockWeatherService.Request.class)
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
