@@ -21,8 +21,6 @@ import org.springframework.ai.image.*;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
-import org.springframework.ai.stabilityai.api.StabilityAiImageOptionsBuilder;
-import org.springframework.ai.stabilityai.api.StabilityAiImageOptionsImpl;
 import org.springframework.util.Assert;
 
 import java.util.List;
@@ -41,7 +39,7 @@ public class StabilityAiImageClient implements ImageClient {
 	private final StabilityAiApi stabilityAiApi;
 
 	public StabilityAiImageClient(StabilityAiApi stabilityAiApi) {
-		this(stabilityAiApi, StabilityAiImageOptionsBuilder.builder().build());
+		this(stabilityAiApi, StabilityAiImageOptions.builder().build());
 	}
 
 	public StabilityAiImageClient(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options) {
@@ -71,7 +69,7 @@ public class StabilityAiImageClient implements ImageClient {
 		// options configured via Autoconfiguration.
 		// Runtime options overwrite StabilityAiImageClient options
 		StabilityAiImageOptions optionsToUse = ModelOptionsUtils.merge(runtimeOptions, this.options,
-				StabilityAiImageOptionsImpl.class);
+				StabilityAiImageOptions.class);
 
 		// Copy the org.springframework.ai.model derived ImagePrompt and ImageOptions data
 		// types to the data types used in StabilityAiApi
@@ -100,7 +98,7 @@ public class StabilityAiImageClient implements ImageClient {
 			.withCfgScale(optionsToUse.getCfgScale())
 			.withClipGuidancePreset(optionsToUse.getClipGuidancePreset())
 			.withSampler(optionsToUse.getSampler())
-			.withSamples(optionsToUse.getSamples())
+			.withSamples(optionsToUse.getN())
 			.withSeed(optionsToUse.getSeed())
 			.withSteps(optionsToUse.getSteps())
 			.withStylePreset(optionsToUse.getStylePreset())
@@ -118,7 +116,7 @@ public class StabilityAiImageClient implements ImageClient {
 	}
 
 	private StabilityAiImageOptions convertOptions(ImageOptions runtimeOptions) {
-		StabilityAiImageOptionsBuilder builder = StabilityAiImageOptionsBuilder.builder();
+		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder();
 		if (runtimeOptions == null) {
 			return builder.build();
 		}

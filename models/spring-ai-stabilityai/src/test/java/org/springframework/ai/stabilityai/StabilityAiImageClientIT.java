@@ -18,14 +18,11 @@ package org.springframework.ai.stabilityai;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.image.*;
-import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
-import org.springframework.ai.stabilityai.api.StabilityAiImageOptionsBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Base64;
@@ -42,12 +39,13 @@ public class StabilityAiImageClientIT {
 	@Test
 	void imageAsBase64Test() throws IOException {
 
-		StabilityAiImageOptions imageOptions = StabilityAiImageOptionsBuilder.builder()
+		StabilityAiImageOptions imageOptions = StabilityAiImageOptions.builder()
 			.withStylePreset(StyleEnum.PHOTOGRAPHIC)
 			.build();
 
 		var instructions = """
-				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
+				A light cream colored mini golden doodle.
+				""";
 
 		ImagePrompt imagePrompt = new ImagePrompt(instructions, imageOptions);
 
@@ -58,7 +56,7 @@ public class StabilityAiImageClientIT {
 
 		assertThat(image.getB64Json()).isNotEmpty();
 
-		// writeFile(image);
+		writeFile(image);
 	}
 
 	private static void writeFile(Image image) throws IOException {

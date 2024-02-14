@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 
+import java.util.Objects;
+
 /**
  * OpenAI Image API options. OpenAiImageOptions.java
  *
@@ -45,6 +47,18 @@ public class OpenAiImageOptions implements ImageOptions {
 	private String model = OpenAiImageApi.DEFAULT_IMAGE_MODEL;
 
 	/**
+	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
+	 */
+	@JsonProperty("size_width")
+	private Integer width;
+
+	/**
+	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
+	 */
+	@JsonProperty("size_height")
+	private Integer height;
+
+	/**
 	 * The quality of the image that will be generated. hd creates images with finer
 	 * details and greater consistency across the image. This param is only supported for
 	 * dall-e-3.
@@ -65,18 +79,6 @@ public class OpenAiImageOptions implements ImageOptions {
 	 */
 	@JsonProperty("size")
 	private String size;
-
-	/**
-	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
-	 */
-	@JsonProperty("size_width")
-	private Integer width;
-
-	/**
-	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
-	 */
-	@JsonProperty("size_height")
-	private Integer height;
 
 	/**
 	 * The style of the generated images. Must be one of vivid or natural. Vivid causes
@@ -233,6 +235,30 @@ public class OpenAiImageOptions implements ImageOptions {
 			return this.size;
 		}
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof OpenAiImageOptions that))
+			return false;
+		return Objects.equals(n, that.n) && Objects.equals(model, that.model) && Objects.equals(width, that.width)
+				&& Objects.equals(height, that.height) && Objects.equals(quality, that.quality)
+				&& Objects.equals(responseFormat, that.responseFormat) && Objects.equals(size, that.size)
+				&& Objects.equals(style, that.style) && Objects.equals(user, that.user);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(n, model, width, height, quality, responseFormat, size, style, user);
+	}
+
+	@Override
+	public String toString() {
+		return "OpenAiImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", width=" + width + ", height=" + height
+				+ ", quality='" + quality + '\'' + ", responseFormat='" + responseFormat + '\'' + ", size='" + size
+				+ '\'' + ", style='" + style + '\'' + ", user='" + user + '\'' + '}';
 	}
 
 }

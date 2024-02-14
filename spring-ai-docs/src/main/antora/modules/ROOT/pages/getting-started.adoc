@@ -3,6 +3,7 @@
 
 This section offers jumping off points for how to get started using Spring AI.
 
+[#_dependency_management]
 == Dependency Management
 
 The Spring AI project provides artifacts in the Spring Milestone and Snapshot repositories.

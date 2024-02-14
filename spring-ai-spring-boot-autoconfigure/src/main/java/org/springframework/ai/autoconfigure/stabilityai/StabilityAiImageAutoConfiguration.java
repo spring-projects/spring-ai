@@ -33,23 +33,23 @@ import org.springframework.web.client.RestClient;
  */
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(StabilityAiApi.class)
-@EnableConfigurationProperties({ StabilityAiProperties.class })
+@EnableConfigurationProperties({ StabilityAiImageProperties.class })
 @ImportRuntimeHints(NativeHints.class)
 public class StabilityAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public StabilityAiApi stabilityAiApi(StabilityAiProperties stabilityAiProperties,
+	public StabilityAiApi stabilityAiApi(StabilityAiImageProperties stabilityAiImageProperties,
 			RestClient.Builder restClientBuilder) {
-		return new StabilityAiApi(stabilityAiProperties.getApiKey(), stabilityAiProperties.getBaseUrl(),
-				stabilityAiProperties.getOptions().getModel(), restClientBuilder);
+		return new StabilityAiApi(stabilityAiImageProperties.getApiKey(), stabilityAiImageProperties.getBaseUrl(),
+				stabilityAiImageProperties.getOptions().getModel(), restClientBuilder);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	public StabilityAiImageClient stabilityAiImageClient(StabilityAiApi stabilityAiApi,
-			StabilityAiProperties stabilityAiProperties) {
-		return new StabilityAiImageClient(stabilityAiApi, stabilityAiProperties.getOptions());
+			StabilityAiImageProperties stabilityAiImageProperties) {
+		return new StabilityAiImageClient(stabilityAiApi, stabilityAiImageProperties.getOptions());
 	}
 
 }

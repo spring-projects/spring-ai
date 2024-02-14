@@ -24,33 +24,13 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Mark Pollack
  * @since 0.8.0
  */
-@ConfigurationProperties(StabilityAiProperties.CONFIG_PREFIX)
-public class StabilityAiProperties {
+@ConfigurationProperties(StabilityAiImageProperties.CONFIG_PREFIX)
+public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.stabilityai";
-
-	private String apiKey;
-
-	private String baseUrl = StabilityAiApi.DEFAULT_BASE_URL;
+	public static final String CONFIG_PREFIX = "spring.ai.stabilityai.image";
 
 	@NestedConfigurationProperty
 	private StabilityAiImageOptions options;
-
-	public String getApiKey() {
-		return this.apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
-
-	public String getBaseUrl() {
-		return this.baseUrl;
-	}
-
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
 
 	public StabilityAiImageOptions getOptions() {
 		return this.options;

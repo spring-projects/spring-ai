@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,34 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.image;
-
-import org.springframework.ai.model.ModelOptions;
+package org.springframework.ai.autoconfigure.stabilityai;
 
 /**
- * ImageOptions represent the common options, portable across different image generation
- * models.
+ * Internal parent properties for the StabilityAI properties.
+ *
+ * @author Mark Pollack
+ * @since 0.8.0
  */
-public interface ImageOptions extends ModelOptions {
+class StabilityAiParentProperties {
 
-	Integer getN();
+	private String apiKey;
 
-	String getModel();
+	private String baseUrl;
 
-	Integer getWidth();
+	public String getApiKey() {
+		return apiKey;
+	}
 
-	Integer getHeight();
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
 
-	String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+	public String getBaseUrl() {
+		return baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
+	}
 
 }
