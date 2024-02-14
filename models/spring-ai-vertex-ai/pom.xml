@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-vertex-ai</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vertex AI</name>
-	<description>Vertex AI support</description>
+	<name>Spring AI Vertex AI PaLM2</name>
+	<description>Vertex AI PaLM2 support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
