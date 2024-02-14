@@ -12,6 +12,14 @@ The <<generic-model-api>> can help you understand the basic constructs used impl
 * xref:api/vectordbs.adoc[Vector Database API]
 * xref:api/[Image Generation API](WIP)
 
+== API Docs
+
+You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/[here].
+
+== Feedback and Contributions
+
+The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
+
 == Spring AI Generic Model API [[generic-model-api]]
 
 image::spring-ai-generic-model-api.jpg[width=900, align="center"]

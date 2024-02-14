@@ -15,11 +15,11 @@
     <url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
-		<url>https://github.com/spring-projects-experimental/spring-ai</url>
-		<connection>git://github.com/spring-projects-experimental/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects-experimental/spring-ai.git</developerConnection>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
-	
+
 	<properties>
 		<testcontainers-redis.version>2.0.1</testcontainers-redis.version>
 		<jedis.version>5.1.0</jedis.version>
@@ -39,7 +39,7 @@
             <artifactId>jedis</artifactId>
             <version>${jedis.version}</version>
         </dependency>
-        
+
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
