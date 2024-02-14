@@ -31,9 +31,11 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -66,7 +68,7 @@ import io.micrometer.observation.ObservationRegistry;
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class,
-		OpenAiAudioSpeechProperties.class })
+		OpenAiAudioSpeechProperties.class, OpenAiModerationProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class OpenAiAutoConfiguration {
@@ -178,6 +180,22 @@ public class OpenAiAutoConfiguration {
 
 		return new OpenAiAudioTranscriptionModel(openAiAudioApi, transcriptionProperties.getOptions(), retryTemplate);
 
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiModerationModel openAiModerationClient(OpenAiConnectionProperties commonProperties,
+			OpenAiModerationProperties moderationProperties, RetryTemplate retryTemplate,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, moderationProperties,
+				"moderation");
+
+		var openAiModerationApi = new OpenAiModerationApi(resolved.baseUrl, resolved.apiKey(), restClientBuilder,
+				responseErrorHandler);
+
+		return new OpenAiModerationModel(openAiModerationApi, retryTemplate)
+			.withDefaultOptions(moderationProperties.getOptions());
 	}
 
 	@Bean

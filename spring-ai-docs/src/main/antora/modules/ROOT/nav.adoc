@@ -66,6 +66,9 @@
 **** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 *** xref:api/audio/speech.adoc[]
 **** xref:api/audio/speech/openai-speech.adoc[OpenAI]
+** xref:api/moderation[Moderation Model API]
+*** xref:api/moderation/openai-moderation.adoc[OpenAI]
+
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
