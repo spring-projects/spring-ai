@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -56,11 +57,11 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(Neo4jVectorStoreAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(Neo4jAutoConfiguration.class, Neo4jVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.neo4j.driver.uri=" + neo4jContainer.getBoltUrl(),
-				"spring.ai.vectorstore.neo4j.driver.authentication.username=" + "neo4j",
-				"spring.ai.vectorstore.neo4j.driver.authentication.password=" + neo4jContainer.getAdminPassword());
+		.withPropertyValues("spring.neo4j.uri=" + neo4jContainer.getBoltUrl(),
+				"spring.neo4j.authentication.username=" + "neo4j",
+				"spring.neo4j.authentication.password=" + neo4jContainer.getAdminPassword());
 
 	@Test
 	void addAndSearch() {
