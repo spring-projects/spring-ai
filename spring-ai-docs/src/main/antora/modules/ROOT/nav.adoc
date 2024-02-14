@@ -27,7 +27,6 @@
 ** xref:api/prompt.adoc[]
 ** xref:api/output-parser.adoc[]
 ** xref:api/vectordbs.adoc[]
-** xref:api/etl-pipeline.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
 *** xref:api/vectordbs/milvus.adoc[]
@@ -36,6 +35,7 @@
 *** xref:api/vectordbs/weaviate.adoc[]
 *** xref:api/vectordbs/redis.adoc[]
 *** xref:api/vectordbs/pinecone.adoc[]
+** xref:api/etl-pipeline.adoc[]
 ** xref:api/testing.adoc[]
 * Appendices
 ** xref:glossary.adoc[]
