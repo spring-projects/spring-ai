@@ -141,11 +141,11 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 *
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
-	 * If the enabledFunctions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
+	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@NestedConfigurationProperty
 	@JsonIgnore
-	private Set<String> enabledFunctions = new HashSet<>();
+	private Set<String> functions = new HashSet<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -239,15 +239,15 @@ public class OpenAiChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withEnabledFunctions(Set<String> functionNames) {
+		public Builder withFunctions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.enabledFunctions = functionNames;
+			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withEnabledFunction(String functionName) {
+		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.enabledFunctions.add(functionName);
+			this.options.functions.add(functionName);
 			return this;
 		}
 
@@ -381,12 +381,12 @@ public class OpenAiChatOptions implements ChatOptions {
 		this.functionCallbacks = functionCallbacks;
 	}
 
-	public Set<String> getEnabledFunctions() {
-		return enabledFunctions;
+	public Set<String> getFunctions() {
+		return functions;
 	}
 
-	public void setEnabledFunctions(Set<String> functionNames) {
-		this.enabledFunctions = functionNames;
+	public void setFunctions(Set<String> functionNames) {
+		this.functions = functionNames;
 	}
 
 	@Override

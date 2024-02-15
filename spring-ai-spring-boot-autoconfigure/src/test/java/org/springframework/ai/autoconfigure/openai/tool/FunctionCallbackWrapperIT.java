@@ -57,8 +57,8 @@ public class FunctionCallbackWrapperIT {
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withEnabledFunction("WeatherInfo").build()));
+			ChatResponse response = chatClient.call(
+					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 

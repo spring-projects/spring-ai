@@ -58,14 +58,14 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withEnabledFunction("weatherFunction").build()));
+					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
 			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 			response = chatClient.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withEnabledFunction("weatherFunction3").build()));
+					OpenAiChatOptions.builder().withFunction("weatherFunction3").build()));
 
 			logger.info("Response: {}", response);
 

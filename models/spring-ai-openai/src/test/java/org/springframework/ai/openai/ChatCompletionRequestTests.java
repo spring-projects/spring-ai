@@ -114,7 +114,7 @@ public class ChatCompletionRequestTests {
 
 		// Explicitly enable the function
 		request = client.createRequest(new Prompt("Test message content",
-				OpenAiChatOptions.builder().withEnabledFunction(TOOL_FUNCTION_NAME).build()), false);
+				OpenAiChatOptions.builder().withFunction(TOOL_FUNCTION_NAME).build()), false);
 
 		assertThat(request.tools()).hasSize(1);
 		assertThat(request.tools().get(0).function().name()).as("Explicitly enabled function")

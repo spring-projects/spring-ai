@@ -73,6 +73,8 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	private final static boolean IS_RUNTIME_CALL = true;
+
 	/**
 	 * The default options used for the chat completion requests.
 	 */
@@ -127,14 +129,6 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
 		this.functionCallbackContext = functionCallbackContext;
-
-		// Register the default function callbacks.
-		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctionCallbacks())) {
-			this.defaultOptions.getFunctionCallbacks()
-				.stream()
-				.forEach(functionCallback -> this.functionCallbackRegister.put(functionCallback.getName(),
-						functionCallback));
-		}
 	}
 
 	/**
@@ -208,7 +202,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		Set<String> enabledFunctionsForRequest = new HashSet<>();
+		Set<String> functionsForThisRequest = new HashSet<>();
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
 			.stream()
@@ -223,9 +217,9 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
 						ChatOptions.class, OpenAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = handleFunctionCallbackConfigurations(updatedRuntimeOptions, true,
-						true);
-				enabledFunctionsForRequest.addAll(promptEnabledFunctions);
+				Set<String> promptEnabledFunctions = handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+						IS_RUNTIME_CALL);
+				functionsForThisRequest.addAll(promptEnabledFunctions);
 
 				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 			}
@@ -237,40 +231,39 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		if (this.defaultOptions != null) {
 
-			Set<String> defaultEnabledFunctions = handleFunctionCallbackConfigurations(this.defaultOptions, false,
-					false);
+			Set<String> defaultEnabledFunctions = handleFunctionCallbackConfigurations(this.defaultOptions,
+					!IS_RUNTIME_CALL);
 
-			enabledFunctionsForRequest.addAll(defaultEnabledFunctions);
+			functionsForThisRequest.addAll(defaultEnabledFunctions);
 
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
-		if (!CollectionUtils.isEmpty(enabledFunctionsForRequest)) {
+		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
 			if (stream) {
 				throw new IllegalArgumentException("Currently tool functions are not supported in streaming mode");
 			}
 
 			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().withTools(this.getFunctionTools(enabledFunctionsForRequest)).build(),
+					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
 		}
 
 		return request;
 	}
 
-	private Set<String> handleFunctionCallbackConfigurations(OpenAiChatOptions options,
-			boolean autoEnableCallbackFunctions, boolean overrideCallbackFunctionsRegister) {
+	private Set<String> handleFunctionCallbackConfigurations(OpenAiChatOptions options, boolean isRuntimeCall) {
 
-		Set<String> enabledFunctions = new HashSet<>();
+		Set<String> functionToCall = new HashSet<>();
 
 		if (options != null) {
 			if (!CollectionUtils.isEmpty(options.getFunctionCallbacks())) {
 				options.getFunctionCallbacks().stream().forEach(functionCallback -> {
 
 					// Register the tool callback.
-					if (overrideCallbackFunctionsRegister) {
+					if (isRuntimeCall) {
 						this.functionCallbackRegister.put(functionCallback.getName(), functionCallback);
 					}
 					else {
@@ -278,19 +271,19 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 					}
 
 					// Automatically enable the function, usually from prompt callback.
-					if (autoEnableCallbackFunctions) {
-						enabledFunctions.add(functionCallback.getName());
+					if (isRuntimeCall) {
+						functionToCall.add(functionCallback.getName());
 					}
 				});
 			}
 
 			// Add the explicitly enabled functions.
-			if (!CollectionUtils.isEmpty(options.getEnabledFunctions())) {
-				enabledFunctions.addAll(options.getEnabledFunctions());
+			if (!CollectionUtils.isEmpty(options.getFunctions())) {
+				functionToCall.addAll(options.getFunctions());
 			}
 		}
 
-		return enabledFunctions;
+		return functionToCall;
 	}
 
 	/**
