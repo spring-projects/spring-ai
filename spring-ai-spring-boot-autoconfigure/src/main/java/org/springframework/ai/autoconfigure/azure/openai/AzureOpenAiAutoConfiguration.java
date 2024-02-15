@@ -20,6 +20,7 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 
+import com.azure.core.util.ClientOptions;
 import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -44,6 +45,7 @@ public class AzureOpenAiAutoConfiguration {
 
 		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 			.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
+			.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
 			.buildClient();
 	}
 

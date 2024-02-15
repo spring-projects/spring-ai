@@ -60,7 +60,7 @@ The prefix `spring.ai.azure.openai.chat` is the property prefix that configures 
 |====
 | Property | Description | Default
 
-| spring.ai.azure.openai.chat.options.model | 	 * The model name to provide as part of this completions request. Not applicable to Azure OpenAI, where deployment information should be included in the Azure resource URI that's connected to.
+| spring.ai.azure.openai.chat.options.model | 	 * The model name to provide as part of this completions request.
  | gpt-35-turbo
 | spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate. | -
 | spring.ai.azure.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
@@ -81,7 +81,7 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai
 
 On start-up, the default options can be configured with the `AzureOpenAiChatClient(api, options)` constructor or the `spring.ai.azure.openai.chat.options.*` properties.
 
-At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+At runtime you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
@@ -132,7 +132,7 @@ public class ChatController {
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.generate(message));
+        return Map.of("generation", chatClient.call(message));
     }
 
     @GetMapping("/ai/generateStream")
