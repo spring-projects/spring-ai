@@ -24,6 +24,7 @@
 **** xref:api/clients/bedrock/bedrock-titan.adoc[]
 *** xref:api/clients/huggingface.adoc[]
 *** xref:api/clients/vertexai-chat.adoc[]
+** xref:api/functions.adoc[]
 ** xref:api/imageclient.adoc[]
 *** xref:api/clients/image/openai-image.adoc[]
 *** xref:api/clients/image/stabilityai-image.adoc[]
