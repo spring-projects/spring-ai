@@ -24,12 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.openai.tool.MockWeatherService.Request;
-import org.springframework.ai.autoconfigure.openai.tool.MockWeatherService.Response;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.AbstractToolFunctionCallback;
+import org.springframework.ai.model.function.DefaultToolFunctionCallback;
+import org.springframework.ai.model.function.ToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -41,9 +40,9 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
-public class ToolCallWithBeanFunctionRegistrationIT {
+public class TollCallWithDefaultToolFunctionCallbackIT {
 
-	private final Logger logger = LoggerFactory.getLogger(ToolCallWithBeanFunctionRegistrationIT.class);
+	private final Logger logger = LoggerFactory.getLogger(TollCallWithDefaultToolFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
@@ -72,26 +71,13 @@ public class ToolCallWithBeanFunctionRegistrationIT {
 	static class Config {
 
 		@Bean
-		public WeatherFunctionCallback weatherFunctionInfo() {
-			return new WeatherFunctionCallback("WeatherInfo", "Get the weather in location",
-					MockWeatherService.Request.class);
+		public ToolFunctionCallback weatherFunctionInfo() {
+
+			return new DefaultToolFunctionCallback<>("WeatherInfo", // function name
+					"Get the weather in location", // function description
+					(response) -> "" + response.temp() + response.unit(), // responseConverter
+					new MockWeatherService()); // function code
 		}
-
-		public static class WeatherFunctionCallback
-				extends AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response> {
-
-			public WeatherFunctionCallback(String name, String description, Class<Request> inputType) {
-				super(name, description, inputType, (response) -> "" + response.temp() + response.unit());
-			}
-
-			private final MockWeatherService weatherService = new MockWeatherService();
-
-			@Override
-			public Response apply(Request request) {
-				return weatherService.apply(request);
-			}
-
-		};
 
 	}
 

@@ -27,7 +27,7 @@ import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.AbstractToolFunctionCallback;
+import org.springframework.ai.model.function.DefaultToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -54,18 +54,10 @@ public class ToolCallWithPromptFunctionRegistrationIT {
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 			var promptOptions = OpenAiChatOptions.builder()
-				.withToolCallbacks(List
-					.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-							"CurrentWeatherService", "Get the weather in location", MockWeatherService.Request.class,
-							(response) -> "" + response.temp() + response.unit()) {
-
-						private final MockWeatherService weatherService = new MockWeatherService();
-
-						@Override
-						public MockWeatherService.Response apply(MockWeatherService.Request request) {
-							return weatherService.apply(request);
-						}
-					}))
+				.withToolCallbacks(List.of(new DefaultToolFunctionCallback<>("CurrentWeatherService", // name
+						"Get the weather in location", // function description
+						(response) -> "" + response.temp() + response.unit(), // responseConverter
+						new MockWeatherService()))) // function code
 				.build();
 
 			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));

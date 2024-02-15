@@ -17,6 +17,7 @@
 package org.springframework.ai.openai;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.ChatOptions;
-import org.springframework.ai.model.ToolFunctionCallback;
+import org.springframework.ai.model.function.ToolFunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 
@@ -89,6 +91,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
+	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
@@ -106,6 +109,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
+	@NestedConfigurationProperty
 	private @JsonProperty("tools") List<FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
@@ -114,6 +118,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present.
 	 */
+	@NestedConfigurationProperty
 	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
@@ -126,6 +131,7 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatClient chat completion requests.
 	 */
+	@NestedConfigurationProperty
 	@JsonIgnore
 	private List<ToolFunctionCallback> toolCallbacks = new ArrayList<>();
 
@@ -138,8 +144,20 @@ public class OpenAiChatOptions implements ChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the enabledFunctions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
+	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> enabledFunctions = new HashSet<>();
+
+	/**
+	 * Map of bean names and their descriptions to register as function callbacks.
+	 * For example `spring.ai.openai.chat.options.beanFunctions.spring.ai.openai.chat.options.beanFunctions.weatherInfo` * or with
+	 * description `spring.ai.openai.chat.options.beanFunctions.spring.ai.openai.chat.options.beanFunctions.weatherInfo=Get the weather in location`.
+	 * The description is optional.
+	 * Each bean name should be specified in a separate property.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, String> beanFunctions = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -242,6 +260,16 @@ public class OpenAiChatOptions implements ChatOptions {
 		public Builder withEnabledFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.enabledFunctions.add(functionName);
+			return this;
+		}
+
+		public Builder withBeanFunctions(Map<String, String> beanFunctions) {
+			this.options.beanFunctions = beanFunctions;
+			return this;
+		}
+
+		public Builder withBeanFunction(String beanName, String description) {
+			this.options.beanFunctions.put(beanName, description);
 			return this;
 		}
 
@@ -381,6 +409,14 @@ public class OpenAiChatOptions implements ChatOptions {
 
 	public void setEnabledFunctions(Set<String> functionNames) {
 		this.enabledFunctions = functionNames;
+	}
+
+	public Map<String, String> getBeanFunctions() {
+		return beanFunctions;
+	}
+
+	public void setBeanFunctions(Map<String, String> beanFunctions) {
+		this.beanFunctions = beanFunctions;
 	}
 
 	@Override

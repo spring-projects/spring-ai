@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model;
+package org.springframework.ai.model.function;
 
 /**
  * Represents a model function call handler. Implementations are registered with the

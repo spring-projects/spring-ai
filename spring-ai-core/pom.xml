@@ -25,6 +25,13 @@
 	</properties>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-function-context</artifactId>
+			<version>4.1.0</version>
+		</dependency>
+
 		<!-- production dependencies -->
 		<dependency>
 			<groupId>org.antlr</groupId>

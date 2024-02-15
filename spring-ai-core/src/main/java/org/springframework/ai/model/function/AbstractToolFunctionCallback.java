@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model;
+package org.springframework.ai.model.function;
 
 import java.util.function.Function;
 
@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -110,6 +111,19 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 		this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(inputType);
 		this.responseConverter = responseConverter;
 		this.objectMapper = objectMapper;
+	}
+
+	public static <I, O> AbstractToolFunctionCallback<I, O> of(String name, String description,
+			Function<I, O> function) {
+		Assert.notNull(name, "Name must not be null");
+		Assert.notNull(description, "Description must not be null");
+		Assert.notNull(function, "Function must not be null");
+
+		@SuppressWarnings("unchecked")
+		final Class<I> inputClassType = (Class<I>) TypeResolverHelper
+			.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
+
+		return new DefaultToolFunctionCallback<I, O>(name, description, inputClassType, function);
 	}
 
 	@Override

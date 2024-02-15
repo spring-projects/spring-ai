@@ -19,9 +19,9 @@ package org.springframework.ai.autoconfigure.openai;
 import java.util.List;
 
 import org.springframework.ai.autoconfigure.NativeHints;
-import org.springframework.ai.autoconfigure.common.function.SpringAiFunctionAnnotationManager;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.model.ToolFunctionCallback;
+import org.springframework.ai.model.function.SpringAiFunctionContextManager;
+import org.springframework.ai.model.function.ToolFunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
@@ -58,7 +58,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			List<ToolFunctionCallback> toolFunctionCallbacks, SpringAiFunctionAnnotationManager functionManager) {
+			List<ToolFunctionCallback> toolFunctionCallbacks, SpringAiFunctionContextManager functionManager) {
 
 		String apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -75,9 +75,11 @@ public class OpenAiAutoConfiguration {
 			chatProperties.getOptions().getToolCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		var annotatedFunctionsList = functionManager.getAnnotatedToolFunctionCallbacks();
-		if (!CollectionUtils.isEmpty(annotatedFunctionsList)) {
-			chatProperties.getOptions().getToolCallbacks().addAll(annotatedFunctionsList);
+		if (!CollectionUtils.isEmpty(chatProperties.getOptions().getBeanFunctions())) {
+			chatProperties.getOptions().getBeanFunctions().forEach((beanName, description) -> {
+				ToolFunctionCallback function = functionManager.getFunctionFromBean(beanName, description);
+				chatProperties.getOptions().getToolCallbacks().add(function);
+			});
 		}
 
 		return new OpenAiChatClient(openAiApi, chatProperties.getOptions());
@@ -122,8 +124,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public SpringAiFunctionAnnotationManager springAiFunctionManager(ApplicationContext context) {
-		SpringAiFunctionAnnotationManager manager = new SpringAiFunctionAnnotationManager();
+	public SpringAiFunctionContextManager springAiFunctionManager(ApplicationContext context) {
+		SpringAiFunctionContextManager manager = new SpringAiFunctionContextManager();
 		manager.setApplicationContext(context);
 		return manager;
 	}
