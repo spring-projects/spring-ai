@@ -21,11 +21,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.AbstractToolFunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
-import org.springframework.ai.openai.chat.api.tool.MockWeatherService.Request;
-import org.springframework.ai.openai.chat.api.tool.MockWeatherService.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,23 +61,21 @@ public class ChatCompletionRequestTests {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new OpenAiChatClient(new OpenAiApi("TEST"))
-			.withDefaultOptions(OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").build());
+		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
+				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").build());
 
-		var request = client.createRequest(new Prompt("Test message content", OpenAiChatOptions.builder()
-			.withModel("PROMPT_MODEL")
-			.withToolCallbacks(
-					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-							TOOL_FUNCTION_NAME, "Get the weather in location", MockWeatherService.Request.class) {
-						@Override
-						public Response apply(Request request) {
-							return new MockWeatherService().apply(request);
-						}
-					}))
-			.build()), false);
+		var request = client.createRequest(
+				new Prompt("Test message content",
+						OpenAiChatOptions.builder()
+							.withModel("PROMPT_MODEL")
+							.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(TOOL_FUNCTION_NAME,
+									"Get the weather in location", (response) -> "" + response.temp() + response.unit(),
+									new MockWeatherService())))
+							.build()),
+				false);
 
-		assertThat(client.getToolCallbackRegister()).hasSize(1);
-		assertThat(client.getToolCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
+		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
+		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -94,23 +90,19 @@ public class ChatCompletionRequestTests {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new OpenAiChatClient(new OpenAiApi("TEST")).withDefaultOptions(OpenAiChatOptions.builder()
-			.withModel("DEFAULT_MODEL")
-			.withToolCallbacks(
-					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-							TOOL_FUNCTION_NAME, "Get the weather in location", MockWeatherService.Request.class) {
-						@Override
-						public Response apply(Request request) {
-							return new MockWeatherService().apply(request);
-						}
-					}))
-			.build());
+		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
+				OpenAiChatOptions.builder()
+					.withModel("DEFAULT_MODEL")
+					.withFunctionCallbacks(
+							List.of(new FunctionCallbackWrapper<>(TOOL_FUNCTION_NAME, "Get the weather in location",
+									(response) -> "" + response.temp() + response.unit(), new MockWeatherService())))
+					.build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
 
-		assertThat(client.getToolCallbackRegister()).hasSize(1);
-		assertThat(client.getToolCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
-		assertThat(client.getToolCallbackRegister().get(TOOL_FUNCTION_NAME).getDescription())
+		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
+		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
+		assertThat(client.getFunctionCallbackRegister().get(TOOL_FUNCTION_NAME).getDescription())
 			.isEqualTo("Get the weather in location");
 
 		assertThat(request.messages()).hasSize(1);
@@ -129,27 +121,20 @@ public class ChatCompletionRequestTests {
 			.isEqualTo(TOOL_FUNCTION_NAME);
 
 		// Override the default options function with one from the prompt
-		request = client
-			.createRequest(new Prompt("Test message content",
-					OpenAiChatOptions.builder()
-						.withToolCallbacks(List
-							.of(new AbstractToolFunctionCallback<MockWeatherService.Request, String>(TOOL_FUNCTION_NAME,
-									"Overridden function description", MockWeatherService.Request.class) {
-								@Override
-								public String apply(Request request) {
-									return "Mock response";
-								}
-							}))
-						.build()),
-					false);
+		request = client.createRequest(new Prompt("Test message content",
+				OpenAiChatOptions.builder()
+					.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(TOOL_FUNCTION_NAME,
+							"Overridden function description", new MockWeatherService())))
+					.build()),
+				false);
 
 		assertThat(request.tools()).hasSize(1);
 		assertThat(request.tools().get(0).function().name()).as("Explicitly enabled function")
 			.isEqualTo(TOOL_FUNCTION_NAME);
 
-		assertThat(client.getToolCallbackRegister()).hasSize(1);
-		assertThat(client.getToolCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
-		assertThat(client.getToolCallbackRegister().get(TOOL_FUNCTION_NAME).getDescription())
+		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
+		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
+		assertThat(client.getFunctionCallbackRegister().get(TOOL_FUNCTION_NAME).getDescription())
 			.isEqualTo("Overridden function description");
 	}
 

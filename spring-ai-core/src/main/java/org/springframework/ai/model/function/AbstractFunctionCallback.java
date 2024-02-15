@@ -26,7 +26,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
- * Abstract implementation of the {@link ToolFunctionCallback} for interacting with the
+ * Abstract implementation of the {@link FunctionCallback} for interacting with the
  * Model's function calling protocol and a {@link Function} wrapping the interaction with
  * the 3rd party service/function.
  *
@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
  */
-public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, O>, ToolFunctionCallback {
+abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, FunctionCallback {
 
 	private final String name;
 
@@ -55,8 +55,8 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 	private final Function<O, String> responseConverter;
 
 	/**
-	 * Constructs a new {@link AbstractToolFunctionCallback} with the given name,
-	 * description, input type and object mapper.
+	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
+	 * input type and object mapper.
 	 * @param name Function name. Should be unique within the ChatClient's function
 	 * registry.
 	 * @param description Function description. Used as a "system prompt" by the model to
@@ -64,13 +64,13 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 	 * @param inputType Used to compute, the argument's JSON schema required by the
 	 * Model's function calling protocol.
 	 */
-	protected AbstractToolFunctionCallback(String name, String description, Class<I> inputType) {
+	protected AbstractFunctionCallback(String name, String description, Class<I> inputType) {
 		this(name, description, inputType, Object::toString);
 	}
 
 	/**
-	 * Constructs a new {@link AbstractToolFunctionCallback} with the given name,
-	 * description, input type and object mapper.
+	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
+	 * input type and object mapper.
 	 * @param name Function name. Should be unique within the ChatClient's function
 	 * registry.
 	 * @param description Function description. Used as a "system prompt" by the model to
@@ -79,15 +79,15 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 	 * Model's function calling protocol.
 	 * @param responseConverter Used to convert the function's output type to a string.
 	 */
-	protected AbstractToolFunctionCallback(String name, String description, Class<I> inputType,
+	protected AbstractFunctionCallback(String name, String description, Class<I> inputType,
 			Function<O, String> responseConverter) {
 		this(name, description, inputType, responseConverter,
 				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
 	}
 
 	/**
-	 * Constructs a new {@link AbstractToolFunctionCallback} with the given name,
-	 * description, input type and default object mapper.
+	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
+	 * input type and default object mapper.
 	 * @param name Function name. Should be unique within the ChatClient's function
 	 * registry.
 	 * @param description Function description. Used as a "system prompt" by the model to
@@ -98,7 +98,7 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
-	protected AbstractToolFunctionCallback(String name, String description, Class<I> inputType,
+	protected AbstractFunctionCallback(String name, String description, Class<I> inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
@@ -113,8 +113,7 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 		this.objectMapper = objectMapper;
 	}
 
-	public static <I, O> AbstractToolFunctionCallback<I, O> of(String name, String description,
-			Function<I, O> function) {
+	public static <I, O> AbstractFunctionCallback<I, O> of(String name, String description, Function<I, O> function) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(function, "Function must not be null");
@@ -123,7 +122,7 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 		final Class<I> inputClassType = (Class<I>) TypeResolverHelper
 			.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
 
-		return new DefaultToolFunctionCallback<I, O>(name, description, inputClassType, function);
+		return new FunctionCallbackWrapper<I, O>(name, description, inputClassType, function);
 	}
 
 	@Override
@@ -178,7 +177,7 @@ public abstract class AbstractToolFunctionCallback<I, O> implements Function<I, 
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		AbstractToolFunctionCallback other = (AbstractToolFunctionCallback) obj;
+		AbstractFunctionCallback other = (AbstractFunctionCallback) obj;
 		if (name == null) {
 			if (other.name != null)
 				return false;

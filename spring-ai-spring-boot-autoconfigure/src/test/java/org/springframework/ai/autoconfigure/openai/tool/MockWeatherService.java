@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 /**
+ * Mock 3rd party weather service.
+ *
  * @author Christian Tzolov
  */
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
@@ -49,11 +51,11 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		/**
 		 * Celsius.
 		 */
-		c("metric"),
+		C("metric"),
 		/**
 		 * Fahrenheit.
 		 */
-		f("imperial");
+		F("imperial");
 
 		/**
 		 * Human readable unit name.
@@ -87,7 +89,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 			temperature = 30;
 		}
 
-		return new Response(temperature, 15, 20, 2, 53, 45, Unit.c);
+		return new Response(temperature, 15, 20, 2, 53, 45, Unit.C);
 	}
 
 }

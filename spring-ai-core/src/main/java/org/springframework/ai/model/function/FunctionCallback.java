@@ -22,7 +22,7 @@ package org.springframework.ai.model.function;
  *
  * @author Christian Tzolov
  */
-public interface ToolFunctionCallback {
+public interface FunctionCallback {
 
 	/**
 	 * @return Returns the Function name. Unique within the model.

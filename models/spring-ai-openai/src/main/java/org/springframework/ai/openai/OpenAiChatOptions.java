@@ -17,7 +17,6 @@
 package org.springframework.ai.openai;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,12 +28,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.ChatOptions;
-import org.springframework.ai.model.function.ToolFunctionCallback;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 
 /**
  * @author Christian Tzolov
@@ -127,19 +126,19 @@ public class OpenAiChatOptions implements ChatOptions {
 
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatClient.
-	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
-	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatClient chat completion requests.
 	 */
 	@NestedConfigurationProperty
 	@JsonIgnore
-	private List<ToolFunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
 	 * the chat completion requests.
-	 * Functions with those names must exist in the toolCallbacks registry.
-	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * Functions with those names must exist in the functionCallbacks registry.
+	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 *
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the enabledFunctions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
@@ -147,17 +146,6 @@ public class OpenAiChatOptions implements ChatOptions {
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> enabledFunctions = new HashSet<>();
-
-	/**
-	 * Map of bean names and their descriptions to register as function callbacks.
-	 * For example `spring.ai.openai.chat.options.beanFunctions.spring.ai.openai.chat.options.beanFunctions.weatherInfo` * or with
-	 * description `spring.ai.openai.chat.options.beanFunctions.spring.ai.openai.chat.options.beanFunctions.weatherInfo=Get the weather in location`.
-	 * The description is optional.
-	 * Each bean name should be specified in a separate property.
-	 */
-	@NestedConfigurationProperty
-	@JsonIgnore
-	private Map<String, String> beanFunctions = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -246,8 +234,8 @@ public class OpenAiChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
-			this.options.toolCallbacks = toolCallbacks;
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
@@ -260,16 +248,6 @@ public class OpenAiChatOptions implements ChatOptions {
 		public Builder withEnabledFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.enabledFunctions.add(functionName);
-			return this;
-		}
-
-		public Builder withBeanFunctions(Map<String, String> beanFunctions) {
-			this.options.beanFunctions = beanFunctions;
-			return this;
-		}
-
-		public Builder withBeanFunction(String beanName, String description) {
-			this.options.beanFunctions.put(beanName, description);
 			return this;
 		}
 
@@ -395,12 +373,12 @@ public class OpenAiChatOptions implements ChatOptions {
 		this.user = user;
 	}
 
-	public List<ToolFunctionCallback> getToolCallbacks() {
-		return this.toolCallbacks;
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
 	}
 
-	public void setToolCallbacks(List<ToolFunctionCallback> toolCallbacks) {
-		this.toolCallbacks = toolCallbacks;
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
 	}
 
 	public Set<String> getEnabledFunctions() {
@@ -409,14 +387,6 @@ public class OpenAiChatOptions implements ChatOptions {
 
 	public void setEnabledFunctions(Set<String> functionNames) {
 		this.enabledFunctions = functionNames;
-	}
-
-	public Map<String, String> getBeanFunctions() {
-		return beanFunctions;
-	}
-
-	public void setBeanFunctions(Map<String, String> beanFunctions) {
-		this.beanFunctions = beanFunctions;
 	}
 
 	@Override

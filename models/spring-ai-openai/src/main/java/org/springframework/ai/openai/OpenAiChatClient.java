@@ -37,7 +37,8 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.ToolFunctionCallback;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
@@ -72,10 +73,26 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	/**
+	 * The default options used for the chat completion requests.
+	 */
 	private OpenAiChatOptions defaultOptions;
 
-	private Map<String, ToolFunctionCallback> toolCallbackRegister = new ConcurrentHashMap<>();
+	/**
+	 * The function callback register is used to resolve the function callbacks by name.
+	 */
+	private Map<String, FunctionCallback> functionCallbackRegister = new ConcurrentHashMap<>();
 
+	/**
+	 * The function callback context is used to resolve the function callbacks by name
+	 * from the Spring context. It is optional and usually used with Spring
+	 * auto-configuration.
+	 */
+	private FunctionCallbackContext functionCallbackContext;
+
+	/**
+	 * The retry template used to retry the OpenAI API calls.
+	 */
 	public final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(OpenAiApiException.class)
@@ -89,17 +106,35 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		})
 		.build();
 
+	/**
+	 * Low-level access to the OpenAI API.
+	 */
 	private final OpenAiApi openAiApi;
 
 	public OpenAiChatClient(OpenAiApi openAiApi) {
-		this(openAiApi, OpenAiChatOptions.builder().withModel("gpt-3.5-turbo").withTemperature(0.7f).build());
+		this(openAiApi,
+				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
 	}
 
 	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options) {
+		this(openAiApi, options, null);
+	}
+
+	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext) {
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
+		this.functionCallbackContext = functionCallbackContext;
+
+		// Register the default function callbacks.
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctionCallbacks())) {
+			this.defaultOptions.getFunctionCallbacks()
+				.stream()
+				.forEach(functionCallback -> this.functionCallbackRegister.put(functionCallback.getName(),
+						functionCallback));
+		}
 	}
 
 	/**
@@ -188,7 +223,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
 						ChatOptions.class, OpenAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = handleToolFunctionConfigurations(updatedRuntimeOptions, true,
+				Set<String> promptEnabledFunctions = handleFunctionCallbackConfigurations(updatedRuntimeOptions, true,
 						true);
 				enabledFunctionsForRequest.addAll(promptEnabledFunctions);
 
@@ -202,7 +237,8 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		if (this.defaultOptions != null) {
 
-			Set<String> defaultEnabledFunctions = handleToolFunctionConfigurations(this.defaultOptions, false, false);
+			Set<String> defaultEnabledFunctions = handleFunctionCallbackConfigurations(this.defaultOptions, false,
+					false);
 
 			enabledFunctionsForRequest.addAll(defaultEnabledFunctions);
 
@@ -224,26 +260,26 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		return request;
 	}
 
-	private Set<String> handleToolFunctionConfigurations(OpenAiChatOptions options, boolean autoEnableCallbackFunctions,
-			boolean overrideCallbackFunctionsRegister) {
+	private Set<String> handleFunctionCallbackConfigurations(OpenAiChatOptions options,
+			boolean autoEnableCallbackFunctions, boolean overrideCallbackFunctionsRegister) {
 
 		Set<String> enabledFunctions = new HashSet<>();
 
 		if (options != null) {
-			if (!CollectionUtils.isEmpty(options.getToolCallbacks())) {
-				options.getToolCallbacks().stream().forEach(toolCallback -> {
+			if (!CollectionUtils.isEmpty(options.getFunctionCallbacks())) {
+				options.getFunctionCallbacks().stream().forEach(functionCallback -> {
 
 					// Register the tool callback.
 					if (overrideCallbackFunctionsRegister) {
-						this.toolCallbackRegister.put(toolCallback.getName(), toolCallback);
+						this.functionCallbackRegister.put(functionCallback.getName(), functionCallback);
 					}
 					else {
-						this.toolCallbackRegister.putIfAbsent(toolCallback.getName(), toolCallback);
+						this.functionCallbackRegister.putIfAbsent(functionCallback.getName(), functionCallback);
 					}
 
 					// Automatically enable the function, usually from prompt callback.
 					if (autoEnableCallbackFunctions) {
-						enabledFunctions.add(toolCallback.getName());
+						enabledFunctions.add(functionCallback.getName());
 					}
 				});
 			}
@@ -260,18 +296,32 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	/**
 	 * @return returns the registered tool callbacks.
 	 */
-	Map<String, ToolFunctionCallback> getToolCallbackRegister() {
-		return toolCallbackRegister;
+	Map<String, FunctionCallback> getFunctionCallbackRegister() {
+		return functionCallbackRegister;
 	}
 
-	public List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
+	private List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
 
 		List<OpenAiApi.FunctionTool> functionTools = new ArrayList<>();
 		for (String functionName : functionNames) {
-			if (!this.toolCallbackRegister.containsKey(functionName)) {
-				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+
+				if (this.functionCallbackContext != null) {
+					FunctionCallback functionCallback = this.functionCallbackContext.getFunctionCallback(functionName,
+							null);
+					if (functionCallback != null) {
+						this.functionCallbackRegister.put(functionName, functionCallback);
+					}
+					else {
+						throw new IllegalStateException(
+								"No function callback [" + functionName + "] fund in tht FunctionCallbackContext");
+					}
+				}
+				else {
+					throw new IllegalStateException("No function callback found for name: " + functionName);
+				}
 			}
-			ToolFunctionCallback functionCallback = this.toolCallbackRegister.get(functionName);
+			FunctionCallback functionCallback = this.functionCallbackRegister.get(functionName);
 
 			var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
 					functionCallback.getName(), functionCallback.getInputTypeSchema());
@@ -320,11 +370,11 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 			var functionName = toolCall.function().name();
 			String functionArguments = toolCall.function().arguments();
 
-			if (!this.toolCallbackRegister.containsKey(functionName)) {
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
 				throw new IllegalStateException("No function callback found for function name: " + functionName);
 			}
 
-			String functionResponse = this.toolCallbackRegister.get(functionName).call(functionArguments);
+			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
 
 			// Add the function response to the conversation.
 			conversationMessages.add(new ChatCompletionMessage(functionResponse, Role.TOOL, null, toolCall.id(), null));

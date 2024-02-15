@@ -52,6 +52,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 
+	@SuppressWarnings("null")
 	@Test
 	public void toolFunctionCall() {
 
@@ -80,7 +81,7 @@ public class OpenAiApiToolFunctionCallIT {
 										},
 										"unit": {
 											"type": "string",
-											"enum": ["c", "f"]
+											"enum": ["C", "F"]
 										}
 									},
 									"required": ["location", "lat", "lon", "unit"]
@@ -98,7 +99,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4-1106-preview",
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview",
 				List.of(functionTool), null);
 
 		ResponseEntity<ChatCompletion> chatCompletion = completionApi.chatCompletionEntity(chatCompletionRequest);
@@ -132,7 +133,7 @@ public class OpenAiApiToolFunctionCallIT {
 				}
 			}
 
-			var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4-1106-preview", 0.8f);
+			var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview", 0.8f);
 
 			ResponseEntity<ChatCompletion> chatCompletion2 = completionApi
 				.chatCompletionEntity(functionResponseRequest);
@@ -143,7 +144,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 			assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
-				.containsAnyOf("30.0°F", "30°F");
+				.containsAnyOf("30.0°C", "30°C");
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
 				.containsAnyOf("10.0°C", "10°C");
 			;

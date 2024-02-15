@@ -40,9 +40,9 @@ import org.springframework.context.annotation.Description;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
-class ToolCallWithPlainBeanRegistrationIT {
+class FunctionCallbackWithPlainFunctionBeanIT {
 
-	private final Logger logger = LoggerFactory.getLogger(ToolCallWithPlainBeanRegistrationIT.class);
+	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
@@ -51,40 +51,27 @@ class ToolCallWithPlainBeanRegistrationIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-1106-preview",
-				// ).run(context -> {
-				"spring.ai.openai.chat.options.beanFunctions.weatherFunction",
-				"spring.ai.openai.chat.options.beanFunctions.weatherFunction2=Get the weather in location",
-				"spring.ai.openai.chat.options.beanFunctions.weatherFunction3")
-			.run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
 
-				OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
+			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withEnabledFunction("weatherFunction").build()));
+			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withEnabledFunction("weatherFunction").build()));
 
-				logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				response = chatClient.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withEnabledFunction("weatherFunction2").build()));
+			response = chatClient.call(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder().withEnabledFunction("weatherFunction3").build()));
 
-				logger.info("Response: {}", response);
+			logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				response = chatClient.call(new Prompt(List.of(userMessage),
-						OpenAiChatOptions.builder().withEnabledFunction("weatherFunction3").build()));
-
-				logger.info("Response: {}", response);
-
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
-
-			});
+		});
 	}
 
 	@Configuration
@@ -93,14 +80,7 @@ class ToolCallWithPlainBeanRegistrationIT {
 		@Bean
 		@Description("Get the weather in location")
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
-			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
-		}
-
-		@Bean(name = "weatherFunction2")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction1() {
-			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
+			return new MockWeatherService();
 		}
 
 		// Relies on the Request's JsonClassDescription annotation to provide the

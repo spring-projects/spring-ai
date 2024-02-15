@@ -33,8 +33,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * A Spring {@link ApplicationContextAware} implementation that provides a way to retrieve
- * a {@link Function} from the Spring context and wrap it into a
- * {@link ToolFunctionCallback}.
+ * a {@link Function} from the Spring context and wrap it into a {@link FunctionCallback}.
  *
  * The name of the function is determined by the bean name.
  *
@@ -48,7 +47,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Christopher Smith
  */
-public class SpringAiFunctionContextManager implements ApplicationContextAware {
+public class FunctionCallbackContext implements ApplicationContextAware {
 
 	private GenericApplicationContext applicationContext;
 
@@ -58,7 +57,7 @@ public class SpringAiFunctionContextManager implements ApplicationContextAware {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public ToolFunctionCallback getFunctionFromBean(@NonNull String beanName, @Nullable String defaultDescription) {
+	public FunctionCallback getFunctionCallback(@NonNull String beanName, @Nullable String defaultDescription) {
 
 		Type beanType = FunctionContextUtils.findType(this.applicationContext.getBeanFactory(), beanName);
 
@@ -105,7 +104,7 @@ public class SpringAiFunctionContextManager implements ApplicationContextAware {
 		Object bean = this.applicationContext.getBean(beanName);
 
 		if (bean instanceof Function<?, ?> function) {
-			return new DefaultToolFunctionCallback(functionName, functionDescription, functionInputClass, function);
+			return new FunctionCallbackWrapper(functionName, functionDescription, functionInputClass, function);
 		}
 		else {
 			throw new IllegalArgumentException("Bean must be of type Function");

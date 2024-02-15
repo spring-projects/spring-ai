@@ -50,7 +50,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingClient.class);
 
-	public static final String DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002";
+	public static final String DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-large";
 
 	private final OpenAiEmbeddingOptions defaultOptions;
 

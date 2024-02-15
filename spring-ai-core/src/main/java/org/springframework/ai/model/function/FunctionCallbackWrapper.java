@@ -11,28 +11,28 @@ import org.springframework.util.Assert;
  * implementation to override this.
  *
  */
-public class DefaultToolFunctionCallback<I, O> extends AbstractToolFunctionCallback<I, O> {
+public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O> {
 
 	private Function<I, O> function;
 
-	public DefaultToolFunctionCallback(String name, String description, Class<I> inputType, Function<I, O> function) {
+	public FunctionCallbackWrapper(String name, String description, Class<I> inputType, Function<I, O> function) {
 		super(name, description, inputType);
 		Assert.notNull(function, "Function must not be null");
 		this.function = function;
 	}
 
-	public DefaultToolFunctionCallback(String name, String description, Class<I> inputType,
+	public FunctionCallbackWrapper(String name, String description, Class<I> inputType,
 			Function<O, String> responseConverter, Function<I, O> function) {
 		super(name, description, inputType, responseConverter);
 		Assert.notNull(function, "Function must not be null");
 		this.function = function;
 	}
 
-	public DefaultToolFunctionCallback(String name, String description, Function<I, O> function) {
+	public FunctionCallbackWrapper(String name, String description, Function<I, O> function) {
 		this(name, description, resolveInputType(function), function);
 	}
 
-	public DefaultToolFunctionCallback(String name, String description, Function<O, String> responseConverter,
+	public FunctionCallbackWrapper(String name, String description, Function<O, String> responseConverter,
 			Function<I, O> function) {
 		this(name, description, resolveInputType(function), responseConverter, function);
 	}

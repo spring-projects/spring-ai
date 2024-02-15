@@ -19,7 +19,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.model.function.AbstractToolFunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
@@ -172,20 +172,10 @@ class OpenAiChatClientIT extends AbstractIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel("gpt-4-1106-preview")
-			.withToolCallbacks(
-					List.of(new AbstractToolFunctionCallback<MockWeatherService.Request, MockWeatherService.Response>(
-							"getCurrentWeather", "Get the weather in location", MockWeatherService.Request.class,
-							(response) -> "" + response.temp() + response.unit()) {
-
-						private final MockWeatherService weatherService = new MockWeatherService();
-
-						@Override
-						public MockWeatherService.Response apply(MockWeatherService.Request request) {
-							return weatherService.apply(request);
-						}
-
-					}))
+			.withModel("gpt-4-turbo-preview")
+			.withFunctionCallbacks(
+					List.of(new FunctionCallbackWrapper<>("getCurrentWeather", "Get the weather in location",
+							(response) -> "" + response.temp() + response.unit(), new MockWeatherService())))
 			.build();
 
 		ChatResponse response = openAiChatClient.call(new Prompt(messages, promptOptions));

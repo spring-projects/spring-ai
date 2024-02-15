@@ -20,8 +20,8 @@ import java.util.List;
 
 import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.model.function.SpringAiFunctionContextManager;
-import org.springframework.ai.model.function.ToolFunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
@@ -58,7 +58,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			List<ToolFunctionCallback> toolFunctionCallbacks, SpringAiFunctionContextManager functionManager) {
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
 
 		String apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -72,17 +72,10 @@ public class OpenAiAutoConfiguration {
 		var openAiApi = new OpenAiApi(baseUrl, apiKey, restClientBuilder);
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getToolCallbacks().addAll(toolFunctionCallbacks);
+			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		if (!CollectionUtils.isEmpty(chatProperties.getOptions().getBeanFunctions())) {
-			chatProperties.getOptions().getBeanFunctions().forEach((beanName, description) -> {
-				ToolFunctionCallback function = functionManager.getFunctionFromBean(beanName, description);
-				chatProperties.getOptions().getToolCallbacks().add(function);
-			});
-		}
-
-		return new OpenAiChatClient(openAiApi, chatProperties.getOptions());
+		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext);
 	}
 
 	@Bean
@@ -124,8 +117,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public SpringAiFunctionContextManager springAiFunctionManager(ApplicationContext context) {
-		SpringAiFunctionContextManager manager = new SpringAiFunctionContextManager();
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setApplicationContext(context);
 		return manager;
 	}
