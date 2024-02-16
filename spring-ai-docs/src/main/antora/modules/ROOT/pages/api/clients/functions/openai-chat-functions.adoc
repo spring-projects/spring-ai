@@ -152,7 +152,7 @@ OpenAiChatClient chatClient = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-		OpenAiChatOptions.builder().withEnabledFunction("CurrentWeather").build())); // (1) Enable the function
+		OpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -218,7 +218,7 @@ The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot
 // UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 //
 // ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-// 		OpenAiChatOptions.builder().withEnabledFunction("CurrentWeather").build())); // Enable the function
+// 		OpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
 // ----
 //
 // NOTE: Functions are registered when OpenAiChatClient is created, by you must enable in the Prompt the functions to be used in the request.
