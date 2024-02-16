@@ -108,6 +108,10 @@ repositories {
 *** xref:api/clients/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
 // ** xref:api/clients/bedrock/bedrock-jurassic.adoc[Jurassic2 Chat Completion] (WIP, no streaming support)
 
+== Image Generation Models
+* xref:api/imageclient.adoc[]
+** xref:api/clients/image/openai-image.adoc[OpenAI Image Generation]
+** xref:api/clients/image/stabilityai-image.adoc[StabilityAI Image Generation]
 
 == Vector Databases
 * xref:api/vectordbs.adoc[Vector Database API]
@@ -119,7 +123,7 @@ repositories {
 ** xref:api/vectordbs/pinecone.adoc[PineconeVectorStore] - https://www.pinecone.io/[PineCone] vector store.
 ** xref:api/vectordbs/redis.adoc[RedisVectorStore] - The https://redis.io/[Redis] vector store.
 ** xref:api/vectordbs/weaviate.adoc[WeaviateVectorStore] - The https://weaviate.io/[Weaviate] vector store.
-** link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.
+** link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple (in-memory) implementation of persistent vector storage, good for educational purposes.
 
 
 == Spring CLI
