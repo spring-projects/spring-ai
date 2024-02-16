@@ -45,10 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class Neo4jVectorStoreAutoConfigurationIT {
 
-	// Needs to be Neo4j 5.13+, because Neo4j 5.13 deprecated the used embedding storing
+	// Needs to be Neo4j 5.15+, because Neo4j 5.15 deprecated the used embedding storing
 	// function.
 	@Container
-	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.14"))
+	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.15"))
 		.withRandomPassword();
 
 	List<Document> documents = List.of(
