@@ -62,7 +62,7 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
 | spring.ai.openai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
-| spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-3-large (other options: text-embedding-3-small,  text-embedding-ada-002)
+| spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-3-small (other options: text-embedding-3-large, text-embedding-ada-002)
 | spring.ai.openai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
 | spring.ai.openai.embedding.options.user   | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.  | -
 |====

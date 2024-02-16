@@ -50,8 +50,6 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingClient.class);
 
-	public static final String DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-large";
-
 	private final OpenAiEmbeddingOptions defaultOptions;
 
 	private final RetryTemplate retryTemplate = RetryTemplate.builder()
@@ -76,7 +74,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode) {
 		this(openAiApi, metadataMode,
-				OpenAiEmbeddingOptions.builder().withModel(DEFAULT_OPENAI_EMBEDDING_MODEL).build());
+				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build());
 	}
 
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode, OpenAiEmbeddingOptions options) {
@@ -106,7 +104,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 							this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat(),
 							this.defaultOptions.getUser())
 					: new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
-							DEFAULT_OPENAI_EMBEDDING_MODEL);
+							OpenAiApi.DEFAULT_EMBEDDING_MODEL);
 
 			if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
 				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
