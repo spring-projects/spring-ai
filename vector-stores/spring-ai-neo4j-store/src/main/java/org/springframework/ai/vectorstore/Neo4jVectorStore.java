@@ -311,26 +311,21 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
 			session
-				.run("CREATE CONSTRAINT %s_unique_idx IF NOT EXISTS FOR (n:%s) REQUIRE n.id IS UNIQUE".formatted(
+				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.id IS UNIQUE".formatted(
 						SchemaNames.sanitize(this.config.label + "_unique_idx").orElseThrow(), this.config.quotedLabel))
 				.consume();
 
-			var vectorIndexExists = session
-				.run("SHOW INDEXES YIELD name WHERE name = $name RETURN count(*) > 0",
-						Map.of("name", this.config.indexName))
-				.single()
-				.get(0)
-				.asBoolean();
-
-			if (!vectorIndexExists) {
-				var statement = "CALL db.index.vector.createNodeIndex($indexName, $label, $embeddingProperty, $embeddingDimension, $distanceType)";
-				session.run(statement,
-						Map.of("indexName", this.config.indexName, "label", this.config.label, "embeddingProperty",
-								this.config.embeddingProperty, "embeddingDimension", this.config.embeddingDimension,
-								"distanceType", this.config.distanceType.name))
-					.consume();
-				session.run("CALL db.awaitIndexes()").consume();
-			}
+			var statement = """
+					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
+							OPTIONS {indexConfig: {
+							 `vector.dimensions`: %d,
+							 `vector.similarity_function`: '%s'
+							}}
+					""".formatted(SchemaNames.sanitize(this.config.indexName, true).orElseThrow(),
+					this.config.quotedLabel, this.config.embeddingProperty, this.config.embeddingDimension,
+					this.config.distanceType.name);
+			session.run(statement).consume();
+			session.run("CALL db.awaitIndexes()").consume();
 		}
 	}
 

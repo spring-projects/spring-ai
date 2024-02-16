@@ -13,7 +13,7 @@ Those indexes are powered by Lucene using a Hierarchical Navigable Small World G
 
 == Prerequisites
 
-* A running Neo4j (5.13+) instance. The following options are available:
+* A running Neo4j (5.15+) instance. The following options are available:
 ** link:https://hub.docker.com/_/neo4j[Docker] image
 ** link:https://neo4j.com/download/[Neo4j Desktop]
 ** link:https://neo4j.com/cloud/aura-free/[Neo4j Aura]
