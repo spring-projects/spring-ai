@@ -23,10 +23,12 @@ The basis of the underlying infrastructure is the link:https://github.com/spring
 
 Suppose we want the AI model to respond with information that it does not have, for example the current temperature at a given location.
 
-We can provide the AI model with our own functions that can it can use to retrieve that information as it processes your prompt.
+We can provide the AI model with metadata about our own functions that it can use to retrieve that information as it processes your prompt.
 
 For example, if during the processing of a prompt, the AI Model determines that it needs additional information about the temperature in a given location, it will start a server side generated request/response interaction.  The AI Model invokes a client side function.
-The AI Model provides method invocation details as JSON and it is the responsibilty of the client to execute that function and return the response.
+The AI Model provides method invocation details as JSON and it is the responsibility of the client to execute that function and return the response.
+
+The model-client interaction is illustrated in the <<spring-ai-function-calling-flow>> diagram.
 
 Spring AI greatly simplifies code you need to write to support function invocation.
 It brokers the function invocation conversation for you.
@@ -224,13 +226,13 @@ The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot
 // NOTE: Functions are registered when OpenAiChatClient is created, by you must enable in the Prompt the functions to be used in the request.
 
 
-=== Function Calling Flow
+== Appendices:
+
+=== Spring AI Function Calling Flow [[spring-ai-function-calling-flow]]
 
 The following diagram illustrates the flow of the OpenAiChatClient Function Calling:
 
-image:openai-chatclient-function-call.png[width=800, title="OpenAiChatClient Function Calling Flow"]
-
-== Appendices:
+image:openai-chatclient-function-call.jpg[width=800, title="OpenAiChatClient Function Calling Flow"]
 
 === OpenAI API Function Calling Flow
 
