@@ -1,0 +1,88 @@
+[[upgrade-notes]]
+= Upgrading to 0.8.0
+
+== January 24, 2024 Update
+
+* Moving the `prompt` and `messages` and `metadata` packages to subpackages of `org.sf.ai.chat`
+* New functionality is *text to image* clients. Classes are `OpenAiImageClient` and `StabilityAiImageClient`. See the integration tests for usage, docs are coming soon.
+* A new package `model` that contains interfaces and base classes to support creating AI Model Clients for any input/output data type combination. At the moment the chat and image model packages implement this. We will be updating the embedding package to this new model soon.
+* A new "portable options" design pattern. We wanted to provide as much portability in the `ChatClient` as possible across different chat based AI Models. There is a common set of generation options and then those that are specific to a model provider. A sort of "duck typing" approach is used. `ModelOptions` in the model package is a marker interface indicating implementations of this class will provide the options for a model. See `ImageOptions`, a subinterface that defines portable options across all text->image `ImageClient` implementations. Then `StabilityAiImageOptions` and `OpenAiImageOptions` provide the options specific to each model provider. All options classes are created via a fluent API builder all can be passed into the portable `ImageClient` API. These option data types are using in autoconfiguration/configuration properties for the `ImageClient` implementations.
+
+== January 13, 2024 Update
+
+The following OpenAi Autoconfiguration chat properties has changed
+
+* from `spring.ai.openai.model` to `spring.ai.openai.chat.model`.
+* from `spring.ai.openai.temperature` to `spring.ai.openai.chat.temperature`.
+
+Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/clients/openai.html
+
+== December 27, 2023 Update
+
+Merge SimplePersistentVectorStore and InMemoryVectorStore into SimpleVectorStore
+* Replace InMemoryVectorStore with SimpleVectorStore
+
+== December 20, 2023 Update
+
+Refactor the Ollama client and related classes and package names
+
+* Replace the org.springframework.ai.ollama.client.OllamaClient by org.springframework.ai.ollama.OllamaChatClient.
+* The OllamaChatClient method signatures have changed.
+* Rename the org.springframework.ai.autoconfigure.ollama.OllamaProperties into org.springframework.ai.autoconfigure.ollama.OllamaChatProperties and change the suffix to: `spring.ai.ollama.chat`. Some of the properties have changed as well.
+
+== December 19, 2023 Update
+
+Renaming of AiClient and related classes and package names
+
+* Rename AiClient to ChatClient
+* Rename AiResponse to ChatResponse
+* Rename AiStreamClient to StreamingChatClient
+* Rename package org.sf.ai.client to org.sf.ai.chat
+
+Rename artifact ID of
+
+* `transformers-embedding` to `spring-ai-transformers`
+
+Moved Maven modules from top-level directory and `embedding-clients` subdirectory to all be under a single `models` directory.
+
+[WARNING]
+
+== December 1, 2023
+
+We are transitioning the project's Group ID:
+
+* *FROM*: `org.springframework.experimental.ai`
+* *TO*: `org.springframework.ai`
+
+Artifacts will still be hosted in the snapshot repository as shown below.
+
+The main branch will move to the version `0.8.0-SNAPSHOT`.
+It will be unstable for a week or two.
+Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
+
+You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://markpollack.github.io/spring-ai-0.7.1/[0.7.1-SNAPSHOT Documentation].
+
+== 0.7.1-SNAPSHOT Dependencies
+
+* Azure OpenAI
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+* OpenAI
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+

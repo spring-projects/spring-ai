@@ -42,4 +42,4 @@
 ** xref:api/etl-pipeline.adoc[]
 ** xref:api/testing.adoc[]
 * Appendices
-** xref:glossary.adoc[]
+** xref:upgrade-notes.adoc[]]

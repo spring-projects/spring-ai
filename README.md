@@ -6,238 +6,29 @@ The Spring AI project provides a Spring-friendly API and abstractions for develo
 
 Let's make your `@Beans` intelligent!
 
-For further information go to our [Spring AI documentation](https://docs.spring.io/spring-ai/reference/).
-
-## Project Update
-
-:partying_face: The Spring AI project has graduated out of the repository!
-
-:warning:
-
-### Breaking Changes
-
-January 24, 2024 Update
-
-* Moving the `prompt` and `messages` and `metadata` packages to subpackages of `org.sf.ai.chat`
-* New functionality is **text to image** clients.  Classes are `OpenAiImageClient` and `StabilityAiImageClient`.  See the integration tests for usage, docs are coming soon.
-* A new package `model` that contains interfaces and base classes to support creating AI Model Clients for any input/output data type combination. At the moment the chat and image model packages implement this.  We will be updating the embedding package to this new model soon.
-* A new "portable options" design pattern.  We wanted to provide as much portability in the `ChatClient` as possible across different chat based AI Models.  There is a common set of generation options and then those that are specific to a model provider.  A sort of `duck typing` approach is used.  `ModelOptions` in the model package is a marker interface indicating implementations of this class will provide the options for a model.  See `ImageOptions`, a subinterface that defines portable options across all text->image `ImageClient` implementations.  Then `StabilityAiImageOptions` and `OpenAiImageOptions` provide the options specific to each model provider.  All options classes are created via a fluent API builder all can be passed into the portable `ImageClient` API.  These option data types are using in autoconfiguration/configurationproperties for the `ImageClient` implementations.
-
-
-January 13, 2024 Update
-
-The following OpenAi Autoconfiguration chat properties has changed
-
- - from `spring.ai.openai.model` to `spring.ai.openai.chat.model`.
- - from `spring.ai.openai.temperature` to `spring.ai.openai.chat.temperature`.
-
-Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/clients/openai.html
-
-December 27, 2023 Update
-
-Merge SimplePersistentVectorStore and InMemoryVectorStore into SimpleVectorStore
-- Replace InMemoryVectorStore with SimpleVectorStore
-
-December 20, 2023 Update
-
-Refactor the Ollama client and related classes and package names
-
- - Replace the org.springframework.ai.ollama.client.OllamaClient by org.springframework.ai.ollama.OllamaChatClient.
- - The OllamaChatClient method signatures have changed.
- - Rename the org.springframework.ai.autoconfigure.ollama.OllamaProperties into org.springframework.ai.autoconfigure.ollama.OllamaChatProperties and change the suffix to: `spring.ai.ollama.chat`. Some of the properties have changed as well.
-
-December 19, 2023 Update
-
-Renaming of AiClient and related classes and packagenames
-
-* Rename AiClient to ChatClient
-* Rename AiResponse to ChatResponse
-* Rename AiStreamClient to StreamingChatClient
-* Rename package org.sf.ai.client to org.sf.ai.chat
-
-Rename artifact ID of
-
-* `transformers-embedding` to `spring-ai-transformers`
-
-Moved Maven modules from top level directoryand `embedding-clients` subdirectory to all be under a single `models` directory.
-
-:warning:
-
-December 1, 2023
-
-We are transitioning the project's Group ID:
-
-* **FROM**: `org.springframework.experimental.ai`
-* **TO**: `org.springframework.ai`
-
-Artifacts will still be hosted in the snapshot repository as shown below.
-
-The main branch will move to the version `0.8.0-SNAPSHOT`.
-It will be unstable for a week or two.
-Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
-
-You can access `0.7.1-SNAPSHOT` artifacts as before and still access [0.7.1-SNAPSHOT Documentation](https://markpollack.github.io/spring-ai-0.7.1/).
-
-
-## Cloning the repo
-
-This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2).
-To clone it you have to either:
-
-- Ignore the large files (won't affect the spring-ai behaviour) :  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
-- Or install the [Git Large File Storage](https://git-lfs.com/) before cloning the repo.
+For further information go to our [Spring AI refernce documentation](https://docs.spring.io/spring-ai/reference/).
 
 ## Project Links
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [Issues](https://github.com/spring-projects/spring-ai/issues)
 * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!
-* [JavaDocs](https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/)
+* [Upgrade from 0.7.1-SNAPSHOT](https://docs.spring.io/spring-ai/reference/upgrade-notes.html)
 
 ## Educational Resources
 
-* Follow the [Workshop](#workshop)
+- Follow the [Workshop](#workshop)
+  - The workshop contains step-by-step examples from 'hello world' to 'retrieval augmented generation'
+
+Some selected videos.  Search YouTube! for more.
+
+- Spring Tips: Spring AI
+<br>[![Watch Spring Tips video](https://img.youtube.com/vi/aNKDoiOUo9M/default.jpg)](https://www.youtube.com/watch?v=aNKDoiOUo9M)
 * Overview of Spring AI @ Devoxx 2023
 <br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
 * Introducing Spring AI - Add Generative AI to your Spring Applications
 <br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
 
-## Dependencies
-
-The Spring AI project provides artifacts in the Spring Milestone Repository.
-You will need to add configuration to add a reference to the Spring Milestone repository in your build file.
-For example, in maven, add the following repository definition.
-
-
-```xml
-  <repositories>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
-```
-
-And the Spring Boot Starter depending on if you are using Azure Open AI or Open AI.
-
-### Main Branch
-
-The main branch has move to version 0.8.0-SNAPSHOT.
-It will be unstable for a week or two.
-Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
-
-* Azure OpenAI
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-
-* OpenAI
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-
-### 0.7.1-SNAPSHOT
-
-* Azure OpenAI
-```xml
-    <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
-        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
-    </dependency>
-```
-
-* OpenAI
-
-```xml
-    <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
-        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
-    </dependency>
-```
-### Vector Stores
-
-Following vector stores are supported:
-
-* Azure Vector Store
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-azure-vector-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-
-* Chroma
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-chroma-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-* Milvus
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-
-* PGVector
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-* Pinecone
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-pinecone-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-* Weaviate
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
-* Neo4j
-
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
-    </dependency>
-```
 
 ## Workshop
 
@@ -250,6 +41,24 @@ Following vector stores are supported:
         <version>0.7.1-SNAPSHOT</version>
     </dependency>
 ```
+
+## Getting Started
+
+Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/reference/getting-started.html) for instruction on adding your dependencies.
+
+Note, the new Spring CLI project lets you get up and running in two simple steps, [described in detail here](https://docs.spring.io/spring-ai/reference/getting-started.html#spring-cli).
+1. Install Spring CLI
+2. Type `spring boot new --from ai --name myai` in your terminal
+
+
+### Adding Dependencies manually
+
+Note that are two main steps.
+
+1. [Add the Spring Milestone and Snapshot repositories to your build system](https://docs.spring.io/spring-ai/reference/getting-started.html#repositories).
+2. Add the [Spring AI BOM](https://docs.spring.io/spring-ai/reference/getting-started.html#dependency-management)
+3. [Add dependencies](https://docs.spring.io/spring-ai/reference/getting-started.html#add-dependencies) for the specific AI model, Vector Database or other component dependencies you require.
+
 
 ## Overview
 
@@ -354,6 +163,17 @@ Though the `DocumentWriter` interface isn't exclusively for Vector Database writ
 They ascertain which document sections the AI should use for generating responses.
 Examples of Vector Databases include Chroma, Postgres, Pinecone, Weaviate, Mongo Atlas, and Redis. Spring AI's `VectorStore` abstraction permits effortless transitions between database implementations.
 
+
+
+## Cloning the repo
+
+This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2).
+To clone it you have to either:
+
+- Ignore the large files (won't affect the spring-ai behaviour) :  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
+- Or install the [Git Large File Storage](https://git-lfs.com/) before cloning the repo.
+
+
 ## Building
 
 To build with running unit tests
@@ -380,3 +200,4 @@ To build the docs
 ```
 
 The docs are then in the directory `spring-ai-docs/target/antora/site/index.html`
+
