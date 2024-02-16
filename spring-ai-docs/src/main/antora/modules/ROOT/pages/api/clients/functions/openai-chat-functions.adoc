@@ -182,7 +182,7 @@ OpenAiChatClient chatClient = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(new DefaultToolFunctionCallback<>(
+	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
 		"CurrentWeather", // name
 		"Get the weather in location", // function description
 		new MockWeatherService()))) // function code
@@ -207,7 +207,7 @@ The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot
 // OpenAiApi openaiApi = new OpenAiApi(apiKey);
 //
 // var defaultOptions = OpenAiChatOptions.builder()
-// 	.withFunctionCallbacks(List.of(new DefaultToolFunctionCallback<>(
+// 	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
 // 		"CurrentWeather", // name
 // 		"Get the weather in location", // function description
 // 		new MockWeatherService()))) // function code
