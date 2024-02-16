@@ -310,8 +310,10 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
-					OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
+			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			// return new OpenAiEmbeddingClient(new
+			// OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
+			// OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
 		}
 
 	}

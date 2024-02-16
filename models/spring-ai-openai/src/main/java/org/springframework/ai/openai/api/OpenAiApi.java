@@ -54,7 +54,7 @@ public class OpenAiApi {
 
 	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
 	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
-	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
+	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
