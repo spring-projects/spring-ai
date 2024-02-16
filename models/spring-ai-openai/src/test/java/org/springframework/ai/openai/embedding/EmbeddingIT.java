@@ -42,7 +42,7 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-ada-002");
+		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-3-small");
 		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
 		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
 
@@ -65,15 +65,15 @@ class EmbeddingIT {
 	}
 
 	@Test
-	void embedding3Small() {
+	void textEmbeddingAda002() {
 
 		EmbeddingResponse embeddingResponse = embeddingClient.call(new EmbeddingRequest(List.of("Hello World"),
-				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-small").build()));
+				OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
 
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-3-small");
+		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-ada-002");
 		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
 		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
 
