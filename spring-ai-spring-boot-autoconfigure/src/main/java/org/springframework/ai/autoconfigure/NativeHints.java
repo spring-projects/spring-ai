@@ -11,6 +11,7 @@ import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -100,6 +101,13 @@ public class NativeHints implements RuntimeHintsRegistrar {
 
 		@Override
 		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+
+			var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ChatMessage.class,
+					FunctionMessage.class, Message.class, MessageType.class, UserMessage.class, SystemMessage.class);
+			for (var c : chatTypes) {
+				hints.reflection().registerType(c);
+			}
+
 			for (var r : Set.of("antlr4/org/springframework/ai/vectorstore/filter/antlr4/Filters.g4",
 					"embedding/embedding-model-dimensions.properties"))
 				hints.resources().registerResource(new ClassPathResource(r));
