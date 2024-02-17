@@ -34,7 +34,7 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(StabilityAiApi.class)
 @EnableConfigurationProperties({ StabilityAiImageProperties.class })
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.StabilityAiHints.class)
 public class StabilityAiImageAutoConfiguration {
 
 	@Bean

@@ -38,7 +38,7 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
 		OllamaConnectionProperties.class })
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.OllamaHints.class)
 public class OllamaAutoConfiguration {
 
 	@Bean

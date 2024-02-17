@@ -31,7 +31,7 @@ import org.springframework.web.client.RestClient;
 
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(VertexAiApi.class)
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.VertexAiHints.class)
 @EnableConfigurationProperties({ VertexAiConnectionProperties.class, VertexAiChatProperties.class,
 		VertexAiEmbeddingProperties.class })
 public class VertexAiAutoConfiguration {

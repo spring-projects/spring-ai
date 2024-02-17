@@ -43,7 +43,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockTitanChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockTitanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.BedrockAiHints.class)
 public class BedrockTitanChatAutoConfiguration {
 
 	@Bean

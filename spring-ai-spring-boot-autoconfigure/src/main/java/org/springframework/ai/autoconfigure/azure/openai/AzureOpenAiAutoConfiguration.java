@@ -21,6 +21,7 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 
 import com.azure.core.util.ClientOptions;
+import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -28,12 +29,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.Assert;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAIClientBuilder.class)
 @EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
 		AzureOpenAiConnectionProperties.class })
+@ImportRuntimeHints(NativeHints.OpenAiHints.class)
 public class AzureOpenAiAutoConfiguration {
 
 	@Bean

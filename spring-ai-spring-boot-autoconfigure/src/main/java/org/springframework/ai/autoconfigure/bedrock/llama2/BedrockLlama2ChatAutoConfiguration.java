@@ -46,7 +46,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockLlama2ChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockLlama2ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.BedrockAiHints.class)
 public class BedrockLlama2ChatAutoConfiguration {
 
 	@Bean

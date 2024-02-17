@@ -44,7 +44,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockTitanEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockTitanEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.BedrockAiHints.class)
 public class BedrockTitanEmbeddingAutoConfiguration {
 
 	@Bean

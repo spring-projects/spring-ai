@@ -44,7 +44,7 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
-@ImportRuntimeHints(NativeHints.class)
+@ImportRuntimeHints(NativeHints.OpenAiHints.class)
 /**
  * @author Christian Tzolov
  */
