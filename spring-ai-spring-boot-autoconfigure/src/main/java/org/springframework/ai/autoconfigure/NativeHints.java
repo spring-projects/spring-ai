@@ -11,6 +11,7 @@ import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
+import org.springframework.ai.mistral.api.MistralAiApi;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -42,7 +43,7 @@ public class NativeHints implements RuntimeHintsRegistrar {
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 
 		for (var h : Set.of(new BedrockAiHints(), new VertexAiHints(), new OpenAiHints(), new PdfReaderHints(),
-				new KnuddelsHints(), new OllamaHints()))
+				new KnuddelsHints(), new OllamaHints(), new MistralAiHints()))
 			h.registerHints(hints, classLoader);
 
 		hints.resources().registerResource(new ClassPathResource("embedding/embedding-model-dimensions.properties"));
@@ -115,6 +116,17 @@ public class NativeHints implements RuntimeHintsRegistrar {
 		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 			var mcs = MemberCategory.values();
 			for (var tr : findJsonAnnotatedClasses(OpenAiApi.class))
+				hints.reflection().registerType(tr, mcs);
+		}
+
+	}
+
+	static class MistralAiHints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			var mcs = MemberCategory.values();
+			for (var tr : findJsonAnnotatedClasses(MistralAiApi.class))
 				hints.reflection().registerType(tr, mcs);
 		}
 
