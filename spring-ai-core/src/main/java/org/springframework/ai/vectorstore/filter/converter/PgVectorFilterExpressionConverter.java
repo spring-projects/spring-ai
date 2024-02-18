@@ -64,7 +64,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("$." + key.key());
+		context.append("$." + String.format("\"%s\"", key.key()));
 	}
 
 	@Override
