@@ -81,7 +81,7 @@ spring project list
 [[repositories]]
 == Add Milestone and Snapshot Repositories
 
-If you would prefer to add the dependency snippets by hand, follow the directions in the following secitons.
+If you prefer to add the dependency snippets by hand, follow the directions in the following secitons.
 
 To use the Milestone and Snapshot version, you need to add references to the Spring Milestone and/or Snapshot repositories in your build file.
 

@@ -18,6 +18,13 @@ Exporting an environment variable is one way to set that configuration property:
 export SPRING_AI_VERTEX_AI_API_KEY=<INSERT KEY HERE>
 ----
 
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Client.
@@ -41,7 +48,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 === Chat Properties
 
@@ -126,7 +133,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 Next, create a `VertexAiEmbeddingClient` and use it for text generations:
 
