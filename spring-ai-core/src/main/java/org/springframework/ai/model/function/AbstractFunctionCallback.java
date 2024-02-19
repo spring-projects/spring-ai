@@ -113,18 +113,6 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 		this.objectMapper = objectMapper;
 	}
 
-	public static <I, O> AbstractFunctionCallback<I, O> of(String name, String description, Function<I, O> function) {
-		Assert.notNull(name, "Name must not be null");
-		Assert.notNull(description, "Description must not be null");
-		Assert.notNull(function, "Function must not be null");
-
-		@SuppressWarnings("unchecked")
-		final Class<I> inputClassType = (Class<I>) TypeResolverHelper
-			.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
-
-		return new FunctionCallbackWrapper<I, O>(name, description, inputClassType, function);
-	}
-
 	@Override
 	public String getName() {
 		return this.name;

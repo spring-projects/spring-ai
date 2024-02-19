@@ -29,11 +29,7 @@ import org.springframework.ai.azure.openai.MockAzureOpenAiTestConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.PromptMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.*;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -111,12 +107,12 @@ class AzureOpenAiChatClientMetadataTests {
 		ChatResponseMetadata chatResponseMetadata = response.getMetadata();
 
 		assertThat(chatResponseMetadata).isNotNull();
-		assertThat(chatResponseMetadata.getRateLimit()).isEqualTo(RateLimit.NULL);
+		assertThat(chatResponseMetadata.getRateLimit().getRequestsLimit())
+			.isEqualTo(new EmptyRateLimit().getRequestsLimit());
 
 		Usage usage = chatResponseMetadata.getUsage();
 
 		assertThat(usage).isNotNull();
-		assertThat(usage).isNotEqualTo(Usage.NULL);
 		assertThat(usage.getPromptTokens()).isEqualTo(58);
 		assertThat(usage.getGenerationTokens()).isEqualTo(68);
 		assertThat(usage.getTotalTokens()).isEqualTo(126);

@@ -18,8 +18,8 @@ package org.springframework.ai.vertex;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.ChatOptions;
-import org.springframework.ai.chat.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.vertex.api.VertexAiApi;
 

@@ -170,7 +170,7 @@ or programmatically using the expression DSL:
 
 [source,java]
 ----
-FilterExpressionBuilder b = Filter.builder();
+FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(
     SearchRequest

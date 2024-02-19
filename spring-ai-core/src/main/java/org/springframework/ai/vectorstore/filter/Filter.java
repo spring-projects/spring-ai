@@ -58,27 +58,12 @@ package org.springframework.ai.vectorstore.filter;
  *
  *
  * Usually you will not create expression manually but use either the
- * {@link Filter#builder()} DSL or the {@link Filter#parser()} for parsing generic text
- * expressions. Follow the {@link FilterExpressionBuilder} and
- * {@link FilterExpressionTextParser} documentation for how to use them.
+ * {@link FilterExpressionBuilder} DSL or the {@link FilterExpressionTextParser} for
+ * parsing generic text expressions.
  *
  * @author Christian Tzolov
  */
 public class Filter {
-
-	/**
-	 * DSL builder for creating {@link Filter.Expression} programmatically.
-	 */
-	public static FilterExpressionBuilder builder() {
-		return new FilterExpressionBuilder();
-	}
-
-	/**
-	 * Parses a portable filter expression text language into {@link Filter.Expression}.
-	 */
-	public static FilterExpressionTextParser parser() {
-		return new FilterExpressionTextParser();
-	}
 
 	/**
 	 * Mark interface representing the supported expression types: {@link Key},
