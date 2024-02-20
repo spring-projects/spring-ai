@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.stabilityai;
 
 import org.springframework.ai.stabilityai.StabilityAiImageClient;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +27,8 @@ import org.springframework.web.client.RestClient;
  * @author Mark Pollack
  * @since 0.8.0
  */
+
+@ConditionalOnClass(StabilityAiApi.class)
 @EnableConfigurationProperties({ StabilityAiImageProperties.class })
 public class StabilityAiImageAutoConfiguration {
 
