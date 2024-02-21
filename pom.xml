@@ -120,7 +120,7 @@
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 
 		<!-- testing dependencies -->
-		<testcontainers.version>1.19.0</testcontainers.version>
+		<testcontainers.version>1.19.6</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
