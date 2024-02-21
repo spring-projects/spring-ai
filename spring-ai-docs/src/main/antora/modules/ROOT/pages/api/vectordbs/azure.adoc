@@ -2,7 +2,7 @@
 
 This section will walk you through setting up the `AzureVectorStore` to store document embeddings and perform similarity searches using the Azure AI Search Service.
 
-link:https://azure.microsoft.com/en-us/products/ai-services/cognitive-search[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
+link:https://azure.microsoft.com/en-us/products/ai-services/ai-search/[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
 
 == Prerequisites
 
