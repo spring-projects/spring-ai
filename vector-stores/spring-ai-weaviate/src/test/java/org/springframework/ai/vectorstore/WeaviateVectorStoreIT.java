@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -38,23 +37,19 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.testcontainers.weaviate.WeaviateContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class WeaviateVectorStoreIT {
 
 	@Container
-	static GenericContainer<?> weaviateContainer = new GenericContainer<>("semitechnologies/weaviate:1.22.4")
-		.withEnv("AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED", "true")
-		.withEnv("PERSISTENCE_DATA_PATH", "/var/lib/weaviate")
-		.withEnv("QUERY_DEFAULTS_LIMIT", "25")
-		.withEnv("DEFAULT_VECTORIZER_MODULE", "none")
-		.withEnv("CLUSTER_HOSTNAME", "node1")
-		.withExposedPorts(8080);
+	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.22.4");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -250,7 +245,7 @@ public class WeaviateVectorStoreIT {
 		public VectorStore vectorStore(EmbeddingClient embeddingClient) {
 			WeaviateVectorStoreConfig config = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
 				.withScheme("http")
-				.withHost(String.format("%s:%s", weaviateContainer.getHost(), weaviateContainer.getMappedPort(8080)))
+				.withHost(weaviateContainer.getHttpHostAddress())
 				.withFilterableMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
 				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
 				.build();
