@@ -8,75 +8,31 @@ You should follow the steps in each of the following section according to your n
 [[spring-cli]]
 == Spring CLI
 
-The Spring CLI makes it easy to create new applications with code in your terminal window. Think of it as the 'create-react-app' of Spring for those familiar with the JavaScript ecosystem.
+The https://docs.spring.io/spring-cli/reference/index.html[Spring CLI], simplifies creating new applications directly from your terminal.
+Like the 'create-react-app' command for those familiar with the JavaScript ecosystem, Spring CLI provides a `spring boot new` command to create Spring-based projects.
+Spring CLI also offers features to integrate external code bases into your current project, and many other productivity features.
 
-Download the latest https://github.com/spring-projects/spring-cli/releases[Spring CLI Release]
-and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[instructions] to add `spring` to your `PATH`.
+NOTE: It is important to understand that the "Spring CLI" is a distinct project from the "Spring Boot CLI", each with its own set of functionalities.
 
-Create a simple AI application:
+To begin creating a Spring AI application, follow these steps:
 
-* For OpenAI
 
+. Download the latest https://github.com/spring-projects/spring-cli/releases[Spring CLI Release]
+and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[installation instructions].
+. To create a simple OpenAI-based application, use the command:
++
 ```shell
 spring boot new --from ai --name myai
 ```
+. Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI application.
 
-*  For Azure OpenAI
+To add the same simple AI application to an *existing* project, execute:
 
-```shell
-spring boot new --from ai-azure --name myai
-```
-
-You can also add the same simple AI application to your current project by using:
-
-*  For OpenAI
 ```shell
 spring boot add ai
 ```
 
-*  For Azure OpenAI
-```shell
-spring boot add ai-azure
-```
-
-There is a project catalog available for Azure OpenAI that covers more functionality.
-Add the catalog by running the the following command:
-
-```shell
-spring project-catalog add ai-azure
-```
-
-Now you have the following projects that you can use to create a new project by using the `spring boot new` command or add to your existing project by using the `spring boot add` command.
-
-```shell
-spring project list
-
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-hello-world      │AI - Hello,    │https://github.com/rd-1-2022/ai-azure-openai-helloworld             │ai-azure│[java-17,      │
-│                          │World          │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, web]    │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-prompt-templating│AI - Prompt    │https://github.com/rd-1-2022/ai-azure-prompt-template               │ai-azure│[java-17,      │
-│                          │Templating     │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, prompt  │
-│                          │               │                                                                    │        │templating]    │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-prompt-roles     │AI - Prompt    │https://github.com/rd-1-2022/ai-azure-openai-prompt-roles           │ai-azure│[java-17,      │
-│                          │Templating     │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, prompt  │
-│                          │               │                                                                    │        │roles]         │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-stuff-prompt     │AI - Stuff the │https://github.com/rd-1-2022/ai-azure-stuff-prompt                  │ai-azure│[java-17,      │
-│                          │prompt         │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, prompt  │
-│                          │               │                                                                    │        │stuff]         │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-prompt-rag       │AI - Retrieval │https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation│ai-azure│[java-17,      │
-│                          │Augmented      │                                                                    │        │boot-3.1.x, ai,│
-│                          │Generation     │                                                                    │        │azure,         │
-│                          │               │                                                                    │        │retrieval]     │
-└──────────────────────────┴───────────────┴────────────────────────────────────────────────────────────────────┴────────┴───────────────┘
-```
+NOTE: Spring CLI allows users to define their own https://docs.spring.io/spring-cli/reference/registering-new-projects.html[project catalogs] that define which projects you can create or add to your existing code base.
 
 [[repositories]]
 == Add Milestone and Snapshot Repositories
