@@ -17,27 +17,40 @@ package org.springframework.ai.autoconfigure.stabilityai;
 
 import org.springframework.ai.stabilityai.StabilityAiImageClient;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.client.RestClient;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Mark Pollack
  * @since 0.8.0
  */
 
+@AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @ConditionalOnClass(StabilityAiApi.class)
-@EnableConfigurationProperties({ StabilityAiImageProperties.class })
+@EnableConfigurationProperties({ StabilityAiConnectionProperties.class, StabilityAiImageProperties.class })
 public class StabilityAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public StabilityAiApi stabilityAiApi(StabilityAiImageProperties stabilityAiImageProperties,
-			RestClient.Builder restClientBuilder) {
-		return new StabilityAiApi(stabilityAiImageProperties.getApiKey(), stabilityAiImageProperties.getBaseUrl(),
-				stabilityAiImageProperties.getOptions().getModel(), restClientBuilder);
+	public StabilityAiApi stabilityAiApi(StabilityAiConnectionProperties commonProperties,
+			StabilityAiImageProperties imageProperties) {
+
+		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "StabilityAI API key must be set");
+		Assert.hasText(baseUrl, "StabilityAI base URL must be set");
+
+		return new StabilityAiApi(apiKey, imageProperties.getOptions().getModel(), baseUrl);
 	}
 
 	@Bean
