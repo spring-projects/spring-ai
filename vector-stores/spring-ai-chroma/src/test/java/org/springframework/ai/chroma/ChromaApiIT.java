@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,14 +39,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @SpringBootTest
 @Testcontainers
 public class ChromaApiIT {
 
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22.dev44")
-		.withExposedPorts(8000);
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22.dev44");
 
 	@Autowired
 	ChromaApi chroma;
@@ -186,10 +186,7 @@ public class ChromaApiIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			String host = chromaContainer.getHost();
-			int port = chromaContainer.getMappedPort(8000);
-			String baseUrl = "http://%s:%d".formatted(host, port);
-			return new ChromaApi(baseUrl, restTemplate);
+			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate);
 		}
 
 	}
