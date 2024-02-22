@@ -8,13 +8,9 @@ To provide an overview, the following key functionalities are available:
 
 * Portable API across AI providers for Chat and for Embedding models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
 * Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
+* Function calling
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
-* OpenAI Function calling
 * ETL framework for Data Engineering
-
-== API Docs
-
-You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/api[here].
 
 == Feedback and Contributions
 
