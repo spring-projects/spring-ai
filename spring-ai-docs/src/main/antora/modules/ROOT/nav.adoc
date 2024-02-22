@@ -41,5 +41,6 @@
 *** xref:api/vectordbs/pinecone.adoc[]
 ** xref:api/etl-pipeline.adoc[]
 ** xref:api/testing.adoc[]
+** xref:api/generic-model.adoc[]
 * Appendices
 ** xref:upgrade-notes.adoc[]]

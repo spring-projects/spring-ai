@@ -2,15 +2,15 @@
 
 == Introduction
 
-The following sections introduce each part of the API.
+The Spring AI API covers a wide range of functionalities.
+Each major feature is detailed in its own dedicated section.
+To provide an overview, the following key functionalities are available:
 
-The <<generic-model-api>> can help you understand the basic constructs used implementing all the other APIs.
-
-== APIs
-* xref:api/embeddings.adoc[Embeddings API]
-* xref:api/chatclient.adoc[Chat Completion API]
-* xref:api/vectordbs.adoc[Vector Database API]
-* xref:api/[Image Generation API](WIP)
+* Portable API across AI providers for Chat and for Embedding models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
+* Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
+* Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
+* OpenAI Function calling
+* ETL framework for Data Engineering
 
 == API Docs
 
@@ -19,21 +19,4 @@ You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/
 == Feedback and Contributions
 
 The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
-
-== Spring AI Generic Model API [[generic-model-api]]
-
-image::spring-ai-generic-model-api.jpg[width=900, align="center"]
-
-=== ModelClient
-
-=== StreamingModelClient
-
-=== ModelRequest
-
-=== ModelOptions
-
-=== ModelResponse
-
-=== ModelResult
-
 

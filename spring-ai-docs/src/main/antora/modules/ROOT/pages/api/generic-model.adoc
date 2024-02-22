@@ -1,0 +1,23 @@
+[[generic-model-api]]
+= Generic Model API
+
+In order to provide a foundation for all AI Model clients, the Generic Model API was created.
+This makes it easy to contribute new AI Model support to Spring AI by following a common pattern.
+The following sections walk through this API and how it works.
+
+
+== Class Diagram
+
+image::spring-ai-generic-model-api.jpg[width=900, align="center"]
+
+== ModelClient
+
+== StreamingModelClient
+
+== ModelRequest
+
+== ModelOptions
+
+== ModelResponse
+
+== ModelResult

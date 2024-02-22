@@ -6,7 +6,6 @@ The ETL pipeline orchestrates the flow from raw data sources to a structured vec
 
 The RAG use case is text to augment the capabilities of generative models by retrieving relevant information from a body of data to enhance the quality and relevance of the generated output.
 
-
 == API Overview
 
 === DocumentReader
@@ -18,49 +17,151 @@ public interface DocumentReader extends Supplier<List<Document>> {
 }
 ```
 
-==== Available Implementations
+==== JsonReader
+The `JsonReader` Parses documents in JSON format.
 
-*JsonReader*::
-+ Parses documents in JSON format.
+Example:
 
-*TextReader*::
-+ Processes plain text documents.
+[source,java]
+----
+@Component
+public class MyAiApp {
 
-*PagePdfDocumentReader*::
-+ Uses Apache PdfBox library to parse PDF documents
+	@Value("classpath:bikes.json") // This is the json document to load
+	private Resource resource;
 
-*ParagraphPdfDocumentReader*::
-+ Uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
+	List<Document> loadJsonAsDocuments() {
+		JsonReader jsonReader = new JsonReader(resource, "description");
+		return jsonReader.get();
+	}
+}
+----
 
-*TikaDocumentReader*::
-+ Uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
+==== TextReader
+The `TextReader` processes plain text documents.
+
+Example:
+
+[source,java]
+----
+@Component
+public class MyTextReader {
+
+    @Value("classpath:text-source.txt") // This is the text document to load
+	private Resource resource;
+
+	List<Document> loadText() {
+		TextReader textReader = new TextReader(resource);
+		textReader.getCustomMetadata().put("filename", "text-source.txt");
+
+		return textReader.get();
+    }
+}
+----
+
+==== PagePdfDocumentReader
+The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents
+
+Example:
+
+[source,java]
+----
+@Component
+public class MyPagePdfDocumentReader {
+
+	List<Document> getDocsFromPdf() {
+
+		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+				PdfDocumentReaderConfig.builder()
+					.withPageTopMargin(0)
+					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+						.withNumberOfTopTextLinesToDelete(0)
+						.build())
+					.withPagesPerDocument(1)
+					.build());
+
+		return pdfReader.get();
+    }
+
+}
+
+----
+
+
+==== ParagraphPdfDocumentReader
+The `ParagraphPdfDocumentReader` uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
+NOTE: Not all PDF documents contain the PDF catalog.
+
+Example:
+
+[source,java]
+----
+@Component
+public class MyPagePdfDocumentReader {
+
+	List<Document> getDocsFromPdfwithCatalog() {
+
+        new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
+                PdfDocumentReaderConfig.builder()
+                    .withPageTopMargin(0)
+                    .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+                        .withNumberOfTopTextLinesToDelete(0)
+                        .build())
+                    .withPagesPerDocument(1)
+                    .build());
+
+		return pdfReader.get();
+    }
+}
+----
+
+
+==== TikaDocumentReader
+The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
+
+Example:
+
+[source,java]
+----
+@Component
+public class MyTikaDocumentReader {
+
+    @Value("classpath:/word-sample.docx") // This is the word document to load
+	private Resource resource;
+
+	List<Document> loadText() {
+        TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(resourceUri);
+        return tikaDocumentReader.get();
+    }
+}
+----
 
 === DocumentTransformer
 
 Transforms a batch of documents as part of the processing workflow.
 
-```java
+[source,java]
+----
 public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
 
 }
-```
+----
 
-==== Available Implementations
+==== TextSplitter
+The `TextSplitter` an abstract base class that helps divides documents to fit the AI model's context window.
 
-*TextSplitter*::
-+ Divides documents to fit the AI model's context window.
 
-*TokenTextSplitter*::
-+ Splits documents while preserving token-level integrity.
+==== TokenTextSplitter
+Splits documents while preserving token-level integrity.
 
-*ContentFormatTransformer*::
-+ Ensures uniform content formats across all documents.
+==== ContentFormatTransformer*::
+Ensures uniform content formats across all documents.
 
-*KeywordMetadataEnricher*::
-+ Augments documents with essential keyword metadata.
+==== KeywordMetadataEnricher*::
+Augments documents with essential keyword metadata.
 
-*SummaryMetadataEnricher*::
-+ Enriches documents with summarization metadata for enhanced retrieval.
+==== SummaryMetadataEnricher*::
+Enriches documents with summarization metadata for enhanced retrieval.
 
 === DocumentWriter
 
@@ -77,57 +178,3 @@ public interface DocumentWriter extends Consumer<List<Document>> {
 There is an implementation for each of the Vector Stores that Spring AI supports, e.g. `PineconeVectorStore`.
 
 See xref:api/vectordbs.adoc[Vector DB Documentation] for a full listing.
-
-
-== Using PagePdfDocumentReader
-
-[source,java]
-----
-PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(
-	"file:document-readers/pdf-reader/src/test/resources/sample.pdf",
-	PdfDocumentReaderConfig.builder()
-			.withPageTopMargin(0)
-			.withPageBottomMargin(0)
-			.withPageExtractedTextFormatter(PageExtractedTextFormatter.builder()
-					.withNumberOfTopTextLinesToDelete(0)
-					.withNumberOfBottomTextLinesToDelete(3)
-					.withNumberOfTopPagesToSkipBeforeDelete(0)
-					.build())
-			.withPagesPerDocument(1)
-			.build());
-
-var documents = pdfReader.get();
-
-PdfTestUtils.writeToFile("document-readers/pdf-reader/target/sample.txt", documents, false);
-----
-
-[source,java]
-----
-public static void main(String[] args) throws IOException {
-
-	ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader(
-			"file:document-readers/pdf-reader/src/test/resources/sample2.pdf",
-			PdfDocumentReaderConfig.builder()
-					// .withPageBottomMargin(15)
-					// .withReversedParagraphPosition(true)
-					// .withTextLeftAlignment(true)
-					.build());
-	// ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader(
-	// "file:document-readers/pdf-reader/src/test/resources/spring-framework.pdf",
-	// PdfDocumentReaderConfig.builder()
-	// .withPageBottomMargin(15)
-	// .withReversedParagraphPosition(true)
-	// // .withTextLeftAlignment(true)
-	// .build());
-
-	// PdfDocumentReader pdfReader = new
-	// PdfDocumentReader("file:document-readers/pdf-reader/src/test/resources/uber-k-10.pdf",
-	// PdfDocumentReaderConfig.builder().withPageTopMargin(80).withPageBottomMargin(60).build());
-
-	var documents = pdfReader.get();
-
-	writeToFile("document-readers/pdf-reader/target/sample2.txt", documents, true);
-	System.out.println(documents.size());
-
-}
-----
