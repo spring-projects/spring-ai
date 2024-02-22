@@ -52,7 +52,7 @@ jobs:
           DOCS_HOST: ${{ secrets.DOCS_HOST }}
           DOCS_PATH: ${{ secrets.DOCS_PATH }}
           DOCS_USERNAME: ${{ secrets.DOCS_USERNAME }}
-        working-directory: spring-ai-docs
+        working-directory: spring-ai-docs/target
         run: |
           unzip spring-ai-$PROJECT_VERSION-docs.zip
           ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST cd $DOCS_PATH && mkdir -p $PROJECT_VERSION/api
