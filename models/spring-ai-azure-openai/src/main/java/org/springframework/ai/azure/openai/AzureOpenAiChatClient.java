@@ -279,7 +279,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		ChatCompletionsOptions mergedAzureOptions = new ChatCompletionsOptions(azureOptions.getMessages());
-		mergedAzureOptions.setStream(azureOptions.isStream());
+		mergedAzureOptions = merge(azureOptions, mergedAzureOptions);
 
 		if (springAiOptions.getMaxTokens() != null) {
 			mergedAzureOptions.setMaxTokens(springAiOptions.getMaxTokens());
@@ -322,6 +322,49 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		return mergedAzureOptions;
+	}
+
+	private ChatCompletionsOptions merge(ChatCompletionsOptions fromOptions, ChatCompletionsOptions toOptions) {
+
+		if (fromOptions == null) {
+			return toOptions;
+		}
+
+		ChatCompletionsOptions mergedOptions = new ChatCompletionsOptions(toOptions.getMessages());
+		mergedOptions.setStream(toOptions.isStream());
+
+		if (fromOptions.getMaxTokens() != null) {
+			mergedOptions.setMaxTokens(fromOptions.getMaxTokens());
+		}
+		if (fromOptions.getLogitBias() != null) {
+			mergedOptions.setLogitBias(fromOptions.getLogitBias());
+		}
+		if (fromOptions.getStop() != null) {
+			mergedOptions.setStop(fromOptions.getStop());
+		}
+		if (fromOptions.getTemperature() != null) {
+			mergedOptions.setTemperature(fromOptions.getTemperature());
+		}
+		if (fromOptions.getTopP() != null) {
+			mergedOptions.setTopP(fromOptions.getTopP());
+		}
+		if (fromOptions.getFrequencyPenalty() != null) {
+			mergedOptions.setFrequencyPenalty(fromOptions.getFrequencyPenalty());
+		}
+		if (fromOptions.getPresencePenalty() != null) {
+			mergedOptions.setPresencePenalty(fromOptions.getPresencePenalty());
+		}
+		if (fromOptions.getN() != null) {
+			mergedOptions.setN(fromOptions.getN());
+		}
+		if (fromOptions.getUser() != null) {
+			mergedOptions.setUser(fromOptions.getUser());
+		}
+		if (fromOptions.getModel() != null) {
+			mergedOptions.setModel(fromOptions.getModel());
+		}
+
+		return mergedOptions;
 	}
 
 }
