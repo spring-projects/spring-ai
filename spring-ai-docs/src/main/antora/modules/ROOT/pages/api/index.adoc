@@ -14,7 +14,7 @@ The <<generic-model-api>> can help you understand the basic constructs used impl
 
 == API Docs
 
-You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/[here].
+You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/api[here].
 
 == Feedback and Contributions
 
