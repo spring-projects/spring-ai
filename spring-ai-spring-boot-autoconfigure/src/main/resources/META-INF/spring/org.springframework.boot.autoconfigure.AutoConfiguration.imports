@@ -21,4 +21,4 @@ org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoCon
 org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration
-
+org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration

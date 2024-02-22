@@ -161,6 +161,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-qdrant</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Utilities -->
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -283,6 +289,11 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-qdrant-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

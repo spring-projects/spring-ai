@@ -215,6 +215,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Qdrant Vector Store-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-qdrant</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- test dependencies -->
 
 		<dependency>
@@ -286,6 +294,14 @@
 			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>qdrant</artifactId>
+            <version>1.19.6</version>
+            <scope>test</scope>
+        </dependency>
+
 
 	</dependencies>
 

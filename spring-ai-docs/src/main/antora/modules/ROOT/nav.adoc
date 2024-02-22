@@ -43,6 +43,7 @@
 *** xref:api/vectordbs/weaviate.adoc[]
 *** xref:api/vectordbs/redis.adoc[]
 *** xref:api/vectordbs/pinecone.adoc[]
+*** xref:api/vectordbs/qdrant.adoc[]
 ** xref:api/etl-pipeline.adoc[]
 ** xref:api/testing.adoc[]
 ** xref:api/generic-model.adoc[]

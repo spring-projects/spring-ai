@@ -41,6 +41,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
@@ -55,6 +56,7 @@
 		<module>vector-stores/spring-ai-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
+		<module>vector-stores/spring-ai-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 	</modules>
@@ -112,6 +114,7 @@
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
 		<com.google.cloud.version>26.33.0</com.google.cloud.version>
+		<qdrant.version>1.7.1</qdrant.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
@@ -125,6 +128,7 @@
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
+		<qdrant.version>1.7.1</qdrant.version>
 
 		<!-- testing dependencies -->
 		<testcontainers.version>1.19.6</testcontainers.version>
