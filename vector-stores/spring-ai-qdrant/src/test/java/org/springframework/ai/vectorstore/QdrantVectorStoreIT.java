@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,24 +26,21 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.qdrant.QdrantContainer;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
-
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Anush Shetty
@@ -56,8 +55,7 @@ public class QdrantVectorStoreIT {
 	private static final int QDRANT_GRPC_PORT = 6334;
 
 	@Container
-	static GenericContainer<?> qdrantContainer = new GenericContainer<>("qdrant/qdrant:latest")
-		.withExposedPorts(QDRANT_GRPC_PORT);
+	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.7.4");
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
@@ -119,9 +117,9 @@ public class QdrantVectorStoreIT {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Bulgaria"));
+					Map.of("country", "Bulgaria", "number", 3));
 			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Netherlands"));
+					Map.of("country", "Netherlands", "number", 90));
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
@@ -144,6 +142,16 @@ public class QdrantVectorStoreIT {
 					request.withSimilarityThresholdAll().withFilterExpression("NOT(country == 'Netherlands')"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			results = vectorStore
+				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("number in [3, 5, 12]"));
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			results = vectorStore
+				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("number nin [3, 5, 12]"));
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 			// Remove all documents from the store
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
