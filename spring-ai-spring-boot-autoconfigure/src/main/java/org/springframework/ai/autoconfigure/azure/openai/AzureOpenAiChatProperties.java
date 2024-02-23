@@ -25,7 +25,7 @@ public class AzureOpenAiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
+	public static final String DEFAULT_CHAT_MODEL = "gpt-35-turbo";
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
