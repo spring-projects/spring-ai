@@ -11,10 +11,6 @@ This design aligns with Spring's philosophy of modularity and interchangeability
 Also with the help of companion classes like `Prompt` for input encapsulation and `ChatResponse` for output handling, the Chat Completion API unifies the communication with AI Models.
 It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
 
-The Spring AI Chat Completion API is build on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. Following class diagram illustrates the main classes and interfaces of the Spring AI Chat Completion API.
-
-image::spring-ai-chat-api.jpg[align="center", width="900px"]
-
 == API Overview
 
 This section provides a guide to the Spring AI Chat Completion API interface and associated classes.
@@ -189,6 +185,12 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 ** xref:api/clients/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
 ** xref:api/clients/bedrock/bedrock-titan.adoc[Titan Chat Completion]
 ** xref:api/clients/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
+
+== Chat Model API
+
+The Spring AI Chat Completion API is build on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. Following class diagram illustrates the main classes and interfaces of the Spring AI Chat Completion API.
+
+image::spring-ai-chat-api.jpg[align="center", width="900px"]
 
 // == Best Practices
 //

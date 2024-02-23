@@ -8,15 +8,23 @@ The project was founded with the belief that the next wave of Generative AI appl
 
 At its core, Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.
-For example, Spring AI introduces the `ChatClient`/`StreamingChatClient` interfaces with implementations for OpenAI and Azure OpenAI, Ollama, VertexAI, Huggingface, Bedrock/Llama2, Bedrock/Anthropic, Bedrock/Titan, Bedrock/Cohere etc.
-Similarly abstractions, such as `EmbeddingClient`, `ImageClient` and various model implementations for them are provided.
 
-In addition to these core abstractions, Spring AI aims to provide higher-level functionalities to address common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
-As the complexity of the use cases increases, the Spring AI project will integrate with other projects in the Spring Ecosystem, such as Spring Integration, Spring Batch, and Spring Data, Spring Cloud GCP, Spring Cloud, etc.
+Spring AI provides the following features:
 
-To simplify setup, Spring Boot starters are available to help set up essential dependencies and classes.
-There is also a collection of sample applications to help you explore the project's features. Lastly, the new Spring CLI project also enables you to get started quickly by using the `spring boot new ai` command for new projects or `spring boot add ai` for adding AI capabilities to your existing application.
+* Support for all major Model providers such as OpenAI, Microsoft, Amazon, Google, and Huggingface.
+* Supported Model types are Chat and Text to Image with more on the way.
+* Portable API across AI providers for Chat and for Embedding models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
+* Mapping of AI Model output to POJOs.
+* Support for all major Vector Database providers such as Azure Vector Search, Chroma, Milvus, Neo4j, PostgreSQL/PGVector, PineCone, Redis, and Weaviate
+* Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
+* Function calling
+* Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
+* ETL framework for Data Engineering
 
-The xref:concepts.adoc[next section] provides a high-level overview of AI concepts and their representation in Spring AI.
+This feature set lets you implement common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
+
+
+The xref:concepts.adoc[concepts section] provides a high-level overview of AI concepts and their representation in Spring AI.
+
 The xref:getting-started.adoc[Getting Started] section shows you how to create your first AI application.
 Subsequent sections delve into each component and common use cases with a code-focused approach.

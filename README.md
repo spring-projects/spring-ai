@@ -92,10 +92,11 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 
 ### Interacting with AI Models
 
-**AI Client:** A foundational feature of Spring AI is a standardized client API for interfacing with generative AI models. With this common API, you can initially target g [OpenAI's Chat endpoint](https://platform.openai.com/docs/api-reference/chat) and easily swap about the implementation to use other platforms, such as [HuggingFace's Inference Endpoints](https://huggingface.co/inference-endpoints)
+**ChatClient:** A foundational feature of Spring AI is a portable client API for interacting with generative AI models.  With this portable API, you can initially target one AI chat model, for example OpenAI and then easily swap out the implementation to another AI chat model, for example Amazon Bedrock's Anthropic Model.  When necessary, you can also drop down to use non-portable model options.
 
-Dive deeper into [Models](https://docs.spring.io/spring-ai/reference/concepts.html#_models). in our concept guide.
-For usage details, consult the  [ChatClient API guide](https://docs.spring.io/spring-ai/reference/api/aiclient.html)
+Spring AI supports many AI models.  For an overview see here.  Specific models currently supported are
+* OpenAI
+* 
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.

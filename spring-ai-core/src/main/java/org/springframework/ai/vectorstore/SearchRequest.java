@@ -226,7 +226,8 @@ public class SearchRequest {
 	 * @return this.builder
 	 */
 	public SearchRequest withFilterExpression(String textExpression) {
-		this.filterExpression = (textExpression != null) ? Filter.parser().parse(textExpression) : null;
+		this.filterExpression = (textExpression != null) ? new FilterExpressionTextParser().parse(textExpression)
+				: null;
 		return this;
 	}
 
