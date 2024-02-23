@@ -76,7 +76,7 @@ public class QdrantVectorStore implements VectorStore {
 		 */
 		private QdrantVectorStoreConfig(Builder builder) {
 			this.collectionName = builder.collectionName;
-			// this.defaultSimilarityTopK = builder.defaultSimilarityTopK;
+
 			QdrantGrpcClient.Builder grpcClientBuilder = QdrantGrpcClient.newBuilder(builder.host, builder.port,
 					builder.useTls);
 
