@@ -36,7 +36,6 @@ Add these dependencies to your project:
 <dependency>
  <groupId>org.springframework.ai</groupId>
  <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
- <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -47,9 +46,10 @@ Add these dependencies to your project:
 <dependency>
   <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-chroma-store</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 == Sample Code
 

@@ -29,7 +29,6 @@ Add the Neo4j Vector Store dependency to your project:
 <dependency>
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-neo4j-store</artifactId>
-	<version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -38,11 +37,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-neo4j-store:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-neo4j-store'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 == Configuration
 
@@ -88,7 +87,6 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -97,9 +95,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-neo4j-store-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-neo4j-store-spring-boot-starter'
 }
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 Please have a look at the list of xref:#_neo4jvectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 

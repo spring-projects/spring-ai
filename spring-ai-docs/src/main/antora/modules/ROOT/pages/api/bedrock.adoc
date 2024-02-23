@@ -23,7 +23,6 @@ Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` bu
 <dependency>
  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
  <groupId>org.springframework.ai</groupId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -32,10 +31,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter'
 }
 ----
 
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 === Connect to AWS Bedrock
 

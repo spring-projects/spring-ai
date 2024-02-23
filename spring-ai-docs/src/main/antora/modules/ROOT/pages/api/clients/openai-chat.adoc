@@ -16,7 +16,8 @@ export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -32,7 +33,6 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -41,11 +41,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 === Chat Properties
 
@@ -172,7 +172,6 @@ Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-openai</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -181,11 +180,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-openai'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 Next, create a `OpenAiChatClient` and use it for text generations:
 

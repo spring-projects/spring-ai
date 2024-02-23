@@ -26,7 +26,6 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-postgresml-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -35,11 +34,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-postgresml-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-postgresml-spring-boot-starter'
 }
 ----
 
-NOTE: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 Use the `spring.ai.postgresml.embedding.options.*` properties to configure your `PostgresMlEmbeddingClient`. links
 
@@ -125,7 +124,6 @@ For this add the `spring-ai-postgresml` dependency to your project's Maven `pom.
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-postgresml</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -134,9 +132,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-postgresml:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-postgresml'
 }
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 Next, create an `PostgresMlEmbeddingClient` instance and use it to compute the similarity between two input texts:
 

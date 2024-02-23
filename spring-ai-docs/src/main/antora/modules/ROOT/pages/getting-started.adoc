@@ -37,7 +37,7 @@ NOTE: Spring CLI allows users to define their own https://docs.spring.io/spring-
 [[repositories]]
 == Add Milestone and Snapshot Repositories
 
-If you prefer to add the dependency snippets by hand, follow the directions in the following secitons.
+If you prefer to add the dependency snippets by hand, follow the directions in the following sections.
 
 To use the Milestone and Snapshot version, you need to add references to the Spring Milestone and/or Snapshot repositories in your build file.
 
@@ -94,7 +94,7 @@ If you’re a Maven user, you can use the BOM by adding the following to your po
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-bom</artifactId>
-            <version>{project-version}</version>
+            <version>0.8.0-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -109,7 +109,7 @@ As shown in the snippet below this can then be followed by version-less declarat
 [source,gradle]
 ----
 dependencies {
-  implementation platform("org.springframework.ai:spring-ai-bom:${springAiVersion}")
+  implementation platform("org.springframework.ai:spring-ai-bom:0.8.0-SNAPSHOT")
   // Replace the following with the starter dependencies of specific modules you wish to use
   implementation 'org.springframework.ai:spring-ai-openai'
 }
@@ -118,7 +118,7 @@ dependencies {
 [[add-dependencies]]
 == Add dependencies for specific components
 
-Each of the following sections in the documentation shows which dependnecies you need to add to your project build system.
+Each of the following sections in the documentation shows which dependencies you need to add to your project build system.
 
 === Embeddings Models
 

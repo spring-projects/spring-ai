@@ -62,7 +62,6 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -71,11 +70,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 === Chat Properties
 
@@ -189,7 +188,6 @@ To enable it, add the `spring-ai-azure-openai` dependency to your project's Mave
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-azure-openai</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -198,9 +196,11 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-azure-openai'
 }
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 TIP: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../clients/azure-openai-chat.html[Azure OpenAI Chat] section.
 

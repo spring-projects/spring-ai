@@ -24,7 +24,6 @@ Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's 
 <dependency>
   <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -33,11 +32,11 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 === Enable Cohere Embedding Support
 
@@ -150,7 +149,6 @@ Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-bedrock</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -159,11 +157,11 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-bedrock'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
 
 Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingClient.java[BedrockCohereEmbeddingClient] and use it for text embeddings:
 
