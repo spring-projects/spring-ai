@@ -44,7 +44,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 The `spring.ai.ollama.embedding.options.*` properties are used to configure the default options used for all embedding requests.
 (It is used as `OllamaEmbeddingClient#withDefaultOptions()` instance).
@@ -173,7 +173,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 NOTE: The `spring-ai-ollama` dependency provides access also to the `OllamaChatClient`.
 For more information about the `OllamaChatClient` refer to the link:../clients/ollama-chat.html[Ollama Chat Client] section.

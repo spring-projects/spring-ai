@@ -46,7 +46,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 === Embedding Properties
 
@@ -152,7 +152,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`.
 For more information about the `OpenAiChatClient` refer to the link:../clients/openai-chat.html[OpenAI Chat Client] section.

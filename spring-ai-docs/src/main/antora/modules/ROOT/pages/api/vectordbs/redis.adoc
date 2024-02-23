@@ -53,7 +53,7 @@ or use OpenAI (Cloud)
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 You'll need to provide your OpenAI API Key. Set it as an environment variable like so:
 
@@ -78,7 +78,7 @@ export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 == Usage
 

@@ -25,7 +25,7 @@ You should get your HuggingFace API key and set it as an environment variable
 export HUGGINGFACE_API_KEY=your_api_key_here
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Note, there is not yet a Spring Boot Starter for this client implementation.
 

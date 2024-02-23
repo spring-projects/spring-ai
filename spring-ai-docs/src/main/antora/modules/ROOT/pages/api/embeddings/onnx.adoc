@@ -41,7 +41,7 @@ Add the `spring-ai-transformers` project to your maven dependencies:
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 then create a new `TransformersEmbeddingClient` instance and use the `setTokenizerResource(tokenizerJsonUri)` and `setModelResource(modelOnnxUri)` methods to set the URIs  of the exported `tokenizer.json` and `model.onnx` files. (`classpath:`, `file:` or `https:` URI schemas are supported).
 
@@ -111,7 +111,7 @@ You can bootstrap and autowire the `TransformersEmbeddingClient` with the follow
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add to add the Spring AI BOM to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 To configure it, use the `spring.ai.embedding.transformer.*` properties.
 
