@@ -120,7 +120,7 @@ public class QdrantVectorStore implements VectorStore {
 			/**
 			 * @param host The host of the Qdrant instance. Defaults to "localhost".
 			 */
-			public Builder host(String host) {
+			public Builder withHost(String host) {
 				this.host = host;
 				return this;
 			}
@@ -128,7 +128,7 @@ public class QdrantVectorStore implements VectorStore {
 			/**
 			 * @param collectionName REQUIRED. The name of the collection.
 			 */
-			public Builder collectionName(String collectionName) {
+			public Builder withCollectionName(String collectionName) {
 				this.collectionName = collectionName;
 				return this;
 			}
@@ -137,7 +137,7 @@ public class QdrantVectorStore implements VectorStore {
 			 * @param port The GRPC port of the Qdrant instance. Defaults to 6334.
 			 * @return
 			 */
-			public Builder port(int port) {
+			public Builder withPort(int port) {
 				this.port = port;
 				return this;
 			}
@@ -146,7 +146,7 @@ public class QdrantVectorStore implements VectorStore {
 			 * @param useTls Whether to use TLS(HTTPS). Defaults to false.
 			 * @return
 			 */
-			public Builder useTls(boolean useTls) {
+			public Builder withTls(boolean useTls) {
 				this.useTls = useTls;
 				return this;
 			}
@@ -154,7 +154,7 @@ public class QdrantVectorStore implements VectorStore {
 			/**
 			 * @param apiKey The Qdrant API key to authenticate with. Defaults to null.
 			 */
-			public Builder apiKey(String apiKey) {
+			public Builder withApiKey(String apiKey) {
 				this.apiKey = apiKey;
 				return this;
 			}
