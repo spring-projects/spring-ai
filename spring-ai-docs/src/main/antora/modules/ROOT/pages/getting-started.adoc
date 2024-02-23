@@ -34,6 +34,10 @@ spring boot add ai
 
 NOTE: Spring CLI allows users to define their own https://docs.spring.io/spring-cli/reference/registering-new-projects.html[project catalogs] that define which projects you can create or add to your existing code base.
 
+== Spring Initializr
+
+Head on over to https://start.spring.io/[start.spring.io] and select the AI Models and Vector Stores that you want to use in your new applications.
+
 [[repositories]]
 == Add Milestone and Snapshot Repositories
 
@@ -94,7 +98,7 @@ If you’re a Maven user, you can use the BOM by adding the following to your po
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-bom</artifactId>
-            <version>0.8.0-SNAPSHOT</version>
+            <version>0.8.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -109,7 +113,7 @@ As shown in the snippet below this can then be followed by version-less declarat
 [source,gradle]
 ----
 dependencies {
-  implementation platform("org.springframework.ai:spring-ai-bom:0.8.0-SNAPSHOT")
+  implementation platform("org.springframework.ai:spring-ai-bom:0.8.0")
   // Replace the following with the starter dependencies of specific modules you wish to use
   implementation 'org.springframework.ai:spring-ai-openai'
 }
