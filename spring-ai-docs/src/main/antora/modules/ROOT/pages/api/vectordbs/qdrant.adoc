@@ -41,12 +41,12 @@ To acquire Spring AI artifacts, declare the Spring Snapshot repository:
 [source,xml]
 ----
 <repository>
-	<id>spring-snapshots</id>
-	<name>Spring Snapshots</name>
-	<url>https://repo.spring.io/snapshot</url>
-	<releases>
-		<enabled>false</enabled>
-	</releases>
+   <id>spring-snapshots</id>
+   <name>Spring Snapshots</name>
+   <url>https://repo.spring.io/snapshot</url>
+   <releases>
+      <enabled>false</enabled>
+   </releases>
 </repository>
 ----
 
@@ -89,7 +89,7 @@ public QdrantVectorStoreConfig qdrantVectorStoreConfig() {
         .withHost("<QDRANT_HOSTNAME>")
         .withPort(<QDRANT_GRPC_PORT>)
         .withCollectionName("<QDRANT_COLLECTION_NAME>")
-		.withApiKey("<QDRANT_API_KEY>")
+        .withApiKey("<QDRANT_API_KEY>")
         .build();
 }
 ----
@@ -109,10 +109,10 @@ Let's create some documents.
 
 [source,java]
 ----
-List<Document> documents = List.of(
-	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
-	new Document("The World is Big and Salvation Lurks Around the Corner"),
-	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 ----
 
 Add the documents to Qdrant.
@@ -140,11 +140,11 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-                    SearchRequest.defaults()
-                            .withQuery("The World")
-                            .withTopK(TOP_K)
-                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-                            .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+    SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -154,12 +154,12 @@ or programmatically using the `Filter.Expression` DSL:
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(SearchRequest.defaults()
-                    .withQuery("The World")
-                    .withTopK(TOP_K)
-                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-                    .withFilterExpression(b.and(
-                            b.in("john", "jill"),
-                            b.eq("article_type", "blog")).build()));
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("john", "jill"),
+        b.eq("article_type", "blog")).build()));
 ----
 
 NOTE: These filter expressions are converted into the equivalent Qdrant link:https://qdrant.tech/documentation/concepts/filtering/[filters].

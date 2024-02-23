@@ -75,4 +75,5 @@ public class QdrantVectorStoreProperties {
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
 	}
+
 }
