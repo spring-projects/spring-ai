@@ -8,14 +8,51 @@ The RAG use case is text to augment the capabilities of generative models by ret
 
 == API Overview
 
+There are three main components of the ETL pipeline,
+
+* `DocumentReader` that implements `Supplier<List<Document>>`
+* `DocumentTransformer` that implements `Function<List<Document>, List<Document>>`
+* `DocumentWriter` that implements `Consumer<List<Document>>`
+
+The `Document` class contains text and metadata and is created from PDFs, text files and other document types via the `DocumentReader`.
+
+To construct a simple ETL pipeline, you can chain together an instance of each type.
+
+Let's say we have the following instances of those three ETL types
+
+* `PagePdfDocumentReader` an implementation of `DocumentReader`
+* `TokenTextSplitter` an implementation of `DocumentTransformer`
+* `VectorStore` an implementation of `DocumentWriter`
+
+To perform the basic loading of data into a Vector Database for use with the Retrieval Augmented Generation pattern, use the following code.
+[source,java]
+----
+vectorStore.accept(tokenTextSplitter.apply(pdfReader.get()));
+----
+
+== Getting Started
+
+To begin creating a Spring AI RAG application, follow these steps:
+
+. Download the latest https://github.com/spring-projects/spring-cli/releases[Spring CLI Release]
+and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[installation instructions].
+. To create a simple OpenAI-based application, use the command:
++
+```shell
+spring boot new --from ai-rag --name myrag
+```
+. Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI RAG application.
+
+== ETL Interfaces and Implementations
 === DocumentReader
 
 Provides a source of documents from diverse origins.
-```java
+[source,java]
+----
 public interface DocumentReader extends Supplier<List<Document>> {
 
 }
-```
+----
 
 ==== JsonReader
 The `JsonReader` Parses documents in JSON format.
@@ -154,13 +191,13 @@ The `TextSplitter` an abstract base class that helps divides documents to fit th
 ==== TokenTextSplitter
 Splits documents while preserving token-level integrity.
 
-==== ContentFormatTransformer*::
+==== ContentFormatTransformer
 Ensures uniform content formats across all documents.
 
-==== KeywordMetadataEnricher*::
+==== KeywordMetadataEnricher
 Augments documents with essential keyword metadata.
 
-==== SummaryMetadataEnricher*::
+==== SummaryMetadataEnricher
 Enriches documents with summarization metadata for enhanced retrieval.
 
 === DocumentWriter
