@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat;
+package org.springframework.ai.chat.prompt;
 
 public class ChatOptionsBuilder {
 

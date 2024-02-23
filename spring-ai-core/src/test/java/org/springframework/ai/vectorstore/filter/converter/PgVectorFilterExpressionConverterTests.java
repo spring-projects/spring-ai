@@ -24,6 +24,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;

@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.stabilityai;
 
-import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -30,7 +29,10 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.stabilityai.image";
 
 	@NestedConfigurationProperty
-	private StabilityAiImageOptions options;
+	private StabilityAiImageOptions options = StabilityAiImageOptions.builder().build(); // stable-diffusion-v1-6
+																							// is
+																							// default
+																							// model
 
 	public StabilityAiImageOptions getOptions() {
 		return this.options;

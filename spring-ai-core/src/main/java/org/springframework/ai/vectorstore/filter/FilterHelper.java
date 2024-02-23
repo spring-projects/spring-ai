@@ -23,7 +23,6 @@ import java.util.Map;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
-import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 import org.springframework.util.Assert;
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore.filter.converter;
+package org.springframework.ai.chat.prompt;
 
-import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.model.ModelOptions;
 
 /**
- * Converters a generic, portable {@link Filter.Expression} into a
- * {@link org.springframework.ai.vectorstore.VectorStore} specific expression language
- * format.
- *
- * @author Christian Tzolov
+ * The ChatOptions represent the common options, portable across different chat models.
  */
-public interface FilterExpressionConverter {
+public interface ChatOptions extends ModelOptions {
 
-	public String convertExpression(Filter.Expression expression);
+	Float getTemperature();
+
+	void setTemperature(Float temperature);
+
+	Float getTopP();
+
+	void setTopP(Float topP);
+
+	Integer getTopK();
+
+	void setTopK(Integer topK);
 
 }

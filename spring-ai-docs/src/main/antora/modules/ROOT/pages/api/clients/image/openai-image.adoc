@@ -38,7 +38,7 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 
 === Image Generation Properties

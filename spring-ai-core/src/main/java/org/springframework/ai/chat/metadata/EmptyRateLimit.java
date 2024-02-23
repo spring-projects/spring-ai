@@ -16,22 +16,44 @@
 
 package org.springframework.ai.chat.metadata;
 
+import java.time.Duration;
+
 /**
- * Abstract base class used as a foundation for implementing {@link Usage}.
+ * A RateLimit implementation that returns zero for all property getters
  *
  * @author John Blum
  * @since 0.7.0
  */
-public abstract class AbstractUsage implements Usage {
+public class EmptyRateLimit implements RateLimit {
 
 	@Override
-	public Long getPromptTokens() {
+	public Long getRequestsLimit() {
 		return 0L;
 	}
 
 	@Override
-	public Long getGenerationTokens() {
+	public Long getRequestsRemaining() {
 		return 0L;
+	}
+
+	@Override
+	public Duration getRequestsReset() {
+		return Duration.ZERO;
+	}
+
+	@Override
+	public Long getTokensLimit() {
+		return 0L;
+	}
+
+	@Override
+	public Long getTokensRemaining() {
+		return 0L;
+	}
+
+	@Override
+	public Duration getTokensReset() {
+		return Duration.ZERO;
 	}
 
 }

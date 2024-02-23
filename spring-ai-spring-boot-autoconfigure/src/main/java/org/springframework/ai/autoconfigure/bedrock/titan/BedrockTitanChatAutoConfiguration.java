@@ -16,9 +16,6 @@
 package org.springframework.ai.autoconfigure.bedrock.titan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.titan.BedrockTitanChatClient;
@@ -30,7 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportRuntimeHints;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Chat Client.
@@ -43,7 +40,6 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockTitanChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockTitanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
 public class BedrockTitanChatAutoConfiguration {
 
 	@Bean

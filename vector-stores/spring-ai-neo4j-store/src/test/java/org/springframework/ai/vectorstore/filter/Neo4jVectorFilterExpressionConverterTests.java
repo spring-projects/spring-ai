@@ -24,7 +24,6 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
-import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
@@ -130,7 +129,8 @@ public class Neo4jVectorFilterExpressionConverterTests {
 
 	@Test
 	public void testComplexIdentifiers2() {
-		Filter.Expression expr = Filter.parser().parse("author in ['john', 'jill'] && 'article_type' == 'blog'");
+		Filter.Expression expr = new FilterExpressionTextParser()
+			.parse("author in ['john', 'jill'] && 'article_type' == 'blog'");
 		String vectorExpr = converter.convertExpression(expr);
 		assertThat(vectorExpr)
 			.isEqualTo("node.`metadata.author` IN [\"john\",\"jill\"] AND node.`metadata.'article_type'` = \"blog\"");

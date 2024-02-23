@@ -18,7 +18,6 @@ package org.springframework.ai.chat.prompt;
 
 import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
-import org.springframework.ai.chat.ChatOptions;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
