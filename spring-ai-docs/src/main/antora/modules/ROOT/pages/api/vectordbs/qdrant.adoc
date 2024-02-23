@@ -1,0 +1,165 @@
+= Qdrant
+
+This section walks you through setting up the Qdrant `VectorStore` to store document embeddings and perform similarity searches.
+
+== What is Qdrant?
+
+link:https://www.qdrant.tech/[Qdrant] is an open-source, high-performance vector search engine/database.
+
+== Prerequisites
+
+1. Qdrant Instance: Set up a Qdrant instance by following the link:https://qdrant.tech/documentation/guides/installation/[installation instructions] in the Qdrant documentation.
+2. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+
+== Configuration
+
+To set up `QdrantVectorStore`, you'll need the following information from your Qdrant instance:
+
+* Qdrant Host
+* Qdrant GRPC Port
+* Qdrant Collection Name
+* Optional Qdrant API Key
+
+[NOTE]
+====
+A Qdrant collection has to be link:https://qdrant.tech/documentation/concepts/collections/#create-a-collection[created] in advance with the appropriate dimensions and configurations.
+====
+
+When creating a collection, select a vector size of `1536`. Which is the dimensionality of OpenAI's model, `text-embedding-ada-002`, that we'll be using for this guide.
+
+Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+
+[source,bash]
+----
+export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+----
+
+== Repository
+
+To acquire Spring AI artifacts, declare the Spring Snapshot repository:
+
+[source,xml]
+----
+<repository>
+	<id>spring-snapshots</id>
+	<name>Spring Snapshots</name>
+	<url>https://repo.spring.io/snapshot</url>
+	<releases>
+		<enabled>false</enabled>
+	</releases>
+</repository>
+----
+
+== Dependencies
+
+Add these dependencies to your project:
+
+* OpenAI: Required for calculating embeddings.
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+	<version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+* Qdrant
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-qdrant</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+</dependency>
+----
+
+== Sample Code
+
+To configure Qdrant in your application, you can use the following setup:
+
+[source,java]
+----
+@Bean
+public QdrantVectorStoreConfig qdrantVectorStoreConfig() {
+
+    return QdrantVectorStoreConfig.builder()
+        .withHost("<QDRANT_HOSTNAME>")
+        .withPort(<QDRANT_GRPC_PORT>)
+        .withCollectionName("<QDRANT_COLLECTION_NAME>")
+		.withApiKey("<QDRANT_API_KEY>")
+        .build();
+}
+----
+
+Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to your project.
+This provides you with an implementation of the Embeddings client:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(QdrantVectorStoreConfig config, EmbeddingClient embeddingClient) {
+    return new QdrantVectorStore(config, embeddingClient);
+}
+----
+
+Let's create some documents.
+
+[source,java]
+----
+List<Document> documents = List.of(
+	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+	new Document("The World is Big and Salvation Lurks Around the Corner"),
+	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+----
+
+Add the documents to Qdrant.
+
+[source,java]
+----
+vectorStore.add(List.of(document));
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Qdrant vector store.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+                    SearchRequest.defaults()
+                            .withQuery("The World")
+                            .withTopK(TOP_K)
+                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                            .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+                    .withQuery("The World")
+                    .withTopK(TOP_K)
+                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                    .withFilterExpression(b.and(
+                            b.in("john", "jill"),
+                            b.eq("article_type", "blog")).build()));
+----
+
+NOTE: These filter expressions are converted into the equivalent Qdrant link:https://qdrant.tech/documentation/concepts/filtering/[filters].
