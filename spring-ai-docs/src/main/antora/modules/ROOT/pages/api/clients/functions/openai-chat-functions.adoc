@@ -40,7 +40,7 @@ You can also reference multiple function bean names in your prompt.
 Let's create a chatbot that answer questions by calling our own function.
 To support the response of the chatbot, we will register our own function that takes a location and returns the current weather in that location.
 
-When the reponse to the prompt to the model needs to answer a question such as `"What’s the weather like in Boston?"` the AI model will invoke the client providing the location value as an argument to be passed to the function.  This RPC-like data is passed as JSON.
+When the response to the prompt to the model needs to answer a question such as `"What’s the weather like in Boston?"` the AI model will invoke the client providing the location value as an argument to be passed to the function.  This RPC-like data is passed as JSON.
 
 Our function can some SaaS based weather service API and returns the weather response back to the model to complete the conversation.  In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
 

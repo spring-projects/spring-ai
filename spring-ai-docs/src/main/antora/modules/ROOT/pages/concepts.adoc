@@ -148,15 +148,17 @@ Note that the GPT 3.5/4.0 dataset extends only until September 2021.
 Consequently, the model says that it does not know the answer to questions that require knowledge beyond that date.
 An interesting bit of trivia is that this dataset is around 650GB.
 
-Two techniques exist for customizing the AI model to incorporate your data:
+Three techniques exist for customizing the AI model to incorporate your data:
 
-* Fine Tuning: This traditional machine learning technique involves tailoring the model and changing its internal weighting.
+* `Fine Tuning`: This traditional machine learning technique involves tailoring the model and changing its internal weighting.
 However, it is a challenging process for machine learning experts and extremely resource-intensive for models like GPT due to their size. Additionally, some models might not offer this option.
 
-* Prompt Stuffing: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
+* `Prompt Stuffing`: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
 This approach is colloquially referred to as "`stuffing the prompt.`"
-
 The Spring AI library helps you implement solutions based on the "`stuffing the prompt`" technique otherwise known as Retrieval Augmented Generation (RAG).
+
+* `Function Calling`: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
+Spring AI greatly simplifies code you need to write to support xref:api/functions.adoc[function calling].
 
 [[concept-rag]]
 == Retrieval Augmented Generation
@@ -187,6 +189,19 @@ The concepts map onto classes in Spring AI:
 * `DocumentTransformer`: Responsible for processing the data in various ways (for example, splitting documents into smaller pieces or adding additional metadata to the `Document`).
 * `DocumentWriter`: Lets you persist the Documents into a database (most commonly in the AI stack, a vector database).
 * `Embedding`: A representation of your data as a `List<Double>` that is used by the vector database to compute the "`similarity`" of a user's query to relevant documents.
+
+== Function Calling
+
+Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
+
+The `Function Calling` mechanism addresses these shortcomings.
+It allows you register custom, user, functions that connect the large language models to the APIs of external systems.
+These systems can provide LLMs with real-time data and perform data processing actions on their behalf.
+
+Spring AI greatly simplifies code you need to write to support function invocation.
+It brokers the function invocation conversation for you.
+You can provide your function as a `@Bean` and then provide the bean name of the function in your prompt options to activate that function.
+You can also define and reference multiple functions in a single prompt.
 
 == Evaluating AI responses
 
