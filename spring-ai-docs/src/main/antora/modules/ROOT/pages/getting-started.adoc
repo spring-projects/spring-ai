@@ -98,7 +98,7 @@ If you’re a Maven user, you can use the BOM by adding the following to your po
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-bom</artifactId>
-            <version>0.8.0</version>
+            <version>0.8.1-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -113,7 +113,7 @@ As shown in the snippet below this can then be followed by version-less declarat
 [source,gradle]
 ----
 dependencies {
-  implementation platform("org.springframework.ai:spring-ai-bom:0.8.0")
+  implementation platform("org.springframework.ai:spring-ai-bom:0.8.1-SNAPSHOT")
   // Replace the following with the starter dependencies of specific modules you wish to use
   implementation 'org.springframework.ai:spring-ai-openai'
 }
