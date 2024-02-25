@@ -73,10 +73,11 @@ public class TransformersEmbeddingClientProperties {
 		 * 'truncation', 'padding', 'maxLength', 'stride' and 'padToMultipleOf'. Leave
 		 * empty to fall back to the defaults.
 		 */
+		@NestedConfigurationProperty
 		private Map<String, String> options = new HashMap<>();
 
 		public String getUri() {
-			return uri;
+			return this.uri;
 		}
 
 		public void setUri(String uri) {
@@ -84,7 +85,7 @@ public class TransformersEmbeddingClientProperties {
 		}
 
 		public Map<String, String> getOptions() {
-			return options;
+			return this.options;
 		}
 
 		public void setOptions(Map<String, String> options) {
@@ -111,7 +112,7 @@ public class TransformersEmbeddingClientProperties {
 		private String directory = DEFAULT_CACHE_DIRECTORY;
 
 		public boolean isEnabled() {
-			return enabled;
+			return this.enabled;
 		}
 
 		public void setEnabled(boolean enabled) {
@@ -119,7 +120,7 @@ public class TransformersEmbeddingClientProperties {
 		}
 
 		public String getDirectory() {
-			return directory;
+			return this.directory;
 		}
 
 		public void setDirectory(String directory) {
@@ -135,7 +136,7 @@ public class TransformersEmbeddingClientProperties {
 	private final Cache cache = new Cache();
 
 	public Cache getCache() {
-		return cache;
+		return this.cache;
 	}
 
 	public static class Onnx {
@@ -161,7 +162,7 @@ public class TransformersEmbeddingClientProperties {
 		private int gpuDeviceId = -1;
 
 		public String getModelUri() {
-			return modelUri;
+			return this.modelUri;
 		}
 
 		public void setModelUri(String modelUri) {
@@ -169,7 +170,7 @@ public class TransformersEmbeddingClientProperties {
 		}
 
 		public int getGpuDeviceId() {
-			return gpuDeviceId;
+			return this.gpuDeviceId;
 		}
 
 		public void setGpuDeviceId(int gpuDeviceId) {
@@ -177,7 +178,7 @@ public class TransformersEmbeddingClientProperties {
 		}
 
 		public String getModelOutputName() {
-			return modelOutputName;
+			return this.modelOutputName;
 		}
 
 		public void setModelOutputName(String modelOutputName) {
@@ -190,7 +191,7 @@ public class TransformersEmbeddingClientProperties {
 	private final Onnx onnx = new Onnx();
 
 	public Onnx getOnnx() {
-		return onnx;
+		return this.onnx;
 	}
 
 	/**
@@ -204,11 +205,11 @@ public class TransformersEmbeddingClientProperties {
 	private MetadataMode metadataMode = MetadataMode.NONE;
 
 	public Tokenizer getTokenizer() {
-		return tokenizer;
+		return this.tokenizer;
 	}
 
 	public MetadataMode getMetadataMode() {
-		return metadataMode;
+		return this.metadataMode;
 	}
 
 	public void setMetadataMode(MetadataMode metadataMode) {

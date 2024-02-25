@@ -44,7 +44,7 @@ public class BedrockCohereChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CohereChatBedrockApi cohereApi(AwsCredentialsProvider credentialsProvider,
+	public CohereChatBedrockApi cohereChatApi(AwsCredentialsProvider credentialsProvider,
 			BedrockCohereChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new CohereChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
 				new ObjectMapper());

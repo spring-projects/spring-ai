@@ -16,7 +16,8 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import java.util.List;
+
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiChatClient;
@@ -36,8 +37,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
-
-import java.util.List;
 
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
@@ -82,7 +81,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
 
 		String apiKey = StringUtils.hasText(embeddingProperties.getApiKey()) ? embeddingProperties.getApiKey()
