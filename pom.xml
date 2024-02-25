@@ -27,6 +27,7 @@
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-anthropic</module>
+		<module>models/spring-ai-watsonx-ai</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -67,6 +68,7 @@
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 	</modules>
 
 	<organization>
@@ -124,6 +126,7 @@
 		<com.google.cloud.version>26.34.0</com.google.cloud.version>
 		<qdrant.version>1.7.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>
+		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
