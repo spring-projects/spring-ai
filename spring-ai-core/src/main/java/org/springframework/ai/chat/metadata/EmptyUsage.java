@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat;
-
-import org.springframework.ai.model.ModelOptions;
+package org.springframework.ai.chat.metadata;
 
 /**
- * The ChatOptions represent the common options, portable across different chat models.
+ * A EmpytUsage implementation that returns zero for all property getters
+ *
+ * @author John Blum
+ * @since 0.7.0
  */
-public interface ChatOptions extends ModelOptions {
+public class EmptyUsage implements Usage {
 
-	Float getTemperature();
+	@Override
+	public Long getPromptTokens() {
+		return 0L;
+	}
 
-	void setTemperature(Float temperature);
-
-	Float getTopP();
-
-	void setTopP(Float topP);
-
-	Integer getTopK();
-
-	void setTopK(Integer topK);
+	@Override
+	public Long getGenerationTokens() {
+		return 0L;
+	}
 
 }

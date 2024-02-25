@@ -36,7 +36,7 @@ public interface ChatResponseMetadata extends ResponseMetadata {
 	 * @see RateLimit
 	 */
 	default RateLimit getRateLimit() {
-		return RateLimit.NULL;
+		return new EmptyRateLimit();
 	}
 
 	/**
@@ -45,7 +45,7 @@ public interface ChatResponseMetadata extends ResponseMetadata {
 	 * @see Usage
 	 */
 	default Usage getUsage() {
-		return Usage.NULL;
+		return new EmptyUsage();
 	}
 
 	default PromptMetadata getPromptMetadata() {

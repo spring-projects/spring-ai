@@ -19,7 +19,6 @@ package org.springframework.ai.autoconfigure.bedrock.llama2;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatClient;
@@ -31,7 +30,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Llama2 Chat Client.
@@ -46,7 +44,6 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockLlama2ChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockLlama2ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
 public class BedrockLlama2ChatAutoConfiguration {
 
 	@Bean

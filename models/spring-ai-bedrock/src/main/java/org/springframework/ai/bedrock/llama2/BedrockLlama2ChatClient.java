@@ -25,7 +25,7 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;

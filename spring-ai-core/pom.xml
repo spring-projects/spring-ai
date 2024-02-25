@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.8.0-SNAPSHOT</version>
+		<version>0.8.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-core</artifactId>
 	<packaging>jar</packaging>
@@ -49,6 +49,14 @@
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-core</artifactId>
 		</dependency>
+
+
+		<!-- Spring Framework -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework</groupId>

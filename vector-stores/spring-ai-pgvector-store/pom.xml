@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.8.0-SNAPSHOT</version>
+		<version>0.8.1-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-pgvector-store</artifactId>
@@ -32,11 +32,9 @@
 			<version>${parent.version}</version>
 		</dependency>
 
-
 		<dependency>
-			<groupId>com.pgvector</groupId>
-			<artifactId>pgvector</artifactId>
-			<version>${pgvector.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 
 		<dependency>
@@ -46,8 +44,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
+			<groupId>com.pgvector</groupId>
+			<artifactId>pgvector</artifactId>
+			<version>${pgvector.version}</version>
 		</dependency>
 
 		<!-- TESTING -->

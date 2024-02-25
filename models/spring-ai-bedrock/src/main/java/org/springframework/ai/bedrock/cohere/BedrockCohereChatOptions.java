@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.LogitBias;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
-import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
  * @author Christian Tzolov

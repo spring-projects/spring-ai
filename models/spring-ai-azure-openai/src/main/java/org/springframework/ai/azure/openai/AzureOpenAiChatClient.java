@@ -18,7 +18,6 @@ package org.springframework.ai.azure.openai;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
@@ -36,7 +35,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
@@ -280,7 +279,7 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		ChatCompletionsOptions mergedAzureOptions = new ChatCompletionsOptions(azureOptions.getMessages());
-		mergedAzureOptions.setStream(azureOptions.isStream());
+		mergedAzureOptions = merge(azureOptions, mergedAzureOptions);
 
 		if (springAiOptions.getMaxTokens() != null) {
 			mergedAzureOptions.setMaxTokens(springAiOptions.getMaxTokens());
@@ -323,6 +322,49 @@ public class AzureOpenAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		return mergedAzureOptions;
+	}
+
+	private ChatCompletionsOptions merge(ChatCompletionsOptions fromOptions, ChatCompletionsOptions toOptions) {
+
+		if (fromOptions == null) {
+			return toOptions;
+		}
+
+		ChatCompletionsOptions mergedOptions = new ChatCompletionsOptions(toOptions.getMessages());
+		mergedOptions.setStream(toOptions.isStream());
+
+		if (fromOptions.getMaxTokens() != null) {
+			mergedOptions.setMaxTokens(fromOptions.getMaxTokens());
+		}
+		if (fromOptions.getLogitBias() != null) {
+			mergedOptions.setLogitBias(fromOptions.getLogitBias());
+		}
+		if (fromOptions.getStop() != null) {
+			mergedOptions.setStop(fromOptions.getStop());
+		}
+		if (fromOptions.getTemperature() != null) {
+			mergedOptions.setTemperature(fromOptions.getTemperature());
+		}
+		if (fromOptions.getTopP() != null) {
+			mergedOptions.setTopP(fromOptions.getTopP());
+		}
+		if (fromOptions.getFrequencyPenalty() != null) {
+			mergedOptions.setFrequencyPenalty(fromOptions.getFrequencyPenalty());
+		}
+		if (fromOptions.getPresencePenalty() != null) {
+			mergedOptions.setPresencePenalty(fromOptions.getPresencePenalty());
+		}
+		if (fromOptions.getN() != null) {
+			mergedOptions.setN(fromOptions.getN());
+		}
+		if (fromOptions.getUser() != null) {
+			mergedOptions.setUser(fromOptions.getUser());
+		}
+		if (fromOptions.getModel() != null) {
+			mergedOptions.setModel(fromOptions.getModel());
+		}
+
+		return mergedOptions;
 	}
 
 }

@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.filter.converter;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.FilterHelper;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;

@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
  * The configuration information for a chat completions request. Completions support a

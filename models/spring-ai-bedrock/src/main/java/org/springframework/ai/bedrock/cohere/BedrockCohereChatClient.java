@@ -26,7 +26,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;

@@ -1,5 +1,5 @@
 [[Function]]
-= Function API
+= Function Calling API
 
 The integration of function support in AI models, such as ChatGPT, permits the model to request the execution of client-side functions, thereby accessing necessary information or performing tasks dynamically as required.
 

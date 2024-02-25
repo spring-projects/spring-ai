@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;

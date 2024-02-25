@@ -16,9 +16,7 @@
 
 package org.springframework.ai.openai.metadata;
 
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.*;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -68,13 +66,13 @@ public class OpenAiChatResponseMetadata implements ChatResponseMetadata {
 	@Nullable
 	public RateLimit getRateLimit() {
 		RateLimit rateLimit = this.rateLimit;
-		return rateLimit != null ? rateLimit : RateLimit.NULL;
+		return rateLimit != null ? rateLimit : new EmptyRateLimit();
 	}
 
 	@Override
 	public Usage getUsage() {
 		Usage usage = this.usage;
-		return usage != null ? usage : Usage.NULL;
+		return usage != null ? usage : new EmptyUsage();
 	}
 
 	public OpenAiChatResponseMetadata withRateLimit(RateLimit rateLimit) {

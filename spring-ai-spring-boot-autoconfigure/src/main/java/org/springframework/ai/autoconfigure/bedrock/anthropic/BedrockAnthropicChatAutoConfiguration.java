@@ -17,10 +17,6 @@
 package org.springframework.ai.autoconfigure.bedrock.anthropic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.anthropic.BedrockAnthropicChatClient;
@@ -32,7 +28,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportRuntimeHints;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Anthropic Chat Client.
@@ -47,7 +43,6 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockAnthropicChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockAnthropicChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
 public class BedrockAnthropicChatAutoConfiguration {
 
 	@Bean

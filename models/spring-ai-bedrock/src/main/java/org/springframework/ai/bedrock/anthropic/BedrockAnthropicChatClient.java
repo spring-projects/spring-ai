@@ -19,7 +19,7 @@ package org.springframework.ai.bedrock.anthropic;
 import java.util.List;
 
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;

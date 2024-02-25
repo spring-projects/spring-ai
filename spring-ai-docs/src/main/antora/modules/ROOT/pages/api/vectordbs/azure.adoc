@@ -2,7 +2,7 @@
 
 This section will walk you through setting up the `AzureVectorStore` to store document embeddings and perform similarity searches using the Azure AI Search Service.
 
-link:https://azure.microsoft.com/en-us/products/ai-services/cognitive-search[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
+link:https://azure.microsoft.com/en-us/products/ai-services/ai-search/[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
 
 == Prerequisites
 
@@ -48,7 +48,6 @@ Add these dependencies to your project:
 <dependency>
    <groupId>org.springframework.ai</groupId>
    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -59,7 +58,6 @@ Add these dependencies to your project:
 <dependency>
  <groupId>org.springframework.ai</groupId>
  <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
- <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -70,7 +68,6 @@ Add these dependencies to your project:
 <dependency>
  <groupId>org.springframework.ai</groupId>
  <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
- <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -81,9 +78,10 @@ Add these dependencies to your project:
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-azure-vector-store</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 == Sample Code
 
@@ -170,7 +168,7 @@ or programmatically using the expression DSL:
 
 [source,java]
 ----
-FilterExpressionBuilder b = Filter.builder();
+FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(
     SearchRequest

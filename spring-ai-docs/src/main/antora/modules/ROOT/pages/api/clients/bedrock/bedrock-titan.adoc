@@ -10,6 +10,13 @@ The https://aws.amazon.com/bedrock/titan/[AWS Bedrock Titan Model Page] and http
 
 Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] for setting up API access.
 
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
 == Auto-configuration
 
 Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's Maven `pom.xml` file:
@@ -19,7 +26,6 @@ Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's 
 <dependency>
   <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -28,9 +34,11 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter'
 }
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 === Enable Titan Chat
 
@@ -155,7 +163,6 @@ Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-bedrock</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -164,11 +171,11 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-bedrock'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#_dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatClient.java[BedrockTitanChatClient] and use it for text generations:
 

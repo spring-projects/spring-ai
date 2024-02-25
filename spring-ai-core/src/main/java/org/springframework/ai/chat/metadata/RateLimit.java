@@ -27,9 +27,6 @@ import java.time.Duration;
  */
 public interface RateLimit {
 
-	RateLimit NULL = new AbstractRateLimit() {
-	};
-
 	/**
 	 * Returns the maximum number of requests that are permitted before exhausting the
 	 * rate limit.
