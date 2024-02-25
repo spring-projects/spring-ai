@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.mistralai;
 
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.mistral.MistralAiEmbeddingClient;
 import org.springframework.ai.mistral.api.MistralAiApi;
@@ -36,7 +35,6 @@ import org.springframework.web.client.RestClient;
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiEmbeddingProperties.class, MistralAiConnectionProperties.class })
-@ImportRuntimeHints(NativeHints.class)
 @ConditionalOnClass(MistralAiApi.class)
 public class MistralAiAutoConfiguration {
 
