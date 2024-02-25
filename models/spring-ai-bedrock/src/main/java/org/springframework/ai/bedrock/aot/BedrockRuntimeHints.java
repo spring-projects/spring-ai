@@ -1,6 +1,7 @@
 package org.springframework.ai.bedrock.aot;
 
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
@@ -26,6 +27,8 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
+		for (var tr : findJsonAnnotatedClassesInPackage(AbstractBedrockApi.class))
+			hints.reflection().registerType(tr, mcs);
 		for (var tr : findJsonAnnotatedClassesInPackage(Ai21Jurassic2ChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
 		for (var tr : findJsonAnnotatedClassesInPackage(CohereChatBedrockApi.class))

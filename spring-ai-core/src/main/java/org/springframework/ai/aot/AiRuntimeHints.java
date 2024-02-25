@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.TypeFilter;
 
 import java.lang.reflect.Executable;
 import java.util.*;
@@ -24,9 +25,8 @@ public class AiRuntimeHints {
 	private static final Logger log = LoggerFactory.getLogger(AiRuntimeHints.class);
 
 	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(String packageName) {
-		var classPathScanningCandidateComponentProvider = new ClassPathScanningCandidateComponentProvider(false);
 		var annotationTypeFilter = new AnnotationTypeFilter(JsonInclude.class);
-		classPathScanningCandidateComponentProvider.addIncludeFilter((metadataReader, metadataReaderFactory) -> {
+		TypeFilter typeFilter = (metadataReader, metadataReaderFactory) -> {
 			try {
 				var clazz = Class.forName(metadataReader.getClassMetadata().getClassName());
 				return annotationTypeFilter.match(metadataReader, metadataReaderFactory)
@@ -35,7 +35,18 @@ public class AiRuntimeHints {
 			catch (ClassNotFoundException e) {
 				throw new RuntimeException(e);
 			}
-		});
+		};
+
+		return findClassesInPackage(packageName, typeFilter);
+	}
+
+	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(Class<?> packageClass) {
+		return findJsonAnnotatedClassesInPackage(packageClass.getPackageName());
+	}
+
+	public static Set<TypeReference> findClassesInPackage(String packageName, TypeFilter typeFilter) {
+		var classPathScanningCandidateComponentProvider = new ClassPathScanningCandidateComponentProvider(false);
+		classPathScanningCandidateComponentProvider.addIncludeFilter(typeFilter);
 		return classPathScanningCandidateComponentProvider//
 			.findCandidateComponents(packageName)//
 			.stream()//
@@ -45,11 +56,6 @@ public class AiRuntimeHints {
 					log.debug("registering [" + tr.getName() + ']');
 			})
 			.collect(Collectors.toUnmodifiableSet());
-
-	}
-
-	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(Class<?> packageClass) {
-		return findJsonAnnotatedClassesInPackage(packageClass.getPackageName());
 	}
 
 	private static boolean hasJacksonAnnotations(Class<?> type) {
