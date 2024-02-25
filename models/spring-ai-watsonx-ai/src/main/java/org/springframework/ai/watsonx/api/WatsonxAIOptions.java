@@ -9,6 +9,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Helper class for creating watsonx.ai options.
@@ -91,9 +92,9 @@ public class WatsonxAIOptions implements ChatOptions {
     @JsonProperty("random_seed") private Integer randomSeed;
 
     /**
-     * Model ID is the ID of the LLM Model to be used
+     * Model is the identifier of the LLM Model to be used
      */
-    @JsonProperty("model_id") private String modelId;
+    @JsonProperty("model") private String model;
 
     public WatsonxAIOptions withTemperature(Float temperature) {
         this.temperature = temperature;
@@ -140,8 +141,8 @@ public class WatsonxAIOptions implements ChatOptions {
         return this;
     }
 
-    public WatsonxAIOptions withModelId(String modelId) {
-        this.modelId = modelId;
+    public WatsonxAIOptions withModel(String model) {
+        this.model = model;
         return this;
     }
 
@@ -217,12 +218,12 @@ public class WatsonxAIOptions implements ChatOptions {
         this.randomSeed = randomSeed;
     }
 
-    public String getModelId() {
-        return modelId;
+    public String getModel() {
+        return model;
     }
 
-    public void setModelId(String modelId) {
-        this.modelId = modelId;
+    public void setModel(String model) {
+        this.model = model;
     }
 
     /**
@@ -247,6 +248,18 @@ public class WatsonxAIOptions implements ChatOptions {
     public static WatsonxAIOptions create() {
         return new WatsonxAIOptions();
     }
+
+    /**
+     * Filter out the non supported fields from the options.
+     * @param options The options to filter.
+     * @return The filtered options.
+     */
+    public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
+        return options.entrySet().stream()
+                .filter(e -> !e.getKey().equals("model"))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
 
 }
 // @formatter:on
