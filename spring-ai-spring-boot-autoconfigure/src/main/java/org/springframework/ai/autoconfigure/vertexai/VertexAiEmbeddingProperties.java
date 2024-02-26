@@ -25,6 +25,11 @@ public class VertexAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding";
 
 	/**
+	 * Enable Vertex AI PaLM API embedding client.
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * Vertex AI PaLM API embedding generative name. Defaults to embedding-gecko-001.
 	 */
 	private String model = VertexAiApi.DEFAULT_EMBEDDING_MODEL;
@@ -35,6 +40,14 @@ public class VertexAiEmbeddingProperties {
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

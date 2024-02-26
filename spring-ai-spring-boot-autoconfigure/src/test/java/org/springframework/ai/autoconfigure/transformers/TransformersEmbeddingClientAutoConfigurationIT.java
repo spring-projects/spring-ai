@@ -89,4 +89,23 @@ public class TransformersEmbeddingClientAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	void embeddingActivation() {
+		contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingClientProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(TransformersEmbeddingClient.class)).isEmpty();
+		});
+
+		contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingClientProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(TransformersEmbeddingClient.class)).isNotEmpty();
+		});
+
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingClientProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(TransformersEmbeddingClient.class)).isNotEmpty();
+		});
+
+	}
+
 }

@@ -65,6 +65,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 |====
 | Property | Description | Default
 
+| spring.ai.openai.chat.enabled | Enable OpenAI chat client.  | true
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | This is the OpenAI Chat model to use | `gpt-3.5-turbo` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)

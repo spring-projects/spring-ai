@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @since 0.8.0
  */
-public class OllamaAutoConfigurationTests {
+public class OllamaChatAutoConfigurationTests {
 
 	@Test
 	public void propertiesTest() {

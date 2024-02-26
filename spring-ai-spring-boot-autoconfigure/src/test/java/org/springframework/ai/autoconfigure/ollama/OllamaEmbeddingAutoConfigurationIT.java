@@ -16,22 +16,23 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.io.IOException;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,6 +77,25 @@ public class OllamaEmbeddingAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingClient.dimensions()).isEqualTo(3200);
 		});
+	}
+
+	@Test
+	void embeddingActivation() {
+		contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isEmpty();
+		});
+
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isNotEmpty();
+		});
+
+		contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isNotEmpty();
+		});
+
 	}
 
 }

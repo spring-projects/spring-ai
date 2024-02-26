@@ -21,12 +21,18 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * @author Mark Pollack
+ * @author Christian Tzolov
  * @since 0.8.0
  */
 @ConfigurationProperties(StabilityAiImageProperties.CONFIG_PREFIX)
 public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.stabilityai.image";
+
+	/**
+	 * Enable Stability Image client.
+	 */
+	private boolean enabled = true;
 
 	@NestedConfigurationProperty
 	private StabilityAiImageOptions options = StabilityAiImageOptions.builder().build(); // stable-diffusion-v1-6
@@ -40,6 +46,14 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 	public void setOptions(StabilityAiImageOptions options) {
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

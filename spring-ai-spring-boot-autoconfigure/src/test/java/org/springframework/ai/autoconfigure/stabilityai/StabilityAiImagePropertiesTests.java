@@ -17,10 +17,8 @@
 package org.springframework.ai.autoconfigure.stabilityai;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiChatProperties;
-import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiConnectionProperties;
-import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiEmbeddingProperties;
+
+import org.springframework.ai.stabilityai.StabilityAiImageClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -37,9 +35,9 @@ public class StabilityAiImagePropertiesTests {
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-				"spring.ai.stabilityai.image.api-key=API_KEY",
+	  "spring.ai.stabilityai.image.api-key=API_KEY",
 				"spring.ai.stabilityai.image.base-url=ENDPOINT",
-						"spring.ai.stabilityai.image.options.n=10",
+				"spring.ai.stabilityai.image.options.n=10",
 				"spring.ai.stabilityai.image.options.model=MODEL_XYZ",
 				"spring.ai.stabilityai.image.options.width=512",
 				"spring.ai.stabilityai.image.options.height=256",
@@ -72,6 +70,41 @@ public class StabilityAiImagePropertiesTests {
 				assertThat(chatProperties.getOptions().getSteps()).isEqualTo(30);
 				assertThat(chatProperties.getOptions().getStylePreset()).isEqualTo("neon-punk");
 			});
+	}
+
+	@Test
+	void stabilityImageActivation() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.stabilityai.image.api-key=API_KEY",
+					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.stabilityai.image.enabled=false")
+			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageClient.class)).isEmpty();
+
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.stabilityai.image.api-key=API_KEY",
+					"spring.ai.stabilityai.image.base-url=ENDPOINT")
+			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageClient.class)).isNotEmpty();
+
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.stabilityai.image.api-key=API_KEY",
+					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.stabilityai.image.enabled=true")
+			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageClient.class)).isNotEmpty();
+
+			});
+
 	}
 
 }

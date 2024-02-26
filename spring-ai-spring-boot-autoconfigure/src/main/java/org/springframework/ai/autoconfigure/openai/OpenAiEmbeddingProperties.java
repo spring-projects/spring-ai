@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,11 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 
+	/**
+	 * Enable OpenAI embedding client.
+	 */
+	private boolean enabled = true;
+
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
@@ -36,7 +41,7 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 		.build();
 
 	public OpenAiEmbeddingOptions getOptions() {
-		return options;
+		return this.options;
 	}
 
 	public void setOptions(OpenAiEmbeddingOptions options) {
@@ -44,11 +49,19 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 	}
 
 	public MetadataMode getMetadataMode() {
-		return metadataMode;
+		return this.metadataMode;
 	}
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }
