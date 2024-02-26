@@ -50,9 +50,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Disabled("For manual smoke testing only.")
 @Testcontainers
-public class OllamaAutoConfigurationIT {
+public class OllamaChatAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OllamaAutoConfigurationIT.class);
+	private static final Log logger = LogFactory.getLog(OllamaChatAutoConfigurationIT.class);
 
 	private static String MODEL_NAME = "mistral";
 
@@ -117,6 +117,24 @@ public class OllamaAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");
+		});
+	}
+
+	@Test
+	void chatActivation() {
+		contextRunner.withPropertyValues("spring.ai.ollama.chat.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaChatClient.class)).isEmpty();
+		});
+
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaChatClient.class)).isNotEmpty();
+		});
+
+		contextRunner.withPropertyValues("spring.ai.ollama.chat.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaChatClient.class)).isNotEmpty();
 		});
 	}
 

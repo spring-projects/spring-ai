@@ -123,4 +123,42 @@ public class AzureOpenAiAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	public void chatActivation() {
+
+		// Disable the chat auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(AzureOpenAiChatClient.class)).isEmpty();
+		});
+
+		// The chat auto-configuration is enabled by default.
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(AzureOpenAiChatClient.class)).isNotEmpty();
+		});
+
+		// Explicitly enable the chat auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(AzureOpenAiChatClient.class)).isNotEmpty();
+		});
+	}
+
+	@Test
+	public void embeddingActivation() {
+
+		// Disable the embedding auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingClient.class)).isEmpty();
+		});
+
+		// The embedding auto-configuration is enabled by default.
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingClient.class)).isNotEmpty();
+		});
+
+		// Explicitly enable the embedding auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.azure.openai.embedding.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(AzureOpenAiEmbeddingClient.class)).isNotEmpty();
+		});
+	}
+
 }

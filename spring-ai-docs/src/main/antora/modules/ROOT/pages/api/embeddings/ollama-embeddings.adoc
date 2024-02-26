@@ -66,6 +66,7 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 |====
 | Property | Description | Default
 
+| spring.ai.ollama.embedding.enabled      | Enable Ollama embedding client. | true
 | spring.ai.ollama.embedding.model   (DEPRECATED)      | The name of the model to use. Deprecated use the `spring.ai.ollama.embedding.options.model` instead | mistral
 | spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported models] to use. | mistral
 | spring.ai.ollama.embedding.options.numa              | Whether to use NUMA.                                           | false

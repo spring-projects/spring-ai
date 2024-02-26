@@ -22,6 +22,7 @@ import org.springframework.ai.vertex.api.VertexAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -45,12 +46,16 @@ public class VertexAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = VertexAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public VertexAiChatClient vertexAiChatClient(VertexAiApi vertexAiApi, VertexAiChatProperties chatProperties) {
 		return new VertexAiChatClient(vertexAiApi, chatProperties.getOptions());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = VertexAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public VertexAiEmbeddingClient vertexAiEmbeddingClient(VertexAiApi vertexAiApi) {
 		return new VertexAiEmbeddingClient(vertexAiApi);
 	}

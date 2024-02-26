@@ -29,6 +29,11 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
+	/**
+	 * Enable OpenAI chat client.
+	 */
+	private boolean enabled = true;
+
 	@NestedConfigurationProperty
 	private OpenAiChatOptions options = OpenAiChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
@@ -41,6 +46,14 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiChatOptions options) {
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

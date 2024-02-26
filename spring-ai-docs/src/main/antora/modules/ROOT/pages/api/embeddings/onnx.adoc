@@ -127,6 +127,8 @@ The complete list of supported properties are:
 [cols="3*"]
 |===
 | Property    | Description | Default
+
+| spring.ai.embedding.transformer.enabled | Enable the Transformer Embedding client. | true
 | spring.ai.embedding.transformer.tokenizer.uri  | URI of a pre-trained HuggingFaceTokenizer created by the ONNX engine (e.g. tokenizer.json).   | onnx/all-MiniLM-L6-v2/tokenizer.json
 | spring.ai.embedding.transformer.tokenizer.options  | HuggingFaceTokenizer options such as '`addSpecialTokens`', '`modelMaxLength`', '`truncation`', '`padding`', '`maxLength`', '`stride`', '`padToMultipleOf`'. Leave empty to fallback to the defaults. | empty
 | spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true

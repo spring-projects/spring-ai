@@ -26,6 +26,11 @@ public class AzureOpenAiEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
+	/**
+	 * Enable Azure OpenAI embedding client.
+	 */
+	private boolean enabled = true;
+
 	private AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
 		.withModel("text-embedding-ada-002")
 		.build();
@@ -48,6 +53,14 @@ public class AzureOpenAiEmbeddingProperties {
 	public void setMetadataMode(MetadataMode metadataMode) {
 		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		this.metadataMode = metadataMode;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

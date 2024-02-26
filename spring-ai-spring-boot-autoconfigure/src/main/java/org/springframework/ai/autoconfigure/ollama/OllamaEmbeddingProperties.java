@@ -32,6 +32,11 @@ public class OllamaEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.embedding";
 
 	/**
+	 * Enable Ollama embedding client.
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * Client lever Ollama options. Use this property to configure generative temperature,
 	 * topK and topP and alike parameters. The null values are ignored defaulting to the
 	 * generative's defaults.
@@ -48,7 +53,15 @@ public class OllamaEmbeddingProperties {
 	}
 
 	public OllamaOptions getOptions() {
-		return options;
+		return this.options;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
 	}
 
 }

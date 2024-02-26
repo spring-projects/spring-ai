@@ -32,6 +32,11 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
 	/**
+	 * Enable OpenAI Image client.
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * Options for OpenAI Image API.
 	 */
 	@NestedConfigurationProperty
@@ -43,6 +48,14 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiImageOptions options) {
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

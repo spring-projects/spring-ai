@@ -44,6 +44,19 @@ public class TransformersEmbeddingClientProperties {
 		.getAbsolutePath();
 
 	/**
+	 * Enable the Transformer Embedding client.
+	 */
+	private boolean enabled = true;
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	/**
 	 * Configurations for the {@link HuggingFaceTokenizer} used to convert sentences into
 	 * tokens.
 	 */
