@@ -54,6 +54,7 @@
 		<module>vector-stores/spring-ai-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 	</modules>
 
 	<organization>
