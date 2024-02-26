@@ -2,6 +2,13 @@ package org.springframework.ai.autoconfigure.watsonxai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * WatsonX.ai connection autoconfiguration properties.
+ *
+ * @author Pablo Sanchidrian Herrera
+ * @author John Jario Moreno Rojas
+ * @since 0.8.1
+ */
 @ConfigurationProperties(WatsonxAIConnectionProperties.CONFIG_PREFIX)
 public class WatsonxAIConnectionProperties {
     public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai";
