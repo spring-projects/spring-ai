@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=TEST_BASE_URL",
 				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.read-timeout=2m",
 				"spring.ai.openai.chat.options.model=MODEL_XYZ",
 				"spring.ai.openai.chat.options.temperature=0.55")
 				// @formatter:on
@@ -56,9 +58,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(chatProperties.getApiKey()).isNull();
 				assertThat(chatProperties.getBaseUrl()).isNull();
+				assertThat(chatProperties.getReadTimeout()).isNull();
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
@@ -72,8 +76,10 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=TEST_BASE_URL",
 				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.read-timeout=2m",
 				"spring.ai.openai.chat.base-url=TEST_BASE_URL2",
 				"spring.ai.openai.chat.api-key=456",
+				"spring.ai.openai.chat.read-timeout=5m",
 				"spring.ai.openai.chat.options.model=MODEL_XYZ",
 				"spring.ai.openai.chat.options.temperature=0.55")
 				// @formatter:on
@@ -84,9 +90,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(chatProperties.getApiKey()).isEqualTo("456");
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+				assertThat(chatProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(5));
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
@@ -100,6 +108,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=TEST_BASE_URL",
 				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.read-timeout=2m",
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
@@ -109,9 +118,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(embeddingProperties.getApiKey()).isNull();
 				assertThat(embeddingProperties.getBaseUrl()).isNull();
+				assertThat(embeddingProperties.getReadTimeout()).isNull();
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
@@ -124,8 +135,10 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=TEST_BASE_URL",
 				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.read-timeout=2m",
 				"spring.ai.openai.embedding.base-url=TEST_BASE_URL2",
 				"spring.ai.openai.embedding.api-key=456",
+				"spring.ai.openai.embedding.read-timeout=5m",
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
@@ -135,9 +148,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+				assertThat(embeddingProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(5));
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
@@ -149,6 +164,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 						"spring.ai.openai.base-url=TEST_BASE_URL",
 						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.read-timeout=2m",
 						"spring.ai.openai.image.options.model=MODEL_XYZ",
 						"spring.ai.openai.image.options.n=3")
 				// @formatter:on
@@ -159,9 +175,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(imageProperties.getApiKey()).isNull();
 				assertThat(imageProperties.getBaseUrl()).isNull();
+				assertThat(imageProperties.getReadTimeout()).isNull();
 
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
@@ -174,8 +192,10 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 						"spring.ai.openai.base-url=TEST_BASE_URL",
 						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.read-timeout=2m",
 						"spring.ai.openai.image.base-url=TEST_BASE_URL2",
 						"spring.ai.openai.image.api-key=456",
+						"spring.ai.openai.image.read-timeout=5m",
 						"spring.ai.openai.image.options.model=MODEL_XYZ",
 						"spring.ai.openai.image.options.n=3")
 				// @formatter:on
@@ -186,9 +206,11 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(imageProperties.getApiKey()).isEqualTo("456");
 				assertThat(imageProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+				assertThat(imageProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(5));
 
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
@@ -202,6 +224,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.api-key=API_KEY",
 				"spring.ai.openai.base-url=TEST_BASE_URL",
+				"spring.ai.openai.read-timeout=2m",
 
 				"spring.ai.openai.chat.options.model=MODEL_XYZ",
 				"spring.ai.openai.chat.options.frequencyPenalty=-1.5",
@@ -254,6 +277,7 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("text-embedding-ada-002");
 
@@ -290,6 +314,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.api-key=API_KEY",
 				"spring.ai.openai.base-url=TEST_BASE_URL",
+				"spring.ai.openai.read-timeout=2m",
 
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
 				"spring.ai.openai.embedding.options.encodingFormat=MyEncodingFormat",
@@ -303,6 +328,7 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
@@ -316,6 +342,7 @@ public class OpenAiPropertiesTests {
 		// @formatter:off
 						"spring.ai.openai.api-key=API_KEY",
 						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.read-timeout=2m",
 
 						"spring.ai.openai.image.options.n=3",
 						"spring.ai.openai.image.options.model=MODEL_XYZ",
@@ -335,6 +362,7 @@ public class OpenAiPropertiesTests {
 
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMinutes(2));
 
 				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
