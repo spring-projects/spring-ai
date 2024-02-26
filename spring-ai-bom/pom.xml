@@ -100,6 +100,11 @@
 				<artifactId>spring-ai-vertex-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-watsonx-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<!-- Vector Databses -->
 			<dependency>
