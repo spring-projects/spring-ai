@@ -11,6 +11,8 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.List;
@@ -103,6 +105,25 @@ public class WatsonxAIApi {
                 .retrieve()
                 .onStatus(this.responseErrorHandler)
                 .body(WatsonxAIResponse.class);
+    }
+
+    public Flux<WatsonxAIResponse> generateStreaming(WatsonxAIRequest watsonxAIRequest) {
+        Assert.notNull(watsonxAIRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
+
+        String bearer = this.iamAuthenticator.requestToken().getAccessToken();
+
+        return webClient.post()
+                .uri(this.streamEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer)
+                .body(Mono.just(watsonxAIRequest), WatsonxAIRequest.class)
+                .retrieve()
+                .bodyToFlux(WatsonxAIResponse.class)
+                .handle((data, sink) -> {
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(data);
+                    }
+                    sink.next(data);
+                });
     }
 
 }
