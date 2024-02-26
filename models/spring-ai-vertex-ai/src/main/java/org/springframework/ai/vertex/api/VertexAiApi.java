@@ -197,6 +197,10 @@ public class VertexAiApi {
 		return response != null ? response.embedding() : null;
 	}
 
+	@JsonInclude(Include.NON_NULL)
+	record BatchEmbeddingResponse(List<Embedding> embeddings) {
+	}
+
 	/**
 	 * Generates a response from the model given an input.
 	 * @param texts List of texts to embed.
@@ -205,9 +209,6 @@ public class VertexAiApi {
 	public List<Embedding> batchEmbedText(List<String> texts) {
 		Assert.notNull(texts, "The texts can not be null.");
 
-		@JsonInclude(Include.NON_NULL)
-		record BatchEmbeddingResponse(List<Embedding> embeddings) {
-		}
 
 		BatchEmbeddingResponse response = this.restClient.post()
 				.uri("/models/{model}:batchEmbedText?key={apiKey}", this.embeddingModel, this.apiKey)

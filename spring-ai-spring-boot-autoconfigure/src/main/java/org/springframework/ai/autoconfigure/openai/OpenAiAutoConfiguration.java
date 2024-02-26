@@ -16,7 +16,8 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import java.util.List;
+
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiChatClient;
@@ -27,6 +28,7 @@ import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
@@ -35,8 +37,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
-
-import java.util.List;
 
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
@@ -53,6 +53,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
@@ -77,7 +79,9 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
 
 		String apiKey = StringUtils.hasText(embeddingProperties.getApiKey()) ? embeddingProperties.getApiKey()
@@ -96,6 +100,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
 			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder) {
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()

@@ -65,6 +65,8 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 [cols="3,5,1"]
 |====
 | Property | Description | Default
+
+| spring.ai.openai.embedding.enabled | Enable OpenAI embedding client.  | true
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
 | spring.ai.openai.embedding.metadata-mode      | Document content extraction mode.      | EMBED

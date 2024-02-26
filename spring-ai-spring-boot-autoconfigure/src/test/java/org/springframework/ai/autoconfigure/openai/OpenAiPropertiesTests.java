@@ -20,6 +20,9 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
@@ -346,6 +349,96 @@ public class OpenAiPropertiesTests {
 				assertThat(imageProperties.getOptions().getStyle()).isEqualTo("vivid");
 				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
 			});
+	}
+
+	@Test
+	void embeddingActivation() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.embedding.enabled=false")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingClient.class)).isEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingClient.class)).isNotEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.embedding.enabled=true")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingClient.class)).isNotEmpty();
+			});
+	}
+
+	@Test
+	void chatActivation() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.chat.enabled=false")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatClient.class)).isEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatClient.class)).isNotEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.chat.enabled=true")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatClient.class)).isNotEmpty();
+			});
+
+	}
+
+	@Test
+	void imageActivation() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.image.enabled=false")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isNotEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.image.enabled=true")
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isNotEmpty();
+			});
+
 	}
 
 }

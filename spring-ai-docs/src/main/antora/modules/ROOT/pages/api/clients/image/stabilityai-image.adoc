@@ -57,19 +57,20 @@ The prefix `spring.ai.stabilityai.image` is the property prefix that lets you co
 |====
 | Property | Description | Default
 
-| `spring.ai.stabilityai.image.base-url`              | Optional overrides the spring.ai.openai.base-url to provide a specific url |  `https://api.stability.ai/v1`
-| `spring.ai.stabilityai.image.api-key`               | Optional overrides the spring.ai.openai.api-key to provide a specific api-key |  -
-| `spring.ai.stabilityai.image.option.n`               | The number of images to be generated. Must be between 1 and 10.                                                            | 1
-| `spring.ai.stabilityai.image.option.model`                 | The engine/model to use in Stability AI. The model is passed in the URL as a path parameter.                              | `stable-diffusion-v1-6`
-| `spring.ai.stabilityai.image.option.width`                 | Width of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies. | 512
-| `spring.ai.stabilityai.image.option.height`                | Height of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies.| 512
-| `spring.ai.stabilityai.image.option.responseFormat`        | The format in which the generated images are returned. Must be "application/json" or "image/png".                         | -
-| `spring.ai.stabilityai.image.option.cfg_scale`             | The strictness level of the diffusion process adherence to the prompt text. Range: 0 to 35.                               | 7
-| `spring.ai.stabilityai.image.option.clip_guidance_preset`  | Pass in a style preset to guide the image model towards a particular style. This list of style presets is subject to change. | `NONE`
-| `spring.ai.stabilityai.image.option.sampler`               | Which sampler to use for the diffusion process. If this value is omitted, an appropriate sampler will be automatically selected. | -
-| `spring.ai.stabilityai.image.option.seed`                  | Random noise seed (omit this option or use 0 for a random seed). Valid range: 0 to 4294967295.                             | 0
-| `spring.ai.stabilityai.image.option.steps`                 | Number of diffusion steps to run. Valid range: 10 to 50.                                                                   | 30
-| `spring.ai.stabilityai.image.option.style_preset`          | Pass in a style preset to guide the image model towards a particular style. This list of style presets is subject to change. | -
+| spring.ai.stabilityai.image.enabled | Enable Stability AI image client.  | true
+| spring.ai.stabilityai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide a specific url |  `https://api.stability.ai/v1`
+| spring.ai.stabilityai.image.api-key              | Optional overrides the spring.ai.openai.api-key to provide a specific api-key |  -
+| spring.ai.stabilityai.image.option.n               | The number of images to be generated. Must be between 1 and 10.                                                            | 1
+| spring.ai.stabilityai.image.option.model                 | The engine/model to use in Stability AI. The model is passed in the URL as a path parameter.          | `stable-diffusion-v1-6`
+| spring.ai.stabilityai.image.option.width                 | Width of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies. | 512
+| spring.ai.stabilityai.image.option.height               | Height of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies.| 512
+| spring.ai.stabilityai.image.option.responseFormat        | The format in which the generated images are returned. Must be "application/json" or "image/png".                         | -
+| spring.ai.stabilityai.image.option.cfg_scale             | The strictness level of the diffusion process adherence to the prompt text. Range: 0 to 35.                               | 7
+| spring.ai.stabilityai.image.option.clip_guidance_preset  | Pass in a style preset to guide the image model towards a particular style. This list of style presets is subject to change. | `NONE`
+| spring.ai.stabilityai.image.option.sampler               | Which sampler to use for the diffusion process. If this value is omitted, an appropriate sampler will be automatically selected. | -
+| spring.ai.stabilityai.image.option.seed                  | Random noise seed (omit this option or use 0 for a random seed). Valid range: 0 to 4294967295.                             | 0
+| spring.ai.stabilityai.image.option.steps                 | Number of diffusion steps to run. Valid range: 10 to 50.                                                                   | 30
+| spring.ai.stabilityai.image.option.style_preset          | Pass in a style preset to guide the image model towards a particular style. This list of style presets is subject to change. | -
 |====
 
 

@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertex.VertexAiEmbeddingClient;
 import org.springframework.ai.vertex.VertexAiChatClient;
+import org.springframework.ai.vertex.VertexAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -70,6 +70,50 @@ public class VertexAiAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 			assertThat(embeddingClient.dimensions()).isEqualTo(768);
+		});
+	}
+
+	@Test
+	public void embeddingActivation() {
+
+		// Disable the embedding auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(VertexAiEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VertexAiEmbeddingClient.class)).isEmpty();
+		});
+
+		// The embedding auto-configuration is enabled by default.
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(VertexAiEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VertexAiEmbeddingClient.class)).isNotEmpty();
+		});
+
+		// Explicitly enable the embedding auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(VertexAiEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VertexAiEmbeddingClient.class)).isNotEmpty();
+		});
+	}
+
+	@Test
+	public void chatActivation() {
+
+		// Disable the chat auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.vertex.ai.chat.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(VertexAiChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VertexAiChatClient.class)).isEmpty();
+		});
+
+		// The chat auto-configuration is enabled by default.
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(VertexAiChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VertexAiChatClient.class)).isNotEmpty();
+		});
+
+		// Explicitly enable the chat auto-configuration.
+		contextRunner.withPropertyValues("spring.ai.vertex.ai.chat.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(VertexAiChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VertexAiChatClient.class)).isNotEmpty();
 		});
 	}
 
