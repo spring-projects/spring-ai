@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>0.8.1-SNAPSHOT</version>
+		<version>0.8.0</version>
 	</parent>
 
 	<artifactId>spring-ai-bom</artifactId>
