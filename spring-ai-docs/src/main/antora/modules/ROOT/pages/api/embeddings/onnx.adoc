@@ -81,7 +81,7 @@ List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "Wo
 
 ----
 
-Note that when created manually, you must call the `afterPropertiesSet()` after setting the properties and before using the client.
+NOTE: that when created manually, you must call the `afterPropertiesSet()` after setting the properties and before using the client.
 
 The first `embed()` call downloads the large ONNX model and caches it on the local file system.
 Therefore, the first call might take longer than usual.

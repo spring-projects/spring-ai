@@ -37,7 +37,7 @@ public class TransformersEmbeddingClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient embeddingClient(TransformersEmbeddingClientProperties properties) {
+	public TransformersEmbeddingClient embeddingClient(TransformersEmbeddingClientProperties properties) {
 
 		TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient(properties.getMetadataMode());
 
