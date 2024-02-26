@@ -6,6 +6,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -90,5 +91,18 @@ public class WatsonxAIApi {
 
     }
 
+    public WatsonxAIResponse generate(WatsonxAIRequest watsonxAIRequest) {
+        Assert.notNull(watsonxAIRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
+
+        String bearer = this.iamAuthenticator.requestToken().getAccessToken();
+
+        return this.restClient.post()
+                .uri(this.textEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer)
+                .body(watsonxAIRequest.withProjectId(projectId))
+                .retrieve()
+                .onStatus(this.responseErrorHandler)
+                .body(WatsonxAIResponse.class);
+    }
 
 }
