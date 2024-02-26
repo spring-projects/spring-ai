@@ -94,7 +94,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>17</java.version>
 		<maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- production dependencies -->
 		<spring-boot.version>3.2.3</spring-boot.version>
@@ -197,36 +197,6 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${maven-javadoc-plugin.version}</version>
-				<configuration>
-					<excludePackageNames>
-						org.springframework.ai.sample.*
-					</excludePackageNames>
-					<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
-					<detectJavaApiLink>false</detectJavaApiLink>
-					<doclint>all,-missing</doclint>
-					<quiet>true</quiet>
-				</configuration>
-				<executions>
-					<execution>
-						<id>generate-javadocs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>generate-aggregate-javadocs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>aggregate</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
 				<version>${maven-source-plugin.version}</version>
 				<executions>
@@ -281,6 +251,44 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>javadoc</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>${maven-javadoc-plugin.version}</version>
+						<configuration>
+							<excludePackageNames>org.springframework.ai.sample.*</excludePackageNames>
+							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+							<detectJavaApiLink>false</detectJavaApiLink>
+							<doclint>all,-missing</doclint>
+							<quiet>true</quiet>
+						</configuration>
+						<executions>
+							<execution>
+								<id>generate-javadocs</id>
+								<phase>package</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>generate-aggregate-javadocs</id>
+								<phase>package</phase>
+								<goals>
+									<goal>aggregate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 		<profile>
 			<id>integration-tests</id>
 			<activation>
