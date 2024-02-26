@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 
+import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.beans.BeansException;
 import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
 import org.springframework.cloud.function.context.config.FunctionContextUtils;
@@ -50,6 +51,12 @@ import org.springframework.util.StringUtils;
 public class FunctionCallbackContext implements ApplicationContextAware {
 
 	private GenericApplicationContext applicationContext;
+
+	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
+
+	public void setSchemaType(SchemaType schemaType) {
+		this.schemaType = schemaType;
+	}
 
 	@Override
 	public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
@@ -104,7 +111,12 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 		Object bean = this.applicationContext.getBean(beanName);
 
 		if (bean instanceof Function<?, ?> function) {
-			return new FunctionCallbackWrapper(functionName, functionDescription, functionInputClass, function);
+			return FunctionCallbackWrapper.builder(function)
+				.withName(functionName)
+				.withSchemaType(this.schemaType)
+				.withDescription(functionDescription)
+				.withInputType(functionInputClass)
+				.build();
 		}
 		else {
 			throw new IllegalArgumentException("Bean must be of type Function");

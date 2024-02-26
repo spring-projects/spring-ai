@@ -22,8 +22,10 @@
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
-		<module>models/spring-ai-vertex-ai</module>
-		<module>models/spring-ai-stabilityai</module>
+		<module>models/spring-ai-stability-ai</module>
+		<module>models/spring-ai-mistral-ai</module>
+		<module>models/spring-ai-vertex-ai-palm2</module>
+		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -39,6 +41,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
@@ -51,8 +54,12 @@
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
+		<module>vector-stores/spring-ai-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
+		<module>spring-ai-retry</module>
 	</modules>
 
 	<organization>
@@ -100,24 +107,30 @@
 		<spring-boot.version>3.2.3</spring-boot.version>
 		<spring-framework.version>6.1.4</spring-framework.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
-		<azure-open-ai-client.version>1.0.0-beta.6</azure-open-ai-client.version>
+		<azure-open-ai-client.version>1.0.0-beta.7</azure-open-ai-client.version>
 		<jtokkit.version>1.0.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
 		<bedrockruntime.version>2.24.8</bedrockruntime.version>
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
+		<com.google.cloud.version>26.34.0</com.google.cloud.version>
+		<qdrant.version>1.7.1</qdrant.version>
+		<spring-retry.version>2.0.5</spring-retry.version>
+
+		<!-- Protobuf -->
+		<protobuf-java.version>3.25.2</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<milvus.version>2.3.4</milvus.version>
-		<pinecone.version>0.7.4</pinecone.version>
-		<protobuf-java-util.version>3.24.4</protobuf-java-util.version>
+		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
+		<qdrant.version>1.7.1</qdrant.version>
 
 		<!-- testing dependencies -->
 		<testcontainers.version>1.19.6</testcontainers.version>
@@ -140,7 +153,8 @@
 		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
 		<maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
 		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
-		<maven-site-plugin.version>3.12.1</maven-site-plugin.version>
+		<!-- <maven-site-plugin.version>3.12.1</maven-site-plugin.version> -->
+		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
@@ -162,6 +176,11 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>${maven-site-plugin.version}</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -225,7 +244,7 @@
 							<flattenMode>ossrh</flattenMode>
 							<pomElements>
 								<distributionManagement>remove</distributionManagement>
-								<dependencyManagement>resolve</dependencyManagement>
+								<dependencyManagement>remove</dependencyManagement>
 								<repositories>remove</repositories>
 								<scm>keep</scm>
 								<url>keep</url>
@@ -251,6 +270,83 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>license</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+								<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>4.1</version>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<properties>
+						<owner>the original author or authors.</owner>
+						<email/>
+						<year>2024</year>
+					</properties>
+					<licenseSets>
+						<licenseSet>
+							<inlineHeader>
+<!-- @formatter:off -->
+Copyright 2023 - ${year} the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+<!-- @formatter:on -->
+							</inlineHeader>
+							<excludes>
+								<exclude>**/.antlr/**</exclude>
+								<exclude>**/aot.factories</exclude>
+								<exclude>**/.sdkmanrc</exclude>
+								<exclude>**/*.adoc</exclude>
+								<exclude>**/*.puml</exclude>
+								<exclude>**/pom.xml</exclude>
+								<exclude>**/*.properties</exclude>
+								<exclude>**/*.yaml</exclude>
+								<exclude>**/*.yml</exclude>
+								<exclude>**/*.map</exclude>
+								<exclude>**/*.html</exclude>
+								<exclude>**/*.xhtml</exclude>
+								<exclude>**/*.jsp</exclude>
+								<exclude>**/*.js</exclude>
+								<exclude>**/*.css</exclude>
+								<exclude>**/*.txt</exclude>
+								<exclude>**/*.xjb</exclude>
+								<exclude>**/*.ftl</exclude>
+								<exclude>**/*.xsd</exclude>
+								<exclude>**/*.xml</exclude>
+								<exclude>**/*.sh</exclude>
+								<exclude>**/generated/**</exclude>
+								<exclude>**/Dockerfile</exclude>
+							</excludes>
+						</licenseSet>
+					</licenseSets>
+				</configuration>
+			</plugin>
+
+				</plugins>
+			</build>
+		</profile>
 		<profile>
 			<id>javadoc</id>
 			<activation>

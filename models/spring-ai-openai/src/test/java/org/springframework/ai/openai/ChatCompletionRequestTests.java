@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.openai;
 
 import java.util.List;
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
+import org.springframework.ai.openai.api.tool.MockWeatherService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,14 +63,15 @@ public class ChatCompletionRequestTests {
 		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").build());
 
-		var request = client.createRequest(
-				new Prompt("Test message content",
-						OpenAiChatOptions.builder()
-							.withModel("PROMPT_MODEL")
-							.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(TOOL_FUNCTION_NAME,
-									"Get the weather in location", (response) -> "" + response.temp() + response.unit(),
-									new MockWeatherService())))
-							.build()),
+		var request = client.createRequest(new Prompt("Test message content",
+				OpenAiChatOptions.builder()
+					.withModel("PROMPT_MODEL")
+					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName(TOOL_FUNCTION_NAME)
+						.withDescription("Get the weather in location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+					.build()),
 				false);
 
 		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
@@ -93,9 +93,11 @@ public class ChatCompletionRequestTests {
 		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
-					.withFunctionCallbacks(
-							List.of(new FunctionCallbackWrapper<>(TOOL_FUNCTION_NAME, "Get the weather in location",
-									(response) -> "" + response.temp() + response.unit(), new MockWeatherService())))
+					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName(TOOL_FUNCTION_NAME)
+						.withDescription("Get the weather in location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
 					.build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
@@ -123,8 +125,10 @@ public class ChatCompletionRequestTests {
 		// Override the default options function with one from the prompt
 		request = client.createRequest(new Prompt("Test message content",
 				OpenAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(TOOL_FUNCTION_NAME,
-							"Overridden function description", new MockWeatherService())))
+					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName(TOOL_FUNCTION_NAME)
+						.withDescription("Overridden function description")
+						.build()))
 					.build()),
 				false);
 

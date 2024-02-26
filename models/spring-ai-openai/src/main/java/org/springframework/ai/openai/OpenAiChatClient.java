@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.openai;
 
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,15 +27,15 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -45,19 +43,17 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@link ChatClient} implementation for {@literal OpenAI} backed by {@link OpenAiApi}.
+ * {@link ChatClient} and {@link StreamingChatClient} implementation for {@literal OpenAI}
+ * backed by {@link OpenAiApi}.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
@@ -69,11 +65,11 @@ import org.springframework.util.CollectionUtils;
  * @see StreamingChatClient
  * @see OpenAiApi
  */
-public class OpenAiChatClient implements ChatClient, StreamingChatClient {
+public class OpenAiChatClient extends
+		AbstractFunctionCallSupport<ChatCompletionMessage, OpenAiApi.ChatCompletionRequest, ResponseEntity<ChatCompletion>>
+		implements ChatClient, StreamingChatClient {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
-	private final static boolean IS_RUNTIME_CALL = true;
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClient.class);
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -81,74 +77,63 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 	private OpenAiChatOptions defaultOptions;
 
 	/**
-	 * The function callback register is used to resolve the function callbacks by name.
-	 */
-	private Map<String, FunctionCallback> functionCallbackRegister = new ConcurrentHashMap<>();
-
-	/**
-	 * The function callback context is used to resolve the function callbacks by name
-	 * from the Spring context. It is optional and usually used with Spring
-	 * auto-configuration.
-	 */
-	private FunctionCallbackContext functionCallbackContext;
-
-	/**
 	 * The retry template used to retry the OpenAI API calls.
 	 */
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(OpenAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			@Override
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	public final RetryTemplate retryTemplate;
 
 	/**
 	 * Low-level access to the OpenAI API.
 	 */
 	private final OpenAiApi openAiApi;
 
+	/**
+	 * Creates an instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @throws IllegalArgumentException if openAiApi is null
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi) {
 		this(openAiApi,
 				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
 	}
 
+	/**
+	 * Initializes an instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat client.
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options) {
-		this(openAiApi, options, null);
-	}
-
-	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
-		Assert.notNull(openAiApi, "OpenAiApi must not be null");
-		Assert.notNull(options, "Options must not be null");
-		this.openAiApi = openAiApi;
-		this.defaultOptions = options;
-		this.functionCallbackContext = functionCallbackContext;
+		this(openAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	/**
-	 * @deprecated since 0.8.0, use the
-	 * {@link #OpenAiChatClient(OpenAiApi, OpenAiChatOptions)} constructor instead.
+	 * Initializes a new instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat client.
+	 * @param functionCallbackContext The function callback context.
+	 * @param retryTemplate The retry template.
 	 */
-	@Deprecated(since = "0.8.0", forRemoval = true)
-	public OpenAiChatClient withDefaultOptions(OpenAiChatOptions options) {
+	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
+		super(functionCallbackContext);
+		Assert.notNull(openAiApi, "OpenAiApi must not be null");
+		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
-		return this;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
+		ChatCompletionRequest request = createRequest(prompt, false);
+
 		return this.retryTemplate.execute(ctx -> {
 
-			ChatCompletionRequest request = createRequest(prompt, false);
-
-			ResponseEntity<ChatCompletion> completionEntity = this.chatCompletionWithTools(request);
+			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 
 			var chatCompletion = completionEntity.getBody();
 			if (chatCompletion == null) {
@@ -217,7 +202,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
 						ChatOptions.class, OpenAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
 						IS_RUNTIME_CALL);
 				functionsForThisRequest.addAll(promptEnabledFunctions);
 
@@ -231,7 +216,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 
 		if (this.defaultOptions != null) {
 
-			Set<String> defaultEnabledFunctions = handleFunctionCallbackConfigurations(this.defaultOptions,
+			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
 					!IS_RUNTIME_CALL);
 
 			functionsForThisRequest.addAll(defaultEnabledFunctions);
@@ -254,131 +239,12 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		return request;
 	}
 
-	private Set<String> handleFunctionCallbackConfigurations(OpenAiChatOptions options, boolean isRuntimeCall) {
-
-		Set<String> functionToCall = new HashSet<>();
-
-		if (options != null) {
-			if (!CollectionUtils.isEmpty(options.getFunctionCallbacks())) {
-				options.getFunctionCallbacks().stream().forEach(functionCallback -> {
-
-					// Register the tool callback.
-					if (isRuntimeCall) {
-						this.functionCallbackRegister.put(functionCallback.getName(), functionCallback);
-					}
-					else {
-						this.functionCallbackRegister.putIfAbsent(functionCallback.getName(), functionCallback);
-					}
-
-					// Automatically enable the function, usually from prompt callback.
-					if (isRuntimeCall) {
-						functionToCall.add(functionCallback.getName());
-					}
-				});
-			}
-
-			// Add the explicitly enabled functions.
-			if (!CollectionUtils.isEmpty(options.getFunctions())) {
-				functionToCall.addAll(options.getFunctions());
-			}
-		}
-
-		return functionToCall;
-	}
-
-	/**
-	 * @return returns the registered tool callbacks.
-	 */
-	Map<String, FunctionCallback> getFunctionCallbackRegister() {
-		return functionCallbackRegister;
-	}
-
 	private List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
-
-		List<OpenAiApi.FunctionTool> functionTools = new ArrayList<>();
-		for (String functionName : functionNames) {
-			if (!this.functionCallbackRegister.containsKey(functionName)) {
-
-				if (this.functionCallbackContext != null) {
-					FunctionCallback functionCallback = this.functionCallbackContext.getFunctionCallback(functionName,
-							null);
-					if (functionCallback != null) {
-						this.functionCallbackRegister.put(functionName, functionCallback);
-					}
-					else {
-						throw new IllegalStateException(
-								"No function callback [" + functionName + "] fund in tht FunctionCallbackContext");
-					}
-				}
-				else {
-					throw new IllegalStateException("No function callback found for name: " + functionName);
-				}
-			}
-			FunctionCallback functionCallback = this.functionCallbackRegister.get(functionName);
-
+		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
 			var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
 					functionCallback.getName(), functionCallback.getInputTypeSchema());
-			functionTools.add(new OpenAiApi.FunctionTool(function));
-		}
-
-		return functionTools;
-	}
-
-	/**
-	 * Function Call handling. If the model calls a function, the function is called and
-	 * the response is added to the conversation history. The conversation history is then
-	 * sent back to the model.
-	 * @param request the chat completion request
-	 * @return the chat completion response.
-	 */
-	@SuppressWarnings("null")
-	private ResponseEntity<ChatCompletion> chatCompletionWithTools(OpenAiApi.ChatCompletionRequest request) {
-
-		ResponseEntity<ChatCompletion> chatCompletion = this.openAiApi.chatCompletionEntity(request);
-
-		// Return the result if the model is not calling a function.
-		if (Boolean.FALSE.equals(this.isToolCall(chatCompletion))) {
-			return chatCompletion;
-		}
-
-		// The OpenAI chat completion tool call API requires the complete conversation
-		// history. Including the initial user message.
-		List<ChatCompletionMessage> conversationMessages = new ArrayList<>(request.messages());
-
-		// We assume that the tool calling information is inside the response's first
-		// choice.
-		ChatCompletionMessage responseMessage = chatCompletion.getBody().choices().iterator().next().message();
-
-		if (chatCompletion.getBody().choices().size() > 1) {
-			logger.warn("More than one choice returned. Only the first choice is processed.");
-		}
-
-		// Add the assistant response to the message conversation history.
-		conversationMessages.add(responseMessage);
-
-		// Every tool-call item requires a separate function call and a response (TOOL)
-		// message.
-		for (ToolCall toolCall : responseMessage.toolCalls()) {
-
-			var functionName = toolCall.function().name();
-			String functionArguments = toolCall.function().arguments();
-
-			if (!this.functionCallbackRegister.containsKey(functionName)) {
-				throw new IllegalStateException("No function callback found for function name: " + functionName);
-			}
-
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-			// Add the function response to the conversation.
-			conversationMessages.add(new ChatCompletionMessage(functionResponse, Role.TOOL, null, toolCall.id(), null));
-		}
-
-		// Recursively call chatCompletionWithTools until the model doesn't call a
-		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationMessages, request.stream());
-		newRequest = ModelOptionsUtils.merge(newRequest, request, ChatCompletionRequest.class);
-
-		return this.chatCompletionWithTools(newRequest);
+			return new OpenAiApi.FunctionTool(function);
+		}).toList();
 	}
 
 	private Map<String, Object> toMap(ChatCompletionMessage message) {
@@ -400,12 +266,53 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 		return map;
 	}
 
-	/**
-	 * Check if it is a model calls function response.
-	 * @param chatCompletion the chat completion response.
-	 * @return true if the model expects a function call.
-	 */
-	private Boolean isToolCall(ResponseEntity<ChatCompletion> chatCompletion) {
+	@Override
+	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
+			ChatCompletionMessage responseMessage, List<ChatCompletionMessage> conversationHistory) {
+
+		// Every tool-call item requires a separate function call and a response (TOOL)
+		// message.
+		for (ToolCall toolCall : responseMessage.toolCalls()) {
+
+			var functionName = toolCall.function().name();
+			String functionArguments = toolCall.function().arguments();
+
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+
+			// Add the function response to the conversation.
+			conversationHistory
+				.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
+		}
+
+		// Recursively call chatCompletionWithTools until the model doesn't call a
+		// functions anymore.
+		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, previousRequest.stream());
+		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
+
+		return newRequest;
+	}
+
+	@Override
+	protected List<ChatCompletionMessage> doGetUserMessages(ChatCompletionRequest request) {
+		return request.messages();
+	}
+
+	@Override
+	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
+		return chatCompletion.getBody().choices().iterator().next().message();
+	}
+
+	@Override
+	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
+		return this.openAiApi.chatCompletionEntity(request);
+	}
+
+	@Override
+	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletion> chatCompletion) {
 		var body = chatCompletion.getBody();
 		if (body == null) {
 			return false;
@@ -416,7 +323,7 @@ public class OpenAiChatClient implements ChatClient, StreamingChatClient {
 			return false;
 		}
 
-		return choices.get(0).message().toolCalls() != null;
+		return !CollectionUtils.isEmpty(choices.get(0).message().toolCalls());
 	}
 
 }

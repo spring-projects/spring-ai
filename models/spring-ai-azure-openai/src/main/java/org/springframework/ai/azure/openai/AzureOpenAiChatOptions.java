@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.azure.openai;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -25,6 +27,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * The configuration information for a chat completions request. Completions support a
@@ -34,7 +40,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @author Christian Tzolov
  */
 @JsonInclude(Include.NON_NULL)
-public class AzureOpenAiChatOptions implements ChatOptions {
+public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	/**
 	 * The maximum number of tokens to generate.
@@ -121,6 +127,32 @@ public class AzureOpenAiChatOptions implements ChatOptions {
 	@JsonProperty(value = "model")
 	private String model;
 
+	/**
+	 * OpenAI Tool Function Callbacks to register with the ChatClient. For Prompt Options
+	 * the functionCallbacks are automatically enabled for the duration of the prompt
+	 * execution. For Default Options the functionCallbacks are registered but disabled by
+	 * default. Use the enableFunctions to set the functions from the registry to be used
+	 * by the ChatClient chat completion requests.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+
+	/**
+	 * List of functions, identified by their names, to configure for function calling in
+	 * the chat completion requests. Functions with those names must exist in the
+	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
+	 * are automatically enabled for the duration of the prompt execution.
+	 *
+	 * Note that function enabled with the default options are enabled for all chat
+	 * completion requests. This could impact the token count and the billing. If the
+	 * functions is set in a prompt options, then the enabled functions are only active
+	 * for the duration of this prompt execution.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Set<String> functions = new HashSet<>();
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -184,6 +216,23 @@ public class AzureOpenAiChatOptions implements ChatOptions {
 
 		public Builder withUser(String user) {
 			this.options.user = user;
+			return this;
+		}
+
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder withFunctions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder withFunction(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
 			return this;
 		}
 
@@ -262,7 +311,6 @@ public class AzureOpenAiChatOptions implements ChatOptions {
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -272,7 +320,6 @@ public class AzureOpenAiChatOptions implements ChatOptions {
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -283,10 +330,27 @@ public class AzureOpenAiChatOptions implements ChatOptions {
 		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
+	}
+
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	public void setFunctions(Set<String> functions) {
+		this.functions = functions;
 	}
 
 }

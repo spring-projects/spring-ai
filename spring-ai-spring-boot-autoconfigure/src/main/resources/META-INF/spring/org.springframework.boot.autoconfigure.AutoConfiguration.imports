@@ -3,7 +3,8 @@ org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.stabilityai.StabilityAiImageAutoConfiguration
 org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingClientAutoConfiguration
 org.springframework.ai.autoconfigure.huggingface.HuggingfaceChatAutoConfiguration
-org.springframework.ai.autoconfigure.vertexai.VertexAiAutoConfiguration
+org.springframework.ai.autoconfigure.vertexai.palm2.VertexAiPalm2AutoConfiguration
+org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.llama2.BedrockLlama2ChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereEmbeddingAutoConfiguration
@@ -11,6 +12,7 @@ org.springframework.ai.autoconfigure.bedrock.anthropic.BedrockAnthropicChatAutoC
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
 org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
+org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pinecone.PineconeVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoConfiguration
@@ -19,3 +21,5 @@ org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoCon
 org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration

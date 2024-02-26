@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 - 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.openai.chat;
 
 import java.util.ArrayList;
@@ -22,7 +37,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
+import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -173,9 +188,11 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			.withModel("gpt-4-turbo-preview")
-			.withFunctionCallbacks(
-					List.of(new FunctionCallbackWrapper<>("getCurrentWeather", "Get the weather in location",
-							(response) -> "" + response.temp() + response.unit(), new MockWeatherService())))
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription("Get the weather in location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build()))
 			.build();
 
 		ChatResponse response = openAiChatClient.call(new Prompt(messages, promptOptions));
@@ -185,7 +202,6 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
-
 	}
 
 }

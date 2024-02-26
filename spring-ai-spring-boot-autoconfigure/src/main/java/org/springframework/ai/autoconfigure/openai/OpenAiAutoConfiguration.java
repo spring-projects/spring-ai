@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.autoconfigure.openai;
 
 import java.time.Duration;
 import java.util.List;
 
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,25 +40,21 @@ import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
-@AutoConfiguration(after = { RestClientAutoConfiguration.class })
-@ConditionalOnClass(OpenAiApi.class)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
 /**
  * @author Christian Tzolov
  */
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
+@ConditionalOnClass(OpenAiApi.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class })
 public class OpenAiAutoConfiguration {
-
-	public static final String OPEN_AI_API_KEY_MUST_BE_SET = "OpenAI API key must be set";
-
-	public static final String OPEN_AI_BASE_URL_MUST_BE_SET = "OpenAI base URL must be set";
-
-	public static final String OPEN_AI_READ_TIMEOUT_MUST_BE_SET = "OpenAI base read timeout must be set";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -64,21 +62,16 @@ public class OpenAiAutoConfiguration {
 			matchIfMissing = true)
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
-		OpenAiConnectionProperties overridenCommonProperties = checkAndOverrideProperties(commonProperties,
-				chatProperties);
-		RestClient.Builder overridenRestClientBuilder = overrideRestClientBuilder(restClientBuilder,
-				overridenCommonProperties);
-
-		var openAiApi = new OpenAiApi(overridenCommonProperties.getBaseUrl(), overridenCommonProperties.getApiKey(),
-				overridenRestClientBuilder);
+		var openAiApi = openAiApi(commonProperties, chatProperties, restClientBuilder, responseErrorHandler);
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext);
+		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
 	}
 
 	@Bean
@@ -86,18 +79,25 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
+			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
-		OpenAiConnectionProperties overridenCommonProperties = checkAndOverrideProperties(commonProperties,
-				embeddingProperties);
-		RestClient.Builder overridenRestClientBuilder = overrideRestClientBuilder(restClientBuilder,
-				overridenCommonProperties);
-
-		var openAiApi = new OpenAiApi(overridenCommonProperties.getBaseUrl(), overridenCommonProperties.getApiKey(),
-				overridenRestClientBuilder);
+		var openAiApi = openAiApi(commonProperties, embeddingProperties, restClientBuilder, responseErrorHandler);
 
 		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions());
+				embeddingProperties.getOptions(), retryTemplate);
+	}
+
+	private <T extends OpenAiParentProperties> OpenAiApi openAiApi(OpenAiConnectionProperties commonProperties,
+			T specificProperties, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		OpenAiConnectionProperties overridenCommonProperties = checkAndOverrideProperties(commonProperties,
+				specificProperties);
+		RestClient.Builder overrideRestClientBuilder = overrideRestClientBuilder(restClientBuilder,
+				overridenCommonProperties);
+
+		return new OpenAiApi(overridenCommonProperties.getBaseUrl(), overridenCommonProperties.getApiKey(),
+				overrideRestClientBuilder, responseErrorHandler);
 	}
 
 	@Bean
@@ -105,17 +105,35 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
-			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder) {
+			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
 
 		OpenAiConnectionProperties overridenCommonProperties = checkAndOverrideProperties(commonProperties,
 				imageProperties);
-		RestClient.Builder overridenRestClientBuilder = overrideRestClientBuilder(restClientBuilder,
+		RestClient.Builder overrideRestClientBuilder = overrideRestClientBuilder(restClientBuilder,
 				overridenCommonProperties);
 
 		var openAiImageApi = new OpenAiImageApi(overridenCommonProperties.getBaseUrl(),
-				overridenCommonProperties.getApiKey(), overridenRestClientBuilder);
+				overridenCommonProperties.getApiKey(), overrideRestClientBuilder, responseErrorHandler);
 
-		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
+		return new OpenAiImageClient(openAiImageApi, imageProperties.getOptions(), retryTemplate);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiAudioTranscriptionClient openAiAudioTranscriptionClient(OpenAiConnectionProperties commonProperties,
+			OpenAiAudioTranscriptionProperties transcriptionProperties, RestClient.Builder restClientBuilder,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
+
+		OpenAiConnectionProperties overridenCommonProperties = checkAndOverrideProperties(commonProperties,
+				transcriptionProperties);
+		RestClient.Builder overrideRestClientBuilder = overrideRestClientBuilder(restClientBuilder,
+				overridenCommonProperties);
+
+		var openAiAudioApi = new OpenAiAudioApi(overridenCommonProperties.getBaseUrl(),
+				overridenCommonProperties.getApiKey(), overrideRestClientBuilder, responseErrorHandler);
+
+		return new OpenAiAudioTranscriptionClient(openAiAudioApi, transcriptionProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean
@@ -138,9 +156,9 @@ public class OpenAiAutoConfiguration {
 		Duration readTimeout = specificProperties.getReadTimeout() != null ? specificProperties.getReadTimeout()
 				: commonProperties.getReadTimeout();
 
-		Assert.hasText(apiKey, OPEN_AI_API_KEY_MUST_BE_SET);
-		Assert.hasText(baseUrl, OPEN_AI_BASE_URL_MUST_BE_SET);
-		Assert.notNull(readTimeout, OPEN_AI_READ_TIMEOUT_MUST_BE_SET);
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+		Assert.notNull(readTimeout, "OpenAI base read timeout must be set");
 
 		OpenAiConnectionProperties overridenCommonProperties = new OpenAiConnectionProperties();
 		overridenCommonProperties.setApiKey(apiKey);

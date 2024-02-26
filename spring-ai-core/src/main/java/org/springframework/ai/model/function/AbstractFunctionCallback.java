@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.model.function;
 
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -56,59 +53,31 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 
 	/**
 	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
-	 * input type and object mapper.
-	 * @param name Function name. Should be unique within the ChatClient's function
-	 * registry.
-	 * @param description Function description. Used as a "system prompt" by the model to
-	 * decide if the function should be called.
-	 * @param inputType Used to compute, the argument's JSON schema required by the
-	 * Model's function calling protocol.
-	 */
-	protected AbstractFunctionCallback(String name, String description, Class<I> inputType) {
-		this(name, description, inputType, Object::toString);
-	}
-
-	/**
-	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
-	 * input type and object mapper.
-	 * @param name Function name. Should be unique within the ChatClient's function
-	 * registry.
-	 * @param description Function description. Used as a "system prompt" by the model to
-	 * decide if the function should be called.
-	 * @param inputType Used to compute, the argument's JSON schema required by the
-	 * Model's function calling protocol.
-	 * @param responseConverter Used to convert the function's output type to a string.
-	 */
-	protected AbstractFunctionCallback(String name, String description, Class<I> inputType,
-			Function<O, String> responseConverter) {
-		this(name, description, inputType, responseConverter,
-				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
-	}
-
-	/**
-	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
 	 * input type and default object mapper.
 	 * @param name Function name. Should be unique within the ChatClient's function
 	 * registry.
 	 * @param description Function description. Used as a "system prompt" by the model to
 	 * decide if the function should be called.
+	 * @param inputTypeSchema Used to compute, the argument's Schema (such as JSON Schema
+	 * or OpenAPI Schema)required by the Model's function calling protocol.
 	 * @param inputType Used to compute, the argument's JSON schema required by the
 	 * Model's function calling protocol.
 	 * @param responseConverter Used to convert the function's output type to a string.
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
-	protected AbstractFunctionCallback(String name, String description, Class<I> inputType,
+	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Class<I> inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(inputType, "InputType must not be null");
+		Assert.notNull(inputTypeSchema, "InputTypeSchema must not be null");
 		Assert.notNull(responseConverter, "ResponseConverter must not be null");
 		Assert.notNull(objectMapper, "ObjectMapper must not be null");
 		this.name = name;
 		this.description = description;
 		this.inputType = inputType;
-		this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(inputType);
+		this.inputTypeSchema = inputTypeSchema;
 		this.responseConverter = responseConverter;
 		this.objectMapper = objectMapper;
 	}

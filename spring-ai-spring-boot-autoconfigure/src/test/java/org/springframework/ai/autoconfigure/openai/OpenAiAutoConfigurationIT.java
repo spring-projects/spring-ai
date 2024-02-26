@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.autoconfigure.openai;
 
 import java.util.List;
@@ -28,10 +27,14 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -47,13 +50,25 @@ public class OpenAiAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class));
 
 	@Test
 	void generate() {
 		contextRunner.run(context -> {
 			OpenAiChatClient client = context.getBean(OpenAiChatClient.class);
 			String response = client.call("Hello");
+			assertThat(response).isNotEmpty();
+			logger.info("Response: " + response);
+		});
+	}
+
+	@Test
+	void transcribe() {
+		contextRunner.run(context -> {
+			OpenAiAudioTranscriptionClient client = context.getBean(OpenAiAudioTranscriptionClient.class);
+			Resource audioFile = new ClassPathResource("/speech/jfk.flac");
+			String response = client.call(audioFile);
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
@@ -92,7 +107,7 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		contextRunner.withPropertyValues("spring.ai.openai.image.options.size=256x256").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.image.options.size=1024x1024").run(context -> {
 			OpenAiImageClient client = context.getBean(OpenAiImageClient.class);
 			ImageResponse imageResponse = client.call(new ImagePrompt("forest"));
 			assertThat(imageResponse.getResults()).hasSize(1);

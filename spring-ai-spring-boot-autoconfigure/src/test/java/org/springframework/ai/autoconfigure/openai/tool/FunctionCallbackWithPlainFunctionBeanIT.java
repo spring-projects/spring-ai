@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.autoconfigure.openai.tool;
 
 import java.util.List;
@@ -25,9 +24,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -46,7 +48,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
@@ -55,6 +58,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
+			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
@@ -64,13 +68,33 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
+			// Test weatherFunctionTwo
 			response = chatClient.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction3").build()));
+					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
 			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
+		});
+	}
+
+	@Test
+	void functionCallWithPortableFunctionCallingOptions() {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+
+			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
+
+			// Test weatherFunction
+			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+				.withFunction("weatherFunction")
+				.build();
+
+			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), functionOptions));
+
+			logger.info("Response: {}", response);
 		});
 	}
 
@@ -86,7 +110,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		// Relies on the Request's JsonClassDescription annotation to provide the
 		// function description.
 		@Bean
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction3() {
+		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunctionTwo() {
 			MockWeatherService weatherService = new MockWeatherService();
 			return (weatherService::apply);
 		}
