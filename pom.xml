@@ -23,6 +23,7 @@
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-vertex-ai</module>
+		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-stabilityai</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
