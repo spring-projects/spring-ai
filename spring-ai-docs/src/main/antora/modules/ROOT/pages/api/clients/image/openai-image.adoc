@@ -55,8 +55,9 @@ The prefix `spring.ai.openai.image` is the property prefix that lets you configu
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.openai.chat.base-url              | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
-| spring.ai.openai.chat.api-key               | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
+| spring.ai.openai.image.enabled | Enable OpenAI image client.  | true
+| spring.ai.openai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
+| spring.ai.openai.image.api-key               | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
 | spring.ai.openai.image.options.model        | The model to use for image generation.  | OpenAiImageApi.DEFAULT_IMAGE_MODEL
 | spring.ai.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -

@@ -26,6 +26,11 @@ public class VertexAiChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.chat";
 
 	/**
+	 * Enable Vertex AI PaLM API chat client.
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * Vertex AI PaLM API generative name. Defaults to chat-bison-001
 	 */
 	private String model = VertexAiApi.DEFAULT_GENERATE_MODEL;
@@ -54,6 +59,14 @@ public class VertexAiChatProperties {
 
 	public void setOptions(VertexAiChatOptions options) {
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

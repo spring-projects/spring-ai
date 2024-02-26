@@ -29,6 +29,11 @@ public class AzureOpenAiChatProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
+	/**
+	 * Enable Azure OpenAI chat client.
+	 */
+	private boolean enabled = true;
+
 	@NestedConfigurationProperty
 	private AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
 		.withModel(DEFAULT_CHAT_MODEL)
@@ -41,6 +46,14 @@ public class AzureOpenAiChatProperties {
 
 	public void setOptions(AzureOpenAiChatOptions options) {
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

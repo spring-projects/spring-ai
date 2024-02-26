@@ -46,7 +46,7 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CohereEmbeddingBedrockApi cohereApi(AwsCredentialsProvider credentialsProvider,
+	public CohereEmbeddingBedrockApi cohereEmbeddingApi(AwsCredentialsProvider credentialsProvider,
 			BedrockCohereEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
 				new ObjectMapper());
