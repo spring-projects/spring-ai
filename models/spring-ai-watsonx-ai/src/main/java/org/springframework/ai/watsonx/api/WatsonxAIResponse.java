@@ -15,4 +15,3 @@ public record WatsonxAIResponse(
         @JsonProperty("results") List<WatsonxAIResults> results,
         @JsonProperty("system") Map<String, Object> system
 ) {}
-

@@ -11,55 +11,57 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(WatsonxAIConnectionProperties.CONFIG_PREFIX)
 public class WatsonxAIConnectionProperties {
-    public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai";
 
-    private String baseUrl = "http://www.ibm.com";
+	public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai";
 
-    private String streamEndpoint = "generation/stream?version=2023-05-29";
+	private String baseUrl = "http://www.ibm.com";
 
-    private String textEndpoint = "generation/text?version=2023-05-29";
+	private String streamEndpoint = "generation/stream?version=2023-05-29";
 
-    private String projectId = "1";
+	private String textEndpoint = "generation/text?version=2023-05-29";
 
-    private String IAMToken;
+	private String projectId = "1";
 
-    public String getBaseUrl() {
-        return baseUrl;
-    }
+	private String IAMToken;
 
-    public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
-    }
+	public String getBaseUrl() {
+		return baseUrl;
+	}
 
-    public String getStreamEndpoint() {
-        return streamEndpoint;
-    }
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
+	}
 
-    public void setStreamEndpoint(String streamEndpoint) {
-        this.streamEndpoint = streamEndpoint;
-    }
+	public String getStreamEndpoint() {
+		return streamEndpoint;
+	}
 
-    public String getTextEndpoint() {
-        return textEndpoint;
-    }
+	public void setStreamEndpoint(String streamEndpoint) {
+		this.streamEndpoint = streamEndpoint;
+	}
 
-    public void setTextEndpoint(String textEndpoint) {
-        this.textEndpoint = textEndpoint;
-    }
+	public String getTextEndpoint() {
+		return textEndpoint;
+	}
 
-    public String getProjectId() {
-        return projectId;
-    }
+	public void setTextEndpoint(String textEndpoint) {
+		this.textEndpoint = textEndpoint;
+	}
 
-    public void setProjectId(String projectId) {
-        this.projectId = projectId;
-    }
+	public String getProjectId() {
+		return projectId;
+	}
 
-    public String getIAMToken() {
-        return IAMToken;
-    }
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
 
-    public void setIAMToken(String IAMToken) {
-        this.IAMToken = IAMToken;
-    }
+	public String getIAMToken() {
+		return IAMToken;
+	}
+
+	public void setIAMToken(String IAMToken) {
+		this.IAMToken = IAMToken;
+	}
+
 }

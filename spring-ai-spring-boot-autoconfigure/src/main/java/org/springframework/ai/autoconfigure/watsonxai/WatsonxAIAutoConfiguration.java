@@ -21,10 +21,11 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({ WatsonxAIConnectionProperties.class })
 public class WatsonxAIAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    public WatsonxAIApi watsonxApi(WatsonxAIConnectionProperties properties, RestClient.Builder restClientBuilder) {
-        return new WatsonxAIApi(properties.getBaseUrl(), properties.getStreamEndpoint(), properties.getTextEndpoint(),
-                properties.getProjectId(), properties.getIAMToken(), restClientBuilder);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	public WatsonxAIApi watsonxApi(WatsonxAIConnectionProperties properties, RestClient.Builder restClientBuilder) {
+		return new WatsonxAIApi(properties.getBaseUrl(), properties.getStreamEndpoint(), properties.getTextEndpoint(),
+				properties.getProjectId(), properties.getIAMToken(), restClientBuilder);
+	}
+
 }
