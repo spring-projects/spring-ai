@@ -44,7 +44,7 @@ public class MistralAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(prefix = MistralAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public EmbeddingClient mistralAiEmbeddingClient(MistralAiConnectionProperties commonProperties,
 			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
