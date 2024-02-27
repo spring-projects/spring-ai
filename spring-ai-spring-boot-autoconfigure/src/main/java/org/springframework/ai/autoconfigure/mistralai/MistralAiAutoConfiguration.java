@@ -20,7 +20,6 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.mistral.MistralAiChatClient;
 import org.springframework.ai.mistral.MistralAiEmbeddingClient;
 import org.springframework.ai.mistral.api.MistralAiApi;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
