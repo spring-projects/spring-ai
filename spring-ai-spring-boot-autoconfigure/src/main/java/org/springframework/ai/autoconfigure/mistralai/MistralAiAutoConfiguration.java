@@ -16,9 +16,17 @@
 
 package org.springframework.ai.autoconfigure.mistralai;
 
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.mistral.MistralAiEmbeddingClient;
+import org.springframework.ai.mistral.api.MistralAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
 /**
  * @author Ricken Bazolo
@@ -26,5 +34,26 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiEmbeddingProperties.class, MistralAiConnectionProperties.class })
 public class MistralAiAutoConfiguration {
+    public static final String API_KEY_MUST_BE_SET = "Mistral API key must be set";
 
+    public static final String BASE_URL_MUST_BE_SET = "Mistral base URL must be set";
+
+    @Bean
+    @ConditionalOnMissingBean
+    public EmbeddingClient mistralAiEmbeddingClient(MistralAiConnectionProperties commonProperties,
+                                                    MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
+
+        var apiKey = StringUtils.hasText(embeddingProperties.getApiKey()) ? embeddingProperties.getApiKey()
+                : commonProperties.getApiKey();
+        var baseUrl = StringUtils.hasText(embeddingProperties.getBaseUrl()) ? embeddingProperties.getBaseUrl()
+                : commonProperties.getBaseUrl();
+
+        Assert.hasText(apiKey, API_KEY_MUST_BE_SET);
+        Assert.hasText(baseUrl, BASE_URL_MUST_BE_SET);
+
+        var mistralAiApi = new MistralAiApi(baseUrl, apiKey, restClientBuilder);
+
+        return new MistralAiEmbeddingClient(mistralAiApi, embeddingProperties.getMetadataMode(),
+                embeddingProperties.getOptions());
+    }
 }
