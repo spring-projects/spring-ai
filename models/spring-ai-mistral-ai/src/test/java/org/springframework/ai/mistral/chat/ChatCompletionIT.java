@@ -16,18 +16,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 public class ChatCompletionIT {
-    @Autowired
-    MistralAiChatClient chatClient;
 
-    @Test
-    void chatCompletionTest() {
-        var message = "Tell me about DC comics.";
-        var userMessage = new UserMessage(message);
-        var prompt = new Prompt(List.of(userMessage));
+	@Autowired
+	MistralAiChatClient chatClient;
 
-        var response = chatClient.call(prompt);
+	@Test
+	void chatCompletionTest() {
+		var message = "Tell me about DC comics.";
+		var userMessage = new UserMessage(message);
+		var prompt = new Prompt(List.of(userMessage));
 
-        assertThat(response.getResult().getOutput().getContent()).contains("American");
-    }
+		var response = chatClient.call(prompt);
+
+		assertThat(response.getResult().getOutput().getContent()).contains("American");
+	}
 
 }

@@ -26,148 +26,171 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MistralAiChatOptions implements ChatOptions {
-    /**
-     * ID of the model to use
-     */
-    private @JsonProperty("model") String model;
-    /**
-     * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will make the output more random,
-     * while lower values like 0.2 will make it more focused and deterministic. We generally recommend altering this or
-     * top_p but not both.
-     */
-    private @JsonProperty("temperature") Float temperature = 0.7f;
-    /**
-     * Nucleus sampling, where the model considers the results of the tokens with top_p probability mass.
-     * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
-     * We generally recommend altering this or temperature but not both.
-     */
-    private @JsonProperty("top_p") Float topP = 1f;
-    /**
-     * The maximum number of tokens to generate in the completion.
-     * The token count of your prompt plus max_tokens cannot exceed the model's context length.
-     */
-    private @JsonProperty("max_tokens") Integer maxTokens;
-    /**
-     * Whether to stream back partial progress. If set, tokens will be sent as data-only server-sent events
-     * as they become available, with the stream terminated by a data: [DONE] message. Otherwise, the server will hold
-     * the request open until the timeout or until completion, with the response containing the full result as JSON.
-     */
-    private @JsonProperty("stream") Boolean stream = false;
-    /**
-     * Whether to inject a safety prompt before all conversations.
-     */
-    private @JsonProperty("safe_prompt") Boolean safePrompt = false;
-    /**
-     * The seed to use for random sampling. If set, different calls will generate deterministic results.
-     */
-    private @JsonProperty("random_seed") Integer randomSeed;
-    public static Builder builder() {
-        return new Builder();
-    }
-    public static class Builder {
-        private final MistralAiChatOptions options = new MistralAiChatOptions();
 
-        public Builder withModel(String model) {
-            this.options.setModel(model);
-            return this;
-        }
-        public Builder withMaxToken(Integer maxTokens) {
-            this.options.setMaxTokens(maxTokens);
-            return this;
-        }
-        public Builder withStream(Boolean stream) {
-            this.options.setStream(stream);
-            return this;
-        }
-        public Builder withSafePrompt(Boolean safePrompt) {
-            this.options.setSafePrompt(safePrompt);
-            return this;
-        }
-        public Builder withRandomSeed(Integer randomSeed) {
-            this.options.setRandomSeed(randomSeed);
-            return this;
-        }
-        public Builder withTemperature(Float temperature) {
-            this.options.setTemperature(temperature);
-            return this;
-        }
-        public Builder withTopP(Float topP) {
-            this.options.setTopP(topP);
-            return this;
-        }
-        public MistralAiChatOptions build() {
-            return this.options;
-        }
-    }
-    public String getModel() {
-        return this.model;
-    }
+	/**
+	 * ID of the model to use
+	 */
+	private @JsonProperty("model") String model;
 
-    public void setModel(String model) {
-        this.model = model;
-    }
+	/**
+	 * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will
+	 * make the output more random, while lower values like 0.2 will make it more focused
+	 * and deterministic. We generally recommend altering this or top_p but not both.
+	 */
+	private @JsonProperty("temperature") Float temperature = 0.7f;
 
-    public Integer getMaxTokens() {
-        return this.maxTokens;
-    }
+	/**
+	 * Nucleus sampling, where the model considers the results of the tokens with top_p
+	 * probability mass. So 0.1 means only the tokens comprising the top 10% probability
+	 * mass are considered. We generally recommend altering this or temperature but not
+	 * both.
+	 */
+	private @JsonProperty("top_p") Float topP = 1f;
 
-    public void setMaxTokens(Integer maxTokens) {
-        this.maxTokens = maxTokens;
-    }
+	/**
+	 * The maximum number of tokens to generate in the completion. The token count of your
+	 * prompt plus max_tokens cannot exceed the model's context length.
+	 */
+	private @JsonProperty("max_tokens") Integer maxTokens;
 
-    public Boolean getStream() {
-        return this.stream;
-    }
+	/**
+	 * Whether to stream back partial progress. If set, tokens will be sent as data-only
+	 * server-sent events as they become available, with the stream terminated by a data:
+	 * [DONE] message. Otherwise, the server will hold the request open until the timeout
+	 * or until completion, with the response containing the full result as JSON.
+	 */
+	private @JsonProperty("stream") Boolean stream = false;
 
-    public void setStream(Boolean stream) {
-        this.stream = stream;
-    }
+	/**
+	 * Whether to inject a safety prompt before all conversations.
+	 */
+	private @JsonProperty("safe_prompt") Boolean safePrompt = false;
 
-    public Boolean getSafePrompt() {
-        return this.safePrompt;
-    }
+	/**
+	 * The seed to use for random sampling. If set, different calls will generate
+	 * deterministic results.
+	 */
+	private @JsonProperty("random_seed") Integer randomSeed;
 
-    public void setSafePrompt(Boolean safePrompt) {
-        this.safePrompt = safePrompt;
-    }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-    public Integer getRandomSeed() {
-        return this.randomSeed;
-    }
+	public static class Builder {
 
-    public void setRandomSeed(Integer randomSeed) {
-        this.randomSeed = randomSeed;
-    }
+		private final MistralAiChatOptions options = new MistralAiChatOptions();
 
-    @Override
-    public Float getTemperature() {
-        return this.temperature;
-    }
+		public Builder withModel(String model) {
+			this.options.setModel(model);
+			return this;
+		}
 
-    @Override
-    public void setTemperature(Float temperature) {
-        this.temperature = temperature;
-    }
+		public Builder withMaxToken(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
 
-    @Override
-    public Float getTopP() {
-        return this.topP;
-    }
+		public Builder withStream(Boolean stream) {
+			this.options.setStream(stream);
+			return this;
+		}
 
-    @Override
-    public void setTopP(Float topP) {
-        this.topP = topP;
-    }
+		public Builder withSafePrompt(Boolean safePrompt) {
+			this.options.setSafePrompt(safePrompt);
+			return this;
+		}
 
-    @Override
-    @JsonIgnore
-    public Integer getTopK() {
-        throw new UnsupportedOperationException("Unsupported option: 'TopK'");
-    }
+		public Builder withRandomSeed(Integer randomSeed) {
+			this.options.setRandomSeed(randomSeed);
+			return this;
+		}
 
-    @Override
-    @JsonIgnore
-    public void setTopK(Integer topK) {
-        throw new UnsupportedOperationException("Unsupported option: 'TopK'");
-    }
+		public Builder withTemperature(Float temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder withTopP(Float topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public MistralAiChatOptions build() {
+			return this.options;
+		}
+
+	}
+
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public Integer getMaxTokens() {
+		return this.maxTokens;
+	}
+
+	public void setMaxTokens(Integer maxTokens) {
+		this.maxTokens = maxTokens;
+	}
+
+	public Boolean getStream() {
+		return this.stream;
+	}
+
+	public void setStream(Boolean stream) {
+		this.stream = stream;
+	}
+
+	public Boolean getSafePrompt() {
+		return this.safePrompt;
+	}
+
+	public void setSafePrompt(Boolean safePrompt) {
+		this.safePrompt = safePrompt;
+	}
+
+	public Integer getRandomSeed() {
+		return this.randomSeed;
+	}
+
+	public void setRandomSeed(Integer randomSeed) {
+		this.randomSeed = randomSeed;
+	}
+
+	@Override
+	public Float getTemperature() {
+		return this.temperature;
+	}
+
+	@Override
+	public void setTemperature(Float temperature) {
+		this.temperature = temperature;
+	}
+
+	@Override
+	public Float getTopP() {
+		return this.topP;
+	}
+
+	@Override
+	public void setTopP(Float topP) {
+		this.topP = topP;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
+	}
+
+	@Override
+	@JsonIgnore
+	public void setTopK(Integer topK) {
+		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
+	}
+
 }

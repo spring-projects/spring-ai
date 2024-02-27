@@ -14,33 +14,32 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 public class ChatCompletionRequestTest {
-    MistralAiChatClient chatClient = new MistralAiChatClient(new MistralAiApi("test"));
-    @Test
-    void chatCompletionDefaultRequestTest() {
 
-        var request = chatClient.createRequest(new Prompt("test content"), false);
+	MistralAiChatClient chatClient = new MistralAiChatClient(new MistralAiApi("test"));
 
-        assertThat(request.messages()).hasSize(1);
-        assertThat(request.topP()).isEqualTo(1);
-        assertThat(request.temperature()).isEqualTo(0.7f);
-        assertThat(request.safePrompt()).isFalse();
-        assertThat(request.maxTokens()).isNull();
-    }
+	@Test
+	void chatCompletionDefaultRequestTest() {
 
-    @Test
-    void chatCompletionRequestWithOptionsTest() {
+		var request = chatClient.createRequest(new Prompt("test content"), false);
 
-        var options = MistralAiChatOptions.builder()
-                .withTemperature(0.5f)
-                .withTopP(0.8f)
-                .withStream(true)
-                .build();
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.topP()).isEqualTo(1);
+		assertThat(request.temperature()).isEqualTo(0.7f);
+		assertThat(request.safePrompt()).isFalse();
+		assertThat(request.maxTokens()).isNull();
+	}
 
-        var request = chatClient.createRequest(new Prompt("test content", options), false);
+	@Test
+	void chatCompletionRequestWithOptionsTest() {
 
-        assertThat(request.messages().size()).isEqualTo(1);
-        assertThat(request.topP()).isEqualTo(0.8f);
-        assertThat(request.temperature()).isEqualTo(0.5f);
-        assertThat(request.stream()).isTrue();
-    }
+		var options = MistralAiChatOptions.builder().withTemperature(0.5f).withTopP(0.8f).withStream(true).build();
+
+		var request = chatClient.createRequest(new Prompt("test content", options), false);
+
+		assertThat(request.messages().size()).isEqualTo(1);
+		assertThat(request.topP()).isEqualTo(0.8f);
+		assertThat(request.temperature()).isEqualTo(0.5f);
+		assertThat(request.stream()).isTrue();
+	}
+
 }

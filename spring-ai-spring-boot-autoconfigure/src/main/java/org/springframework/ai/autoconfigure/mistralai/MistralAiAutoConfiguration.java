@@ -20,7 +20,6 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.mistral.MistralAiChatClient;
 import org.springframework.ai.mistral.MistralAiEmbeddingClient;
 import org.springframework.ai.mistral.api.MistralAiApi;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,8 +35,8 @@ import org.springframework.web.client.RestClient;
  * @author Ricken Bazolo
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
-@EnableConfigurationProperties({ MistralAiEmbeddingProperties.class,
-		MistralAiConnectionProperties.class, MistralAiChatProperties.class })
+@EnableConfigurationProperties({ MistralAiEmbeddingProperties.class, MistralAiConnectionProperties.class,
+		MistralAiChatProperties.class })
 @ConditionalOnClass(MistralAiApi.class)
 public class MistralAiAutoConfiguration {
 
@@ -72,7 +71,7 @@ public class MistralAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = MistralAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MistralAiChatClient mistralAiChatClient(MistralAiConnectionProperties commonProperties,
-									MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder) {
+			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder) {
 		var apiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
 				: commonProperties.getApiKey();
 		var baseUrl = StringUtils.hasText(chatProperties.getBaseUrl()) ? chatProperties.getBaseUrl()
@@ -85,4 +84,5 @@ public class MistralAiAutoConfiguration {
 
 		return new MistralAiChatClient(mistralAi);
 	}
+
 }

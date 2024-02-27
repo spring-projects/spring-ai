@@ -38,10 +38,10 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	@NestedConfigurationProperty
 	private MistralAiChatOptions options = MistralAiChatOptions.builder()
-			.withModel(DEFAULT_CHAT_MODEL)
-			.withTemperature(DEFAULT_TEMPERATURE.floatValue())
-			.withSafePrompt(DEFAULT_SAFE_PROMPT)
-			.build();
+		.withModel(DEFAULT_CHAT_MODEL)
+		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
+		.withSafePrompt(DEFAULT_SAFE_PROMPT)
+		.build();
 
 	public MistralAiChatOptions getOptions() {
 		return options;

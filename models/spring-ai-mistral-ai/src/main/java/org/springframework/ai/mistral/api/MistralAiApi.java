@@ -42,8 +42,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * Implementation of the MistralAI Embedding API: <a href="https://docs.mistral.ai/api/#operation/createEmbedding">...</a>
- * and Chat Completion API: <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">...</a>
+ * Implementation of the MistralAI Embedding API:
+ * <a href="https://docs.mistral.ai/api/#operation/createEmbedding">...</a> and Chat
+ * Completion API:
+ * <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">...</a>
  *
  * @author Ricken Bazolo
  */
@@ -52,6 +54,7 @@ public class MistralAiApi {
 	private static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
 
 	public static final String DEFAULT_EMBEDDING_MODEL = "mistral-embed";
+
 	public static final String DEFAULT_CHAT_MODEL = "mistral-tiny";
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
@@ -119,10 +122,7 @@ public class MistralAiApi {
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
-		this.webClient = WebClient.builder()
-				.baseUrl(baseUrl)
-				.defaultHeaders(jsonContentHeaders)
-				.build();
+		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
 	}
 
 	public static class MistralAiApiException extends RuntimeException {
@@ -130,9 +130,11 @@ public class MistralAiApi {
 		public MistralAiApiException(String message) {
 			super(message);
 		}
+
 		public MistralAiApiException(String message, Throwable t) {
 			super(message, t);
 		}
+
 	}
 
 	/**
@@ -177,11 +179,11 @@ public class MistralAiApi {
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
-	 * @param completionTokens Number of tokens in the generated completion. Only applicable for completion requests.
+	 * @param completionTokens Number of tokens in the generated completion. Only
+	 * applicable for completion requests.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record Usage(
-			@JsonProperty("prompt_tokens") Integer promptTokens,
+	public record Usage(@JsonProperty("prompt_tokens") Integer promptTokens,
 			@JsonProperty("total_tokens") Integer totalTokens,
 			@JsonProperty("completion_tokens") Integer completionTokens) {
 	}
@@ -300,49 +302,54 @@ public class MistralAiApi {
 	 * Creates a model request for chat conversation.
 	 *
 	 * @param model ID of the model to use.
-	 * @param messages The prompt(s) to generate completions for, encoded as a list of dict with role and content.
-	 * The first prompt role should be user or system.
-	 * @param temperature What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will make
-	 * the output more random, while lower values like 0.2 will make it more focused and deterministic.
-	 * We generally recommend altering this or top_p but not both.
-	 * @param topP Nucleus sampling, where the model considers the results of the tokens with top_p probability mass.
-	 * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
-	 * We generally recommend altering this or temperature but not both.
-	 * @param maxTokens The maximum number of tokens to generate in the completion. The token count of your prompt
-	 * plus max_tokens cannot exceed the model's context length.
-	 * @param stream Whether to stream back partial progress. If set, tokens will be sent as data-only server-sent
-	 * events as they become available, with the stream terminated by a data: [DONE] message.
-	 * Otherwise, the server will hold the request open until the timeout or until completion, with the response containing
-	 * the full result as JSON.
+	 * @param messages The prompt(s) to generate completions for, encoded as a list of
+	 * dict with role and content. The first prompt role should be user or system.
+	 * @param temperature What sampling temperature to use, between 0.0 and 1.0. Higher
+	 * values like 0.8 will make the output more random, while lower values like 0.2 will
+	 * make it more focused and deterministic. We generally recommend altering this or
+	 * top_p but not both.
+	 * @param topP Nucleus sampling, where the model considers the results of the tokens
+	 * with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
+	 * probability mass are considered. We generally recommend altering this or
+	 * temperature but not both.
+	 * @param maxTokens The maximum number of tokens to generate in the completion. The
+	 * token count of your prompt plus max_tokens cannot exceed the model's context
+	 * length.
+	 * @param stream Whether to stream back partial progress. If set, tokens will be sent
+	 * as data-only server-sent events as they become available, with the stream
+	 * terminated by a data: [DONE] message. Otherwise, the server will hold the request
+	 * open until the timeout or until completion, with the response containing the full
+	 * result as JSON.
 	 * @param safePrompt Whether to inject a safety prompt before all conversations.
-	 * @param randomSeed The seed to use for random sampling. If set, different calls will generate deterministic results.
+	 * @param randomSeed The seed to use for random sampling. If set, different calls will
+	 * generate deterministic results.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest(
-			@JsonProperty("model") String model,
+	public record ChatCompletionRequest(@JsonProperty("model") String model,
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP,
-			@JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("safe_prompt") Boolean safePrompt,
-			@JsonProperty("random_seed") Integer randomSeed
-	) {
+			@JsonProperty("temperature") Float temperature, @JsonProperty("top_p") Float topP,
+			@JsonProperty("max_tokens") Integer maxTokens, @JsonProperty("stream") Boolean stream,
+			@JsonProperty("safe_prompt") Boolean safePrompt, @JsonProperty("random_seed") Integer randomSeed) {
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages and model.
+		 * Shortcut constructor for a chat completion request with the given messages and
+		 * model.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
 			this(model, messages, 0.7f, 1f, null, false, false, null);
 		}
+
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
+		 * Shortcut constructor for a chat completion request with the given messages,
+		 * model and temperature.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(model, messages, temperature, 1f, null, false, false, null);
 		}
+
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages and stream.
+		 * Shortcut constructor for a chat completion request with the given messages and
+		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(null, messages, 0.7f, 1f, null, stream, false, null);
@@ -353,27 +360,29 @@ public class MistralAiApi {
 	 * Message comprising the conversation.
 	 *
 	 * @param content The contents of the message.
-	 * @param role The role of the messages author. Could be one of the {@link Role} types.
+	 * @param role The role of the messages author. Could be one of the {@link Role}
+	 * types.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionMessage(
-			@JsonProperty("content") String content,
-			@JsonProperty("role") Role role
-	) {
+	public record ChatCompletionMessage(@JsonProperty("content") String content, @JsonProperty("role") Role role) {
 
 		/**
 		 * The role of the author of this message.
 		 */
 		public enum Role {
+
 			/**
 			 * System message.
 			 */
-			@JsonProperty("system") SYSTEM,
+			@JsonProperty("system")
+			SYSTEM,
 			/**
 			 * User message.
 			 */
-			@JsonProperty("user") USER,
-			@JsonProperty("assistant") ASSISTANT
+			@JsonProperty("user")
+			USER, @JsonProperty("assistant")
+			ASSISTANT
+
 		}
 	}
 
@@ -381,39 +390,41 @@ public class MistralAiApi {
 	 * The reason the model stopped generating tokens.
 	 */
 	public enum ChatCompletionFinishReason {
+
 		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
-		@JsonProperty("stop") STOP,
+		@JsonProperty("stop")
+		STOP,
 		/**
 		 * The maximum number of tokens specified in the request was reached.
 		 */
-		@JsonProperty("length") LENGTH,
+		@JsonProperty("length")
+		LENGTH,
 		/**
 		 * The content was omitted due to a flag from our content filters.
 		 */
-		@JsonProperty("content_filter") CONTENT_FILTER
+		@JsonProperty("content_filter")
+		CONTENT_FILTER
+
 	}
 
 	/**
-	 * Represents a chat completion response returned by model, based on the provided input.
+	 * Represents a chat completion response returned by model, based on the provided
+	 * input.
 	 *
 	 * @param id A unique identifier for the chat completion.
 	 * @param object The object type, which is always chat.completion.
-	 * @param created The Unix timestamp (in seconds) of when the chat completion was created.
+	 * @param created The Unix timestamp (in seconds) of when the chat completion was
+	 * created.
 	 * @param model The model used for the chat completion.
 	 * @param choices A list of chat completion choices.
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletion(
-			@JsonProperty("id") String id,
-			@JsonProperty("object") String object,
-			@JsonProperty("created") Long created,
-			@JsonProperty("model") String model,
-			@JsonProperty("choices") List<Choice> choices,
-			@JsonProperty("usage") Usage usage
-	){
+	public record ChatCompletion(@JsonProperty("id") String id, @JsonProperty("object") String object,
+			@JsonProperty("created") Long created, @JsonProperty("model") String model,
+			@JsonProperty("choices") List<Choice> choices, @JsonProperty("usage") Usage usage) {
 		/**
 		 * Chat completion choice.
 		 *
@@ -422,29 +433,27 @@ public class MistralAiApi {
 		 * @param finishReason The reason the model stopped generating tokens.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record Choice(
-				@JsonProperty("index") Integer index,
+		public record Choice(@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason
-		) {}
+				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
+		}
 	}
 
 	/**
-	 * Represents a streamed chunk of a chat completion response returned by model, based on the provided input.
+	 * Represents a streamed chunk of a chat completion response returned by model, based
+	 * on the provided input.
 	 *
 	 * @param id A unique identifier for the chat completion. Each chunk has the same ID.
 	 * @param object The object type, which is always 'chat.completion.chunk'.
-	 * @param created The Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same
-	 * timestamp.
+	 * @param created The Unix timestamp (in seconds) of when the chat completion was
+	 * created. Each chunk has the same timestamp.
 	 * @param model The model used for the chat completion.
-	 * @param choices A list of chat completion choices. Can be more than one if n is greater than 1.
+	 * @param choices A list of chat completion choices. Can be more than one if n is
+	 * greater than 1.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionChunk(
-			@JsonProperty("id") String id,
-			@JsonProperty("object") String object,
-			@JsonProperty("created") Long created,
-			@JsonProperty("model") String model,
+	public record ChatCompletionChunk(@JsonProperty("id") String id, @JsonProperty("object") String object,
+			@JsonProperty("created") Long created, @JsonProperty("model") String model,
 			@JsonProperty("choices") List<ChunkChoice> choices) {
 
 		/**
@@ -455,8 +464,7 @@ public class MistralAiApi {
 		 * @param finishReason The reason the model stopped generating tokens.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ChunkChoice(
-				@JsonProperty("index") Integer index,
+		public record ChunkChoice(@JsonProperty("index") Integer index,
 				@JsonProperty("delta") ChatCompletionMessage delta,
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
 		}
@@ -464,9 +472,9 @@ public class MistralAiApi {
 
 	/**
 	 * Creates a model response for the given chat conversation.
-	 *
 	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code and headers.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
 	 */
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
@@ -474,16 +482,16 @@ public class MistralAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
 
 		return this.restClient.post()
-				.uri("/v1/chat/completions")
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
+			.uri("/v1/chat/completions")
+			.body(chatRequest)
+			.retrieve()
+			.toEntity(ChatCompletion.class);
 	}
 
 	/**
 	 * Creates a streaming chat response for the given chat conversation.
-	 *
-	 * @param chatRequest The chat completion request. Must have the stream property set to true.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
@@ -492,21 +500,19 @@ public class MistralAiApi {
 		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
 
 		return this.webClient.post()
-				.uri("/v1/chat/completions")
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> parseJson(content, ChatCompletionChunk.class));
+			.uri("/v1/chat/completions")
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			.takeUntil(SSE_DONE_PREDICATE)
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> parseJson(content, ChatCompletionChunk.class));
 	}
-
 
 	public static Map<String, Object> parseJson(String jsonSchema) {
 		try {
-			return new ObjectMapper().readValue(jsonSchema,
-					new TypeReference<Map<String, Object>>() {
-					});
+			return new ObjectMapper().readValue(jsonSchema, new TypeReference<Map<String, Object>>() {
+			});
 		}
 		catch (Exception e) {
 			throw new MistralAiApiException("Failed to parse schema: " + jsonSchema, e);
@@ -521,4 +527,5 @@ public class MistralAiApi {
 			throw new MistralAiApiException("Failed to parse schema: " + json, e);
 		}
 	}
+
 }
