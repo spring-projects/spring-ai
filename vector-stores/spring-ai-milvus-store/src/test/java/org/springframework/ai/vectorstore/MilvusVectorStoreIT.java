@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 
 package org.springframework.ai.vectorstore;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,20 +27,15 @@ import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,21 +45,20 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.util.FileSystemUtils;
+import org.testcontainers.milvus.MilvusContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class MilvusVectorStoreIT {
 
-	@SuppressWarnings("rawtypes")
-	private static DockerComposeContainer milvusContainer;
-
-	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
+	@Container
+	private static MilvusContainer milvusContainer = new MilvusContainer("milvusdb/milvus:v2.3.8");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -84,28 +76,6 @@ public class MilvusVectorStoreIT {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	@SuppressWarnings({ "rawtypes", "resource" })
-	@BeforeAll
-	public static void beforeAll() {
-		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
-		TEMP_FOLDER.mkdirs();
-
-		milvusContainer = new DockerComposeContainer(new File("src/test/resources/docker-compose.yml"))
-			.withEnv("DOCKER_VOLUME_DIRECTORY", TEMP_FOLDER.getAbsolutePath())
-			.withExposedService("standalone", 19530)
-			.withExposedService("standalone", 9091,
-					Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
-			.waitingFor("standalone", Wait.forLogMessage(".*Proxy successfully started.*\\s", 1)
-				.withStartupTimeout(Duration.ofSeconds(100)));
-		milvusContainer.start();
-	}
-
-	@AfterAll
-	public static void afterAll() {
-		milvusContainer.stop();
-		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
 	}
 
 	private void resetCollection(VectorStore vectorStore) {
@@ -303,8 +273,7 @@ public class MilvusVectorStoreIT {
 		public MilvusServiceClient milvusClient() {
 			return new MilvusServiceClient(ConnectParam.newBuilder()
 				.withAuthorization("minioadmin", "minioadmin")
-				.withHost(milvusContainer.getServiceHost("standalone", 19530))
-				.withPort(milvusContainer.getServicePort("standalone", 19530))
+				.withUri(milvusContainer.getEndpoint())
 				.build());
 		}
 

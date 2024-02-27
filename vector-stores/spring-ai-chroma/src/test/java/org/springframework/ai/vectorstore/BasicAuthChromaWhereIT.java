@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <code>htpasswd -Bbn admin admin > server.htpasswd</code>
  *
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class BasicAuthChromaWhereIT {
@@ -55,13 +56,12 @@ public class BasicAuthChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#basic-authentication
 	 */
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")
 		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.basic.BasicAuthServerProvider")
-		.withCopyToContainer(Transferable.of("src/test/resources/server.htpasswd"), "server.htpasswd")
-		.withExposedPorts(8000);
+		.withCopyToContainer(Transferable.of("src/test/resources/server.htpasswd"), "server.htpasswd");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -103,10 +103,8 @@ public class BasicAuthChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			String host = chromaContainer.getHost();
-			int port = chromaContainer.getMappedPort(8000);
-			String baseUrl = "http://%s:%d".formatted(host, port);
-			return new ChromaApi(baseUrl, restTemplate).withBasicAuthCredentials("admin", "admin");
+			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate).withBasicAuthCredentials("admin",
+					"admin");
 		}
 
 		@Bean
