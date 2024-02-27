@@ -33,7 +33,12 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public static final String DEFAULT_ENCODING_FORMAT = "float";
 
-	public final MetadataMode metadataMode = MetadataMode.EMBED;
+	/**
+	 * Enable MistralAI embedding client.
+	 */
+	private boolean enabled = true;
+
+	public MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
 	private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
@@ -42,7 +47,7 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 		.build();
 
 	public MistralAiEmbeddingOptions getOptions() {
-		return options;
+		return this.options;
 	}
 
 	public void setOptions(MistralAiEmbeddingOptions options) {
@@ -50,7 +55,18 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 	}
 
 	public MetadataMode getMetadataMode() {
-		return metadataMode;
+		return this.metadataMode;
 	}
 
+	public void setMetadataMode(MetadataMode metadataMode) {
+		this.metadataMode = metadataMode;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
 }

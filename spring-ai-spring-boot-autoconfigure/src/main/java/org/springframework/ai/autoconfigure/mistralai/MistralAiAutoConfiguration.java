@@ -16,16 +16,17 @@
 
 package org.springframework.ai.autoconfigure.mistralai;
 
+import org.springframework.ai.autoconfigure.openai.OpenAiChatProperties;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.mistral.MistralAiEmbeddingClient;
 import org.springframework.ai.mistral.api.MistralAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -44,6 +45,8 @@ public class MistralAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public EmbeddingClient mistralAiEmbeddingClient(MistralAiConnectionProperties commonProperties,
 			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
 
