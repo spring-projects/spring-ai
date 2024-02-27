@@ -20,7 +20,7 @@ jobs:
           cache: 'maven'
 
       - name: Cache Docker images.
-        uses: ScribeMD/docker-cache@0.3.6
+        uses: ScribeMD/docker-cache@0.3.7
         with:
           key: docker-${{ runner.os }}-${{ hashFiles('**/OllamaImage.java') }}
 
