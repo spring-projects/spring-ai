@@ -44,4 +44,9 @@ public class MistralAiTestConfiguration {
 		return new MistralAiEmbeddingClient(api);
 	}
 
+	@Bean
+	public MistralAiChatClient mistralAiChatClient(MistralAiApi mistralAiApi) {
+		return new MistralAiChatClient(mistralAiApi);
+	}
+
 }
