@@ -19,10 +19,10 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Cache Docker images.
-        uses: ScribeMD/docker-cache@0.3.7
-        with:
-          key: docker-${{ runner.os }}-${{ hashFiles('**/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/OllamaImage.java') }}
+      # - name: Cache Docker images.
+      #   uses: ScribeMD/docker-cache@0.3.7
+      #   with:
+      #     key: docker-${{ runner.os }}-${{ hashFiles('**/OllamaImage.java') }}
 
       - name: Build with Maven and deploy to Artifactory
         env:
