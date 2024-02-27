@@ -133,22 +133,20 @@ public class OllamaAutoConfigurationIT {
 
 	static class OllamaContainer extends GenericContainer<OllamaContainer> {
 
-		private static final String MODEL = "orca-mini";
-
 		private final DockerImageName dockerImageName;
 
 		OllamaContainer(DockerImageName image) {
 			super(image);
 			this.dockerImageName = image;
 			withExposedPorts(11434);
-			withImagePullPolicy(dockerImageName -> !dockerImageName.getVersionPart().endsWith(MODEL));
+			withImagePullPolicy(dockerImageName -> !dockerImageName.getUnversionedPart().startsWith(MODEL_NAME));
 		}
 
 		@Override
 		protected void containerIsStarted(InspectContainerResponse containerInfo) {
-			if (!this.dockerImageName.getVersionPart().endsWith(MODEL)) {
+			if (!this.dockerImageName.getVersionPart().endsWith(MODEL_NAME)) {
 				try {
-					execInContainer("ollama", "pull", MODEL);
+					execInContainer("ollama", "pull", MODEL_NAME);
 				}
 				catch (IOException | InterruptedException e) {
 					throw new RuntimeException("Error pulling orca-mini model", e);
