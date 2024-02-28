@@ -84,4 +84,31 @@ public class PostgresMlAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void embeddingActivation() {
+		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> jdbcTemplate)
+			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class))
+			.withPropertyValues("spring.ai.postgresml.embedding.enabled=false")
+			.run(context -> {
+				assertThat(context.getBeansOfType(PostgresMlEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(PostgresMlEmbeddingClient.class)).isEmpty();
+			});
+
+		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> jdbcTemplate)
+			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class))
+			.withPropertyValues("spring.ai.postgresml.embedding.enabled=true")
+			.run(context -> {
+				assertThat(context.getBeansOfType(PostgresMlEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(PostgresMlEmbeddingClient.class)).isNotEmpty();
+			});
+
+		new ApplicationContextRunner().withBean(JdbcTemplate.class, () -> jdbcTemplate)
+			.withConfiguration(AutoConfigurations.of(PostgresMlAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(PostgresMlEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(PostgresMlEmbeddingClient.class)).isNotEmpty();
+			});
+
+	}
+
 }

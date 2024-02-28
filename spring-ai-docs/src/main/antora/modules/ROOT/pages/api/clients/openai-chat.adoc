@@ -16,7 +16,8 @@ export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -32,7 +33,6 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -41,11 +41,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency_management[Dependency Management] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 === Chat Properties
 
@@ -65,6 +65,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 |====
 | Property | Description | Default
 
+| spring.ai.openai.chat.enabled | Enable OpenAI chat client.  | true
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | This is the OpenAI Chat model to use | `gpt-3.5-turbo` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)
@@ -115,8 +116,9 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 === Function Calling
 
-You can register custom Java functions with the OpenAiChatClient and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions. This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-link:functions/openai-chat-functions.html[Read more about Function Calling].
+You can register custom Java functions with the OpenAiChatClient and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/clients/functions/openai-chat-functions.adoc[OpenAI Function Calling].
 
 === Sample Controller (Auto-configuration)
 
@@ -172,7 +174,6 @@ Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-openai</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -181,11 +182,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-openai'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Next, create a `OpenAiChatClient` and use it for text generations:
 

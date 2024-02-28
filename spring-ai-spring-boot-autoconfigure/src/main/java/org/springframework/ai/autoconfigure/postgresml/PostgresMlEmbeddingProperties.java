@@ -35,6 +35,11 @@ public class PostgresMlEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.postgresml.embedding";
 
+	/**
+	 * Enable Postgres ML embedding client.
+	 */
+	private boolean enabled = true;
+
 	@NestedConfigurationProperty
 	private PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
 		.withTransformer(PostgresMlEmbeddingClient.DEFAULT_TRANSFORMER_MODEL)
@@ -55,6 +60,14 @@ public class PostgresMlEmbeddingProperties {
 		Assert.notNull(options.getMetadataMode(), "metadataMode must not be null.");
 
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

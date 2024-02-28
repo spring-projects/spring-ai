@@ -40,7 +40,6 @@ public class RestClientBuilderTests {
 	}
 
 	@Test
-	@Disabled("RestClient.builder(restTemplate) bug: https://github.com/spring-projects/spring-framework/issues/32180")
 	public void test2() {
 		RestTemplate restTemplate = new RestTemplate();
 		test(RestClient.builder(restTemplate), BASE_URL);

@@ -17,7 +17,6 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -65,7 +64,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	private PdfDocumentReaderConfig config;
 
-	private File resourceFileName;
+	private String resourceFileName;
 
 	/**
 	 * Constructs a ParagraphPdfDocumentReader using a resource URL.
@@ -108,7 +107,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 			this.paragraphTextExtractor = new ParagraphManager(this.document);
 
-			this.resourceFileName = pdfResource.getFile();
+			this.resourceFileName = pdfResource.getFilename();
 		}
 		catch (IllegalArgumentException iae) {
 			throw iae;

@@ -1,2 +1,2 @@
 org.springframework.aot.hint.RuntimeHintsRegistrar=\
-	org.springframework.ai.vertex.aot.OllamaRuntimeHints
+	org.springframework.ai.ollama.aot.OllamaRuntimeHints

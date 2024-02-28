@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * https://github.com/chroma-core/chroma/blob/main/examples/basic_functionality/in_not_in_filtering.ipynb
  *
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class TokenSecuredChromaWhereIT {
@@ -57,13 +58,11 @@ public class TokenSecuredChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#static-api-token-authentication
 	 */
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.22")
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.token.TokenConfigServerAuthCredentialsProvider")
-		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.token.TokenAuthServerProvider")
-
-		.withExposedPorts(8000);
+		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.token.TokenAuthServerProvider");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -135,10 +134,7 @@ public class TokenSecuredChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			String host = chromaContainer.getHost();
-			int port = chromaContainer.getMappedPort(8000);
-			String baseurl = "http://%s:%d".formatted(host, port);
-			var chromaApi = new ChromaApi(baseurl, restTemplate);
+			var chromaApi = new ChromaApi(chromaContainer.getEndpoint(), restTemplate);
 			chromaApi.withKeyToken(CHROMA_SERVER_AUTH_CREDENTIALS);
 			return chromaApi;
 		}

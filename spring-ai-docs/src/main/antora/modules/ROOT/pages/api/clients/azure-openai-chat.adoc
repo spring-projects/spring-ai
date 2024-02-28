@@ -62,7 +62,6 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -71,11 +70,11 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 === Chat Properties
 
@@ -95,6 +94,7 @@ The prefix `spring.ai.azure.openai.chat` is the property prefix that configures 
 |====
 | Property | Description | Default
 
+| spring.ai.azure.openai.chat.enabled | Enable Azure OpenAI chat client.  | true
 | spring.ai.azure.openai.chat.options.model | 	 * In use with Azure, this actually refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal. It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly. To clarify this distinction, we plan to rename this attribute to `deployment-name` in future updates.
 Deployments model name to provide as part of this completions request.
  | gpt-35-turbo
@@ -133,6 +133,13 @@ ChatResponse response = chatClient.call(
 ----
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+
+=== Function Calling
+
+You can register custom Java functions with the AzureOpenAiChatClient and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/clients/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
 
 === Sample Controller (Auto-configuration)
 
@@ -189,7 +196,6 @@ To enable it, add the `spring-ai-azure-openai` dependency to your project's Mave
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-azure-openai</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -198,9 +204,11 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-azure-openai'
 }
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 TIP: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../clients/azure-openai-chat.html[Azure OpenAI Chat] section.
 

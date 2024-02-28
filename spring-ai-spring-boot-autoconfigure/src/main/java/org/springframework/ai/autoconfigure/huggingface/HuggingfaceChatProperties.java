@@ -11,6 +11,11 @@ public class HuggingfaceChatProperties {
 
 	private String url;
 
+	/**
+	 * Enable Huggingface chat client.
+	 */
+	private boolean enabled = true;
+
 	public String getApiKey() {
 		return apiKey;
 	}
@@ -25,6 +30,14 @@ public class HuggingfaceChatProperties {
 
 	public void setUrl(String url) {
 		this.url = url;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

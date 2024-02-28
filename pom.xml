@@ -4,7 +4,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai</artifactId>
-	<version>0.8.0-SNAPSHOT</version>
+	<version>0.8.1-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
@@ -22,8 +22,10 @@
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
-		<module>models/spring-ai-vertex-ai</module>
 		<module>models/spring-ai-stabilityai</module>
+		<module>models/spring-ai-mistral-ai</module>
+		<module>models/spring-ai-vertex-ai-palm2</module>
+		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -53,8 +55,10 @@
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
 		<module>vector-stores/spring-ai-qdrant</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 	</modules>
 
 	<organization>
@@ -96,7 +100,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>17</java.version>
 		<maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- production dependencies -->
 		<spring-boot.version>3.2.3</spring-boot.version>
@@ -109,14 +113,17 @@
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
+		<com.google.cloud.version>26.33.0</com.google.cloud.version>
+
+		<!-- Protobuf -->
+		<protobuf-java.version>3.25.2</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<milvus.version>2.3.4</milvus.version>
-		<pinecone.version>0.7.4</pinecone.version>
-		<protobuf-java-util.version>3.24.4</protobuf-java-util.version>
+		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
@@ -143,7 +150,8 @@
 		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
 		<maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
 		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
-		<maven-site-plugin.version>3.12.1</maven-site-plugin.version>
+		<!-- <maven-site-plugin.version>3.12.1</maven-site-plugin.version> -->
+		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
@@ -165,6 +173,11 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>${maven-site-plugin.version}</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -197,36 +210,6 @@
 						</manifestEntries>
 					</archive>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${maven-javadoc-plugin.version}</version>
-				<configuration>
-					<excludePackageNames>
-						org.springframework.ai.sample.*
-					</excludePackageNames>
-					<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
-					<detectJavaApiLink>false</detectJavaApiLink>
-					<doclint>all,-missing</doclint>
-					<quiet>true</quiet>
-				</configuration>
-				<executions>
-					<execution>
-						<id>generate-javadocs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>generate-aggregate-javadocs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>aggregate</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -284,6 +267,44 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>javadoc</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>${maven-javadoc-plugin.version}</version>
+						<configuration>
+							<excludePackageNames>org.springframework.ai.sample.*</excludePackageNames>
+							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+							<detectJavaApiLink>false</detectJavaApiLink>
+							<doclint>all,-missing</doclint>
+							<quiet>true</quiet>
+						</configuration>
+						<executions>
+							<execution>
+								<id>generate-javadocs</id>
+								<phase>package</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>generate-aggregate-javadocs</id>
+								<phase>package</phase>
+								<goals>
+									<goal>aggregate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 		<profile>
 			<id>integration-tests</id>
 			<activation>

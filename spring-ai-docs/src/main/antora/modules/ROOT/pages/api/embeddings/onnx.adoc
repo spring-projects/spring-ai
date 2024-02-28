@@ -38,9 +38,10 @@ Add the `spring-ai-transformers` project to your maven dependencies:
 <dependency>
   <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-transformers</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 then create a new `TransformersEmbeddingClient` instance and use the `setTokenizerResource(tokenizerJsonUri)` and `setModelResource(modelOnnxUri)` methods to set the URIs  of the exported `tokenizer.json` and `model.onnx` files. (`classpath:`, `file:` or `https:` URI schemas are supported).
 
@@ -80,7 +81,7 @@ List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "Wo
 
 ----
 
-Note that when created manually, you must call the `afterPropertiesSet()` after setting the properties and before using the client.
+NOTE: that when created manually, you must call the `afterPropertiesSet()` after setting the properties and before using the client.
 
 The first `embed()` call downloads the large ONNX model and caches it on the local file system.
 Therefore, the first call might take longer than usual.
@@ -107,9 +108,10 @@ You can bootstrap and autowire the `TransformersEmbeddingClient` with the follow
 <dependency>
    <groupId>org.springframework.ai</groupId>
    <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
-   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 To configure it, use the `spring.ai.embedding.transformer.*` properties.
 
@@ -125,6 +127,8 @@ The complete list of supported properties are:
 [cols="3*"]
 |===
 | Property    | Description | Default
+
+| spring.ai.embedding.transformer.enabled | Enable the Transformer Embedding client. | true
 | spring.ai.embedding.transformer.tokenizer.uri  | URI of a pre-trained HuggingFaceTokenizer created by the ONNX engine (e.g. tokenizer.json).   | onnx/all-MiniLM-L6-v2/tokenizer.json
 | spring.ai.embedding.transformer.tokenizer.options  | HuggingFaceTokenizer options such as '`addSpecialTokens`', '`modelMaxLength`', '`truncation`', '`padding`', '`maxLength`', '`stride`', '`padToMultipleOf`'. Leave empty to fallback to the defaults. | empty
 | spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true

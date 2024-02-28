@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-pinecone</artifactId>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
-            <version>${protobuf-java-util.version}</version>
+            <version>${protobuf-java.version}</version>
         </dependency>
 
         <!-- TESTING -->
