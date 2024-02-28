@@ -21,12 +21,12 @@ public class WatsonxAIRuntimeHints implements RuntimeHintsRegistrar {
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
         var mcs = MemberCategory.values();
-        for (var tr : findJsonAnnotatedClassesInPackage(WatsonxAIApi.class)) {
+        for (var tr : findJsonAnnotatedClassesInPackage(WatsonxAIApi.class))
             hints.reflection().registerType(tr, mcs);
-        }
-        for (var tr : findJsonAnnotatedClassesInPackage(WatsonxAIOptions.class)) {
+
+        for (var tr : findJsonAnnotatedClassesInPackage(WatsonxAIOptions.class))
             hints.reflection().registerType(tr, mcs);
-        }
+
     }
 
 }
