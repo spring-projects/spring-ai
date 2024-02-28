@@ -93,6 +93,7 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/neo4j.adoc[Neo4jVectorStore] - The https://neo4j.com/[Neo4j] vector store.
 * xref:api/vectordbs/pgvector.adoc[PgVectorStore] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
 * xref:api/vectordbs/pinecone.adoc[PineconeVectorStore] - https://www.pinecone.io/[PineCone] vector store.
+* xref:api/vectordbs/qdrant.adoc[QdrantVectorStore] - https://www.qdrant.tech/[Qdrant] vector store.
 * xref:api/vectordbs/redis.adoc[RedisVectorStore] - The https://redis.io/[Redis] vector store.
 * xref:api/vectordbs/weaviate.adoc[WeaviateVectorStore] - The https://weaviate.io/[Weaviate] vector store.
 * link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.

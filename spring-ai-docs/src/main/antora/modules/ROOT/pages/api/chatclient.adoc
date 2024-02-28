@@ -175,11 +175,12 @@ The `ChatClient` and `StreamingChatClient` implementations are provided for the 
 
 image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 
-* xref:api/clients/openai-chat.adoc[OpenAI Chat Completion]
-* xref:api/clients/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion]
+* xref:api/clients/openai-chat.adoc[OpenAI Chat Completion] (streaming & function-calling support)
+* xref:api/clients/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming & function-calling support)
 * xref:api/clients/ollama-chat.adoc[Ollama Chat Completion]
 * xref:api/clients/huggingface.adoc[HuggingFace Chat Completion] (no streaming support)
-* xref:api/clients/vertexai-chat.adoc[Google Vertex Chat Completion] (no streaming support)
+* xref:api/clients/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
+* xref:api/clients/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/bedrock.adoc[Amazon Bedrock]
 ** xref:api/clients/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
 ** xref:api/clients/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]

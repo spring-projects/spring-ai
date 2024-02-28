@@ -6,3 +6,5 @@ The integration of function support in AI models, such as ChatGPT, permits the m
 Spring AI currently supports Function invocation in the AI Models
 
 * OpenAI: Refer to the xref:api/clients/functions/openai-chat-functions.adoc[Open AI function invocation docs].
+* VertexAI Gemini: Refer to the xref:api/clients/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini function invocation docs].
+* Azure OpenAI: Refer to the xref:api/clients/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI function invocation docs].

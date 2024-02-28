@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 
+import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.beans.BeansException;
 import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
 import org.springframework.cloud.function.context.config.FunctionContextUtils;
@@ -50,6 +51,12 @@ import org.springframework.util.StringUtils;
 public class FunctionCallbackContext implements ApplicationContextAware {
 
 	private GenericApplicationContext applicationContext;
+
+	private SchemaType schemaType = SchemaType.JSON_SCHEMA;
+
+	public void setSchemaType(SchemaType schemaType) {
+		this.schemaType = schemaType;
+	}
 
 	@Override
 	public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
@@ -104,7 +111,12 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 		Object bean = this.applicationContext.getBean(beanName);
 
 		if (bean instanceof Function<?, ?> function) {
-			return new FunctionCallbackWrapper(functionName, functionDescription, functionInputClass, function);
+			return FunctionCallbackWrapper.builder(function)
+				.withName(functionName)
+				.withSchemaType(this.schemaType)
+				.withDescription(functionDescription)
+				.withInputType(functionInputClass)
+				.build();
 		}
 		else {
 			throw new IllegalArgumentException("Bean must be of type Function");

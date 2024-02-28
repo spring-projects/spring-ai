@@ -73,10 +73,11 @@ public class FunctionCallbackWrapperIT {
 		@Bean
 		public FunctionCallback weatherFunctionInfo() {
 
-			return new FunctionCallbackWrapper<>("WeatherInfo", // function name
-					"Get the weather in location", // function description
-					(response) -> "" + response.temp() + response.unit(), // responseConverter
-					new MockWeatherService()); // function code
+			return FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("WeatherInfo")
+				.withDescription("Get the weather in location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build();
 		}
 
 	}

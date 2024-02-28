@@ -16,11 +16,14 @@
 
 package org.springframework.ai.chat.messages;
 
+import java.util.List;
 import java.util.Map;
 
 public interface Message {
 
 	String getContent();
+
+	List<MediaData> getMediaData();
 
 	Map<String, Object> getProperties();
 

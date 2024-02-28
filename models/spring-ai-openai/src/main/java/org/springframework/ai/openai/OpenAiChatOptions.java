@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
@@ -40,7 +41,7 @@ import org.springframework.util.Assert;
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
-public class OpenAiChatOptions implements ChatOptions {
+public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	// @formatter:off
 	/**
@@ -373,18 +374,22 @@ public class OpenAiChatOptions implements ChatOptions {
 		this.user = user;
 	}
 
+	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
 	}
 
+	@Override
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 		this.functionCallbacks = functionCallbacks;
 	}
 
+	@Override
 	public Set<String> getFunctions() {
 		return functions;
 	}
 
+	@Override
 	public void setFunctions(Set<String> functionNames) {
 		this.functions = functionNames;
 	}

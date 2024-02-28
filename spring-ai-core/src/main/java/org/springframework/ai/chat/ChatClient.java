@@ -25,7 +25,8 @@ public interface ChatClient extends ModelClient<Prompt, ChatResponse> {
 
 	default String call(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
-		return call(prompt).getResult().getOutput().getContent();
+		Generation generation = call(prompt).getResult();
+		return (generation != null) ? generation.getOutput().getContent() : "";
 	}
 
 	@Override

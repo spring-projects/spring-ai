@@ -30,6 +30,4 @@ public class WatsonxAIRuntimeHintsTest {
             assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
         }
     }
-
-
 }

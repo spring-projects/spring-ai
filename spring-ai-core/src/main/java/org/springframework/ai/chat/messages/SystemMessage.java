@@ -37,7 +37,7 @@ public class SystemMessage extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "SystemMessage{" + "content='" + content + '\'' + ", properties=" + properties + ", messageType="
+		return "SystemMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
 				+ messageType + '}';
 	}
 
