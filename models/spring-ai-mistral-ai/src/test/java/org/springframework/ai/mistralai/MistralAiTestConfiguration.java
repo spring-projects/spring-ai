@@ -17,10 +17,6 @@
 package org.springframework.ai.mistralai;
 
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.mistralai.MistralAiChatClient;
-import org.springframework.ai.mistralai.MistralAiChatOptions;
-import org.springframework.ai.mistralai.MistralAiEmbeddingClient;
-import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
