@@ -83,10 +83,10 @@ public class OpenAiAutoConfiguration {
 			RestClient.Builder restClientBuilder) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+		Assert.hasText(resolvedBaseUrl, "OpenAI base URL must be set");
 
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(resolvedApiKey, "OpenAI API key must be set");
 
 		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder);
 	}
