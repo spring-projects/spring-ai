@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistralai.chat.api;
+package org.springframework.ai.mistralai.api;
 
 import java.util.List;
 

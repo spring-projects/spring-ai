@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistralai.chat;
+package org.springframework.ai.mistralai;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -47,6 +47,7 @@ public class MistralChatCompletionRequestTest {
 		assertThat(request.temperature()).isEqualTo(0.7f);
 		assertThat(request.safePrompt()).isFalse();
 		assertThat(request.maxTokens()).isNull();
+		assertThat(request.stream()).isFalse();
 	}
 
 	@Test
@@ -54,7 +55,7 @@ public class MistralChatCompletionRequestTest {
 
 		var options = MistralAiChatOptions.builder().withTemperature(0.5f).withTopP(0.8f).build();
 
-		var request = chatClient.createRequest(new Prompt("test content", options), false);
+		var request = chatClient.createRequest(new Prompt("test content", options), true);
 
 		assertThat(request.messages().size()).isEqualTo(1);
 		assertThat(request.topP()).isEqualTo(0.8f);
