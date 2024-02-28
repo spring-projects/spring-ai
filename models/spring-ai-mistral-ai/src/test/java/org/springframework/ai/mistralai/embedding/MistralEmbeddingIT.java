@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.mistral.embedding;
+package org.springframework.ai.mistralai.embedding;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.mistral.MistralAiEmbeddingClient;
-import org.springframework.ai.mistral.MistralAiEmbeddingOptions;
+import org.springframework.ai.mistralai.MistralAiEmbeddingClient;
+import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 

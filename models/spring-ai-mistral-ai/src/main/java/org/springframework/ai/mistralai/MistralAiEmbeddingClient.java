@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistral;
+package org.springframework.ai.mistralai;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.*;
-import org.springframework.ai.mistral.api.MistralAiApi;
-import org.springframework.ai.mistral.api.MistralAiApi.MistralAiApiException;
+import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.MistralAiApiException;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.aot;
+package org.springframework.ai.mistralai.aot;
 
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -25,19 +25,18 @@ import org.springframework.lang.Nullable;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
 /**
- * The OpenAiRuntimeHints class is responsible for registering runtime hints for OpenAI
- * API classes.
+ * The MistralAiRuntimeHints class is responsible for registering runtime hints for
+ * Mistral AI API classes.
  *
- * @author Josh Long
  * @author Christian Tzolov
- * @author Mark Pollack
+ * @since 0.8.1
  */
-public class OpenAiRuntimeHints implements RuntimeHintsRegistrar {
+public class MistralAiRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(OpenAiApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(MistralAiApi.class))
 			hints.reflection().registerType(tr, mcs);
 	}
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.mistral;
+package org.springframework.ai.mistralai;
 
 import java.time.Duration;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.mistral.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;

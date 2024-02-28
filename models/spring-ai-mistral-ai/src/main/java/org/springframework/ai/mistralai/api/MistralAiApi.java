@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistral.api;
+package org.springframework.ai.mistralai.api;
 
 import java.io.IOException;
 import java.util.List;

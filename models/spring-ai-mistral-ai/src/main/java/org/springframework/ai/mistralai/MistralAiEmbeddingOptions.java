@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistral;
+package org.springframework.ai.mistralai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;

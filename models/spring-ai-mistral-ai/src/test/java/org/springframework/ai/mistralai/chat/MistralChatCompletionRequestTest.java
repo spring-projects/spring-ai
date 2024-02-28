@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistral.chat;
+package org.springframework.ai.mistralai.chat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.mistral.MistralAiChatClient;
-import org.springframework.ai.mistral.MistralAiChatOptions;
-import org.springframework.ai.mistral.api.MistralAiApi;
+import org.springframework.ai.mistralai.MistralAiChatClient;
+import org.springframework.ai.mistralai.MistralAiChatOptions;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;

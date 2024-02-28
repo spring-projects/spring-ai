@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.mistralai;
 
-import org.springframework.ai.mistral.MistralAiChatOptions;
+import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

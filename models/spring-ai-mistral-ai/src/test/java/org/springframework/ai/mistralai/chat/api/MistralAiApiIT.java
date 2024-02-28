@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistral.chat.api;
+package org.springframework.ai.mistralai.chat.api;
 
 import java.util.List;
 
@@ -22,14 +22,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.mistral.api.MistralAiApi;
-import org.springframework.ai.mistral.api.MistralAiApi.ChatCompletionMessage.Role;
-import org.springframework.ai.mistral.api.MistralAiApi.ChatCompletionRequest;
-import org.springframework.ai.mistral.api.MistralAiApi.Embedding;
-import org.springframework.ai.mistral.api.MistralAiApi.EmbeddingList;
-import org.springframework.ai.mistral.api.MistralAiApi.ChatCompletion;
-import org.springframework.ai.mistral.api.MistralAiApi.ChatCompletionChunk;
-import org.springframework.ai.mistral.api.MistralAiApi.ChatCompletionMessage;
+import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
+import org.springframework.ai.mistralai.api.MistralAiApi.Embedding;
+import org.springframework.ai.mistralai.api.MistralAiApi.EmbeddingList;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
