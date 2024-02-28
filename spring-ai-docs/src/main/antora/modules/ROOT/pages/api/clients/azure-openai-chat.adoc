@@ -134,6 +134,13 @@ ChatResponse response = chatClient.call(
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
+
+=== Function Calling
+
+You can register custom Java functions with the AzureOpenAiChatClient and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/clients/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
+
 === Sample Controller (Auto-configuration)
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-azure-openai-spring-boot-starter` to your pom (or gradle) dependencies.

@@ -16,38 +16,58 @@
 
 package org.springframework.ai.chat.messages;
 
-import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
+import org.springframework.util.StreamUtils;
 
 public abstract class AbstractMessage implements Message {
 
-	protected String content;
+	protected final MessageType messageType;
+
+	protected final String textContent;
+
+	protected final List<MediaData> mediaData;
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
 	 */
-	protected Map<String, Object> properties = new HashMap<>();
-
-	protected MessageType messageType;
-
-	protected AbstractMessage() {
-
-	}
+	protected final Map<String, Object> properties;
 
 	protected AbstractMessage(MessageType messageType, String content) {
-		this(messageType, content, Collections.emptyMap());
+		this(messageType, content, Map.of());
 	}
 
 	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> messageProperties) {
+		Assert.notNull(messageType, "Message type must not be null");
+		// Assert.notNull(content, "Content must not be null");
 		this.messageType = messageType;
-		this.content = content;
+		this.textContent = content;
+		this.mediaData = new ArrayList<>();
+		this.properties = messageProperties;
+	}
+
+	protected AbstractMessage(MessageType messageType, String textContent, List<MediaData> mediaData) {
+		this(messageType, textContent, mediaData, Map.of());
+	}
+
+	protected AbstractMessage(MessageType messageType, String textContent, List<MediaData> mediaData,
+			Map<String, Object> messageProperties) {
+
+		Assert.notNull(messageType, "Message type must not be null");
+		Assert.notNull(textContent, "Content must not be null");
+		Assert.notNull(mediaData, "media data must not be null");
+
+		this.messageType = messageType;
+		this.textContent = textContent;
+		this.mediaData = new ArrayList<>(mediaData);
 		this.properties = messageProperties;
 	}
 
@@ -55,11 +75,17 @@ public abstract class AbstractMessage implements Message {
 		this(messageType, resource, Collections.emptyMap());
 	}
 
+	@SuppressWarnings("null")
 	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> messageProperties) {
+		Assert.notNull(messageType, "Message type must not be null");
+		Assert.notNull(resource, "Resource must not be null");
+
 		this.messageType = messageType;
 		this.properties = messageProperties;
+		this.mediaData = new ArrayList<>();
+
 		try (InputStream inputStream = resource.getInputStream()) {
-			this.content = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
@@ -68,7 +94,12 @@ public abstract class AbstractMessage implements Message {
 
 	@Override
 	public String getContent() {
-		return this.content;
+		return this.textContent;
+	}
+
+	@Override
+	public List<MediaData> getMediaData() {
+		return this.mediaData;
 	}
 
 	@Override
@@ -85,7 +116,7 @@ public abstract class AbstractMessage implements Message {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((content == null) ? 0 : content.hashCode());
+		result = prime * result + ((mediaData == null) ? 0 : mediaData.hashCode());
 		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
 		result = prime * result + ((messageType == null) ? 0 : messageType.hashCode());
 		return result;
@@ -100,11 +131,11 @@ public abstract class AbstractMessage implements Message {
 		if (getClass() != obj.getClass())
 			return false;
 		AbstractMessage other = (AbstractMessage) obj;
-		if (content == null) {
-			if (other.content != null)
+		if (mediaData == null) {
+			if (other.mediaData != null)
 				return false;
 		}
-		else if (!content.equals(other.content))
+		else if (!mediaData.equals(other.mediaData))
 			return false;
 		if (properties == null) {
 			if (other.properties != null)
