@@ -7,7 +7,7 @@
         <version>0.8.1-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-vertex-ai-plam2-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-vertex-ai-palm2-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - VertexAI PaLM2</name>
     <description>Spring AI VertexAI PaLM2 Auto Configuration</description>

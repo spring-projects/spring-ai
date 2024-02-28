@@ -261,7 +261,7 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-vertex-ai-plam2-spring-boot-starter</artifactId>
+				<artifactId>spring-ai-vertex-ai-palm2-spring-boot-starter</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
