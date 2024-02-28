@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-
 /**
  * {@link ChatClient} implementation for {@literal watsonx.ai}.
  *
@@ -77,9 +76,9 @@ public class WatsonxChatClient implements ChatClient, StreamingChatClient {
 	public static WatsonxAIRequest request(Prompt prompt) {
 
 		final String convertedPrompt = MessageToPromptConverter.create()
-				.withAssistantPrompt("")
-				.withHumanPrompt("")
-				.toPrompt(prompt.getInstructions());
+			.withAssistantPrompt("")
+			.withHumanPrompt("")
+			.toPrompt(prompt.getInstructions());
 		ModelOptions givenOptions = prompt.getOptions();
 
 		WatsonxAIOptions runtimeOptions = Objects.nonNull(givenOptions)
@@ -87,7 +86,7 @@ public class WatsonxChatClient implements ChatClient, StreamingChatClient {
 				: WatsonxAIOptions.create();
 
 		Optional.ofNullable(Objects.requireNonNull(runtimeOptions).getModel())
-				.orElseThrow(() -> new IllegalArgumentException("model is not set!"));
+			.orElseThrow(() -> new IllegalArgumentException("model is not set!"));
 
 		Map<String, Object> parameters = runtimeOptions.toMap();
 

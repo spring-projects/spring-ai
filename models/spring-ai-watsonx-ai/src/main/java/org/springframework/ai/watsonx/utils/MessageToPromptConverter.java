@@ -65,4 +65,5 @@ public class MessageToPromptConverter {
         throw new IllegalArgumentException("Unknown message type: " + message.getMessageType());
     }
     // @formatter:on
+
 }
