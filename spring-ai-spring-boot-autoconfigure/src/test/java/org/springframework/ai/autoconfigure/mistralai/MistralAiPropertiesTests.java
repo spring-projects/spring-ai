@@ -44,7 +44,7 @@ public class MistralAiPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(embeddingProperties.getApiKey()).isNull();
-				assertThat(embeddingProperties.getBaseUrl()).isNull();
+				assertThat(embeddingProperties.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
