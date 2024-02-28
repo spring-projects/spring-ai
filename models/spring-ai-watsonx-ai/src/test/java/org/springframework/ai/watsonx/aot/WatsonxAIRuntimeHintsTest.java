@@ -14,20 +14,21 @@ import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.refl
 
 public class WatsonxAIRuntimeHintsTest {
 
-    @Test
-    void registerHints() {
-        RuntimeHints runtimeHints = new RuntimeHints();
-        WatsonxAIRuntimeHints watsonxAIRuntimeHintsTest = new WatsonxAIRuntimeHints();
-        watsonxAIRuntimeHintsTest.registerHints(runtimeHints, null);
+	@Test
+	void registerHints() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		WatsonxAIRuntimeHints watsonxAIRuntimeHintsTest = new WatsonxAIRuntimeHints();
+		watsonxAIRuntimeHintsTest.registerHints(runtimeHints, null);
 
-        Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(WatsonxAIApi.class);
-        for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-            assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
-        }
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(WatsonxAIApi.class);
+		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
+			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+		}
 
-        jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(WatsonxAIOptions.class);
-        for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-            assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
-        }
-    }
+		jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(WatsonxAIOptions.class);
+		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
+			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+		}
+	}
+
 }
