@@ -56,7 +56,7 @@ class PaymentStatusBeanIT {
 	void functionCallTest() {
 
 		contextRunner
-			.withPropertyValues("spring.ai.mistral.chat.options.model=" + MistralAiApi.ChatModel.LARGE.getValue())
+			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.LARGE.getValue())
 			.run(context -> {
 
 				MistralAiChatClient chatClient = context.getBean(MistralAiChatClient.class);

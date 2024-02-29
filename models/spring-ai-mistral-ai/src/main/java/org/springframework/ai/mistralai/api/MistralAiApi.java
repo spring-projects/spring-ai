@@ -586,7 +586,11 @@ public class MistralAiApi {
 		 /**
 		  * The content was omitted due to a flag from our content filters.
 		  */
-		 @JsonProperty("model_length") MODEL_LENGTH
+		 @JsonProperty("model_length") MODEL_LENGTH,
+		 /**
+		  * The model called a tool.
+		  */
+		 @JsonProperty("tool_call") TOOL_CALL
 		 // @formatter:on
 
 	}

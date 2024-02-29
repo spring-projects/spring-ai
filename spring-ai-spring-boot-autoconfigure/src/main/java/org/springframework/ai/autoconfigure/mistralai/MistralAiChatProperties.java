@@ -29,7 +29,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(MistralAiChatProperties.CONFIG_PREFIX)
 public class MistralAiChatProperties extends MistralAiParentProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.mistral.chat";
+	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
 	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.TINY.getValue();
 

@@ -470,7 +470,11 @@ public class OpenAiApi {
 		/**
 		 * (deprecated) The model called a function.
 		 */
-		@JsonProperty("function_call") FUNCTION_CALL
+		@JsonProperty("function_call") FUNCTION_CALL,
+		/**
+		 * Only for compatibility with Mistral AI API.
+		 */
+		@JsonProperty("tool_call") TOOL_CAL
 	}
 
 	/**
