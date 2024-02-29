@@ -87,21 +87,16 @@ public class MongoDBVectorStore implements VectorStore {
 
     @Override
     public List<Document> similaritySearch(String query) {
-        return this.similaritySearch(query, 4);
+        return similaritySearch(SearchRequest.query(query));
     }
 
     @Override
-    public List<Document> similaritySearch(String query, int k) {
-        return similaritySearch(query, k, 0.0);
-    }
-
-    @Override
-    public List<Document> similaritySearch(String query, int k, double threshold) {
-        List<Double> queryEmbedding = this.embeddingClient.embed(query);
+    public List<Document> similaritySearch(SearchRequest request) {
+        List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 
 
         Aggregation aggregation = Aggregation.newAggregation(
-                new VectorSearchAggregation(queryEmbedding, "embedding", 10, "spring_ai_vector_search", k));
+                new VectorSearchAggregation(queryEmbedding, "embedding", 10, "spring_ai_vector_search", request.getTopK()));
         return this.mongoTemplate.aggregate(aggregation, VECTOR_COLLECTION_NAME, BasicDBObject.class)
                 .getMappedResults().stream()
                 .map(this::mapBasicDbObject)
