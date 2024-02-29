@@ -12,6 +12,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
+/**
+ * @author Pablo Sanchidrian Herrera
+ * @author John Jairo Moreno Rojas
+ */
 public class WatsonxAIRuntimeHintsTest {
 
 	@Test

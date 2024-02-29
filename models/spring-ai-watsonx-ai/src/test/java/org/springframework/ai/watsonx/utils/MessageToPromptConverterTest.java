@@ -8,6 +8,11 @@ import org.springframework.ai.chat.messages.*;
 
 import java.util.List;
 
+
+/**
+ * @author Pablo Sanchidrian Herrera
+ * @author John Jairo Moreno Rojas
+ */
 public class MessageToPromptConverterTest {
 
 	private MessageToPromptConverter converter;
