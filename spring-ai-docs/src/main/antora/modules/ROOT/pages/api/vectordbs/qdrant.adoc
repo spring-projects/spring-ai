@@ -9,49 +9,14 @@ link:https://www.qdrant.tech/[Qdrant] is an open-source, high-performance vector
 * Qdrant Instance: Set up a Qdrant instance by following the link:https://qdrant.tech/documentation/guides/installation/[installation instructions] in the Qdrant documentation.
 * If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `QdrantVectorStore`.
 
-== Configuration
+To set up `QdrantVectorStore`, you'll need the following information from your Qdrant instance: `Host`, `GRPC Port`, `Collection Name`, and `API Key` (if required).
 
-To set up `QdrantVectorStore`, you'll need the following information from your Qdrant instance:
-
-* Qdrant Host
-* Qdrant GRPC Port
-* Qdrant Collection Name
-* Optional Qdrant API Key (not required for local development)
-
-[NOTE]
-====
-A Qdrant collection has to be link:https://qdrant.tech/documentation/concepts/collections/#create-a-collection[created] in advance with the appropriate dimensions and configurations.
-
-For example if using the OpenAI `text-embedding-ada-002` embedding model, create a collection with a vector size of `1536`.
-====
+NOTE: It is recommended that the Qdrant collection is link:https://qdrant.tech/documentation/concepts/collections/#create-a-collection[created] in advance with the appropriate dimensions and configurations.
+If the collection is not created, the `QdrantVectorStore` will attempt to create one using the `Cosine` similarity and the dimension of the configured `EmbeddingClient`.
 
 == Dependencies
 
-* The Vector Store requires an `EmbeddingClient` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations]. For example ou can use the OpenAI boot starter:
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
-}
-----
-
-TIP: Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
-`export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key`
-
-
-* Add the Qdrant Boot Starter dependency to your project:
+Then add the Qdrant boot starter dependency to your project:
 
 [source,xml]
 ----
@@ -70,21 +35,55 @@ dependencies {
 }
 ----
 
+The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+
+For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingClient] add the following dependency to your project:
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+}
+----
+
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Please have a look at the list of xref:#qdrant-vectorstore-properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+To connect to Qdrant and use the `QdrantVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.properties_,
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+[source,properties]
+----
+spring.ai.vectorstore.qdrant.host=<host of your qdrant instance>
+spring.ai.vectorstore.qdrant.port=<the GRPC port of your qdrant instance>
+spring.ai.vectorstore.qdrant.api-key=<your api key>
+spring.ai.vectorstore.qdrant.collection-name=<The name of the collection to use in Qdrant>
 
+# API key if needed, e.g. OpenAI
+spring.ai.openai.api.key=<api-key>
+----
+
+TIP: Check the list of xref:#qdrant-vectorstore-properties[configuration parameters] to learn about the default values and configuration options.
 
 Now you can Auto-wire the Qdrant Vector Store in your application and use it
 
 [source,java]
 ----
-@Autowired
-VectorStore vectorStore;
+@Autowired VectorStore vectorStore;
 
-...
+// ...
+
 List <Document> documents = List.of(
     new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
     new Document("The World is Big and Salvation Lurks Around the Corner"),
@@ -97,24 +96,7 @@ vectorStore.add(List.of(document));
 List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
-== Configuration
-
-To connect to Qdrant and use the `QdrantVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
-
-[source,properties]
-----
-spring.ai.vectorstore.qdrant.host=<host of your qdrant instance>
-spring.ai.vectorstore.qdrant.port=<port of your qdrant instance>
-spring.ai.vectorstore.qdrant.api-key=<your api key>
-spring.ai.vectorstore.qdrant.collection-name=<The name of the collection to use in Qdrant>
-
-# API key if needed, e.g. OpenAI
-spring.ai.openai.api.key=<api-key>
-----
-
-
-== Manual Configuration
+=== Manual Configuration
 
 Instead of using the Spring Boot auto-configuration, you can manually configure the `QdrantVectorStore`. For this you need to add the `spring-ai-qdrant` dependency to your project:
 
@@ -162,7 +144,7 @@ public VectorStore vectorStore(QdrantVectorStoreConfig config, EmbeddingClient e
 }
 ----
 
-=== Metadata filtering
+== Metadata filtering
 
 You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Qdrant vector store.
 
@@ -195,18 +177,18 @@ vectorStore.similaritySearch(SearchRequest.defaults()
 
 NOTE: These filter expressions are converted into the equivalent Qdrant link:https://qdrant.tech/documentation/concepts/filtering/[filters].
 
-
 [[qdrant-vectorstore-properties]]
-== Qdrant VectorStore properties
+== Configuration properties
 
 You can use the following properties in your Spring Boot configuration to customize the Qdrant vector store.
 
+[cols="3,5,1"]
 |===
 |Property| Description | Default value
 
 |`spring.ai.vectorstore.qdrant.host`| The host of the Qdrant server. | localhost
-|`spring.ai.vectorstore.qdrant.port`| The port of the Qdrant server. | 6334
+|`spring.ai.vectorstore.qdrant.port`| The gRPC port of the Qdrant server. | 6334
 |`spring.ai.vectorstore.qdrant.api-key`| The API key to use for authentication with the Qdrant server. | -
 |`spring.ai.vectorstore.qdrant.collection-name`| The name of the collection to use in Qdrant. | -
-|`spring.ai.vectorstore.qdrant.use-tls`| Whether to use TLS(HTTPS). Defaults to false. | false
+|`spring.ai.vectorstore.qdrant.use-tls`| Whether to use TLS(HTTPS). | false
 |===

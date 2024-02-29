@@ -43,7 +43,7 @@ public class QdrantVectorStoreAutoConfiguration {
 			.withCollectionName(properties.getCollectionName())
 			.withHost(properties.getHost())
 			.withPort(properties.getPort())
-			.withTls(properties.useTls())
+			.withTls(properties.isUseTls())
 			.withApiKey(properties.getApiKey())
 			.build();
 

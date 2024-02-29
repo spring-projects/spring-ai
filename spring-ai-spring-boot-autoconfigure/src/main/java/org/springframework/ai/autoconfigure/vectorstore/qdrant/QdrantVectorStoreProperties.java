@@ -76,7 +76,7 @@ public class QdrantVectorStoreProperties {
 		this.port = port;
 	}
 
-	public boolean useTls() {
+	public boolean isUseTls() {
 		return this.useTls;
 	}
 

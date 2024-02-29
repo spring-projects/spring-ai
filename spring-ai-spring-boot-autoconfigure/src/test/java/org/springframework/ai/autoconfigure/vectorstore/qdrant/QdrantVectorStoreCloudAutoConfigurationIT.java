@@ -28,9 +28,7 @@ import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.qdrant.QdrantContainer;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -46,30 +44,62 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * Test using a free tier Qdrant Cloud instance: https://cloud.qdrant.io
+ *
  * @author Christian Tzolov
  * @since 0.8.1
  */
-@Testcontainers
-public class QdrantVectorStoreAutoConfigurationIT {
+// NOTE: The free Qdrant Cluster and the QDRANT_API_KEY expire after 4 weeks of
+// inactivity.
+@EnabledIfEnvironmentVariable(named = "QDRANT_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "QDRANT_HOST", matches = ".+")
+public class QdrantVectorStoreCloudAutoConfigurationIT {
 
 	private static final String COLLECTION_NAME = "test_collection";
 
-	private static final int QDRANT_GRPC_PORT = 6334;
+	// Because we pre-create the collection.
+	private static final int EMBEDDING_DIMENSION = 384;
 
-	@Container
-	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.7.4");
+	private static final String CLOUD_API_KEY = System.getenv("QDRANT_API_KEY");
+
+	private static final String CLOUD_HOST = System.getenv("QDRANT_HOST");
+
+	// NOTE: The GRPC port (usually 6334) is different from the HTTP port (usually 6333)!
+	private static final int CLOUD_GRPC_PORT = 6334;
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
 			new Document(getText("classpath:/test/data/time.shelter.txt")),
 			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
+	@BeforeAll
+	static void setup() throws InterruptedException, ExecutionException {
+
+		// Create a new test collection
+		try (QdrantClient client = new QdrantClient(
+				QdrantGrpcClient.newBuilder(CLOUD_HOST, CLOUD_GRPC_PORT, true).withApiKey(CLOUD_API_KEY).build())) {
+
+			if (client.listCollectionsAsync().get().stream().anyMatch(c -> c.equals(COLLECTION_NAME))) {
+				client.deleteCollectionAsync(COLLECTION_NAME).get();
+			}
+
+			var vectorParams = VectorParams.newBuilder()
+				.setDistance(Distance.Cosine)
+				.setSize(EMBEDDING_DIMENSION)
+				.build();
+
+			client.createCollectionAsync(COLLECTION_NAME, vectorParams).get();
+		}
+	}
+
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(QdrantVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.qdrant.port=" + qdrantContainer.getMappedPort(QDRANT_GRPC_PORT),
-				"spring.ai.vectorstore.qdrant.host=" + qdrantContainer.getHost(),
-				"spring.ai.vectorstore.qdrant.collectionName=" + COLLECTION_NAME);
+		.withPropertyValues("spring.ai.vectorstore.qdrant.port=" + CLOUD_GRPC_PORT,
+				"spring.ai.vectorstore.qdrant.host=" + CLOUD_HOST,
+				"spring.ai.vectorstore.qdrant.api-key=" + CLOUD_API_KEY,
+				"spring.ai.vectorstore.qdrant.collection-name=" + COLLECTION_NAME,
+				"spring.ai.vectorstore.qdrant.use-tls=true");
 
 	@Test
 	public void addAndSearch() {
