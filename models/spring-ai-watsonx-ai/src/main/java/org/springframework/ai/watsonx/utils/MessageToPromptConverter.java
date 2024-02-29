@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 // @formatter:off
 public class MessageToPromptConverter {
 
-    private static final String HUMAN_PROMPT = "Human:";
-    private static final String ASSISTANT_PROMPT = "Assistant:";
+    private static final String HUMAN_PROMPT = "Human: ";
+    private static final String ASSISTANT_PROMPT = "Assistant: ";
     public static final String TOOL_EXECUTION_NOT_SUPPORTED_FOR_WAI_MODELS = "Tool execution results are not supported for watsonx.ai models";
     private String humanPrompt = HUMAN_PROMPT;
     private String assistantPrompt = ASSISTANT_PROMPT;
@@ -45,9 +45,7 @@ public class MessageToPromptConverter {
                 .map(this::messageToString)
                 .collect(Collectors.joining("\n"));
 
-        final String prompt = String.format("%s%n%n%s%n%s", systemMessages, userMessages, assistantPrompt).trim();
-
-        return prompt;
+        return String.format("%s%n%n%s%n%s", systemMessages, userMessages, assistantPrompt).trim();
     }
 
     protected String messageToString(Message message) {
@@ -55,9 +53,9 @@ public class MessageToPromptConverter {
             case SYSTEM:
                 return message.getContent();
             case USER:
-                return humanPrompt + " " + message.getContent();
+                return humanPrompt + message.getContent();
             case ASSISTANT:
-                return assistantPrompt + " " + message.getContent();
+                return assistantPrompt + message.getContent();
             case FUNCTION:
                 throw new IllegalArgumentException(TOOL_EXECUTION_NOT_SUPPORTED_FOR_WAI_MODELS);
         }
