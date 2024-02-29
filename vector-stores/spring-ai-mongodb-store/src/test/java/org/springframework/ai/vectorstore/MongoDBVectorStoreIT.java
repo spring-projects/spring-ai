@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -77,7 +79,7 @@ class MongoDBVectorStoreIT {
             vectorStore.add(documents);
             Thread.sleep(2000);            //Await a second for the document to be indexed
 
-            List<Document> results = vectorStore.similaritySearch("Great", 1);
+            List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
             assertThat(results).hasSize(1);
             Document resultDoc = results.get(0);
@@ -89,7 +91,7 @@ class MongoDBVectorStoreIT {
             // Remove all documents from the store
             vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
 
-            List<Document> results2 = vectorStore.similaritySearch("Great", 1);
+            List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
             assertThat(results2).isEmpty();
 
         });
@@ -108,7 +110,7 @@ class MongoDBVectorStoreIT {
             Thread.sleep(2000);            //Await a second for the document to be indexed
 
 
-            List<Document> results = vectorStore.similaritySearch("Spring", 5);
+            List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 
             assertThat(results).hasSize(1);
             Document resultDoc = results.get(0);
@@ -122,7 +124,7 @@ class MongoDBVectorStoreIT {
 
             vectorStore.add(List.of(sameIdDocument));
 
-            results = vectorStore.similaritySearch("FooBar", 5);
+            results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
 
             assertThat(results).hasSize(1);
             resultDoc = results.get(0);
@@ -147,6 +149,10 @@ class MongoDBVectorStoreIT {
             return new MongoTemplate(mongoClient, "test");
         }
 
+        @Bean
+        public EmbeddingClient embeddingClient() {
+            return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+        }
     }
 
 }
