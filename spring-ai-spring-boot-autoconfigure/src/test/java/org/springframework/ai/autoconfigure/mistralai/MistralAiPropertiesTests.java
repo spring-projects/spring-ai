@@ -24,7 +24,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link MistralAiCommonProperties}, {@link MistralAiEmbeddingProperties}.
+ * Unit Tests for {@link MistralAiCommonProperties}, {@link MistralAiEmbeddingProperties}, {@link MistralAiChatProperties}
+ * @author Ricken Bazolo
  */
 public class MistralAiPropertiesTests {
 
@@ -91,6 +92,72 @@ public class MistralAiPropertiesTests {
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
+			});
+	}
+
+	@Test
+	public void chatProperties() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL", "spring.ai.mistralai.api-key=abc123",
+					"spring.ai.mistralai.chat.options.model=MODEL_XYZ")
+			.withConfiguration(
+					AutoConfigurations.of(RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(MistralAiChatProperties.class);
+				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(chatProperties.getApiKey()).isNull();
+				assertThat(chatProperties.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
+
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+			});
+	}
+
+	@Test
+	public void chatOverrideConnectionProperties() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL", "spring.ai.mistralai.api-key=abc123",
+					"spring.ai.mistralai.chat.base-url=TEST_BASE_URL2", "spring.ai.mistralai.chat.api-key=456",
+					"spring.ai.mistralai.chat.options.model=MODEL_XYZ")
+			.withConfiguration(
+					AutoConfigurations.of(RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(MistralAiChatProperties.class);
+				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(chatProperties.getApiKey()).isEqualTo("456");
+				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+			});
+	}
+
+	@Test
+	public void chatOptionsTest() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.api-key=API_KEY", "spring.ai.mistralai.base-url=TEST_BASE_URL",
+					"spring.ai.mistralai.chat.options.model=MODEL_XYZ",
+					"spring.ai.mistralai.chat.options.temperature=0.7")
+			.withConfiguration(
+					AutoConfigurations.of(RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
+				var chatProperties = context.getBean(MistralAiChatProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.7f);
 			});
 	}
 
