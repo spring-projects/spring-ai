@@ -21,6 +21,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.List;
@@ -39,6 +40,7 @@ public class MongoDBVectorStore implements VectorStore {
     private final EmbeddingClient embeddingClient;
 
     private static final String VECTOR_COLLECTION_NAME = "vector_store";
+    private final int DEFAULT_NUM_CANDIDATES = 10;
 
     public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
         this.mongoTemplate = mongoTemplate;
@@ -94,11 +96,17 @@ public class MongoDBVectorStore implements VectorStore {
     public List<Document> similaritySearch(SearchRequest request) {
         List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 
+        var vectorSearch = new VectorSearchAggregation(queryEmbedding, "embedding", DEFAULT_NUM_CANDIDATES, "spring_ai_vector_search", request.getTopK());
 
         Aggregation aggregation = Aggregation.newAggregation(
-                new VectorSearchAggregation(queryEmbedding, "embedding", 10, "spring_ai_vector_search", request.getTopK()));
+                vectorSearch,
+                Aggregation.addFields().addField("score").withValue("$meta.searchScore").build(),
+                Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold()))
+                );
+
         return this.mongoTemplate.aggregate(aggregation, VECTOR_COLLECTION_NAME, BasicDBObject.class)
-                .getMappedResults().stream()
+                .getMappedResults()
+                .stream()
                 .map(this::mapBasicDbObject)
                 .toList();
     }

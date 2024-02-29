@@ -15,7 +15,6 @@ record VectorSearchAggregation(List<Double> embeddings,String path, int numCandi
                         .append("numCandidates", numCandidates)
                         .append("index", index)
                         .append("limit", count));
-
         return context.getMappedObject(doc);
     }
 }
