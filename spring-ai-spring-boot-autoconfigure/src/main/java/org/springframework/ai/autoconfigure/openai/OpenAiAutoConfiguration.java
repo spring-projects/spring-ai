@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,75 +16,107 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import java.time.Duration;
+import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.theokanning.openai.client.OpenAiApi;
-import com.theokanning.openai.service.OpenAiService;
-import okhttp3.OkHttpClient;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
-
-import org.springframework.ai.autoconfigure.NativeHints;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.client.OpenAiClient;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
-import static org.springframework.ai.autoconfigure.openai.OpenAiProperties.CONFIG_PREFIX;
-
-@AutoConfiguration
-@ConditionalOnClass(OpenAiService.class)
-@EnableConfigurationProperties(OpenAiProperties.class)
-@ImportRuntimeHints(NativeHints.class)
+@AutoConfiguration(after = { RestClientAutoConfiguration.class })
+@ConditionalOnClass(OpenAiApi.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
+/**
+ * @author Christian Tzolov
+ */
 public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiClient openAiClient(OpenAiProperties openAiProperties) {
-		OpenAiClient openAiClient = new OpenAiClient(theoOpenAiService(openAiProperties.getBaseUrl(),
-				openAiProperties.getApiKey(), openAiProperties.getDuration()));
-		openAiClient.setTemperature(openAiProperties.getTemperature());
-		openAiClient.setModel(openAiProperties.getModel());
-		return openAiClient;
+	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
+			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+
+		var openAiApi = openAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder);
+
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+		}
+
+		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiProperties openAiProperties) {
-		return new OpenAiEmbeddingClient(theoOpenAiService(openAiProperties.getEmbeddingBaseUrl(),
-				openAiProperties.getEmbeddingApiKey(), openAiProperties.getDuration()),
-				openAiProperties.getEmbeddingModel());
+	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
+
+		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder);
+
+		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions());
 	}
 
-	private OpenAiService theoOpenAiService(String baseUrl, String apiKey, Duration duration) {
+	private OpenAiApi openAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
+			RestClient.Builder restClientBuilder) {
 
-		if ("https://api.openai.com".equals(baseUrl) && !StringUtils.hasText(apiKey)) {
-			throw new IllegalArgumentException(
-					"You must provide an API key with the property name " + CONFIG_PREFIX + ".api-key");
-		}
+		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
+		Assert.hasText(resolvedBaseUrl, "OpenAI base URL must be set");
 
-		ObjectMapper mapper = OpenAiService.defaultObjectMapper();
-		OkHttpClient client = OpenAiService.defaultClient(apiKey, duration);
+		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
+		Assert.hasText(resolvedApiKey, "OpenAI API key must be set");
 
-		// Waiting for https://github.com/TheoKanning/openai-java/issues/249 to be
-		// resolved.
-		Retrofit retrofit = new Retrofit.Builder().baseUrl(baseUrl)
-			.client(client)
-			.addConverterFactory(JacksonConverterFactory.create(mapper))
-			.addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-			.build();
+		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder);
+	}
 
-		OpenAiApi api = retrofit.create(OpenAiApi.class);
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
+			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder) {
+		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
+				: commonProperties.getApiKey();
 
-		return new OpenAiService(api);
+		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder);
+
+		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

@@ -16,53 +16,78 @@
 
 package org.springframework.ai.autoconfigure.azure.openai;
 
+import java.util.List;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
-import org.springframework.ai.azure.openai.client.AzureOpenAiClient;
-import org.springframework.ai.azure.openai.embedding.AzureOpenAiEmbeddingClient;
+import com.azure.core.util.ClientOptions;
+
+import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 @AutoConfiguration
 @ConditionalOnClass(OpenAIClientBuilder.class)
-@EnableConfigurationProperties(AzureOpenAiProperties.class)
+@EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
+		AzureOpenAiConnectionProperties.class })
 public class AzureOpenAiAutoConfiguration {
 
-	private final AzureOpenAiProperties azureOpenAiProperties;
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
 
-	public AzureOpenAiAutoConfiguration(AzureOpenAiProperties azureOpenAiProperties) {
-		this.azureOpenAiProperties = azureOpenAiProperties;
+		Assert.hasText(connectionProperties.getApiKey(), "API key must not be empty");
+		Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
+
+		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
+			.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
+			.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
+			.buildClient();
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient,
+			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackContext functionCallbackContext) {
+
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+		}
+
+		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(openAIClient,
+				chatProperties.getOptions(), functionCallbackContext);
+
+		return azureOpenAiChatClient;
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient openAIClient,
+			AzureOpenAiEmbeddingProperties embeddingProperties) {
+		return new AzureOpenAiEmbeddingClient(openAIClient, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAIClient msoftSdkOpenAiClient(AzureOpenAiProperties azureOpenAiProperties) {
-		if (!StringUtils.hasText(azureOpenAiProperties.getApiKey())) {
-			throw new IllegalArgumentException("You must provide an API key with the property name "
-					+ AzureOpenAiProperties.CONFIG_PREFIX + ".api-key");
-		}
-		OpenAIClient msoftSdkOpenAiClient = new OpenAIClientBuilder().endpoint(this.azureOpenAiProperties.getEndpoint())
-			.credential(new AzureKeyCredential(this.azureOpenAiProperties.getApiKey()))
-			.buildClient();
-		return msoftSdkOpenAiClient;
-	}
-
-	@Bean
-	public AzureOpenAiClient azureOpenAiClient(OpenAIClient msoftSdkOpenAiClient) {
-		AzureOpenAiClient azureOpenAiClient = new AzureOpenAiClient(msoftSdkOpenAiClient);
-		azureOpenAiClient.setTemperature(this.azureOpenAiProperties.getTemperature());
-		azureOpenAiClient.setModel(this.azureOpenAiProperties.getModel());
-		return azureOpenAiClient;
-	}
-
-	@Bean
-	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient msoftSdkOpenAiClient) {
-		return new AzureOpenAiEmbeddingClient(msoftSdkOpenAiClient, this.azureOpenAiProperties.getEmbeddingModel());
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

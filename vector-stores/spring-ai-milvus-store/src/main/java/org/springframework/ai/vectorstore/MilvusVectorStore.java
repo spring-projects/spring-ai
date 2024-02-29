@@ -54,8 +54,11 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
@@ -85,6 +88,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	public static final List<String> SEARCH_OUTPUT_FIELDS = Arrays.asList(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
 			METADATA_FIELD_NAME);
+
+	public final FilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
 
 	private final MilvusServiceClient milvusClient;
 
@@ -145,7 +150,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 			private IndexType indexType = IndexType.IVF_FLAT;
 
-			private MetricType metricType = MetricType.L2;
+			private MetricType metricType = MetricType.COSINE;
 
 			private String indexParameters = "{\"nlist\":1024}";
 
@@ -154,13 +159,14 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 			/**
 			 * Configures the Milvus metric type to use. Leave {@literal null} or blank to
-			 * use the metric metric.
+			 * use the metric metric: https://milvus.io/docs/metric.md#floating
 			 * @param metricType the metric type to use
 			 * @return this builder
 			 */
 			public Builder withMetricType(MetricType metricType) {
 				Assert.notNull(metricType, "Collection Name must not be empty");
-				Assert.isTrue(metricType == MetricType.IP || metricType == MetricType.L2,
+				Assert.isTrue(
+						metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
 						"Only the text metric types IP and L2 are supported");
 
 				this.metricType = metricType;
@@ -316,32 +322,29 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(query, 4);
-	}
+	public List<Document> similaritySearch(SearchRequest request) {
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK) {
-		return similaritySearch(query, topK, 0.0D);
-	}
+		String nativeFilterExpressions = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-	@Override
-	public List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
-		Assert.notNull(query, "Query string must not be null");
+		Assert.notNull(request.getQuery(), "Query string must not be null");
 
-		List<Double> embedding = this.embeddingClient.embed(query);
+		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
 
-		SearchParam searchParam = SearchParam.newBuilder()
+		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withMetricType(this.config.metricType)
 			.withOutFields(SEARCH_OUTPUT_FIELDS)
-			.withTopK(topK)
+			.withTopK(request.getTopK())
 			.withVectors(List.of(toFloatList(embedding)))
-			.withVectorFieldName(EMBEDDING_FIELD_NAME)
-			.build();
+			.withVectorFieldName(EMBEDDING_FIELD_NAME);
 
-		R<SearchResults> respSearch = milvusClient.search(searchParam);
+		if (StringUtils.hasText(nativeFilterExpressions)) {
+			searchParamBuilder.withExpr(nativeFilterExpressions);
+		}
+
+		R<SearchResults> respSearch = milvusClient.search(searchParamBuilder.build());
 
 		if (respSearch.getException() != null) {
 			throw new RuntimeException("Search failed!", respSearch.getException());
@@ -349,9 +352,9 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		SearchResultsWrapper wrapperSearch = new SearchResultsWrapper(respSearch.getData().getResults());
 
-		return wrapperSearch.getRowRecords()
+		return wrapperSearch.getRowRecords(0)
 			.stream()
-			.filter(rowRecord -> getResultSimilarity(rowRecord) >= similarityThreshold)
+			.filter(rowRecord -> getResultSimilarity(rowRecord) >= request.getSimilarityThreshold())
 			.map(rowRecord -> {
 				String docId = (String) rowRecord.get(DOC_ID_FIELD_NAME);
 				String content = (String) rowRecord.get(CONTENT_FIELD_NAME);
@@ -365,7 +368,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private float getResultSimilarity(RowRecord rowRecord) {
 		Float distance = (Float) rowRecord.get(DISTANCE_FIELD_NAME);
-		return (this.config.metricType == MetricType.IP) ? distance : (1 - distance);
+		return (this.config.metricType == MetricType.IP || this.config.metricType == MetricType.COSINE) ? distance
+				: (1 - distance);
 	}
 
 	private List<Float> toFloatList(List<Double> embeddingDouble) {

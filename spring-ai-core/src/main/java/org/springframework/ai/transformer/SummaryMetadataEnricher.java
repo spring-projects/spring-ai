@@ -21,18 +21,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.client.AiClient;
+import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Title extractor with adjacent sharing that uses model to extract 'section_summary',
- * 'prev_section_summary', 'next_section_summary' metadata fields.
+ * Title extractor with adjacent sharing that uses generative to extract
+ * 'section_summary', 'prev_section_summary', 'next_section_summary' metadata fields.
  *
  * @author Christian Tzolov
  */
@@ -63,7 +63,7 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 	/**
 	 * AI client.
 	 */
-	private final AiClient aiClient;
+	private final ChatClient chatClient;
 
 	/**
 	 * Number of documents from front to use for title extraction.
@@ -77,16 +77,16 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 	 */
 	private final String summaryTemplate;
 
-	public SummaryMetadataEnricher(AiClient aiClient, List<SummaryType> summaryTypes) {
-		this(aiClient, summaryTypes, DEFAULT_SUMMARY_EXTRACT_TEMPLATE, MetadataMode.ALL);
+	public SummaryMetadataEnricher(ChatClient chatClient, List<SummaryType> summaryTypes) {
+		this(chatClient, summaryTypes, DEFAULT_SUMMARY_EXTRACT_TEMPLATE, MetadataMode.ALL);
 	}
 
-	public SummaryMetadataEnricher(AiClient aiClient, List<SummaryType> summaryTypes, String summaryTemplate,
+	public SummaryMetadataEnricher(ChatClient chatClient, List<SummaryType> summaryTypes, String summaryTemplate,
 			MetadataMode metadataMode) {
-		Assert.notNull(aiClient, "AiClient must not be null");
+		Assert.notNull(chatClient, "ChatClient must not be null");
 		Assert.hasText(summaryTemplate, "Summary template must not be empty");
 
-		this.aiClient = aiClient;
+		this.chatClient = chatClient;
 		this.summaryTypes = CollectionUtils.isEmpty(summaryTypes) ? List.of(SummaryType.CURRENT) : summaryTypes;
 		this.metadataMode = metadataMode;
 		this.summaryTemplate = summaryTemplate;
@@ -102,7 +102,7 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 
 			Prompt prompt = new PromptTemplate(this.summaryTemplate)
 				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
-			documentSummaries.add(this.aiClient.generate(prompt).getGeneration().getText());
+			documentSummaries.add(this.chatClient.call(prompt).getResult().getOutput().getContent());
 		}
 
 		for (int i = 0; i < documentSummaries.size(); i++) {

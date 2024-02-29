@@ -19,20 +19,25 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      # - name: Cache Docker images.
+      #   uses: ScribeMD/docker-cache@0.3.7
+      #   with:
+      #     key: docker-${{ runner.os }}-${{ hashFiles('**/OllamaImage.java') }}
+
       - name: Build with Maven and deploy to Artifactory
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: mvn -s settings.xml -Pintegration-tests --batch-mode --update-snapshots deploy
+        run: mvn -s settings.xml -Pintegration-tests -Dfailsafe.rerunFailingTestsCount=3 --batch-mode --update-snapshots deploy
 
       - name: Generate Java docs
         run: mvn javadoc:aggregate
 
       - name: Generate Reference docs
         working-directory: spring-ai-docs
-        run: mvn site
+        run: mvn assembly:single
 
       - name: Capture project version
         run: echo PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
@@ -52,8 +57,8 @@ jobs:
           DOCS_HOST: ${{ secrets.DOCS_HOST }}
           DOCS_PATH: ${{ secrets.DOCS_PATH }}
           DOCS_USERNAME: ${{ secrets.DOCS_USERNAME }}
-        working-directory: spring-ai-docs
+        working-directory: spring-ai-docs/target
         run: |
-          cd target && unzip spring-ai-$PROJECT_VERSION-docs.zip
-          scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
-          scp -i $HOME/.ssh/key -r reference $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
+          unzip spring-ai-$PROJECT_VERSION-docs.zip
+          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST cd $DOCS_PATH && mkdir -p $PROJECT_VERSION/api
+          scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION/api

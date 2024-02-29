@@ -111,12 +111,14 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * Constructor initializing the reader with a resource and a text formatter.
+	 * Constructor initializing the reader with a resource and a text formatter. This
+	 * constructor will create a BodyContentHandler that allows for reading large PDFs
+	 * (constrained only by memory)
 	 * @param resource Resource pointing to the document
 	 * @param textFormatter Formatter for the extracted text
 	 */
 	public TikaDocumentReader(Resource resource, ExtractedTextFormatter textFormatter) {
-		this(resource, new BodyContentHandler(), textFormatter);
+		this(resource, new BodyContentHandler(-1), textFormatter);
 	}
 
 	/**

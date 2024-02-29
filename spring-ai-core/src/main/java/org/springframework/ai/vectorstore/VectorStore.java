@@ -6,32 +6,53 @@ import java.util.Optional;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
 
+/**
+ * The {@code VectorStore} interface defines the operations for managing and querying
+ * documents in a vector database. It extends {@link DocumentWriter} to support document
+ * writing operations. Vector databases are specialized for AI applications, performing
+ * similarity searches based on vector representations of data rather than exact matches.
+ * This interface allows for adding, deleting, and searching documents based on their
+ * similarity to a given query.
+ */
 public interface VectorStore extends DocumentWriter {
 
 	/**
-	 * Adds Documents to the vector store.
-	 * @param documents the list of documents to store Will throw an exception if the
-	 * underlying provider checks for duplicate IDs on add
+	 * Adds list of {@link Document}s to the vector store.
+	 * @param documents the list of documents to store. Throws an exception if the
+	 * underlying provider checks for duplicate IDs.
 	 */
 	void add(List<Document> documents);
 
+	@Override
 	default void accept(List<Document> documents) {
 		add(documents);
 	}
 
+	/**
+	 * Deletes documents from the vector store.
+	 * @param idList list of document ids for which documents will be removed.
+	 * @return
+	 */
 	Optional<Boolean> delete(List<String> idList);
 
-	List<Document> similaritySearch(String query);
-
-	List<Document> similaritySearch(String query, int k);
+	/**
+	 * Retrieves documents by query embedding similarity and metadata filters to retrieve
+	 * exactly the number of nearest-neighbor results that match the request criteria.
+	 * @param request Search request for set search parameters, such as the query text,
+	 * topK, similarity threshold and metadata filter expressions.
+	 * @return Returns documents th match the query request conditions.
+	 */
+	List<Document> similaritySearch(SearchRequest request);
 
 	/**
-	 * @param query The query to send, it will be converted to an embedding based on the
-	 * configuration of the vector store.
-	 * @param k the top 'k' similar results
-	 * @param threshold the lower bound of the similarity score
-	 * @return similar documents
+	 * Retrieves documents by query embedding similarity using the default
+	 * {@link SearchRequest}'s' search criteria.
+	 * @param query Text to use for embedding similarity comparison.
+	 * @return Returns a list of documents that have embeddings similar to the query text
+	 * embedding.
 	 */
-	List<Document> similaritySearch(String query, int k, double threshold);
+	default List<Document> similaritySearch(String query) {
+		return this.similaritySearch(SearchRequest.query(query));
+	}
 
 }

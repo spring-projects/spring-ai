@@ -1,0 +1,171 @@
+[[ImageClient]]
+= Image Generation API
+
+
+The `Spring Image Generation API` is designed to be a simple and portable interface for interacting with various xref:concepts.adoc#_models[AI Models] specialized in image generation, allowing developers to switch between different image-related models with minimal code changes.
+This design aligns with Spring's philosophy of modularity and interchangeability, ensuring developers can quickly adapt their applications to different AI capabilities related to image processing.
+
+Additionally, with the support of companion classes like `ImagePrompt` for input encapsulation and `ImageResponse` for output handling, the Image Generation API unifies the communication with AI Models dedicated to image generation.
+It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction for image-generation functionalities.
+
+The Spring Image Generation API is built on top of the Spring AI `Generic Model API`, providing image-specific abstractions and implementations.
+
+== API Overview
+
+This section provides a guide to the Spring Image Generation API interface and associated classes.
+
+== Image Client
+
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageClient.java[ImageClient] interface definition:
+
+[source,java]
+----
+@FunctionalInterface
+public interface ImageClient extends ModelClient<ImagePrompt, ImageResponse> {
+
+	ImageResponse call(ImagePrompt request);
+
+}
+----
+
+=== ImagePrompt
+
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImagePrompt.java[ImagePrompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageMessage.java[ImageMessage] objects and optional model request options.
+The following listing shows a truncated version of the `ImagePrompt` class, excluding constructors and other utility methods:
+
+[source,java]
+----
+public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
+
+    private final List<ImageMessage> messages;
+
+	private ImageOptions imageModelOptions;
+
+    @Override
+	public List<ImageMessage> getInstructions() {...}
+
+	@Override
+	public ImageOptions getOptions() {...}
+
+    // constructors and utility methods omitted
+}
+----
+
+==== ImageMessage
+
+The `ImageMessage` class encapsulates the text to use and the weight that the text should have in influencing the generated image.  For models that support weights, they can be positive or negative.
+
+[source,java]
+----
+public class ImageMessage {
+
+	private String text;
+
+	private Float weight;
+
+    public String getText() {...}
+
+	public Float getWeight() {...}
+
+   // constructors and utility methods omitted
+
+----
+
+==== ImageOptions
+
+Represents the options that can be passed to the Image generation model. The `ImageOptions` class extends the `ModelOptions` interface and is used to define few portable options that can be passed to the AI model.
+
+The `ImageOptions` class is defined as follows:
+
+[source,java]
+----
+public interface ImageOptions extends ModelOptions {
+
+	Integer getN();
+
+	String getModel();
+
+	Integer getWidth();
+
+	Integer getHeight();
+
+	String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+
+}
+----
+
+Additionally, every model specific ImageClient implementation can have its own options that can be passed to the AI model. For example, the OpenAI Image Generation model has its own options like `quality`, `style`, etc.
+
+
+This is a powerful feature that allows developers to use model specific options when starting the application and then override them with at runtime using the `ImagePrompt`.
+
+
+=== ImageResponse
+
+The structure of the `ChatResponse` class is as follows:
+
+[source,java]
+----
+public class ImageResponse implements ModelResponse<ImageGeneration> {
+
+	private final ImageResponseMetadata imageResponseMetadata;
+
+	private final List<ImageGeneration> imageGenerations;
+
+	@Override
+	public ImageGeneration getResult() {
+		// get the first result
+	}
+
+	@Override
+	public List<ImageGeneration> getResults() {...}
+
+	@Override
+	public ImageResponseMetadata getMetadata() {...}
+
+    // other methods omitted
+
+}
+----
+
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageResponse.java[ImageResponse] class holds the AI Model's output, with each `ImageGeneration` instance containing one of potentially multiple outputs resulting from a single prompt.
+
+The `ImageResponse` class also carries a `ImageResponseMetadata` metadata about the AI Model's response.
+
+=== ImageGeneration
+
+Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageGeneration.java[ImageGeneration] class extends from the `ModelResult` to represent the output response and related metadata about this result:
+
+[source,java]
+----
+public class ImageGeneration implements ModelResult<Image> {
+
+	private ImageGenerationMetadata imageGenerationMetadata;
+
+	private Image image;
+
+    	@Override
+	public Image getOutput() {...}
+
+	@Override
+	public ImageGenerationMetadata getMetadata() {...}
+
+    // other methods omitted
+
+}
+----
+
+== Available Implementations
+
+`ImageClient` implementations are provided for the following Model providers:
+
+* xref:api/clients/image/openai-image.adoc[OpenAI Image Generation]
+* xref:api/clients/image/stabilityai-image.adoc[StabilityAI Image Generation]
+
+== API Docs
+
+You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/[here].
+
+== Feedback and Contributions
+
+The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.

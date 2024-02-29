@@ -10,7 +10,7 @@ assignees: ''
 For anything other than bug reports and feature requests (performance, refactoring, etc),
 just go ahead and file the issue. Please provide as many details as possible.
 
-If you have a question or a support request, please open a new discussion on [GitHub Discussions](https://github.com/spring-projects-experimental/spring-ai/discussions)
+If you have a question or a support request, please open a new discussion on [GitHub Discussions](https://github.com/spring-projects/spring-ai/discussions)
 or ask a question on [StackOverflow](https://stackoverflow.com/questions/tagged/spring-ai).
 
 Please do **not** create issues on the [Issue Tracker](https://github.com/spring-projects/spring-ai/issues) for questions or support requests.

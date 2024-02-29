@@ -1,42 +1,63 @@
+[[getting-started]]
 = Getting Started
 
-== API Keys
+This section offers jumping off points for how to get started using Spring AI.
 
-=== OpenAI
+You should follow the steps in each of the following section according to your needs.
 
-Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+[[spring-cli]]
+== Spring CLI
 
-The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from `openai.com`.
+The https://docs.spring.io/spring-cli/reference/index.html[Spring CLI], simplifies creating new applications directly from your terminal.
+Like the 'create-react-app' command for those familiar with the JavaScript ecosystem, Spring CLI provides a `spring boot new` command to create Spring-based projects.
+Spring CLI also offers features to integrate external code bases into your current project, and many other productivity features.
 
-Exporting an environment variable is one way to set that configuration property.
+NOTE: It is important to understand that the "Spring CLI" is a distinct project from the "Spring Boot CLI", each with its own set of functionalities.
 
-[source,shell]
-----
-export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
-----
+To begin creating a Spring AI application, follow these steps:
 
-=== Azure OpenAI
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on link:https://portal.azure.com[Azure Portal].
 
-The Spring AI project defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
+. Download the latest https://github.com/spring-projects/spring-cli/releases[Spring CLI Release]
+and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[installation instructions].
+. To create a simple OpenAI-based application, use the command:
++
+```shell
+spring boot new --from ai --name myai
+```
+. Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI application.
 
-Exporting environment variables is one way to set these configuration properties.
+To add the same simple AI application to an *existing* project, execute:
 
-[source,shell]
-----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
-export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
-----
+```shell
+spring boot add ai
+```
 
-== Dependencies
+NOTE: Spring CLI allows users to define their own https://docs.spring.io/spring-cli/reference/registering-new-projects.html[project catalogs] that define which projects you can create or add to your existing code base.
 
-The Spring AI project provides artifacts in the Spring Milestone Repository.
-You will need to add configuration to add a reference to the Spring Milestone repository in your build file.
-For example, in maven, add the following repository definition.
+== Spring Initializr
+
+Head on over to https://start.spring.io/[start.spring.io] and select the AI Models and Vector Stores that you want to use in your new applications.
+
+[[repositories]]
+== Add Milestone and Snapshot Repositories
+
+If you prefer to add the dependency snippets by hand, follow the directions in the following sections.
+
+To use the Milestone and Snapshot version, you need to add references to the Spring Milestone and/or Snapshot repositories in your build file.
+
+For Maven, add the following repository definitions as needed:
 
 [source,xml]
 ----
   <repositories>
+    <repository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
     <repository>
       <id>spring-snapshots</id>
       <name>Spring Snapshots</name>
@@ -48,107 +69,105 @@ For example, in maven, add the following repository definition.
   </repositories>
 ----
 
-Add the Spring Boot Starter depending on if you are using Azure Open AI or Open AI.
+For Gradle, add the following repository definitions as needed:
 
-* Azure OpenAI
-[source, xml]
+[source,groovy]
 ----
-    <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
-        <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
-    </dependency>
-----
-
-* OpenAI
-
-[source, xml]
-----
-    <dependency>
-        <groupId>org.springframework.experimental.ai</groupId>
-        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
-    </dependency>
+repositories {
+  mavenCentral()
+  maven { url 'https://repo.spring.io/milestone' }
+  maven { url 'https://repo.spring.io/snapshot' }
+}
 ----
 
-== Spring CLI
 
-The Spring CLI makes it easy to create new applications with code in your terminal window.  Think of it as the 'create-react-app' of Spring for those familiar with the JavaScript ecosystem.
+[[dependency-management]]
+== Dependency Management
 
-Download the latest https://github.com/spring-projects-experimental/spring-cli/releases[Spring CLI Release]
+The Spring AI Bill of Materials (BOM) declares the recommended versions of all the dependencies used by a given release of Spring AI.
+Using the BOM from your application’s build script avoids the need for you to specify and maintain the dependency versions yourself.
+Instead, the version of the BOM you’re using determines the utilized dependency versions.
+It also ensures that you’re using supported and tested versions of the dependencies by default, unless you choose to override them.
 
-and follow the https://docs.spring.io/spring-cli/reference/installation.html#_setting_up_your_path_or_alias[instructions] to add `spring` to your `PATH`.
+If you’re a Maven user, you can use the BOM by adding the following to your pom.xml file -
 
-Create a simple AI application
+[source,xml]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-bom</artifactId>
+            <version>0.8.1-SNAPSHOT</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+----
 
-* For OpenAI
+Gradle users can also use the Spring AI BOM by leveraging Gradle (5.0+) native support for declaring dependency constraints using a Maven BOM.
+This is implemented by adding a 'platform' dependency handler method to the dependencies section of your Gradle build script.
+As shown in the snippet below this can then be followed by version-less declarations of the Starter Dependencies for the one or more spring-ai modules you wish to use, e.g. spring-ai-openai.
 
-```shell
-spring boot new ai
-```
+[source,gradle]
+----
+dependencies {
+  implementation platform("org.springframework.ai:spring-ai-bom:0.8.1-SNAPSHOT")
+  // Replace the following with the starter dependencies of specific modules you wish to use
+  implementation 'org.springframework.ai:spring-ai-openai'
+}
+----
 
-or
+[[add-dependencies]]
+== Add dependencies for specific components
 
-*  For Azure OpenAI
+Each of the following sections in the documentation shows which dependencies you need to add to your project build system.
 
-```shell
-spring boot new ai-azure
-```
+=== Embeddings Models
 
-You can also `ADD` the same simple AI application to your current project using
+* xref:api/embeddings.adoc[Embeddings API]
+** xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
+** xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]
+** xref:api/embeddings/ollama-embeddings.adoc[Spring AI Ollama Embeddings]
+** xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
+** xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
+** xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
+** xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
+** xref:api/embeddings/vertexai-embeddings.adoc[Spring AI VertexAI Embeddings]
 
-*  For OpenAI
-```shell
-spring boot add ai
-```
+=== Chat Models
+* xref:api/chatclient.adoc[Chat Completion API]
+** xref:api/clients/openai-chat.adoc[OpenAI Chat Completion] (streaming and function-calling support)
+** xref:api/clients/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming and function-calling support)
+** xref:api/clients/ollama-chat.adoc[Ollama Chat Completion]
+** xref:api/clients/huggingface.adoc[HuggingFace Chat Completion] (no streaming support)
+** xref:api/clients/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
+** xref:api/clients/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
+** xref:api/bedrock.adoc[Amazon Bedrock]
+*** xref:api/clients/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
+*** xref:api/clients/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
+*** xref:api/clients/bedrock/bedrock-titan.adoc[Titan Chat Completion]
+*** xref:api/clients/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
+// ** xref:api/clients/bedrock/bedrock-jurassic.adoc[Jurassic2 Chat Completion] (WIP, no streaming support)
 
-or
+=== Image Generation Models
+* xref:api/imageclient.adoc[]
+** xref:api/clients/image/openai-image.adoc[OpenAI Image Generation]
+** xref:api/clients/image/stabilityai-image.adoc[StabilityAI Image Generation]
 
-*  For Azure OpenAI
-```shell
-spring boot add ai-azure
-```
-
-There is a project catalog available for Azure OpenAI that covers more functionality.
-Add the catalog by running the command
-
-* For Azure Open AI
-
-```shell
-spring project-catalog add ai-azure
-```
-
-Now you have the following projects that you can use to create a new project using the `spring boot new` command or add to your existing project using the `spring boot add` command.
-
-```shell
-spring project list
-
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-hello-world      │AI - Hello,    │https://github.com/rd-1-2022/ai-azure-openai-helloworld             │ai-azure│[java-17,      │
-│                          │World          │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, web]    │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-prompt-templating│AI - Prompt    │https://github.com/rd-1-2022/ai-azure-prompt-template               │ai-azure│[java-17,      │
-│                          │Templating     │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, prompt  │
-│                          │               │                                                                    │        │templating]    │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-prompt-roles     │AI - Prompt    │https://github.com/rd-1-2022/ai-azure-openai-prompt-roles           │ai-azure│[java-17,      │
-│                          │Templating     │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, prompt  │
-│                          │               │                                                                    │        │roles]         │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-stuff-prompt     │AI - Stuff the │https://github.com/rd-1-2022/ai-azure-stuff-prompt                  │ai-azure│[java-17,      │
-│                          │prompt         │                                                                    │        │boot-3.1.x, ai,│
-│                          │               │                                                                    │        │azure, prompt  │
-│                          │               │                                                                    │        │stuff]         │
-├──────────────────────────┼───────────────┼────────────────────────────────────────────────────────────────────┼────────┼───────────────┤
-│ai-azure-prompt-rag       │AI - Retrieval │https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation│ai-azure│[java-17,      │
-│                          │Augmented      │                                                                    │        │boot-3.1.x, ai,│
-│                          │Generation     │                                                                    │        │azure,         │
-│                          │               │                                                                    │        │retrieval]     │
-└──────────────────────────┴───────────────┴────────────────────────────────────────────────────────────────────┴────────┴───────────────┘
-```
+=== Vector Databases
+* xref:api/vectordbs.adoc[Vector Database API]
+** xref:api/vectordbs/azure.adoc[ Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
+** xref:api/vectordbs/chroma.adoc[ChromaVectorStore] - The https://www.trychroma.com/[Chroma] vector store.
+** xref:api/vectordbs/milvus.adoc[MilvusVectorStore] - The https://milvus.io/[Milvus] vector store.
+** xref:api/vectordbs/neo4j.adoc[Neo4jVectorStore] - The https://neo4j.com/[Neo4j] vector store.
+** xref:api/vectordbs/pgvector.adoc[PgVectorStore] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
+** xref:api/vectordbs/pinecone.adoc[PineconeVectorStore] - https://www.pinecone.io/[PineCone] vector store.
+** xref:api/vectordbs/qdrant.adoc[QdrantVectorStore] - https://www.qdrant.tech/[Qdrant] vector store.
+** xref:api/vectordbs/redis.adoc[RedisVectorStore] - The https://redis.io/[Redis] vector store.
+** xref:api/vectordbs/weaviate.adoc[WeaviateVectorStore] - The https://weaviate.io/[Weaviate] vector store.
+** link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple (in-memory) implementation of persistent vector storage, good for educational purposes.
 
 
 == Sample Projects
@@ -166,4 +185,3 @@ You can clone these projects on GitHub to get started.
 * https://github.com/rd-1-2022/ai-azure-prompt-template
 * https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
 * https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
-
