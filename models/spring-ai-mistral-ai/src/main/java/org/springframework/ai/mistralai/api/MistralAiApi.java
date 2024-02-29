@@ -26,17 +26,19 @@ import java.util.function.Predicate;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
@@ -45,10 +47,15 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Implementation of the MistralAI Embedding API:
- * <a href="https://docs.mistral.ai/api/#operation/createEmbedding">...</a> and Chat
- * Completion API:
- * <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">...</a>
+ * Single-class, Java Client library for Mistral AI platform. Provides implementation for
+ * the <a href="https://docs.mistral.ai/api/#operation/createEmbedding">MistralAI
+ * Embedding API</a> and the
+ * <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">Chat
+ * Completion</a> APIs.
+ * <p>
+ * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
+ * <b>Function Calling</b> features.
+ * </p>
  *
  * @author Ricken Bazolo
  * @author Christian Tzolov
@@ -101,12 +108,12 @@ public class MistralAiApi {
 		var responseErrorHandler = new ResponseErrorHandler() {
 
 			@Override
-			public boolean hasError(ClientHttpResponse response) throws IOException {
+			public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
 				return response.getStatusCode().isError();
 			}
 
 			@Override
-			public void handleError(ClientHttpResponse response) throws IOException {
+			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
 					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
 					String message = String.format("%s - %s", response.getStatusCode().value(), error);
@@ -152,6 +159,65 @@ public class MistralAiApi {
 	}
 
 	/**
+	 * Represents a tool the model may call. Currently, only functions are supported as a
+	 * tool.
+	 *
+	 * @param type The type of the tool. Currently, only 'function' is supported.
+	 * @param function The function definition.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record FunctionTool(@JsonProperty("type") Type type, @JsonProperty("function") Function function) {
+
+		/**
+		 * Create a tool of type 'function' and the given function definition.
+		 * @param function function definition.
+		 */
+		@ConstructorBinding
+		public FunctionTool(Function function) {
+			this(Type.FUNCTION, function);
+		}
+
+		/**
+		 * Create a tool of type 'function' and the given function definition.
+		 */
+		public enum Type {
+
+			/**
+			 * Function tool type.
+			 */
+			@JsonProperty("function")
+			FUNCTION
+
+		}
+
+		/**
+		 * Function definition.
+		 *
+		 * @param description A description of what the function does, used by the model
+		 * to choose when and how to call the function.
+		 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or
+		 * contain underscores and dashes, with a maximum length of 64.
+		 * @param parameters The parameters the functions accepts, described as a JSON
+		 * Schema object. To describe a function that accepts no parameters, provide the
+		 * value {"type": "object", "properties": {}}.
+		 */
+		public record Function(@JsonProperty("description") String description, @JsonProperty("name") String name,
+				@JsonProperty("parameters") Map<String, Object> parameters) {
+
+			/**
+			 * Create tool function definition.
+			 * @param description tool function description.
+			 * @param name tool function name.
+			 * @param jsonSchema tool function schema as json.
+			 */
+			@ConstructorBinding
+			public Function(String description, String name, String jsonSchema) {
+				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+			}
+		}
+	}
+
+	/**
 	 * Usage statistics.
 	 *
 	 * @param promptTokens Number of tokens in the prompt.
@@ -163,10 +229,10 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Usage(
 	// @formatter:off
-		@JsonProperty("prompt_tokens") Integer promptTokens,
-		@JsonProperty("total_tokens") Integer totalTokens,
-		@JsonProperty("completion_tokens") Integer completionTokens) {
-		// @formatter:on
+		 @JsonProperty("prompt_tokens") Integer promptTokens,
+		 @JsonProperty("total_tokens") Integer totalTokens,
+		 @JsonProperty("completion_tokens") Integer completionTokens) {
+		 // @formatter:on
 	}
 
 	/**
@@ -180,10 +246,10 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(
 	// @formatter:off
-		@JsonProperty("index") Integer index,
-		@JsonProperty("embedding") List<Double> embedding,
-		@JsonProperty("object") String object) {
-		// @formatter:on
+		 @JsonProperty("index") Integer index,
+		 @JsonProperty("embedding") List<Double> embedding,
+		 @JsonProperty("object") String object) {
+		 // @formatter:on
 
 		/**
 		 * Create an embedding with the given index, embedding and object type set to
@@ -208,10 +274,10 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest<T>(
 	// @formatter:off
-		@JsonProperty("input") T input,
-		@JsonProperty("model") String model,
-		@JsonProperty("encoding_format") String encodingFormat) {
-		// @formatter:on
+		 @JsonProperty("input") T input,
+		 @JsonProperty("model") String model,
+		 @JsonProperty("encoding_format") String encodingFormat) {
+		 // @formatter:on
 
 		/**
 		 * Create an embedding request with the given input, model and encoding format set
@@ -245,11 +311,11 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingList<T>(
 	// @formatter:off
-			@JsonProperty("object") String object,
-			@JsonProperty("data") List<T> data,
-			@JsonProperty("model") String model,
-			@JsonProperty("usage") Usage usage) {
-		// @formatter:on
+			 @JsonProperty("object") String object,
+			 @JsonProperty("data") List<T> data,
+			 @JsonProperty("model") String model,
+			 @JsonProperty("usage") Usage usage) {
+		 // @formatter:on
 	}
 
 	/**
@@ -298,6 +364,13 @@ public class MistralAiApi {
 	 * @param model ID of the model to use.
 	 * @param messages The prompt(s) to generate completions for, encoded as a list of
 	 * dict with role and content. The first prompt role should be user or system.
+	 * @param tools A list of tools the model may call. Currently, only functions are
+	 * supported as a tool. Use this to provide a list of functions the model may generate
+	 * JSON inputs for.
+	 * @param toolChoice Controls which (if any) function is called by the model. none
+	 * means the model will not call a function and instead generates a message. auto
+	 * means the model can pick between generating a message or calling a function. Any
+	 * means the model must call a function.
 	 * @param temperature What sampling temperature to use, between 0.0 and 1.0. Higher
 	 * values like 0.8 will make the output more random, while lower values like 0.2 will
 	 * make it more focused and deterministic. We generally recommend altering this or
@@ -317,19 +390,25 @@ public class MistralAiApi {
 	 * @param safePrompt Whether to inject a safety prompt before all conversations.
 	 * @param randomSeed The seed to use for random sampling. If set, different calls will
 	 * generate deterministic results.
+	 * @param responseFormat An object specifying the format that the model must output.
+	 * Setting to { "type": "json_object" } enables JSON mode, which guarantees the
+	 * message the model generates is valid JSON.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
-			@JsonProperty("model") String model,
-			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("temperature") Float temperature,
-			@JsonProperty("top_p") Float topP,
-			@JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("safe_prompt") Boolean safePrompt,
-			@JsonProperty("random_seed") Integer randomSeed) {
-		// @formatter:on
+			 @JsonProperty("model") String model,
+			 @JsonProperty("messages") List<ChatCompletionMessage> messages,
+			 @JsonProperty("tools") List<FunctionTool> tools,
+			 @JsonProperty("tool_choice") ToolChoice toolChoice,
+			 @JsonProperty("temperature") Float temperature,
+			 @JsonProperty("top_p") Float topP,
+			 @JsonProperty("max_tokens") Integer maxTokens,
+			 @JsonProperty("stream") Boolean stream,
+			 @JsonProperty("safe_prompt") Boolean safePrompt,
+			 @JsonProperty("random_seed") Integer randomSeed,
+			 @JsonProperty("response_format") ResponseFormat responseFormat) {
+		 // @formatter:on
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -339,7 +418,7 @@ public class MistralAiApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, 0.7f, 1f, null, false, false, null);
+			this(model, messages, null, null, 0.7f, 1f, null, false, false, null, null);
 		}
 
 		/**
@@ -354,7 +433,7 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature,
 				boolean stream) {
-			this(model, messages, temperature, 1f, null, stream, false, null);
+			this(model, messages, null, null, temperature, 1f, null, stream, false, null, null);
 		}
 
 		/**
@@ -367,7 +446,22 @@ public class MistralAiApi {
 		 *
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(model, messages, temperature, 1f, null, false, false, null);
+			this(model, messages, null, null, temperature, 1f, null, false, false, null, null);
+		}
+
+		/**
+		 * Shortcut constructor for a chat completion request with the given messages,
+		 * model, tools and tool choice. Streaming is set to false, temperature to 0.8 and
+		 * all other parameters are null.
+		 * @param messages A list of messages comprising the conversation so far.
+		 * @param model ID of the model to use.
+		 * @param tools A list of tools the model may call. Currently, only functions are
+		 * supported as a tool.
+		 * @param toolChoice Controls which (if any) function is called by the model.
+		 */
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
+				ToolChoice toolChoice) {
+			this(model, messages, tools, toolChoice, null, 1f, null, false, false, null, null);
 		}
 
 		/**
@@ -375,7 +469,31 @@ public class MistralAiApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, 0.7f, 1f, null, stream, false, null);
+			this(null, messages, null, null, 0.7f, 1f, null, stream, false, null, null);
+		}
+
+		/**
+		 * Specifies a tool the model should use. Use to force the model to call a
+		 * specific function.
+		 *
+		 */
+		public enum ToolChoice {
+
+			// @formatter:off
+			 @JsonProperty("auto") AUTO,
+			 @JsonProperty("any") ANY,
+			 @JsonProperty("none") NONE
+			 // @formatter:on
+
+		}
+
+		/**
+		 * An object specifying the format that the model must output.
+		 *
+		 * @param type Must be one of 'text' or 'json_object'.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ResponseFormat(@JsonProperty("type") String type) {
 		}
 	}
 
@@ -385,13 +503,27 @@ public class MistralAiApi {
 	 * @param content The contents of the message.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.
+	 * @param toolCalls The tool calls generated by the model, such as function calls.
+	 * Applicable only for {@link Role#ASSISTANT} role and null otherwise.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionMessage(
 	// @formatter:off
-		@JsonProperty("content") String content,
-		@JsonProperty("role") Role role) {
-		// @formatter:on
+		 @JsonProperty("content") String content,
+		 @JsonProperty("role") Role role,
+		 @JsonProperty("name") String name,
+		 @JsonProperty("tool_calls") List<ToolCall> toolCalls) {
+		 // @formatter:on
+
+		/**
+		 * Create a chat completion message with the given content and role. All other
+		 * fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(String content, Role role) {
+			this(content, role, null, null);
+		}
 
 		/**
 		 * The role of the author of this message.
@@ -402,11 +534,38 @@ public class MistralAiApi {
 		public enum Role {
 
 			// @formatter:off
-			@JsonProperty("system") SYSTEM,
-			@JsonProperty("user") USER,
-			@JsonProperty("assistant") ASSISTANT
-			// @formatter:on
+			 @JsonProperty("system") SYSTEM,
+			 @JsonProperty("user") USER,
+			 @JsonProperty("assistant") ASSISTANT,
+			 @JsonProperty("tool") TOOL
+			 // @formatter:on
 
+		}
+
+		/**
+		 * The relevant tool call.
+		 *
+		 * @param id The ID of the tool call. This ID must be referenced when you submit
+		 * the tool outputs in using the Submit tool outputs to run endpoint.
+		 * @param type The type of tool call the output is required for. For now, this is
+		 * always function.
+		 * @param function The function definition.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
+				@JsonProperty("function") ChatCompletionFunction function) {
+		}
+
+		/**
+		 * The function definition.
+		 *
+		 * @param name The name of the function.
+		 * @param arguments The arguments that the model expects you to pass to the
+		 * function.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ChatCompletionFunction(@JsonProperty("name") String name,
+				@JsonProperty("arguments") String arguments) {
 		}
 	}
 
@@ -416,19 +575,19 @@ public class MistralAiApi {
 	public enum ChatCompletionFinishReason {
 
 		// @formatter:off
-		/**
-		 * The model hit a natural stop point or a provided stop sequence.
-		 */
-		@JsonProperty("stop") STOP,
-		/**
-		 * The maximum number of tokens specified in the request was reached.
-		 */
-		@JsonProperty("length") LENGTH,
-		/**
-		 * The content was omitted due to a flag from our content filters.
-		 */
-		@JsonProperty("model_length") MODEL_LENGTH
-		// @formatter:on
+		 /**
+		  * The model hit a natural stop point or a provided stop sequence.
+		  */
+		 @JsonProperty("stop") STOP,
+		 /**
+		  * The maximum number of tokens specified in the request was reached.
+		  */
+		 @JsonProperty("length") LENGTH,
+		 /**
+		  * The content was omitted due to a flag from our content filters.
+		  */
+		 @JsonProperty("model_length") MODEL_LENGTH
+		 // @formatter:on
 
 	}
 
@@ -447,13 +606,13 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletion(
 	// @formatter:off
-		@JsonProperty("id") String id,
-		@JsonProperty("object") String object,
-		@JsonProperty("created") Long created,
-		@JsonProperty("model") String model,
-		@JsonProperty("choices") List<Choice> choices,
-		@JsonProperty("usage") Usage usage) {
-		// @formatter:on
+		 @JsonProperty("id") String id,
+		 @JsonProperty("object") String object,
+		 @JsonProperty("created") Long created,
+		 @JsonProperty("model") String model,
+		 @JsonProperty("choices") List<Choice> choices,
+		 @JsonProperty("usage") Usage usage) {
+		 // @formatter:on
 
 		/**
 		 * Chat completion choice.
@@ -465,10 +624,10 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record Choice(
 		// @formatter:off
-			@JsonProperty("index") Integer index,
-			@JsonProperty("message") ChatCompletionMessage message,
-			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
-			// @formatter:on
+			 @JsonProperty("index") Integer index,
+			 @JsonProperty("message") ChatCompletionMessage message,
+			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
+			 // @formatter:on
 		}
 	}
 
@@ -487,12 +646,12 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(
 	// @formatter:off
-		@JsonProperty("id") String id,
-		@JsonProperty("object") String object,
-		@JsonProperty("created") Long created,
-		@JsonProperty("model") String model,
-		@JsonProperty("choices") List<ChunkChoice> choices) {
-		// @formatter:on
+		 @JsonProperty("id") String id,
+		 @JsonProperty("object") String object,
+		 @JsonProperty("created") Long created,
+		 @JsonProperty("model") String model,
+		 @JsonProperty("choices") List<ChunkChoice> choices) {
+		 // @formatter:on
 
 		/**
 		 * Chat completion choice.
@@ -504,26 +663,38 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ChunkChoice(
 		// @formatter:off
-			@JsonProperty("index") Integer index,
-			@JsonProperty("delta") ChatCompletionMessage delta,
-			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
-			// @formatter:on
+			 @JsonProperty("index") Integer index,
+			 @JsonProperty("delta") ChatCompletionMessage delta,
+			 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
+			 // @formatter:on
 		}
 	}
 
 	/**
 	 * List of well-known Mistral chat models.
 	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
+	 *
+	 * <p>
+	 * Mistral AI provides five API endpoints featuring five leading Large Language
+	 * Models:
+	 * </p>
+	 * <ul>
+	 * <li><b>TINY</b> - open-mistral-7b (aka mistral-tiny-2312)</li>
+	 * <li><b>MIXTRAL</b> - open-mixtral-8x7b (aka mistral-small-2312)</li>
+	 * <li><b>SMALL_LATEST</b> - mistral-small-latest (aka mistral-small-2402)</li>
+	 * <li><b>MEDIUM</b> - mistral-medium-latest (aka mistral-medium-2312)</li>
+	 * <li><b>LARGE</b> - mistral-large-latest (aka mistral-large-2402)</li>
+	 * </ul>
 	 */
 	public enum ChatModel {
 
 		// @formatter:off
-		@JsonProperty("mistral-tiny") TINY("mistral-tiny"),
-		@JsonProperty("mistral-small") SMALL("mistral-small"),
-		@JsonProperty("mistral-medium") MEDIUM("mistral-medium"),
-		@JsonProperty("mistral-large") LARGE("mistral-large"),
-		@JsonProperty("mistral-xlarge") XLARGE("mistral-xlarge");
-		// @formatter:on
+		 TINY("open-mistral-7b"),
+		 MIXTRAL("open-mixtral-8x7b"),
+		 SMALL("mistral-small-latest"),
+		 MEDIUM("mistral-medium-latest"),
+		 LARGE("mistral-large-latest");
+		 // @formatter:on
 
 		private final String value;
 
@@ -544,8 +715,8 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		@JsonProperty("mistral-embed") EMBED("mistral-embed");
-		// @formatter:on
+		 @JsonProperty("mistral-embed") EMBED("mistral-embed");
+		 // @formatter:on
 
 		private final String value;
 
@@ -595,26 +766,7 @@ public class MistralAiApi {
 			.bodyToFlux(String.class)
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> parseJson(content, ChatCompletionChunk.class));
-	}
-
-	public static Map<String, Object> parseJson(String jsonSchema) {
-		try {
-			return new ObjectMapper().readValue(jsonSchema, new TypeReference<Map<String, Object>>() {
-			});
-		}
-		catch (Exception e) {
-			throw new MistralAiApiException("Failed to parse schema: " + jsonSchema, e);
-		}
-	}
-
-	private <T> T parseJson(String json, Class<T> type) {
-		try {
-			return this.objectMapper.readValue(json, type);
-		}
-		catch (Exception e) {
-			throw new MistralAiApiException("Failed to parse schema: " + json, e);
-		}
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class));
 	}
 
 }

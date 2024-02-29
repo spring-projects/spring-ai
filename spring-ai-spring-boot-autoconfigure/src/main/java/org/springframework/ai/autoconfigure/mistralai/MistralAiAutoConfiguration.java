@@ -16,18 +16,23 @@
 
 package org.springframework.ai.autoconfigure.mistralai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import java.util.List;
+
 import org.springframework.ai.mistralai.MistralAiChatClient;
 import org.springframework.ai.mistralai.MistralAiEmbeddingClient;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
@@ -61,12 +66,17 @@ public class MistralAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = MistralAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MistralAiChatClient mistralAiChatClient(MistralAiCommonProperties commonProperties,
-			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder) {
+			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
 
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder);
 
-		return new MistralAiChatClient(mistralAiApi, chatProperties.getOptions());
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+		}
+
+		return new MistralAiChatClient(mistralAiApi, chatProperties.getOptions(), functionCallbackContext);
 	}
 
 	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
@@ -79,6 +89,14 @@ public class MistralAiAutoConfiguration {
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
 		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

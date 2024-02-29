@@ -277,7 +277,8 @@ public class OpenAiChatClient extends
 			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
 
 			// Add the function response to the conversation.
-			conversationHistory.add(new ChatCompletionMessage(functionResponse, Role.TOOL, null, toolCall.id(), null));
+			conversationHistory
+				.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
 		}
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
@@ -291,7 +292,6 @@ public class OpenAiChatClient extends
 	@Override
 	protected List<ChatCompletionMessage> doGetUserMessages(ChatCompletionRequest request) {
 		return request.messages();
-
 	}
 
 	@Override
@@ -316,7 +316,7 @@ public class OpenAiChatClient extends
 			return false;
 		}
 
-		return choices.get(0).message().toolCalls() != null;
+		return !CollectionUtils.isEmpty(choices.get(0).message().toolCalls());
 	}
 
 }

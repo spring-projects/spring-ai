@@ -20,8 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.mistralai.MistralAiChatClient;
-import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.test.context.SpringBootTest;
 

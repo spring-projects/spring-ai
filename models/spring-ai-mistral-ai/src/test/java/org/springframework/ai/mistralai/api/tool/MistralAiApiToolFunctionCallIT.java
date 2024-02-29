@@ -14,55 +14,58 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.chat.api.tool;
+package org.springframework.ai.mistralai.api.tool;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
+import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool.Type;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
-import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Based on the OpenAI Function Calling tutorial:
- * https://platform.openai.com/docs/guides/function-calling/parallel-function-calling
- *
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class OpenAiApiToolFunctionCallIT {
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
+@Disabled
+public class MistralAiApiToolFunctionCallIT {
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiApiToolFunctionCallIT.class);
+	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.LARGE.getValue();
 
-	@SuppressWarnings("null")
+	MistralAiApi completionApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+
 	@Test
-	public void toolFunctionCall() {
+	@SuppressWarnings("null")
+	public void toolFunctionCall() throws JsonProcessingException {
 
 		// Step 1: send the conversation and available functions to the model
-		var message = new ChatCompletionMessage("What's the weather like in San Francisco, Tokyo, and Paris?",
+		var message = new ChatCompletionMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Show the temperature in Celsius.",
 				Role.USER);
 
-		var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION,
-				new OpenAiApi.FunctionTool.Function(
+		var functionTool = new MistralAiApi.FunctionTool(Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function(
 						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
 						ModelOptionsUtils.jsonToMap("""
 								{
@@ -72,36 +75,31 @@ public class OpenAiApiToolFunctionCallIT {
 											"type": "string",
 											"description": "The city and state e.g. San Francisco, CA"
 										},
-										"lat": {
-											"type": "number",
-											"description": "The city latitude"
-										},
-										"lon": {
-											"type": "number",
-											"description": "The city longitude"
-										},
 										"unit": {
 											"type": "string",
 											"enum": ["C", "F"]
 										}
 									},
-									"required": ["location", "lat", "lon", "unit"]
+									"required": ["location", "unit"]
 								}
 								""")));
 
 		// Or you can use the
 		// ModelOptionsUtils.getJsonSchema(FakeWeatherService.Request.class))) to
 		// auto-generate the JSON schema like:
-		// var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION, new
-		// OpenAiApi.FunctionTool.Function(
+		// var functionTool = new MistralAiApi.FunctionTool(Type.FUNCTION, new
+		// MistralAiApi.FunctionTool.Function(
 		// "Get the weather in location. Return temperature in 30°F or 30°C format.",
 		// "getCurrentWeather",
-		// ModelOptionsUtils.getJsonSchema(FakeWeatherService.Request.class)));
+		// ModelOptionsUtils.getJsonSchema(MockWeatherService.Request.class)));
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview",
-				List.of(functionTool), null);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL,
+				List.of(functionTool), ToolChoice.AUTO);
+
+		System.out
+			.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(chatCompletionRequest));
 
 		ResponseEntity<ChatCompletion> chatCompletion = completionApi.chatCompletionEntity(chatCompletionRequest);
 
@@ -130,11 +128,11 @@ public class OpenAiApiToolFunctionCallIT {
 
 					// extend conversation with function response.
 					messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(),
-							Role.TOOL, functionName, toolCall.id(), null));
+							Role.TOOL, functionName, null));
 				}
 			}
 
-			var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview", 0.8f);
+			var functionResponseRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL, 0.8f);
 
 			ResponseEntity<ChatCompletion> chatCompletion2 = completionApi
 				.chatCompletionEntity(functionResponseRequest);
