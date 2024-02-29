@@ -17,6 +17,7 @@
 package org.springframework.ai.mistralai.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -38,6 +39,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -106,13 +108,12 @@ public class MistralAiApi {
 			@Override
 			public void handleError(ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
+					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+					String message = String.format("%s - %s", response.getStatusCode().value(), error);
 					if (response.getStatusCode().is4xxClientError()) {
-						throw new MistralAiApiClientErrorException(String.format("%s - %s",
-								response.getStatusCode().value(),
-								MistralAiApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+						throw new MistralAiApiClientErrorException(message);
 					}
-					throw new MistralAiApiException(String.format("%s - %s", response.getStatusCode().value(),
-							MistralAiApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+					throw new MistralAiApiException(message);
 				}
 			}
 		};
@@ -148,33 +149,6 @@ public class MistralAiApi {
 			super(message);
 		}
 
-	}
-
-	/**
-	 * API error response.
-	 *
-	 * @param error Error details.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record ResponseError(@JsonProperty("error") Error error) {
-
-		/**
-		 * Error details.
-		 *
-		 * @param message Error message.
-		 * @param type Error type.
-		 * @param param Error parameter.
-		 * @param code Error code.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record Error(
-		// @formatter:off
-			@JsonProperty("message") String message,
-			@JsonProperty("type") String type,
-			@JsonProperty("param") String param,
-			@JsonProperty("code") String code) {
-			// @formatter:on
-		}
 	}
 
 	/**
