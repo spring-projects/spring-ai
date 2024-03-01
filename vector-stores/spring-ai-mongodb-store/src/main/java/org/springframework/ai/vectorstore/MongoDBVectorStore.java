@@ -39,10 +39,10 @@ public class MongoDBVectorStore implements VectorStore {
 
     private final EmbeddingClient embeddingClient;
 
-    private final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
-    private final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
-    private final String DEFAULT_PATH_NAME = "embedding";
-    private final int DEFAULT_NUM_CANDIDATES = 10;
+    private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
+    private static final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
+    private static final String DEFAULT_PATH_NAME = "embedding";
+    private static final int DEFAULT_NUM_CANDIDATES = 10;
 
     public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
         this.mongoTemplate = mongoTemplate;
