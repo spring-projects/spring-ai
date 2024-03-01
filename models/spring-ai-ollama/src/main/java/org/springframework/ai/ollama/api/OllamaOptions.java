@@ -43,7 +43,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 @JsonInclude(Include.NON_NULL)
 public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
-	public static final String DEFAULT_MODEL = "mistral";
+	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
 	// @formatter:off
 	/**
@@ -243,6 +243,9 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	 */
 	@JsonProperty("model") private String model;
 
+	/**
+	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
+	 */
 	public OllamaOptions withModel(String model) {
 		this.model = model;
 		return this;
