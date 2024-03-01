@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-public class PgVectorStorePropertiesTests {
+public class QdrantVectorStorePropertiesTests {
 
 	@Test
 	public void defaultValues() {
