@@ -51,7 +51,7 @@ public class MongoDBVectorStore implements VectorStore {
     }
 
     /**
-     * Maps a basicDBObject to a Spring AI Document
+     * Maps a BasicDBObject to a Spring AI Document
      *
      * @param basicDBObject the basicDBObject to map to a spring ai document
      * @return the spring ai document
