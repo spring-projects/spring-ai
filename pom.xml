@@ -242,7 +242,7 @@
 							<flattenMode>ossrh</flattenMode>
 							<pomElements>
 								<distributionManagement>remove</distributionManagement>
-								<dependencyManagement>resolve</dependencyManagement>
+								<dependencyManagement>remove</dependencyManagement>
 								<repositories>remove</repositories>
 								<scm>keep</scm>
 								<url>keep</url>
