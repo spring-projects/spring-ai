@@ -15,25 +15,14 @@
  */
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiClientErrorException;
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.ai.openai.api.common.ApiUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -50,8 +39,6 @@ public class OpenAiImageApi {
 
 	private final RestClient restClient;
 
-	private final ObjectMapper objectMapper;
-
 	/**
 	 * Create a new OpenAI Image api with base URL set to https://api.openai.com
 	 * @param openAiToken OpenAI apiKey.
@@ -62,37 +49,40 @@ public class OpenAiImageApi {
 
 	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
 
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(openAiToken);
-			headers.setContentType(MediaType.APPLICATION_JSON);
-		};
-
-		var responseErrorHandler = new ResponseErrorHandler() {
-
-			@Override
-			public boolean hasError(ClientHttpResponse response) throws IOException {
-				return response.getStatusCode().isError();
-			}
-
-			@Override
-			public void handleError(ClientHttpResponse response) throws IOException {
-				if (response.getStatusCode().isError()) {
-					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-					String message = String.format("%s - %s", response.getStatusCode().value(), error);
-					if (response.getStatusCode().is4xxClientError()) {
-						throw new OpenAiApiClientErrorException(message);
-					}
-					throw new OpenAiApiException(message);
-				}
-			}
-		};
-
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(jsonContentHeaders)
-			.defaultStatusHandler(responseErrorHandler)
+			.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
+			.defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 			.build();
+	}
+
+	/**
+	 * OpenAI Image API model.
+	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
+	 */
+	enum ImageModel {
+
+		/**
+		 * The latest DALL·E model released in Nov 2023.
+		 */
+		DALL_E_3("dall-e-3"),
+
+		/**
+		 * The previous DALL·E model released in Nov 2022. The 2nd iteration of DALL·E
+		 * with more realistic, accurate, and 4x greater resolution images than the
+		 * original model.
+		 */
+		DALL_E_2("dall-e-2");
+
+		private final String model;
+
+		ImageModel(String model) {
+			this.model = model;
+		}
+
+		public String model() {
+			return this.model;
+		}
+
 	}
 
 	// @formatter:off

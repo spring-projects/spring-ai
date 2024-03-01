@@ -84,6 +84,8 @@ import org.springframework.web.client.RestClient;
  *
  * https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
  *
+ * https://ai.google.dev/api/rest#rest-resource:-v1.models
+ *
  * @author Christian Tzolov
  */
 public class VertexAiPaLm2Api {

@@ -16,11 +16,8 @@
 
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -30,17 +27,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.openai.api.common.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -89,72 +81,128 @@ public class OpenAiApi {
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
 
-		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(openAiToken);
-			headers.setContentType(MediaType.APPLICATION_JSON);
-		};
-
-		var responseErrorHandler = new ResponseErrorHandler() {
-
-			@Override
-			public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
-				return response.getStatusCode().isError();
-			}
-
-			@Override
-			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
-				if (response.getStatusCode().isError()) {
-					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-					String message = String.format("%s - %s", response.getStatusCode().value(), error);
-					if (response.getStatusCode().is4xxClientError()) {
-						throw new OpenAiApiClientErrorException(message);
-					}
-					throw new OpenAiApiException(message);
-				}
-			}
-		};
-
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
-				.defaultHeaders(jsonContentHeaders)
-				.defaultStatusHandler(responseErrorHandler)
+				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
+				.defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 				.build();
 
 		this.webClient = WebClient.builder()
 				.baseUrl(baseUrl)
-				.defaultHeaders(jsonContentHeaders)
+				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
 				.build();
 	}
 
-
 	/**
-	 * Non HTTP Error related exceptions
+	 * OpenAI Chat Completion Models:
+	 * <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a> and
+	 * <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
 	 */
-	public static class OpenAiApiException extends RuntimeException {
+	enum ChatModel {
+		/**
+		 * (New) GPT-4 Turbo - latest GPT-4 model intended to reduce cases
+		 * of “laziness” where the model doesn’t complete a task.
+		 * Returns a maximum of 4,096 output tokens.
+		 * Context window: 128k tokens
+		 */
+		GPT_4_0125_PREVIEW("gpt-4-0125-preview"),
 
-		public OpenAiApiException(String message) {
-			super(message);
+		/**
+		 * Currently points to gpt-4-0125-preview - model featuring improved
+		 * instruction following, JSON mode, reproducible outputs,
+		 * parallel function calling, and more.
+		 * Returns a maximum of 4,096 output tokens
+		 * Context window: 128k tokens
+		 */
+		GPT_4_TURBO_PREVIEW("gpt-4-turbo-preview"),
+
+		/**
+		 * GPT-4 with the ability to understand images, in addition
+		 * to all other GPT-4 Turbo capabilities. Currently points
+		 * to gpt-4-1106-vision-preview.
+		 * Returns a maximum of 4,096 output tokens
+		 * Context window: 128k tokens
+		 */
+		GPT_4_VISION_PREVIEW("gpt-4-vision-preview"),
+
+		/**
+		 * Currently points to gpt-4-0613.
+		 * Snapshot of gpt-4 from June 13th 2023 with improved
+		 * function calling support.
+		 * Context window: 8k tokens
+		 */
+		GPT_4("gpt-4"),
+
+		/**
+		 * Currently points to gpt-4-32k-0613.
+		 * Snapshot of gpt-4-32k from June 13th 2023 with improved
+		 * function calling support.
+		 * Context window: 32k tokens
+		 */
+		GPT_4_32K("gpt-4-32k"),
+
+		/**
+		 *Currently points to gpt-3.5-turbo-0125.
+		 * model with higher accuracy at responding in requested
+		 * formats and a fix for a bug which caused a text
+		 * encoding issue for non-English language function calls.
+		 * Returns a maximum of 4,096
+		 * Context window: 16k tokens
+		 */
+		GPT_3_5_TURBO("gpt-3.5-turbo"),
+
+		/**
+		 * GPT-3.5 Turbo model with improved instruction following,
+		 * JSON mode, reproducible outputs, parallel function calling,
+		 * and more. Returns a maximum of 4,096 output tokens.
+		 * Context window: 16k tokens.
+		 */
+		GPT_3_5_TURBO_1106("gpt-3.5-turbo-1106");
+
+		public final String  value;
+
+		ChatModel(String value) {
+			this.value = value;
 		}
 
-		public OpenAiApiException(String message, Throwable cause) {
-			super(message, cause);
+		public String getValue() {
+			return value;
 		}
 	}
 
 	/**
-	 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
-	 * 401 - You must be a member of an organization to use the API,
-	 * 429 - Rate limit reached for requests, 429 - You exceeded your current quota
-	 * , please check your plan and billing details.
+	 * OpenAI Embeddings Models:
+	 * <a href="https://platform.openai.com/docs/models/embeddings">Embeddings</a>.
 	 */
-	public static class OpenAiApiClientErrorException extends RuntimeException {
+	enum EmbeddingModel {
 
-		public OpenAiApiClientErrorException(String message) {
-			super(message);
+		/**
+		 * Most capable embedding model for both english and non-english tasks.
+		 * DIMENSION: 3072
+		 */
+		TEXT_EMBEDDING_3_LARGE("text-embedding-3-large"),
+
+		/**
+		 * Increased performance over 2nd generation ada embedding model.
+		 * DIMENSION: 1536
+		 */
+		TEXT_EMBEDDING_3_SMALL("text-embedding-3-small"),
+
+		/**
+		 * Most capable 2nd generation embedding model, replacing 16 first
+		 * generation models.
+		 * DIMENSION: 1536
+		 */
+		TEXT_EMBEDDING_ADA_002("text-embedding-ada-002");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
 		}
 
-		public OpenAiApiClientErrorException(String message, Throwable cause) {
-			super(message, cause);
+		public String getValue() {
+			return value;
 		}
 	}
 
