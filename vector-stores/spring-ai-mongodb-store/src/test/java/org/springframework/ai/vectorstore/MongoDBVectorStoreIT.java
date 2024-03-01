@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore;
 
 import com.mongodb.client.MongoClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
@@ -50,11 +51,12 @@ class MongoDBVectorStoreIT {
             .withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"),
 
                     // JdbcTemplate configuration
-                    String.format("spring.data.mongodb.uri=mongodb://localhost:%d/test", 56903));
+                    String.format("spring.data.mongodb.uri="+System.getenv("SPRING_DATA_MONGODB_URI"))
+                    );
 
 
-   // @AfterEach
-    public  void afterEverything(){
+    @BeforeEach
+    public void afterEverything(){
         contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 
             MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
@@ -77,7 +79,7 @@ class MongoDBVectorStoreIT {
                             Collections.singletonMap("meta2", "meta2")));
 
             vectorStore.add(documents);
-            Thread.sleep(2000);            //Await a second for the document to be indexed
+            Thread.sleep(5000);            //Await a second for the document to be indexed
 
             List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 
@@ -107,7 +109,7 @@ class MongoDBVectorStoreIT {
                     Collections.singletonMap("meta1", "meta1"));
 
             vectorStore.add(List.of(document));
-            Thread.sleep(2000);            //Await a second for the document to be indexed
+            Thread.sleep(5000);            //Await a second for the document to be indexed
 
 
             List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
@@ -146,7 +148,7 @@ class MongoDBVectorStoreIT {
 
         @Bean
         public MongoTemplate mongoTemplate(MongoClient mongoClient) {
-            return new MongoTemplate(mongoClient, "test");
+            return new MongoTemplate(mongoClient, "springaisample");
         }
 
         @Bean

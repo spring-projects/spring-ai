@@ -96,11 +96,11 @@ public class MongoDBVectorStore implements VectorStore {
     public List<Document> similaritySearch(SearchRequest request) {
         List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 
-        var vectorSearch = new VectorSearchAggregation(queryEmbedding, "embedding", DEFAULT_NUM_CANDIDATES, "spring_ai_vector_search", request.getTopK());
+        var vectorSearch = new VectorSearchAggregation(queryEmbedding, "embedding", DEFAULT_NUM_CANDIDATES, "vector_index", request.getTopK());
 
         Aggregation aggregation = Aggregation.newAggregation(
                 vectorSearch,
-                Aggregation.addFields().addField("score").withValue("$meta.searchScore").build(),
+                Aggregation.addFields().addField("score").withValueOfExpression("{\"$meta\":\"vectorSearchScore\"}").build(),
                 Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold()))
                 );
 
