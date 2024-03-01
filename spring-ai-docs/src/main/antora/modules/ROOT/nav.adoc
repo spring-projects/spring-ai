@@ -30,6 +30,7 @@
 **** xref:api/clients/vertexai-gemini-chat.adoc[VertexAI Gemini]
 ***** xref:api/clients/functions/vertexai-gemini-chat-functions.adoc[Function Calling]
 *** xref:api/clients/mistralai-chat.adoc[Mistral AI]
+**** xref:api/clients/functions/mistralai-chat-functions.adoc[Function Calling]
 ** xref:api/imageclient.adoc[]
 *** xref:api/clients/image/openai-image.adoc[OpenAI]
 *** xref:api/clients/image/stabilityai-image.adoc[Stability]
