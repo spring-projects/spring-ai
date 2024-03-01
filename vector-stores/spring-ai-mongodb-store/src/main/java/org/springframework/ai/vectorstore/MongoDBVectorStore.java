@@ -39,14 +39,16 @@ public class MongoDBVectorStore implements VectorStore {
 
     private final EmbeddingClient embeddingClient;
 
-    private static final String VECTOR_COLLECTION_NAME = "vector_store";
+    private final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
+    private final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
+    private final String DEFAULT_PATH_NAME = "embedding";
     private final int DEFAULT_NUM_CANDIDATES = 10;
 
     public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
         this.mongoTemplate = mongoTemplate;
         this.embeddingClient = embeddingClient;
-        if (!mongoTemplate.collectionExists(VECTOR_COLLECTION_NAME)) {
-            mongoTemplate.createCollection(VECTOR_COLLECTION_NAME);
+        if (!mongoTemplate.collectionExists(DEFAULT_VECTOR_COLLECTION_NAME)) {
+            mongoTemplate.createCollection(DEFAULT_VECTOR_COLLECTION_NAME);
         }
     }
 
@@ -60,7 +62,7 @@ public class MongoDBVectorStore implements VectorStore {
         String id = basicDBObject.getString("_id");
         String content = basicDBObject.getString("content");
         Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get("metadata");
-        List<Double> embedding = (List<Double>) basicDBObject.get("embedding");
+        List<Double> embedding = (List<Double>) basicDBObject.get(DEFAULT_PATH_NAME);
 
         Document document = new Document(id, content, metadata);
         document.setEmbedding(embedding);
@@ -73,7 +75,7 @@ public class MongoDBVectorStore implements VectorStore {
         for (Document document : documents) {
             List<Double> embedding = this.embeddingClient.embed(document);
             document.setEmbedding(embedding);
-            this.mongoTemplate.save(document, VECTOR_COLLECTION_NAME);
+            this.mongoTemplate.save(document, DEFAULT_VECTOR_COLLECTION_NAME);
         }
     }
 
@@ -81,7 +83,7 @@ public class MongoDBVectorStore implements VectorStore {
     public Optional<Boolean> delete(List<String> idList) {
         Query query = new Query(where("_id").in(idList));
 
-        var deleteRes = this.mongoTemplate.remove(query, VECTOR_COLLECTION_NAME);
+        var deleteRes = this.mongoTemplate.remove(query, DEFAULT_VECTOR_COLLECTION_NAME);
         long deleteCount = deleteRes.getDeletedCount();
 
         return Optional.of(deleteCount == idList.size());
@@ -96,7 +98,7 @@ public class MongoDBVectorStore implements VectorStore {
     public List<Document> similaritySearch(SearchRequest request) {
         List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 
-        var vectorSearch = new VectorSearchAggregation(queryEmbedding, "embedding", DEFAULT_NUM_CANDIDATES, "vector_index", request.getTopK());
+        var vectorSearch = new VectorSearchAggregation(queryEmbedding, DEFAULT_PATH_NAME, DEFAULT_NUM_CANDIDATES, DEFAULT_VECTOR_INDEX_NAME, request.getTopK());
 
         Aggregation aggregation = Aggregation.newAggregation(
                 vectorSearch,
@@ -104,7 +106,7 @@ public class MongoDBVectorStore implements VectorStore {
                 Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold()))
                 );
 
-        return this.mongoTemplate.aggregate(aggregation, VECTOR_COLLECTION_NAME, BasicDBObject.class)
+        return this.mongoTemplate.aggregate(aggregation, DEFAULT_VECTOR_COLLECTION_NAME, BasicDBObject.class)
                 .getMappedResults()
                 .stream()
                 .map(this::mapBasicDbObject)
