@@ -30,7 +30,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Chris Smith
  */
-@Testcontainers
 class MongoDBVectorStoreIT {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
