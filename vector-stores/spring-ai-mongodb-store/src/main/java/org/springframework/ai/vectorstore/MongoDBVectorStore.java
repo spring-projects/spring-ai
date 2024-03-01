@@ -35,78 +35,85 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
  */
 public class MongoDBVectorStore implements VectorStore {
 
-    private final MongoTemplate mongoTemplate;
-    private final EmbeddingClient embeddingClient;
-    private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
-    private static final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
-    private static final String DEFAULT_PATH_NAME = "embedding";
-    private static final int DEFAULT_NUM_CANDIDATES = 10;
+	private final MongoTemplate mongoTemplate;
 
-    public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
-        this.mongoTemplate = mongoTemplate;
-        this.embeddingClient = embeddingClient;
-        if (!mongoTemplate.collectionExists(DEFAULT_VECTOR_COLLECTION_NAME)) {
-            mongoTemplate.createCollection(DEFAULT_VECTOR_COLLECTION_NAME);
-        }
-    }
+	private final EmbeddingClient embeddingClient;
 
-    /**
-     * Maps a BasicDBObject to a Spring AI Document
-     *
-     * @param basicDBObject the basicDBObject to map to a spring ai document
-     * @return the spring ai document
-     */
-    private Document mapBasicDbObject(BasicDBObject basicDBObject) {
-        String id = basicDBObject.getString("_id");
-        String content = basicDBObject.getString("content");
-        Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get("metadata");
-        List<Double> embedding = (List<Double>) basicDBObject.get(DEFAULT_PATH_NAME);
+	private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
 
-        Document document = new Document(id, content, metadata);
-        document.setEmbedding(embedding);
+	private static final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
 
-        return document;
-    }
+	private static final String DEFAULT_PATH_NAME = "embedding";
 
-    @Override
-    public void add(List<Document> documents) {
-        for (Document document : documents) {
-            List<Double> embedding = this.embeddingClient.embed(document);
-            document.setEmbedding(embedding);
-            this.mongoTemplate.save(document, DEFAULT_VECTOR_COLLECTION_NAME);
-        }
-    }
+	private static final int DEFAULT_NUM_CANDIDATES = 10;
 
-    @Override
-    public Optional<Boolean> delete(List<String> idList) {
-        Query query = new Query(where("_id").in(idList));
+	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
+		this.mongoTemplate = mongoTemplate;
+		this.embeddingClient = embeddingClient;
+		if (!mongoTemplate.collectionExists(DEFAULT_VECTOR_COLLECTION_NAME)) {
+			mongoTemplate.createCollection(DEFAULT_VECTOR_COLLECTION_NAME);
+		}
+	}
 
-        var deleteRes = this.mongoTemplate.remove(query, DEFAULT_VECTOR_COLLECTION_NAME);
-        long deleteCount = deleteRes.getDeletedCount();
+	/**
+	 * Maps a BasicDBObject to a Spring AI Document
+	 * @param basicDBObject the basicDBObject to map to a spring ai document
+	 * @return the spring ai document
+	 */
+	private Document mapBasicDbObject(BasicDBObject basicDBObject) {
+		String id = basicDBObject.getString("_id");
+		String content = basicDBObject.getString("content");
+		Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get("metadata");
+		List<Double> embedding = (List<Double>) basicDBObject.get(DEFAULT_PATH_NAME);
 
-        return Optional.of(deleteCount == idList.size());
-    }
+		Document document = new Document(id, content, metadata);
+		document.setEmbedding(embedding);
 
-    @Override
-    public List<Document> similaritySearch(String query) {
-        return similaritySearch(SearchRequest.query(query));
-    }
+		return document;
+	}
 
-    @Override
-    public List<Document> similaritySearch(SearchRequest request) {
-        List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
-        var vectorSearch = new VectorSearchAggregation(queryEmbedding, DEFAULT_PATH_NAME, DEFAULT_NUM_CANDIDATES, DEFAULT_VECTOR_INDEX_NAME, request.getTopK());
+	@Override
+	public void add(List<Document> documents) {
+		for (Document document : documents) {
+			List<Double> embedding = this.embeddingClient.embed(document);
+			document.setEmbedding(embedding);
+			this.mongoTemplate.save(document, DEFAULT_VECTOR_COLLECTION_NAME);
+		}
+	}
 
-        Aggregation aggregation = Aggregation.newAggregation(
-                vectorSearch,
-                Aggregation.addFields().addField("score").withValueOfExpression("{\"$meta\":\"vectorSearchScore\"}").build(),
-                Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold()))
-                );
+	@Override
+	public Optional<Boolean> delete(List<String> idList) {
+		Query query = new Query(where("_id").in(idList));
 
-        return this.mongoTemplate.aggregate(aggregation, DEFAULT_VECTOR_COLLECTION_NAME, BasicDBObject.class)
-                .getMappedResults()
-                .stream()
-                .map(this::mapBasicDbObject)
-                .toList();
-    }
+		var deleteRes = this.mongoTemplate.remove(query, DEFAULT_VECTOR_COLLECTION_NAME);
+		long deleteCount = deleteRes.getDeletedCount();
+
+		return Optional.of(deleteCount == idList.size());
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query) {
+		return similaritySearch(SearchRequest.query(query));
+	}
+
+	@Override
+	public List<Document> similaritySearch(SearchRequest request) {
+		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
+		var vectorSearch = new VectorSearchAggregation(queryEmbedding, DEFAULT_PATH_NAME, DEFAULT_NUM_CANDIDATES,
+				DEFAULT_VECTOR_INDEX_NAME, request.getTopK());
+
+		Aggregation aggregation = Aggregation.newAggregation(vectorSearch,
+				Aggregation.addFields()
+					.addField("score")
+					.withValueOfExpression("{\"$meta\":\"vectorSearchScore\"}")
+					.build(),
+				Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold())));
+
+		return this.mongoTemplate.aggregate(aggregation, DEFAULT_VECTOR_COLLECTION_NAME, BasicDBObject.class)
+			.getMappedResults()
+			.stream()
+			.map(this::mapBasicDbObject)
+			.toList();
+	}
+
 }

@@ -59,6 +59,7 @@
 		<module>vector-stores/spring-ai-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
+		<module>vector-stores/spring-ai-mongodb-store</module>
 	</modules>
 
 	<organization>
