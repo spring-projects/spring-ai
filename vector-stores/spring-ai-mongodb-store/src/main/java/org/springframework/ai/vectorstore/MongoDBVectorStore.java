@@ -45,7 +45,7 @@ public class MongoDBVectorStore implements VectorStore {
 
 	private static final String DEFAULT_PATH_NAME = "embedding";
 
-	private static final int DEFAULT_NUM_CANDIDATES = 10;
+	private static final int DEFAULT_NUM_CANDIDATES = 200;
 
 	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
 		this.mongoTemplate = mongoTemplate;
