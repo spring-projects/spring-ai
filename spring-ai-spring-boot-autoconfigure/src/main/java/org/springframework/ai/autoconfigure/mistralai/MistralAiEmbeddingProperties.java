@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.mistralai;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -30,7 +31,7 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.embedding";
 
-	public static final String DEFAULT_EMBEDDING_MODEL = "mistral-embed";
+	public static final String DEFAULT_EMBEDDING_MODEL = MistralAiApi.EmbeddingModel.EMBED.getValue();
 
 	public static final String DEFAULT_ENCODING_FORMAT = "float";
 

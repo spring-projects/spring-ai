@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -218,7 +218,8 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.chat.options.temperature=0.55",
 				"spring.ai.openai.chat.options.topP=0.56",
 
-				"spring.ai.openai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
+				// "spring.ai.openai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
+				"spring.ai.openai.chat.options.toolChoice=" + ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName"),
 
 				"spring.ai.openai.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.openai.chat.options.tools[0].function.description=function description",
@@ -272,8 +273,9 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
 
-				assertThat(chatProperties.getOptions().getToolChoice())
-					.isEqualTo(new ToolChoice("function", Map.of("name", "toolChoiceFunctionName")));
+				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
+						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
+
 				assertThat(chatProperties.getOptions().getUser()).isEqualTo("userXYZ");
 
 				assertThat(chatProperties.getOptions().getTools()).hasSize(1);

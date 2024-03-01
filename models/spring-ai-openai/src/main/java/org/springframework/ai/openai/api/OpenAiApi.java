@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -25,20 +26,20 @@ import java.util.function.Predicate;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -59,7 +60,6 @@ public class OpenAiApi {
 
 	private final RestClient restClient;
 	private final WebClient webClient;
-	private final ObjectMapper objectMapper;
 
 	/**
 	 * Create an new chat completion api with base URL set to https://api.openai.com
@@ -89,8 +89,6 @@ public class OpenAiApi {
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
 
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(openAiToken);
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -99,19 +97,19 @@ public class OpenAiApi {
 		var responseErrorHandler = new ResponseErrorHandler() {
 
 			@Override
-			public boolean hasError(ClientHttpResponse response) throws IOException {
+			public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
 				return response.getStatusCode().isError();
 			}
 
 			@Override
-			public void handleError(ClientHttpResponse response) throws IOException {
+			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
+					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+					String message = String.format("%s - %s", response.getStatusCode().value(), error);
 					if (response.getStatusCode().is4xxClientError()) {
-						throw new OpenAiApiClientErrorException(String.format("%s - %s", response.getStatusCode().value(),
-							OpenAiApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+						throw new OpenAiApiClientErrorException(message);
 					}
-					throw new OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
-							OpenAiApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+					throw new OpenAiApiException(message);
 				}
 			}
 		};
@@ -129,6 +127,9 @@ public class OpenAiApi {
 	}
 
 
+	/**
+	 * Non HTTP Error related exceptions
+	 */
 	public static class OpenAiApiException extends RuntimeException {
 
 		public OpenAiApiException(String message) {
@@ -154,29 +155,6 @@ public class OpenAiApi {
 
 		public OpenAiApiClientErrorException(String message, Throwable cause) {
 			super(message, cause);
-		}
-	}
-
-	/**
-	 * API error response.
-	 * @param error Error details.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record ResponseError(@JsonProperty("error") Error error) {
-
-		/**
-		 * Error details.
-		 * @param message Error message.
-		 * @param type Error type.
-		 * @param param Error parameter.
-		 * @param code Error code.
-		 */
-		@JsonInclude(Include.NON_NULL)
-		public record Error(
-				@JsonProperty("message") String message,
-				@JsonProperty("type") String type,
-				@JsonProperty("param") String param,
-				@JsonProperty("code") String code) {
 		}
 	}
 
@@ -234,7 +212,7 @@ public class OpenAiApi {
 			 */
 			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, parseJson(jsonSchema));
+				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}
 		}
 	}
@@ -278,7 +256,7 @@ public class OpenAiApi {
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
 	 * function. Specifying a particular function via {"type: "function", "function": {"name": "my_function"}} forces
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
-	 * functions are present.
+	 * functions are present. Use the {@link ToolChoiceBuilder} to create the tool choice value.
 	 * @param user A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 *
 	 */
@@ -298,7 +276,7 @@ public class OpenAiApi {
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") ToolChoice toolChoice,
+			@JsonProperty("tool_choice") String toolChoice,
 			@JsonProperty("user") String user) {
 
 		/**
@@ -309,7 +287,7 @@ public class OpenAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(messages, model, 0.0f, null, null, 1, 0.0f,
+			this(messages, model, null, null, null, null, null,
 					null, null, null, false, temperature, null,
 					null, null, null);
 		}
@@ -324,7 +302,7 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
-			this(messages, model, 0.0f, null, null, 1, 0.0f,
+			this(messages, model, null, null, null, null, null,
 					null, null, null, stream, temperature, null,
 					null, null, null);
 		}
@@ -339,8 +317,8 @@ public class OpenAiApi {
 		 * @param toolChoice Controls which (if any) function is called by the model.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
-				List<FunctionTool> tools, ToolChoice toolChoice) {
-			this(messages, model, 0.0f, null, null, 1, 0.0f,
+				List<FunctionTool> tools, String toolChoice) {
+			this(messages, model, null, null, null, null, null,
 					null, null, null, false, 0.8f, null,
 					tools, toolChoice, null);
 		}
@@ -360,23 +338,23 @@ public class OpenAiApi {
 		}
 
 		/**
-		 * Specifies a tool the model should use. Use to force the model to call a specific function.
-		 *
-		 * @param type The type of the tool. Currently, only 'function' is supported.
-		 * @param function single field map for type 'name':'your function name'.
+		 * Helper factory that creates a tool_choice of type 'none', 'auto' or selected function by name.
 		 */
-		@JsonInclude(Include.NON_NULL)
-		public record ToolChoice(
-				@JsonProperty("type") String type,
-				@JsonProperty("function") Map<String, String> function) {
+		public static class ToolChoiceBuilder {
+			/**
+			 * Model can pick between generating a message or calling a function.
+			 */
+			public static final String AUTO = "none";
+			/**
+			 * Model will not call a function and instead generates a message
+			 */
+			public static final String NONE = "none";
 
 			/**
-			 * Create a tool choice of type 'function' and name 'functionName'.
-			 * @param functionName Function name of the tool.
+			 * Specifying a particular function forces the model to call that function.
 			 */
-			@ConstructorBinding
-			public ToolChoice(String functionName) {
-				this("function", Map.of("name", functionName));
+			public static String FUNCTION(String functionName) {
+				return ModelOptionsUtils.toJsonString(Map.of("type", "function", "function", Map.of("name", functionName)));
 			}
 		}
 
@@ -676,7 +654,7 @@ public class OpenAiApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				// filters out the "[DONE]" message.
 				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> parseJson(content, ChatCompletionChunk.class));
+				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class));
 	}
 
 	/**
@@ -794,26 +772,6 @@ public class OpenAiApi {
 				.retrieve()
 				.toEntity(new ParameterizedTypeReference<>() {
 				});
-	}
-
-	public static Map<String, Object> parseJson(String jsonSchema) {
-		try {
-			return new ObjectMapper().readValue(jsonSchema,
-					new TypeReference<Map<String, Object>>() {
-					});
-		}
-		catch (Exception e) {
-			throw new OpenAiApiException("Failed to parse schema: " + jsonSchema, e);
-		}
-	}
-
-	private <T> T parseJson(String json, Class<T> type) {
-		try {
-			return this.objectMapper.readValue(json, type);
-		}
-		catch (Exception e) {
-			throw new OpenAiApiException("Failed to parse schema: " + json, e);
-		}
 	}
 }
 // @formatter:on

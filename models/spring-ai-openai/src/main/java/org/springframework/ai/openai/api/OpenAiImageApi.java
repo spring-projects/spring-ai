@@ -16,6 +16,7 @@
 package org.springframework.ai.openai.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -26,12 +27,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiClientErrorException;
 import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
-import org.springframework.ai.openai.api.OpenAiApi.ResponseError;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -78,13 +79,12 @@ public class OpenAiImageApi {
 			@Override
 			public void handleError(ClientHttpResponse response) throws IOException {
 				if (response.getStatusCode().isError()) {
+					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+					String message = String.format("%s - %s", response.getStatusCode().value(), error);
 					if (response.getStatusCode().is4xxClientError()) {
-						throw new OpenAiApiClientErrorException(String.format("%s - %s",
-								response.getStatusCode().value(),
-								OpenAiImageApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+						throw new OpenAiApiClientErrorException(message);
 					}
-					throw new OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
-							OpenAiImageApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
+					throw new OpenAiApiException(message);
 				}
 			}
 		};
