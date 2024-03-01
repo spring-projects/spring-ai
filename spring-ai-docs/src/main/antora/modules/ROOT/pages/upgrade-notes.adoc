@@ -45,6 +45,13 @@ to
 </dependency>
 ----
 
+* Renamed Classes (01.03.2024)
+
+** VertexAiApi -> VertexAiPalm2Api
+** VertexAiClientChat -> VertexAiPalm2ChatClient
+** VertexAiEmbeddingClient -> VertexAiPalm2EmbeddingClient
+** VertexAiChatOptions -> VertexAiPalm2ChatOptions
+
 == Upgrading to 0.8.0
 
 === January 24, 2024 Update

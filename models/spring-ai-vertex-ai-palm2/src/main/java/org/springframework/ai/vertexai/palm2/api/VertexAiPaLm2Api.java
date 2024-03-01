@@ -82,9 +82,11 @@ import org.springframework.web.client.RestClient;
  * 		topK=null
  * </pre>
  *
+ * https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+ *
  * @author Christian Tzolov
  */
-public class VertexAiApi {
+public class VertexAiPaLm2Api {
 
 	/**
 	 * The default generation model. This model is used to generate responses for the
@@ -115,7 +117,7 @@ public class VertexAiApi {
 	 * Create a new chat completion api.
 	 * @param apiKey vertex apiKey.
 	 */
-	public VertexAiApi(String apiKey) {
+	public VertexAiPaLm2Api(String apiKey) {
 		this(DEFAULT_BASE_URL, apiKey, DEFAULT_GENERATE_MODEL, DEFAULT_EMBEDDING_MODEL, RestClient.builder());
 	}
 
@@ -127,7 +129,7 @@ public class VertexAiApi {
 	 * @param embeddingModel vertex embedding model.
 	 * @param restClientBuilder RestClient builder.
 	 */
-	public VertexAiApi(String baseUrl, String apiKey, String model, String embeddingModel,
+	public VertexAiPaLm2Api(String baseUrl, String apiKey, String model, String embeddingModel,
 			RestClient.Builder restClientBuilder) {
 
 		this.chatModel = model;

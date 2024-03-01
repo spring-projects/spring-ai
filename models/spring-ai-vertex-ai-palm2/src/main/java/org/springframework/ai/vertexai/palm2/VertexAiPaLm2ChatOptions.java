@@ -26,7 +26,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @author Christian Tzolov
  */
 @JsonInclude(Include.NON_NULL)
-public class VertexAiChatOptions implements ChatOptions {
+public class VertexAiPaLm2ChatOptions implements ChatOptions {
 
 	// @formatter:off
 	/**
@@ -65,7 +65,7 @@ public class VertexAiChatOptions implements ChatOptions {
 
 	public static class Builder {
 
-		private VertexAiChatOptions options = new VertexAiChatOptions();
+		private VertexAiPaLm2ChatOptions options = new VertexAiPaLm2ChatOptions();
 
 		public Builder withTemperature(Float temperature) {
 			this.options.temperature = temperature;
@@ -87,7 +87,7 @@ public class VertexAiChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public VertexAiChatOptions build() {
+		public VertexAiPaLm2ChatOptions build() {
 			return this.options;
 		}
 

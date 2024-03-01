@@ -590,7 +590,13 @@ public class MistralAiApi {
 		 /**
 		  * The model called a tool.
 		  */
-		 @JsonProperty("tool_call") TOOL_CALL
+		 @JsonProperty("tool_call") TOOL_CALL,
+
+		 // anticipation of future changes. Based on:
+		 // https://github.com/mistralai/client-python/blob/main/src/mistralai/models/chat_completion.py
+		 @JsonProperty("error") ERROR,
+		 
+		 @JsonProperty("tool_calls") TOOL_CALLS
 		 // @formatter:on
 
 	}

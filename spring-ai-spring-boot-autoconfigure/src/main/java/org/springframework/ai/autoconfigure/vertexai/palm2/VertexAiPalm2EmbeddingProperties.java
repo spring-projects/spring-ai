@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vertexai.palm2;
 
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(VertexAiPalm2EmbeddingProperties.CONFIG_PREFIX)
@@ -32,7 +32,7 @@ public class VertexAiPalm2EmbeddingProperties {
 	/**
 	 * Vertex AI PaLM API embedding generative name. Defaults to embedding-gecko-001.
 	 */
-	private String model = VertexAiApi.DEFAULT_EMBEDDING_MODEL;
+	private String model = VertexAiPaLm2Api.DEFAULT_EMBEDDING_MODEL;
 
 	public String getModel() {
 		return this.model;

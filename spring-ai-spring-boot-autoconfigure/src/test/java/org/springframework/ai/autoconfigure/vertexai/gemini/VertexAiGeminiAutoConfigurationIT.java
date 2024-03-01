@@ -42,7 +42,8 @@ public class VertexAiGeminiAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
 				"spring.ai.vertex.ai.gemini.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"),
-				"spring.ai.vertex.ai.gemini.chat.options.model=gemini-pro-vision")
+				"spring.ai.vertex.ai.gemini.chat.options.model="
+						+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_VISION.getValue())
 		.withConfiguration(AutoConfigurations.of(VertexAiGeminiAutoConfiguration.class));
 
 	@Test

@@ -54,27 +54,30 @@ public class FunctionCallWithFunctionWrapperIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model=gemini-pro").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
+					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.run(context -> {
 
-			VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
 
-			var systemMessage = new SystemMessage("""
-					Use Multi-turn function calling.
-					Answer for all listed locations.
-					If the information was not fetched call the function again. Repeat at most 3 times.
-					""");
-			var userMessage = new UserMessage("What's the weather like in San Francisco, Paris and in Tokyo?");
+				var systemMessage = new SystemMessage("""
+						Use Multi-turn function calling.
+						Answer for all listed locations.
+						If the information was not fetched call the function again. Repeat at most 3 times.
+						""");
+				var userMessage = new UserMessage("What's the weather like in San Francisco, Paris and in Tokyo?");
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
-					VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
+				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+						VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
 
-			logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-			assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-			assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
+				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
+				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
+				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
 
-		});
+			});
 	}
 
 	@Configuration

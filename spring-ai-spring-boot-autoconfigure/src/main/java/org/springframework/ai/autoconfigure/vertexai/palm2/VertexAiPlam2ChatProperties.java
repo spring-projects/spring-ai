@@ -16,8 +16,8 @@
 
 package org.springframework.ai.autoconfigure.vertexai.palm2;
 
-import org.springframework.ai.vertexai.palm2.VertexAiChatOptions;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.VertexAiPaLm2ChatOptions;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(VertexAiPlam2ChatProperties.CONFIG_PREFIX)
@@ -33,12 +33,12 @@ public class VertexAiPlam2ChatProperties {
 	/**
 	 * Vertex AI PaLM API generative name. Defaults to chat-bison-001
 	 */
-	private String model = VertexAiApi.DEFAULT_GENERATE_MODEL;
+	private String model = VertexAiPaLm2Api.DEFAULT_GENERATE_MODEL;
 
 	/**
 	 * Vertex AI PaLM API generative options.
 	 */
-	private VertexAiChatOptions options = VertexAiChatOptions.builder()
+	private VertexAiPaLm2ChatOptions options = VertexAiPaLm2ChatOptions.builder()
 		.withTemperature(0.7f)
 		.withTopP(null)
 		.withCandidateCount(1)
@@ -53,11 +53,11 @@ public class VertexAiPlam2ChatProperties {
 		this.model = model;
 	}
 
-	public VertexAiChatOptions getOptions() {
+	public VertexAiPaLm2ChatOptions getOptions() {
 		return this.options;
 	}
 
-	public void setOptions(VertexAiChatOptions options) {
+	public void setOptions(VertexAiPaLm2ChatOptions options) {
 		this.options = options;
 	}
 
