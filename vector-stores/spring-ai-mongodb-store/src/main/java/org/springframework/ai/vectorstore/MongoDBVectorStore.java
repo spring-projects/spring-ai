@@ -36,9 +36,7 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 public class MongoDBVectorStore implements VectorStore {
 
     private final MongoTemplate mongoTemplate;
-
     private final EmbeddingClient embeddingClient;
-
     private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
     private static final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
     private static final String DEFAULT_PATH_NAME = "embedding";
@@ -97,7 +95,6 @@ public class MongoDBVectorStore implements VectorStore {
     @Override
     public List<Document> similaritySearch(SearchRequest request) {
         List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
-
         var vectorSearch = new VectorSearchAggregation(queryEmbedding, DEFAULT_PATH_NAME, DEFAULT_NUM_CANDIDATES, DEFAULT_VECTOR_INDEX_NAME, request.getTopK());
 
         Aggregation aggregation = Aggregation.newAggregation(
@@ -112,6 +109,4 @@ public class MongoDBVectorStore implements VectorStore {
                 .map(this::mapBasicDbObject)
                 .toList();
     }
-
-
 }

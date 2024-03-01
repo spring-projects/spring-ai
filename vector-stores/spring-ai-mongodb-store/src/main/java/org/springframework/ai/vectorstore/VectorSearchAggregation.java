@@ -6,10 +6,10 @@ import org.springframework.data.mongodb.core.aggregation.AggregationOperationCon
 
 import java.util.List;
 
-record VectorSearchAggregation(List<Double> embeddings,String path, int numCandidates, String index,  int count) implements AggregationOperation {
+record VectorSearchAggregation(List<Double> embeddings, String path, int numCandidates, String index, int count) implements AggregationOperation {
     @Override
     public org.bson.Document toDocument(AggregationOperationContext context) {
-        var doc =  new Document("$vectorSearch",
+        var doc = new Document("$vectorSearch",
                 new Document("queryVector", embeddings)
                         .append("path", path)
                         .append("numCandidates", numCandidates)

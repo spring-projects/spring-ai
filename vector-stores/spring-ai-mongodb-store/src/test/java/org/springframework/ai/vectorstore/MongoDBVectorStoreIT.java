@@ -45,28 +45,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class MongoDBVectorStoreIT {
 
-
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(TestApplication.class)
             .withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"),
-
-                    // JdbcTemplate configuration
-                    String.format("spring.data.mongodb.uri="+System.getenv("SPRING_DATA_MONGODB_URI"))
-                    );
+                    String.format("spring.data.mongodb.uri=" + System.getenv("SPRING_DATA_MONGODB_URI"))
+            );
 
 
     @BeforeEach
-    public void afterEverything(){
+    public void afterEverything() {
         contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
-
             MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
             mongoTemplate.getCollection("vector_store").deleteMany(new org.bson.Document());
         });
     }
+
     @Test
     void vectorStoreTest() {
         contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
-
             VectorStore vectorStore = context.getBean(VectorStore.class);
 
             List<Document> documents = List.of(
@@ -102,7 +98,6 @@ class MongoDBVectorStoreIT {
     @Test
     void documentUpdateTest() {
         contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
-
             VectorStore vectorStore = context.getBean(VectorStore.class);
 
             Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -140,7 +135,6 @@ class MongoDBVectorStoreIT {
     @SpringBootConfiguration
     @EnableAutoConfiguration
     public static class TestApplication {
-
         @Bean
         public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
             return new MongoDBVectorStore(mongoTemplate, embeddingClient);
