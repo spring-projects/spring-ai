@@ -19,10 +19,12 @@ package org.springframework.ai.vectorstore;
 import com.mongodb.BasicDBObject;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -33,11 +35,13 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 /**
  * @author Chris Smith
  */
-public class MongoDBVectorStore implements VectorStore {
+public class MongoDBVectorStore implements VectorStore, InitializingBean {
 
 	private final MongoTemplate mongoTemplate;
 
 	private final EmbeddingClient embeddingClient;
+
+	private final MongoDBVectorStoreConfig config;
 
 	private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
 
@@ -48,10 +52,21 @@ public class MongoDBVectorStore implements VectorStore {
 	private static final int DEFAULT_NUM_CANDIDATES = 200;
 
 	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
+		this(mongoTemplate, embeddingClient, MongoDBVectorStoreConfig.defaultConfig());
+	}
+
+	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
+			MongoDBVectorStoreConfig config) {
 		this.mongoTemplate = mongoTemplate;
 		this.embeddingClient = embeddingClient;
-		if (!mongoTemplate.collectionExists(DEFAULT_VECTOR_COLLECTION_NAME)) {
-			mongoTemplate.createCollection(DEFAULT_VECTOR_COLLECTION_NAME);
+		this.config = config;
+
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
+			mongoTemplate.createCollection(this.config.collectionName);
 		}
 	}
 
@@ -64,7 +79,7 @@ public class MongoDBVectorStore implements VectorStore {
 		String id = basicDBObject.getString("_id");
 		String content = basicDBObject.getString("content");
 		Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get("metadata");
-		List<Double> embedding = (List<Double>) basicDBObject.get(DEFAULT_PATH_NAME);
+		List<Double> embedding = (List<Double>) basicDBObject.get(this.config.pathName);
 
 		Document document = new Document(id, content, metadata);
 		document.setEmbedding(embedding);
@@ -77,7 +92,7 @@ public class MongoDBVectorStore implements VectorStore {
 		for (Document document : documents) {
 			List<Double> embedding = this.embeddingClient.embed(document);
 			document.setEmbedding(embedding);
-			this.mongoTemplate.save(document, DEFAULT_VECTOR_COLLECTION_NAME);
+			this.mongoTemplate.save(document, this.config.collectionName);
 		}
 	}
 
@@ -85,7 +100,7 @@ public class MongoDBVectorStore implements VectorStore {
 	public Optional<Boolean> delete(List<String> idList) {
 		Query query = new Query(where("_id").in(idList));
 
-		var deleteRes = this.mongoTemplate.remove(query, DEFAULT_VECTOR_COLLECTION_NAME);
+		var deleteRes = this.mongoTemplate.remove(query, this.config.collectionName);
 		long deleteCount = deleteRes.getDeletedCount();
 
 		return Optional.of(deleteCount == idList.size());
@@ -99,8 +114,8 @@ public class MongoDBVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
-		var vectorSearch = new VectorSearchAggregation(queryEmbedding, DEFAULT_PATH_NAME, DEFAULT_NUM_CANDIDATES,
-				DEFAULT_VECTOR_INDEX_NAME, request.getTopK());
+		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
+				this.config.vectorIndexName, request.getTopK());
 
 		Aggregation aggregation = Aggregation.newAggregation(vectorSearch,
 				Aggregation.addFields()
@@ -109,11 +124,78 @@ public class MongoDBVectorStore implements VectorStore {
 					.build(),
 				Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold())));
 
-		return this.mongoTemplate.aggregate(aggregation, DEFAULT_VECTOR_COLLECTION_NAME, BasicDBObject.class)
+		return this.mongoTemplate.aggregate(aggregation, this.config.collectionName, BasicDBObject.class)
 			.getMappedResults()
 			.stream()
 			.map(this::mapBasicDbObject)
 			.toList();
+	}
+
+	public static class MongoDBVectorStoreConfig {
+
+		private final String collectionName;
+
+		private final String vectorIndexName;
+
+		private final String pathName;
+
+		private final int numCandidates;
+
+		private MongoDBVectorStoreConfig(Builder builder) {
+			this.collectionName = builder.collectionName;
+			this.vectorIndexName = builder.vectorIndexName;
+			this.pathName = builder.pathName;
+			this.numCandidates = builder.numCandidates;
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static MongoDBVectorStoreConfig defaultConfig() {
+			return builder().build();
+		}
+
+		public static class Builder {
+
+			private String collectionName = DEFAULT_VECTOR_COLLECTION_NAME;
+
+			private String vectorIndexName = DEFAULT_VECTOR_INDEX_NAME;
+
+			private String pathName = DEFAULT_PATH_NAME;
+
+			private int numCandidates = DEFAULT_NUM_CANDIDATES;
+
+			private Builder() {
+			}
+
+			public Builder withCollectionName(String collectionName) {
+				Assert.notNull(collectionName, "Collection Name must not be null");
+				Assert.notNull(collectionName, "Collection Name must not be empty");
+				this.collectionName = collectionName;
+				return this;
+			}
+
+			public Builder withVectorIndexName(String vectorIndexName) {
+				Assert.notNull(vectorIndexName, "Vector Index Name must not be null");
+				Assert.notNull(vectorIndexName, "Vector Index Name must not be empty");
+				this.vectorIndexName = vectorIndexName;
+				return this;
+			}
+
+			public Builder withPathName(String pathName) {
+				Assert.notNull(pathName, "Path Name must not be null");
+				Assert.notNull(pathName, "Path Name must not be empty");
+				this.pathName = pathName;
+				return this;
+			}
+
+			public MongoDBVectorStoreConfig build() {
+				return new MongoDBVectorStoreConfig(this);
+			}
+
+		}
+
 	}
 
 }
