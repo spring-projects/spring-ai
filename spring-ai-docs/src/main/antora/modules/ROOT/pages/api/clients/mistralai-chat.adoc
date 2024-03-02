@@ -90,7 +90,7 @@ TIP: All properties prefixed with `spring.ai.mistralai.chat.options` can be over
 
 === Chat Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistralai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
 On start-up, the default options can be configured with the `MistralAiChatClient(api, options)` constructor or the `spring.ai.mistralai.chat.options.*` properties.
 
@@ -109,7 +109,7 @@ ChatResponse response = chatClient.call(
     ));
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistralai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 === Sample Controller (Auto-configuration)
 
@@ -156,7 +156,7 @@ public class ChatController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistralai/src/main/java/org/springframework/ai/mistralai/MistralAiChatClient.java[MistralAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the MistralAI service.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatClient.java[MistralAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the MistralAI service.
 
 Add the `spring-ai-mistralai` dependency to your project's Maven `pom.xml` file:
 
@@ -204,7 +204,7 @@ The `MistralAiChatOptions.Builder` is fluent options builder.
 
 === Low-level MistralAiApi Client [[low-level-api]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistralai/src/main/java/org/springframework/ai/mistralai/api/MistralAiApi.java[MistralAiApi] provides is lightweight Java client for link:https://docs.mistral.ai/api/[Mistral AI API].
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralAiApi.java[MistralAiApi] provides is lightweight Java client for link:https://docs.mistral.ai/api/[Mistral AI API].
 
 Here is a simple snippet how to use the api programmatically:
 
@@ -230,6 +230,5 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 ==== MistralAiApi Samples
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/MistralAiApiIT.java[MistralAiApiIT.java] test provides some general examples how to use the lightweight library.
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/tool/
-MistralAiApiToolFunctionCallIT.java[MistralAiApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/tool/PaymentStatusFunctionCallingIT.java[PaymentStatusFunctionCallingIT.java] test shows how to use the low-level API to call tool functions.
 Based on the link:https://docs.mistral.ai/guides/function-calling/[MistralAI Function Calling] tutorial.
