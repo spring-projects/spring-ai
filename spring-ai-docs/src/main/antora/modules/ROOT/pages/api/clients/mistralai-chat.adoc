@@ -68,13 +68,18 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.enabled | Enable MistralAI chat client.  | true
 | spring.ai.mistralai.chat.base-url   | Optional overrides the spring.ai.mistralai.base-url to provide chat specific url |  -
 | spring.ai.mistralai.chat.api-key   | Optional overrides the spring.ai.mistralai.api-key to provide chat specific api-key |  -
-| spring.ai.mistralai.chat.options.model | This is the MistralAI Chat model to use | `mistral-tiny` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)
+| spring.ai.mistralai.chat.options.model | This is the MistralAI Chat model to use | `open-mistral-7b`, `open-mixtral-8x7b`, `mistral-small-latest`, `mistral-medium-latest`, `mistral-large-latest`
 | spring.ai.mistralai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.mistralai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.mistralai.chat.options.safePrompt | Indicates whether to inject a security prompt before all conversations. | false
 | spring.ai.mistralai.chat.options.randomSeed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
 | spring.ai.mistralai.chat.options.stop | Up to 4 sequences where the API will stop generating further tokens. | -
 | spring.ai.mistralai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | -
+| spring.ai.mistralai.chat.options.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.| -
+| spring.ai.mistralai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
+| spring.ai.mistralai.chat.options.toolChoice | Controls which (if any) function is called by the model. none means the model will not call a function and instead generates a message. auto means the model can pick between generating a message or calling a function. Specifying a particular function via {"type: "function", "function": {"name": "my_function"}} forces the model to call that function. none is the default when no functions are present. auto is the default if functions are present. | -
+| spring.ai.mistralai.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
+| spring.ai.mistralai.chat.options.functionCallbacks | MistralAI Tool Function Callbacks to register with the ChatClient. | -
 |====
 
 NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
@@ -98,7 +103,7 @@ ChatResponse response = chatClient.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MistralAiChatOptions.builder()
-            .withModel("mistral-medium")
+            .withModel(MistralAiApi.ChatModel.LARGE.getValue())
             .withTemperature(0.5f)
         .build()
     ));
@@ -181,7 +186,7 @@ Next, create a `MistralAiChatClient` and use it for text generations:
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
 var chatClient = new MistralAiChatClient(mistralAiApi, MistralAiChatOptions.builder()
-                .withModel("mistral-small")
+                .withModel(MistralAiApi.ChatModel.LARGE.getValue())
                 .withTemperature(0.4f)
                 .withMaxToken(200)
                 .build());
@@ -213,15 +218,18 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), "mistral-small", 0.8f, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8f, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = mistralAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), "mistral-small", 0.8f, true));
+        new ChatCompletionRequest(List.of(chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8f, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralAiApi.java[MistralAiApi.java]'s JavaDoc for further information.
 
 ==== MistralAiApi Samples
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/MistralAiApiIT.java[MistralAiApiIT.java] test provides some general examples how to use the lightweight library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/MistralAiApiIT.java[MistralAiApiIT.java] test provides some general examples how to use the lightweight library.
 
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/tool/
+MistralAiApiToolFunctionCallIT.java[MistralAiApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
+Based on the link:https://docs.mistral.ai/guides/function-calling/[MistralAI Function Calling] tutorial.
