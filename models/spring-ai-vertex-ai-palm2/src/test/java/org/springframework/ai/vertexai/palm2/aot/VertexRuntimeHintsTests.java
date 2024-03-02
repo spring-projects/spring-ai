@@ -2,7 +2,7 @@ package org.springframework.ai.vertexai.palm2.aot;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
@@ -19,7 +19,7 @@ class VertexRuntimeHintsTests {
 		RuntimeHints runtimeHints = new RuntimeHints();
 		VertexRuntimeHints vertexRuntimeHints = new VertexRuntimeHints();
 		vertexRuntimeHints.registerHints(runtimeHints, null);
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(VertexAiApi.class);
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(VertexAiPaLm2Api.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
 		}

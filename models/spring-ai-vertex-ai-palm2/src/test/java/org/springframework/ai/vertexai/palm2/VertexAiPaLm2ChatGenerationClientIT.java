@@ -17,8 +17,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.vertexai.palm2.VertexAiChatClient;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -31,10 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".*")
-class VertexAiChatGenerationClientIT {
+class VertexAiPaLm2ChatGenerationClientIT {
 
 	@Autowired
-	private VertexAiChatClient client;
+	private VertexAiPaLm2ChatClient client;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -117,13 +116,13 @@ class VertexAiChatGenerationClientIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public VertexAiApi vertexAiApi() {
-			return new VertexAiApi(System.getenv("PALM_API_KEY"));
+		public VertexAiPaLm2Api vertexAiApi() {
+			return new VertexAiPaLm2Api(System.getenv("PALM_API_KEY"));
 		}
 
 		@Bean
-		public VertexAiChatClient vertexAiEmbedding(VertexAiApi vertexAiApi) {
-			return new VertexAiChatClient(vertexAiApi);
+		public VertexAiPaLm2ChatClient vertexAiEmbedding(VertexAiPaLm2Api vertexAiApi) {
+			return new VertexAiPaLm2ChatClient(vertexAiApi);
 		}
 
 	}

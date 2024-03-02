@@ -99,9 +99,30 @@ public class VertexAiGeminiChatClient
 
 	}
 
+	public enum ChatModel {
+
+		GEMINI_PRO_VISION("gemini-pro-vision"),
+
+		GEMINI_PRO("gemini-pro");
+
+		ChatModel(String value) {
+			this.value = value;
+		}
+
+		public final String value;
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
 	public VertexAiGeminiChatClient(VertexAI vertexAI) {
 		this(vertexAI,
-				VertexAiGeminiChatOptions.builder().withModel("gemini-pro-vision").withTemperature(0.8f).build());
+				VertexAiGeminiChatOptions.builder()
+					.withModel(ChatModel.GEMINI_PRO_VISION.getValue())
+					.withTemperature(0.8f)
+					.build());
 	}
 
 	public VertexAiGeminiChatClient(VertexAI vertexAI, VertexAiGeminiChatOptions options) {

@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
@@ -55,32 +56,36 @@ class FunctionCallWithFunctionBeanIT {
 	@Test
 	void functionCallTest() {
 
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model=gemini-pro").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
+					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.run(context -> {
 
-			VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
 
-			var systemMessage = new SystemMessage("""
-					Use Multi-turn function calling.
-					Answer for all listed locations.
-					If the information was not fetched call the function again. Repeat at most 3 times.
-					""");
-			var userMessage = new UserMessage("What's the weather like in San Francisco, Paris and in Tokyo (Japan)?");
+				var systemMessage = new SystemMessage("""
+						Use Multi-turn function calling.
+						Answer for all listed locations.
+						If the information was not fetched call the function again. Repeat at most 3 times.
+						""");
+				var userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Paris and in Tokyo (Japan)?");
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
-					VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
+				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
 
-			logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-			response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
-					VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
+				response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
 
-			logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-		});
+			});
 	}
 
 	@Configuration

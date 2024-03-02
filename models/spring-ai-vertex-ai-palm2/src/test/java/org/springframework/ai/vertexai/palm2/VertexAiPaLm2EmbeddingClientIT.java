@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,10 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".*")
-class VertexAiEmbeddingClientIT {
+class VertexAiPaLm2EmbeddingClientIT {
 
 	@Autowired
-	private VertexAiEmbeddingClient embeddingClient;
+	private VertexAiPaLm2EmbeddingClient embeddingClient;
 
 	@Test
 	void simpleEmbedding() {
@@ -48,13 +48,13 @@ class VertexAiEmbeddingClientIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public VertexAiApi vertexAiApi() {
-			return new VertexAiApi(System.getenv("PALM_API_KEY"));
+		public VertexAiPaLm2Api vertexAiApi() {
+			return new VertexAiPaLm2Api(System.getenv("PALM_API_KEY"));
 		}
 
 		@Bean
-		public VertexAiEmbeddingClient vertexAiEmbedding(VertexAiApi vertexAiApi) {
-			return new VertexAiEmbeddingClient(vertexAiApi);
+		public VertexAiPaLm2EmbeddingClient vertexAiEmbedding(VertexAiPaLm2Api vertexAiApi) {
+			return new VertexAiPaLm2EmbeddingClient(vertexAiApi);
 		}
 
 	}

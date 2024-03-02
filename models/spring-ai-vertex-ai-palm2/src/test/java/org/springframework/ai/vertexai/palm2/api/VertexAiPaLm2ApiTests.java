@@ -24,11 +24,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.Embedding;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageRequest;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageResponse;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.MessagePrompt;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageResponse.ContentFilter.BlockedReason;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.Embedding;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageRequest;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.MessagePrompt;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse.ContentFilter.BlockedReason;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -47,13 +47,13 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 /**
  * @author Christian Tzolov
  */
-@RestClientTest(VertexAiApiTests.Config.class)
-public class VertexAiApiTests {
+@RestClientTest(VertexAiPaLm2ApiTests.Config.class)
+public class VertexAiPaLm2ApiTests {
 
 	private final static String TEST_API_KEY = "test-api-key";
 
 	@Autowired
-	private VertexAiApi client;
+	private VertexAiPaLm2Api client;
 
 	@Autowired
 	private MockRestServiceServer server;
@@ -70,16 +70,16 @@ public class VertexAiApiTests {
 	public void generateMessage() throws JsonProcessingException {
 
 		GenerateMessageRequest request = new GenerateMessageRequest(
-				new MessagePrompt(List.of(new VertexAiApi.Message("0", "Hello, how are you?"))));
+				new MessagePrompt(List.of(new VertexAiPaLm2Api.Message("0", "Hello, how are you?"))));
 
 		GenerateMessageResponse expectedResponse = new GenerateMessageResponse(
-				List.of(new VertexAiApi.Message("1", "Hello, how are you?")),
-				List.of(new VertexAiApi.Message("0", "I'm fine, thank you.")),
-				List.of(new VertexAiApi.GenerateMessageResponse.ContentFilter(BlockedReason.SAFETY, "reason")));
+				List.of(new VertexAiPaLm2Api.Message("1", "Hello, how are you?")),
+				List.of(new VertexAiPaLm2Api.Message("0", "I'm fine, thank you.")),
+				List.of(new VertexAiPaLm2Api.GenerateMessageResponse.ContentFilter(BlockedReason.SAFETY, "reason")));
 
 		server
 			.expect(requestToUriTemplate("/models/{generative}:generateMessage?key={apiKey}",
-					VertexAiApi.DEFAULT_GENERATE_MODEL, TEST_API_KEY))
+					VertexAiPaLm2Api.DEFAULT_GENERATE_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(content().json(objectMapper.writeValueAsString(request)))
 			.andRespond(withSuccess(objectMapper.writeValueAsString(expectedResponse), MediaType.APPLICATION_JSON));
@@ -100,7 +100,7 @@ public class VertexAiApiTests {
 
 		server
 			.expect(requestToUriTemplate("/models/{generative}:embedText?key={apiKey}",
-					VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
+					VertexAiPaLm2Api.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("text", text))))
 			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embedding", expectedEmbedding)),
@@ -123,7 +123,7 @@ public class VertexAiApiTests {
 
 		server
 			.expect(requestToUriTemplate("/models/{generative}:batchEmbedText?key={apiKey}",
-					VertexAiApi.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
+					VertexAiPaLm2Api.DEFAULT_EMBEDDING_MODEL, TEST_API_KEY))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(content().json(objectMapper.writeValueAsString(Map.of("texts", texts))))
 			.andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("embeddings", expectedEmbeddings)),
@@ -140,9 +140,9 @@ public class VertexAiApiTests {
 	static class Config {
 
 		@Bean
-		public VertexAiApi audioApi(RestClient.Builder builder) {
-			return new VertexAiApi("", TEST_API_KEY, VertexAiApi.DEFAULT_GENERATE_MODEL,
-					VertexAiApi.DEFAULT_EMBEDDING_MODEL, builder);
+		public VertexAiPaLm2Api audioApi(RestClient.Builder builder) {
+			return new VertexAiPaLm2Api("", TEST_API_KEY, VertexAiPaLm2Api.DEFAULT_GENERATE_MODEL,
+					VertexAiPaLm2Api.DEFAULT_EMBEDDING_MODEL, builder);
 		}
 
 	}

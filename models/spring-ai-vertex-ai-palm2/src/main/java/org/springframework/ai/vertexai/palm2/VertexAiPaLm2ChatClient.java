@@ -25,10 +25,10 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageRequest;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageResponse;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.MessagePrompt;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageRequest;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.MessagePrompt;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -36,20 +36,20 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Christian Tzolov
  */
-public class VertexAiChatClient implements ChatClient {
+public class VertexAiPaLm2ChatClient implements ChatClient {
 
-	private final VertexAiApi vertexAiApi;
+	private final VertexAiPaLm2Api vertexAiApi;
 
-	private final VertexAiChatOptions defaultOptions;
+	private final VertexAiPaLm2ChatOptions defaultOptions;
 
-	public VertexAiChatClient(VertexAiApi vertexAiApi) {
+	public VertexAiPaLm2ChatClient(VertexAiPaLm2Api vertexAiApi) {
 		this(vertexAiApi,
-				VertexAiChatOptions.builder().withTemperature(0.7f).withCandidateCount(1).withTopK(20).build());
+				VertexAiPaLm2ChatOptions.builder().withTemperature(0.7f).withCandidateCount(1).withTopK(20).build());
 	}
 
-	public VertexAiChatClient(VertexAiApi vertexAiApi, VertexAiChatOptions defaultOptions) {
+	public VertexAiPaLm2ChatClient(VertexAiPaLm2Api vertexAiApi, VertexAiPaLm2ChatOptions defaultOptions) {
 		Assert.notNull(defaultOptions, "Default options must not be null!");
-		Assert.notNull(vertexAiApi, "VertexAiApi must not be null!");
+		Assert.notNull(vertexAiApi, "VertexAiPaLm2Api must not be null!");
 
 		this.vertexAiApi = vertexAiApi;
 		this.defaultOptions = defaultOptions;
@@ -81,10 +81,10 @@ public class VertexAiChatClient implements ChatClient {
 			.map(m -> m.getContent())
 			.collect(Collectors.joining("\n"));
 
-		List<VertexAiApi.Message> vertexMessages = prompt.getInstructions()
+		List<VertexAiPaLm2Api.Message> vertexMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> new VertexAiApi.Message(m.getMessageType().getValue(), m.getContent()))
+			.map(m -> new VertexAiPaLm2Api.Message(m.getMessageType().getValue(), m.getContent()))
 			.toList();
 
 		Assert.isTrue(!CollectionUtils.isEmpty(vertexMessages), "No user or assistant messages found in the prompt!");
@@ -99,8 +99,8 @@ public class VertexAiChatClient implements ChatClient {
 
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				VertexAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, VertexAiChatOptions.class);
+				VertexAiPaLm2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, VertexAiPaLm2ChatOptions.class);
 				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, GenerateMessageRequest.class);
 			}
 			else {

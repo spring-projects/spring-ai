@@ -43,8 +43,8 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.openai.api.common.OpenAiApiException;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.http.ResponseEntity;
@@ -277,7 +277,8 @@ public class OpenAiChatClient extends
 			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
 
 			// Add the function response to the conversation.
-			conversationHistory.add(new ChatCompletionMessage(functionResponse, Role.TOOL, null, toolCall.id(), null));
+			conversationHistory
+				.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
 		}
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
@@ -291,7 +292,6 @@ public class OpenAiChatClient extends
 	@Override
 	protected List<ChatCompletionMessage> doGetUserMessages(ChatCompletionRequest request) {
 		return request.messages();
-
 	}
 
 	@Override
@@ -316,7 +316,7 @@ public class OpenAiChatClient extends
 			return false;
 		}
 
-		return choices.get(0).message().toolCalls() != null;
+		return !CollectionUtils.isEmpty(choices.get(0).message().toolCalls());
 	}
 
 }

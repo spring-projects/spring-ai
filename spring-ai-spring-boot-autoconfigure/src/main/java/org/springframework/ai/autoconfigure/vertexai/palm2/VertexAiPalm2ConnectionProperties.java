@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vertexai.palm2;
 
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(VertexAiPalm2ConnectionProperties.CONFIG_PREFIX)
@@ -33,7 +33,7 @@ public class VertexAiPalm2ConnectionProperties {
 	 * Vertex AI PaLM API base URL. Defaults to
 	 * https://generativelanguage.googleapis.com/v1beta3
 	 */
-	private String baseUrl = VertexAiApi.DEFAULT_BASE_URL;
+	private String baseUrl = VertexAiPaLm2Api.DEFAULT_BASE_URL;
 
 	public String getApiKey() {
 		return this.apiKey;

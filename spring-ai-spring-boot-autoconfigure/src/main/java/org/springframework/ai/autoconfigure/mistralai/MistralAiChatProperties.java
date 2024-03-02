@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.mistralai;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -28,9 +29,9 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(MistralAiChatProperties.CONFIG_PREFIX)
 public class MistralAiChatProperties extends MistralAiParentProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.mistral.chat";
+	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "mistral-tiny";
+	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.TINY.getValue();
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 

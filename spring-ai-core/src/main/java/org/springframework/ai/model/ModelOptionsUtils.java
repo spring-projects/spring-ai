@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -59,6 +60,7 @@ import org.springframework.util.CollectionUtils;
 public final class ModelOptionsUtils {
 
 	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
 	private final static List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
@@ -87,6 +89,22 @@ public final class ModelOptionsUtils {
 
 	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
 	};
+
+	/**
+	 * Converts the given JSON string to an Object of the given type.
+	 * @param <T> the type of the object to return.
+	 * @param json the JSON string to convert to an object.
+	 * @param type the type of the object to return.
+	 * @return Object instance of the given type.
+	 */
+	public static <T> T jsonToObject(String json, Class<T> type) {
+		try {
+			return OBJECT_MAPPER.readValue(json, type);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to json: " + json, e);
+		}
+	}
 
 	/**
 	 * Converts the given object to a JSON string.

@@ -79,9 +79,9 @@ TIP: All properties prefixed with `spring.ai.vertex.ai.chat.options` can be over
 
 === Chat Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertex/VertexAiChatOptions.java[VertexAiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-palm2/src/main/java/org/springframework/ai/vertexai/palm2/VertexAiPaLm2ChatOptions.java[VertexAiPaLm2ChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
-On start-up, the default options can be configured with the `VertexAiChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
+On start-up, the default options can be configured with the `VertexAiPaLm2ChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
@@ -91,13 +91,13 @@ For example to override the default temperature for a specific request:
 ChatResponse response = chatClient.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        VertexAiChatOptions.builder()
+        VertexAiPaLm2ChatOptions.builder()
             .withTemperature(0.4)
         .build()
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific `VertexAiPaLm2ChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 === Sample Controller (Auto-configuration)
 
@@ -114,7 +114,7 @@ spring.ai.vertex.ai.chat.options.temperature=0.5
 
 TIP: replace the `api-key` with your VertexAI credentials.
 
-This will create a `VertexAiChatClient` implementation that you can inject into your class.
+This will create a `VertexAiPaLm2ChatClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the chat client for text generations.
 
 [source,java]
@@ -122,10 +122,10 @@ Here is an example of a simple `@Controller` class that uses the chat client for
 @RestController
 public class ChatController {
 
-    private final VertexAiChatClient chatClient;
+    private final VertexAiPaLm2ChatClient chatClient;
 
     @Autowired
-    public ChatController(VertexAiChatClient chatClient) {
+    public ChatController(VertexAiPaLm2ChatClient chatClient) {
         this.chatClient = chatClient;
     }
 
@@ -144,7 +144,7 @@ public class ChatController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/vertex/VertexAiChatClient.java[VertexAiChatClient] implements the `ChatClient` and uses the <<low-level-api>> to connect to the VertexAI service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/vertexai/paml2/VertexAiPaLm2ChatClient.java[VertexAiPaLm2ChatClient] implements the `ChatClient` and uses the <<low-level-api>> to connect to the VertexAI service.
 
 Add the `spring-ai-vertex-ai-palm2` dependency to your project's Maven `pom.xml` file:
 
@@ -161,20 +161,20 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-vertex-ai'
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-palm'
 }
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `VertexAiChatClient` and use it for text generations:
+Next, create a `VertexAiPaLm2ChatClient` and use it for text generations:
 
 [source,java]
 ----
-VertexAiApi vertexAiApi = new VertexAiApi(< YOUR PALM_API_KEY>);
+VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 
-var chatClient = new VertexAiChatClient(vertexAiApi,
-    VertexAiChatOptions.builder()
+var chatClient = new VertexAiPaLm2ChatClient(vertexAiApi,
+    VertexAiPaLm2ChatOptions.builder()
         .withTemperature(0.4)
     .build());
 
@@ -182,14 +182,14 @@ ChatResponse response = chatClient.call(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
-The `VertexAiChatOptions` provides the configuration information for the chat requests.
-The `VertexAiChatOptions.Builder` is fluent options builder.
+The `VertexAiPaLm2ChatOptions` provides the configuration information for the chat requests.
+The `VertexAiPaLm2ChatOptions.Builder` is fluent options builder.
 
-=== Low-level VertexAiApi Client [[low-level-api]]
+=== Low-level VertexAiPaLm2Api Client [[low-level-api]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertex/api/VertexAiApi.java[VertexAiApi] provides is lightweight Java client for VertexAiApi Chat API.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-aipalm2/src/main/java/org/springframework/ai/vertexai/palm2/api/VertexAiPaLm2Api.java[VertexAiPaLm2Api] provides is lightweight Java client for VertexAiPaLm2Api Chat API.
 
-Following class diagram illustrates the `VertexAiApi` chat interfaces and building blocks:
+Following class diagram illustrates the `VertexAiPaLm2Api` chat interfaces and building blocks:
 
 image::vertex-ai-chat-low-level-api.jpg[w=800,align="center"]
 
@@ -197,7 +197,7 @@ Here is a simple snippet how to use the api programmatically:
 
 [source,java]
 ----
-VertexAiApi vertexAiApi = new VertexAiApi(< YOUR PALM_API_KEY>);
+VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 
 // Generate
 var prompt = new MessagePrompt(List.of(new Message("0", "Hello, how are you?")));

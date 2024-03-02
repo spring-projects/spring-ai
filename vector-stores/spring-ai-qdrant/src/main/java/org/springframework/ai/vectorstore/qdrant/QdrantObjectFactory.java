@@ -58,13 +58,14 @@ class QdrantObjectFactory {
 			case DOUBLE_VALUE:
 				return value.getDoubleValue();
 			case BOOL_VALUE:
-				return value.hasBoolValue();
+				return value.getBoolValue();
 			case LIST_VALUE:
 				return object(value.getListValue());
 			case STRUCT_VALUE:
 				return toObjectMap(value.getStructValue().getFieldsMap());
-			case KIND_NOT_SET:
 			case NULL_VALUE:
+				return null;
+			case KIND_NOT_SET:
 			default:
 				logger.warn("Unsupported value type: " + value.getKindCase());
 				return null;

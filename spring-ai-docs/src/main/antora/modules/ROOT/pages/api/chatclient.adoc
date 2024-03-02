@@ -186,6 +186,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 ** xref:api/clients/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
 ** xref:api/clients/bedrock/bedrock-titan.adoc[Titan Chat Completion]
 ** xref:api/clients/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
+* xref:api/clients/mistralai-chat.adoc[Mistral AI Chat Completion] (streaming & function-calling support)
 
 == Chat Model API
 

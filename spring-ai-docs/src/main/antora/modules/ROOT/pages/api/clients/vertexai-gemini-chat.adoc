@@ -81,7 +81,7 @@ TIP: All properties prefixed with `spring.ai.vertex.ai.gemini.chat.options` can 
 
 === Chat Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatOptions.java[VertexAiGeminiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatOptions.java[VertexAiGeminiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
 On start-up, the default options can be configured with the `VertexAiGeminiChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
 
@@ -93,13 +93,13 @@ For example to override the default temperature for a specific request:
 ChatResponse response = chatClient.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        VertexAiChatOptions.builder()
+        VertexAiPaLm2ChatOptions.builder()
             .withTemperature(0.4)
         .build()
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific `VertexAiChatPaLm2Options` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 === Function Calling
 
@@ -197,4 +197,4 @@ The `VertexAiGeminiChatOptions.Builder` is fluent options builder.
 
 === Multi-modal
 
-https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java]
+https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java]

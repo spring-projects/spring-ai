@@ -1,19 +1,19 @@
-= Azure OpenAI Function Calling
+= Mistral Function Calling
 
-Function calling lets developers create a description of a function in their code, then pass that description to a language model in a request. The response from the model includes the name of a function that matches the description and the arguments to call it with.
-
-You can register custom Java functions with the `AzureOpenAiChatClient` and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the `MistralAiChatClient` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
-The Azure models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
+The `mistral_small_latest` and `mistral_large_latest` models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
 
-NOTE: Parallel function calling is only supported with gpt-35-turbo (1106) and gpt-4 (1106-preview) also known as GPT-4 Turbo Preview.
+The MistralAI API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
 
-The Azure OpenAI API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
+NOTE: Currently the MistralAI API doesn't support parallel function calling, similarly to the OpenAI API, Azure OpenAI API, and Vertex AI Gemini API.
 
 Spring AI provides flexible and user-friendly ways to register and call custom functions.
-In general, the custom functions need to provide a function `name`, `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.  The `description` helps the model to understand when to call the function.
+In general, the custom functions need to provide a function `name`,  `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.
+The `description` helps the model to understand when to call the function.
 
-As a developer, you need to implement a functions that takes the function call arguments sent from the AI model, and respond with the result back to the model.  Your function can in turn invoke other 3rd party services to provide the results.
+As a developer, you need to implement a functions that takes the function call arguments sent from the AI model, and respond with the result back to the model.
+Your function can in turn invoke other 3rd party services to provide the results.
 
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient`.
 
@@ -41,7 +41,8 @@ To support the response of the chatbot, we will register our own function that t
 
 When the response to the prompt to the model needs to answer a question such as `"What’s the weather like in Boston?"` the AI model will invoke the client providing the location value as an argument to be passed to the function.  This RPC-like data is passed as JSON.
 
-Our function can some SaaS based weather service API and returns the weather response back to the model to complete the conversation.  In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
+Our function can some SaaS based weather service API and returns the weather response back to the model to complete the conversation.
+In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
 
 The following `MockWeatherService.java` represents the weather service API:
 
@@ -61,7 +62,7 @@ public class MockWeatherService implements Function<Request, Response> {
 
 === Registering Functions as Beans
 
-With the link:../azure-openai-chat.html#_auto_configuration[AzureOpenAiChatClient Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
+With the link:../mistralai-chat.html#_auto_configuration[MistralAiChatClient Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
 
 We start with describing the most POJO friendly options.
 
@@ -87,7 +88,8 @@ static class Config {
 }
 ----
 
-The `@Description` annotation is optional and provides a function description (2) that helps the model to understand when to call the function.  It is an important property to set to help the AI model determine what client side function to invoke.
+The `@Description` annotation is optional and provides a function description (2) that helps the model to understand when to call the function.
+It is an important property to set to help the AI model determine what client side function to invoke.
 
 Another option to provide the description of the function is to the `@JacksonDescription` annotation on the `MockWeatherService.Request` to provide the function description:
 
@@ -110,7 +112,11 @@ public record Request(String location, Unit unit) {}
 
 It is a best practice to annotate the request object with information such that the generates JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/azure/tool/FunctionCallWithFunctionBeanIT.java[FunctionCallWithFunctionBeanIT.java] demonstrates this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanIT.java[PaymentStatusBeanIT.java] demonstrates this approach.
+
+TIP: The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanOpenAiIT[PaymentStatusBeanOpenAiIT] implements the same function using the OpenAI API.
+MistralAI is almost identical to OpenAI in this regard.
+
 
 ==== FunctionCallback Wrapper
 
@@ -124,20 +130,21 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-		return FunctionCallbackWrapper.builder(new MockWeatherService())
-			.withName("CurrentWeather") // (1) function name
-			.withDescription("Get the current weather in a given location") // (2) function description
-			.build();
+		return new FunctionCallbackWrapper<>("CurrentWeather", // (1) function name
+				"Get the weather in location", // (2) function description
+				(response) -> "" + response.temp() + response.unit(), // (3) Response Converter
+				new MockWeatherService()); // function code
 	}
 	...
 }
 ----
 
-It wraps the 3rd party, `MockWeatherService` function and registers it as a `CurrentWeather` function with the `ChatClient` and provides a description (2).
+It wraps the 3rd party, `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MistralAiChatClient`.
+It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
 
-NOTE: The default response converter does a JSON serialization of the Response object.
+NOTE: By default, the response converter does a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class and internally generates an JSON schema for the function call.
+NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -145,29 +152,19 @@ To let the model know and call your `CurrentWeather` function you need to enable
 
 [source,java]
 ----
-AzureOpenAiChatClient chatClient = ...
+MistralAiChatClient chatClient = ...
 
-UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-		AzureOpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
+		MistralAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
 
 // NOTE: You can can have multiple functions registered in your `ChatClient` but only those enabled in the prompt request will be considered for the function calling.
 
-Above user question will trigger 3 calls to `CurrentWeather` function (one for each city) and the final response will be something like this:
-
-----
-Here is the current weather for the requested cities:
-- San Francisco, CA: 30.0°C
-- Tokyo, Japan: 10.0°C
-- Paris, France: 15.0°C
-----
-
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/azure/tool/FunctionCallWithFunctionWrapperIT.java[FunctionCallWithFunctionWrapperIT.java] test demo this approach.
-
+Above user question will trigger 3 calls to `CurrentWeather` function (one for each city) and produce the final response.
 
 === Register/Call Functions with Prompt Options
 
@@ -175,15 +172,15 @@ In addition to the auto-configuration you can register callback functions, dynam
 
 [source,java]
 ----
-AzureOpenAiChatClient chatClient = ...
+MistralAiChatClient chatClient = ...
 
-UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?  Use Multi-turn function calling.");
+UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
-var promptOptions = AzureOpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-		.withName("CurrentWeather")
-		.withDescription("Get the weather in location")
-		.build()))
+var promptOptions = MistralAiChatOptions.builder()
+	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
+		"CurrentWeather", // name
+		"Get the weather in location", // function description
+		new MockWeatherService()))) // function code
 	.build();
 
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
@@ -193,5 +190,4 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows to dynamically chose different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/azure/tool/FunctionCallWithPromptFunctionIT.java[FunctionCallWithPromptFunctionIT.java] integration test provides a complete example of how to register a function with the `AzureOpenAiChatClient` and use it in a prompt request.
-
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusPromptIT.java[PaymentStatusPromptIT.java] integration test provides a complete example of how to register a function with the `MistralAiChatClient` and use it in a prompt request.

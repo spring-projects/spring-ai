@@ -22,33 +22,33 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.Embedding;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageRequest;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.GenerateMessageResponse;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi.MessagePrompt;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.Embedding;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageRequest;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.MessagePrompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for {@link VertexAiApi}. Requires a valid API key to be set via the
- * {@code PALM_API_KEY} environment and at the moment Google enables is it only in the US
- * region (so use VPN for testing).
+ * Integration tests for {@link VertexAiPaLm2Api}. Requires a valid API key to be set via
+ * the {@code PALM_API_KEY} environment and at the moment Google enables is it only in the
+ * US region (so use VPN for testing).
  *
  * @author Christian Tzolov
  */
 @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".*")
-public class VertexAiApiIT {
+public class VertexAiPaLm2ApiIT {
 
-	VertexAiApi vertexAiApi = new VertexAiApi(System.getenv("PALM_API_KEY"));
+	VertexAiPaLm2Api vertexAiPaLm2Api = new VertexAiPaLm2Api(System.getenv("PALM_API_KEY"));
 
 	@Test
 	public void generateMessage() {
 
-		var prompt = new MessagePrompt(List.of(new VertexAiApi.Message("0", "Hello, how are you?")));
+		var prompt = new MessagePrompt(List.of(new VertexAiPaLm2Api.Message("0", "Hello, how are you?")));
 
 		GenerateMessageRequest request = new GenerateMessageRequest(prompt);
 
-		GenerateMessageResponse response = vertexAiApi.generateMessage(request);
+		GenerateMessageResponse response = vertexAiPaLm2Api.generateMessage(request);
 
 		assertThat(response).isNotNull();
 
@@ -67,7 +67,7 @@ public class VertexAiApiIT {
 
 		var text = "Hello, how are you?";
 
-		Embedding response = vertexAiApi.embedText(text);
+		Embedding response = vertexAiPaLm2Api.embedText(text);
 
 		assertThat(response).isNotNull();
 		assertThat(response.value()).hasSize(768);
@@ -78,7 +78,7 @@ public class VertexAiApiIT {
 
 		var text = List.of("Hello, how are you?", "I am fine, thank you!");
 
-		List<Embedding> response = vertexAiApi.batchEmbedText(text);
+		List<Embedding> response = vertexAiPaLm2Api.batchEmbedText(text);
 
 		assertThat(response).isNotNull();
 		assertThat(response).hasSize(2);
@@ -91,8 +91,8 @@ public class VertexAiApiIT {
 
 		var text = "Hello, how are you?";
 
-		var prompt = new MessagePrompt(List.of(new VertexAiApi.Message("0", text)));
-		int response = vertexAiApi.countMessageTokens(prompt);
+		var prompt = new MessagePrompt(List.of(new VertexAiPaLm2Api.Message("0", text)));
+		int response = vertexAiPaLm2Api.countMessageTokens(prompt);
 
 		assertThat(response).isEqualTo(17);
 	}
@@ -100,22 +100,22 @@ public class VertexAiApiIT {
 	@Test
 	public void listModels() {
 
-		List<String> response = vertexAiApi.listModels();
+		List<String> response = vertexAiPaLm2Api.listModels();
 
 		assertThat(response).isNotNull();
 		assertThat(response).hasSizeGreaterThan(0);
 		assertThat(response).contains("models/chat-bison-001", "models/text-bison-001", "models/embedding-gecko-001");
 
 		System.out.println(" - " + response.stream()
-			.map(vertexAiApi::getModel)
-			.map(VertexAiApi.Model::toString)
+			.map(vertexAiPaLm2Api::getModel)
+			.map(VertexAiPaLm2Api.Model::toString)
 			.collect(Collectors.joining("\n - ")));
 	}
 
 	@Test
 	public void getModel() {
 
-		VertexAiApi.Model model = vertexAiApi.getModel("models/chat-bison-001");
+		VertexAiPaLm2Api.Model model = vertexAiPaLm2Api.getModel("models/chat-bison-001");
 
 		System.out.println(model);
 		assertThat(model).isNotNull();

@@ -24,16 +24,16 @@ import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 
 /**
  * @author Christian Tzolov
  */
-public class VertexAiEmbeddingClient extends AbstractEmbeddingClient {
+public class VertexAiPaLm2EmbeddingClient extends AbstractEmbeddingClient {
 
-	private final VertexAiApi vertexAiApi;
+	private final VertexAiPaLm2Api vertexAiApi;
 
-	public VertexAiEmbeddingClient(VertexAiApi vertexAiApi) {
+	public VertexAiPaLm2EmbeddingClient(VertexAiPaLm2Api vertexAiApi) {
 		this.vertexAiApi = vertexAiApi;
 	}
 
@@ -44,7 +44,7 @@ public class VertexAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		List<VertexAiApi.Embedding> vertexEmbeddings = this.vertexAiApi.batchEmbedText(request.getInstructions());
+		List<VertexAiPaLm2Api.Embedding> vertexEmbeddings = this.vertexAiApi.batchEmbedText(request.getInstructions());
 		AtomicInteger indexCounter = new AtomicInteger(0);
 		List<Embedding> embeddings = vertexEmbeddings.stream()
 			.map(vm -> new Embedding(vm.value(), indexCounter.getAndIncrement()))

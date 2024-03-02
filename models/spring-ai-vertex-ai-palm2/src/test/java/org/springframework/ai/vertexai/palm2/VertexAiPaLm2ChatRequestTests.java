@@ -21,16 +21,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.vertexai.palm2.api.VertexAiApi;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  */
-public class VertexAiChatRequestTests {
+public class VertexAiPaLm2ChatRequestTests {
 
-	VertexAiChatClient client = new VertexAiChatClient(new VertexAiApi("bla"));
+	VertexAiPaLm2ChatClient client = new VertexAiPaLm2ChatClient(new VertexAiPaLm2Api("bla"));
 
 	@Test
 	public void createRequestWithDefaultOptions() {
@@ -49,7 +49,7 @@ public class VertexAiChatRequestTests {
 	public void createRequestWithPromptVertexAiOptions() {
 
 		// Runtime options should override the default options.
-		VertexAiChatOptions promptOptions = VertexAiChatOptions.builder()
+		VertexAiPaLm2ChatOptions promptOptions = VertexAiPaLm2ChatOptions.builder()
 			.withTemperature(0.8f)
 			.withTopP(0.5f)
 			.withTopK(99)
