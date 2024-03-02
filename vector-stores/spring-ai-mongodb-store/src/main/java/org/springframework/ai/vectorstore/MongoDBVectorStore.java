@@ -37,11 +37,13 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
  */
 public class MongoDBVectorStore implements VectorStore, InitializingBean {
 
-	private final MongoTemplate mongoTemplate;
+	public static final String ID_FIELD_NAME = "_id";
 
-	private final EmbeddingClient embeddingClient;
+	public static final String METADATA_FIELD_NAME = "metadata";
 
-	private final MongoDBVectorStoreConfig config;
+	public static final String CONTENT_FIELD_NAME = "content";
+
+	public static final String SCORE_FIELD_NAME = "score";
 
 	private static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
 
@@ -50,6 +52,12 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 	private static final String DEFAULT_PATH_NAME = "embedding";
 
 	private static final int DEFAULT_NUM_CANDIDATES = 200;
+
+	private final MongoTemplate mongoTemplate;
+
+	private final EmbeddingClient embeddingClient;
+
+	private final MongoDBVectorStoreConfig config;
 
 	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
 		this(mongoTemplate, embeddingClient, MongoDBVectorStoreConfig.defaultConfig());
@@ -65,6 +73,7 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		// Create the collection if it does not exist
 		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
 			mongoTemplate.createCollection(this.config.collectionName);
 		}
@@ -76,9 +85,9 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 	 * @return the spring ai document
 	 */
 	private Document mapBasicDbObject(BasicDBObject basicDBObject) {
-		String id = basicDBObject.getString("_id");
-		String content = basicDBObject.getString("content");
-		Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get("metadata");
+		String id = basicDBObject.getString(ID_FIELD_NAME);
+		String content = basicDBObject.getString(CONTENT_FIELD_NAME);
+		Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get(METADATA_FIELD_NAME);
 		List<Double> embedding = (List<Double>) basicDBObject.get(this.config.pathName);
 
 		Document document = new Document(id, content, metadata);
@@ -98,7 +107,7 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
-		Query query = new Query(where("_id").in(idList));
+		Query query = new Query(where(ID_FIELD_NAME).in(idList));
 
 		var deleteRes = this.mongoTemplate.remove(query, this.config.collectionName);
 		long deleteCount = deleteRes.getDeletedCount();
@@ -119,10 +128,10 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 
 		Aggregation aggregation = Aggregation.newAggregation(vectorSearch,
 				Aggregation.addFields()
-					.addField("score")
+					.addField(SCORE_FIELD_NAME)
 					.withValueOfExpression("{\"$meta\":\"vectorSearchScore\"}")
 					.build(),
-				Aggregation.match(new Criteria("score").gte(request.getSimilarityThreshold())));
+				Aggregation.match(new Criteria(SCORE_FIELD_NAME).gte(request.getSimilarityThreshold())));
 
 		return this.mongoTemplate.aggregate(aggregation, this.config.collectionName, BasicDBObject.class)
 			.getMappedResults()
@@ -169,6 +178,12 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 			private Builder() {
 			}
 
+			/**
+			 * Configures the collection to use This must match the name of the collection
+			 * for the Vector Search Index in Atlas
+			 * @param collectionName
+			 * @return this builder
+			 */
 			public Builder withCollectionName(String collectionName) {
 				Assert.notNull(collectionName, "Collection Name must not be null");
 				Assert.notNull(collectionName, "Collection Name must not be empty");
@@ -176,6 +191,12 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 				return this;
 			}
 
+			/**
+			 * Configures the vector index name. This must match the name of the Vector
+			 * Search Index Name in Atlas
+			 * @param vectorIndexName
+			 * @return this builder
+			 */
 			public Builder withVectorIndexName(String vectorIndexName) {
 				Assert.notNull(vectorIndexName, "Vector Index Name must not be null");
 				Assert.notNull(vectorIndexName, "Vector Index Name must not be empty");
@@ -183,6 +204,12 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 				return this;
 			}
 
+			/**
+			 * Configures the path name. This must match the name of the field indexed for
+			 * the Vector Search Index in Atlas
+			 * @param pathName
+			 * @return this builder
+			 */
 			public Builder withPathName(String pathName) {
 				Assert.notNull(pathName, "Path Name must not be null");
 				Assert.notNull(pathName, "Path Name must not be empty");

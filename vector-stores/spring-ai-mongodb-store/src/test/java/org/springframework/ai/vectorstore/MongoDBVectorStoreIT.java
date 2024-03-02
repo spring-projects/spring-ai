@@ -83,7 +83,7 @@ class MongoDBVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
+			vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
 
 			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).isEmpty();
