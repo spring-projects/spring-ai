@@ -45,9 +45,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiApi {
 
-	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
-	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
-	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_3_5_TURBO.getValue();
+	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
@@ -59,7 +58,7 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String openAiToken) {
-		this(DEFAULT_BASE_URL, openAiToken);
+		this(ApiUtils.DEFAULT_BASE_URL, openAiToken);
 	}
 
 	/**

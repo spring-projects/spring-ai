@@ -28,14 +28,11 @@ import org.springframework.web.client.RestClient;
 /**
  * OpenAI Image API.
  *
- * @see <a href=
- * "https://platform.openai.com/docs/api-reference/images">https://platform.openai.com/docs/api-reference/images</a>
+ * @see <a href= "https://platform.openai.com/docs/api-reference/images">Images</a>
  */
 public class OpenAiImageApi {
 
-	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
-
-	public static final String DEFAULT_IMAGE_MODEL = "dall-e-2";
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
 
 	private final RestClient restClient;
 
@@ -44,7 +41,7 @@ public class OpenAiImageApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiImageApi(String openAiToken) {
-		this(DEFAULT_BASE_URL, openAiToken, RestClient.builder());
+		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
 	}
 
 	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
@@ -59,7 +56,7 @@ public class OpenAiImageApi {
 	 * OpenAI Image API model.
 	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
 	 */
-	enum ImageModel {
+	public enum ImageModel {
 
 		/**
 		 * The latest DALL·E model released in Nov 2023.
@@ -73,14 +70,14 @@ public class OpenAiImageApi {
 		 */
 		DALL_E_2("dall-e-2");
 
-		private final String model;
+		private final String value;
 
 		ImageModel(String model) {
-			this.model = model;
+			this.value = model;
 		}
 
-		public String model() {
-			return this.model;
+		public String getValue() {
+			return this.value;
 		}
 
 	}
