@@ -45,7 +45,7 @@ class MongoDBVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"),
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
 				String.format("spring.data.mongodb.uri=" + System.getenv("SPRING_DATA_MONGODB_URI")));
 
 	@BeforeEach
