@@ -92,7 +92,7 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		contextRunner.withPropertyValues("spring.ai.openai.image.options.size=256x256").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.image.options.size=1024x1024").run(context -> {
 			OpenAiImageClient client = context.getBean(OpenAiImageClient.class);
 			ImageResponse imageResponse = client.call(new ImagePrompt("forest"));
 			assertThat(imageResponse.getResults()).hasSize(1);
