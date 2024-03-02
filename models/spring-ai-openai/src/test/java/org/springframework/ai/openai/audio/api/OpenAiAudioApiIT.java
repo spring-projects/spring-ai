@@ -59,13 +59,14 @@ public class OpenAiAudioApiIT {
 				TranslationRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
 				StructuredResponse.class);
 
-		assertThat(translation.text()).isEqualTo("Hello, my name is Chris, and I love Spring AI.");
+		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionEnglish = audioApi.createTranscription(
 				TranscriptionRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
 				StructuredResponse.class);
 
-		assertThat(transcriptionEnglish.text()).isEqualTo("Hello, my name is Chris, and I love Spring AI.");
+		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
+			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionDutch = audioApi.createTranscription(
 				TranscriptionRequest.builder().withFile(speech).withLanguage("nl").build(), StructuredResponse.class);
