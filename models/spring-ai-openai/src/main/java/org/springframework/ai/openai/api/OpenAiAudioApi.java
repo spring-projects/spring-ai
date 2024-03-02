@@ -94,9 +94,7 @@ public class OpenAiAudioApi {
 	}
 
 	/**
-	 * Request to generates audio from the input text.
-	 * <p/>
-	 * Reference:
+	 * Request to generates audio from the input text. Reference:
 	 * <a href="https://platform.openai.com/docs/api-reference/audio/createSpeech">Create
 	 * Speech</a>
 	 *
@@ -116,7 +114,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("input") String input,
 		@JsonProperty("voice") Voice voice,
-		@JsonProperty("response_format") AudioResponseFormat response_format,
+		@JsonProperty("response_format") AudioResponseFormat responseFormat,
 		@JsonProperty("speed") Float speed) {
 		// @formatter:on
 
@@ -281,9 +279,9 @@ public class OpenAiAudioApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("language") String language,
 		@JsonProperty("prompt") String prompt,
-		@JsonProperty("response_format") TextualResponseFormat response_format,
+		@JsonProperty("response_format") TextualResponseFormat responseFormat,
 		@JsonProperty("temperature") Float temperature,
-		@JsonProperty("timestamp_granularities") GranularityType timestampGranularities) {
+		@JsonProperty("timestamp_granularities") GranularityType granularityType) {
 		// @formatter:on
 
 		public enum GranularityType {
@@ -563,29 +561,11 @@ public class OpenAiAudioApi {
 	/**
 	 * Request to generates audio from the input text.
 	 * @param requestBody The request body.
-	 * @return The audio file in bytes. You can use the
-	 * {@link #saveToFile(byte[], String)} to save the audio to a file.
+	 * @return The audio file in bytes.
 	 */
 	public byte[] createSpeech(SpeechRequest requestBody) {
 		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().body(byte[].class);
 	}
-
-	// /**
-	// * Saves the audio binary into a file.
-	// * @param audioContent The audio as byte array.
-	// * @param fileName The file name to save the audio to.
-	// */
-	// public static void saveToFile(byte[] audioContent, String fileName) {
-
-	// try {
-	// var fos = new FileOutputStream(fileName);
-	// StreamUtils.copy(audioContent, fos);
-	// fos.close();
-	// }
-	// catch (Exception e) {
-	// throw new RuntimeException(e);
-	// }
-	// };
 
 	/**
 	 * Transcribes audio into the input language.
@@ -593,7 +573,7 @@ public class OpenAiAudioApi {
 	 * @return The transcribed text.
 	 */
 	public Object createTranscription(TranscriptionRequest requestBody) {
-		return createTranscription(requestBody, requestBody.response_format().getResponseType());
+		return createTranscription(requestBody, requestBody.responseFormat().getResponseType());
 	}
 
 	/**
@@ -616,12 +596,12 @@ public class OpenAiAudioApi {
 		multipartBody.add("model", requestBody.model());
 		multipartBody.add("language", requestBody.language());
 		multipartBody.add("prompt", requestBody.prompt());
-		multipartBody.add("response_format", requestBody.response_format().getValue());
+		multipartBody.add("response_format", requestBody.responseFormat().getValue());
 		multipartBody.add("temperature", requestBody.temperature());
-		if (requestBody.timestampGranularities() != null) {
-			Assert.isTrue(requestBody.response_format() == TextualResponseFormat.VERBOSE_JSON,
+		if (requestBody.granularityType() != null) {
+			Assert.isTrue(requestBody.responseFormat() == TextualResponseFormat.VERBOSE_JSON,
 					"response_format must be set to verbose_json to use timestamp granularities.");
-			multipartBody.add("timestamp_granularities[]", requestBody.timestampGranularities().getValue());
+			multipartBody.add("timestamp_granularities[]", requestBody.granularityType().getValue());
 		}
 
 		return this.restClient.post().uri("/v1/audio/transcriptions").body(multipartBody).retrieve().body(responseType);
