@@ -342,15 +342,20 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
 		}
 
-		this.jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + VECTOR_TABLE_NAME + " ( "
-				+ "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, " + "content text, " + "metadata json, "
-				+ "embedding vector(" + this.embeddingDimensions() + "))");
+		this.jdbcTemplate.execute(String.format("""
+				CREATE TABLE IF NOT EXISTS %s (
+					id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+					content text,
+					metadata json,
+					embedding vector(%d)
+				)
+				""", VECTOR_TABLE_NAME, this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
-			this.jdbcTemplate.execute("CREATE INDEX ON " + VECTOR_TABLE_NAME + " USING " + this.createIndexMethod
-					+ " (embedding " + this.getDistanceType().index + ")");
+			this.jdbcTemplate.execute(String.format("""
+					CREATE INDEX ON %s USING %s (embedding %s)
+					""", VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
 		}
-
 	}
 
 	int embeddingDimensions() {

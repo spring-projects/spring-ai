@@ -120,7 +120,7 @@ vectorStore.add(List.of(document));
 List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
-== Manual Configuration
+=== Manual Configuration
 
 Instead of using the Spring Boot auto-configuration, you can manually configure the `PgVectorStore`.
 For this you need to add the PostgreSQL connection and `JdbcTemplate` auto-configuration dependencies to your project:
