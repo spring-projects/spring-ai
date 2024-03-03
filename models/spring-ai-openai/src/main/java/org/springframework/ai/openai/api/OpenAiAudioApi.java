@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.openai.api.common.ApiUtils;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -561,18 +562,19 @@ public class OpenAiAudioApi {
 	/**
 	 * Request to generates audio from the input text.
 	 * @param requestBody The request body.
-	 * @return The audio file in bytes.
+	 * @return Response entity containing the audio binary.
 	 */
-	public byte[] createSpeech(SpeechRequest requestBody) {
-		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().body(byte[].class);
+	public ResponseEntity<byte[]> createSpeech(SpeechRequest requestBody) {
+		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().toEntity(byte[].class);
 	}
 
 	/**
 	 * Transcribes audio into the input language.
 	 * @param requestBody The request body.
-	 * @return The transcribed text.
+	 * @return Response entity containing the transcribed text in either json or text
+	 * format.
 	 */
-	public Object createTranscription(TranscriptionRequest requestBody) {
+	public ResponseEntity<?> createTranscription(TranscriptionRequest requestBody) {
 		return createTranscription(requestBody, requestBody.responseFormat().getResponseType());
 	}
 
@@ -582,9 +584,9 @@ public class OpenAiAudioApi {
 	 * @param <T> The response type.
 	 * @param requestBody The request body.
 	 * @param responseType The response type class.
-	 * @return The transcribed text.
+	 * @return Response entity containing the transcribed text in the responseType format.
 	 */
-	public <T> T createTranscription(TranscriptionRequest requestBody, Class<T> responseType) {
+	public <T> ResponseEntity<T> createTranscription(TranscriptionRequest requestBody, Class<T> responseType) {
 
 		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
 		multipartBody.add("file", new ByteArrayResource(requestBody.file()) {
@@ -604,15 +606,20 @@ public class OpenAiAudioApi {
 			multipartBody.add("timestamp_granularities[]", requestBody.granularityType().getValue());
 		}
 
-		return this.restClient.post().uri("/v1/audio/transcriptions").body(multipartBody).retrieve().body(responseType);
+		return this.restClient.post()
+			.uri("/v1/audio/transcriptions")
+			.body(multipartBody)
+			.retrieve()
+			.toEntity(responseType);
 	}
 
 	/**
 	 * Translates audio into English.
 	 * @param requestBody The request body.
-	 * @return The transcribed text.
+	 * @return Response entity containing the transcribed text in either json or text
+	 * format.
 	 */
-	public Object createTranslation(TranslationRequest requestBody) {
+	public ResponseEntity<?> createTranslation(TranslationRequest requestBody) {
 		return createTranslation(requestBody, requestBody.responseFormat().getResponseType());
 	}
 
@@ -622,9 +629,9 @@ public class OpenAiAudioApi {
 	 * @param <T> The response type.
 	 * @param requestBody The request body.
 	 * @param responseType The response type class.
-	 * @return The transcribed text.
+	 * @return Response entity containing the transcribed text in the responseType format.
 	 */
-	public <T> T createTranslation(TranslationRequest requestBody, Class<T> responseType) {
+	public <T> ResponseEntity<T> createTranslation(TranslationRequest requestBody, Class<T> responseType) {
 
 		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
 		multipartBody.add("file", new ByteArrayResource(requestBody.file()) {
@@ -638,7 +645,11 @@ public class OpenAiAudioApi {
 		multipartBody.add("response_format", requestBody.responseFormat().getValue());
 		multipartBody.add("temperature", requestBody.temperature());
 
-		return this.restClient.post().uri("/v1/audio/translations").body(multipartBody).retrieve().body(responseType);
+		return this.restClient.post()
+			.uri("/v1/audio/translations")
+			.body(multipartBody)
+			.retrieve()
+			.toEntity(responseType);
 	}
 
 }
