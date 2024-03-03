@@ -2,19 +2,17 @@
 
 This section walks you through setting up the PGvector `VectorStore` to store document embeddings and perform similarity searches.
 
-== What is PGvector?
-
 link:https://github.com/pgvector/pgvector[PGvector] is an open-source extension for PostgreSQL that enables storing and searching over machine learning-generated embeddings. It provides different capabilities that let users identify both exact and approximate nearest neighbors. It is designed to work seamlessly with other PostgreSQL features, including indexing and querying.
 
-=== Prerequisites
+== Prerequisites
 
-1. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+First you need an access to PostgreSQL instance with enabled `vector`, `hstore` and `uuid-ossp` extensions.
 
-2. Access to PostgreSQL instance with the following configurations
+TIP: The <<appendix_a,setup local Postgres/PGVector>> appendix shows how to set up a DB locally with a Docker container.
 
-The <<appendix_a,setup local Postgres/PGVector>> appendix shows how to set up a DB locally with a Docker container.
+On startup, the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with an index.
 
-On startup, the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with an index. Optionally, you can do this manually like so:
+Optionally, you can do this manually like so:
 
 [sql]
 ----
@@ -26,44 +24,106 @@ CREATE TABLE IF NOT EXISTS vector_store (
 	id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
 	content text,
 	metadata json,
-	embedding vector(1536)
+	embedding vector(1536) // 1536 is the default embedding dimension
 );
 
 CREATE INDEX ON vector_store USING HNSW (embedding vector_cosine_ops);
 ----
 
-== Configuration
+TIP: replace the `1536` with the actual embedding dimension if you are using a different dimension.
 
-To set up `PgVectorStore`, you need to provide (via `application.yaml`) configurations to your PostgreSQL database.
-
-Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
-
-[source,bash]
-----
-export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
-----
-
-== Repository
-
-To acquire Spring AI artifacts, declare the Spring Snapshot repository:
-
-[source,xml]
-----
-<repository>
-	<id>spring-snapshots</id>
-	<name>Spring Snapshots</name>
-	<url>https://repo.spring.io/snapshot</url>
-	<releases>
-		<enabled>false</enabled>
-	</releases>
-</repository>
-----
+Next if required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `PgVectorStore`.
 
 == Dependencies
 
-Add these dependencies to your project:
+Then add the PgVectorStore boot starter dependency to your project:
 
-* PostgreSQL connection and `JdbcTemplate` auto-configuration.
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'
+}
+----
+
+The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+
+For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingClient] add the following dependency to your project:
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+To connect to and configure the `PgVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's `application.yml`
+
+[yml]
+----
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+  ai:
+	vectorstore:
+	  pgvector:
+		index-type: HNSW
+		distance-type: COSINE_DISTANCE
+		dimension: 1536
+----
+
+TIP: Check the list of xref:#pgvector-properties[configuration parameters] to learn about the default values and configuration options.
+
+Now you can Auto-wire the PgVector Store in your application and use it
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to PGVector
+vectorStore.add(List.of(document));
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the `PgVectorStore`.
+For this you need to add the PostgreSQL connection and `JdbcTemplate` auto-configuration dependencies to your project:
 
 [source,xml]
 ----
@@ -77,22 +137,7 @@ Add these dependencies to your project:
 	<artifactId>postgresql</artifactId>
 	<scope>runtime</scope>
 </dependency>
-----
 
-* OpenAI: Required for calculating embeddings.
-
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-</dependency>
-----
-
-* PGvector
-
-[source,xml]
-----
 <dependency>
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-pgvector-store</artifactId>
@@ -101,22 +146,7 @@ Add these dependencies to your project:
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-== Sample Code
-
-To configure `PgVectorStore` in your application, you can use the following setup:
-
-Add to `application.yml` (using your DB credentials):
-
-[yml]
-----
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: postgres
-----
-
-Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI Starter to your project. This provides you with an implementation of the Embeddings client:
+To configure PgVector in your application, you can use the following setup:
 
 [source,java]
 ----
@@ -126,31 +156,54 @@ public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embedd
 }
 ----
 
-In your main code, create some documents:
+== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the PgVector store.
+
+For example, you can use either the text expression language:
 
 [source,java]
 ----
-List<Document> documents = List.of(
-	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
-	new Document("The World is Big and Salvation Lurks Around the Corner"),
-	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+vectorStore.similaritySearch(
+    SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
 ----
 
-Add the documents to your vector store:
-
-[source,java]
-----
-vectorStore.add(List.of(document));
-----
-
-And finally, retrieve documents similar to a query:
+or programmatically using the `Filter.Expression` DSL:
 
 [source,java]
 ----
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("john", "jill"),
+        b.eq("article_type", "blog")).build()));
 ----
 
-If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+NOTE: These filter expressions are converted into the equivalent PgVector filters.
+
+[[pgvector-properties]]
+== PgVectorStore properties
+
+You can use the following properties in your Spring Boot configuration to customize the PGVector vector store.
+
+[cols="2,5,1"]
+|===
+|Property| Description | Default value
+
+|`spring.ai.vectorstore.pgvector.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVFFlat` - index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVFFlat, but has better query performance (in terms of speed-recall tradeoff). There’s no training step like IVFFlat, so the index can be created without any data in the table.| HNSW
+|`spring.ai.vectorstore.pgvector.distance-type`| Search distance type. Defaults to `COSINE_DISTANCE`. But if vectors are normalized to length 1, you can use `EUCLIDEAN_DISTANCE` or `NEGATIVE_INNER_PRODUCT` for best performance.| COSINE_DISTANCE
+|`spring.ai.vectorstore.pgvector.dimension`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingClient`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to to re-create the vector_store table as well. | -
+|spring.ai.vectorstore.pgvector.remove-existing-vector-store-table| Deletes the existing `vector_store` table on start up.  | false
+|===
+
 
 == Run Postgres & PGVector DB locally
 
