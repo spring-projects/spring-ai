@@ -72,6 +72,7 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 | Model      | Chat | Chat Streaming | Embedding
 
 | llama2     | Yes  | Yes            | No
+| jurassic2  | Yes  | No             | No
 | cohere     | Yes  | Yes            | Yes
 | anthropic  | Yes  | Yes            | No
 | jurassic2 (WIP)  | Yes  | No             | No
