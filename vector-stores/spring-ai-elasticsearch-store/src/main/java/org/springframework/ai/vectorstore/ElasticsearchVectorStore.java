@@ -1,13 +1,17 @@
 package org.springframework.ai.vectorstore;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.endpoints.BooleanResponse;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +23,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.springframework.ai.vectorstore.ElasticsearchVectorStore.ElasticsearchScriptScoreQuery.Query;
-import static org.springframework.ai.vectorstore.ElasticsearchVectorStore.ElasticsearchScriptScoreQuery.Query.ScriptScore;
-import static org.springframework.ai.vectorstore.ElasticsearchVectorStore.ElasticsearchScriptScoreQuery.Query.ScriptScore.Script;
-import static org.springframework.ai.vectorstore.ElasticsearchVectorStore.ElasticsearchScriptScoreQuery.Query.ScriptScore.Script.Params;
 
 public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
@@ -36,132 +36,14 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
     public static final String COSINE_SIMILARITY_FUNCTION =
             "(cosineSimilarity(params.query_vector, 'embedding') + 1.0) / 2";
 
-    public record ElasticsearchBulkIndexId(
-            @JsonProperty("_index")
-            String index,
-            @JsonProperty("_id")
-            String id
-    ) {
-    }
-
-    public record ElasticsearchDeleteBody(
-            @JsonProperty("delete")
-            Delete delete
-    ) {
-        public record Delete(
-
-                @JsonProperty("_index")
-                String index,
-
-                @JsonProperty("_id")
-                String id
-        ) {
-        }
-    }
-
-    public record ElasticsearchUpsertDocumentBody(
-            @JsonProperty("doc")
-            Document document
-    ) {
-        @JsonProperty("doc_as_upsert")
-        public boolean docAsUpsert() {
-            return true;
-        }
-    }
-
-    public record ElasticsearchScriptScoreQuery(
-            @JsonProperty("size")
-            int size,
-
-            @JsonProperty("query")
-            Query query
-    ) {
-        public record Query(
-                @JsonProperty("script_score")
-                ScriptScore scriptScore
-        ) {
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-
-            public record ScriptScore(
-                    @JsonProperty("query")
-                    Map<String, Object> query,
-
-                    @JsonProperty("script")
-                    Script script,
-                    @JsonProperty("min_score")
-                    Float minScore,
-                    @JsonProperty("boost")
-                    Float boost
-            ) {
-                public record Script(
-                        @JsonProperty("source")
-                        String source,
-
-                        @JsonProperty("params")
-                        Params params
-                ) {
-                    public record Params(
-                            @JsonProperty("query_vector")
-                            List<Double> queryVector
-                    ) {
-                    }
-                }
-            }
-        }
-    }
-
-    public record ElasticsearchVectorSearchResponse(
-
-            @JsonProperty("hits")
-            Hits hits,
-
-            @JsonProperty("took")
-            int took,
-
-            @JsonProperty("timed_out")
-            boolean timedOut
-    ) {
-        public record Hits(
-                @JsonProperty("hits")
-                List<Hit> hits,
-                @JsonProperty("total")
-                Total total,
-                @JsonProperty("max_score")
-                float maxScore
-        ) {
-            public record Hit(
-                    @JsonProperty("_index")
-                    String index,
-                    @JsonProperty("_type")
-                    String type,
-                    @JsonProperty("_id")
-                    String id,
-                    @JsonProperty("_score")
-                    float score,
-                    @JsonProperty("_source")
-                    Document source
-            ) {
-            }
-
-            public record Total(
-                    @JsonProperty("value")
-                    int value,
-                    @JsonProperty("relation")
-                    String relation
-            ) {
-            }
-        }
-    }
-
-
     private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
 
     private static final String INDEX_NAME = "spring-ai-document-index";
 
-    private static final String NEW_LINE = System.lineSeparator();
     private final EmbeddingClient embeddingClient;
-    private final ObjectMapper objectMapper;
-    private final RestClient restClient;
+
+    private final ElasticsearchClient elasticsearchClient;
+
     private final String index;
 
     private final FilterExpressionConverter filterExpressionConverter;
@@ -175,9 +57,10 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
     public ElasticsearchVectorStore(String index, RestClient restClient, EmbeddingClient embeddingClient) {
         Objects.requireNonNull(embeddingClient, "RestClient must not be null");
         Objects.requireNonNull(embeddingClient, "EmbeddingClient must not be null");
-        this.restClient = restClient;
+        this.elasticsearchClient =
+                new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
+                        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
         this.embeddingClient = embeddingClient;
-        this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.index = index;
         this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
         // the potential functions for vector fields at https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-score-query.html#vector-functions
@@ -191,49 +74,32 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
     @Override
     public void add(List<Document> documents) {
+        BulkRequest.Builder builkRequestBuilder = new BulkRequest.Builder();
         for (Document document : documents) {
             if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
                 logger.info("Calling EmbeddingClient for document id = " + document.getId());
                 document.setEmbedding(this.embeddingClient.embed(document));
             }
+            builkRequestBuilder.operations(
+                    op -> op.index(idx -> idx.index(this.index).id(document.getId()).document(document)));
         }
-
-        Request request = new Request("POST", "/_bulk");
-        request.setJsonEntity(documents.stream()
-                .map(document -> buildBulkActionJson(document.getId()) + NEW_LINE +
-                        buildJsonString(new ElasticsearchUpsertDocumentBody(document)))
-                .collect(Collectors.joining(NEW_LINE, "", NEW_LINE)));
-        requestToElasticsearch(request);
-    }
-
-    private String buildJsonString(Object object) {
-        try {
-            return objectMapper.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String buildBulkActionJson(String documentId) {
-        return buildJsonString(Map.of("update", new ElasticsearchBulkIndexId(index, documentId)));
-    }
-
-    private String buildJsonBody(Object object) {
-        try {
-            return objectMapper.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        bulkRequest(builkRequestBuilder.build());
     }
 
     @Override
     public Optional<Boolean> delete(List<String> idList) {
-        Request request = new Request("POST", "/_bulk");
-        request.setJsonEntity(idList.stream()
-                .map(id -> new ElasticsearchDeleteBody(new ElasticsearchDeleteBody.Delete(index, id)))
-                .map(this::buildJsonBody).collect(Collectors.joining(NEW_LINE, "", NEW_LINE)));
-        requestToElasticsearch(request);
-        return Optional.of(true);
+        BulkRequest.Builder builkRequestBuilder = new BulkRequest.Builder();
+        for (String id : idList)
+            builkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
+        return Optional.of(bulkRequest(builkRequestBuilder.build()).errors());
+    }
+
+    private BulkResponse bulkRequest(BulkRequest bulkRequest) {
+        try {
+            return this.elasticsearchClient.bulk(bulkRequest);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -246,17 +112,20 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
     public List<Document> similaritySearch(List<Double> embedding, int topK, float similarityThreshold,
             Filter.Expression filterExpression) {
-        ElasticsearchScriptScoreQuery elasticsearchSimilarityQuery = getElasticsearchSimilarityQuery(embedding, topK,
-                similarityThreshold, filterExpression);
-        return similaritySearch(elasticsearchSimilarityQuery);
+        return similaritySearch(new co.elastic.clients.elasticsearch.core.SearchRequest.Builder().query(
+                        getElasticsearchSimilarityQuery(embedding, filterExpression)).size(topK)
+                .minScore(Float.valueOf(similarityThreshold).doubleValue()).build());
     }
 
-    private ElasticsearchScriptScoreQuery getElasticsearchSimilarityQuery(List<Double> embedding, int topK,
-            float similarityThreshold, Filter.Expression filterExpression) {
-        return new ElasticsearchScriptScoreQuery(topK, new Query(
-                new ScriptScore(Map.of("query_string", Map.of("query", getElasticsearchQueryString(filterExpression))),
-                        new Script(this.similarityFunction, new Params(embedding)), similarityThreshold, null))
-        );
+    private Query getElasticsearchSimilarityQuery(List<Double> embedding, Filter.Expression filterExpression) {
+        return Query.of(queryBuilder -> queryBuilder.scriptScore(
+                scriptScoreQueryBuilder -> scriptScoreQueryBuilder.query(
+                                queryBuilder2 -> queryBuilder2.queryString(
+                                        queryStringQuerybuilder -> queryStringQuerybuilder.query(
+                                                getElasticsearchQueryString(filterExpression))))
+                        .script(scriptBuilder -> scriptBuilder.inline(
+                                inlineScriptBuilder -> inlineScriptBuilder.source(this.similarityFunction)
+                                        .params("query_vector", JsonData.of(embedding))))));
     }
 
     private String getElasticsearchQueryString(Filter.Expression filterExpression) {
@@ -265,50 +134,35 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
     }
 
-    public List<Document> similaritySearch(ElasticsearchScriptScoreQuery elasticsearchScriptScoreQuery) {
-        Request request = new Request("GET", "/" + index + "/_search");
-        request.setJsonEntity(buildJsonBody(elasticsearchScriptScoreQuery));
-        Response response = requestToElasticsearch(request);
-        logger.debug("similaritySearch result - " + response);
+    private List<Document> similaritySearch(co.elastic.clients.elasticsearch.core.SearchRequest searchRequest) {
         try {
-            ElasticsearchVectorSearchResponse elasticsearchVectorSearchResponse =
-                    objectMapper.readValue(EntityUtils.toString(response.getEntity()),
-                            ElasticsearchVectorSearchResponse.class);
-            return elasticsearchVectorSearchResponse.hits().hits().stream().map(this::toDocument)
-                    .collect(Collectors.toList());
+            return  this.elasticsearchClient.search(searchRequest, Document.class).hits().hits().stream()
+                    .map(this::toDocument).collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Response requestToElasticsearch(Request request) {
-        try {
-            return restClient.performRequest(request);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Document toDocument(ElasticsearchVectorSearchResponse.Hits.Hit hit) {
+    private Document toDocument(Hit<Document> hit) {
         Document document = hit.source();
-        document.getMetadata().put("distance", 1 - hit.score());
+        document.getMetadata().put("distance", 1 - hit.score().floatValue());
         return document;
     }
 
     public boolean exists(String targetIndex) {
         try {
-            Response response = restClient.performRequest(new Request("HEAD", targetIndex));
-            return response.getStatusLine().getStatusCode() == 200;
+            BooleanResponse response = this.elasticsearchClient.indices()
+                    .exists(existRequestBuilder -> existRequestBuilder.index(targetIndex));
+            return response.value();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Response putIndexMapping(String index, String mappingJson) {
-        Request request = new Request("PUT", index);
-        request.setJsonEntity(mappingJson);
+    public CreateIndexResponse createIndexMapping(String index, String mappingJson) {
         try {
-            return restClient.performRequest(request);
+            return this.elasticsearchClient.indices().create(createIndexBuilder -> createIndexBuilder.index(index)
+                    .mappings(typeMappingBuilder -> typeMappingBuilder.withJson(new StringReader(mappingJson))));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -317,19 +171,18 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
     @Override
     public void afterPropertiesSet() {
         if (!exists(this.index)) {
-            putIndexMapping(this.index, """
+            createIndexMapping(this.index, """
                     {
-                      "mappings": {
-                        "properties": {
-                          "embedding": {
-                            "type": "dense_vector",
-                            "dims": 1536,
-                            "index": true,
-                            "similarity": "cosine"
+                          "properties": {
+                              "embedding": {
+                                  "type": "dense_vector",
+                                  "dims": 1536,
+                                  "index": true,
+                                  "similarity": "cosine"
+                              }
                           }
-                        }
                       }
-                    }""");
+                    """);
         }
     }
 
