@@ -72,6 +72,7 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 | Model      | Chat | Chat Streaming | Embedding
 
 | llama2     | Yes  | Yes            | No
+| jurassic2  | Yes  | No             | No
 | cohere     | Yes  | Yes            | Yes
 | anthropic  | Yes  | Yes            | No
 | jurassic2 (WIP)  | Yes  | No             | No
@@ -90,5 +91,7 @@ For more information, refer to the documentation below for each supported model.
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-titan.adoc[Spring AI Bedrock Titan Chat]: `spring.ai.bedrock.titan.chat.enabled=true`
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
+* xref:api/chat/bedrock/bedrock-jurassic2.adoc[Spring AI Bedrock Ai21 Jurassic2 Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`
+
 
 // * xref:api/chat/bedrock/bedrock-jurassic2-chat.adoc[(WIP)Spring AI Bedrock Jurassic Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`
