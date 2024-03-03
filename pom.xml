@@ -22,7 +22,7 @@
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
-		<module>models/spring-ai-stabilityai</module>
+		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
