@@ -196,9 +196,19 @@ public class ChromaApi {
 
 		public enum Include {
 
-			metadatas, documents, distances, embeddings;
+			@JsonProperty("metadatas")
+			METADATAS,
 
-			public static final List<Include> all = List.of(metadatas, documents, distances, embeddings);
+			@JsonProperty("documents")
+			DOCUMENTS,
+
+			@JsonProperty("distances")
+			DISTANCES,
+
+			@JsonProperty("embeddings")
+			EMBEDDINGS;
+
+			public static final List<Include> all = List.of(METADATAS, DOCUMENTS, DISTANCES, EMBEDDINGS);
 
 		}
 
@@ -297,7 +307,7 @@ public class ChromaApi {
 	public List<Collection> listCollections() {
 
 		return this.restTemplate
-			.exchange(this.baseUrl + "/api/v1/collections/", HttpMethod.GET, new HttpEntity<>(httpHeaders()),
+			.exchange(this.baseUrl + "/api/v1/collections", HttpMethod.GET, new HttpEntity<>(httpHeaders()),
 					CollectionList.class)
 			.getBody();
 	}
@@ -306,9 +316,9 @@ public class ChromaApi {
 	// Chroma Collection API (https://docs.trychroma.com/js_reference/Collection)
 	//
 
-	public Boolean upsertEmbeddings(String collectionId, AddEmbeddingsRequest embedding) {
+	public void upsertEmbeddings(String collectionId, AddEmbeddingsRequest embedding) {
 
-		return this.restTemplate
+		this.restTemplate
 			.exchange(this.baseUrl + "/api/v1/collections/{collection_id}/upsert", HttpMethod.POST,
 					this.getHttpEntityFor(embedding), Boolean.class, collectionId)
 			.getBody();

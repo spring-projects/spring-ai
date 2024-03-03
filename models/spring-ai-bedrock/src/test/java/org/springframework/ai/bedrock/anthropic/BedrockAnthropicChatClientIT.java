@@ -8,7 +8,11 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -17,11 +21,11 @@ import org.springframework.ai.chat.Generation;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -36,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 class BedrockAnthropicChatClientIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(BedrockAnthropicChatClientIT.class);
 
 	@Autowired
 	private BedrockAnthropicChatClient client;
@@ -52,9 +58,9 @@ class BedrockAnthropicChatClientIT {
 
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-		ChatResponse response = client.generate(prompt);
+		ChatResponse response = client.call(prompt);
 
-		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
 	@Test
@@ -70,9 +76,9 @@ class BedrockAnthropicChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors.", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.client.generate(prompt).getGeneration();
+		Generation generation = this.client.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getContent());
+		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 
@@ -88,9 +94,9 @@ class BedrockAnthropicChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = client.generate(prompt).getGeneration();
+		Generation generation = client.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getContent());
+		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -112,9 +118,9 @@ class BedrockAnthropicChatClientIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = client.generate(prompt).getGeneration();
+		Generation generation = client.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getContent());
+		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -133,17 +139,18 @@ class BedrockAnthropicChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.generateStream(prompt)
+		String generationTextFromStream = client.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
-			.map(ChatResponse::getGenerations)
+			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
-			.map(Generation::getContent)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

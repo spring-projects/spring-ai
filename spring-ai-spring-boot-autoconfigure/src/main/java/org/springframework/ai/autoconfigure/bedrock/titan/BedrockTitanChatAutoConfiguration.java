@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 package org.springframework.ai.autoconfigure.bedrock.titan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.titan.BedrockTitanChatClient;
@@ -30,7 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportRuntimeHints;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Chat Client.
@@ -43,12 +40,11 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockTitanChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockTitanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
 public class BedrockTitanChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TitanChatBedrockApi titanApi(AwsCredentialsProvider credentialsProvider,
+	public TitanChatBedrockApi titanChatBedrockApi(AwsCredentialsProvider credentialsProvider,
 			BedrockTitanChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 
 		return new TitanChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
@@ -59,10 +55,7 @@ public class BedrockTitanChatAutoConfiguration {
 	public BedrockTitanChatClient titanChatClient(TitanChatBedrockApi titanChatApi,
 			BedrockTitanChatProperties properties) {
 
-		return new BedrockTitanChatClient(titanChatApi).withTemperature(properties.getTemperature())
-			.withTopP(properties.getTopP())
-			.withMaxTokenCount(properties.getMaxTokenCount())
-			.withStopSequences(properties.getStopSequences());
+		return new BedrockTitanChatClient(titanChatApi, properties.getOptions());
 	}
 
 }

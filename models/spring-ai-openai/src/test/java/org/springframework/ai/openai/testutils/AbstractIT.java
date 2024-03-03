@@ -9,10 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.SystemMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.image.ImageClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -26,6 +27,9 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected ChatClient openAiChatClient;
+
+	@Autowired
+	protected ImageClient openaiImageClient;
 
 	@Autowired
 	protected StreamingChatClient openStreamingChatClient;
@@ -44,7 +48,7 @@ public abstract class AbstractIT {
 
 	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
 		assertThat(response).isNotNull();
-		String answer = response.getGeneration().getContent();
+		String answer = response.getResult().getOutput().getContent();
 		logger.info("Question: " + question);
 		logger.info("Answer:" + answer);
 		PromptTemplate userPromptTemplate = new PromptTemplate(userEvaluatorResource,
@@ -58,12 +62,12 @@ public abstract class AbstractIT {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = openAiChatClient.generate(prompt).getGeneration().getContent();
+		String yesOrNo = openAiChatClient.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = openAiChatClient.generate(prompt).getGeneration().getContent();
+			String reasonForFailure = openAiChatClient.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);
 		}
 		else {

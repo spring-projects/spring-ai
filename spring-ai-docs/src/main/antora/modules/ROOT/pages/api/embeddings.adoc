@@ -1,5 +1,5 @@
 [[EmbeddingClient]]
-= EmbeddingClient
+= Embeddings API
 
 The `EmbeddingClient` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
@@ -16,42 +16,146 @@ By providing straightforward methods like `embed(String text)` and `embed(Docume
 
 == API Overview
 
-This section provides a guide to the `EmbeddingClient` interface and associated classes.
+The Embedding API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
+As such, the EmbeddingClient interface extends the `ModelClient` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
+
+The Embedding API in turn is used by higher-level components to implement Embedding Clients for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
+
+Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Clients:
+
+image:embeddings-api.jpg[title=Embeddings API,align=center,width=900]
 
 === EmbeddingClient
-Here is the `EmbeddingClient` interface definition:
 
-java
-Copy code
-public interface EmbeddingClient {
+This section provides a guide to the `EmbeddingClient` interface and associated classes.
 
-    List<Double> embed(String text);
+[source,java]
+----
+public interface EmbeddingClient extends ModelClient<EmbeddingRequest, EmbeddingResponse> {
 
-    List<Double> embed(Document document);
+	@Override
+	EmbeddingResponse call(EmbeddingRequest request);
 
-    List<List<Double>> embed(List<String> texts);
 
-    EmbeddingResponse embedForResponse(List<String> texts);
+	/**
+	 * Embeds the given document's content into a vector.
+	 * @param document the document to embed.
+	 * @return the embedded vector.
+	 */
+	List<Double> embed(Document document);
 
-    default int dimensions() {
-        return embed("Test String").size();
-    }
+	/**
+	 * Embeds the given text into a vector.
+	 * @param text the text to embed.
+	 * @return the embedded vector.
+	 */
+	default List<Double> embed(String text) {
+		Assert.notNull(text, "Text must not be null");
+		return this.embed(List.of(text)).iterator().next();
+	}
+
+	/**
+	 * Embeds a batch of texts into vectors.
+	 * @param texts list of texts to embed.
+	 * @return list of list of embedded vectors.
+	 */
+	default List<List<Double>> embed(List<String> texts) {
+		Assert.notNull(texts, "Texts must not be null");
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
+			.getResults()
+			.stream()
+			.map(Embedding::getOutput)
+			.toList();
+	}
+
+	/**
+	 * Embeds a batch of texts into vectors and returns the {@link EmbeddingResponse}.
+	 * @param texts list of texts to embed.
+	 * @return the embedding response.
+	 */
+	default EmbeddingResponse embedForResponse(List<String> texts) {
+		Assert.notNull(texts, "Texts must not be null");
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY));
+	}
+
+	/**
+	 * @return the number of dimensions of the embedded vectors. It is generative
+	 * specific.
+	 */
+	default int dimensions() {
+		return embed("Test String").size();
+	}
 
 }
-The embed methods offer various options for converting text into embeddings, accommodating single strings, structured Document objects, or batches of text.
-The returned values are lists of doubles, representing the embeddings in a numerical vector format.
+----
+
+The embed methods offer various options for converting text into embeddings, accommodating single strings, structured `Document` objects, or batches of text.
+
+Multiple shortcut methods are provided for embedding text, including the `embed(String text)` method, which takes a single string and returns the corresponding embedding vector.
+All shortcuts are implemented around the `call` method, which is the primary method for invoking the embedding model.
+
+Typically the embedding returns a lists of doubles, representing the embeddings in a numerical vector format.
 
 The `embedForResponse` method provides a more comprehensive output, potentially including additional information about the embeddings.
 
 The dimensions method is a handy tool for developers to quickly ascertain the size of the embedding vectors, which is important for understanding the embedding space and for subsequent processing steps.
 
+==== EmbeddingRequest
 
-== Available Implementations
+The `EmbeddingRequest` is a `ModelRequest` that takes a list of text objects and optional embedding request options.
+The following listing shows a truncated version of the EmbeddingRequest class, excluding constructors and other utility methods:
 
-The `EmbeddingClient` interface has the following available implementations:
+[source,java]
+----
+public class EmbeddingRequest implements ModelRequest<List<String>> {
+	private final List<String> inputs;
+	private final EmbeddingOptions options;
+	// other methods omitted
+}
+----
 
-* OpenAI: Using the https://github.com/TheoKanning/openai-java[Theo Kanning client library].
-* Azure OpenAI: Using https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Microsoft's OpenAI client library].
-* PostgresML: https://postgresml.org/docs/[PostgresML is a complete MLOps platform built on PostgreSQL]
-* Sentence embedding with local ONNX models: The https://djl.ai/[Deep Java Library] and the Microsoft https://onnxruntime.ai/docs/get-started/with-java.html[ONNX Java Runtime] libraries are applied to run the ONNX models and compute the embeddings in Java.
+==== EmbeddingResponse
 
+The structure of the `EmbeddingResponse` class is as follows:
+
+[source,java]
+----
+public class EmbeddingResponse implements ModelResponse<Embedding> {
+
+	private List<Embedding> embeddings;
+	private EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+	// other methods omitted
+}
+----
+
+The `EmbeddingResponse` class holds the AI Model's output, with each `Embedding` instance containing the result vector data from a single text input.
+
+The `EmbeddingResponse` class also carries a `EmbeddingResponseMetadata` metadata about the AI Model's response.
+
+==== Embedding
+
+The `Embedding` represents a single embedding vector.
+
+[source,java]
+----
+public class Embedding implements ModelResult<List<Double>> {
+	private List<Double> embedding;
+	private Integer index;
+	private EmbeddingResultMetadata metadata;
+	// other methods omitted
+}
+----
+
+== Available Implementations [[available-implementations]]
+
+Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
+
+* xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
+* xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]
+* xref:api/embeddings/ollama-embeddings.adoc[Spring AI Ollama Embeddings]
+* xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
+* xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
+* xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
+* xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
+* xref:api/embeddings/vertexai-embeddings.adoc[Spring AI VertexAI PaLM2 Embeddings]
+* xref:api/embeddings/mistralai-embeddings.adoc[Spring AI Mistral AI Embeddings]

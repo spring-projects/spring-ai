@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -47,6 +47,7 @@ import org.springframework.util.StringUtils;
  * Pinecone index.
  *
  * @author Christian Tzolov
+ * @author Adam Bchouti
  */
 public class PineconeVectorStore implements VectorStore {
 
@@ -223,11 +224,11 @@ public class PineconeVectorStore implements VectorStore {
 	}
 
 	/**
-	 * Adds a list of documents to the vector store.
+	 * Adds a list of documents to the vector store based on the namespace.
 	 * @param documents The list of documents to be added.
+	 * @param namespace The namespace to add the documents to
 	 */
-	@Override
-	public void add(List<Document> documents) {
+	public void add(List<Document> documents, String namespace) {
 
 		List<Vector> upsertVectors = documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
@@ -242,10 +243,19 @@ public class PineconeVectorStore implements VectorStore {
 
 		UpsertRequest upsertRequest = UpsertRequest.newBuilder()
 			.addAllVectors(upsertVectors)
-			.setNamespace(this.pineconeNamespace)
+			.setNamespace(namespace)
 			.build();
 
 		this.pineconeConnection.getBlockingStub().upsert(upsertRequest);
+	}
+
+	/**
+	 * Adds a list of documents to the vector store.
+	 * @param documents The list of documents to be added.
+	 */
+	@Override
+	public void add(List<Document> documents) {
+		add(documents, this.pineconeNamespace);
 	}
 
 	/**
@@ -277,15 +287,15 @@ public class PineconeVectorStore implements VectorStore {
 	}
 
 	/**
-	 * Deletes a list of documents by their IDs.
+	 * Deletes a list of documents by their IDs based on the namespace.
 	 * @param documentIds The list of document IDs to be deleted.
+	 * @param namespace The namespace of the document IDs.
 	 * @return An optional boolean indicating the deletion status.
 	 */
-	@Override
-	public Optional<Boolean> delete(List<String> documentIds) {
+	public Optional<Boolean> delete(List<String> documentIds, String namespace) {
 
 		DeleteRequest deleteRequest = DeleteRequest.newBuilder()
-			.setNamespace(this.pineconeNamespace) // ignored for free tier.
+			.setNamespace(namespace) // ignored for free tier.
 			.addAllIds(documentIds)
 			.setDeleteAll(false)
 			.build();
@@ -296,8 +306,17 @@ public class PineconeVectorStore implements VectorStore {
 		return Optional.of(true);
 	}
 
+	/**
+	 * Deletes a list of documents by their IDs.
+	 * @param documentIds The list of document IDs to be deleted.
+	 * @return An optional boolean indicating the deletion status.
+	 */
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public Optional<Boolean> delete(List<String> documentIds) {
+		return delete(documentIds, this.pineconeNamespace);
+	}
+
+	public List<Document> similaritySearch(SearchRequest request, String namespace) {
 
 		String nativeExpressionFilters = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -308,7 +327,7 @@ public class PineconeVectorStore implements VectorStore {
 			.addAllVector(toFloatList(queryEmbedding))
 			.setTopK(request.getTopK())
 			.setIncludeMetadata(true)
-			.setNamespace(this.pineconeNamespace);
+			.setNamespace(namespace);
 
 		if (StringUtils.hasText(nativeExpressionFilters)) {
 			queryRequestBuilder.setFilter(metadataFiltersToStruct(nativeExpressionFilters));
@@ -328,6 +347,11 @@ public class PineconeVectorStore implements VectorStore {
 				return new Document(id, content, metadata);
 			})
 			.toList();
+	}
+
+	@Override
+	public List<Document> similaritySearch(SearchRequest request) {
+		return similaritySearch(request, this.pineconeNamespace);
 	}
 
 	private Struct metadataFiltersToStruct(String metadataFilters) {

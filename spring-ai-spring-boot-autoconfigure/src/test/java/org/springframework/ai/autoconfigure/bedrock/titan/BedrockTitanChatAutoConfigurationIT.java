@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
@@ -30,10 +31,10 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperti
 import org.springframework.ai.bedrock.titan.BedrockTitanChatClient;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -53,7 +54,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.titan.chat.model=" + TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
-				"spring.ai.bedrock.titan.chat.temperature=0.5", "spring.ai.bedrock.titan.chat.maxTokens=500")
+				"spring.ai.bedrock.titan.chat.options.temperature=0.5",
+				"spring.ai.bedrock.titan.chat.options.maxTokenCount=500")
 		.withConfiguration(AutoConfigurations.of(BedrockTitanChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
@@ -70,8 +72,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockTitanChatClient chatClient = context.getBean(BedrockTitanChatClient.class);
-			ChatResponse response = chatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -81,15 +83,16 @@ public class BedrockTitanChatAutoConfigurationIT {
 
 			BedrockTitanChatClient chatClient = context.getBean(BedrockTitanChatClient.class);
 
-			Flux<ChatResponse> response = chatClient.generateStream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(1);
 
 			String stitchedResponseContent = responses.stream()
-				.map(ChatResponse::getGenerations)
+				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
-				.map(Generation::getContent)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -104,9 +107,10 @@ public class BedrockTitanChatAutoConfigurationIT {
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.titan.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-					"spring.ai.bedrock.titan.chat.temperature=0.55", "spring.ai.bedrock.titan.chat.topP=0.55",
-					"spring.ai.bedrock.titan.chat.stopSequences=END1,END2",
-					"spring.ai.bedrock.titan.chat.maxTokenCount=123")
+					"spring.ai.bedrock.titan.chat.options.temperature=0.55",
+					"spring.ai.bedrock.titan.chat.options.topP=0.55",
+					"spring.ai.bedrock.titan.chat.options.stopSequences=END1,END2",
+					"spring.ai.bedrock.titan.chat.options.maxTokenCount=123")
 			.withConfiguration(AutoConfigurations.of(BedrockTitanChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockTitanChatProperties.class);
@@ -116,11 +120,11 @@ public class BedrockTitanChatAutoConfigurationIT {
 				assertThat(aswProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getTemperature()).isEqualTo(0.55f);
-				assertThat(chatProperties.getTopP()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.55f);
 
-				assertThat(chatProperties.getStopSequences()).isEqualTo(List.of("END1", "END2"));
-				assertThat(chatProperties.getMaxTokenCount()).isEqualTo(123);
+				assertThat(chatProperties.getOptions().getStopSequences()).isEqualTo(List.of("END1", "END2"));
+				assertThat(chatProperties.getOptions().getMaxTokenCount()).isEqualTo(123);
 
 				assertThat(aswProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(aswProperties.getSecretKey()).isEqualTo("SECRET_KEY");

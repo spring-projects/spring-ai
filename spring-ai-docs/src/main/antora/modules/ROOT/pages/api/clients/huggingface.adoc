@@ -1,4 +1,4 @@
-= HuggingFace
+= HuggingFace Chat
 
 HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
 
@@ -15,7 +15,6 @@ Add the `spring-ai-huggingface` dependency:
 <dependency>
    <groupId>org.springframework.ai</groupId>
    <artifactId>spring-ai-huggingface</artifactId>
-   <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -25,6 +24,8 @@ You should get your HuggingFace API key and set it as an environment variable
 ----
 export HUGGINGFACE_API_KEY=your_api_key_here
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Note, there is not yet a Spring Boot Starter for this client implementation.
 
@@ -37,7 +38,7 @@ You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggi
 ----
 HuggingfaceChatClient client = new HuggingfaceChatClient(apiKey, basePath);
 Prompt prompt = new Prompt("Your text here...");
-AiResponse response = client.generate(prompt);
+ChatResponse response = client.call(prompt);
 System.out.println(response.getGeneration().getText());
 ----
 
@@ -55,7 +56,7 @@ String mistral7bInstruct = """
         Just generate the JSON object without explanations:
         [/INST]""";
 Prompt prompt = new Prompt(mistral7bInstruct);
-AiResponse aiResponse = huggingfaceChatClient.generate(prompt);
+ChatResponse aiResponse = huggingfaceChatClient.call(prompt);
 System.out.println(response.getGeneration().getText());
 ----
 Will produce the output

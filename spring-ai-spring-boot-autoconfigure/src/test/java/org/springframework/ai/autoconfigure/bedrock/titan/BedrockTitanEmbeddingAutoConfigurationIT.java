@@ -56,8 +56,8 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 			BedrockTitanEmbeddingClient embeddingClient = context.getBean(BedrockTitanEmbeddingClient.class);
 			assertThat(embeddingClient).isNotNull();
 			EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
-			assertThat(embeddingResponse.getData()).hasSize(1);
-			assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+			assertThat(embeddingResponse.getResults()).hasSize(1);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingClient.dimensions()).isEqualTo(1024);
 		});
 	}
@@ -75,8 +75,8 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 
 			EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of(base64Image));
 
-			assertThat(embeddingResponse.getData()).hasSize(1);
-			assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+			assertThat(embeddingResponse.getResults()).hasSize(1);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingClient.dimensions()).isEqualTo(1024);
 		});
 	}

@@ -1,0 +1,95 @@
+[[understand-vector-databases]]
+= Understanding Vectors
+
+image::vector_2d_coordinates.png[width=150, role = "right"]
+
+Vectors have dimensionality and a direction.
+For example, the following image depicts a two-dimensional vector stem:[\vec{a}] in the cartesian coordinate system pictured as an arrow.
+
+The head of the vector stem:[\vec{a}] is at the point stem:[(a_1, a_2)].
+The *x* coordinate value is stem:[a_1] and the *y* coordinate value is stem:[a_2]. The coordinates are also referred to as the components of the vector.
+
+[[vectordbs-similarity]]
+== Similarity
+
+Several mathematical formulas can be used to determine if two vectors are similar.
+One of the most intuitive to visualize and understand is cosine similarity.
+Consider the following images that show three sets of graphs:
+
+image::vector_similarity.png[align="center",width=600]
+
+The vectors stem:[\vec{A}] and stem:[\vec{B}] are considered similar, when they are pointing close to each other, as in the first diagram.
+The vectors are considered unrelated when pointing perpendicular to each other and opposite when they point away from each other.
+
+The angle between them, stem:[\theta], is a good measure of their similarity.
+How can the angle stem:[\theta] be computed?
+
+image:pythagorean-triangle.png[align="center",width=100, role="left", trim="10 10 10 100"]
+
+We are all familiar with the https://en.wikipedia.org/wiki/Pythagorean_theorem#History[Pythagorean Theorem].
+
+What about when the angle between *a* and *b* is not 90 degrees?
+
+
+Enter the https://en.wikipedia.org/wiki/Law_of_cosines[Law of cosines].
+
+
+.Law of Cosines
+****
+stem:[a^2 + b^2 - 2ab\cos\theta = c^2]
+****
+
+The following image shows this approach as a vector diagram:
+image:lawofcosines.png[align="center",width=200]
+
+The magnitude of this vector is defined in terms of its components as:
+
+.Magnitude
+****
+stem:[\vec{A} * \vec{A} = ||\vec{A}||^2 = A_1^2 + A_2^2 ]
+****
+
+The dot product between two vectors stem:[\vec{A}] and stem:[\vec{B}] is defined in terms of its components as:
+
+.Dot Product
+****
+stem:[\vec{A} * \vec{B} = A_1B_1 + A_2B_2]
+****
+
+Rewriting the Law of Cosines with vector magnitudes and dot products gives the following:
+
+.Law of Cosines in Vector form
+****
+stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec{C}||^2]
+****
+
+
+Replacing stem:[||\vec{C}||^2] with stem:[||\vec{B} - \vec{A}||^2] gives the following:
+
+.Law of Cosines in Vector form only in terms of stem:[\vec{A}] and stem:[\vec{B}]
+
+****
+stem:[||\vec{A}||^2 + ||\vec{B}||^2 - 2||\vec{A}||||\vec{B}||\cos\theta = ||\vec{B} - \vec{A}||^2]
+****
+
+
+https://towardsdatascience.com/cosine-similarity-how-does-it-measure-the-similarity-maths-behind-and-usage-in-python-50ad30aad7db[Expanding this out] gives us the formula for https://en.wikipedia.org/wiki/Cosine_similarity[Cosine Similarity].
+
+.Cosine Similarity
+****
+stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{\vec{A}\cdot\vec{B}}{||\vec{A}\||\cdot||\vec{B}||]
+****
+
+This formula works for dimensions higher than 2 or 3, though it is hard to visualize. However, https://projector.tensorflow.org/[it can be visualized to some extent].
+It is common for vectors in AI/ML applications to have hundreds or even thousands of dimensions.
+
+The similarity function in higher dimensions using the components of the vector is shown below.
+It expands the two-dimensional definitions of Magnitude and Dot Product given previously to *N* dimensions by using https://en.wikipedia.org/wiki/Summation[Summation mathematical syntax].
+
+.Cosine Similarity with vector components
+****
+stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{ \sum_{i=1}^{n} {A_i  B_i} }{ \sqrt{\sum_{i=1}^{n}{A_i^2} \cdot \sum_{i=1}^{n}{B_i^2}}]
+****
+
+This is the key formula used in the simple implementation of a vector store and can be found in the `InMemoryVectorStore` implementation.
+

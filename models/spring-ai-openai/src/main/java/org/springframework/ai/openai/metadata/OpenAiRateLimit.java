@@ -18,7 +18,7 @@ package org.springframework.ai.openai.metadata;
 
 import java.time.Duration;
 
-import org.springframework.ai.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.RateLimit;
 
 /**
  * {@link RateLimit} implementation for {@literal OpenAI}.

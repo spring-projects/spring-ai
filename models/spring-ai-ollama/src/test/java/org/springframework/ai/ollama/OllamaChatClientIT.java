@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.ollama;
 
 import java.io.IOException;
@@ -11,6 +26,8 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -22,11 +39,11 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.PromptTemplate;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,13 +62,13 @@ class OllamaChatClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
 
 	static String baseUrl;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL);
 		logger.info(MODEL + " pulling competed!");
 
@@ -72,12 +89,22 @@ class OllamaChatClientIT {
 
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = client.generate(prompt);
-		assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+		// portable/generic options
+		var portableOptions = ChatOptionsBuilder.builder().withTemperature(0.7f).build();
+
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage), portableOptions);
+
+		ChatResponse response = client.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+
+		// ollama specific options
+		var ollamaOptions = new OllamaOptions().withLowVRAM(true);
+
+		response = client.call(new Prompt(List.of(userMessage, systemMessage), ollamaOptions));
+		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void outputParser() {
 		DefaultConversionService conversionService = new DefaultConversionService();
@@ -91,13 +118,12 @@ class OllamaChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors.", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.client.generate(prompt).getGeneration();
+		Generation generation = this.client.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getContent());
+		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void mapOutputParser() {
 		MapOutputParser outputParser = new MapOutputParser();
@@ -112,9 +138,9 @@ class OllamaChatClientIT {
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		Generation generation = client.generate(prompt).getGeneration();
+		Generation generation = client.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getContent());
+		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -122,7 +148,6 @@ class OllamaChatClientIT {
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void beanOutputParserRecords() {
 
@@ -132,18 +157,16 @@ class OllamaChatClientIT {
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
-				Remove Markdown code blocks from the output.
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = client.generate(prompt).getGeneration();
+		Generation generation = client.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getContent());
+		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void beanStreamOutputParserRecords() {
 
@@ -158,13 +181,14 @@ class OllamaChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.generateStream(prompt)
+		String generationTextFromStream = client.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
-			.map(ChatResponse::getGenerations)
+			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
-			.map(Generation::getContent)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
@@ -184,7 +208,7 @@ class OllamaChatClientIT {
 		@Bean
 		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
 			return new OllamaChatClient(ollamaApi).withModel(MODEL)
-				.withOptions(OllamaOptions.create().withTemperature(0.9f));
+				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
 		}
 
 	}

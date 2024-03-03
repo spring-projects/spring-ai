@@ -31,6 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.OllamaEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,13 +49,13 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	private static String MODEL_NAME = "orca-mini";
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.16").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
 
 	static String baseUrl;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL_NAME + " ' model ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL_NAME + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL_NAME);
 		logger.info(MODEL_NAME + " pulling competed!");
 
@@ -62,9 +63,9 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.ollama.embedding.enabled=true", "spring.ai.ollama.embedding.model=" + MODEL_NAME,
+		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.base-url=" + baseUrl)
-		.withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class));
 
 	@Test
 	public void singleTextEmbedding() {
@@ -72,10 +73,29 @@ public class OllamaEmbeddingAutoConfigurationIT {
 			OllamaEmbeddingClient embeddingClient = context.getBean(OllamaEmbeddingClient.class);
 			assertThat(embeddingClient).isNotNull();
 			EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
-			assertThat(embeddingResponse.getData()).hasSize(1);
-			assertThat(embeddingResponse.getData().get(0).getEmbedding()).isNotEmpty();
+			assertThat(embeddingResponse.getResults()).hasSize(1);
+			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingClient.dimensions()).isEqualTo(3200);
 		});
+	}
+
+	@Test
+	void embeddingActivation() {
+		contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isEmpty();
+		});
+
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isNotEmpty();
+		});
+
+		contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isNotEmpty();
+		});
+
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
-import org.springframework.ai.autoconfigure.NativeHints;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingClient;
@@ -31,7 +30,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Client.
@@ -44,12 +42,11 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @EnableConfigurationProperties({ BedrockCohereEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockCohereEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportRuntimeHints(NativeHints.class)
 public class BedrockCohereEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CohereEmbeddingBedrockApi cohereApi(AwsCredentialsProvider credentialsProvider,
+	public CohereEmbeddingBedrockApi cohereEmbeddingApi(AwsCredentialsProvider credentialsProvider,
 			BedrockCohereEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
 				new ObjectMapper());
@@ -60,8 +57,7 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	public BedrockCohereEmbeddingClient cohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingApi,
 			BedrockCohereEmbeddingProperties properties) {
 
-		return new BedrockCohereEmbeddingClient(cohereEmbeddingApi).withInputType(properties.getInputType())
-			.withTruncate(properties.getTruncate());
+		return new BedrockCohereEmbeddingClient(cohereEmbeddingApi, properties.getOptions());
 	}
 
 }

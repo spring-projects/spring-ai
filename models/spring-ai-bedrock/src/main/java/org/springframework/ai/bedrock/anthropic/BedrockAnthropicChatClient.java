@@ -19,7 +19,9 @@ package org.springframework.ai.bedrock.anthropic;
 import java.util.List;
 
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -28,12 +30,12 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Anthropic chat
- * model.
+ * generative.
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -42,64 +44,27 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 
 	private final AnthropicChatBedrockApi anthropicChatApi;
 
-	private Float temperature = 0.8f;
-
-	private Float topP;
-
-	private Integer maxTokensToSample = 500;
-
-	private Integer topK = 10;
-
-	private List<String> stopSequences;
-
-	private String anthropicVersion = AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION;
+	private final AnthropicChatOptions defaultOptions;
 
 	public BedrockAnthropicChatClient(AnthropicChatBedrockApi chatApi) {
+		this(chatApi,
+				AnthropicChatOptions.builder()
+					.withTemperature(0.8f)
+					.withMaxTokensToSample(500)
+					.withTopK(10)
+					.withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+					.build());
+	}
+
+	public BedrockAnthropicChatClient(AnthropicChatBedrockApi chatApi, AnthropicChatOptions options) {
 		this.anthropicChatApi = chatApi;
-	}
-
-	public BedrockAnthropicChatClient withTemperature(Float temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	public BedrockAnthropicChatClient withMaxTokensToSample(Integer maxTokensToSample) {
-		this.maxTokensToSample = maxTokensToSample;
-		return this;
-	}
-
-	public BedrockAnthropicChatClient withTopK(Integer topK) {
-		this.topK = topK;
-		return this;
-	}
-
-	public BedrockAnthropicChatClient withTopP(Float tpoP) {
-		this.topP = tpoP;
-		return this;
-	}
-
-	public BedrockAnthropicChatClient withStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-		return this;
-	}
-
-	public BedrockAnthropicChatClient withAnthropicVersion(String anthropicVersion) {
-		this.anthropicVersion = anthropicVersion;
-		return this;
+		this.defaultOptions = options;
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+	public ChatResponse call(Prompt prompt) {
 
-		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
-			.withTemperature(this.temperature)
-			.withMaxTokensToSample(this.maxTokensToSample)
-			.withTopK(this.topK)
-			.withTopP(this.topP)
-			.withStopSequences(this.stopSequences)
-			.withAnthropicVersion(this.anthropicVersion)
-			.build();
+		AnthropicChatRequest request = createRequest(prompt);
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
@@ -107,18 +72,9 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
-
-		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue)
-			.withTemperature(this.temperature)
-			.withMaxTokensToSample(this.maxTokensToSample)
-			.withTopK(this.topK)
-			.withTopP(this.topP)
-			.withStopSequences(this.stopSequences)
-			.withAnthropicVersion(this.anthropicVersion)
-			.build();
+		AnthropicChatRequest request = createRequest(prompt);
 
 		Flux<AnthropicChatResponse> fluxResponse = this.anthropicChatApi.chatCompletionStream(request);
 
@@ -126,11 +82,39 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
 			var generation = new Generation(response.completion());
 			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation
-					.withChoiceMetadata(ChoiceMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+				generation = generation.withGenerationMetadata(
+						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
 			}
 			return new ChatResponse(List.of(generation));
 		});
+	}
+
+	/**
+	 * Accessible for testing.
+	 */
+	AnthropicChatRequest createRequest(Prompt prompt) {
+
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
+
+		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue).build();
+
+		if (this.defaultOptions != null) {
+			request = ModelOptionsUtils.merge(request, this.defaultOptions, AnthropicChatRequest.class);
+		}
+
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, AnthropicChatOptions.class);
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, AnthropicChatRequest.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
+
+		return request;
 	}
 
 }

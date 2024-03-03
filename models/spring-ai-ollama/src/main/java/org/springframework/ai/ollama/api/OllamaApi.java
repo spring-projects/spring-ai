@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -349,15 +350,15 @@ public class OllamaApi {
 			/**
 			 * System message type used as instructions to the model.
 			 */
-			system,
+			@JsonProperty("system") SYSTEM,
 			/**
 			 * User message type.
 			 */
-			user,
+			@JsonProperty("user") USER,
 			/**
 			 * Assistant message type. Usually the response from the model.
 			 */
-			assistant;
+			@JsonProperty("assistant") ASSISTANT;
 
 		}
 
@@ -445,19 +446,21 @@ public class OllamaApi {
 			}
 
 			public Builder withOptions(Map<String, Object> options) {
-				this.options = options;
+				Objects.requireNonNullElse(options, "The options can not be null.");
+
+				this.options = OllamaOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
 			public Builder withOptions(OllamaOptions options) {
-				this.options = options.toMap();
+				Objects.requireNonNullElse(options, "The options can not be null.");
+				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 
 			public ChatRequest build() {
 				return new ChatRequest(model, messages, stream, format, options);
 			}
-
 		}
 	}
 
@@ -466,7 +469,7 @@ public class OllamaApi {
 	 *
 	 * @param model The model name used for completion.
 	 * @param createdAt When the request was made.
-	 * @param message The response {@link Message} with {@link Message.Role#assistant}.
+	 * @param message The response {@link Message} with {@link Message.Role#ASSISTANT}.
 	 * @param done Whether this is the final response. For streaming response only the
 	 * last message is marked as done. If true, this response may be followed by another
 	 * response with the following, additional fields: context, prompt_eval_count,

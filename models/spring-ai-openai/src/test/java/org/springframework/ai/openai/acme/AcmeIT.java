@@ -12,15 +12,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.client.OpenAiChatClient;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.testutils.AbstractIT;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.reader.JsonReader;
-import org.springframework.ai.retriever.VectorStoreRetriever;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -73,8 +72,6 @@ public class AcmeIT extends AbstractIT {
 
 		// Now user query
 
-		VectorStoreRetriever vectorStoreRetriever = new VectorStoreRetriever(vectorStore);
-
 		logger.info("Retrieving relevant documents");
 		String userQuery = "What bike is good for city commuting?";
 
@@ -82,7 +79,7 @@ public class AcmeIT extends AbstractIT {
 		// "How much does the SonicRide 8S cost?";
 
 		// Eventually include metadata in query.
-		List<Document> similarDocuments = vectorStoreRetriever.retrieve(userQuery);
+		List<Document> similarDocuments = vectorStore.similaritySearch(userQuery);
 		logger.info(String.format("Found %s relevant documents.", similarDocuments.size()));
 
 		// Try the case where not product was specified, so query over whatever docs might
@@ -93,10 +90,10 @@ public class AcmeIT extends AbstractIT {
 
 		// Create the prompt ad-hoc for now, need to put in system message and user
 		// message via ChatPromptTemplate or some other message building mechanic;
-		logger.info("Asking AI model to reply to question.");
+		logger.info("Asking AI generative to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
-		ChatResponse response = chatClient.generate(prompt);
+		ChatResponse response = chatClient.call(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
 	}

@@ -116,7 +116,7 @@ public class SearchRequestTests {
 				new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("active"), new Filter.Value(true)));
 		assertThat(request.hasFilterExpression()).isTrue();
 
-		request.withFilterExpression(Filter.builder().eq("country", "NL").build());
+		request.withFilterExpression(new FilterExpressionBuilder().eq("country", "NL").build());
 		assertThat(request.getFilterExpression()).isEqualTo(
 				new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("country"), new Filter.Value("NL")));
 		assertThat(request.hasFilterExpression()).isTrue();

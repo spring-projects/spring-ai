@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
@@ -30,10 +31,10 @@ import org.springframework.ai.bedrock.anthropic.BedrockAnthropicChatClient;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.SystemPromptTemplate;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -51,9 +52,9 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 		.withPropertyValues("spring.ai.bedrock.anthropic.chat.enabled=true",
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-				"spring.ai.bedrock.anthropic.chat.model=" + AnthropicChatModel.CLAUDE_V2.id(),
 				"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-				"spring.ai.bedrock.anthropic.chat.temperature=0.5", "spring.ai.bedrock.anthropic.chat.maxGenLen=500")
+				"spring.ai.bedrock.anthropic.chat.model=" + AnthropicChatModel.CLAUDE_V2.id(),
+				"spring.ai.bedrock.anthropic.chat.options.temperature=0.5")
 		.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
@@ -70,8 +71,8 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockAnthropicChatClient anthropicChatClient = context.getBean(BedrockAnthropicChatClient.class);
-			ChatResponse response = anthropicChatClient.generate(new Prompt(List.of(userMessage, systemMessage)));
-			assertThat(response.getGeneration().getContent()).contains("Blackbeard");
+			ChatResponse response = anthropicChatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
 
@@ -81,16 +82,16 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 
 			BedrockAnthropicChatClient anthropicChatClient = context.getBean(BedrockAnthropicChatClient.class);
 
-			Flux<ChatResponse> response = anthropicChatClient
-				.generateStream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = anthropicChatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
 
 			String stitchedResponseContent = responses.stream()
-				.map(ChatResponse::getGenerations)
+				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
-				.map(Generation::getContent)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
 				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -105,7 +106,7 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.anthropic.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-					"spring.ai.bedrock.anthropic.chat.temperature=0.55")
+					"spring.ai.bedrock.anthropic.chat.options.temperature=0.55")
 			.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				var anthropicChatProperties = context.getBean(BedrockAnthropicChatProperties.class);
@@ -114,7 +115,7 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 				assertThat(anthropicChatProperties.isEnabled()).isTrue();
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
 
-				assertThat(anthropicChatProperties.getTemperature()).isEqualTo(0.55f);
+				assertThat(anthropicChatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 				assertThat(anthropicChatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");

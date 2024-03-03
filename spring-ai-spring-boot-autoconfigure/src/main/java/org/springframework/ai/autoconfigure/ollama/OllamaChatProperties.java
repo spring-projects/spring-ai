@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Ollama Chat autoconfiguration properties.
@@ -31,40 +32,36 @@ public class OllamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
 	/**
-	 * Enable Ollama Chat Client. True by default.
+	 * Enable Ollama chat client.
 	 */
 	private boolean enabled = true;
 
 	/**
-	 * Ollama Chat model name. Defaults to 'llama2'.
+	 * Client lever Ollama options. Use this property to configure generative temperature,
+	 * topK and topP and alike parameters. The null values are ignored defaulting to the
+	 * generative's defaults.
 	 */
-	private String model = "llama2";
+	@NestedConfigurationProperty
+	private OllamaOptions options = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
 
-	/**
-	 * Client lever Ollama options. Use this property to configure model temperature, topK
-	 * and topP and alike parameters. The null values are ignored defaulting to the
-	 * model's defaults.
-	 */
-	private OllamaOptions options = new OllamaOptions();
+	public String getModel() {
+		return this.options.getModel();
+	}
 
-	public boolean isEnabled() {
-		return this.enabled;
+	public void setModel(String model) {
+		this.options.setModel(model);
+	}
+
+	public OllamaOptions getOptions() {
+		return this.options;
 	}
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
 	}
 
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public OllamaOptions getOptions() {
-		return this.options;
+	public boolean isEnabled() {
+		return this.enabled;
 	}
 
 }

@@ -27,7 +27,7 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
@@ -100,12 +100,8 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 			embeddings.add(JsonUtils.toFloatArray(document.getEmbedding()));
 		}
 
-		var success = this.chromaApi.upsertEmbeddings(this.collectionId,
+		this.chromaApi.upsertEmbeddings(this.collectionId,
 				new AddEmbeddingsRequest(ids, embeddings, metadatas, contents));
-
-		if (!success) {
-			throw new RuntimeException("Unsuccessful storing!");
-		}
 	}
 
 	@Override

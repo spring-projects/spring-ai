@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -28,7 +29,7 @@ import org.testcontainers.utility.DockerImageName;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -44,10 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 public class Neo4jVectorStoreAutoConfigurationIT {
 
-	// Needs to be Neo4j 5.13+, because Neo4j 5.13 deprecated the used embedding storing
+	// Needs to be Neo4j 5.15+, because Neo4j 5.15 deprecated the used embedding storing
 	// function.
 	@Container
-	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.14"))
+	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.15"))
 		.withRandomPassword();
 
 	List<Document> documents = List.of(
@@ -56,21 +57,23 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(Neo4jVectorStoreAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(Neo4jAutoConfiguration.class, Neo4jVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.neo4j.driver.uri=" + neo4jContainer.getBoltUrl(),
-				"spring.ai.vectorstore.neo4j.driver.authentication.username=" + "neo4j",
-				"spring.ai.vectorstore.neo4j.driver.authentication.password=" + neo4jContainer.getAdminPassword());
+		.withPropertyValues("spring.neo4j.uri=" + neo4jContainer.getBoltUrl(),
+				"spring.neo4j.authentication.username=" + "neo4j",
+				"spring.neo4j.authentication.password=" + neo4jContainer.getAdminPassword());
 
 	@Test
 	void addAndSearch() {
 		contextRunner
 			.withPropertyValues("spring.ai.vectorstore.neo4j.label=my_test_label",
-					"spring.ai.vectorstore.neo4j.embeddingDimension=384")
+					"spring.ai.vectorstore.neo4j.embeddingDimension=384",
+					"spring.ai.vectorstore.neo4j.indexName=customIndexName")
 			.run(context -> {
 				var properties = context.getBean(Neo4jVectorStoreProperties.class);
 				assertThat(properties.getLabel()).isEqualTo("my_test_label");
 				assertThat(properties.getEmbeddingDimension()).isEqualTo(384);
+				assertThat(properties.getIndexName()).isEqualTo("customIndexName");
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				vectorStore.add(documents);

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.huggingface;
 
-import org.springframework.ai.huggingface.client.HuggingfaceChatClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;

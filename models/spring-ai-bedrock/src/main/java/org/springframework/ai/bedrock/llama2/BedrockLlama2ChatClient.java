@@ -18,7 +18,6 @@ package org.springframework.ai.bedrock.llama2;
 
 import java.util.List;
 
-import org.springframework.ai.chat.ChatResponse;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -26,15 +25,19 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.Usage;
-import org.springframework.ai.prompt.Prompt;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.util.Assert;
 
 /**
  * Java {@link ChatClient} and {@link StreamingChatClient} for the Bedrock Llama2 chat
- * model.
+ * generative.
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -43,64 +46,43 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 
 	private final Llama2ChatBedrockApi chatApi;
 
-	private Float temperature;
-
-	private Float topP;
-
-	private Integer maxGenLen;
+	private final BedrockLlama2ChatOptions defaultOptions;
 
 	public BedrockLlama2ChatClient(Llama2ChatBedrockApi chatApi) {
+		this(chatApi,
+				BedrockLlama2ChatOptions.builder().withTemperature(0.8f).withTopP(0.9f).withMaxGenLen(100).build());
+	}
+
+	public BedrockLlama2ChatClient(Llama2ChatBedrockApi chatApi, BedrockLlama2ChatOptions options) {
+		Assert.notNull(chatApi, "Llama2ChatBedrockApi must not be null");
+		Assert.notNull(options, "BedrockLlama2ChatOptions must not be null");
+
 		this.chatApi = chatApi;
-	}
-
-	public BedrockLlama2ChatClient withTemperature(Float temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	public BedrockLlama2ChatClient withTopP(Float topP) {
-		this.topP = topP;
-		return this;
-	}
-
-	public BedrockLlama2ChatClient withMaxGenLen(Integer maxGenLen) {
-		this.maxGenLen = maxGenLen;
-		return this;
+		this.defaultOptions = options;
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
+	public ChatResponse call(Prompt prompt) {
 
-		var request = Llama2ChatRequest.builder(promptValue)
-			.withTemperature(this.temperature)
-			.withTopP(this.topP)
-			.withMaxGenLen(this.maxGenLen)
-			.build();
+		var request = createRequest(prompt);
 
 		Llama2ChatResponse response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.generation())
-			.withChoiceMetadata(ChoiceMetadata.from(response.stopReason().name(), extractUsage(response)))));
+		return new ChatResponse(List.of(new Generation(response.generation()).withGenerationMetadata(
+				ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getMessages());
-
-		var request = Llama2ChatRequest.builder(promptValue)
-			.withTemperature(this.temperature)
-			.withTopP(this.topP)
-			.withMaxGenLen(this.maxGenLen)
-			.build();
+		var request = createRequest(prompt);
 
 		Flux<Llama2ChatResponse> fluxResponse = this.chatApi.chatCompletionStream(request);
 
 		return fluxResponse.map(response -> {
 			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
 			return new ChatResponse(List.of(new Generation(response.generation())
-				.withChoiceMetadata(ChoiceMetadata.from(stopReason, extractUsage(response)))));
+				.withGenerationMetadata(ChatGenerationMetadata.from(stopReason, extractUsage(response)))));
 		});
 	}
 
@@ -117,6 +99,35 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 				return response.generationTokenCount().longValue();
 			}
 		};
+	}
+
+	/**
+	 * Accessible for testing.
+	 */
+	Llama2ChatRequest createRequest(Prompt prompt) {
+
+		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
+
+		Llama2ChatRequest request = Llama2ChatRequest.builder(promptValue).build();
+
+		if (this.defaultOptions != null) {
+			request = ModelOptionsUtils.merge(request, this.defaultOptions, Llama2ChatRequest.class);
+		}
+
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+				BedrockLlama2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+						ChatOptions.class, BedrockLlama2ChatOptions.class);
+
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, Llama2ChatRequest.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
+
+		return request;
 	}
 
 }

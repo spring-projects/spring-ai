@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
@@ -36,6 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;;
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class AnthropicChatBedrockApiIT {
+
+	private final Logger logger = LoggerFactory.getLogger(AnthropicChatBedrockApiIT.class);
 
 	private AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(AnthropicChatModel.CLAUDE_V2.id(),
 			Region.EU_CENTRAL_1.id());
@@ -60,7 +64,7 @@ public class AnthropicChatBedrockApiIT {
 		assertThat(response.stop()).isEqualTo("\n\nHuman:");
 		assertThat(response.amazonBedrockInvocationMetrics()).isNull();
 
-		System.out.println(response);
+		logger.info("" + response);
 	}
 
 	@Test

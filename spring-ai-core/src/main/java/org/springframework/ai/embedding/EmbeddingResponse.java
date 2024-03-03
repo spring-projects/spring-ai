@@ -1,55 +1,78 @@
+/*
+ * Copyright 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.embedding;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+
+import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.Assert;
 
 /**
  * Embedding response object.
  */
-public class EmbeddingResponse {
+public class EmbeddingResponse implements ModelResponse<Embedding> {
 
 	/**
 	 * Embedding data.
 	 */
-	private List<Embedding> data;
+	private List<Embedding> embeddings;
 
 	/**
 	 * Embedding metadata.
 	 */
-	private Map<String, Object> metadata = new HashMap<>();
+	private EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 
 	/**
 	 * Creates a new {@link EmbeddingResponse} instance with empty metadata.
-	 * @param data the embedding data.
+	 * @param embeddings the embedding data.
 	 */
-	public EmbeddingResponse(List<Embedding> data) {
-		this(data, new HashMap<>());
+	public EmbeddingResponse(List<Embedding> embeddings) {
+		this(embeddings, new EmbeddingResponseMetadata());
 	}
 
 	/**
 	 * Creates a new {@link EmbeddingResponse} instance.
-	 * @param data the embedding data.
+	 * @param embeddings the embedding data.
 	 * @param metadata the embedding metadata.
 	 */
-	public EmbeddingResponse(List<Embedding> data, Map<String, Object> metadata) {
-		this.data = data;
+	public EmbeddingResponse(List<Embedding> embeddings, EmbeddingResponseMetadata metadata) {
+		this.embeddings = embeddings;
 		this.metadata = metadata;
-	}
-
-	/**
-	 * @return Get the embedding data.
-	 */
-	public List<Embedding> getData() {
-		return data;
 	}
 
 	/**
 	 * @return Get the embedding metadata.
 	 */
-	public Map<String, Object> getMetadata() {
+	public EmbeddingResponseMetadata getMetadata() {
 		return metadata;
+	}
+
+	@Override
+	public Embedding getResult() {
+		Assert.notEmpty(embeddings, "No embedding data available.");
+		return embeddings.get(0);
+	}
+
+	/**
+	 * @return Get the embedding data.
+	 */
+	@Override
+	public List<Embedding> getResults() {
+		return embeddings;
 	}
 
 	@Override
@@ -59,17 +82,17 @@ public class EmbeddingResponse {
 		if (o == null || getClass() != o.getClass())
 			return false;
 		EmbeddingResponse that = (EmbeddingResponse) o;
-		return Objects.equals(data, that.data) && Objects.equals(metadata, that.metadata);
+		return Objects.equals(embeddings, that.embeddings) && Objects.equals(metadata, that.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(data, metadata);
+		return Objects.hash(embeddings, metadata);
 	}
 
 	@Override
 	public String toString() {
-		return "EmbeddingResult{" + "data=" + data + ", metadata=" + metadata + '}';
+		return "EmbeddingResult{" + "data=" + embeddings + ", metadata=" + metadata + '}';
 	}
 
 }

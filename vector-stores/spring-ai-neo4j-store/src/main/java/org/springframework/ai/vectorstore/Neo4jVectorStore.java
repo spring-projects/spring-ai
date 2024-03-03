@@ -22,6 +22,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -69,6 +70,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 		private final String quotedLabel;
 
+		private final String indexName;
+
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
@@ -97,6 +100,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			this.label = builder.label;
 			this.embeddingProperty = builder.embeddingProperty;
 			this.quotedLabel = SchemaNames.sanitize(this.label).orElseThrow();
+			this.indexName = builder.indexName;
 		}
 
 		public static class Builder {
@@ -110,6 +114,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			private String label = DEFAULT_LABEL;
 
 			private String embeddingProperty = DEFAULT_EMBEDDING_PROPERTY;
+
+			private String indexName = DEFAULT_INDEX_NAME;
 
 			private Builder() {
 			}
@@ -183,6 +189,21 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			}
 
 			/**
+			 * Configures the vector index to be used. Defaults to
+			 * {@literal spring-ai-document-index}.
+			 * @param newIndexName The name of the index to be used for storing and
+			 * searching data.
+			 * @return this builder
+			 */
+			public Builder withIndexName(String newIndexName) {
+
+				Assert.hasText(newIndexName, "Index name may not be null or blank");
+
+				this.indexName = newIndexName;
+				return this;
+			}
+
+			/**
 			 * {@return the immutable configuration}
 			 */
 			public Neo4jVectorStoreConfig build() {
@@ -198,9 +219,11 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	public static final String DEFAULT_LABEL = "Document";
 
-	private static final String INDEX_NAME = "spring-ai-document-index";
+	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
 	public static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
+
+	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
 
 	private final Driver driver;
 
@@ -257,25 +280,26 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
-		if (request.getFilterExpression() != null) {
-			throw new UnsupportedOperationException(
-					"The [" + this.getClass() + "] doesn't support metadata filtering!");
-		}
-
 		Assert.isTrue(request.getTopK() > 0, "The number of documents to returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
 		var embedding = Values.value(toFloatArray(this.embeddingClient.embed(request.getQuery())));
 		try (var session = this.driver.session(this.config.sessionConfig)) {
+			StringBuilder condition = new StringBuilder("score >= $threshold");
+			if (request.hasFilterExpression()) {
+				condition.append(" AND ")
+					.append(this.filterExpressionConverter.convertExpression(request.getFilterExpression()));
+			}
+			String query = """
+					CALL db.index.vector.queryNodes($indexName, $numberOfNearestNeighbours, $embeddingValue)
+					YIELD node, score
+					WHERE %s
+					RETURN node, score""".formatted(condition);
+
 			return session
-				.run("""
-						CALL db.index.vector.queryNodes($indexName, $numberOfNearestNeighbours, $embeddingValue)
-						YIELD node, score
-						WHERE score >= $threshold
-						RETURN node, score
-						""",
-						Map.of("indexName", INDEX_NAME, "numberOfNearestNeighbours", request.getTopK(),
+				.run(query,
+						Map.of("indexName", this.config.indexName, "numberOfNearestNeighbours", request.getTopK(),
 								"embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
 				.list(Neo4jVectorStore::recordToDocument);
 		}
@@ -287,25 +311,21 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
 			session
-				.run("CREATE CONSTRAINT %s_unique_idx IF NOT EXISTS FOR (n:%s) REQUIRE n.id IS UNIQUE".formatted(
+				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.id IS UNIQUE".formatted(
 						SchemaNames.sanitize(this.config.label + "_unique_idx").orElseThrow(), this.config.quotedLabel))
 				.consume();
 
-			var vectorIndexExists = session
-				.run("SHOW INDEXES YIELD name WHERE name = $name RETURN count(*) > 0", Map.of("name", INDEX_NAME))
-				.single()
-				.get(0)
-				.asBoolean();
-
-			if (!vectorIndexExists) {
-				var statement = "CALL db.index.vector.createNodeIndex($indexName, $label, $embeddingProperty, $embeddingDimension, $distanceType)";
-				session.run(statement,
-						Map.of("indexName", INDEX_NAME, "label", this.config.label, "embeddingProperty",
-								this.config.embeddingProperty, "embeddingDimension", this.config.embeddingDimension,
-								"distanceType", this.config.distanceType.name))
-					.consume();
-				session.run("CALL db.awaitIndexes()").consume();
-			}
+			var statement = """
+					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
+							OPTIONS {indexConfig: {
+							 `vector.dimensions`: %d,
+							 `vector.similarity_function`: '%s'
+							}}
+					""".formatted(SchemaNames.sanitize(this.config.indexName, true).orElseThrow(),
+					this.config.quotedLabel, this.config.embeddingProperty, this.config.embeddingDimension,
+					this.config.distanceType.name);
+			session.run(statement).consume();
+			session.run("CALL db.awaitIndexes()").consume();
 		}
 	}
 
@@ -323,7 +343,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
 
-		row.put(DEFAULT_EMBEDDING_PROPERTY, Values.value(toFloatArray(embedding)));
+		row.put(this.config.embeddingProperty, Values.value(toFloatArray(embedding)));
 		return row;
 	}
 

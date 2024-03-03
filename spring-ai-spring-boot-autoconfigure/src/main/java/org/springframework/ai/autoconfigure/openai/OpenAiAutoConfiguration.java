@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,45 +16,107 @@
 
 package org.springframework.ai.autoconfigure.openai;
 
-import org.springframework.ai.autoconfigure.NativeHints;
-import org.springframework.ai.embedding.EmbeddingClient;
+import java.util.List;
+
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.client.OpenAiChatClient;
-import org.springframework.ai.openai.embedding.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-@AutoConfiguration
+@AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
-@EnableConfigurationProperties(OpenAiProperties.class)
-@ImportRuntimeHints(NativeHints.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class })
+/**
+ * @author Christian Tzolov
+ */
 public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiApi openAiApi(OpenAiProperties openAiProperties) {
-		return new OpenAiApi(openAiProperties.getBaseUrl(), openAiProperties.getApiKey(), RestClient.builder());
+	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
+			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+
+		var openAiApi = openAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder);
+
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+		}
+
+		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiChatClient openAiChatClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(openAiApi);
-		openAiChatClient.setTemperature(openAiProperties.getTemperature());
-		openAiChatClient.setModel(openAiProperties.getModel());
+	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
 
-		return openAiChatClient;
+		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder);
+
+		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions());
+	}
+
+	private OpenAiApi openAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
+			RestClient.Builder restClientBuilder) {
+
+		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
+		Assert.hasText(resolvedBaseUrl, "OpenAI base URL must be set");
+
+		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
+		Assert.hasText(resolvedApiKey, "OpenAI API key must be set");
+
+		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiApi openAiApi, OpenAiProperties openAiProperties) {
-		return new OpenAiEmbeddingClient(openAiApi, openAiProperties.getEmbedding().getModel());
+	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
+			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder) {
+		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder);
+
+		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

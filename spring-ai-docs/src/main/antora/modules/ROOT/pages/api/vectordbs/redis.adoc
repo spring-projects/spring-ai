@@ -40,7 +40,6 @@ Add these dependencies to your project:
 <dependency>
   <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
 
@@ -51,9 +50,10 @@ or use OpenAI (Cloud)
 <dependency>
     <groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
 </dependency>
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 You'll need to provide your OpenAI API Key. Set it as an environment variable like so:
 
@@ -69,7 +69,6 @@ export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
 <dependency>
   <groupId>org.springframework.ai</groupId>
   <artifactId>spring-ai-redis</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
 </dependency>
 
 <dependency>
@@ -78,6 +77,8 @@ export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
     <version>5.1.0</version>
 </dependency>
 ----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 == Usage
 
@@ -99,6 +100,10 @@ public VectorStore vectorStore(EmbeddingClient embeddingClient) {
   return new RedisVectorStore(config, embeddingClient);
 }
 ----
+
+> [NOTE]
+> It is more convenient and preferred to create the `RedisVectorStore` as a Bean.
+> But if you decide to create it manually, then you must call the `RedisVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
 
 > [NOTE]
 > You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
@@ -155,7 +160,7 @@ or programmatically using the expression DSL:
 
 [source,java]
 ----
-FilterExpressionBuilder b = Filter.builder();
+FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(
    SearchRequest

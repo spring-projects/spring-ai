@@ -22,10 +22,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import org.springframework.ai.autoconfigure.embedding.transformer.TransformersEmbeddingClientAutoConfiguration;
-import org.springframework.ai.autoconfigure.embedding.transformer.TransformersEmbeddingClientProperties;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.embedding.TransformersEmbeddingClient;
+import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -47,8 +45,8 @@ public class TransformersEmbeddingClientAutoConfigurationIT {
 		contextRunner.run(context -> {
 			var properties = context.getBean(TransformersEmbeddingClientProperties.class);
 			assertThat(properties.getCache().isEnabled()).isTrue();
-			assertThat(properties.getCache().getDirectory())
-				.isEqualTo(new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-model").getAbsolutePath());
+			assertThat(properties.getCache().getDirectory()).isEqualTo(
+					new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
 
 			EmbeddingClient embeddingClient = context.getBean(EmbeddingClient.class);
 			assertThat(embeddingClient).isInstanceOf(TransformersEmbeddingClient.class);
@@ -89,6 +87,25 @@ public class TransformersEmbeddingClientAutoConfigurationIT {
 				assertThat(embeddings.get(0).size()).isEqualTo(embeddingClient.dimensions()); // dimensions
 																								// size
 			});
+	}
+
+	@Test
+	void embeddingActivation() {
+		contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=false").run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingClientProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(TransformersEmbeddingClient.class)).isEmpty();
+		});
+
+		contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=true").run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingClientProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(TransformersEmbeddingClient.class)).isNotEmpty();
+		});
+
+		contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingClientProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(TransformersEmbeddingClient.class)).isNotEmpty();
+		});
+
 	}
 
 }

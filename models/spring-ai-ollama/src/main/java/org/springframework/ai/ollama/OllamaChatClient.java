@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,27 @@
 package org.springframework.ai.ollama;
 
 import java.util.List;
-import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.metadata.ChoiceMetadata;
-import org.springframework.ai.metadata.Usage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-
-import org.springframework.ai.prompt.Prompt;
-import org.springframework.ai.prompt.messages.Message;
-import org.springframework.ai.prompt.messages.MessageType;
+import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.util.StringUtils;
 
 /**
- * {@link ChatClient} implementation for {@literal Ollma}.
+ * {@link ChatClient} implementation for {@literal Ollama}.
  *
  * Ollama allows developers to run large language models and generate embeddings locally.
  * It supports open-source models available on [Ollama AI
@@ -52,52 +52,57 @@ import org.springframework.ai.prompt.messages.MessageType;
  */
 public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
+	/**
+	 * Low-level Ollama API library.
+	 */
 	private final OllamaApi chatApi;
 
-	private String model = "orca-mini";
-
-	private Map<String, Object> clientOptions;
+	/**
+	 * Default options to be used for all chat requests.
+	 */
+	private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
 
 	public OllamaChatClient(OllamaApi chatApi) {
 		this.chatApi = chatApi;
 	}
 
+	/**
+	 * @deprecated Use {@link OllamaOptions#setModel} instead.
+	 */
+	@Deprecated
 	public OllamaChatClient withModel(String model) {
-		this.model = model;
+		this.defaultOptions.setModel(model);
 		return this;
 	}
 
-	public OllamaChatClient withOptions(Map<String, Object> options) {
-		this.clientOptions = options;
-		return this;
-	}
-
-	public OllamaChatClient withOptions(OllamaOptions options) {
-		this.clientOptions = options.toMap();
+	public OllamaChatClient withDefaultOptions(OllamaOptions options) {
+		this.defaultOptions = options;
 		return this;
 	}
 
 	@Override
-	public ChatResponse generate(Prompt prompt) {
+	public ChatResponse call(Prompt prompt) {
 
-		OllamaApi.ChatResponse response = this.chatApi.chat(request(prompt, this.model, false));
+		OllamaApi.ChatResponse response = this.chatApi.chat(ollamaChatRequest(prompt, false));
 		var generator = new Generation(response.message().content());
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator.withChoiceMetadata(ChoiceMetadata.from("unknown", extractUsage(response)));
+			generator = generator
+				.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(response)));
 		}
 		return new ChatResponse(List.of(generator));
 	}
 
 	@Override
-	public Flux<ChatResponse> generateStream(Prompt prompt) {
+	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		Flux<OllamaApi.ChatResponse> response = this.chatApi.streamingChat(request(prompt, this.model, true));
+		Flux<OllamaApi.ChatResponse> response = this.chatApi.streamingChat(ollamaChatRequest(prompt, true));
 
 		return response.map(chunk -> {
 			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
 					: new Generation("");
 			if (Boolean.TRUE.equals(chunk.done())) {
-				generation = generation.withChoiceMetadata(ChoiceMetadata.from("unknown", extractUsage(chunk)));
+				generation = generation
+					.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(chunk)));
 			}
 			return new ChatResponse(List.of(generation));
 		});
@@ -118,19 +123,44 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		};
 	}
 
-	private OllamaApi.ChatRequest request(Prompt prompt, String model, boolean stream) {
+	/**
+	 * Package access for testing.
+	 */
+	OllamaApi.ChatRequest ollamaChatRequest(Prompt prompt, boolean stream) {
 
-		List<OllamaApi.Message> ollamaMessages = prompt.getMessages()
+		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() == MessageType.USER
-					|| message.getMessageType() == MessageType.ASSISTANT)
+					|| message.getMessageType() == MessageType.ASSISTANT
+					|| message.getMessageType() == MessageType.SYSTEM)
 			.map(m -> OllamaApi.Message.builder(toRole(m)).withContent(m.getContent()).build())
 			.toList();
 
-		return ChatRequest.builder(model)
+		// runtime options
+		OllamaOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ChatOptions runtimeChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(runtimeChatOptions, ChatOptions.class,
+						OllamaOptions.class);
+			}
+			else {
+				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
+						+ prompt.getOptions().getClass().getSimpleName());
+			}
+		}
+
+		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
+
+		// Override the model.
+		if (!StringUtils.hasText(mergedOptions.getModel())) {
+			throw new IllegalArgumentException("Model is not set!");
+		}
+
+		String model = mergedOptions.getModel();
+		return OllamaApi.ChatRequest.builder(model)
 			.withStream(stream)
 			.withMessages(ollamaMessages)
-			.withOptions(this.clientOptions)
+			.withOptions(mergedOptions)
 			.build();
 	}
 
@@ -138,11 +168,11 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
 		switch (message.getMessageType()) {
 			case USER:
-				return Role.user;
+				return Role.USER;
 			case ASSISTANT:
-				return Role.assistant;
+				return Role.ASSISTANT;
 			case SYSTEM:
-				return Role.system;
+				return Role.SYSTEM;
 			default:
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 		}

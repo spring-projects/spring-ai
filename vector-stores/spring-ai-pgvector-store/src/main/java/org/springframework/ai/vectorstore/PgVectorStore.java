@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.converter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -116,17 +116,17 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
-		EuclideanDistance("<->", "vector_l2_ops",
+		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
 		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
-		NegativeInnerProduct("<#>", "vector_ip_ops",
+		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
 				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 
-		CosineDistance("<=>", "vector_cosine_ops",
+		COSINE_DISTANCE("<=>", "vector_cosine_ops",
 				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
@@ -197,12 +197,12 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-		this(jdbcTemplate, embeddingClient, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.CosineDistance,
+		this(jdbcTemplate, embeddingClient, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE,
 				false, PgIndexType.NONE);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions) {
-		this(jdbcTemplate, embeddingClient, dimensions, PgVectorStore.PgDistanceType.CosineDistance, false,
+		this(jdbcTemplate, embeddingClient, dimensions, PgVectorStore.PgDistanceType.COSINE_DISTANCE, false,
 				PgIndexType.NONE);
 	}
 
@@ -342,15 +342,20 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
 		}
 
-		this.jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + VECTOR_TABLE_NAME + " ( "
-				+ "id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY, " + "content text, " + "metadata json, "
-				+ "embedding vector(" + this.embeddingDimensions() + "))");
+		this.jdbcTemplate.execute(String.format("""
+				CREATE TABLE IF NOT EXISTS %s (
+					id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+					content text,
+					metadata json,
+					embedding vector(%d)
+				)
+				""", VECTOR_TABLE_NAME, this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
-			this.jdbcTemplate.execute("CREATE INDEX ON " + VECTOR_TABLE_NAME + " USING " + this.createIndexMethod
-					+ " (embedding " + this.getDistanceType().index + ")");
+			this.jdbcTemplate.execute(String.format("""
+					CREATE INDEX ON %s USING %s (embedding %s)
+					""", VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
 		}
-
 	}
 
 	int embeddingDimensions() {

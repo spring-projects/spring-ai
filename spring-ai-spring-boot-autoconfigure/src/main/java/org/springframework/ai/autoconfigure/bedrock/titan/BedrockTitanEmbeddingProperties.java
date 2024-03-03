@@ -37,7 +37,7 @@ public class BedrockTitanEmbeddingProperties {
 	private boolean enabled = false;
 
 	/**
-	 * Bedrock Titan Embedding model name. Defaults to 'amazon.titan-embed-image-v1'.
+	 * Bedrock Titan Embedding generative name. Defaults to 'amazon.titan-embed-image-v1'.
 	 */
 	private String model = TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id();
 

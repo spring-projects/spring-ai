@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.metadata.Usage;
 
 /**
  * Unit Tests for {@link Usage}.
