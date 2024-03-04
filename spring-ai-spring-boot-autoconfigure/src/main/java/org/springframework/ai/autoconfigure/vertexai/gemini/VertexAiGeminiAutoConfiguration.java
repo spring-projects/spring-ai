@@ -64,7 +64,9 @@ public class VertexAiGeminiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public VertexAiGeminiChatClient vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context) {
+
+		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -73,9 +75,11 @@ public class VertexAiGeminiAutoConfiguration {
 		return new VertexAiGeminiChatClient(vertexAi, chatProperties.getOptions(), functionCallbackContext);
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+	/**
+	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance must
+	 * different from the other JSON schema types.
+	 */
+	private FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
 		manager.setApplicationContext(context);
