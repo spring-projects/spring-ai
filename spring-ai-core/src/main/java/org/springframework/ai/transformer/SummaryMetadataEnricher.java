@@ -16,7 +16,6 @@
 
 package org.springframework.ai.transformer;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,33 +93,60 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 
 	@Override
 	public List<Document> apply(List<Document> documents) {
-
-		List<String> documentSummaries = new ArrayList<>();
-		for (Document document : documents) {
-
-			var documentContext = document.getFormattedContent(this.metadataMode);
-
-			Prompt prompt = new PromptTemplate(this.summaryTemplate)
-				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
-			documentSummaries.add(this.chatClient.call(prompt).getResult().getOutput().getContent());
-		}
+		List<String> documentSummaries = summaryDocuments(documents);
 
 		for (int i = 0; i < documentSummaries.size(); i++) {
-			Map<String, Object> summaryMetadata = new HashMap<>();
-			if (i > 0 && this.summaryTypes.contains(SummaryType.PREVIOUS)) {
-				summaryMetadata.put(PREV_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i - 1));
-			}
-			if (i < (documentSummaries.size() - 1) && this.summaryTypes.contains(SummaryType.NEXT)) {
-				summaryMetadata.put(NEXT_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i + 1));
-			}
-			if (this.summaryTypes.contains(SummaryType.CURRENT)) {
-				summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i));
-			}
-
+			Map<String, Object> summaryMetadata = extractSummaryMetadata(documentSummaries, i);
 			documents.get(i).getMetadata().putAll(summaryMetadata);
 		}
 
 		return documents;
+	}
+
+	private List<String> summaryDocuments(List<Document> documents) {
+		return documents.stream()
+				.map(this::summarySingleDocument)
+				.toList();
+	}
+
+	private Map<String, Object> extractSummaryMetadata(List<String> documentSummaries, int nowIndex) {
+		final int prevIndex = nowIndex - 1;
+		final int nextIndex = nowIndex + 1;
+
+		Map<String, Object> summaryMetadata = new HashMap<>();
+
+		if (nowIndex > 0 && this.summaryTypes.contains(SummaryType.PREVIOUS)) {
+			summaryMetadata.put(PREV_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(prevIndex));
+		}
+		if (nowIndex < (documentSummaries.size() - 1) && this.summaryTypes.contains(SummaryType.NEXT)) {
+			summaryMetadata.put(NEXT_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(nextIndex));
+		}
+		if (this.summaryTypes.contains(SummaryType.CURRENT)) {
+			summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(nowIndex));
+		}
+
+		return summaryMetadata;
+	}
+
+	private String summarySingleDocument(Document document) {
+		var documentContext = document.getFormattedContent(this.metadataMode);
+
+		Prompt prompt = createPromptByContext(documentContext);
+
+		return getContentFromPrompt(prompt);
+	}
+
+	private Prompt createPromptByContext(String documentContext) {
+		return new PromptTemplate(this.summaryTemplate)
+				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
+	}
+
+	private String getContentFromPrompt(Prompt prompt) {
+		return this.chatClient
+				.call(prompt)
+				.getResult()
+				.getOutput()
+				.getContent();
 	}
 
 }
