@@ -4,6 +4,7 @@
 - [Cohere Chat Documentation](https://docs.spring.io/spring-ai/reference/api/clients/bedrock/bedrock-cohere.html)
 - [Cohere Embedding Documentation](https://docs.spring.io/spring-ai/reference/api/embeddings/bedrock-cohere-embedding.html)
 - [Llama2 Chat Documentation](https://docs.spring.io/spring-ai/reference/api/clients/bedrock/bedrock-llama2.html)
+- [Jurassic2 Chat Documentation](https://docs.spring.io/spring-ai/reference/api/clients/bedrock/bedrock-jurassic2.html)
 - [Titan Chat Documentation](https://docs.spring.io/spring-ai/reference/api/clients/bedrock/bedrock-titan.html)
 - [Titan Embedding Documentation](https://docs.spring.io/spring-ai/reference/api/embeddings/bedrock-titan-embedding.html)
 

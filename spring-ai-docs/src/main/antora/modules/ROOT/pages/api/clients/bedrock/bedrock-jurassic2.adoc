@@ -1,13 +1,8 @@
 = Jurassic-2 Chat
 
-https://ai.meta.com/jurassic/[Meta's Jurassic-2 Chat] is part of the Jurassic-2 collection of large language models.
-It excels in dialogue-based applications with a parameter scale of 13 billion.
-Leveraging public datasets and human annotations, Jurassic-2 Chat offers context-aware dialogues.
+https://aws.amazon.com/bedrock/jurassic/[AI21 Labs Jurassic on Amazon Bedrock
+] Jurassic is AI21 Labs’ family of reliable FMs for the enterprise, powering sophisticated language generation tasks – such as question answering, text generation, search, and summarization – across thousands of live applications.
 
-Trained on a diverse set of tokens from public data sources, Jurassic-2 Chat provides extensive knowledge for insightful conversations.
-Rigorous testing ensures both performance and safety, making it a reliable choice for AI-driven dialogues.
-
-The https://aws.amazon.com/bedrock/jurassic-2/[AWS Jurassic-2 Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
 
 == Prerequisites
 
@@ -106,7 +101,7 @@ ChatResponse response = chatClient.call(
     ));
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatOptions.java[BedrockAi21Jurassic2ChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatOptions.java[BedrockAi21Jurassic2ChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 === Sample Controller (Auto-configuration)
 
@@ -146,17 +141,12 @@ public class ChatController {
         return Map.of("generation", chatClient.call(message));
     }
 
-    @GetMapping("/ai/generateStream")
-    public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
-    }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatClient.java[BedrockAi21Jurassic2ChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Jurassic-2 service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatClient.java[BedrockAi21Jurassic2ChatClient] implements the `ChatClient`  uses the <<low-level-api>> to connect to the Bedrock Jurassic-2 service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -195,22 +185,16 @@ BedrockAi21Jurassic2ChatClient chatClient = new BedrockAi21Jurassic2ChatClient(a
 ChatResponse response = chatClient.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
-// Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
-    new Prompt("Generate the names of 5 famous pirates."));
 ----
 
 == Low-level Ai21Jurassic2ChatBedrockApi Client [[low-level-api]]
 
-https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java[Ai21Jurassic2ChatBedrockApi] provides a lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html[Meta Jurassic-2 and Jurassic-2 Chat models].
+https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java[Ai21Jurassic2ChatBedrockApi] provides a lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html[Jurassic-2 and Jurassic-2 Chat models].
 
-Following class diagram illustrates the Ai21Jurassic2ChatBedrockApi interface and building blocks:
-
-image::bedrock/bedrock-jurassic2-chat-api.jpg[Ai21Jurassic2ChatBedrockApi Class Diagram]
-
-The Ai21Jurassic2ChatBedrockApi supports the `ai21.j2-mid-v1` and `ai21.j2-ultra-v1` models for both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) responses.
+The Ai21Jurassic2ChatBedrockApi supports the `ai21.j2-mid-v1` and `ai21.j2-ultra-v1` models and only support synchronous  ( `chatCompletion()`).
 
 Here is a simple snippet on how to use the API programmatically:
+
 
 [source,java]
 ----
@@ -226,9 +210,7 @@ Ai21Jurassic2ChatRequest request = Ai21Jurassic2ChatRequest.builder("Hello, my n
 
 Ai21Jurassic2ChatResponse response = jurassic2ChatApi.chatCompletion(request);
 
-// Streaming response
-Flux<Ai21Jurassic2ChatResponse> responseStream = jurassic2ChatApi.chatCompletionStream(request);
-List<Ai21Jurassic2ChatResponse> responses = responseStream.collectList().block();
+
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java[Ai21Jurassic2ChatBedrockApi.java]'s JavaDoc for further information.

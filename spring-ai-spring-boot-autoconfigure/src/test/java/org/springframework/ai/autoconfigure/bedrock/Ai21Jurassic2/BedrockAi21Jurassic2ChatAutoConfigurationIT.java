@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.springframework.ai.autoconfigure.bedrock.Ai21Jurassic2;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockA21Jurassic2ChatAutoConfiguration;
+import org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassic2ChatAutoConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassic2ChatProperties;
 import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatClient;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
@@ -45,15 +45,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockAi21Jurassic2ChatAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.bedrock.a21jurassic2.chat.enabled=true",
+		.withPropertyValues("spring.ai.bedrock.jurassic2.chat.enabled=true",
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.a21jurassic2.chat.model="
+				"spring.ai.bedrock.jurassic2.chat.model="
 						+ Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel.AI21_J2_ULTRA_V1.id(),
-				"spring.ai.bedrock.a21jurassic2.chat.options.temperature=0.5",
-				"spring.ai.bedrock.a21jurassic2.chat.options.maxGenLen=500")
-		.withConfiguration(AutoConfigurations.of(BedrockA21Jurassic2ChatAutoConfiguration.class));
+				"spring.ai.bedrock.jurassic2.chat.options.temperature=0.5",
+				"spring.ai.bedrock.jurassic2.chat.options.maxGenLen=500")
+		.withConfiguration(AutoConfigurations.of(BedrockAi21Jurassic2ChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
@@ -79,13 +79,13 @@ public class BedrockAi21Jurassic2ChatAutoConfigurationIT {
 	public void propertiesTest() {
 
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.bedrock.a21jurassic2.chat.enabled=true",
+			.withPropertyValues("spring.ai.bedrock.jurassic2.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.a21jurassic2.chat.model=MODEL_XYZ",
+					"spring.ai.bedrock.jurassic2.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-					"spring.ai.bedrock.a21jurassic2.chat.options.temperature=0.55",
-					"spring.ai.bedrock.a21jurassic2.chat.options.maxTokens=123")
-			.withConfiguration(AutoConfigurations.of(BedrockA21Jurassic2ChatAutoConfiguration.class))
+					"spring.ai.bedrock.jurassic2.chat.options.temperature=0.55",
+					"spring.ai.bedrock.jurassic2.chat.options.maxTokens=123")
+			.withConfiguration(AutoConfigurations.of(BedrockAi21Jurassic2ChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockAi21Jurassic2ChatProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -107,23 +107,23 @@ public class BedrockAi21Jurassic2ChatAutoConfigurationIT {
 
 		// It is disabled by default
 		new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(BedrockA21Jurassic2ChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(BedrockAi21Jurassic2ChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockAi21Jurassic2ChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockAi21Jurassic2ChatClient.class)).isEmpty();
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.a21jurassic2.chat.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockA21Jurassic2ChatAutoConfiguration.class))
+		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.jurassic2.chat.enabled=true")
+			.withConfiguration(AutoConfigurations.of(BedrockAi21Jurassic2ChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockAi21Jurassic2ChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockAi21Jurassic2ChatClient.class)).isNotEmpty();
 			});
 
 		// Explicitly disable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.a21jurassic2.chat.enabled=false")
-			.withConfiguration(AutoConfigurations.of(BedrockA21Jurassic2ChatAutoConfiguration.class))
+		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.jurassic2.chat.enabled=false")
+			.withConfiguration(AutoConfigurations.of(BedrockAi21Jurassic2ChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockAi21Jurassic2ChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockAi21Jurassic2ChatClient.class)).isEmpty();

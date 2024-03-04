@@ -22,6 +22,7 @@
 *** xref:api/bedrock-chat.adoc[Amazon Bedrock]
 **** xref:api/clients/bedrock/bedrock-anthropic.adoc[Anthropic]
 **** xref:api/clients/bedrock/bedrock-llama2.adoc[Llama2]
+**** xref:api/clients/bedrock/bedrock-jurassic2.adoc[Jurassic2]
 **** xref:api/clients/bedrock/bedrock-cohere.adoc[Cohere]
 **** xref:api/clients/bedrock/bedrock-titan.adoc[Titan]
 *** xref:api/clients/huggingface.adoc[HuggingFace]

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,10 +29,10 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(BedrockAi21Jurassic2ChatProperties.CONFIG_PREFIX)
 public class BedrockAi21Jurassic2ChatProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.bedrock.a21jurassic2.chat";
+	public static final String CONFIG_PREFIX = "spring.ai.bedrock.jurassic2.chat";
 
 	/**
-	 * Enable Bedrock A21Jurassic2 chat client. Disabled by default.
+	 * Enable Bedrock Ai21Jurassic2 chat client. Disabled by default.
 	 */
 	private boolean enabled = false;
 
