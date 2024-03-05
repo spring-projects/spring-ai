@@ -523,7 +523,7 @@ public class OpenAiApi {
 		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
-		@JsonProperty("tool_call") TOOL_CAL
+		@JsonProperty("tool_call") TOOL_CALL
 	}
 
 	/**
