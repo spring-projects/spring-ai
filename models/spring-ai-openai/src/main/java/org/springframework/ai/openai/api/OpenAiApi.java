@@ -151,12 +151,14 @@ public class OpenAiApi {
 		GPT_3_5_TURBO("gpt-3.5-turbo"),
 
 		/**
-		 * GPT-3.5 Turbo model with improved instruction following,
-		 * JSON mode, reproducible outputs, parallel function calling,
-		 * and more. Returns a maximum of 4,096 output tokens.
-		 * Context window: 16k tokens.
+		 * (new) The latest GPT-3.5 Turbo model with higher accuracy
+		 * at responding in requested formats and a fix for a bug
+		 * which caused a text encoding issue for non-English
+		 * language function calls.
+		 * Returns a maximum of 4,096
+		 * Context window: 16k tokens
 		 */
-		GPT_3_5_TURBO_1106("gpt-3.5-turbo-1106");
+		GPT_3_5_TURBO_0125("gpt-3.5-turbo-0125");
 
 		public final String  value;
 
