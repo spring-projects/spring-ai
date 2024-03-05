@@ -48,6 +48,7 @@
 *** xref:api/vectordbs/redis.adoc[]
 *** xref:api/vectordbs/pinecone.adoc[]
 *** xref:api/vectordbs/qdrant.adoc[]
+*** xref:api/vectordbs/gemfire.adoc[GemFire]
 ** xref:api/functions.adoc[Function Calling]
 ** xref:api/prompt.adoc[]
 ** xref:api/output-parser.adoc[]

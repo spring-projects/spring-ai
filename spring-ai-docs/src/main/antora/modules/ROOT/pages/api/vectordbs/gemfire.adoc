@@ -1,0 +1,122 @@
+= GemFire Vector Store
+
+This section walks you through setting up the GemFire VectorStore to store document embeddings and perform similarity searches.
+
+link:https://tanzu.vmware.com/gemfire[GemFire] is an ultra high speed in-memory data and compute grid, with vector extensions to store and search vectors efficiently.
+
+link:https://docs.vmware.com/en/VMware-GemFire-VectorDB/1.0/gemfire-vectordb/overview.html[GemFire VectorDB] extends GemFire's capabilities, serving as a versatile vector database that efficiently stores, retrieves, and performs vector searches through a distributed and resilient infrastructure:
+
+Capabilities:
+- Create Indexes
+- Store vectors and the associated metadata
+- Perform vector searches based on similarity
+
+== Prerequisites
+
+Access to a GemFire cluster with the link:https://docs.vmware.com/en/VMware-GemFire-VectorDB/1.0/gemfire-vectordb/install.html[GemFire Vector Database] extension installed.
+You can download the GemFire VectorDB extension from the link:https://network.pivotal.io/products/gemfire-vectordb/[VMware Tanzu Network] after signing in.
+
+== Dependencies
+
+Add these dependencies to your project:
+
+- Embedding Client boot starter, required for calculating embeddings.
+- Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions.
+
+[source,xml]
+----
+<dependency>
+     <groupId>org.springframework.ai</groupId>
+     <artifactId>spring-ai-transformers</artifactId>
+</dependency>
+----
+
+- Add the GemFire VectorDB dependencies
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-gemfire</artifactId>
+</dependency>
+----
+
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+
+== Sample Code
+
+- To configure GemFire in your application, use the following setup:
+
+[source,java]
+----
+@Bean
+public GemFireVectorStoreConfig gemFireVectorStoreConfig() {
+    return GemFireVectorStoreConfig.builder()
+        .withUrl("http://localhost:8080")
+        .withIndexName("spring-ai-test-index")
+        .build();
+}
+----
+
+- Create a GemFireVectorStore instance connected to your GemFire VectorDB:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingClient embeddingClient) {
+    return new GemFireVectorStore(config, embeddingClient);
+}
+----
+- Create a Vector Index which will configure GemFire region.
+
+[source,java]
+----
+  public void createIndex() {
+		try {
+			CreateRequest createRequest = new CreateRequest();
+			createRequest.setName(INDEX_NAME);
+			createRequest.setBeamWidth(20);
+			createRequest.setMaxConnections(16);
+			ObjectMapper objectMapper = new ObjectMapper();
+			String index = objectMapper.writeValueAsString(createRequest);
+			client.post()
+				.contentType(MediaType.APPLICATION_JSON)
+				.bodyValue(index)
+				.retrieve()
+				.bodyToMono(Void.class)
+				.block();
+		}
+		catch (Exception e) {
+			logger.warn("An unexpected error occurred while creating the index");
+		}
+	}
+----
+
+- Create some documents:
+
+[source,java]
+----
+    List<Document> documents = List.of(
+        new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+        new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+        new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+----
+
+- Add the documents to GemFire VectorDB:
+
+[source,java]
+----
+vectorStore.add(List.of(document));
+----
+
+- And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+  List<Document> results = vectorStore.similaritySearch("Spring", 5);
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+

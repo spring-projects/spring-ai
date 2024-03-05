@@ -56,6 +56,7 @@
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
+		<module>vector-stores/spring-ai-gemfire</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
 		<module>vector-stores/spring-ai-qdrant</module>
