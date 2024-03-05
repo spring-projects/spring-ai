@@ -58,7 +58,7 @@ public class OpenAiImageClientIT extends AbstractIT {
 		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
 
 		assertThat(openAiImageGenerationMetadata).isNotNull();
-		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNull();
+		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
 	}
 
 }

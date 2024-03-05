@@ -22,12 +22,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate;
+import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * @author Christian Tzolov
  */
 @JsonInclude(Include.NON_NULL)
-public class BedrockCohereEmbeddingOptions {
+public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 
 	// @formatter:off
 	/**

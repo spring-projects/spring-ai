@@ -17,7 +17,7 @@ For further information go to our [Spring AI refernce documentation](https://doc
 
 ## Educational Resources
 
-- Follow the [Workshop](#workshop)
+- Follow the [Workshop material for Azure OpenAI](https://github.com/Azure-Samples/spring-ai-azure-workshop)
   - The workshop contains step-by-step examples from 'hello world' to 'retrieval augmented generation'
 
 Some selected videos.  Search YouTube! for more.
@@ -28,19 +28,6 @@ Some selected videos.  Search YouTube! for more.
 <br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
 * Introducing Spring AI - Add Generative AI to your Spring Applications
 <br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
-
-
-## Workshop
-
-* You can try out the features of Spring AI by following the [workshop material for Azure OpenAI](https://github.com/Azure-Samples/spring-ai-azure-workshop)
-* To use the workshop material with OpenAI (not Azure's offering) you will need to *replace* the Azure Open AI Boot Starter in the `pom.xml` with the Open AI Boot Starter.
-```xml
-    <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
-    </dependency>
-```
 
 ## Getting Started
 
