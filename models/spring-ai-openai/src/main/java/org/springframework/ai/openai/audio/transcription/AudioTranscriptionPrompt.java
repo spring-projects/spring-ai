@@ -24,17 +24,17 @@ import org.springframework.core.io.Resource;
  * @author Michael Lavelle
  * @since 0.8.1
  */
-public class AudioTranscriptionRequest implements ModelRequest<Resource> {
+public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 
 	private Resource audioResource;
 
 	private ModelOptions modelOptions;
 
-	public AudioTranscriptionRequest(Resource audioResource) {
+	public AudioTranscriptionPrompt(Resource audioResource) {
 		this.audioResource = audioResource;
 	}
 
-	public AudioTranscriptionRequest(Resource audioResource, ModelOptions modelOptions) {
+	public AudioTranscriptionPrompt(Resource audioResource, ModelOptions modelOptions) {
 		this.audioResource = audioResource;
 		this.modelOptions = modelOptions;
 	}

@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
 /**
  * Audio transcription metadata implementation for {@literal OpenAI}.
  *
- * @author MichaelLavelle
+ * @author Michael Lavelle
  * @since 0.8.1
  * @see RateLimit
  */

@@ -19,6 +19,7 @@ package org.springframework.ai.openai.audio.transcription;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,19 +65,19 @@ class TranscriptionClientTests {
 
 		doAnswer(invocationOnMock -> {
 
-			AudioTranscriptionRequest transcriptionRequest = invocationOnMock.getArgument(0);
+			AudioTranscriptionPrompt transcriptionRequest = invocationOnMock.getArgument(0);
 
 			assertThat(transcriptionRequest).isNotNull();
 			assertThat(transcriptionRequest.getInstructions()).isEqualTo(mockAudioFile);
 
 			return response;
 
-		}).when(mockClient).call(any(AudioTranscriptionRequest.class));
+		}).when(mockClient).call(any(AudioTranscriptionPrompt.class));
 
 		assertThat(mockClient.call(mockAudioFile)).isEqualTo(mockTranscription);
 
 		verify(mockClient, times(1)).call(eq(mockAudioFile));
-		verify(mockClient, times(1)).call(isA(AudioTranscriptionRequest.class));
+		verify(mockClient, times(1)).call(isA(AudioTranscriptionPrompt.class));
 		verify(response, times(1)).getResult();
 		verify(transcript, times(1)).getOutput();
 		verifyNoMoreInteractions(mockClient, transcript, response);

@@ -3,11 +3,10 @@ package org.springframework.ai.openai.audio.transcription;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
-import org.springframework.ai.openai.audio.transcription.AudioTranscriptionRequest;
-import org.springframework.ai.openai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +27,7 @@ class OpenAiTranscriptionClientIT extends AbstractIT {
 			.withResponseFormat(TranscriptResponseFormat.TEXT)
 			.withTemperature(0f)
 			.build();
-		AudioTranscriptionRequest transcriptionRequest = new AudioTranscriptionRequest(audioFile, transcriptionOptions);
+		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
 		AudioTranscriptionResponse response = openAiTranscriptionClient.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();
@@ -44,7 +43,7 @@ class OpenAiTranscriptionClientIT extends AbstractIT {
 			.withTemperature(0f)
 			.withResponseFormat(responseFormat)
 			.build();
-		AudioTranscriptionRequest transcriptionRequest = new AudioTranscriptionRequest(audioFile, transcriptionOptions);
+		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
 		AudioTranscriptionResponse response = openAiTranscriptionClient.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();

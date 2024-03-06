@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-package org.springframework.ai.openai.audio.transcription;
+package org.springframework.ai.openai;
 
 import java.time.Duration;
 
@@ -26,6 +26,9 @@ import org.springframework.ai.model.ModelClient;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
 import org.springframework.ai.openai.api.common.OpenAiApiException;
+import org.springframework.ai.openai.audio.transcription.AudioTranscription;
+import org.springframework.ai.openai.audio.transcription.AudioTranscriptionPrompt;
+import org.springframework.ai.openai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.core.io.Resource;
@@ -42,7 +45,7 @@ import org.springframework.util.Assert;
  * @since 0.8.1
  */
 public class OpenAiAudioTranscriptionClient
-		implements ModelClient<AudioTranscriptionRequest, AudioTranscriptionResponse> {
+		implements ModelClient<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -73,12 +76,12 @@ public class OpenAiAudioTranscriptionClient
 	}
 
 	public String call(Resource audioResource) {
-		AudioTranscriptionRequest transcriptionRequest = new AudioTranscriptionRequest(audioResource);
+		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioResource);
 		return call(transcriptionRequest).getResult().getOutput();
 	}
 
 	@Override
-	public AudioTranscriptionResponse call(AudioTranscriptionRequest request) {
+	public AudioTranscriptionResponse call(AudioTranscriptionPrompt request) {
 
 		return this.retryTemplate.execute(ctx -> {
 
@@ -130,7 +133,7 @@ public class OpenAiAudioTranscriptionClient
 		});
 	}
 
-	OpenAiAudioApi.TranscriptionRequest createRequestBody(AudioTranscriptionRequest request) {
+	OpenAiAudioApi.TranscriptionRequest createRequestBody(AudioTranscriptionPrompt request) {
 
 		OpenAiAudioTranscriptionOptions options = this.defaultOptions;
 

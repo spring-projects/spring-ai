@@ -22,9 +22,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
-import org.springframework.ai.openai.audio.transcription.AudioTranscriptionRequest;
-import org.springframework.ai.openai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionMetadata;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
@@ -72,7 +71,7 @@ public class OpenAiTranscriptionClientWithTranscriptionResponseMetadataTests {
 
 		Resource audioFile = new ClassPathResource("speech/jfk.flac");
 
-		AudioTranscriptionRequest transcriptionRequest = new AudioTranscriptionRequest(audioFile);
+		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile);
 
 		AudioTranscriptionResponse response = this.openAiTranscriptionClient.call(transcriptionRequest);
 
