@@ -15,19 +15,17 @@
  */
 package org.springframework.ai.stabilityai.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.util.Assert;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
+import org.springframework.web.client.RestClient;
 
 /**
  * Represents the StabilityAI API.
@@ -80,33 +78,10 @@ public class StabilityAiApi {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		ResponseErrorHandler responseErrorHandler = new ResponseErrorHandler() {
-			@Override
-			public boolean hasError(ClientHttpResponse response) throws IOException {
-				return response.getStatusCode().isError();
-			}
-
-			@Override
-			public void handleError(ClientHttpResponse response) throws IOException {
-				if (response.getStatusCode().isError()) {
-					throw new RuntimeException(String.format("%s - %s", response.getStatusCode().value(),
-							new ObjectMapper().readValue(response.getBody(), ResponseError.class)));
-				}
-			}
-		};
-
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
-			.defaultStatusHandler(responseErrorHandler)
+			.defaultStatusHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 			.build();
-	}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ResponseError(@JsonProperty("id") String id, @JsonProperty("name") String name,
-			@JsonProperty("message") String message
-
-	) {
-
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

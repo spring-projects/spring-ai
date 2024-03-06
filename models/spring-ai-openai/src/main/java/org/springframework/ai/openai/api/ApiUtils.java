@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.api.common;
+package org.springframework.ai.openai.api;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.NonNull;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.ResponseErrorHandler;
 
 /**
  * @author Christian Tzolov
@@ -38,26 +32,6 @@ public class ApiUtils {
 			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
-	};
-
-	public static final ResponseErrorHandler DEFAULT_RESPONSE_ERROR_HANDLER = new ResponseErrorHandler() {
-
-		@Override
-		public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
-			return response.getStatusCode().isError();
-		}
-
-		@Override
-		public void handleError(@NonNull ClientHttpResponse response) throws IOException {
-			if (response.getStatusCode().isError()) {
-				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-				String message = String.format("%s - %s", response.getStatusCode().value(), error);
-				if (response.getStatusCode().is4xxClientError()) {
-					throw new OpenAiApiClientErrorException(message);
-				}
-				throw new OpenAiApiException(message);
-			}
-		}
 	};
 
 }

@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.mistralai;
 
 import java.util.List;
 
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.mistralai.MistralAiChatClient;
 import org.springframework.ai.mistralai.MistralAiEmbeddingClient;
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -30,9 +31,11 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -40,7 +43,7 @@ import org.springframework.web.client.RestClient;
  * @author Christian Tzolov
  * @since 0.8.1
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiEmbeddingProperties.class, MistralAiCommonProperties.class,
 		MistralAiChatProperties.class })
 @ConditionalOnClass(MistralAiApi.class)
@@ -51,13 +54,15 @@ public class MistralAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = MistralAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MistralAiEmbeddingClient mistralAiEmbeddingClient(MistralAiCommonProperties commonProperties,
-			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
+			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var mistralAiApi = mistralAiApi(embeddingProperties.getApiKey(), commonProperties.getApiKey(),
-				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder);
+				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder,
+				responseErrorHandler);
 
 		return new MistralAiEmbeddingClient(mistralAiApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions());
+				embeddingProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean
@@ -66,20 +71,22 @@ public class MistralAiAutoConfiguration {
 			matchIfMissing = true)
 	public MistralAiChatClient mistralAiChatClient(MistralAiCommonProperties commonProperties,
 			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
-				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder);
+				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder, responseErrorHandler);
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new MistralAiChatClient(mistralAiApi, chatProperties.getOptions(), functionCallbackContext);
+		return new MistralAiChatClient(mistralAiApi, chatProperties.getOptions(), functionCallbackContext,
+				retryTemplate);
 	}
 
 	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder) {
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -87,7 +94,7 @@ public class MistralAiAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
-		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder);
+		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
 	}
 
 	@Bean

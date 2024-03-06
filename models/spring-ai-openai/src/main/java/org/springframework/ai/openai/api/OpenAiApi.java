@@ -26,14 +26,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.openai.api.common.ApiUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -52,8 +51,6 @@ public class OpenAiApi {
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
-
-	private final RestClient multipartRestClient;
 
 	private final WebClient webClient;
 
@@ -84,20 +81,23 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 *
+	 * @param baseUrl api base URL.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
-				.defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
-				.build();
-
-		this.multipartRestClient = restClientBuilder
-				.baseUrl(baseUrl)
-				.defaultHeaders(multipartFormDataHeaders -> {
-					multipartFormDataHeaders.setBearerAuth(openAiToken);
-					multipartFormDataHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
-				})
-				.defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+				.defaultStatusHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 				.build();
 
 		this.webClient = WebClient.builder()

@@ -6,12 +6,11 @@
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
 		<version>0.8.1-SNAPSHOT</version>
-		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-stability-ai</artifactId>
+	<artifactId>spring-ai-retry</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Stability AI</name>
-	<description>Stability AI support</description>
+	<name>Spring AI Retry</name>
+	<description>Spring AI utility project helping with remote call retry</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -30,30 +29,22 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-retry</artifactId>
-			<version>${project.parent.version}</version>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
+			<version>${spring-retry.version}</version>
 		</dependency>
 
-		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-context-support</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-logging</artifactId>
+			<artifactId>spring-webflux</artifactId>
 		</dependency>
 
 		<!-- test dependencies -->
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-test</artifactId>
-			<version>${project.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
 	</dependencies>
-
 </project>

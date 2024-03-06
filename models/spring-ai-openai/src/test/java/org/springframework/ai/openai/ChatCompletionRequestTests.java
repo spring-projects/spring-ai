@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.chat.api.tool.MockWeatherService;
+import org.springframework.ai.openai.api.tool.MockWeatherService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
