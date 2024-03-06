@@ -312,7 +312,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -322,7 +321,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -333,7 +331,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
@@ -344,7 +341,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		return this.functionCallbacks;
 	}
 
-	@Override
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 		this.functionCallbacks = functionCallbacks;
 	}
@@ -354,7 +350,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		return this.functions;
 	}
 
-	@Override
 	public void setFunctions(Set<String> functions) {
 		this.functions = functions;
 	}

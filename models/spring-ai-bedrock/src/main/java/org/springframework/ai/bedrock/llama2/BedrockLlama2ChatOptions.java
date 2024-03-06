@@ -105,7 +105,6 @@ public class BedrockLlama2ChatOptions implements ChatOptions {
 		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unsupported option: 'TopK'");

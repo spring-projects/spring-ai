@@ -31,7 +31,6 @@ public class ChatOptionsBuilder {
 			return temperature;
 		}
 
-		@Override
 		public void setTemperature(Float temperature) {
 			this.temperature = temperature;
 		}
@@ -41,7 +40,6 @@ public class ChatOptionsBuilder {
 			return topP;
 		}
 
-		@Override
 		public void setTopP(Float topP) {
 			this.topP = topP;
 		}
@@ -51,7 +49,6 @@ public class ChatOptionsBuilder {
 			return topK;
 		}
 
-		@Override
 		public void setTopK(Integer topK) {
 			this.topK = topK;
 		}

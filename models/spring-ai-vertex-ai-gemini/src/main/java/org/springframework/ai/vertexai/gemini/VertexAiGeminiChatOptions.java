@@ -190,7 +190,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -200,7 +199,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -215,7 +213,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.topK = topK;
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		this.topK = (topK != null) ? topK.floatValue() : null;

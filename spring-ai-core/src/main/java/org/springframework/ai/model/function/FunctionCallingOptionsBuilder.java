@@ -98,7 +98,6 @@ public class FunctionCallingOptionsBuilder {
 			return this.functionCallbacks;
 		}
 
-		@Override
 		public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
 			this.functionCallbacks = functionCallbacks;
@@ -109,7 +108,6 @@ public class FunctionCallingOptionsBuilder {
 			return this.functions;
 		}
 
-		@Override
 		public void setFunctions(Set<String> functions) {
 			Assert.notNull(functions, "Functions must not be null");
 			this.functions = functions;
@@ -120,7 +118,6 @@ public class FunctionCallingOptionsBuilder {
 			return this.temperature;
 		}
 
-		@Override
 		public void setTemperature(Float temperature) {
 			this.temperature = temperature;
 		}
@@ -130,7 +127,6 @@ public class FunctionCallingOptionsBuilder {
 			return this.topP;
 		}
 
-		@Override
 		public void setTopP(Float topP) {
 			this.topP = topP;
 		}
@@ -140,7 +136,6 @@ public class FunctionCallingOptionsBuilder {
 			return this.topK;
 		}
 
-		@Override
 		public void setTopK(Integer topK) {
 			this.topK = topK;
 		}

@@ -144,7 +144,6 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -154,7 +153,6 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -164,7 +162,6 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		return this.topK;
 	}
 
-	@Override
 	public void setTopK(Integer topK) {
 		this.topK = topK;
 	}

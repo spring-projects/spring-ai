@@ -333,7 +333,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -343,7 +342,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -387,7 +385,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return functions;
 	}
 
-	@Override
 	public void setFunctions(Set<String> functionNames) {
 		this.functions = functionNames;
 	}
@@ -515,7 +512,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
