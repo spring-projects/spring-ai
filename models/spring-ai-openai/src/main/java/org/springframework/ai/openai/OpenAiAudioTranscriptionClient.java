@@ -31,8 +31,6 @@
 
 package org.springframework.ai.openai;
 
-import java.time.Duration;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +38,12 @@ import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.model.ModelClient;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
-import org.springframework.ai.openai.api.common.OpenAiApiException;
 import org.springframework.ai.openai.audio.transcription.AudioTranscription;
 import org.springframework.ai.openai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.openai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -66,11 +64,7 @@ public class OpenAiAudioTranscriptionClient
 
 	private final OpenAiAudioTranscriptionOptions defaultOptions;
 
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(OpenAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.build();
+	public final RetryTemplate retryTemplate;
 
 	private final OpenAiAudioApi audioApi;
 
@@ -80,14 +74,18 @@ public class OpenAiAudioTranscriptionClient
 					.withModel(OpenAiAudioApi.WhisperModel.WHISPER_1.getValue())
 					.withResponseFormat(OpenAiAudioApi.TranscriptResponseFormat.JSON)
 					.withTemperature(0.7f)
-					.build());
+					.build(),
+				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public OpenAiAudioTranscriptionClient(OpenAiAudioApi audioApi, OpenAiAudioTranscriptionOptions options) {
+	public OpenAiAudioTranscriptionClient(OpenAiAudioApi audioApi, OpenAiAudioTranscriptionOptions options,
+			RetryTemplate retryTemplate) {
 		Assert.notNull(audioApi, "OpenAiAudioApi must not be null");
 		Assert.notNull(options, "OpenAiTranscriptionOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		this.audioApi = audioApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	public String call(Resource audioResource) {

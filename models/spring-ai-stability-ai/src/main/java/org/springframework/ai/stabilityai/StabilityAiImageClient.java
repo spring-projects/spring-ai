@@ -15,16 +15,23 @@
  */
 package org.springframework.ai.stabilityai;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.image.*;
+
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageClient;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * StabilityAiImageClient is a class that implements the ImageClient interface. It
@@ -50,7 +57,7 @@ public class StabilityAiImageClient implements ImageClient {
 	}
 
 	public StabilityAiImageOptions getOptions() {
-		return options;
+		return this.options;
 	}
 
 	/**
@@ -157,19 +164,6 @@ public class StabilityAiImageClient implements ImageClient {
 			}
 		}
 		return builder.build();
-	}
-
-	private ImagePrompt createUpdatedPrompt(ImagePrompt prompt) {
-		ImageOptions runtimeImageModelOptions = prompt.getOptions();
-		ImageOptionsBuilder imageOptionsBuilder = ImageOptionsBuilder.builder();
-
-		if (runtimeImageModelOptions != null) {
-			if (runtimeImageModelOptions.getModel() != null) {
-				imageOptionsBuilder.withModel(runtimeImageModelOptions.getModel());
-			}
-		}
-		ImageOptions updatedImageModelOptions = imageOptionsBuilder.build();
-		return new ImagePrompt(prompt.getInstructions(), updatedImageModelOptions);
 	}
 
 }

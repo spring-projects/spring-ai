@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.openai;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,14 +42,11 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
-import org.springframework.ai.openai.api.common.OpenAiApiException;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -73,7 +69,7 @@ public class OpenAiChatClient extends
 		AbstractFunctionCallSupport<ChatCompletionMessage, OpenAiApi.ChatCompletionRequest, ResponseEntity<ChatCompletion>>
 		implements ChatClient, StreamingChatClient {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClient.class);
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -83,48 +79,59 @@ public class OpenAiChatClient extends
 	/**
 	 * The retry template used to retry the OpenAI API calls.
 	 */
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(OpenAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			@Override
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	public final RetryTemplate retryTemplate;
 
 	/**
 	 * Low-level access to the OpenAI API.
 	 */
 	private final OpenAiApi openAiApi;
 
+	/**
+	 * Creates an instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @throws IllegalArgumentException if openAiApi is null
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi) {
 		this(openAiApi,
 				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
 	}
 
+	/**
+	 * Initializes an instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat client.
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options) {
-		this(openAiApi, options, null);
+		this(openAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
+	/**
+	 * Initializes a new instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat client.
+	 * @param functionCallbackContext The function callback context.
+	 * @param retryTemplate The retry template.
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
 		super(functionCallbackContext);
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
-		return this.retryTemplate.execute(ctx -> {
+		ChatCompletionRequest request = createRequest(prompt, false);
 
-			ChatCompletionRequest request = createRequest(prompt, false);
+		return this.retryTemplate.execute(ctx -> {
 
 			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 

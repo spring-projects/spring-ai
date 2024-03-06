@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -46,7 +47,8 @@ public class PaymentStatusPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class));
 
 	public record Transaction(@JsonProperty(required = true, value = "transaction_id") String id) {
 	}

@@ -21,12 +21,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.openai.api.common.ApiUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -45,7 +46,7 @@ public class OpenAiAudioApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiAudioApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
+		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -53,12 +54,14 @@ public class OpenAiAudioApi {
 	 * @param baseUrl api base URL.
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
+	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(headers -> {
 			headers.setBearerAuth(openAiToken);
-		}).defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER).build();
+		}).defaultStatusHandler(responseErrorHandler).build();
 	}
 
 	/**

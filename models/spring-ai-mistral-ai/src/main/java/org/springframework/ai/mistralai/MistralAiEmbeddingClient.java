@@ -15,22 +15,24 @@
  */
 package org.springframework.ai.mistralai;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.AbstractEmbeddingClient;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.mistralai.api.MistralAiApi.MistralAiApiException;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-
-import java.time.Duration;
-import java.util.List;
 
 /**
  * @author Ricken Bazolo
@@ -46,17 +48,7 @@ public class MistralAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final MistralAiApi mistralAiApi;
 
-	private final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(MistralAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				log.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	private final RetryTemplate retryTemplate;
 
 	public MistralAiEmbeddingClient(MistralAiApi mistralAiApi) {
 		this(mistralAiApi, MetadataMode.EMBED);
@@ -64,22 +56,25 @@ public class MistralAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public MistralAiEmbeddingClient(MistralAiApi mistralAiApi, MetadataMode metadataMode) {
 		this(mistralAiApi, metadataMode,
-				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build());
+				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
+				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public MistralAiEmbeddingClient(MistralAiApi mistralAiApi, MistralAiEmbeddingOptions options) {
-		this(mistralAiApi, MetadataMode.EMBED, options);
+		this(mistralAiApi, MetadataMode.EMBED, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public MistralAiEmbeddingClient(MistralAiApi mistralAiApi, MetadataMode metadataMode,
-			MistralAiEmbeddingOptions options) {
+			MistralAiEmbeddingOptions options, RetryTemplate retryTemplate) {
 		Assert.notNull(mistralAiApi, "MistralAiApi must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 
 		this.mistralAiApi = mistralAiApi;
 		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
