@@ -25,14 +25,8 @@ public interface ChatOptions extends ModelOptions {
 
 	Float getTemperature();
 
-	void setTemperature(Float temperature);
-
 	Float getTopP();
 
-	void setTopP(Float topP);
-
 	Integer getTopK();
-
-	void setTopK(Integer topK);
 
 }

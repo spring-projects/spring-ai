@@ -18,11 +18,12 @@ package org.springframework.ai.model.function;
 
 import java.util.List;
 import java.util.Set;
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
  * @author Christian Tzolov
  */
-public interface FunctionCallingOptions {
+public interface FunctionCallingOptions extends ChatOptions {
 
 	/**
 	 * Function Callbacks to be registered with the ChatClient. For Prompt Options the
@@ -35,32 +36,9 @@ public interface FunctionCallingOptions {
 	List<FunctionCallback> getFunctionCallbacks();
 
 	/**
-	 * Set the Function Callbacks to be registered with the ChatClient.
-	 * @param functionCallbacks the Function Callbacks to be registered with the
-	 * ChatClient.
-	 */
-	void setFunctionCallbacks(List<FunctionCallback> functionCallbacks);
-
-	/**
 	 * @return List of function names from the ChatClient registry to be used in the next
 	 * chat completion requests.
 	 */
 	Set<String> getFunctions();
-
-	/**
-	 * Set the list of function names from the ChatClient registry to be used in the next
-	 * chat completion requests.
-	 * @param functions the list of function names from the ChatClient registry to be used
-	 * in the next chat completion requests.
-	 */
-	void setFunctions(Set<String> functions);
-
-	/**
-	 * @return Returns FunctionCallingOptionsBuilder to create a new instance of
-	 * FunctionCallingOptions.
-	 */
-	public static FunctionCallingOptionsBuilder builder() {
-		return new FunctionCallingOptionsBuilder();
-	}
 
 }
