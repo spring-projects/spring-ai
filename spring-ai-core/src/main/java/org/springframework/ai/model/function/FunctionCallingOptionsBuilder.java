@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.util.Assert;
 
 /**
@@ -34,115 +35,153 @@ import org.springframework.util.Assert;
  */
 public class FunctionCallingOptionsBuilder {
 
-	private final PortableFunctionCallingOptions options;
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
-	public FunctionCallingOptionsBuilder() {
-		this.options = new PortableFunctionCallingOptions();
+	private Set<String> functions = new HashSet<>();
+
+	private ChatOptionsBuilder chatOptionsBuilder = ChatOptionsBuilder.builder();
+
+	private FunctionCallingOptionsBuilder() {
+	}
+
+	/**
+	 * Creates a new {@link FunctionCallingOptionsBuilder} instance.
+	 * @return A new instance of FunctionCallingOptionsBuilder.
+	 */
+	public static FunctionCallingOptionsBuilder builder() {
+		return new FunctionCallingOptionsBuilder();
+	}
+
+	/**
+	 * Initializes a new {@link FunctionCallingOptionsBuilder} with settings from an
+	 * existing {@link ChatOptions} object. This allows for creating a new
+	 * FunctionCallingOptions object based on the settings of an existing ChatOptions
+	 * instance.
+	 * @param options The ChatOptions object whose settings are to be used.
+	 * @return A FunctionCallingOptionsBuilder instance initialized with the provided
+	 * ChatOptions settings.
+	 */
+	public static FunctionCallingOptionsBuilder builder(ChatOptions options) {
+		return builder().withTopK(options.getTopK())
+			.withTopP(options.getTopP())
+			.withTemperature(options.getTemperature());
+	}
+
+	/**
+	 * Initializes a new {@link FunctionCallingOptionsBuilder} with settings from an
+	 * existing {@link FunctionCallingOptions} object. This method is useful for
+	 * transferring settings between different instances of FunctionCallingOptions,
+	 * including function callbacks and functions.
+	 * @param options The PortableFunctionCallingOptions object whose settings are to be
+	 * used.
+	 * @return A FunctionCallingOptionsBuilder instance initialized with the provided
+	 * PortableFunctionCallingOptions settings.
+	 */
+	public static FunctionCallingOptionsBuilder builder(FunctionCallingOptions options) {
+		return builder().withTopK(options.getTopK())
+			.withTopP(options.getTopP())
+			.withTemperature(options.getTemperature())
+			.withFunctions(options.getFunctions())
+			.withFunctionCallbacks(options.getFunctionCallbacks());
 	}
 
 	public FunctionCallingOptionsBuilder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.options.setFunctionCallbacks(functionCallbacks);
+		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
+		this.functionCallbacks.addAll(functionCallbacks);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withFunctionCallback(FunctionCallback functionCallback) {
 		Assert.notNull(functionCallback, "FunctionCallback must not be null");
-		this.options.getFunctionCallbacks().add(functionCallback);
+		this.functionCallbacks.add(functionCallback);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withFunctions(Set<String> functions) {
-		this.options.setFunctions(functions);
+		Assert.notNull(functions, "Functions must not be null");
+		this.functions.addAll(functions);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withFunction(String function) {
 		Assert.notNull(function, "Function must not be null");
-		this.options.getFunctions().add(function);
+		this.functions.add(function);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withTemperature(Float temperature) {
-		this.options.setTemperature(temperature);
+		this.chatOptionsBuilder.withTemperature(temperature);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withTopP(Float topP) {
-		this.options.setTopP(topP);
+		this.chatOptionsBuilder.withTopP(topP);
 		return this;
 	}
 
 	public FunctionCallingOptionsBuilder withTopK(Integer topK) {
-		this.options.setTopK(topK);
+		this.chatOptionsBuilder.withTopK(topK);
 		return this;
 	}
 
 	public PortableFunctionCallingOptions build() {
-		return this.options;
+		return new PortableFunctionCallingOptions(this.functions, this.functionCallbacks,
+				this.chatOptionsBuilder.build());
 	}
 
-	public static class PortableFunctionCallingOptions implements FunctionCallingOptions, ChatOptions {
+	public class PortableFunctionCallingOptions implements FunctionCallingOptions {
 
-		private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+		private final List<FunctionCallback> functionCallbacks;
 
-		private Set<String> functions = new HashSet<>();
+		private final Set<String> functions;
 
-		private Float temperature;
+		private final ChatOptions options;
 
-		private Float topP;
+		PortableFunctionCallingOptions(final Set<String> functions, final List<FunctionCallback> functionCallbacks,
+				ChatOptions options) {
+			this.functions = functions;
+			this.functionCallbacks = functionCallbacks;
+			this.options = options;
+		}
 
-		private Integer topK;
-
+		/**
+		 * Retrieves a list of function callbacks. This method returns a new list
+		 * containing all currently set function callbacks. The returned list is a copy,
+		 * ensuring that modifications to the returned list do not affect the original
+		 * list of function callbacks. This ensures the immutability of the collection
+		 * exposed to the clients.
+		 * @return An immutable list of {@link FunctionCallback} instances.
+		 */
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
-			return this.functionCallbacks;
+			return new ArrayList<>(this.functionCallbacks);
 		}
 
-		@Override
-		public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-			this.functionCallbacks = functionCallbacks;
-		}
-
+		/**
+		 * Retrieves a set of functions. This method returns a new set containing all
+		 * currently set functions. The returned set is a copy, ensuring that
+		 * modifications to the returned set do not affect the original set of functions.
+		 * This ensures the immutability of the collection exposed to the clients.
+		 * @return An immutable set of String representing the functions.
+		 */
 		@Override
 		public Set<String> getFunctions() {
-			return this.functions;
-		}
-
-		@Override
-		public void setFunctions(Set<String> functions) {
-			Assert.notNull(functions, "Functions must not be null");
-			this.functions = functions;
+			return new HashSet<>(this.functions);
 		}
 
 		@Override
 		public Float getTemperature() {
-			return this.temperature;
-		}
-
-		@Override
-		public void setTemperature(Float temperature) {
-			this.temperature = temperature;
+			return this.options.getTemperature();
 		}
 
 		@Override
 		public Float getTopP() {
-			return this.topP;
-		}
-
-		@Override
-		public void setTopP(Float topP) {
-			this.topP = topP;
+			return this.options.getTopP();
 		}
 
 		@Override
 		public Integer getTopK() {
-			return this.topK;
-		}
-
-		@Override
-		public void setTopK(Integer topK) {
-			this.topK = topK;
+			return this.options.getTopK();
 		}
 
 	}
