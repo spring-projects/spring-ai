@@ -189,3 +189,12 @@ To build the docs
 
 The docs are then in the directory `spring-ai-docs/target/antora/site/index.html`
 
+To reformat using the [java-format plugin](https://github.com/spring-io/spring-javaformat)
+```shell
+./mvnw spring-javaformat:apply
+```
+
+To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
+```shell
+./mvnw license:update-file-header
+```
