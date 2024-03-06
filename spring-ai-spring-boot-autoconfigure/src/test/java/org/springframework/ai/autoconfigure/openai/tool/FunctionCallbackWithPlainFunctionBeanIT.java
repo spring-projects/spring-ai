@@ -28,7 +28,7 @@ import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -87,7 +87,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+			PortableFunctionCallingOptions functionOptions = FunctionCallingOptionsBuilder.builder()
 				.withFunction("weatherFunction")
 				.build();
 
