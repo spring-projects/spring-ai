@@ -59,6 +59,7 @@
 		<module>vector-stores/spring-ai-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
+		<module>spring-ai-retry</module>
 	</modules>
 
 	<organization>
@@ -115,6 +116,7 @@
 		<onnxruntime.version>1.17.0</onnxruntime.version>
 		<com.google.cloud.version>26.33.0</com.google.cloud.version>
 		<qdrant.version>1.7.1</qdrant.version>
+		<spring-retry.version>2.0.5</spring-retry.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat.api.tool;
+package org.springframework.ai.openai.api.tool;
 
 import java.util.function.Function;
 

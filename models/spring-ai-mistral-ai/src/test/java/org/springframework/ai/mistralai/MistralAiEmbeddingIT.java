@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-class MistralEmbeddingIT {
+class MistralAiEmbeddingIT {
 
 	@Autowired
 	private MistralAiEmbeddingClient mistralAiEmbeddingClient;

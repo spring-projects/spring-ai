@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.mistralai;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,10 +40,8 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -70,17 +67,7 @@ public class MistralAiChatClient extends
 	 */
 	private final MistralAiApi mistralAiApi;
 
-	private final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(MistralAiApi.MistralAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				log.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	private final RetryTemplate retryTemplate;
 
 	public MistralAiChatClient(MistralAiApi mistralAiApi) {
 		this(mistralAiApi,
@@ -93,46 +80,50 @@ public class MistralAiChatClient extends
 	}
 
 	public MistralAiChatClient(MistralAiApi mistralAiApi, MistralAiChatOptions options) {
-		this(mistralAiApi, options, null);
+		this(mistralAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public MistralAiChatClient(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
 		super(functionCallbackContext);
 		Assert.notNull(mistralAiApi, "MistralAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		this.mistralAiApi = mistralAiApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		// return retryTemplate.execute(ctx -> {
 		var request = createRequest(prompt, false);
 
-		// var completionEntity = this.mistralAiApi.chatCompletionEntity(request);
-		ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+		return retryTemplate.execute(ctx -> {
 
-		var chatCompletion = completionEntity.getBody();
-		if (chatCompletion == null) {
-			log.warn("No chat completion returned for prompt: {}", prompt);
-			return new ChatResponse(List.of());
-		}
+			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 
-		List<Generation> generations = chatCompletion.choices()
-			.stream()
-			.map(choice -> new Generation(choice.message().content(), Map.of("role", choice.message().role().name()))
-				.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
-			.toList();
+			var chatCompletion = completionEntity.getBody();
+			if (chatCompletion == null) {
+				log.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
 
-		return new ChatResponse(generations);
-		// });
+			List<Generation> generations = chatCompletion.choices()
+				.stream()
+				.map(choice -> new Generation(choice.message().content(),
+						Map.of("role", choice.message().role().name()))
+					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
+				.toList();
+
+			return new ChatResponse(generations);
+		});
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		var request = createRequest(prompt, true);
+
 		return retryTemplate.execute(ctx -> {
-			var request = createRequest(prompt, true);
 
 			var completionChunks = this.mistralAiApi.chatCompletionStream(request);
 

@@ -35,16 +35,17 @@ public class StabilityAiImageGenerationMetadata implements ImageGenerationMetada
 	}
 
 	public String getFinishReason() {
-		return finishReason;
+		return this.finishReason;
 	}
 
 	public Long getSeed() {
-		return seed;
+		return this.seed;
 	}
 
 	@Override
 	public String toString() {
-		return "StabilityAiImageGenerationMetadata{" + "finishReason='" + finishReason + '\'' + ", seed=" + seed + '}';
+		return "StabilityAiImageGenerationMetadata{" + "finishReason='" + this.finishReason + '\'' + ", seed="
+				+ this.seed + '}';
 	}
 
 	@Override
@@ -53,12 +54,12 @@ public class StabilityAiImageGenerationMetadata implements ImageGenerationMetada
 			return true;
 		if (!(o instanceof StabilityAiImageGenerationMetadata that))
 			return false;
-		return Objects.equals(finishReason, that.finishReason) && Objects.equals(seed, that.seed);
+		return Objects.equals(this.finishReason, that.finishReason) && Objects.equals(this.seed, that.seed);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(finishReason, seed);
+		return Objects.hash(this.finishReason, this.seed);
 	}
 
 }
