@@ -160,6 +160,14 @@ public class OpenAiApi {
 		 */
 		GPT_3_5_TURBO_0125("gpt-3.5-turbo-0125");
 
+		/**
+		 * GPT-3.5 Turbo model with improved instruction following,
+		 * JSON mode, reproducible outputs, parallel function calling,
+		 * and more. Returns a maximum of 4,096 output tokens.
+		 * Context window: 16k tokens.
+		 */
+		GPT_3_5_TURBO_1106("gpt-3.5-turbo-1106");
+
 		public final String  value;
 
 		ChatModel(String value) {
