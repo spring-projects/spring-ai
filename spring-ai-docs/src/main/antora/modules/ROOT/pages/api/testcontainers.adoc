@@ -1,0 +1,28 @@
+[[testcontainers]]
+= Testcontainers
+
+== Service Connections
+
+The following service connection factories are provided in the spring-ai-spring-boot-testcontainers jar:
+
+[cols="|,|"]
+|====
+| Connection Details	 | Matched on
+| `ChromaConnectionDetails`
+| Containers of type `ChromaDBContainer`
+
+| `MilvusServiceClientConnectionDetails`
+| Containers of type `MilvusContainer`
+
+| `OllamaConnectionDetails`
+| Containers of type `OllamaContainer`
+
+| `QdrantConnectionDetails`
+| Containers of type `QdrantContainer`
+
+| `RedisConnectionDetails`
+| Containers of type `RedisStackContainer`
+
+| `WeaviateConnectionDetails`
+| Containers of type `WeaviateContainer`
+|====

@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @AutoConfiguration
 @ConditionalOnClass({ RedisVectorStore.class, EmbeddingClient.class })
@@ -33,16 +34,38 @@ import org.springframework.context.annotation.Bean;
 public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(RedisConnectionDetails.class)
+	public PropertiesRedisConnectionDetails redisConnectionDetails(RedisVectorStoreProperties properties) {
+		return new PropertiesRedisConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore vectorStore(EmbeddingClient embeddingClient, RedisVectorStoreProperties properties) {
+	public RedisVectorStore vectorStore(EmbeddingClient embeddingClient, RedisVectorStoreProperties properties,
+			RedisConnectionDetails redisConnectionDetails) {
 
 		var config = RedisVectorStoreConfig.builder()
-			.withURI(properties.getUri())
+			.withURI(redisConnectionDetails.getUri())
 			.withIndexName(properties.getIndex())
 			.withPrefix(properties.getPrefix())
 			.build();
 
 		return new RedisVectorStore(config, embeddingClient);
+	}
+
+	private static class PropertiesRedisConnectionDetails implements RedisConnectionDetails {
+
+		private final RedisVectorStoreProperties properties;
+
+		public PropertiesRedisConnectionDetails(RedisVectorStoreProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getUri() {
+			return this.properties.getUri();
+		}
+
 	}
 
 }

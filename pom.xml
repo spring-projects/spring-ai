@@ -62,6 +62,7 @@
 		<module>spring-ai-retry</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
+		<module>spring-ai-spring-boot-testcontainers</module>
 	</modules>
 
 	<organization>
@@ -135,7 +136,7 @@
 		<qdrant.version>1.7.1</qdrant.version>
 
 		<!-- testing dependencies -->
-		<testcontainers.version>1.19.6</testcontainers.version>
+		<testcontainers.version>1.19.7</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>

@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * @author Anush Shetty
+ * @author Eddú Meléndez
  * @since 0.8.1
  */
 @AutoConfiguration
@@ -34,18 +35,45 @@ import org.springframework.context.annotation.Bean;
 public class QdrantVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(QdrantConnectionDetails.class)
+	PropertiesQdrantConnectionDetails qdrantConnectionDetails(QdrantVectorStoreProperties properties) {
+		return new PropertiesQdrantConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties) {
+	public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties,
+			QdrantConnectionDetails connectionDetails) {
 
 		var config = QdrantVectorStoreConfig.builder()
 			.withCollectionName(properties.getCollectionName())
-			.withHost(properties.getHost())
-			.withPort(properties.getPort())
+			.withHost(connectionDetails.getHost())
+			.withPort(connectionDetails.getPort())
 			.withTls(properties.isUseTls())
 			.withApiKey(properties.getApiKey())
 			.build();
 
 		return new QdrantVectorStore(config, embeddingClient);
+	}
+
+	private static class PropertiesQdrantConnectionDetails implements QdrantConnectionDetails {
+
+		private final QdrantVectorStoreProperties properties;
+
+		PropertiesQdrantConnectionDetails(QdrantVectorStoreProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getHost() {
+			return this.properties.getHost();
+		}
+
+		@Override
+		public int getPort() {
+			return this.properties.getPort();
+		}
+
 	}
 
 }
