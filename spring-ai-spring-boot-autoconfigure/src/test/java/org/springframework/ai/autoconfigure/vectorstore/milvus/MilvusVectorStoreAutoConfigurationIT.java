@@ -15,17 +15,11 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
-import java.io.File;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.ResourceUtils;
@@ -38,45 +32,24 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.FileSystemUtils;
+import org.testcontainers.milvus.MilvusContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class MilvusVectorStoreAutoConfigurationIT {
 
-	private static DockerComposeContainer milvusContainer;
-
-	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
+	@Container
+	private static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.3.8");
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
 			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
-
-	@BeforeAll
-	public static void beforeAll() {
-		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
-		TEMP_FOLDER.mkdirs();
-
-		milvusContainer = new DockerComposeContainer(new File("src/test/resources/milvus/docker-compose.yml"))
-			.withEnv("DOCKER_VOLUME_DIRECTORY", TEMP_FOLDER.getAbsolutePath())
-			.withExposedService("standalone", 19530)
-			.withExposedService("standalone", 9091,
-					Wait.forHttp("/healthz").forPort(9091).forStatusCode(200).forStatusCode(401))
-			.waitingFor("standalone", Wait.forLogMessage(".*Proxy successfully started.*\\s", 1)
-				.withStartupTimeout(Duration.ofSeconds(100)));
-		milvusContainer.start();
-	}
-
-	@AfterAll
-	public static void afterAll() {
-		milvusContainer.stop();
-		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(MilvusVectorStoreAutoConfiguration.class))
@@ -90,8 +63,8 @@ public class MilvusVectorStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.milvus.embeddingDimension=384",
 					"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
 
-					"spring.ai.vectorstore.milvus.client.host=" + milvusContainer.getServiceHost("standalone", 19530),
-					"spring.ai.vectorstore.milvus.client.port=" + milvusContainer.getServicePort("standalone", 19530))
+					"spring.ai.vectorstore.milvus.client.host=" + milvus.getHost(),
+					"spring.ai.vectorstore.milvus.client.port=" + milvus.getMappedPort(19530))
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				vectorStore.add(documents);

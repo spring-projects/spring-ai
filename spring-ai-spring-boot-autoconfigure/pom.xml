@@ -297,8 +297,29 @@
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
+			<artifactId>chromadb</artifactId>
+			<version>1.19.7</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>milvus</artifactId>
+			<version>1.19.7</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
 			<artifactId>qdrant</artifactId>
-			<version>1.19.6</version>
+			<version>1.19.7</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>weaviate</artifactId>
+			<version>1.19.7</version>
 			<scope>test</scope>
 		</dependency>
 
