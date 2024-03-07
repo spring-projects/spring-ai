@@ -97,7 +97,7 @@ public class OpenAiApi {
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
-				.defaultStatusHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = WebClient.builder()
