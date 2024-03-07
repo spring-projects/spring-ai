@@ -17,21 +17,76 @@ package org.springframework.ai.chat.prompt;
 
 public class ChatOptionsBuilder {
 
+	private Float temperature;
+
+	private Float topP;
+
+	private Integer topK;
+
+	private ChatOptionsBuilder() {
+	}
+
+	/**
+	 * Creates a new {@link ChatOptions} instance.
+	 * @return A new instance of ChatOptionsBuilder.
+	 */
+	public static ChatOptionsBuilder builder() {
+		return new ChatOptionsBuilder();
+	}
+
+	/**
+	 * Initializes a new {@link ChatOptionsBuilder} with settings from an existing
+	 * {@link ChatOptions} object.
+	 * @param options The ChatOptions object whose settings are to be used.
+	 * @return A ChatOptionsBuilder instance initialized with the provided ChatOptions
+	 * settings.
+	 */
+	public static ChatOptionsBuilder builder(final ChatOptions options) {
+		return builder().withTemperature(options.getTemperature())
+			.withTopK(options.getTopK())
+			.withTopP(options.getTopP());
+	}
+
+	public ChatOptionsBuilder withTemperature(final Float temperature) {
+		this.temperature = temperature;
+		return this;
+	}
+
+	public ChatOptionsBuilder withTopP(final Float topP) {
+		this.topP = topP;
+		return this;
+	}
+
+	public ChatOptionsBuilder withTopK(final Integer topK) {
+		this.topK = topK;
+		return this;
+	}
+
+	public ChatOptions build() {
+		return new ChatOptionsImpl(this.temperature, this.topP, this.topK);
+	}
+
+	/**
+	 * Created only by ChatOptionsBuilder for controlled setup. Hidden implementation,
+	 * accessed via ChatOptions interface. Promotes modularity and easy use.
+	 */
 	private class ChatOptionsImpl implements ChatOptions {
 
-		private Float temperature;
+		private final Float temperature;
 
-		private Float topP;
+		private final Float topP;
 
-		private Integer topK;
+		private final Integer topK;
+
+		ChatOptionsImpl(final Float temperature, final Float topP, final Integer topK) {
+			this.temperature = temperature;
+			this.topP = topP;
+			this.topK = topK;
+		}
 
 		@Override
 		public Float getTemperature() {
 			return temperature;
-		}
-
-		public void setTemperature(Float temperature) {
-			this.temperature = temperature;
 		}
 
 		@Override
@@ -39,47 +94,11 @@ public class ChatOptionsBuilder {
 			return topP;
 		}
 
-		public void setTopP(Float topP) {
-			this.topP = topP;
-		}
-
 		@Override
 		public Integer getTopK() {
 			return topK;
 		}
 
-		public void setTopK(Integer topK) {
-			this.topK = topK;
-		}
-
-	}
-
-	private final ChatOptionsImpl options = new ChatOptionsImpl();
-
-	private ChatOptionsBuilder() {
-	}
-
-	public static ChatOptionsBuilder builder() {
-		return new ChatOptionsBuilder();
-	}
-
-	public ChatOptionsBuilder withTemperature(Float temperature) {
-		options.setTemperature(temperature);
-		return this;
-	}
-
-	public ChatOptionsBuilder withTopP(Float topP) {
-		options.setTopP(topP);
-		return this;
-	}
-
-	public ChatOptionsBuilder withTopK(Integer topK) {
-		options.setTopK(topK);
-		return this;
-	}
-
-	public ChatOptions build() {
-		return options;
 	}
 
 }
