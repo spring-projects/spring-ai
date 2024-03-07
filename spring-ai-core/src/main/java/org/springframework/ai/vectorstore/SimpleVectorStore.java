@@ -62,8 +62,10 @@ public class SimpleVectorStore implements VectorStore {
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingClient for document id = {}", document.getId());
-			List<Double> embedding = this.embeddingClient.embed(document);
-			document.setEmbedding(embedding);
+			if (document.getEmbedding().isEmpty()) {
+				List<Double> embedding = this.embeddingClient.embed(document);
+				document.setEmbedding(embedding);
+			}
 			this.store.put(document.getId(), document);
 		}
 	}

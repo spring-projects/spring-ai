@@ -213,7 +213,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		try {
 			List<PointStruct> points = documents.stream().map(document -> {
 				// Compute and assign an embedding to the document.
-				document.setEmbedding(this.embeddingClient.embed(document));
+				document.setEmbedding(this.embeddingClient.cachedEmbed(document));
 
 				return PointStruct.newBuilder()
 					.setId(id(UUID.fromString(document.getId())))

@@ -421,10 +421,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 
 	private WeaviateObject toWeaviateObject(Document document) {
 
-		if (CollectionUtils.isEmpty(document.getEmbedding())) {
-			List<Double> embedding = this.embeddingClient.embed(document);
-			document.setEmbedding(embedding);
-		}
+		this.embeddingClient.cachedEmbed(document);
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();

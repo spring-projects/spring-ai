@@ -52,7 +52,7 @@ public class Document {
 	/**
 	 * Document content.
 	 */
-	private String content;
+	private final String content;
 
 	/**
 	 * Embedding of the document. Note: ephemeral field.

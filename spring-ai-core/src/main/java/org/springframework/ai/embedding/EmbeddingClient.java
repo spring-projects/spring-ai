@@ -18,6 +18,7 @@ package org.springframework.ai.embedding;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.ModelClient;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -45,6 +46,22 @@ public interface EmbeddingClient extends ModelClient<EmbeddingRequest, Embedding
 	 * @return the embedded vector.
 	 */
 	List<Double> embed(Document document);
+
+	/**
+	 * Uses Document's existing if available, otherwise generates and caches the
+	 * embedding.
+	 * @param document the document to embed.
+	 * @return the embedded vector.
+	 */
+	default List<Double> cachedEmbed(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		if (!CollectionUtils.isEmpty(document.getEmbedding())) {
+			return document.getEmbedding();
+		}
+		var embeddings = this.embed(document);
+		document.setEmbedding(embeddings);
+		return embeddings;
+	}
 
 	/**
 	 * Embeds a batch of texts into vectors.

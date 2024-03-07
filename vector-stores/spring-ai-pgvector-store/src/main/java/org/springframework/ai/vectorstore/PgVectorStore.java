@@ -235,7 +235,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 						var document = documents.get(i);
 						var content = document.getContent();
 						var json = toJson(document.getMetadata());
-						var pGvector = new PGvector(toFloatArray(embeddingClient.embed(document)));
+						var pGvector = new PGvector(toFloatArray(embeddingClient.cachedEmbed(document)));
 
 						StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
 								UUID.fromString(document.getId()));

@@ -232,7 +232,7 @@ public class PineconeVectorStore implements VectorStore {
 
 		List<Vector> upsertVectors = documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
-			document.setEmbedding(this.embeddingClient.embed(document));
+			document.setEmbedding(this.embeddingClient.cachedEmbed(document));
 
 			return Vector.newBuilder()
 				.setId(document.getId())

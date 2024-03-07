@@ -95,7 +95,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
 			contents.add(document.getContent());
-			document.setEmbedding(this.embeddingClient.embed(document));
+			document.setEmbedding(this.embeddingClient.cachedEmbed(document));
 			embeddings.add(JsonUtils.toFloatArray(document.getEmbedding()));
 		}
 

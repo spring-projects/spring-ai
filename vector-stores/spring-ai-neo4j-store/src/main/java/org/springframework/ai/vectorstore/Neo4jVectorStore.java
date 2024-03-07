@@ -18,13 +18,17 @@ package org.springframework.ai.vectorstore;
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.value.ListValue;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -329,8 +333,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 	}
 
 	private Map<String, Object> documentToRecord(Document document) {
-		var embedding = this.embeddingClient.embed(document);
-		document.setEmbedding(embedding);
+		var embedding = this.embeddingClient.cachedEmbed(document);
 
 		var row = new HashMap<String, Object>();
 
@@ -366,7 +369,15 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			}
 		});
 
-		return new Document(node.get("id").asString(), node.get("text").asString(), Map.copyOf(metaData));
+		Value listValue = node.get("embedding");
+		List<Double> embeddings = new ArrayList<>(listValue.size());
+		for (int i = 0; i < listValue.size(); i++) {
+			embeddings.add(listValue.get(i).asDouble());
+		}
+
+		var document = new Document(node.get("id").asString(), node.get("text").asString(), Map.copyOf(metaData));
+		document.setEmbedding(embeddings);
+		return document;
 	}
 
 }

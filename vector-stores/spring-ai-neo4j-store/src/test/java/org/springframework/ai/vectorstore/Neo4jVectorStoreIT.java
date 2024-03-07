@@ -55,8 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class Neo4jVectorStoreIT {
 
 	// Needs to be Neo4j 5.15+, because Neo4j 5.15 deprecated the old vector index
-	// creation
-	// function.
+	// creation function.
 	@Container
 	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.15"))
 		.withRandomPassword();

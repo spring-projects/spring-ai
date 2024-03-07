@@ -305,8 +305,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	public void add(List<Document> documents) {
 		Pipeline pipeline = this.jedis.pipelined();
 		for (Document document : documents) {
-			var embedding = this.embeddingClient.embed(document);
-			document.setEmbedding(embedding);
+			var embedding = this.embeddingClient.cachedEmbed(document);
 
 			var fields = new HashMap<String, Object>();
 			fields.put(this.config.embeddingFieldName, embedding);
