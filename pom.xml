@@ -131,7 +131,7 @@
 		<qdrant.version>1.7.1</qdrant.version>
 
 		<!-- testing dependencies -->
-		<testcontainers.version>1.19.6</testcontainers.version>
+		<testcontainers.version>1.19.7</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
