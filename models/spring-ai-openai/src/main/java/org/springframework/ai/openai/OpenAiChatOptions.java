@@ -375,17 +375,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-	}
-
-	@Override
 	public Set<String> getFunctions() {
 		return functions;
-	}
-
-	public void setFunctions(Set<String> functionNames) {
-		this.functions = functionNames;
 	}
 
 	@Override
