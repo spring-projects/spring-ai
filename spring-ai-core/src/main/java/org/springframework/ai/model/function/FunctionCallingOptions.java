@@ -34,32 +34,9 @@ public interface FunctionCallingOptions {
 	List<FunctionCallback> getFunctionCallbacks();
 
 	/**
-	 * Set the Function Callbacks to be registered with the ChatClient.
-	 * @param functionCallbacks the Function Callbacks to be registered with the
-	 * ChatClient.
-	 */
-	void setFunctionCallbacks(List<FunctionCallback> functionCallbacks);
-
-	/**
 	 * @return List of function names from the ChatClient registry to be used in the next
 	 * chat completion requests.
 	 */
 	Set<String> getFunctions();
-
-	/**
-	 * Set the list of function names from the ChatClient registry to be used in the next
-	 * chat completion requests.
-	 * @param functions the list of function names from the ChatClient registry to be used
-	 * in the next chat completion requests.
-	 */
-	void setFunctions(Set<String> functions);
-
-	/**
-	 * @return Returns FunctionCallingOptionsBuilder to create a new instance of
-	 * FunctionCallingOptions.
-	 */
-	public static FunctionCallingOptionsBuilder builder() {
-		return new FunctionCallingOptionsBuilder();
-	}
 
 }
