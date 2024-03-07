@@ -297,6 +297,8 @@ limitations under the License.
 <!-- @formatter:on -->
 							</inlineHeader>
 							<excludes>
+								<exclude>**/.antlr/**</exclude>
+								<exclude>**/aot.factories</exclude>
 								<exclude>**/.sdkmanrc</exclude>
 								<exclude>**/*.adoc</exclude>
 								<exclude>**/*.puml</exclude>
