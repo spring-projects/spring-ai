@@ -156,6 +156,101 @@ public class OpenAiPropertiesTests {
 	}
 
 	@Test
+	public void speechProperties() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.audio.speech.options.model=TTS_1",
+						"spring.ai.openai.audio.speech.options.voice=alloy",
+						"spring.ai.openai.audio.speech.options.response-format=mp3",
+						"spring.ai.openai.audio.speech.options.speed=0.75")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var speechProperties = context.getBean(OpenAiAudioSpeechProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(speechProperties.getApiKey()).isNull();
+				assertThat(speechProperties.getBaseUrl()).isNull();
+
+				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_1");
+				assertThat(speechProperties.getOptions().getVoice())
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ALLOY);
+				assertThat(speechProperties.getOptions().getResponseFormat())
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3);
+				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.75f);
+			});
+	}
+
+	@Test
+	public void speechPropertiesTest() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.audio.speech.options.model=TTS_1",
+						"spring.ai.openai.audio.speech.options.voice=alloy",
+						"spring.ai.openai.audio.speech.options.response-format=mp3",
+						"spring.ai.openai.audio.speech.options.speed=0.75")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var speechProperties = context.getBean(OpenAiAudioSpeechProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_1");
+				assertThat(speechProperties.getOptions().getVoice())
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ALLOY);
+				assertThat(speechProperties.getOptions().getResponseFormat())
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3);
+				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.75f);
+			});
+	}
+
+	@Test
+	public void speechOverrideConnectionPropertiesTest() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.audio.speech.base-url=TEST_BASE_URL2",
+						"spring.ai.openai.audio.speech.api-key=456",
+						"spring.ai.openai.audio.speech.options.model=TTS_2",
+						"spring.ai.openai.audio.speech.options.voice=echo",
+						"spring.ai.openai.audio.speech.options.response-format=opus",
+						"spring.ai.openai.audio.speech.options.speed=0.5")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				var speechProperties = context.getBean(OpenAiAudioSpeechProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(speechProperties.getApiKey()).isEqualTo("456");
+				assertThat(speechProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
+
+				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_2");
+				assertThat(speechProperties.getOptions().getVoice()).isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ECHO);
+				assertThat(speechProperties.getOptions().getResponseFormat())
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.OPUS);
+				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.5f);
+			});
+	}
+
+	@Test
 	public void embeddingProperties() {
 
 		new ApplicationContextRunner().withPropertyValues(
