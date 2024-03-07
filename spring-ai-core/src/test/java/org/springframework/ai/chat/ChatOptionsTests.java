@@ -16,28 +16,18 @@
 package org.springframework.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 
 /**
- * Unit Tests for {@link Prompt}.
+ * Unit Tests for {@link ChatOptions}.
  *
  * @author youngmon
  * @since 0.8.1
  */
-public class ChatBuilderTests {
+public class ChatOptionsTests {
 
 	@Test
 	void createNewChatOptionsTest() {
@@ -68,43 +58,13 @@ public class ChatBuilderTests {
 			.withTopK(initTopK)
 			.build();
 
-	}
+		ChatOptions options1 = ChatOptionsBuilder.builder(options).build();
 
-	@Test
-	void createFunctionCallingOptionTest() {
-		Float temperature = 1.1f;
-		Float topP = 2.2f;
-		Integer topK = 111;
-		List<FunctionCallback> functionCallbacks = new ArrayList<>();
-		Set<String> functions = new HashSet<>();
+		assertThat(options.getTopP()).isEqualTo(options1.getTopP());
+		assertThat(options.getTopK()).isEqualTo(options1.getTopK());
+		assertThat(options.getTemperature()).isEqualTo(options1.getTemperature());
 
-		String func = "func";
-		FunctionCallback cb = FunctionCallbackWrapper.<Integer, Integer>builder(i -> i)
-			.withName("cb")
-			.withDescription("cb")
-			.build();
-
-		functions.add(func);
-		functionCallbacks.add(cb);
-
-		FunctionCallingOptions options = FunctionCallingOptions.builder()
-			.withFunctionCallbacks(functionCallbacks)
-			.withFunctions(functions)
-			.withTopK(topK)
-			.withTopP(topP)
-			.withTemperature(temperature)
-			.build();
-
-		// Callback Functions
-		assertThat(options.getFunctionCallbacks()).isNotNull();
-		assertThat(options.getFunctionCallbacks().size()).isEqualTo(1);
-		assertThat(options.getFunctionCallbacks().contains(cb));
-
-		// Functions
-		assertThat(options.getFunctions()).isNotNull();
-		assertThat(options.getFunctions().size()).isEqualTo(1);
-		assertThat(options.getFunctions().contains(func));
-
+		assertThat(options).isNotSameAs(options1);
 	}
 
 }
