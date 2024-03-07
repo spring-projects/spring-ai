@@ -1,0 +1,144 @@
+= OpenAI Text-to-Speech (TTS) Integration
+
+== Introduction
+
+The Audio API provides a speech endpoint based on our TTS (text-to-speech) model. It can be used to:
+
+- Narrate a written blog post
+- Produce spoken audio in multiple languages
+- Give real time audio output using streaming
+
+== Prerequisites
+
+. Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+. Add the `spring-ai-openai` dependency to your project's build file. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section for more information.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OpenAI Text-to-Speech Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== TTS Properties
+
+The prefix `spring.ai.openai.audio.speech` is used as the property prefix that lets you configure the OpenAI Text-to-Speech client.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+
+| spring.ai.openai.audio.speech.options.model  | ID of the model to use. Only tts-1 is currently available. |  tts-1
+| spring.ai.openai.audio.speech.options.voice | The voice to use for the TTS output. Available options are: alloy, echo, fable, onyx, nova, and shimmer. | alloy
+| spring.ai.openai.audio.speech.options.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
+| spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.0 (slowest) to 1.0 (fastest). | 1.0
+|====
+
+== Runtime Options [[speech-options]]
+
+The `OpenAiAudioSpeechOptions` class provides the options to use when making a text-to-speech request.
+On start-up, the options specified by `spring.ai.openai.audio.speech` are used but you can override these at runtime.
+
+For example:
+
+[source,java]
+----
+OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
+    .withModel("tts-1")
+    .withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+    .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .withSpeed(1.0f)
+    .build();
+
+SpeechPrompt speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
+SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
+----
+
+== Manual Configuration
+
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create an `OpenAiAudioSpeechClient`:
+
+[source,java]
+----
+var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
+
+var openAiAudioSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi);
+
+var speechOptions = OpenAiAudioSpeechOptions.builder()
+    .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .withSpeed(1.0f)
+    .withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
+    .build();
+
+var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
+SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
+
+// Accessing metadata (rate limit info)
+OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
+
+byte[] responseAsBytes = response.getResult().getOutput();
+----
+
+== Streaming Real-time Audio
+
+The Speech API provides support for real-time audio streaming using chunk transfer encoding. This means that the audio is able to be played before the full file has been generated and made accessible.
+
+[source,java]
+----
+var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
+
+var openAiAudioSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi);
+
+OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
+    .withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+    .withSpeed(1.0f)
+    .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
+    .build();
+
+SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", speechOptions);
+
+Flux<SpeechResponse> responseStream = openAiAudioSpeechClient.stream(speechPrompt);
+----
+
+== Example Code
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/speech/OpenAiSpeechClientIT.java[OpenAiSpeechClientIT.java] test provides some general examples of how to use the library.

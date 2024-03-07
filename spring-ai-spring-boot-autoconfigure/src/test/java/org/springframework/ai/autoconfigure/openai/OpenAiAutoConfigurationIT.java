@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.openai;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,7 @@ import org.springframework.ai.openai.OpenAiImageClient;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
+import org.springframework.ai.openai.OpenAiAudioSpeechClient;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
@@ -72,6 +74,32 @@ public class OpenAiAutoConfigurationIT {
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
+	}
+
+	@Test
+	void synthesize() {
+		contextRunner.run(context -> {
+			OpenAiAudioSpeechClient client = context.getBean(OpenAiAudioSpeechClient.class);
+			byte[] response = client.call("H");
+			assertThat(response).isNotNull();
+			assertThat(verifyMp3FrameHeader(response))
+				.withFailMessage("Expected MP3 frame header to be present in the response, but it was not found.")
+				.isTrue();
+			assertThat(response.length).isNotEqualTo(0);
+
+			logger.info("Response: " + Arrays.toString(response));
+		});
+	}
+
+	public boolean verifyMp3FrameHeader(byte[] audioResponse) {
+		// Check if the response is null or too short to contain a frame header
+		if (audioResponse == null || audioResponse.length < 2) {
+			return false;
+		}
+		// Check for the MP3 frame header
+		// 0xFFE0 is the sync word for an MP3 frame (11 bits set to 1 followed by 3 bits
+		// set to 0)
+		return (audioResponse[0] & 0xFF) == 0xFF && (audioResponse[1] & 0xE0) == 0xE0;
 	}
 
 	@Test

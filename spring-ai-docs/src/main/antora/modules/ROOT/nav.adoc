@@ -37,6 +37,8 @@
 *** xref:api/image/stabilityai-image.adoc[Stability]
 ** xref:api/transcriptions.adoc[]
 *** xref:api/transcriptions/openai-transcriptions.adoc[OpenAI]
+** xref:api/speech.adoc[]
+*** xref:api/speech/openai-speech.adoc[OpenAI]
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
