@@ -1,3 +1,4 @@
 org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
 org.springframework.ai.testcontainers.service.connection.chroma.ChromaContainerConnectionDetailsFactory,\
-org.springframework.ai.testcontainers.service.connection.milvus.MilvusContainerConnectionDetailsFactory
+org.springframework.ai.testcontainers.service.connection.milvus.MilvusContainerConnectionDetailsFactory,\
+org.springframework.ai.testcontainers.service.connection.qdrant.QdrantContainerConnectionDetailsFactory
