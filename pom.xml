@@ -170,6 +170,9 @@
 		<qdrant.version>1.7.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 
+		<!-- testing dependencies -->
+		<testcontainers.version>1.19.7</testcontainers.version>
+
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
 		<asciidoctorj-pdf.version>1.6.2</asciidoctorj-pdf.version>		<!-- FIXME build failure with version 2.3.9 -->
