@@ -2,4 +2,5 @@ org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFacto
 org.springframework.ai.testcontainers.service.connection.chroma.ChromaContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.milvus.MilvusContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.qdrant.QdrantContainerConnectionDetailsFactory,\
-org.springframework.ai.testcontainers.service.connection.redis.RedisContainerConnectionDetailsFactory
+org.springframework.ai.testcontainers.service.connection.redis.RedisContainerConnectionDetailsFactory,\
+org.springframework.ai.testcontainers.service.connection.weaviate.WeaviateContainerConnectionDetailsFactory
