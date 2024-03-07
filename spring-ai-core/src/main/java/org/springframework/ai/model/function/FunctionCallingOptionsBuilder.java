@@ -19,124 +19,90 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.util.Assert;
 
 /**
- * Builder for {@link FunctionCallingOptions}. Using the {@link FunctionCallingOptions}
- * permits options portability between different AI providers that support
- * function-calling.
+ * Builder for {@link FunctionCallingOptions}. This builder creates option objects
+ * required for function-calling.
  *
- * @author Christian Tzolov
+ * @author youngmon
  * @since 0.8.1
  */
 public class FunctionCallingOptionsBuilder {
 
-	private final PortableFunctionCallingOptions options;
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
-	public FunctionCallingOptionsBuilder() {
-		this.options = new PortableFunctionCallingOptions();
+	private Set<String> functions = new HashSet<>();
+
+	private FunctionCallingOptionsBuilder() {
 	}
 
-	public FunctionCallingOptionsBuilder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.options.setFunctionCallbacks(functionCallbacks);
+	/**
+	 * Creates a new {@link FunctionCallingOptionsBuilder} instance.
+	 * @return A new instance of FunctionCallingOptionsBuilder.
+	 */
+	public static FunctionCallingOptionsBuilder builder() {
+		return new FunctionCallingOptionsBuilder();
+	}
+
+	/**
+	 * Initializes a new {@link FunctionCallingOptionsBuilder} with settings from an
+	 * existing {@link FunctionCallingOptions} object.
+	 * @param options The FunctionCallingOptions object whose settings are to be used.
+	 * @return A FunctionCallingOptionsBuilder instance initialized with the provided
+	 * FunctionCallingOptions settings.
+	 */
+	public static FunctionCallingOptionsBuilder builder(final FunctionCallingOptions options) {
+		return builder().withFunctions(options.getFunctions()).withFunctionCallbacks(options.getFunctionCallbacks());
+	}
+
+	public FunctionCallingOptions build() {
+		return new FunctionCallingOptionsImpl(this.functionCallbacks, this.functions);
+	}
+
+	public FunctionCallingOptionsBuilder withFunctionCallbacks(final List<FunctionCallback> functionCallbacks) {
+		Assert.notNull(functionCallbacks, "FunctionCallback must not be null");
+		this.functionCallbacks = functionCallbacks;
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunctionCallback(FunctionCallback functionCallback) {
+	public FunctionCallingOptionsBuilder withFunctionCallback(final FunctionCallback functionCallback) {
 		Assert.notNull(functionCallback, "FunctionCallback must not be null");
-		this.options.getFunctionCallbacks().add(functionCallback);
+		this.functionCallbacks.add(functionCallback);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunctions(Set<String> functions) {
-		this.options.setFunctions(functions);
+	public FunctionCallingOptionsBuilder withFunctions(final Set<String> functions) {
+		Assert.notNull(functions, "Functions must not be null");
+		this.functions = functions;
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunction(String function) {
+	public FunctionCallingOptionsBuilder withFunction(final String function) {
 		Assert.notNull(function, "Function must not be null");
-		this.options.getFunctions().add(function);
+		this.functions.add(function);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTemperature(Float temperature) {
-		this.options.setTemperature(temperature);
-		return this;
-	}
+	private class FunctionCallingOptionsImpl implements FunctionCallingOptions {
 
-	public FunctionCallingOptionsBuilder withTopP(Float topP) {
-		this.options.setTopP(topP);
-		return this;
-	}
+		private final List<FunctionCallback> functionCallbacks;
 
-	public FunctionCallingOptionsBuilder withTopK(Integer topK) {
-		this.options.setTopK(topK);
-		return this;
-	}
+		private final Set<String> functions;
 
-	public PortableFunctionCallingOptions build() {
-		return this.options;
-	}
-
-	public static class PortableFunctionCallingOptions implements FunctionCallingOptions, ChatOptions {
-
-		private List<FunctionCallback> functionCallbacks = new ArrayList<>();
-
-		private Set<String> functions = new HashSet<>();
-
-		private Float temperature;
-
-		private Float topP;
-
-		private Integer topK;
+		FunctionCallingOptionsImpl(final List<FunctionCallback> functionCallbacks, final Set<String> functions) {
+			this.functionCallbacks = functionCallbacks;
+			this.functions = functions;
+		}
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
 			return this.functionCallbacks;
 		}
 
-		public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-			this.functionCallbacks = functionCallbacks;
-		}
-
 		@Override
 		public Set<String> getFunctions() {
 			return this.functions;
-		}
-
-		public void setFunctions(Set<String> functions) {
-			Assert.notNull(functions, "Functions must not be null");
-			this.functions = functions;
-		}
-
-		@Override
-		public Float getTemperature() {
-			return this.temperature;
-		}
-
-		public void setTemperature(Float temperature) {
-			this.temperature = temperature;
-		}
-
-		@Override
-		public Float getTopP() {
-			return this.topP;
-		}
-
-		public void setTopP(Float topP) {
-			this.topP = topP;
-		}
-
-		@Override
-		public Integer getTopK() {
-			return this.topK;
-		}
-
-		public void setTopK(Integer topK) {
-			this.topK = topK;
 		}
 
 	}
