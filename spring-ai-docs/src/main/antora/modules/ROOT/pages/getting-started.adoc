@@ -181,6 +181,7 @@ You can clone these projects on GitHub to get started.
 === Azure OpenAI
 
 * https://github.com/rd-1-2022/ai-azure-openai-helloworld
+* https://github.com/Azure-Samples/spring-ai-azure-workshop
 
 // * https://github.com/rd-1-2022/ai-azure-stuff-prompt
 // * https://github.com/rd-1-2022/ai-azure-prompt-template
