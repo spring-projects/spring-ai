@@ -30,9 +30,9 @@ import org.springframework.util.Assert;
  */
 public class FunctionCallingOptionsBuilder {
 
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private final List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
-	private Set<String> functions = new HashSet<>();
+	private final Set<String> functions = new HashSet<>();
 
 	private FunctionCallingOptionsBuilder() {
 	}
@@ -62,7 +62,7 @@ public class FunctionCallingOptionsBuilder {
 
 	public FunctionCallingOptionsBuilder withFunctionCallbacks(final List<FunctionCallback> functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallback must not be null");
-		this.functionCallbacks = functionCallbacks;
+		this.functionCallbacks.addAll(functionCallbacks);
 		return this;
 	}
 
@@ -74,7 +74,7 @@ public class FunctionCallingOptionsBuilder {
 
 	public FunctionCallingOptionsBuilder withFunctions(final Set<String> functions) {
 		Assert.notNull(functions, "Functions must not be null");
-		this.functions = functions;
+		this.functions.addAll(functions);
 		return this;
 	}
 
