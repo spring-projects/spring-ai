@@ -35,7 +35,7 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 /**
  * @author Chris Smith
  */
-public class MongoDBVectorStore implements VectorStore, InitializingBean {
+public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -59,12 +59,12 @@ public class MongoDBVectorStore implements VectorStore, InitializingBean {
 
 	private final MongoDBVectorStoreConfig config;
 
-	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
 		this(mongoTemplate, embeddingClient, MongoDBVectorStoreConfig.defaultConfig());
 	}
 
-	public MongoDBVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
-			MongoDBVectorStoreConfig config) {
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
+								   MongoDBVectorStoreConfig config) {
 		this.mongoTemplate = mongoTemplate;
 		this.embeddingClient = embeddingClient;
 		this.config = config;

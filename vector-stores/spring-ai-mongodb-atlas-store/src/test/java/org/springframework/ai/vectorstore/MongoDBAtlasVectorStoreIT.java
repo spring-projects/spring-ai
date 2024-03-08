@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Chris Smith
  */
-class MongoDBVectorStoreIT {
+class MongoDBAtlasVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -133,7 +133,7 @@ class MongoDBVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
-			return new MongoDBVectorStore(mongoTemplate, embeddingClient);
+			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient);
 		}
 
 		@Bean
