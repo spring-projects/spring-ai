@@ -83,7 +83,7 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 
 Spring AI supports many AI models.  For an overview see here.  Specific models currently supported are
 * OpenAI
-* 
+*
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.
@@ -196,5 +196,10 @@ To reformat using the [java-format plugin](https://github.com/spring-io/spring-j
 
 To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
 ```shell
-./mvnw license:update-file-header
+./mvnw license:update-file-header -Plicense
+```
+
+To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
+```shell
+./mvnw javadoc:javadoc -Pjavadoc
 ```
