@@ -8,10 +8,10 @@
         <version>0.8.1-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-mongodb-store</artifactId>
+    <artifactId>spring-ai-mongodb-atlas-store</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI MongoDB Vector Store</name>
-    <description>Spring AI MongoDB Vector Store</description>
+    <name>Spring AI MongoDB Atlas Vector Store</name>
+    <description>Spring AI MongoDB Atlas Vector Store</description>
     <url>https://github.com/spring-projects-experimental/spring-ai</url>
 
     <scm>
