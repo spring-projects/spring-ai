@@ -40,7 +40,7 @@ public class SpringAiRetryPropertiesTests {
 				assertThat(retryProperties.isOnClientErrors()).isFalse(); // do not retry
 																			// on 4xx
 																			// errors
-				assertThat(retryProperties.getOnHttpCodes()).isEmpty();
+				assertThat(retryProperties.getExcludeOnHttpCodes()).isEmpty();
 				assertThat(retryProperties.getBackoff().getInitialInterval().toMillis()).isEqualTo(2000);
 				assertThat(retryProperties.getBackoff().getMultiplier()).isEqualTo(5);
 				assertThat(retryProperties.getBackoff().getMaxInterval().toMillis()).isEqualTo(3 * 60000);
@@ -54,7 +54,7 @@ public class SpringAiRetryPropertiesTests {
 		// @formatter:off
 				"spring.ai.retry.max-attempts=100",
 				"spring.ai.retry.on-client-errors=false",
-				"spring.ai.retry.on-http-codes=404,500",
+				"spring.ai.retry.exclude-on-http-codes=404,500",
 				"spring.ai.retry.backoff.initial-interval=1000",
 				"spring.ai.retry.backoff.multiplier=2",
 				"spring.ai.retry.backoff.max-interval=60000" )
@@ -65,7 +65,7 @@ public class SpringAiRetryPropertiesTests {
 
 				assertThat(retryProperties.getMaxAttempts()).isEqualTo(100);
 				assertThat(retryProperties.isOnClientErrors()).isFalse();
-				assertThat(retryProperties.getOnHttpCodes()).containsExactly(404, 500);
+				assertThat(retryProperties.getExcludeOnHttpCodes()).containsExactly(404, 500);
 				assertThat(retryProperties.getBackoff().getInitialInterval().toMillis()).isEqualTo(1000);
 				assertThat(retryProperties.getBackoff().getMultiplier()).isEqualTo(2);
 				assertThat(retryProperties.getBackoff().getMaxInterval().toMillis()).isEqualTo(60000);
