@@ -67,7 +67,8 @@ public class MessageToPromptConverter {
 			.map(this::messageToString)
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		final String prompt = String.format("%s%n%n%s%n%s", systemMessages, userMessages, ASSISTANT_PROMPT);
+		final String prompt = systemMessages + System.lineSeparator() + System.lineSeparator() + userMessages
+				+ System.lineSeparator() + ASSISTANT_PROMPT;
 
 		return prompt;
 	}

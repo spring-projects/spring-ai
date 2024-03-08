@@ -32,16 +32,21 @@ import org.springframework.util.Assert;
  */
 public class TokenTextSplitter extends TextSplitter {
 
-	private final int defaultChunkSize = 800; // The target size of each text
-												// chunk in tokens
+	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
 
-	private int minChunkSizeChars = 350; // The minimum size of each text
-											// chunk in characters
+	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
 
-	private int minChunkLengthToEmbed = 5; // Discard chunks shorter than this
+	// The target size of each text chunk in tokens
+	private int defaultChunkSize = 800;
 
-	private int maxNumChunks = 10000; // The maximum number of chunks to generate from a
-										// text
+	// The minimum size of each text chunk in characters
+	private int minChunkSizeChars = 350;
+
+	// Discard chunks shorter than this
+	private int minChunkLengthToEmbed = 5;
+
+	// The maximum number of chunks to generate from a text
+	private int maxNumChunks = 10000;
 
 	private boolean keepSeparator = true;
 
@@ -52,9 +57,14 @@ public class TokenTextSplitter extends TextSplitter {
 		this.keepSeparator = keepSeparator;
 	}
 
-	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
-
-	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
+	public TokenTextSplitter(int defaultChunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
+			boolean keepSeparator) {
+		this.defaultChunkSize = defaultChunkSize;
+		this.minChunkSizeChars = minChunkSizeChars;
+		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
+		this.maxNumChunks = maxNumChunks;
+		this.keepSeparator = keepSeparator;
+	}
 
 	@Override
 	protected List<String> splitText(String text) {
@@ -88,10 +98,10 @@ public class TokenTextSplitter extends TextSplitter {
 				chunkText = chunkText.substring(0, lastPunctuation + 1);
 			}
 
-			String chunk_text_to_append = (this.keepSeparator) ? chunkText.trim()
+			String chunkTextToAppend = (this.keepSeparator) ? chunkText.trim()
 					: chunkText.replace(System.lineSeparator(), " ").trim();
-			if (chunk_text_to_append.length() > this.minChunkLengthToEmbed) {
-				chunks.add(chunk_text_to_append);
+			if (chunkTextToAppend.length() > this.minChunkLengthToEmbed) {
+				chunks.add(chunkTextToAppend);
 			}
 
 			// Remove the tokens corresponding to the chunk text from the remaining tokens
