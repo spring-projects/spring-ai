@@ -42,13 +42,17 @@ public class SpringAiRetryProperties {
 	private Backoff backoff = new Backoff();
 
 	/**
-	 * If true, do not throw a NonTransientAiException, and do not attempt retry for 4xx
-	 * client error codes false by default.
-	 *
+	 * If false, throw a NonTransientAiException, and do not attempt retry for 4xx client
+	 * error codes. False by default. If true, throw a TransientAiException, and attempt
+	 * retry for 4xx client.
 	 */
 	private boolean onClientErrors = false;
 
-	private List<Integer> onHttpCodes = new ArrayList<>();
+	/**
+	 * List of HTTP status codes that should not trigger a retry (e.g. throw
+	 * NonTransientAiException).
+	 */
+	private List<Integer> excludeOnHttpCodes = new ArrayList<>();
 
 	/**
 	 * Exponential Backoff properties.
@@ -108,12 +112,12 @@ public class SpringAiRetryProperties {
 		return this.backoff;
 	}
 
-	public List<Integer> getOnHttpCodes() {
-		return this.onHttpCodes;
+	public List<Integer> getExcludeOnHttpCodes() {
+		return this.excludeOnHttpCodes;
 	}
 
-	public void setOnHttpCodes(List<Integer> onHttpCodes) {
-		this.onHttpCodes = onHttpCodes;
+	public void setExcludeOnHttpCodes(List<Integer> onHttpCodes) {
+		this.excludeOnHttpCodes = onHttpCodes;
 	}
 
 	public boolean isOnClientErrors() {

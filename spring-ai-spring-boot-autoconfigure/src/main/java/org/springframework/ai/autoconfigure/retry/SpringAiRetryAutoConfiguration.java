@@ -95,8 +95,8 @@ public class SpringAiRetryAutoConfiguration {
 						throw new NonTransientAiException(message);
 					}
 					// Explicitly configured non-transient codes
-					if (!CollectionUtils.isEmpty(properties.getOnHttpCodes())
-							&& properties.getOnHttpCodes().contains(response.getStatusCode().value())) {
+					if (!CollectionUtils.isEmpty(properties.getExcludeOnHttpCodes())
+							&& properties.getExcludeOnHttpCodes().contains(response.getStatusCode().value())) {
 						throw new NonTransientAiException(message);
 					}
 					throw new TransientAiException(message);
