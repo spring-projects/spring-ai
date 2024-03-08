@@ -47,6 +47,8 @@ import org.springframework.core.io.DefaultResourceLoader;
 // @EnabledIfEnvironmentVariable(named = "GEMFIRE_HOST", matches = ".+")
 public class GemFireVectorStoreIT {
 
+	public static final String INDEX_NAME = "spring-ai-index1";
+
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
@@ -67,12 +69,12 @@ public class GemFireVectorStoreIT {
 
 	@BeforeEach
 	public void createIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).createIndex());
+		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME));
 	}
 
 	@AfterEach
 	public void deleteIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).deleteIndex());
+		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).deleteIndex(INDEX_NAME));
 	}
 
 	@Test
@@ -91,7 +93,6 @@ public class GemFireVectorStoreIT {
 	public void addAndSearchTest() {
 		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
 			vectorStore.add(documents);
 
 			Awaitility.await().atMost(1, MINUTES).until(() -> {
@@ -187,7 +188,9 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingClient embeddingClient) {
-			return new GemFireVectorStore(config, embeddingClient);
+			GemFireVectorStore gemFireVectorStore = new GemFireVectorStore(config, embeddingClient);
+			gemFireVectorStore.setIndexName(INDEX_NAME);
+			return gemFireVectorStore;
 		}
 
 		@Bean
