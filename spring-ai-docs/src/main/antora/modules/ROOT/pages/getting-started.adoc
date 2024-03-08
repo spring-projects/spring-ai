@@ -181,7 +181,8 @@ You can clone these projects on GitHub to get started.
 === Azure OpenAI
 
 * https://github.com/rd-1-2022/ai-azure-openai-helloworld
-* https://github.com/rd-1-2022/ai-azure-stuff-prompt
-* https://github.com/rd-1-2022/ai-azure-prompt-template
-* https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
-* https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
+
+// * https://github.com/rd-1-2022/ai-azure-stuff-prompt
+// * https://github.com/rd-1-2022/ai-azure-prompt-template
+// * https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
+// * https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
