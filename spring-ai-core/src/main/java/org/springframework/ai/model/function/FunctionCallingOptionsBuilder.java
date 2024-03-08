@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 
 /**
@@ -60,25 +61,26 @@ public class FunctionCallingOptionsBuilder {
 		return new FunctionCallingOptionsImpl(this.functionCallbacks, this.functions);
 	}
 
-	public FunctionCallingOptionsBuilder withFunctionCallbacks(final List<FunctionCallback> functionCallbacks) {
+	public FunctionCallingOptionsBuilder withFunctionCallbacks(
+			@NonNull final List<FunctionCallback> functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallback must not be null");
 		this.functionCallbacks.addAll(functionCallbacks);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunctionCallback(final FunctionCallback functionCallback) {
+	public FunctionCallingOptionsBuilder withFunctionCallback(@NonNull final FunctionCallback functionCallback) {
 		Assert.notNull(functionCallback, "FunctionCallback must not be null");
 		this.functionCallbacks.add(functionCallback);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunctions(final Set<String> functions) {
+	public FunctionCallingOptionsBuilder withFunctions(@NonNull final Set<String> functions) {
 		Assert.notNull(functions, "Functions must not be null");
 		this.functions.addAll(functions);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withFunction(final String function) {
+	public FunctionCallingOptionsBuilder withFunction(@NonNull final String function) {
 		Assert.notNull(function, "Function must not be null");
 		this.functions.add(function);
 		return this;
