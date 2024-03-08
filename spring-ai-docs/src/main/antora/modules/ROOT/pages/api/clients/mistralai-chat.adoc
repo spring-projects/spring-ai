@@ -49,7 +49,9 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Chat Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Chat client.
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Mistral AI Chat client.
 
 [cols="3,5,1"]
 |====
@@ -59,9 +61,11 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 | spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
 | spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
 | spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
-| spring.ai.retry.on-client-errors | If true, do not throw a NonTransientAiException, and do not attempt retry for 4xx client error codes | false
-| spring.ai.retry.on-http-codes | List of HTTP Error Code to include for retry | empty
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
 |====
+
+==== Connection Properties
 
 The prefix `spring.ai.mistralai` is used as the property prefix that lets you connect to OpenAI.
 
@@ -72,6 +76,8 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 | spring.ai.mistralai.base-url   | The URL to connect to |  https://api.mistral.ai
 | spring.ai.mistralai.api-key    | The API Key           |  -
 |====
+
+==== Configuration Properties
 
 The prefix `spring.ai.mistralai.chat` is the property prefix that lets you configure the chat client implementation for MistralAI.
 
