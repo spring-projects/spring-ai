@@ -89,8 +89,8 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.clazz);
-		ObjectWriter objectWriter = new ObjectMapper()
-			.writer(new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter().withLinefeed("\n")));
+		ObjectWriter objectWriter = new ObjectMapper().writer(new DefaultPrettyPrinter()
+			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
 		}

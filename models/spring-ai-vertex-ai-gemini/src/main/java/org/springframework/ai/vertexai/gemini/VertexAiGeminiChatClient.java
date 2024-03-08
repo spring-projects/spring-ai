@@ -293,7 +293,7 @@ public class VertexAiGeminiChatClient
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.map(m -> m.getContent())
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		List<Content> contents = prompt.getInstructions()
 			.stream()

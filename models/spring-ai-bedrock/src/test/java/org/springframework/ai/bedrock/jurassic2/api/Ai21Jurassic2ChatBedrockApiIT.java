@@ -54,7 +54,7 @@ public class Ai21Jurassic2ChatBedrockApiIT {
 		String responseContent = response.completions()
 			.stream()
 			.map(c -> c.data().text())
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 		assertThat(responseContent).contains("Blackbeard");
 	}
 

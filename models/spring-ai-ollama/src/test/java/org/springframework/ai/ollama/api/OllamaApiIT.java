@@ -128,7 +128,7 @@ public class OllamaApiIT {
 		assertThat(responses.stream()
 			.filter(r -> r.message() != null)
 			.map(r -> r.message().content())
-			.collect(Collectors.joining("\n"))).contains("Sofia");
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();

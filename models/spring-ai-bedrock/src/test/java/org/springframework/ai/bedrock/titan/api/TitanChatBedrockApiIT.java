@@ -59,8 +59,9 @@ public class TitanChatBedrockApiIT {
 		Flux<TitanChatResponseChunk> response = titanBedrockApi.chatCompletionStream(titanChatRequest);
 		List<TitanChatResponseChunk> results = response.collectList().block();
 
-		assertThat(results.stream().map(TitanChatResponseChunk::outputText).collect(Collectors.joining("\n")))
-			.contains("Blackbeard");
+		assertThat(results.stream()
+			.map(TitanChatResponseChunk::outputText)
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Blackbeard");
 	}
 
 }

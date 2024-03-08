@@ -78,7 +78,7 @@ public class VertexAiPaLm2ChatClient implements ChatClient {
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.map(m -> m.getContent())
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		List<VertexAiPaLm2Api.Message> vertexMessages = prompt.getInstructions()
 			.stream()

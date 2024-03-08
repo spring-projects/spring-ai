@@ -43,7 +43,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 	private static final String DEFAULT_METADATA_TEMPLATE = String.format("%s: %s", TEMPLATE_KEY_PLACEHOLDER,
 			TEMPLATE_VALUE_PLACEHOLDER);
 
-	private static final String DEFAULT_METADATA_SEPARATOR = "\n";
+	private static final String DEFAULT_METADATA_SEPARATOR = System.lineSeparator();
 
 	private static final String DEFAULT_TEXT_TEMPLATE = String.format("%s\n\n%s", TEMPLATE_METADATA_STRING_PLACEHOLDER,
 			TEMPLATE_CONTENT_PLACEHOLDER);

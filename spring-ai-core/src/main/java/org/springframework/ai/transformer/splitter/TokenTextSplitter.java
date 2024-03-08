@@ -88,7 +88,8 @@ public class TokenTextSplitter extends TextSplitter {
 				chunkText = chunkText.substring(0, lastPunctuation + 1);
 			}
 
-			String chunk_text_to_append = (this.keepSeparator) ? chunkText.trim() : chunkText.replace("\n", " ").trim();
+			String chunk_text_to_append = (this.keepSeparator) ? chunkText.trim()
+					: chunkText.replace(System.lineSeparator(), " ").trim();
 			if (chunk_text_to_append.length() > this.minChunkLengthToEmbed) {
 				chunks.add(chunk_text_to_append);
 			}
@@ -101,7 +102,7 @@ public class TokenTextSplitter extends TextSplitter {
 
 		// Handle the remaining tokens
 		if (!tokens.isEmpty()) {
-			String remaining_text = decodeTokens(tokens).replace("\n", " ").trim();
+			String remaining_text = decodeTokens(tokens).replace(System.lineSeparator(), " ").trim();
 			if (remaining_text.length() > this.minChunkLengthToEmbed) {
 				chunks.add(remaining_text);
 			}
