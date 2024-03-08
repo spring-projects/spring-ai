@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore;
 import com.mongodb.BasicDBObject;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.converter.MongoDBAtlasFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -58,6 +59,8 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	private final EmbeddingClient embeddingClient;
 
 	private final MongoDBVectorStoreConfig config;
+
+	private final MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
 		this(mongoTemplate, embeddingClient, MongoDBVectorStoreConfig.defaultConfig());
@@ -122,9 +125,14 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
+
+		String nativeFilterExpressions = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()):"";
+
+
 		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
-				this.config.vectorIndexName, request.getTopK());
+				this.config.vectorIndexName, request.getTopK(), nativeFilterExpressions);
 
 		Aggregation aggregation = Aggregation.newAggregation(vectorSearch,
 				Aggregation.addFields()

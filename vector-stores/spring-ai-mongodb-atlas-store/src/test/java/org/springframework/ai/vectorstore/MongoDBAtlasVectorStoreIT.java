@@ -19,6 +19,8 @@ package org.springframework.ai.vectorstore;
 import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -33,6 +35,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -49,7 +52,7 @@ class MongoDBAtlasVectorStoreIT {
 				String.format("spring.data.mongodb.uri=" + System.getenv("SPRING_DATA_MONGODB_URI")));
 
 	@BeforeEach
-	public void afterEverything() {
+	public void beforeEach() {
 		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 			MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
 			mongoTemplate.getCollection("vector_store").deleteMany(new org.bson.Document());
@@ -123,10 +126,67 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
 			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
-
 		});
 	}
 
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "COSINE" })
+	// @ValueSource(strings = { "COSINE", "IP", "L2" })
+	public void searchWithFilters(String metricType) throws InterruptedException {
+
+		// https://milvus.io/docs/json_data_type.md
+
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
+			assertThat(results).hasSize(3);
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'NL'"));
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'BG'"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'BG' && year == 2020"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
+			assertThat(results.get(1).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
+
+		});
+	}
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	public static class TestApplication {
