@@ -123,7 +123,7 @@ class BeanOutputParserTest {
 			String formatOutput = parser.getFormat();
 
 			// validate that output contains \n line endings
-			assertThat(formatOutput).contains("\n").doesNotContain("\r\n").doesNotContain("\r");
+			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
 		}
 
 	}

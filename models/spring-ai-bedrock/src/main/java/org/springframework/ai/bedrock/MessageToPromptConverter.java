@@ -59,13 +59,13 @@ public class MessageToPromptConverter {
 		final String systemMessages = messages.stream()
 			.filter(message -> message.getMessageType() == MessageType.SYSTEM)
 			.map(Message::getContent)
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		final String userMessages = messages.stream()
 			.filter(message -> message.getMessageType() == MessageType.USER
 					|| message.getMessageType() == MessageType.ASSISTANT)
 			.map(this::messageToString)
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		final String prompt = String.format("%s%n%n%s%n%s", systemMessages, userMessages, ASSISTANT_PROMPT);
 
