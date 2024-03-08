@@ -75,7 +75,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 

@@ -16,7 +16,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
@@ -36,7 +35,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateVectorStoreProperties properties) {
+	public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateVectorStoreProperties properties) {
 
 		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
 			.withScheme(properties.getScheme())
