@@ -67,7 +67,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
-								   MongoDBVectorStoreConfig config) {
+			MongoDBVectorStoreConfig config) {
 		this.mongoTemplate = mongoTemplate;
 		this.embeddingClient = embeddingClient;
 		this.config = config;
@@ -127,8 +127,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()):"";
-
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "{}";
 
 		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
