@@ -25,6 +25,8 @@ import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
@@ -43,6 +45,8 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  */
 public class PagePdfDocumentReader implements DocumentReader {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String PDF_PAGE_REGION = "pdfPageRegion";
 
@@ -99,7 +103,17 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 			List<String> pageTextGroupList = new ArrayList<>();
 
+			int totalPages = this.document.getDocumentCatalog().getPages().getCount();
+			int logFrequency = totalPages > 10 ? totalPages / 10 : 1; // if less than 10
+																		// pages, print
+																		// each iteration
+			int counter = 0;
+
 			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
+				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
+					logger.info("Processing PDF page: {}", (counter + 1));
+				}
+				counter++;
 
 				pagesPerDocument++;
 
@@ -139,7 +153,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
 						pageNumber));
 			}
-
+			logger.info("Processing {} pages", totalPages);
 			return readDocuments;
 
 		}

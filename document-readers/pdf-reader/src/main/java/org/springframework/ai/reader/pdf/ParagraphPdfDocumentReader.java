@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.pdf.config.ParagraphManager;
@@ -45,6 +47,8 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  */
 public class ParagraphPdfDocumentReader implements DocumentReader {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	// Constants for metadata keys
 	private static final String METADATA_START_PAGE = "page_number";
@@ -128,6 +132,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		List<Document> documents = new ArrayList<>(paragraphs.size());
 
 		if (!CollectionUtils.isEmpty(paragraphs)) {
+			logger.info("Start processing paragraphs from PDF");
 			Iterator<Paragraph> itr = paragraphs.iterator();
 
 			var current = itr.next();
@@ -146,7 +151,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 				}
 			}
 		}
-
+		logger.info("End processing paragraphs from PDF");
 		return documents;
 	}
 

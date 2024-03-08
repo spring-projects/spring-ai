@@ -93,7 +93,8 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 	 */
 	AnthropicChatRequest createRequest(Prompt prompt) {
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
+		// Related to: https://github.com/spring-projects/spring-ai/issues/404
+		final String promptValue = MessageToPromptConverter.create("\n").toPrompt(prompt.getInstructions());
 
 		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue).build();
 

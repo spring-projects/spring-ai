@@ -35,7 +35,7 @@ public class OllamaChatAutoConfigurationTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
-				"spring.ai.ollama.chat.model=MODEL_XYZ",
+				"spring.ai.ollama.chat.options.model=MODEL_XYZ",
 				"spring.ai.ollama.chat.options.temperature=0.55",
 				"spring.ai.ollama.chat.options.topP=0.56",
 				"spring.ai.ollama.chat.options.topK=123")
