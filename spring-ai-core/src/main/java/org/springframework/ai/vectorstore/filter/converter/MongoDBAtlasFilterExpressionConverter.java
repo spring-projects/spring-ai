@@ -1,14 +1,21 @@
 package org.springframework.ai.vectorstore.filter.converter;
 
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
+/**
+ * Converts {@link Filter.Expression} into MongDB Atlas metadata filter expression format.
+ * (https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/#std-label-vectorSearch-agg-pipeline-filter)
+ *
+ * @author Chris Smith
+ */
 public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	@Override
 	protected void doExpression(Filter.Expression expression, StringBuilder context) {
 		// Handling AND/OR
-		if (Filter.ExpressionType.AND.equals(expression.type()) || Filter.ExpressionType.OR.equals(expression.type())) {
+		if (AND.equals(expression.type()) || OR.equals(expression.type())) {
 			doCompoundExpressionType(expression, context);
 		}
 		else {
