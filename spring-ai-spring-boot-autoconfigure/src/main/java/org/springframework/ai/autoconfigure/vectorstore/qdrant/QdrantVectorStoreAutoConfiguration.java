@@ -16,7 +16,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.qdrant;
 
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore.QdrantVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -36,7 +35,7 @@ public class QdrantVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties) {
+	public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties) {
 
 		var config = QdrantVectorStoreConfig.builder()
 			.withCollectionName(properties.getCollectionName())

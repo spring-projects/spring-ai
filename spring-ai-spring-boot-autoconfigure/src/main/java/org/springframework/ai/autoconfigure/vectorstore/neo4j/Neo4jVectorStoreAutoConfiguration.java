@@ -16,9 +16,9 @@
 package org.springframework.ai.autoconfigure.vectorstore.neo4j;
 
 import org.neo4j.driver.Driver;
+
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.Neo4jVectorStore;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,7 +36,7 @@ public class Neo4jVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(Driver driver, EmbeddingClient embeddingClient,
+	public Neo4jVectorStore vectorStore(Driver driver, EmbeddingClient embeddingClient,
 			Neo4jVectorStoreProperties properties) {
 		Neo4jVectorStore.Neo4jVectorStoreConfig config = Neo4jVectorStore.Neo4jVectorStoreConfig.builder()
 			.withDatabaseName(properties.getDatabaseName())

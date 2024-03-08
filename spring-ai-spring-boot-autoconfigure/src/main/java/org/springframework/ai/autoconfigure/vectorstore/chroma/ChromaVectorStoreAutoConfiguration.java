@@ -17,15 +17,14 @@ package org.springframework.ai.autoconfigure.vectorstore.chroma;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.ai.chroma.ChromaApi;
-import org.springframework.ai.vectorsore.ChromaVectorStore;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -63,7 +62,7 @@ public class ChromaVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi,
+	public ChromaVectorStore vectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi,
 			ChromaVectorStoreProperties storeProperties) {
 		return new ChromaVectorStore(embeddingClient, chromaApi, storeProperties.getCollectionName());
 	}
