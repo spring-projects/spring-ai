@@ -20,13 +20,11 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 /**
  * @author Pablo Sanchidrian Herrera
  * @author John Jairo Moreno Rojas
  */
 public class WatsonxChatClientTest {
-
 
 	@Test
 	public void testCreateRequestWithNoModelId() {
