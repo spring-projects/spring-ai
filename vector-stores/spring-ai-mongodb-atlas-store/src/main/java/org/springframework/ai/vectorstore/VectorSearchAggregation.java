@@ -10,12 +10,15 @@ record VectorSearchAggregation(List<Double> embeddings, String path, int numCand
 		String filter) implements AggregationOperation {
 	@Override
 	public org.bson.Document toDocument(AggregationOperationContext context) {
-		var doc = new Document("$vectorSearch",
-				new Document("queryVector", embeddings).append("path", path)
-					.append("numCandidates", numCandidates)
-					.append("index", index)
-					.append("filter", filter)
-					.append("limit", count));
+		var vectorSearch = new Document("queryVector", embeddings).append("path", path)
+			.append("numCandidates", numCandidates)
+			.append("index", index)
+			.append("limit", count);
+		if (!filter.isEmpty()) {
+			vectorSearch.append("filter", Document.parse(filter));
+		}
+		var doc = new Document("$vectorSearch", vectorSearch);
+
 		return context.getMappedObject(doc);
 	}
 }

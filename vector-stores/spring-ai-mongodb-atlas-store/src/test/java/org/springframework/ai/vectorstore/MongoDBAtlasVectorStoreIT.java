@@ -19,8 +19,7 @@ package org.springframework.ai.vectorstore;
 import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -32,6 +31,8 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,12 +45,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Chris Smith
  */
+
+@Testcontainers
 class MongoDBAtlasVectorStoreIT {
+
+	@Container
+	private static MongoDBAtlasContainer container = new MongoDBAtlasContainer();
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				String.format("spring.data.mongodb.uri=" + System.getenv("SPRING_DATA_MONGODB_URI")));
+				String.format("spring.data.mongodb.database=" + "springaisample"),
+				String.format("spring.data.mongodb.uri=" + container.getConnectionString()));
 
 	@BeforeEach
 	public void beforeEach() {
@@ -129,16 +136,10 @@ class MongoDBAtlasVectorStoreIT {
 		});
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "COSINE" })
-	// @ValueSource(strings = { "COSINE", "IP", "L2" })
-	public void searchWithFilters(String metricType) throws InterruptedException {
-
-		// https://milvus.io/docs/json_data_type.md
-
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + metricType).run(context -> {
+	@Test
+	void searchWithFilters() {
+		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
-
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "BG", "year", 2020));
@@ -148,38 +149,39 @@ class MongoDBAtlasVectorStoreIT {
 					Map.of("country", "BG", "year", 2023));
 
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+			Thread.sleep(5000); // Await a second for the document to be indexed
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
 			assertThat(results).hasSize(3);
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("country == 'NL'"));
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'NL'"));
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("country == 'BG'"));
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'BG'"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("country == 'BG' && year == 2020"));
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("country == 'BG' && year == 2020"));
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
+				.withTopK(5)
+				.withSimilarityThresholdAll()
+				.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
@@ -187,13 +189,17 @@ class MongoDBAtlasVectorStoreIT {
 
 		});
 	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	public static class TestApplication {
 
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
-			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient);
+			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient,
+					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
+						.withMetadataFieldsToFilter(List.of("country", "year"))
+						.build());
 		}
 
 		@Bean
@@ -203,7 +209,7 @@ class MongoDBAtlasVectorStoreIT {
 
 		@Bean
 		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

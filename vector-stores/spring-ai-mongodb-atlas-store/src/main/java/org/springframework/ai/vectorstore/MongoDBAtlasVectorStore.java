@@ -27,9 +27,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 
@@ -80,6 +78,28 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
 			mongoTemplate.createCollection(this.config.collectionName);
 		}
+		// Create search index, command doesn't do anything if already existing
+		mongoTemplate.executeCommand(createSearchIndex());
+	}
+
+	/**
+	 * Provides the Definition for the search index
+	 */
+	private org.bson.Document createSearchIndex() {
+		List<org.bson.Document> vectorFields = new ArrayList<>();
+		vectorFields.add(new org.bson.Document().append("type", "vector")
+			.append("path", this.config.pathName)
+			.append("numDimensions", 1536)
+			.append("similarity", "cosine"));
+		vectorFields.addAll(this.config.metadataFieldsToFilter.stream()
+			.map(fieldName -> new org.bson.Document().append("type", "filter").append("path", "metadata." + fieldName))
+			.toList());
+
+		return new org.bson.Document().append("createSearchIndexes", this.config.collectionName)
+			.append("indexes",
+					List.of(new org.bson.Document().append("name", this.config.vectorIndexName)
+						.append("type", "vectorSearch")
+						.append("definition", new org.bson.Document("fields", vectorFields))));
 	}
 
 	/**
@@ -127,7 +147,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "{}";
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
 		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
 		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
@@ -155,6 +175,8 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 		private final String pathName;
 
+		private final List<String> metadataFieldsToFilter;
+
 		private final int numCandidates;
 
 		private MongoDBVectorStoreConfig(Builder builder) {
@@ -162,6 +184,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 			this.vectorIndexName = builder.vectorIndexName;
 			this.pathName = builder.pathName;
 			this.numCandidates = builder.numCandidates;
+			this.metadataFieldsToFilter = builder.metadataFieldsToFilter;
 		}
 
 		public static Builder builder() {
@@ -181,6 +204,8 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 			private String pathName = DEFAULT_PATH_NAME;
 
 			private int numCandidates = DEFAULT_NUM_CANDIDATES;
+
+			private List<String> metadataFieldsToFilter = Collections.emptyList();
 
 			private Builder() {
 			}
@@ -221,6 +246,12 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 				Assert.notNull(pathName, "Path Name must not be null");
 				Assert.notNull(pathName, "Path Name must not be empty");
 				this.pathName = pathName;
+				return this;
+			}
+
+			public Builder withMetadataFieldsToFilter(List<String> metadataFieldsToFilter) {
+				Assert.notEmpty(metadataFieldsToFilter, "Fields list must not be empty");
+				this.metadataFieldsToFilter = metadataFieldsToFilter;
 				return this;
 			}
 
