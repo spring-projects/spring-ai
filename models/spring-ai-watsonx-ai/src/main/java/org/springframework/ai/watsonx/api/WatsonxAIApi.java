@@ -4,7 +4,7 @@ import com.ibm.cloud.sdk.core.security.IamAuthenticator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
@@ -115,7 +115,7 @@ public class WatsonxAIApi {
         return webClient.post()
                 .uri(this.streamEndpoint)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer)
-                .body(Mono.just(watsonxAIRequest), WatsonxAIRequest.class)
+                .bodyValue(watsonxAIRequest.withProjectId(projectId))
                 .retrieve()
                 .bodyToFlux(WatsonxAIResponse.class)
                 .handle((data, sink) -> {
