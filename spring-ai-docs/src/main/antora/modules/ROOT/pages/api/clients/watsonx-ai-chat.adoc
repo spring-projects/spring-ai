@@ -1,0 +1,119 @@
+= watsonx.ai Chat
+
+With https://dataplatform.cloud.ibm.com/docs/content/wsj/getting-started/overview-wx.html?context=wx&audience=wdp[watsonx.ai] you can run various Large Language Models (LLMs) locally and generate text from them.
+Spring AI supports the watsonx.ai text generation with `WatsonxChatClient`.
+
+
+== Prerequisites
+
+You first need to have a SaaS instance of watsonx.ai (as well as an IBM Cloud account).
+
+Refer to https://eu-de.dataplatform.cloud.ibm.com/registration/stepone?context=wx&preselect_region=true[free-trial] to try watsonx.ai for free
+
+NOTE: More info can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the watsonx.ai Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-watsonx-ai-spring-boot-starter'
+}
+----
+
+== Chat Properties
+=== Connection Properties
+
+The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you connect to watsonx.ai.
+
+[cols="4,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.watsonx.ai.base-url         | The URL to connect to             |  https://us-south.ml.cloud.ibm.com
+| spring.ai.watsonx.ai.stream-endpoint  | The streaming endpoint            |  generation/stream?version=2023-05-29
+| spring.ai.watsonx.ai.text-endpoint    | The text endpoint                 |  generation/text?version=2023-05-29
+| spring.ai.watsonx.ai.project-id       | The project ID                    |  -
+| spring.ai.watsonx.ai.iam-token        | The IBM Cloud account IAM token   |  -
+|====
+
+
+== Chat Options [[chat-options]]
+
+The available watsonx.ai options for now are the following (example):
+[source,json]
+----
+"decoding_method": "greedy",
+"temperature": 0.7,
+"top_p": 1,
+"top_k": 50,
+"random_seed": 1,
+"repetition_penalty": 1.0,
+"min_new_tokens": 0,
+"max_new_tokens": 20
+----
+
+NOTE: For more information go to https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-model-parameters.html?context=wx[watsonx-parameters-info]
+
+== Usage example
+
+[source,java]
+----
+public class MyClass {
+
+    private final static String MODEL = "google/flan-ul2";
+    private final WatsonxAIChat chat;
+
+    @Autowired
+    MyClass(WatsonxAIChat chat) {
+        this.chat = chat;
+    }
+
+    public String generate(String userInput) {
+
+        WatsonxAIOptions options = WatsonxAIOptions.create()
+            .withModel(MODEL)
+            .withDecodingMethod("sample")
+            .withRandomSeed(1);
+
+        Prompt prompt = new Prompt(new SystemMessage(userInput), options);
+
+        var results = chat.call(prompt);
+
+        var generatedText = results.getResult().getOutput().getContent();
+
+        return generatedText;
+    }
+
+    public String generateStream(String userInput) {
+        WatsonxAIOptions options = WatsonxAIOptions.create()
+            .withModel(MODEL)
+            .withDecodingMethod("greedy")
+            .withRandomSeed(2);
+
+        Prompt prompt = new Prompt(new SystemMessage(userInput), options);
+
+        var results = chat.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
+
+        var generatedText = results.stream().map(generation -> generation.getResult().getOutput().getContent()).collect(Collectors.joining(""));
+
+        return generatedText;
+    }
+
+}
+----
+
+NOTE: Know that this snippet just show how to use it, so note that the `generateStreaming` method does not make too much sense.
