@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -400,7 +400,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 				.getMessages()
 				.stream()
 				.map(wm -> wm.getMessage())
-				.collect(Collectors.joining("\n")));
+				.collect(Collectors.joining(System.lineSeparator())));
 			throw new RuntimeException("Failed to add documents because: \n" + errorMessages);
 		}
 
@@ -408,8 +408,10 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 			for (var r : response.getResult()) {
 				if (r.getResult() != null && r.getResult().getErrors() != null) {
 					var error = r.getResult().getErrors();
-					errorMessages
-						.add(error.getError().stream().map(e -> e.getMessage()).collect(Collectors.joining("\n")));
+					errorMessages.add(error.getError()
+						.stream()
+						.map(e -> e.getMessage())
+						.collect(Collectors.joining(System.lineSeparator())));
 				}
 			}
 		}
@@ -515,13 +517,14 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 				.getMessages()
 				.stream()
 				.map(WeaviateErrorMessage::getMessage)
-				.collect(Collectors.joining("\n")));
+				.collect(Collectors.joining(System.lineSeparator())));
 		}
 
 		GraphQLError[] errors = result.getResult().getErrors();
 		if (errors != null && errors.length > 0) {
-			throw new IllegalArgumentException(
-					Arrays.stream(errors).map(GraphQLError::getMessage).collect(Collectors.joining("\n")));
+			throw new IllegalArgumentException(Arrays.stream(errors)
+				.map(GraphQLError::getMessage)
+				.collect(Collectors.joining(System.lineSeparator())));
 		}
 
 		@SuppressWarnings("unchecked")

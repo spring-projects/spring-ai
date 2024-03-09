@@ -61,7 +61,6 @@ NOTE: The `options` properties are based on the link:https://github.com/jmorganc
 | Property | Description | Default
 
 | spring.ai.ollama.chat.enabled      | Enable Ollama chat client. | true
-| spring.ai.ollama.chat.model   (DEPRECATED)      | The name of the model to use. Deprecated use the `spring.ai.ollama.chat.options.model` instead | mistral
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported models] to use. | mistral
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.chat.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
@@ -134,7 +133,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.ollama.base-url=http://localhost:11434
-spring.ai.ollama.chat.model=mistral
+spring.ai.ollama.chat.options.model=mistral
 spring.ai.ollama.chat.options.temperature=0.7
 ----
 

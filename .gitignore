@@ -35,3 +35,5 @@ package-lock.json
 package.json
 .vscode
 .antlr
+
+shell.log

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.autoconfigure.ollama;
 
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,7 @@ public class OllamaChatAutoConfigurationTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
-				"spring.ai.ollama.chat.model=MODEL_XYZ",
+				"spring.ai.ollama.chat.options.model=MODEL_XYZ",
 				"spring.ai.ollama.chat.options.temperature=0.55",
 				"spring.ai.ollama.chat.options.topP=0.56",
 				"spring.ai.ollama.chat.options.topK=123")

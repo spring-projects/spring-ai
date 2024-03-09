@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.openai.api;
 
 import java.util.List;
@@ -22,12 +21,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.openai.api.common.ApiUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -46,7 +46,7 @@ public class OpenAiAudioApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiAudioApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
+		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -54,12 +54,14 @@ public class OpenAiAudioApi {
 	 * @param baseUrl api base URL.
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
+	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(headers -> {
 			headers.setBearerAuth(openAiToken);
-		}).defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER).build();
+		}).defaultStatusHandler(responseErrorHandler).build();
 	}
 
 	/**
@@ -280,7 +282,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("language") String language,
 		@JsonProperty("prompt") String prompt,
-		@JsonProperty("response_format") TextualResponseFormat responseFormat,
+		@JsonProperty("response_format") TranscriptResponseFormat responseFormat,
 		@JsonProperty("temperature") Float temperature,
 		@JsonProperty("timestamp_granularities") GranularityType granularityType) {
 		// @formatter:on
@@ -318,7 +320,7 @@ public class OpenAiAudioApi {
 
 			private String prompt;
 
-			private TextualResponseFormat responseFormat = TextualResponseFormat.JSON;
+			private TranscriptResponseFormat responseFormat = TranscriptResponseFormat.JSON;
 
 			private Float temperature;
 
@@ -344,7 +346,7 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder withResponseFormat(TextualResponseFormat response_format) {
+			public Builder withResponseFormat(TranscriptResponseFormat response_format) {
 				this.responseFormat = response_format;
 				return this;
 			}
@@ -375,7 +377,7 @@ public class OpenAiAudioApi {
 	 * The format of the transcript and translation outputs, in one of these options:
 	 * json, text, srt, verbose_json, or vtt. Defaults to json.
 	 */
-	public enum TextualResponseFormat {
+	public enum TranscriptResponseFormat {
 
 		// @formatter:off
 		@JsonProperty("json") JSON("json", StructuredResponse.class),
@@ -393,7 +395,7 @@ public class OpenAiAudioApi {
 			return this == JSON || this == VERBOSE_JSON;
 		}
 
-		TextualResponseFormat(String value, Class<?> responseType) {
+		TranscriptResponseFormat(String value, Class<?> responseType) {
 			this.value = value;
 			this.responseType = responseType;
 		}
@@ -429,7 +431,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("file") byte[] file,
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
-		@JsonProperty("response_format") TextualResponseFormat responseFormat,
+		@JsonProperty("response_format") TranscriptResponseFormat responseFormat,
 		@JsonProperty("temperature") Float temperature) {
 		// @formatter:on
 
@@ -445,7 +447,7 @@ public class OpenAiAudioApi {
 
 			private String prompt;
 
-			private TextualResponseFormat responseFormat = TextualResponseFormat.JSON;
+			private TranscriptResponseFormat responseFormat = TranscriptResponseFormat.JSON;
 
 			private Float temperature;
 
@@ -464,7 +466,7 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder withResponseFormat(TextualResponseFormat responseFormat) {
+			public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
@@ -601,7 +603,7 @@ public class OpenAiAudioApi {
 		multipartBody.add("response_format", requestBody.responseFormat().getValue());
 		multipartBody.add("temperature", requestBody.temperature());
 		if (requestBody.granularityType() != null) {
-			Assert.isTrue(requestBody.responseFormat() == TextualResponseFormat.VERBOSE_JSON,
+			Assert.isTrue(requestBody.responseFormat() == TranscriptResponseFormat.VERBOSE_JSON,
 					"response_format must be set to verbose_json to use timestamp granularities.");
 			multipartBody.add("timestamp_granularities[]", requestBody.granularityType().getValue());
 		}
