@@ -35,7 +35,6 @@ public class WatsonxAIApi {
     private final RestClient restClient;
     private final WebClient webClient;
     private final IamAuthenticator iamAuthenticator;
-    private final String baseUrl;
     private final String streamEndpoint;
     private final String textEndpoint;
     private final String projectId;
@@ -58,7 +57,6 @@ public class WatsonxAIApi {
             String IAMToken,
             RestClient.Builder restClientBuilder
     ) {
-        this.baseUrl = baseUrl;
         this.streamEndpoint = streamEndpoint;
         this.textEndpoint = textEndpoint;
         this.projectId = projectId;
