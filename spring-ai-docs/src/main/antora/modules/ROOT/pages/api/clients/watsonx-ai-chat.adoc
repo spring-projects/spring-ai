@@ -56,14 +56,16 @@ The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you c
 The available watsonx.ai options for now are the following (example):
 [source,json]
 ----
-"decoding_method": "greedy",
-"temperature": 0.7,
-"top_p": 1,
-"top_k": 50,
-"random_seed": 1,
-"repetition_penalty": 1.0,
-"min_new_tokens": 0,
-"max_new_tokens": 20
+{
+    "decoding_method": "greedy",
+    "temperature": 0.7,
+    "top_p": 1,
+    "top_k": 50,
+    "random_seed": 1,
+    "repetition_penalty": 1.0,
+    "min_new_tokens": 0,
+    "max_new_tokens": 20
+}
 ----
 
 NOTE: For more information go to https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-model-parameters.html?context=wx[watsonx-parameters-info]
