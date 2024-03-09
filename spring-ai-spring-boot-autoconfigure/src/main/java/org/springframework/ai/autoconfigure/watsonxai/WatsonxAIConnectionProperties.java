@@ -14,13 +14,13 @@ public class WatsonxAIConnectionProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai";
 
-	private String baseUrl = "http://www.ibm.com";
+	private String baseUrl = "https://us-south.ml.cloud.ibm.com/";
 
 	private String streamEndpoint = "generation/stream?version=2023-05-29";
 
 	private String textEndpoint = "generation/text?version=2023-05-29";
 
-	private String projectId = "1";
+	private String projectId;
 
 	private String IAMToken;
 
