@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.openai;
 
-import java.time.Duration;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -31,13 +29,10 @@ import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiImageApi;
-import org.springframework.ai.openai.api.common.OpenAiApiException;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -51,36 +46,30 @@ import org.springframework.util.Assert;
  */
 public class OpenAiImageClient implements ImageClient {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final static Logger logger = LoggerFactory.getLogger(OpenAiImageClient.class);
 
 	private OpenAiImageOptions defaultOptions;
 
 	private final OpenAiImageApi openAiImageApi;
 
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(OpenAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	public final RetryTemplate retryTemplate;
 
 	public OpenAiImageClient(OpenAiImageApi openAiImageApi) {
+		this(openAiImageApi, OpenAiImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public OpenAiImageClient(OpenAiImageApi openAiImageApi, OpenAiImageOptions defaultOptions,
+			RetryTemplate retryTemplate) {
 		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
+		Assert.notNull(defaultOptions, "defaultOptions must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.openAiImageApi = openAiImageApi;
+		this.defaultOptions = defaultOptions;
+		this.retryTemplate = retryTemplate;
 	}
 
 	public OpenAiImageOptions getDefaultOptions() {
 		return this.defaultOptions;
-	}
-
-	public OpenAiImageClient withDefaultOptions(OpenAiImageOptions defaultOptions) {
-		this.defaultOptions = defaultOptions;
-		return this;
 	}
 
 	@Override

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.openai.api;
 
 import java.util.List;
@@ -27,12 +26,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.openai.api.common.ApiUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -42,6 +42,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * OpenAI Embedding API: https://platform.openai.com/docs/api-reference/embeddings.
  *
  * @author Christian Tzolov
+ * @author Michael Lavelle
  */
 public class OpenAiApi {
 
@@ -50,6 +51,7 @@ public class OpenAiApi {
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
+
 	private final WebClient webClient;
 
 	/**
@@ -79,11 +81,23 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 *
+	 * @param baseUrl api base URL.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
-				.defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = WebClient.builder()
@@ -97,7 +111,7 @@ public class OpenAiApi {
 	 * <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a> and
 	 * <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
 	 */
-	enum ChatModel {
+	public enum ChatModel {
 		/**
 		 * (New) GPT-4 Turbo - latest GPT-4 model intended to reduce cases
 		 * of “laziness” where the model doesn’t complete a task.
@@ -151,6 +165,16 @@ public class OpenAiApi {
 		GPT_3_5_TURBO("gpt-3.5-turbo"),
 
 		/**
+		 * (new) The latest GPT-3.5 Turbo model with higher accuracy
+		 * at responding in requested formats and a fix for a bug
+		 * which caused a text encoding issue for non-English
+		 * language function calls.
+		 * Returns a maximum of 4,096
+		 * Context window: 16k tokens
+		 */
+		GPT_3_5_TURBO_0125("gpt-3.5-turbo-0125"),
+
+		/**
 		 * GPT-3.5 Turbo model with improved instruction following,
 		 * JSON mode, reproducible outputs, parallel function calling,
 		 * and more. Returns a maximum of 4,096 output tokens.
@@ -161,42 +185,6 @@ public class OpenAiApi {
 		public final String  value;
 
 		ChatModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return value;
-		}
-	}
-
-	/**
-	 * OpenAI Embeddings Models:
-	 * <a href="https://platform.openai.com/docs/models/embeddings">Embeddings</a>.
-	 */
-	enum EmbeddingModel {
-
-		/**
-		 * Most capable embedding model for both english and non-english tasks.
-		 * DIMENSION: 3072
-		 */
-		TEXT_EMBEDDING_3_LARGE("text-embedding-3-large"),
-
-		/**
-		 * Increased performance over 2nd generation ada embedding model.
-		 * DIMENSION: 1536
-		 */
-		TEXT_EMBEDDING_3_SMALL("text-embedding-3-small"),
-
-		/**
-		 * Most capable 2nd generation embedding model, replacing 16 first
-		 * generation models.
-		 * DIMENSION: 1536
-		 */
-		TEXT_EMBEDDING_ADA_002("text-embedding-ada-002");
-
-		public final String  value;
-
-		EmbeddingModel(String value) {
 			this.value = value;
 		}
 
@@ -521,7 +509,7 @@ public class OpenAiApi {
 		/**
 		 * Only for compatibility with Mistral AI API.
 		 */
-		@JsonProperty("tool_call") TOOL_CAL
+		@JsonProperty("tool_call") TOOL_CALL
 	}
 
 	/**
@@ -708,6 +696,44 @@ public class OpenAiApi {
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class));
 	}
 
+	// Embeddings API
+
+	/**
+	 * OpenAI Embeddings Models:
+	 * <a href="https://platform.openai.com/docs/models/embeddings">Embeddings</a>.
+	 */
+	public enum EmbeddingModel {
+
+		/**
+		 * Most capable embedding model for both english and non-english tasks.
+		 * DIMENSION: 3072
+		 */
+		TEXT_EMBEDDING_3_LARGE("text-embedding-3-large"),
+
+		/**
+		 * Increased performance over 2nd generation ada embedding model.
+		 * DIMENSION: 1536
+		 */
+		TEXT_EMBEDDING_3_SMALL("text-embedding-3-small"),
+
+		/**
+		 * Most capable 2nd generation embedding model, replacing 16 first
+		 * generation models.
+		 * DIMENSION: 1536
+		 */
+		TEXT_EMBEDDING_ADA_002("text-embedding-ada-002");
+
+		public final String  value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
 	/**
 	 * Represents an embedding vector returned by embedding endpoint.
 	 *
@@ -824,5 +850,87 @@ public class OpenAiApi {
 				.toEntity(new ParameterizedTypeReference<>() {
 				});
 	}
+
+	// Transcription API
+
+	// @JsonInclude(Include.NON_NULL)
+	// public record Transcription(
+	// 		@JsonProperty("text") String text) {
+	// }
+
+	// 	/**
+	//  *
+	//  * @param model ID of the model to use.
+	//  * @param language The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency.
+	//  * @param prompt An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language.
+	//  * @param responseFormat An object specifying the format that the model must output.
+	//  * @param temperature What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
+	//  * more random, while lower values like 0.2 will make it more focused and deterministic. */
+	// @JsonInclude(Include.NON_NULL)
+	// public record TranscriptionRequest (
+	// 		@JsonProperty("model") String model,
+	// 		@JsonProperty("language") String language,
+	// 		@JsonProperty("prompt") String prompt,
+	// 		@JsonProperty("response_format") ResponseFormat responseFormat,
+	// 		@JsonProperty("temperature") Float temperature) {
+
+	// 	/**
+	// 	 * Shortcut constructor for a transcription request with the given model and temperature
+	// 	 *
+	// 	 * @param model ID of the model to use.
+	// 	 * @param temperature What sampling temperature to use, between 0 and 1.
+	// 	 */
+	// 	public TranscriptionRequest(String model, Float temperature) {
+	// 		this(model, null, null, null, temperature);
+	// 	}
+
+	// 	public TranscriptionRequest() {
+	// 		this(null, null, null, null, null);
+	// 	}
+
+	// 	/**
+	// 	 * An object specifying the format that the model must output.
+	// 	 * @param type Must be one of 'text' or 'json_object'.
+	// 	 */
+	// 	@JsonInclude(Include.NON_NULL)
+	// 	public record ResponseFormat(
+	// 			@JsonProperty("type") String type) {
+	// 	}
+	// }
+
+	// /**
+	//  * Creates a model response for the given transcription.
+	//  *
+	//  * @param transcriptionRequest The transcription request.
+	//  * @return Entity response with {@link Transcription} as a body and HTTP status code and headers.
+	//  */
+	// public ResponseEntity<Transcription> transcriptionEntityJson(MultiValueMap<String, Object> transcriptionRequest) {
+
+	// 	Assert.notNull(transcriptionRequest, "The request body can not be null.");
+
+	// 	return this.multipartRestClient.post()
+	// 			.uri("/v1/audio/transcriptions")
+	// 			.body(transcriptionRequest)
+	// 			.retrieve()
+	// 			.toEntity(Transcription.class);
+	// }
+
+	// /**
+	//  * Creates a model response for the given transcription.
+	//  *
+	//  * @param transcriptionRequest The transcription request.
+	//  * @return Entity response with {@link String} as a body and HTTP status code and headers.
+	//  */
+	// public ResponseEntity<String> transcriptionEntityText(MultiValueMap<String, Object> transcriptionRequest) {
+
+	// 	Assert.notNull(transcriptionRequest, "The request body can not be null.");
+
+	// 	return this.multipartRestClient.post()
+	// 			.uri("/v1/audio/transcriptions")
+	// 			.body(transcriptionRequest)
+	// 			.accept(MediaType.TEXT_PLAIN)
+	// 			.retrieve()
+	// 			.toEntity(String.class);
+	// }
 }
 // @formatter:on
