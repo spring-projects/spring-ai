@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.openai;
 
 import java.util.ArrayList;
@@ -31,7 +30,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -52,7 +50,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") Float frequencyPenalty = 0.0f;
+	private @JsonProperty("frequency_penalty") Float frequencyPenalty;
 	/**
 	 * Modify the likelihood of specified tokens appearing in the completion. Accepts a JSON object
 	 * that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
@@ -70,7 +68,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
-	private @JsonProperty("n") Integer n = 1;
+	private @JsonProperty("n") Integer n;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
@@ -98,7 +96,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Float temperature = 0.8f;
+	private @JsonProperty("temperature") Float temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
@@ -116,10 +114,9 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
 	 * function. Specifying a particular function via {"type: "function", "function": {"name": "my_function"}} forces
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
-	 * functions are present.
+	 * functions are present. Use the {@link ToolChoiceBuilder} to create a tool choice object.
 	 */
-	@NestedConfigurationProperty
-	private @JsonProperty("tool_choice") ToolChoice toolChoice;
+	private @JsonProperty("tool_choice") String toolChoice;
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
@@ -225,7 +222,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withToolChoice(ToolChoice toolChoice) {
+		public Builder withToolChoice(String toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
@@ -335,7 +332,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -345,7 +341,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -358,11 +353,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.tools = tools;
 	}
 
-	public ToolChoice getToolChoice() {
+	public String getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(ToolChoice toolChoice) {
+	public void setToolChoice(String toolChoice) {
 		this.toolChoice = toolChoice;
 	}
 
@@ -389,7 +384,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		return functions;
 	}
 
-	@Override
 	public void setFunctions(Set<String> functionNames) {
 		this.functions = functionNames;
 	}
@@ -517,7 +511,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");

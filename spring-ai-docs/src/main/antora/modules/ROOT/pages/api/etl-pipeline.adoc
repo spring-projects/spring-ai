@@ -18,6 +18,8 @@ The `Document` class contains text and metadata and is created from PDFs, text f
 
 To construct a simple ETL pipeline, you can chain together an instance of each type.
 
+image::etl-pipeline.jpg[align="center"]
+
 Let's say we have the following instances of those three ETL types
 
 * `PagePdfDocumentReader` an implementation of `DocumentReader`
@@ -44,6 +46,10 @@ spring boot new --from ai-rag --name myrag
 . Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI RAG application.
 
 == ETL Interfaces and Implementations
+
+The ETL pipeline is composed of the following interfaces and implementations.
+Detailed ETL class diagram is shown in the <<etl-class-diagram>> section.
+
 === DocumentReader
 
 Provides a source of documents from diverse origins.
@@ -209,9 +215,18 @@ public interface DocumentWriter extends Consumer<List<Document>> {
 
 }
 ```
+==== FileDocumentWriter
+Persist documents to a file .
 
-== Available Implementations
+==== VectorStore
 
-There is an implementation for each of the Vector Stores that Spring AI supports, e.g. `PineconeVectorStore`.
-
+Provides integration with various vector stores.
 See xref:api/vectordbs.adoc[Vector DB Documentation] for a full listing.
+
+[[etl-class-diagram]]
+=== ETL Class Diagram
+
+The following class diagram illustrates the ETL interfaces and implementations.
+
+// image::etl-class-diagram.jpg[align="center", width="800px"]
+image::etl-class-diagram.jpg[align="center"]

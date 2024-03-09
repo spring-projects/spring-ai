@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
@@ -30,6 +29,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -59,6 +59,7 @@ import org.springframework.util.CollectionUtils;
 public final class ModelOptionsUtils {
 
 	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
 	private final static List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
@@ -87,6 +88,22 @@ public final class ModelOptionsUtils {
 
 	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
 	};
+
+	/**
+	 * Converts the given JSON string to an Object of the given type.
+	 * @param <T> the type of the object to return.
+	 * @param json the JSON string to convert to an object.
+	 * @param type the type of the object to return.
+	 * @return Object instance of the given type.
+	 */
+	public static <T> T jsonToObject(String json, Class<T> type) {
+		try {
+			return OBJECT_MAPPER.readValue(json, type);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to json: " + json, e);
+		}
+	}
 
 	/**
 	 * Converts the given object to a JSON string.

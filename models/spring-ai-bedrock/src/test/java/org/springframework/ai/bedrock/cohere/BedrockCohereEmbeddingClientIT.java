@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 - 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
@@ -10,6 +25,8 @@ import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
+import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -40,6 +57,21 @@ class BedrockCohereEmbeddingClientIT {
 		assertThat(embeddingClient).isNotNull();
 		EmbeddingResponse embeddingResponse = embeddingClient
 			.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+		assertThat(embeddingResponse.getResults()).hasSize(2);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+
+		assertThat(embeddingClient.dimensions()).isEqualTo(1024);
+	}
+
+	@Test
+	void embeddingWthOptions() {
+		assertThat(embeddingClient).isNotNull();
+		EmbeddingResponse embeddingResponse = embeddingClient
+			.call(new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+					BedrockCohereEmbeddingOptions.builder().withInputType(InputType.SEARCH_DOCUMENT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);

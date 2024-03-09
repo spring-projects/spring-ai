@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.mistralai;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * @author Ricken Bazolo
@@ -27,7 +38,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MistralAiChatOptions implements ChatOptions {
+public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	/**
 	 * ID of the model to use
@@ -66,6 +77,55 @@ public class MistralAiChatOptions implements ChatOptions {
 	 */
 	private @JsonProperty("random_seed") Integer randomSeed;
 
+	/**
+	 * An object specifying the format that the model must output. Setting to { "type":
+	 * "json_object" } enables JSON mode, which guarantees the message the model generates
+	 * is valid JSON.
+	 */
+	private @JsonProperty("response_format") ResponseFormat responseFormat;
+
+	/**
+	 * A list of tools the model may call. Currently, only functions are supported as a
+	 * tool. Use this to provide a list of functions the model may generate JSON inputs
+	 * for.
+	 */
+	@NestedConfigurationProperty
+	private @JsonProperty("tools") List<FunctionTool> tools;
+
+	/**
+	 * Controls which (if any) function is called by the model. none means the model will
+	 * not call a function and instead generates a message. auto means the model can pick
+	 * between generating a message or calling a function.
+	 */
+	@NestedConfigurationProperty
+	private @JsonProperty("tool_choice") ToolChoice toolChoice;
+
+	/**
+	 * MistralAI Tool Function Callbacks to register with the ChatClient. For Prompt
+	 * Options the functionCallbacks are automatically enabled for the duration of the
+	 * prompt execution. For Default Options the functionCallbacks are registered but
+	 * disabled by default. Use the enableFunctions to set the functions from the registry
+	 * to be used by the ChatClient chat completion requests.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+
+	/**
+	 * List of functions, identified by their names, to configure for function calling in
+	 * the chat completion requests. Functions with those names must exist in the
+	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
+	 * are automatically enabled for the duration of the prompt execution.
+	 *
+	 * Note that function enabled with the default options are enabled for all chat
+	 * completion requests. This could impact the token count and the billing. If the
+	 * functions is set in a prompt options, then the enabled functions are only active
+	 * for the duration of this prompt execution.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Set<String> functions = new HashSet<>();
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -101,6 +161,38 @@ public class MistralAiChatOptions implements ChatOptions {
 
 		public Builder withTopP(Float topP) {
 			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder withResponseFormat(ResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder withTools(List<FunctionTool> tools) {
+			this.options.tools = tools;
+			return this;
+		}
+
+		public Builder withToolChoice(ToolChoice toolChoice) {
+			this.options.toolChoice = toolChoice;
+			return this;
+		}
+
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder withFunctions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder withFunction(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
 			return this;
 		}
 
@@ -142,12 +234,35 @@ public class MistralAiChatOptions implements ChatOptions {
 		this.randomSeed = randomSeed;
 	}
 
+	public ResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	public void setTools(List<FunctionTool> tools) {
+		this.tools = tools;
+	}
+
+	public List<FunctionTool> getTools() {
+		return this.tools;
+	}
+
+	public void setToolChoice(ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
+	public ToolChoice getToolChoice() {
+		return this.toolChoice;
+	}
+
 	@Override
 	public Float getTemperature() {
 		return this.temperature;
 	}
 
-	@Override
 	public void setTemperature(Float temperature) {
 		this.temperature = temperature;
 	}
@@ -157,7 +272,6 @@ public class MistralAiChatOptions implements ChatOptions {
 		return this.topP;
 	}
 
-	@Override
 	public void setTopP(Float topP) {
 		this.topP = topP;
 	}
@@ -168,10 +282,31 @@ public class MistralAiChatOptions implements ChatOptions {
 		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
 	}
 
-	@Override
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
+	}
+
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	@Override
+	public void setFunctions(Set<String> functions) {
+		Assert.notNull(functions, "Function must not be null");
+		this.functions = functions;
 	}
 
 }

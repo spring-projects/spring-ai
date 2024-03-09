@@ -54,7 +54,7 @@ public class MockWeatherService implements Function<Request, Response> {
 	public record Response(double temp, Unit unit) {}
 
 	public Response apply(Request request) {
-		return new Response("30", Unit.C);
+		return new Response(30.0, Unit.C);
 	}
 }
 ----

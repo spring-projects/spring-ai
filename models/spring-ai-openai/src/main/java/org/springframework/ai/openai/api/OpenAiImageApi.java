@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,22 +15,13 @@
  */
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiClientErrorException;
-import org.springframework.ai.openai.api.OpenAiApi.OpenAiApiException;
-import org.springframework.ai.openai.api.OpenAiApi.ResponseError;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -38,61 +29,76 @@ import org.springframework.web.client.RestClient;
 /**
  * OpenAI Image API.
  *
- * @see <a href=
- * "https://platform.openai.com/docs/api-reference/images">https://platform.openai.com/docs/api-reference/images</a>
+ * @see <a href= "https://platform.openai.com/docs/api-reference/images">Images</a>
  */
 public class OpenAiImageApi {
 
-	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
-
-	public static final String DEFAULT_IMAGE_MODEL = "dall-e-2";
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
 
 	private final RestClient restClient;
-
-	private final ObjectMapper objectMapper;
 
 	/**
 	 * Create a new OpenAI Image api with base URL set to https://api.openai.com
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiImageApi(String openAiToken) {
-		this(DEFAULT_BASE_URL, openAiToken, RestClient.builder());
+		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
 	}
 
+	/**
+	 * Create a new OpenAI Image API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 */
 	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	}
 
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(openAiToken);
-			headers.setContentType(MediaType.APPLICATION_JSON);
-		};
-
-		var responseErrorHandler = new ResponseErrorHandler() {
-
-			@Override
-			public boolean hasError(ClientHttpResponse response) throws IOException {
-				return response.getStatusCode().isError();
-			}
-
-			@Override
-			public void handleError(ClientHttpResponse response) throws IOException {
-				if (response.getStatusCode().isError()) {
-					if (response.getStatusCode().is4xxClientError()) {
-						throw new OpenAiApiClientErrorException(String.format("%s - %s",
-								response.getStatusCode().value(),
-								OpenAiImageApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
-					}
-					throw new OpenAiApiException(String.format("%s - %s", response.getStatusCode().value(),
-							OpenAiImageApi.this.objectMapper.readValue(response.getBody(), ResponseError.class)));
-				}
-			}
-		};
+	/**
+	 * Create a new OpenAI Image API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 * @param responseErrorHandler the response error handler to use.
+	 */
+	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(jsonContentHeaders)
+			.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
+	}
+
+	/**
+	 * OpenAI Image API model.
+	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
+	 */
+	public enum ImageModel {
+
+		/**
+		 * The latest DALL·E model released in Nov 2023.
+		 */
+		DALL_E_3("dall-e-3"),
+
+		/**
+		 * The previous DALL·E model released in Nov 2022. The 2nd iteration of DALL·E
+		 * with more realistic, accurate, and 4x greater resolution images than the
+		 * original model.
+		 */
+		DALL_E_2("dall-e-2");
+
+		private final String value;
+
+		ImageModel(String model) {
+			this.value = model;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
 	}
 
 	// @formatter:off

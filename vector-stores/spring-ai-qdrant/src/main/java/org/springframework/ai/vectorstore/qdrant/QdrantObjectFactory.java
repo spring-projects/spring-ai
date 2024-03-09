@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.vectorstore.qdrant;
 
 import java.util.Map;
@@ -58,13 +57,14 @@ class QdrantObjectFactory {
 			case DOUBLE_VALUE:
 				return value.getDoubleValue();
 			case BOOL_VALUE:
-				return value.hasBoolValue();
+				return value.getBoolValue();
 			case LIST_VALUE:
 				return object(value.getListValue());
 			case STRUCT_VALUE:
 				return toObjectMap(value.getStructValue().getFieldsMap());
-			case KIND_NOT_SET:
 			case NULL_VALUE:
+				return null;
+			case KIND_NOT_SET:
 			default:
 				logger.warn("Unsupported value type: " + value.getKindCase());
 				return null;

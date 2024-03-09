@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.autoconfigure.vertexai.gemini.tool;
 
 import java.util.List;
@@ -50,32 +49,35 @@ public class FunctionCallWithPromptFunctionIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model=gemini-pro").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
+					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.run(context -> {
 
-			VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
 
-			var systemMessage = new SystemMessage("""
-					Use Multi-turn function calling.
-					Answer for all listed locations.
-					If the information was not fetched call the function again. Repeat at most 3 times.
-					""");
-			UserMessage userMessage = new UserMessage(
-					"What's the weather like in San Francisco, in Paris and in Tokyo?");
+				var systemMessage = new SystemMessage("""
+						Use Multi-turn function calling.
+						Answer for all listed locations.
+						If the information was not fetched call the function again. Repeat at most 3 times.
+						""");
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, in Paris and in Tokyo?");
 
-			var promptOptions = VertexAiGeminiChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-					.withName("CurrentWeatherService")
-					.withSchemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
-					.withDescription("Get the weather in location")
-					.build()))
-				.build();
+				var promptOptions = VertexAiGeminiChatOptions.builder()
+					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("CurrentWeatherService")
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
+						.withDescription("Get the weather in location")
+						.build()))
+					.build();
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage), promptOptions));
+				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage), promptOptions));
 
-			logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
-		});
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			});
 	}
 
 }

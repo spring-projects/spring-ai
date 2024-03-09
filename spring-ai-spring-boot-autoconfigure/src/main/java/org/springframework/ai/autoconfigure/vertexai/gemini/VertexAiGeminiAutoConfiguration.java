@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-20424 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.autoconfigure.vertexai.gemini;
 
 import java.io.IOException;
@@ -64,7 +63,9 @@ public class VertexAiGeminiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public VertexAiGeminiChatClient vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context) {
+
+		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -73,9 +74,11 @@ public class VertexAiGeminiAutoConfiguration {
 		return new VertexAiGeminiChatClient(vertexAi, chatProperties.getOptions(), functionCallbackContext);
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+	/**
+	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance must
+	 * different from the other JSON schema types.
+	 */
+	private FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
 		manager.setApplicationContext(context);

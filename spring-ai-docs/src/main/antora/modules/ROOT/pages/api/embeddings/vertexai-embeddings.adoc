@@ -86,7 +86,7 @@ spring.ai.vertex.ai.embedding.model=embedding-gecko-001
 
 TIP: replace the `api-key` with your VertexAI credentials.
 
-This will create a `VertexAiEmbeddingClient` implementation that you can inject into your class.
+This will create a `VertexAiPaLm2EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the embedding client for text generations.
 
 [source,java]
@@ -111,7 +111,7 @@ public class EmbeddingController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertex/VertexAiEmbeddingClient.java[VertexAiEmbeddingClient] implements the `EmbeddingClient` and uses the <<low-level-api>> to connect to the VertexAI service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-palm2/src/main/java/org/springframework/ai/vertexai/palm2/VertexAiPaLm2EmbeddingClient.java[VertexAiPaLm2EmbeddingClient] implements the `EmbeddingClient` and uses the <<low-level-api>> to connect to the VertexAI service.
 
 Add the `spring-ai-vertex-ai` dependency to your project's Maven `pom.xml` file:
 
@@ -128,29 +128,29 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-vertex-ai'
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-palm2'
 }
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `VertexAiEmbeddingClient` and use it for text generations:
+Next, create a `VertexAiPaLm2EmbeddingClient` and use it for text generations:
 
 [source,java]
 ----
-VertexAiApi vertexAiApi = new VertexAiApi(< YOUR PALM_API_KEY>);
+VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 
-var embeddingClient = new VertexAiEmbeddingClient(vertexAiApi);
+var embeddingClient = new VertexAiPaLm2EmbeddingClient(vertexAiApi);
 
 EmbeddingResponse embeddingResponse = embeddingClient
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
-=== Low-level VertexAiApi Client [[low-level-api]]
+=== Low-level VertexAiPaLm2Api Client [[low-level-api]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai/src/main/java/org/springframework/ai/vertex/api/VertexAiApi.java[VertexAiApi] provides is lightweight Java client for VertexAiApi Chat API.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-palm2/src/main/java/org/springframework/ai/vertexai/palm2/api/VertexAiPaLm2Api.java[VertexAiPaLm2Api] provides is lightweight Java client for VertexAiPaLm2Api Chat API.
 
-Following class diagram illustrates the `VertexAiApi` embedding interfaces and building blocks:
+Following class diagram illustrates the `VertexAiPaLm2Api` embedding interfaces and building blocks:
 
 image::vertex-ai-chat-low-level-api.jpg[w=800,align="center"]
 
@@ -158,7 +158,7 @@ Here is a simple snippet how to use the api programmatically:
 
 [source,java]
 ----
-VertexAiApi vertexAiApi = new VertexAiApi(< YOUR PALM_API_KEY>);
+VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 
 // Generate
 var prompt = new MessagePrompt(List.of(new Message("0", "Hello, how are you?")));

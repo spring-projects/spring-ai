@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.document;
 
 import java.util.ArrayList;
@@ -44,7 +43,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 	private static final String DEFAULT_METADATA_TEMPLATE = String.format("%s: %s", TEMPLATE_KEY_PLACEHOLDER,
 			TEMPLATE_VALUE_PLACEHOLDER);
 
-	private static final String DEFAULT_METADATA_SEPARATOR = "\n";
+	private static final String DEFAULT_METADATA_SEPARATOR = System.lineSeparator();
 
 	private static final String DEFAULT_TEXT_TEMPLATE = String.format("%s\n\n%s", TEMPLATE_METADATA_STRING_PLACEHOLDER,
 			TEMPLATE_CONTENT_PLACEHOLDER);

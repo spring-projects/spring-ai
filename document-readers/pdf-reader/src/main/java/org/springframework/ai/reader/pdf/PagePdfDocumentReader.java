@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
@@ -26,6 +25,8 @@ import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
@@ -44,6 +45,8 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  */
 public class PagePdfDocumentReader implements DocumentReader {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String PDF_PAGE_REGION = "pdfPageRegion";
 
@@ -100,7 +103,17 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 			List<String> pageTextGroupList = new ArrayList<>();
 
+			int totalPages = this.document.getDocumentCatalog().getPages().getCount();
+			int logFrequency = totalPages > 10 ? totalPages / 10 : 1; // if less than 10
+																		// pages, print
+																		// each iteration
+			int counter = 0;
+
 			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
+				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
+					logger.info("Processing PDF page: {}", (counter + 1));
+				}
+				counter++;
 
 				pagesPerDocument++;
 
@@ -140,7 +153,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
 						pageNumber));
 			}
-
+			logger.info("Processing {} pages", totalPages);
 			return readDocuments;
 
 		}

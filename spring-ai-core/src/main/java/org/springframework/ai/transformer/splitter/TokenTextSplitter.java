@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,16 +32,21 @@ import org.springframework.util.Assert;
  */
 public class TokenTextSplitter extends TextSplitter {
 
-	private final int defaultChunkSize = 800; // The target size of each text
-												// chunk in tokens
+	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
 
-	private int minChunkSizeChars = 350; // The minimum size of each text
-											// chunk in characters
+	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
 
-	private int minChunkLengthToEmbed = 5; // Discard chunks shorter than this
+	// The target size of each text chunk in tokens
+	private int defaultChunkSize = 800;
 
-	private int maxNumChunks = 10000; // The maximum number of chunks to generate from a
-										// text
+	// The minimum size of each text chunk in characters
+	private int minChunkSizeChars = 350;
+
+	// Discard chunks shorter than this
+	private int minChunkLengthToEmbed = 5;
+
+	// The maximum number of chunks to generate from a text
+	private int maxNumChunks = 10000;
 
 	private boolean keepSeparator = true;
 
@@ -52,9 +57,14 @@ public class TokenTextSplitter extends TextSplitter {
 		this.keepSeparator = keepSeparator;
 	}
 
-	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
-
-	private final Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
+	public TokenTextSplitter(int defaultChunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
+			boolean keepSeparator) {
+		this.defaultChunkSize = defaultChunkSize;
+		this.minChunkSizeChars = minChunkSizeChars;
+		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
+		this.maxNumChunks = maxNumChunks;
+		this.keepSeparator = keepSeparator;
+	}
 
 	@Override
 	protected List<String> splitText(String text) {
@@ -88,9 +98,10 @@ public class TokenTextSplitter extends TextSplitter {
 				chunkText = chunkText.substring(0, lastPunctuation + 1);
 			}
 
-			String chunk_text_to_append = (this.keepSeparator) ? chunkText.trim() : chunkText.replace("\n", " ").trim();
-			if (chunk_text_to_append.length() > this.minChunkLengthToEmbed) {
-				chunks.add(chunk_text_to_append);
+			String chunkTextToAppend = (this.keepSeparator) ? chunkText.trim()
+					: chunkText.replace(System.lineSeparator(), " ").trim();
+			if (chunkTextToAppend.length() > this.minChunkLengthToEmbed) {
+				chunks.add(chunkTextToAppend);
 			}
 
 			// Remove the tokens corresponding to the chunk text from the remaining tokens
@@ -101,7 +112,7 @@ public class TokenTextSplitter extends TextSplitter {
 
 		// Handle the remaining tokens
 		if (!tokens.isEmpty()) {
-			String remaining_text = decodeTokens(tokens).replace("\n", " ").trim();
+			String remaining_text = decodeTokens(tokens).replace(System.lineSeparator(), " ").trim();
 			if (remaining_text.length() > this.minChunkLengthToEmbed) {
 				chunks.add(remaining_text);
 			}
