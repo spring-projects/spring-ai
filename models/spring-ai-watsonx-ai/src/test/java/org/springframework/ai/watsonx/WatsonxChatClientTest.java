@@ -11,7 +11,6 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.watsonx.api.*;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -28,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class WatsonxChatClientTest {
 
-	final ObjectMapper mapper = new ObjectMapper();
 
 	@Test
 	public void testCreateRequestWithNoModelId() {
