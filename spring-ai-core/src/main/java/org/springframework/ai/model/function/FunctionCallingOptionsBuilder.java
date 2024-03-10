@@ -84,7 +84,7 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	private class FunctionCallingOptionsImpl implements FunctionCallingOptions {
+	private static class FunctionCallingOptionsImpl implements FunctionCallingOptions {
 
 		private final List<FunctionCallback> functionCallbacks;
 

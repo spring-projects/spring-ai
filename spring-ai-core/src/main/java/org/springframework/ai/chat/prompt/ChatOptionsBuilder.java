@@ -70,7 +70,7 @@ public class ChatOptionsBuilder {
 	 * Created only by ChatOptionsBuilder for controlled setup. Hidden implementation,
 	 * accessed via ChatOptions interface. Promotes modularity and easy use.
 	 */
-	private class ChatOptionsImpl implements ChatOptions {
+	private static class ChatOptionsImpl implements ChatOptions {
 
 		private final Float temperature;
 

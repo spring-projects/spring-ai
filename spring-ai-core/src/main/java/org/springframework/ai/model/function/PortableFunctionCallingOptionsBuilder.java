@@ -109,7 +109,7 @@ public class PortableFunctionCallingOptionsBuilder {
 		return this;
 	}
 
-	private class PortableFunctionCallingOptionsImpl implements PortableFunctionCallingOptions {
+	private static class PortableFunctionCallingOptionsImpl implements PortableFunctionCallingOptions {
 
 		private final FunctionCallingOptions functionCallingOptions;
 

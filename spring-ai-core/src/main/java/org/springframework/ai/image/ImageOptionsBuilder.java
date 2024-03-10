@@ -93,7 +93,7 @@ public class ImageOptionsBuilder {
 	 * Created only by ImageOptionsBuilder for controlled setup. Hidden implementation,
 	 * accessed via ImageOptions interface. Promotes modularity and easy use.
 	 */
-	private class ImageOptionsImpl implements ImageOptions {
+	private static class ImageOptionsImpl implements ImageOptions {
 
 		private final Integer n;
 
