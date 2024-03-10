@@ -303,25 +303,26 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void add(List<Document> documents) {
-		Pipeline pipeline = this.jedis.pipelined();
-		for (Document document : documents) {
-			var embedding = this.embeddingClient.embed(document);
-			document.setEmbedding(embedding);
+		try (Pipeline pipeline = this.jedis.pipelined()) {
+			for (Document document : documents) {
+				var embedding = this.embeddingClient.embed(document);
+				document.setEmbedding(embedding);
 
-			var fields = new HashMap<String, Object>();
-			fields.put(this.config.embeddingFieldName, embedding);
-			fields.put(this.config.contentFieldName, document.getContent());
-			fields.putAll(document.getMetadata());
-			pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
-		}
-		List<Object> responses = pipeline.syncAndReturnAll();
-		Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
-		if (errResponse.isPresent()) {
-			String message = MessageFormat.format("Could not add document: {0}", errResponse.get());
-			if (logger.isErrorEnabled()) {
-				logger.error(message);
+				var fields = new HashMap<String, Object>();
+				fields.put(this.config.embeddingFieldName, embedding);
+				fields.put(this.config.contentFieldName, document.getContent());
+				fields.putAll(document.getMetadata());
+				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
 			}
-			throw new RuntimeException(message);
+			List<Object> responses = pipeline.syncAndReturnAll();
+			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
+			if (errResponse.isPresent()) {
+				String message = MessageFormat.format("Could not add document: {0}", errResponse.get());
+				if (logger.isErrorEnabled()) {
+					logger.error(message);
+				}
+				throw new RuntimeException(message);
+			}
 		}
 	}
 
@@ -331,19 +332,20 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
-		Pipeline pipeline = this.jedis.pipelined();
-		for (String id : idList) {
-			pipeline.jsonDel(key(id));
-		}
-		List<Object> responses = pipeline.syncAndReturnAll();
-		Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
-		if (errResponse.isPresent()) {
-			if (logger.isErrorEnabled()) {
-				logger.error("Could not delete document: {}", errResponse.get());
+		try (Pipeline pipeline = this.jedis.pipelined()) {
+			for (String id : idList) {
+				pipeline.jsonDel(key(id));
 			}
-			return Optional.of(false);
+			List<Object> responses = pipeline.syncAndReturnAll();
+			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
+			if (errResponse.isPresent()) {
+				if (logger.isErrorEnabled()) {
+					logger.error("Could not delete document: {}", errResponse.get());
+				}
+				return Optional.of(false);
+			}
+			return Optional.of(true);
 		}
-		return Optional.of(true);
 	}
 
 	@Override
