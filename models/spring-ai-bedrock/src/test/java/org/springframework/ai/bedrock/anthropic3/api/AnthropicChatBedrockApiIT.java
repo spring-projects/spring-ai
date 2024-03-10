@@ -92,7 +92,7 @@ public class AnthropicChatBedrockApiIT {
 				List.of(anthropicAssistantMessage), Role.ASSISTANT);
 
 		AnthropicMessage anthropicFollowupMessage = new AnthropicMessage(AnthropicMessage.Type.TEXT,
-				"Why are they famoust");
+				"Why are they famous?");
 		ChatCompletionMessage chatCompletionFollowupMessage = new ChatCompletionMessage(
 				List.of(anthropicFollowupMessage), Role.USER);
 

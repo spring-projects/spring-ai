@@ -246,7 +246,9 @@ public class AnthropicChatBedrockApi extends
 	 *
 	 * @param id The unique response identifier.
 	 * @param model  The ID for the Anthropic Claude model that made the request.
-	 * @param content The generated text.
+	 * @param type The type of the response.
+	 * @param role The role of the response.
+	 * @param content The list of generated text.
 	 * @param stopReason The reason the model stopped generating text:
 	 *        end_turn – The model reached a natural stopping point.
 	 *        max_tokens – The generated text exceeded the value of the max_tokens input field or exceeded the maximum
@@ -277,6 +279,7 @@ public class AnthropicChatBedrockApi extends
 	 * @param index The delta index.
 	 * @param content_block The generated text.
 	 * @param delta The delta.
+	 * @param usage The usage data.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatStreamingResponse(
@@ -327,6 +330,8 @@ public class AnthropicChatBedrockApi extends
 		 * https://docs.anthropic.com/claude/reference/messages-streaming		 *
 		 * @param type The type of the message.
 		 * @param text The text message.
+		 * @param stopReason The stop reason.
+		 * @param stopSequence The stop sequence.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Delta(
