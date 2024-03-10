@@ -16,6 +16,7 @@
 package org.springframework.ai.model.function;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -94,7 +95,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
-			return this.functionCallbacks;
+			return Collections.unmodifiableList(this.functionCallbacks);
 		}
 
 		public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
@@ -104,7 +105,7 @@ public class FunctionCallingOptionsBuilder {
 
 		@Override
 		public Set<String> getFunctions() {
-			return this.functions;
+			return Collections.unmodifiableSet(this.functions);
 		}
 
 		public void setFunctions(Set<String> functions) {
