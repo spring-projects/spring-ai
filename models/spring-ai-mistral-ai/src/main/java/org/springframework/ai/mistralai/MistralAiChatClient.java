@@ -18,6 +18,7 @@ package org.springframework.ai.mistralai;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,6 +35,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion.Choice;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
@@ -131,13 +134,21 @@ public class MistralAiChatClient extends
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			return completionChunks.map(chunk -> {
-				String chunkId = chunk.id();
-				List<Generation> generations = chunk.choices().stream().map(choice -> {
-					if (choice.delta().role() != null) {
-						roleMap.putIfAbsent(chunkId, choice.delta().role().name());
+			return completionChunks.map(chunk -> toChatCompletion(chunk)).map(chatCompletion -> {
+
+				chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
+					.getBody();
+
+				@SuppressWarnings("null")
+				String id = chatCompletion.id();
+
+				List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+					if (choice.message().role() != null) {
+						roleMap.putIfAbsent(id, choice.message().role().name());
 					}
-					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
+					String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
+					var generation = new Generation(choice.message().content(),
+							Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
 					if (choice.finishReason() != null) {
 						generation = generation
 							.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
@@ -147,6 +158,15 @@ public class MistralAiChatClient extends
 				return new ChatResponse(generations);
 			});
 		});
+	}
+
+	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {
+		List<Choice> choices = chunk.choices()
+			.stream()
+			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason()))
+			.toList();
+
+		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, null);
 	}
 
 	/**
@@ -194,10 +214,6 @@ public class MistralAiChatClient extends
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
-			if (stream) {
-				throw new IllegalArgumentException("Currently tool functions are not supported in streaming mode");
-			}
-
 			request = ModelOptionsUtils.merge(
 					MistralAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
@@ -241,7 +257,7 @@ public class MistralAiChatClient extends
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
 		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, previousRequest.stream());
+		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, false);
 		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
 
 		return newRequest;
@@ -252,6 +268,7 @@ public class MistralAiChatClient extends
 		return request.messages();
 	}
 
+	@SuppressWarnings("null")
 	@Override
 	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
 		return chatCompletion.getBody().choices().iterator().next().message();
