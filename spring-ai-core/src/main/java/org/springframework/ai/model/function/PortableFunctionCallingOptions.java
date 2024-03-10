@@ -17,6 +17,12 @@ package org.springframework.ai.model.function;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 
+/**
+ * Including {@link FunctionCallingOptions} and {@link ChatOptions}. This Interface allows
+ * the extracion of ChatOptions and FunctionCallingOptions.
+ *
+ * @author youngmon
+ */
 public interface PortableFunctionCallingOptions extends FunctionCallingOptions, ChatOptions {
 
 }
