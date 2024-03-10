@@ -27,10 +27,4 @@ public class FunctionMessage extends AbstractMessage {
 		super(MessageType.FUNCTION, content, properties);
 	}
 
-	@Override
-	public String toString() {
-		return "FunctionMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
-				+ messageType + '}';
-	}
-
 }

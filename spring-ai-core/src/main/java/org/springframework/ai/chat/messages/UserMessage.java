@@ -38,10 +38,4 @@ public class UserMessage extends AbstractMessage {
 		super(MessageType.USER, textContent, mediaDataList);
 	}
 
-	@Override
-	public String toString() {
-		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
-				+ messageType + '}';
-	}
-
 }

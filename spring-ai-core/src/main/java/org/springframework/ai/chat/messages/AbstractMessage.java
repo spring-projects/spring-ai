@@ -147,4 +147,10 @@ public abstract class AbstractMessage implements Message {
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("%s{content='%s', properties=%s, messageType=%s}", getClass().getSimpleName(),
+				getContent(), getProperties().toString(), getMessageType());
+	}
+
 }
