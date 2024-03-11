@@ -18,7 +18,7 @@ package org.springframework.ai.model;
 import reactor.core.publisher.Flux;
 
 /**
- * The StreamingModelClient interface provides a generic API for invoking a AI models with
+ * The StreamingModelClient interface provides a generic API for invoking an AI models with
  * streaming response. It abstracts the process of sending requests and receiving a
  * streaming responses. The interface uses Java generics to accommodate different types of
  * requests and responses, enhancing flexibility and adaptability across different AI
