@@ -54,8 +54,10 @@ public class FunctionCallWithPromptFunctionIT {
 
 				AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
 
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
+				UserMessage userMessage = UserMessage.builder()
+					.withContent(
+							"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.")
+					.build();
 
 				var promptOptions = AzureOpenAiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())

@@ -63,7 +63,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = UserMessage.builder()
+				.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.build();
 
 			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
@@ -90,7 +92,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = UserMessage.builder()
+				.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.build();
 
 			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
 				.withFunction("weatherFunction")
@@ -109,7 +113,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = UserMessage.builder()
+				.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.build();
 
 			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));

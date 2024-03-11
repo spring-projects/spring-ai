@@ -73,7 +73,9 @@ public class PaymentStatusPromptIT {
 
 				MistralAiChatClient chatClient = context.getBean(MistralAiChatClient.class);
 
-				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
+				UserMessage userMessage = UserMessage.builder()
+					.withContent("What's the status of my transaction with id T1001?")
+					.build();
 
 				var promptOptions = MistralAiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new Function<Transaction, Status>() {

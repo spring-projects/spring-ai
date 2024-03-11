@@ -61,13 +61,14 @@ class FunctionCallWithFunctionBeanIT {
 
 				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
 
-				var systemMessage = new SystemMessage("""
+				var systemMessage = SystemMessage.builder().withContent("""
 						Use Multi-turn function calling.
 						Answer for all listed locations.
 						If the information was not fetched call the function again. Repeat at most 3 times.
-						""");
-				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Paris and in Tokyo (Japan)?");
+						""").build();
+				var userMessage = UserMessage.builder()
+					.withContent("What's the weather like in San Francisco, Paris and in Tokyo (Japan)?")
+					.build();
 
 				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));

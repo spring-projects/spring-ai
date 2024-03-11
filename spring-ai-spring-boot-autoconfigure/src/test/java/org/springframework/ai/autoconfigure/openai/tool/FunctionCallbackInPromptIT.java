@@ -56,7 +56,9 @@ public class FunctionCallbackInPromptIT {
 
 			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = UserMessage.builder()
+				.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.build();
 
 			var promptOptions = OpenAiChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
@@ -81,7 +83,9 @@ public class FunctionCallbackInPromptIT {
 
 			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = UserMessage.builder()
+				.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.build();
 
 			var promptOptions = OpenAiChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())

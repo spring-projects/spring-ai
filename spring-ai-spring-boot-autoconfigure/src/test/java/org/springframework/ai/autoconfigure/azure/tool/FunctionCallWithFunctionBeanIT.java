@@ -59,8 +59,10 @@ class FunctionCallWithFunctionBeanIT {
 
 				ChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
 
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Paris and in Tokyo? Use Multi-turn function calling.");
+				UserMessage userMessage = UserMessage.builder()
+					.withContent(
+							"What's the weather like in San Francisco, Paris and in Tokyo? Use Multi-turn function calling.")
+					.build();
 
 				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("weatherFunction").build()));

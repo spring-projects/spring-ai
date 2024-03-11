@@ -58,8 +58,9 @@ public class FunctionCallWithFunctionWrapperIT {
 
 				AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
 
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Paris and in Tokyo?");
+				UserMessage userMessage = UserMessage.builder()
+					.withContent("What's the weather like in San Francisco, Paris and in Tokyo?")
+					.build();
 
 				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().withFunction("WeatherInfo").build()));

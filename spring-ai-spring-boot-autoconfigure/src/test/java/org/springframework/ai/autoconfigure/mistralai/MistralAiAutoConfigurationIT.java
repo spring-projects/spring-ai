@@ -65,7 +65,8 @@ public class MistralAiAutoConfigurationIT {
 	void generateStreaming() {
 		contextRunner.run(context -> {
 			MistralAiChatClient client = context.getBean(MistralAiChatClient.class);
-			Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
+			Flux<ChatResponse> responseFlux = client
+				.stream(new Prompt(UserMessage.builder().withContent("Hello").build()));
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				return chatResponse.getResults().get(0).getOutput().getContent();
 			}).collect(Collectors.joining());

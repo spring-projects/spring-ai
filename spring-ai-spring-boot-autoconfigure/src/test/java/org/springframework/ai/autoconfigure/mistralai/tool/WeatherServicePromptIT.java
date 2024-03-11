@@ -66,7 +66,9 @@ public class WeatherServicePromptIT {
 
 				MistralAiChatClient chatClient = context.getBean(MistralAiChatClient.class);
 
-				UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
+				UserMessage userMessage = UserMessage.builder()
+					.withContent("What's the weather like in Paris?")
+					.build();
 				// UserMessage userMessage = new UserMessage("What's the weather like in
 				// San Francisco, Tokyo, and
 				// Paris?");

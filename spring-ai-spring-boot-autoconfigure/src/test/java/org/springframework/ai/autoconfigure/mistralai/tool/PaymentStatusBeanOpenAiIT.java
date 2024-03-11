@@ -43,8 +43,8 @@ import org.springframework.context.annotation.Description;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Same test as {@link PaymentStatusBeanIT.java} but using {@link OpenAiChatClient} for
- * Mistral AI Function Calling implementation.
+ * Same test as {@link PaymentStatusBeanIT} but using {@link OpenAiChatClient} for Mistral
+ * AI Function Calling implementation.
  *
  * @author Christian Tzolov
  */
@@ -69,12 +69,14 @@ class PaymentStatusBeanOpenAiIT {
 
 				OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
 
-				ChatResponse response = chatClient
-					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
-							OpenAiChatOptions.builder()
-								.withFunction("retrievePaymentStatus")
-								.withFunction("retrievePaymentDate")
-								.build()));
+				ChatResponse response = chatClient.call(new Prompt(
+						List.of(UserMessage.builder()
+							.withContent("What's the status of my transaction with id T1001?")
+							.build()),
+						OpenAiChatOptions.builder()
+							.withFunction("retrievePaymentStatus")
+							.withFunction("retrievePaymentDate")
+							.build()));
 
 				logger.info("Response: {}", response);
 

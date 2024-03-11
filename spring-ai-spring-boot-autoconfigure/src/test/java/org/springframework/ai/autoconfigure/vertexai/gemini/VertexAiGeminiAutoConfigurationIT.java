@@ -59,7 +59,8 @@ public class VertexAiGeminiAutoConfigurationIT {
 	void generateStreaming() {
 		contextRunner.run(context -> {
 			VertexAiGeminiChatClient client = context.getBean(VertexAiGeminiChatClient.class);
-			Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
+			Flux<ChatResponse> responseFlux = client
+				.stream(new Prompt(UserMessage.builder().withContent("Hello").build()));
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				return chatResponse.getResults().get(0).getOutput().getContent();
 			}).collect(Collectors.joining());

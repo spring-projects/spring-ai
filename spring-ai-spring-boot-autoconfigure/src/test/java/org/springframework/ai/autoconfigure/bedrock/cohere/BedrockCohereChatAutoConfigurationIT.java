@@ -66,8 +66,9 @@ public class BedrockCohereChatAutoConfigurationIT {
 			You should reply to the user's request with your name and also in the style of a {voice}.
 			""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
-	private final UserMessage userMessage = new UserMessage(
-			"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+	private final UserMessage userMessage = UserMessage.builder()
+		.withContent("Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.")
+		.build();
 
 	@Test
 	public void chatCompletion() {
