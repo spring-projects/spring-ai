@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,6 +40,8 @@ import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionFinishReason;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
@@ -155,8 +158,10 @@ public class OpenAiChatClient extends
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
+		ChatCompletionRequest request = createRequest(prompt, true);
+
 		return this.retryTemplate.execute(ctx -> {
-			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request);
 
@@ -164,22 +169,54 @@ public class OpenAiChatClient extends
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			return completionChunks.map(chunk -> {
-				String chunkId = chunk.id();
-				List<Generation> generations = chunk.choices().stream().map(choice -> {
-					if (choice.delta().role() != null) {
-						roleMap.putIfAbsent(chunkId, choice.delta().role().name());
-					}
-					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
-					if (choice.finishReason() != null) {
-						generation = generation
-							.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
-					}
-					return generation;
-				}).toList();
-				return new ChatResponse(generations);
+			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+			// the function call handling logic.
+			return completionChunks.map(chunk -> chunkToChatCompletion(chunk)).map(chatCompletion -> {
+				try {
+					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
+						.getBody();
+
+					@SuppressWarnings("null")
+					String id = chatCompletion.id();
+
+					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+						if (choice.message().role() != null) {
+							roleMap.putIfAbsent(id, choice.message().role().name());
+						}
+						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
+						var generation = new Generation(choice.message().content(),
+								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
+						if (choice.finishReason() != null) {
+							generation = generation.withGenerationMetadata(
+									ChatGenerationMetadata.from(choice.finishReason().name(), null));
+						}
+						return generation;
+					}).toList();
+
+					return new ChatResponse(generations);
+				}
+				catch (Exception e) {
+					logger.error("Error processing chat completion", e);
+					return new ChatResponse(List.of());
+				}
+
 			});
 		});
+	}
+
+	/**
+	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
+	 * @param chunk the ChatCompletionChunk to convert
+	 * @return the ChatCompletion
+	 */
+	private OpenAiApi.ChatCompletion chunkToChatCompletion(OpenAiApi.ChatCompletionChunk chunk) {
+		List<Choice> choices = chunk.choices()
+			.stream()
+			.map(cc -> new Choice(cc.finishReason(), cc.index(), cc.delta(), cc.logprobs()))
+			.toList();
+
+		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
+				chunk.systemFingerprint(), "chat.completion", null);
 	}
 
 	/**
@@ -227,10 +264,6 @@ public class OpenAiChatClient extends
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
-			if (stream) {
-				throw new IllegalArgumentException("Currently tool functions are not supported in streaming mode");
-			}
-
 			request = ModelOptionsUtils.merge(
 					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
@@ -249,16 +282,6 @@ public class OpenAiChatClient extends
 
 	private Map<String, Object> toMap(ChatCompletionMessage message) {
 		Map<String, Object> map = new HashMap<>();
-
-		// The tool_calls and tool_call_id are not used by the OpenAiChatClient functions
-		// call support! Useful only for users that want to use the tool_calls and
-		// tool_call_id in their applications.
-		if (message.toolCalls() != null) {
-			map.put("tool_calls", message.toolCalls());
-		}
-		if (message.toolCallId() != null) {
-			map.put("tool_call_id", message.toolCallId());
-		}
 
 		if (message.role() != null) {
 			map.put("role", message.role().name());
@@ -290,7 +313,7 @@ public class OpenAiChatClient extends
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
 		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, previousRequest.stream());
+		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, false);
 		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
 
 		return newRequest;
@@ -323,7 +346,9 @@ public class OpenAiChatClient extends
 			return false;
 		}
 
-		return !CollectionUtils.isEmpty(choices.get(0).message().toolCalls());
+		var choice = choices.get(0);
+		return !CollectionUtils.isEmpty(choice.message().toolCalls())
+				&& choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
 }
