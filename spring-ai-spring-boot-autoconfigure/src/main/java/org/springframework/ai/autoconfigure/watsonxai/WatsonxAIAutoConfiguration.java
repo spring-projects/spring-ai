@@ -35,7 +35,6 @@ public class WatsonxAIAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(name = "enabled", havingValue = "true", matchIfMissing = true)
 	public WatsonxChatClient watsonxChatClient(WatsonxAIApi watsonxApi) {
 		return new WatsonxChatClient(watsonxApi);
 	}
