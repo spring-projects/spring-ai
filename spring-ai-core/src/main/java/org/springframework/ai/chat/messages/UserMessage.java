@@ -15,9 +15,14 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.List;
 
+import java.util.Map;
 import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 
 /**
  * A message of the type 'user' passed as input Messages with the user role are from the
@@ -26,16 +31,71 @@ import org.springframework.core.io.Resource;
  */
 public class UserMessage extends AbstractMessage {
 
-	public UserMessage(String message) {
-		super(MessageType.USER, message);
+	private UserMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+			final Map<String, Object> properties) {
+		super(type, textContent, mediaData, properties);
 	}
 
-	public UserMessage(Resource resource) {
-		super(MessageType.USER, resource);
+	/**
+	 * Creates a new {@link UserMessageBuilder} instance.
+	 * @return A new instance of UserMessageBuilder.
+	 */
+	public static UserMessageBuilder builder() {
+		return new UserMessageBuilder();
 	}
 
-	public UserMessage(String textContent, List<MediaData> mediaDataList) {
-		super(MessageType.USER, textContent, mediaDataList);
+	/**
+	 * Initializes a new {@link UserMessageBuilder} with settings from an existing
+	 * {@link UserMessage} object.
+	 * @param message The UserMessage object whose settings are to be used.
+	 * @return A UserMessageBuilder instance initialized with the provided UserMessage
+	 * settings.
+	 */
+	public static UserMessageBuilder builder(final UserMessage message) {
+		return builder().withContent(message.getContent())
+			.withMediaData(message.getMediaData())
+			.withProperties(message.getProperties());
+	}
+
+	/**
+	 * Builder for {@link UserMessage}. This builder creates system message object.
+	 */
+	public static class UserMessageBuilder extends AbstractMessageBuilder<UserMessageBuilder> {
+
+		private UserMessageBuilder() {
+			super(MessageType.USER);
+		}
+
+		public UserMessageBuilder withContent(final String content) {
+			return super.withContent(content);
+		}
+
+		/**
+		 * Loads the content from the given resource and sets it as the content of the
+		 * message being built. This method is useful for setting the content of a message
+		 * to the contents of a file or other resource.
+		 * @param resource the Spring Resource object representing the source of the
+		 * content
+		 * @return this builder instance to allow for method chaining
+		 * @throws RuntimeException if an I/O error occurs reading from the resource
+		 */
+		public UserMessageBuilder withResource(final Resource resource) {
+			try (InputStream inputStream = resource.getInputStream()) {
+				return super.withContent(StreamUtils.copyToString(inputStream, Charset.defaultCharset()));
+			}
+			catch (IOException ex) {
+				throw new RuntimeException("Failed to read resource", ex);
+			}
+		}
+
+		public UserMessageBuilder withMediaData(final List<MediaData> mediaData) {
+			return super.withMediaData(mediaData);
+		}
+
+		public UserMessage build() {
+			return new UserMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+		}
+
 	}
 
 }
