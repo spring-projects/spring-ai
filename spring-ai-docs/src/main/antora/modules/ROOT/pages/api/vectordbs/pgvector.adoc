@@ -6,7 +6,7 @@ link:https://github.com/pgvector/pgvector[PGvector] is an open-source extension 
 
 == Prerequisites
 
-First you need an access to PostgreSQL instance with enabled `vector`, `hstore` and `uuid-ossp` extensions.
+First you need access to PostgreSQL instance with enabled `vector`, `hstore` and `uuid-ossp` extensions.
 
 TIP: The <<Run Postgres & PGVector DB locally,setup local Postgres/PGVector>> appendix shows how to set up a DB locally with a Docker container.
 
