@@ -72,6 +72,8 @@ public class GemFireVectorStore implements VectorStore {
 
 		private final WebClient client;
 
+		private final String index;
+
 		private final int topKPerBucket;
 
 		public final int topK;
@@ -84,9 +86,9 @@ public class GemFireVectorStore implements VectorStore {
 
 		private GemFireVectorStoreConfig(Builder builder) {
 			String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
-				.build(builder.sslEnabled ? "s" : "", builder.host, builder.port, builder.index)
+				.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
 				.toString();
-
+			this.index = builder.index;
 			this.client = WebClient.create(base);
 			this.topKPerBucket = builder.topKPerBucket;
 			this.topK = builder.topK;
