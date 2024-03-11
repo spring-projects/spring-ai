@@ -15,7 +15,13 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
 import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 
 /**
  * A message of the type 'system' passed as input. The system message gives high level
@@ -26,18 +32,65 @@ import org.springframework.core.io.Resource;
  */
 public class SystemMessage extends AbstractMessage {
 
-	public SystemMessage(String content) {
-		super(MessageType.SYSTEM, content);
+	private SystemMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+			final Map<String, Object> properties) {
+		super(type, textContent, mediaData, properties);
 	}
 
-	public SystemMessage(Resource resource) {
-		super(MessageType.SYSTEM, resource);
+	/**
+	 * Creates a new {@link SystemMessageBuilder} instance.
+	 * @return A new instance of SystemMessageBuilder.
+	 */
+	public static SystemMessageBuilder builder() {
+		return new SystemMessageBuilder();
 	}
 
-	@Override
-	public String toString() {
-		return "SystemMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
-				+ messageType + '}';
+	/**
+	 * Initializes a new {@link SystemMessageBuilder} with settings from an existing
+	 * {@link SystemMessage} object.
+	 * @param message The SystemMessage object whose settings are to be used.
+	 * @return A SystemMessageBuilder instance initialized with the provided SystemMessage
+	 * settings.
+	 */
+	public static SystemMessageBuilder builder(final SystemMessage message) {
+		return builder().withContent(message.getContent());
+	}
+
+	/**
+	 * Builder for {@link SystemMessage}. This builder creates system message object.
+	 */
+	public static class SystemMessageBuilder extends AbstractMessageBuilder<SystemMessageBuilder> {
+
+		private SystemMessageBuilder() {
+			super(MessageType.SYSTEM);
+		}
+
+		public SystemMessageBuilder withContent(final String content) {
+			return super.withContent(content);
+		}
+
+		/**
+		 * Loads the content from the given resource and sets it as the content of the
+		 * message being built. This method is useful for setting the content of a message
+		 * to the contents of a file or other resource.
+		 * @param resource the Spring Resource object representing the source of the
+		 * content
+		 * @return this builder instance to allow for method chaining
+		 * @throws RuntimeException if an I/O error occurs reading from the resource
+		 */
+		public SystemMessageBuilder withResource(final Resource resource) {
+			try (InputStream inputStream = resource.getInputStream()) {
+				return super.withContent(StreamUtils.copyToString(inputStream, Charset.defaultCharset()));
+			}
+			catch (IOException ex) {
+				throw new RuntimeException("Failed to read resource", ex);
+			}
+		}
+
+		public SystemMessage build() {
+			return new SystemMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+		}
+
 	}
 
 }
