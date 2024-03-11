@@ -36,6 +36,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
@@ -53,7 +54,7 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, MetadataMode metadataMode) {
 		this(azureOpenAiClient, metadataMode,
-				AzureOpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
+				AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build());
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, MetadataMode metadataMode,
@@ -93,14 +94,28 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	EmbeddingsOptions toEmbeddingOptions(EmbeddingRequest embeddingRequest) {
 		var azureOptions = new EmbeddingsOptions(embeddingRequest.getInstructions());
 		if (this.defaultOptions != null) {
-			azureOptions.setModel(this.defaultOptions.getModel());
+			azureOptions.setModel(this.defaultOptions.getDeploymentName());
 			azureOptions.setUser(this.defaultOptions.getUser());
 		}
 		if (embeddingRequest.getOptions() != null && !EmbeddingOptions.EMPTY.equals(embeddingRequest.getOptions())) {
 			azureOptions = ModelOptionsUtils.merge(embeddingRequest.getOptions(), azureOptions,
 					EmbeddingsOptions.class);
+			// Handle case of deploymentName, in case using against OpenAI and not
+			// AzureOpenAI
+			updateModelUsingDeploymentName(embeddingRequest, azureOptions);
 		}
 		return azureOptions;
+	}
+
+	private static void updateModelUsingDeploymentName(EmbeddingRequest embeddingRequest,
+			EmbeddingsOptions azureOptions) {
+		Object options = embeddingRequest.getOptions();
+		if (options instanceof AzureOpenAiEmbeddingOptions) {
+			AzureOpenAiEmbeddingOptions azureOpenAiEmbeddingOptions = (AzureOpenAiEmbeddingOptions) options;
+			if (StringUtils.hasText(azureOpenAiEmbeddingOptions.getDeploymentName())) {
+				azureOptions.setModel(azureOpenAiEmbeddingOptions.getDeploymentName());
+			}
+		}
 	}
 
 	private EmbeddingResponse generateEmbeddingResponse(Embeddings embeddings) {

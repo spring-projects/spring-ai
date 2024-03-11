@@ -33,7 +33,7 @@ public class AzureChatCompletionsOptionsTests {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
 		var client = new AzureOpenAiChatClient(mockClient,
-				AzureOpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
+				AzureOpenAiChatOptions.builder().withDeploymentName("DEFAULT_MODEL").withTemperature(66.6f).build());
 
 		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content"));
 
@@ -43,7 +43,7 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getTemperature()).isEqualTo(66.6f);
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content",
-				AzureOpenAiChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9f).build()));
+				AzureOpenAiChatOptions.builder().withDeploymentName("PROMPT_MODEL").withTemperature(99.9f).build()));
 
 		assertThat(requestOptions.getMessages()).hasSize(1);
 

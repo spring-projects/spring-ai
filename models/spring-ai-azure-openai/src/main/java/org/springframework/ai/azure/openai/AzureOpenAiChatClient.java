@@ -75,7 +75,7 @@ public class AzureOpenAiChatClient
 		extends AbstractFunctionCallSupport<ChatRequestMessage, ChatCompletionsOptions, ChatCompletions>
 		implements ChatClient, StreamingChatClient {
 
-	private static final String DEFAULT_MODEL = "gpt-35-turbo";
+	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-35-turbo";
 
 	private static final Float DEFAULT_TEMPERATURE = 0.7f;
 
@@ -93,7 +93,10 @@ public class AzureOpenAiChatClient
 
 	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiClient) {
 		this(microsoftOpenAiClient,
-				AzureOpenAiChatOptions.builder().withModel(DEFAULT_MODEL).withTemperature(DEFAULT_TEMPERATURE).build());
+				AzureOpenAiChatOptions.builder()
+					.withDeploymentName(DEFAULT_DEPLOYMENT_NAME)
+					.withTemperature(DEFAULT_TEMPERATURE)
+					.build());
 	}
 
 	public AzureOpenAiChatClient(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options) {
@@ -131,12 +134,7 @@ public class AzureOpenAiChatClient
 		options.setStream(false);
 
 		logger.trace("Azure ChatCompletionsOptions: {}", options);
-
 		ChatCompletions chatCompletions = this.callWithFunctionSupport(options);
-
-		// ChatCompletions chatCompletions =
-		// this.openAIClient.getChatCompletions(options.getModel(), options);
-
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
 		List<Generation> generations = chatCompletions.getChoices()
@@ -323,7 +321,7 @@ public class AzureOpenAiChatClient
 		mergedAzureOptions.setUser(azureOptions.getUser() != null ? azureOptions.getUser() : springAiOptions.getUser());
 
 		mergedAzureOptions
-			.setModel(azureOptions.getModel() != null ? azureOptions.getModel() : springAiOptions.getModel());
+			.setModel(azureOptions.getModel() != null ? azureOptions.getModel() : springAiOptions.getDeploymentName());
 
 		return mergedAzureOptions;
 	}
@@ -376,8 +374,8 @@ public class AzureOpenAiChatClient
 			mergedAzureOptions.setUser(springAiOptions.getUser());
 		}
 
-		if (springAiOptions.getModel() != null) {
-			mergedAzureOptions.setModel(springAiOptions.getModel());
+		if (springAiOptions.getDeploymentName() != null) {
+			mergedAzureOptions.setModel(springAiOptions.getDeploymentName());
 		}
 
 		return mergedAzureOptions;

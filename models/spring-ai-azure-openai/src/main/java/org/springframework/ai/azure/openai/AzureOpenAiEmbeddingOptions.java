@@ -35,12 +35,11 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 	private String user;
 
 	/**
-	 * The model name to provide as part of this embeddings request. Not applicable to
-	 * Azure OpenAI, where deployment information should be included in the Azure resource
-	 * URI that's connected to.
+	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
+	 * backed by an Azure OpenAI base model.
 	 */
-	@JsonProperty(value = "model")
-	private String model;
+	@JsonProperty(value = "deployment_name")
+	private String deploymentName;
 
 	public static Builder builder() {
 		return new Builder();
@@ -55,8 +54,8 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder withModel(String model) {
-			this.options.setModel(model);
+		public Builder withDeploymentName(String model) {
+			this.options.setDeploymentName(model);
 			return this;
 		}
 
@@ -74,12 +73,12 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 		this.user = user;
 	}
 
-	public String getModel() {
-		return this.model;
+	public String getDeploymentName() {
+		return this.deploymentName;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	public void setDeploymentName(String deploymentName) {
+		this.deploymentName = deploymentName;
 	}
 
 }

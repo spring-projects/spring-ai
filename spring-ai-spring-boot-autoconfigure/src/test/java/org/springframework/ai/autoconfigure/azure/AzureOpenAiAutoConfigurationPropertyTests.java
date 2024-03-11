@@ -47,7 +47,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("TEST_API_KEY");
 				assertThat(connectionProperties.getEndpoint()).isEqualTo("TEST_ENDPOINT");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getDeploymentName()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -80,9 +80,9 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				assertThat(connectionProperties.getEndpoint()).isEqualTo("ENDPOINT");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("text-embedding-ada-002");
+				assertThat(embeddingProperties.getOptions().getDeploymentName()).isEqualTo("text-embedding-ada-002");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getDeploymentName()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
 				assertThat(chatProperties.getOptions().getLogitBias().get("myTokenId")).isEqualTo(-5);
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
