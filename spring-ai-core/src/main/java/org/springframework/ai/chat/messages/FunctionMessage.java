@@ -15,16 +15,56 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.util.List;
 import java.util.Map;
 
 public class FunctionMessage extends AbstractMessage {
 
-	public FunctionMessage(String content) {
-		super(MessageType.FUNCTION, content);
+	private FunctionMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+			final Map<String, Object> properties) {
+		super(type, textContent, mediaData, properties);
 	}
 
-	public FunctionMessage(String content, Map<String, Object> properties) {
-		super(MessageType.FUNCTION, content, properties);
+	/**
+	 * Creates a new {@link FunctionMessageBuilder} instance.
+	 * @return A new instance of FunctionMessageBuilder.
+	 */
+	public static FunctionMessageBuilder builder() {
+		return new FunctionMessageBuilder();
+	}
+
+	/**
+	 * Initializes a new {@link FunctionMessageBuilder} with settings from an existing
+	 * {@link FunctionMessage} object.
+	 * @param message The FunctionMessage object whose settings are to be used.
+	 * @return A FunctionMessageBuilder instance initialized with the provided
+	 * FunctionMessage settings.
+	 */
+	public static FunctionMessageBuilder builder(FunctionMessage message) {
+		return builder().withContent(message.getContent()).withProperties(message.getProperties());
+	}
+
+	/**
+	 * Builder for {@link FunctionMessage}. This builder creates function message object.
+	 */
+	public static class FunctionMessageBuilder extends AbstractMessageBuilder<FunctionMessageBuilder> {
+
+		private FunctionMessageBuilder() {
+			super(MessageType.FUNCTION);
+		}
+
+		public FunctionMessageBuilder withContent(final String content) {
+			return super.withContent(content);
+		}
+
+		public FunctionMessageBuilder withProperties(final Map<String, Object> properties) {
+			return super.withProperties(properties);
+		}
+
+		public FunctionMessage build() {
+			return new FunctionMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+		}
+
 	}
 
 }
