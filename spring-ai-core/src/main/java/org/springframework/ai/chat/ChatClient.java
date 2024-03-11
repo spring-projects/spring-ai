@@ -23,7 +23,7 @@ import org.springframework.ai.model.ModelClient;
 public interface ChatClient extends ModelClient<Prompt, ChatResponse> {
 
 	default String call(String message) {
-		Prompt prompt = new Prompt(new UserMessage(message));
+		Prompt prompt = new Prompt(UserMessage.builder().withContent(message).build());
 		Generation generation = call(prompt).getResult();
 		return (generation != null) ? generation.getOutput().getContent() : "";
 	}

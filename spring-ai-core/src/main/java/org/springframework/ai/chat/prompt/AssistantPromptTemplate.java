@@ -33,22 +33,22 @@ public class AssistantPromptTemplate extends PromptTemplate {
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new AssistantMessage(render()));
+		return new Prompt(AssistantMessage.builder().withContent(render()).build());
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new AssistantMessage(render(model)));
+		return new Prompt(AssistantMessage.builder().withContent(render(model)).build());
 	}
 
 	@Override
 	public Message createMessage() {
-		return new AssistantMessage(render());
+		return AssistantMessage.builder().withContent(render()).build();
 	}
 
 	@Override
 	public Message createMessage(Map<String, Object> model) {
-		return new AssistantMessage(render(model));
+		return AssistantMessage.builder().withContent(render(model)).build();
 	}
 
 }

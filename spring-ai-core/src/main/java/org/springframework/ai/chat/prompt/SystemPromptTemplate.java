@@ -33,22 +33,22 @@ public class SystemPromptTemplate extends PromptTemplate {
 
 	@Override
 	public Message createMessage() {
-		return new SystemMessage(render());
+		return SystemMessage.builder().withContent(render()).build();
 	}
 
 	@Override
 	public Message createMessage(Map<String, Object> model) {
-		return new SystemMessage(render(model));
+		return SystemMessage.builder().withContent(render(model)).build();
 	}
 
 	@Override
 	public Prompt create() {
-		return new Prompt(new SystemMessage(render()));
+		return new Prompt(SystemMessage.builder().withContent(render()).build());
 	}
 
 	@Override
 	public Prompt create(Map<String, Object> model) {
-		return new Prompt(new SystemMessage(render(model)));
+		return new Prompt(SystemMessage.builder().withContent(render(model)).build());
 	}
 
 }

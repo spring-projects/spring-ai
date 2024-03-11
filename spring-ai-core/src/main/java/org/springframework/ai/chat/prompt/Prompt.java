@@ -31,7 +31,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	private ChatOptions modelOptions;
 
 	public Prompt(String contents) {
-		this(new UserMessage(contents));
+		this(UserMessage.builder().withContent(contents).build());
 	}
 
 	public Prompt(Message message) {
@@ -43,7 +43,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt(String contents, ChatOptions modelOptions) {
-		this(new UserMessage(contents), modelOptions);
+		this(UserMessage.builder().withContent(contents).build(), modelOptions);
 	}
 
 	public Prompt(Message message, ChatOptions modelOptions) {

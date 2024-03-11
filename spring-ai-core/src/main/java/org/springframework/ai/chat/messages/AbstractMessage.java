@@ -15,18 +15,21 @@
  */
 package org.springframework.ai.chat.messages;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
-import org.springframework.util.StreamUtils;
 
+/**
+ * This abstract class represents the foundation for all message types within the chat
+ * system. It encapsulates common properties such as message type, content, associated
+ * media data, and additional properties that might influence the chat response.
+ *
+ * Implementations of this class are expected to be immutable to ensure thread safety and
+ * predictability.
+ *
+ * @author youngmon
+ */
 public abstract class AbstractMessage implements Message {
 
 	protected final MessageType messageType;
@@ -40,55 +43,16 @@ public abstract class AbstractMessage implements Message {
 	 */
 	protected final Map<String, Object> properties;
 
-	protected AbstractMessage(MessageType messageType, String content) {
-		this(messageType, content, Map.of());
-	}
-
-	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> messageProperties) {
-		Assert.notNull(messageType, "Message type must not be null");
-		// Assert.notNull(content, "Content must not be null");
-		this.messageType = messageType;
-		this.textContent = content;
-		this.mediaData = new ArrayList<>();
-		this.properties = messageProperties;
-	}
-
-	protected AbstractMessage(MessageType messageType, String textContent, List<MediaData> mediaData) {
-		this(messageType, textContent, mediaData, Map.of());
-	}
-
-	protected AbstractMessage(MessageType messageType, String textContent, List<MediaData> mediaData,
-			Map<String, Object> messageProperties) {
+	protected AbstractMessage(final MessageType messageType, final String textContent, final List<MediaData> mediaData,
+			final Map<String, Object> messageProperties) {
 
 		Assert.notNull(messageType, "Message type must not be null");
 		Assert.notNull(textContent, "Content must not be null");
-		Assert.notNull(mediaData, "media data must not be null");
 
 		this.messageType = messageType;
 		this.textContent = textContent;
-		this.mediaData = new ArrayList<>(mediaData);
+		this.mediaData = mediaData;
 		this.properties = messageProperties;
-	}
-
-	protected AbstractMessage(MessageType messageType, Resource resource) {
-		this(messageType, resource, Collections.emptyMap());
-	}
-
-	@SuppressWarnings("null")
-	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> messageProperties) {
-		Assert.notNull(messageType, "Message type must not be null");
-		Assert.notNull(resource, "Resource must not be null");
-
-		this.messageType = messageType;
-		this.properties = messageProperties;
-		this.mediaData = new ArrayList<>();
-
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
 	}
 
 	@Override
@@ -142,9 +106,7 @@ public abstract class AbstractMessage implements Message {
 		}
 		else if (!properties.equals(other.properties))
 			return false;
-		if (messageType != other.messageType)
-			return false;
-		return true;
+		return messageType == other.messageType;
 	}
 
 	@Override

@@ -170,12 +170,12 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public Message createMessage() {
-		return new UserMessage(render());
+		return UserMessage.builder().withContent(render()).build();
 	}
 
 	@Override
 	public Message createMessage(Map<String, Object> model) {
-		return new UserMessage(render(model));
+		return UserMessage.builder().withContent(render(model)).build();
 	}
 
 	@Override

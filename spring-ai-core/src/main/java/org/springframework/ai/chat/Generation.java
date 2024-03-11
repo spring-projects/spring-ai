@@ -33,11 +33,11 @@ public class Generation implements ModelResult<AssistantMessage> {
 	private ChatGenerationMetadata chatGenerationMetadata;
 
 	public Generation(String text) {
-		this.assistantMessage = new AssistantMessage(text);
+		this.assistantMessage = AssistantMessage.builder().withContent(text).build();
 	}
 
 	public Generation(String text, Map<String, Object> properties) {
-		this.assistantMessage = new AssistantMessage(text, properties);
+		this.assistantMessage = AssistantMessage.builder().withContent(text).withProperties(properties).build();
 	}
 
 	@Override
