@@ -101,7 +101,7 @@ public class AcmeIT extends AbstractIT {
 		// be relevant.
 
 		Message systemMessage = getSystemMessage(similarDocuments);
-		UserMessage userMessage = new UserMessage(userQuery);
+		UserMessage userMessage = UserMessage.builder().withContent(userQuery).build();
 
 		// Create the prompt ad-hoc for now, need to put in system message and user
 		// message via ChatPromptTemplate or some other message building mechanic;

@@ -65,7 +65,7 @@ class BedrockCohereChatClientIT {
 		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
 		String name = "Bob";
 		String voice = "pirate";
-		UserMessage userMessage = new UserMessage(request);
+		UserMessage userMessage = UserMessage.builder().withContent(request).build();
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));

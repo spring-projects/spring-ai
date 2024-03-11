@@ -74,17 +74,19 @@ public abstract class AbstractIT {
 				Map.of("question", question, "answer", answer));
 		SystemMessage systemMessage;
 		if (factBased) {
-			systemMessage = new SystemMessage(qaEvalutaorFactBasedAnswerResource);
+			systemMessage = SystemMessage.builder().withResource(qaEvalutaorFactBasedAnswerResource).build();
 		}
 		else {
-			systemMessage = new SystemMessage(qaEvaluatorAccurateAnswerResource);
+			systemMessage = SystemMessage.builder().withResource(qaEvaluatorAccurateAnswerResource).build();
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		String yesOrNo = openAiChatClient.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
-			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
+			SystemMessage notRelatedSystemMessage = SystemMessage.builder()
+				.withResource(qaEvaluatorNotRelatedResource)
+				.build();
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
 			String reasonForFailure = openAiChatClient.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);

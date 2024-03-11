@@ -87,7 +87,9 @@ class OllamaChatClientIT {
 				You should reply to the user's request with your name and also in the style of a {voice}.
 				""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
-		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("Tell me about 5 famous pirates from the Golden Age of Piracy.")
+			.build();
 
 		// portable/generic options
 		var portableOptions = ChatOptionsBuilder.builder().withTemperature(0.7f).build();

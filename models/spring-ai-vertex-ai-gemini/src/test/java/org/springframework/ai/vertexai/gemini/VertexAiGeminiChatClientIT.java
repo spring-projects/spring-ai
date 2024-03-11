@@ -66,7 +66,7 @@ class VertexAiGeminiChatClientIT {
 		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
 		String name = "Bob";
 		String voice = "pirate";
-		UserMessage userMessage = new UserMessage(request);
+		UserMessage userMessage = UserMessage.builder().withContent(request).build();
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
@@ -188,8 +188,10 @@ class VertexAiGeminiChatClientIT {
 
 		byte[] data = new ClassPathResource("/vertex.test.png").getContentAsByteArray();
 
-		var userMessage = new UserMessage("Explain what do you see o this picture?",
-				List.of(new MediaData(MimeTypeUtils.IMAGE_PNG, data)));
+		var userMessage = UserMessage.builder()
+			.withContent("Explain what do you see o this picture?")
+			.withMediaData(List.of(new MediaData(MimeTypeUtils.IMAGE_PNG, data)))
+			.build();
 
 		ChatResponse response = client.call(new Prompt(List.of(userMessage)));
 

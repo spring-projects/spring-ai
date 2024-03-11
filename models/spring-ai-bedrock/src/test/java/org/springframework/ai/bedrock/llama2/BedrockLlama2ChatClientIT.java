@@ -63,8 +63,9 @@ class BedrockLlama2ChatClientIT {
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.")
+			.build();
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 

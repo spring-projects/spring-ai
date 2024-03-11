@@ -53,7 +53,9 @@ class AzureOpenAiChatClientFunctionCallIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, in Tokyo, and in Paris?");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("What's the weather like in San Francisco, in Tokyo, and in Paris?")
+			.build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 

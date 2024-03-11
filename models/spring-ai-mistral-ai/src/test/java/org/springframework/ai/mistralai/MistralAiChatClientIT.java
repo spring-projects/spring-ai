@@ -83,8 +83,9 @@ class MistralAiChatClientIT {
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.")
+			.build();
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		// NOTE: Mistral expects the system message to be before the user message or will
@@ -188,7 +189,9 @@ class MistralAiChatClientIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco?");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("What's the weather like in San Francisco?")
+			.build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -211,7 +214,7 @@ class MistralAiChatClientIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in Tokyo, Japan?");
+		UserMessage userMessage = UserMessage.builder().withContent("What's the weather like in Tokyo, Japan?").build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 

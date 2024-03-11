@@ -62,8 +62,9 @@ class OpenAiChatClientIT extends AbstractIT {
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.")
+			.build();
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
@@ -184,7 +185,9 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+			.build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -209,7 +212,9 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent("What's the weather like in San Francisco, Tokyo, and Paris?")
+			.build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 

@@ -68,8 +68,10 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	@Test
 	public void functionCallExplicitOpenApiSchema() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent(
+					"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.")
+			.build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -116,7 +118,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 
 		// UserMessage userMessage = new UserMessage("What's the weather like in San
 		// Francisco, Paris and Tokyo?");
-		UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
+		UserMessage userMessage = UserMessage.builder().withContent("What's the weather like in Paris?").build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -145,8 +147,10 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	@Test
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
+		UserMessage userMessage = UserMessage.builder()
+			.withContent(
+					"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.")
+			.build();
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
