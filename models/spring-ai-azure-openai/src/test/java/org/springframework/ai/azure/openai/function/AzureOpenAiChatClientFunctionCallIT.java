@@ -58,7 +58,7 @@ class AzureOpenAiChatClientFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withModel("gpt-4-0125-preview")
+			.withDeploymentName("gpt-4-0125-preview")
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the current weather in a given location")
@@ -88,8 +88,10 @@ class AzureOpenAiChatClientFunctionCallIT {
 		@Bean
 		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient) {
 			return new AzureOpenAiChatClient(openAIClient,
-					AzureOpenAiChatOptions.builder().withModel("gpt-35-turbo-0613").withMaxTokens(500).build());
-
+					AzureOpenAiChatOptions.builder()
+						.withDeploymentName("gpt-4-0125-preview")
+						.withMaxTokens(500)
+						.build());
 		}
 
 	}
