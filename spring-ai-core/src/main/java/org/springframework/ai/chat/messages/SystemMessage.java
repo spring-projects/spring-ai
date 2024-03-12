@@ -32,9 +32,9 @@ import org.springframework.util.StreamUtils;
  */
 public class SystemMessage extends AbstractMessage {
 
-	private SystemMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+	private SystemMessage(final MessageType type, final String textContent, final List<Media> media,
 			final Map<String, Object> properties) {
-		super(type, textContent, mediaData, properties);
+		super(type, textContent, media, properties);
 	}
 
 	/**
@@ -88,7 +88,7 @@ public class SystemMessage extends AbstractMessage {
 		}
 
 		public SystemMessage build() {
-			return new SystemMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+			return new SystemMessage(this.messageType, this.textContent, this.media, this.properties);
 		}
 
 	}

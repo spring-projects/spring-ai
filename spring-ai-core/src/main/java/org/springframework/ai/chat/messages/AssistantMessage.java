@@ -26,9 +26,9 @@ import java.util.Map;
  */
 public class AssistantMessage extends AbstractMessage {
 
-	private AssistantMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+	private AssistantMessage(final MessageType type, final String textContent, final List<Media> media,
 			final Map<String, Object> properties) {
-		super(type, textContent, mediaData, properties);
+		super(type, textContent, media, properties);
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class AssistantMessage extends AbstractMessage {
 		}
 
 		public AssistantMessage build() {
-			return new AssistantMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+			return new AssistantMessage(this.messageType, this.textContent, this.media, this.properties);
 		}
 
 	}

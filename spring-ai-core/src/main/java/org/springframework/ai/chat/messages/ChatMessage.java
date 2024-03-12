@@ -24,9 +24,9 @@ import java.util.Map;
  */
 public class ChatMessage extends AbstractMessage {
 
-	private ChatMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+	private ChatMessage(final MessageType type, final String textContent, final List<Media> media,
 			final Map<String, Object> properties) {
-		super(type, textContent, mediaData, properties);
+		super(type, textContent, media, properties);
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class ChatMessage extends AbstractMessage {
 		}
 
 		public ChatMessage build() {
-			return new ChatMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+			return new ChatMessage(this.messageType, this.textContent, this.media, this.properties);
 		}
 
 	}

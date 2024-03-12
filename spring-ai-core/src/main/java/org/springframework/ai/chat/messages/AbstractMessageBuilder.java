@@ -36,7 +36,7 @@ public abstract class AbstractMessageBuilder<T extends AbstractMessageBuilder<T>
 
 	protected String textContent;
 
-	protected List<MediaData> mediaData = new ArrayList<>();
+	protected List<Media> media = new ArrayList<>();
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
@@ -65,8 +65,8 @@ public abstract class AbstractMessageBuilder<T extends AbstractMessageBuilder<T>
 		return (T) this;
 	}
 
-	protected T withMediaData(final List<MediaData> mediaData) {
-		this.mediaData.addAll(mediaData);
+	protected T withMedia(final List<Media> media) {
+		this.media.addAll(media);
 		return (T) this;
 	}
 

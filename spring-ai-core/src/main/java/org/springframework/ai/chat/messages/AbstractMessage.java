@@ -34,14 +34,14 @@ public abstract class AbstractMessage implements Message {
 
 	protected final String textContent;
 
-	protected final List<Media> mediaData;
+	protected final List<Media> media;
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
 	 */
 	protected final Map<String, Object> properties;
 
-	protected AbstractMessage(final MessageType messageType, final String textContent, final List<MediaData> mediaData,
+	protected AbstractMessage(final MessageType messageType, final String textContent, final List<Media> media,
 			final Map<String, Object> messageProperties) {
 
 		Assert.notNull(messageType, "Message type must not be null");
@@ -49,7 +49,7 @@ public abstract class AbstractMessage implements Message {
 
 		this.messageType = messageType;
 		this.textContent = textContent;
-		this.mediaData = mediaData;
+		this.media = media;
 		this.properties = messageProperties;
 	}
 
@@ -60,7 +60,7 @@ public abstract class AbstractMessage implements Message {
 
 	@Override
 	public List<Media> getMedia() {
-		return this.mediaData;
+		return this.media;
 	}
 
 	@Override
@@ -77,7 +77,7 @@ public abstract class AbstractMessage implements Message {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((mediaData == null) ? 0 : mediaData.hashCode());
+		result = prime * result + ((media == null) ? 0 : media.hashCode());
 		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
 		result = prime * result + ((messageType == null) ? 0 : messageType.hashCode());
 		return result;
@@ -92,11 +92,11 @@ public abstract class AbstractMessage implements Message {
 		if (getClass() != obj.getClass())
 			return false;
 		AbstractMessage other = (AbstractMessage) obj;
-		if (mediaData == null) {
-			if (other.mediaData != null)
+		if (media == null) {
+			if (other.media != null)
 				return false;
 		}
-		else if (!mediaData.equals(other.mediaData))
+		else if (!media.equals(other.media))
 			return false;
 		if (properties == null) {
 			if (other.properties != null)

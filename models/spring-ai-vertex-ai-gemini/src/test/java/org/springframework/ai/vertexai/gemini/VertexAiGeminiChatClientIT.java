@@ -190,7 +190,7 @@ class VertexAiGeminiChatClientIT {
 
 		var userMessage = UserMessage.builder()
 			.withContent("Explain what do you see o this picture?")
-			.withMediaData(List.of(new MediaData(MimeTypeUtils.IMAGE_PNG, data)))
+			.withMedia(List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)))
 			.build();
 
 		ChatResponse response = client.call(new Prompt(List.of(userMessage)));

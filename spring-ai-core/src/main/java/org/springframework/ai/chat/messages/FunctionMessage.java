@@ -24,9 +24,9 @@ import java.util.Map;
  */
 public class FunctionMessage extends AbstractMessage {
 
-	private FunctionMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+	private FunctionMessage(final MessageType type, final String textContent, final List<Media> media,
 			final Map<String, Object> properties) {
-		super(type, textContent, mediaData, properties);
+		super(type, textContent, media, properties);
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class FunctionMessage extends AbstractMessage {
 		}
 
 		public FunctionMessage build() {
-			return new FunctionMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+			return new FunctionMessage(this.messageType, this.textContent, this.media, this.properties);
 		}
 
 	}

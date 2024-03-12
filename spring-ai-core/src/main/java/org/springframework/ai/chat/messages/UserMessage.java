@@ -31,9 +31,9 @@ import org.springframework.util.StreamUtils;
  */
 public class UserMessage extends AbstractMessage {
 
-	private UserMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,
+	private UserMessage(final MessageType type, final String textContent, final List<Media> media,
 			final Map<String, Object> properties) {
-		super(type, textContent, mediaData, properties);
+		super(type, textContent, media, properties);
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class UserMessage extends AbstractMessage {
 	 */
 	public static UserMessageBuilder builder(final UserMessage message) {
 		return builder().withContent(message.getContent())
-			.withMediaData(message.getMediaData())
+			.withMedia(message.getMedia())
 			.withProperties(message.getProperties());
 	}
 
@@ -88,12 +88,12 @@ public class UserMessage extends AbstractMessage {
 			}
 		}
 
-		public UserMessageBuilder withMediaData(final List<MediaData> mediaData) {
-			return super.withMediaData(mediaData);
+		public UserMessageBuilder withMedia(final List<Media> mediaData) {
+			return super.withMedia(mediaData);
 		}
 
 		public UserMessage build() {
-			return new UserMessage(this.messageType, this.textContent, this.mediaData, this.properties);
+			return new UserMessage(this.messageType, this.textContent, this.media, this.properties);
 		}
 
 	}
