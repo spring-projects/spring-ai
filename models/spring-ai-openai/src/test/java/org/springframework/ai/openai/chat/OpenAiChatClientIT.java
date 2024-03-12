@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -37,6 +38,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.parser.BeanOutputParser;
@@ -187,7 +189,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel("gpt-4-turbo-preview")
+			.withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
@@ -202,6 +204,39 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void streamFunctionCallTest() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = OpenAiChatOptions.builder()
+			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription("Get the weather in location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = openStreamingChatClient.stream(new Prompt(messages, promptOptions));
+
+		String content = response.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+
+		assertThat(content).containsAnyOf("30.0", "30");
+		assertThat(content).containsAnyOf("10.0", "10");
+		assertThat(content).containsAnyOf("15.0", "15");
 	}
 
 }

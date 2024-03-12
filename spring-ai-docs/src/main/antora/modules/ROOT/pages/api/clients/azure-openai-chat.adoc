@@ -95,7 +95,7 @@ The prefix `spring.ai.azure.openai.chat` is the property prefix that configures 
 | Property | Description | Default
 
 | spring.ai.azure.openai.chat.enabled | Enable Azure OpenAI chat client.  | true
-| spring.ai.azure.openai.chat.options.model | 	 * In use with Azure, this actually refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal. It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly. To clarify this distinction, we plan to rename this attribute to `deployment-name` in future updates.
+| spring.ai.azure.openai.chat.options.deployment-name | 	 * In use with Azure, this refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal. It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly.
 Deployments model name to provide as part of this completions request.
  | gpt-35-turbo
 | spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate. | -

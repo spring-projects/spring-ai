@@ -1,0 +1,5 @@
+[[Transcription]]
+= Transcription API
+
+Spring AI provides support for OpenAI's Transcription API.
+When additional providers for Transcription are implemented, a common `AudioTranscriptionClient` interface will be extracted.

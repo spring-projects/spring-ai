@@ -17,6 +17,10 @@ package org.springframework.ai.chat.messages;
 
 import java.util.Map;
 
+/**
+ * Represents a chat message in a chat application.
+ *
+ */
 public class ChatMessage extends AbstractMessage {
 
 	public ChatMessage(String role, String content) {
