@@ -21,13 +21,11 @@ import java.util.Map;
 import org.springframework.util.Assert;
 
 /**
- * This abstract class represents the foundation for all message types within the chat
- * system. It encapsulates common properties such as message type, content, associated
- * media data, and additional properties that might influence the chat response.
+ * The AbstractMessage class is an abstract implementation of the Message interface. It
+ * provides a base implementation for message content, media attachments, properties, and
+ * message type.
  *
- * Implementations of this class are expected to be immutable to ensure thread safety and
- * predictability.
- *
+ * @see Message
  * @author youngmon
  */
 public abstract class AbstractMessage implements Message {
@@ -36,7 +34,7 @@ public abstract class AbstractMessage implements Message {
 
 	protected final String textContent;
 
-	protected final List<MediaData> mediaData;
+	protected final List<Media> mediaData;
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
@@ -61,7 +59,7 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	@Override
-	public List<MediaData> getMediaData() {
+	public List<Media> getMedia() {
 		return this.mediaData;
 	}
 

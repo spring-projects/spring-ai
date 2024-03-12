@@ -45,16 +45,19 @@ public class Prompt {
 
 === Message
 
-The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, and a categorization known as `MessageType`. The interface is defined as follows:
+The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, a categorization known as `MessageType`, and a list of media objects for those models that are multimodal.
+The interface is defined as follows:
 
 ```java
 public interface Message {
 
-   String getContent();
+	String getContent();
 
-   Map<String, Object> getProperties();
+	List<Media> getMedia();
 
-   MessageType getMessageType();
+	Map<String, Object> getProperties();
+
+	MessageType getMessageType();
 
 }
 ```

@@ -18,6 +18,10 @@ package org.springframework.ai.chat.messages;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Represents a chat message in a chat application.
+ *
+ */
 public class ChatMessage extends AbstractMessage {
 
 	private ChatMessage(final MessageType type, final String textContent, final List<MediaData> mediaData,

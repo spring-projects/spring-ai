@@ -28,7 +28,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MediaData;
+import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -210,7 +210,7 @@ class VertexAiGeminiChatClientIT {
 		// "https://storage.googleapis.com/github-repo/img/gemini/multimodality_usecases_overview/banana-apple.jpg";
 
 		// userMessage = new UserMessage("Explain what do you see o this picture?",
-		// List.of(new MediaData(MimeTypeDetector.getMimeType(imageUrl), imageUrl)));
+		// List.of(new Media(MimeTypeDetector.getMimeType(imageUrl), imageUrl)));
 		// response = client.call(new Prompt(List.of(userMessage)));
 
 		// assertThat(response.getResult().getOutput().getContent()).contains("bananas",

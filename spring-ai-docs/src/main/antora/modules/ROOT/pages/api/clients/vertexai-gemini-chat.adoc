@@ -107,6 +107,26 @@ You can register custom Java functions with the VertexAiGeminiChatClient and hav
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/clients/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
 
+=== Multimodal Example
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
+
+Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video. For more details, refer to the blog post [Introducing Gemini](https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini).
+
+Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
+This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a simple code example extracted from [VertexAiGeminiChatClientIT.java](https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java), demonstrating the combination of user text with an image.
+
+
+[source,java]
+----
+byte[] data = new ClassPathResource("/vertex-test.png").getContentAsByteArray();
+
+var userMessage = new UserMessage("Explain what do you see o this picture?",
+        List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
+
+ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+----
 
 === Sample Controller (Auto-configuration)
 
@@ -195,6 +215,3 @@ ChatResponse response = chatClient.call(
 The `VertexAiGeminiChatOptions` provides the configuration information for the chat requests.
 The `VertexAiGeminiChatOptions.Builder` is fluent options builder.
 
-=== Multi-modal
-
-https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java]
