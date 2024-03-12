@@ -68,6 +68,11 @@ public class OpenAiAudioTranscriptionClient
 
 	private final OpenAiAudioApi audioApi;
 
+	/**
+	 * OpenAiAudioTranscriptionClient is a client class used to interact with the OpenAI
+	 * Audio Transcription API.
+	 * @param audioApi The OpenAiAudioApi instance to be used for making API calls.
+	 */
 	public OpenAiAudioTranscriptionClient(OpenAiAudioApi audioApi) {
 		this(audioApi,
 				OpenAiAudioTranscriptionOptions.builder()
@@ -78,6 +83,25 @@ public class OpenAiAudioTranscriptionClient
 				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
+	/**
+	 * OpenAiAudioTranscriptionClient is a client class used to interact with the OpenAI
+	 * Audio Transcription API.
+	 * @param audioApi The OpenAiAudioApi instance to be used for making API calls.
+	 * @param options The OpenAiAudioTranscriptionOptions instance for configuring the
+	 * audio transcription.
+	 */
+	public OpenAiAudioTranscriptionClient(OpenAiAudioApi audioApi, OpenAiAudioTranscriptionOptions options) {
+		this(audioApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	/**
+	 * OpenAiAudioTranscriptionClient is a client class used to interact with the OpenAI
+	 * Audio Transcription API.
+	 * @param audioApi The OpenAiAudioApi instance to be used for making API calls.
+	 * @param options The OpenAiAudioTranscriptionOptions instance for configuring the
+	 * audio transcription.
+	 * @param retryTemplate The RetryTemplate instance for retrying failed API calls.
+	 */
 	public OpenAiAudioTranscriptionClient(OpenAiAudioApi audioApi, OpenAiAudioTranscriptionOptions options,
 			RetryTemplate retryTemplate) {
 		Assert.notNull(audioApi, "OpenAiAudioApi must not be null");

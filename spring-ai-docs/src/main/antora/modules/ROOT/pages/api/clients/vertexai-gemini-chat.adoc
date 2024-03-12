@@ -1,7 +1,5 @@
 = VertexAI Gemini Chat
 
-
-
 The https://cloud.google.com/vertex-ai/docs/generative-ai/multimodal/overview[Vertex AI Gemini API] allows developers to build generative AI applications using the Gemini model.
 The Vertex AI Gemini API supports multimodal prompts as input and output text or code.
 A multimodal model is a model that is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
@@ -79,13 +77,13 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 
 TIP: All properties prefixed with `spring.ai.vertex.ai.gemini.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-=== Chat Options [[chat-options]]
+== Runtime options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatOptions.java[VertexAiGeminiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
 On start-up, the default options can be configured with the `VertexAiGeminiChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
 
-At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+At runtime you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
@@ -101,21 +99,21 @@ ChatResponse response = chatClient.call(
 
 TIP: In addition to the model specific `VertexAiChatPaLm2Options` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-=== Function Calling
+== Function Calling
 
 You can register custom Java functions with the VertexAiGeminiChatClient and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/clients/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
 
-=== Multimodal Example
+== Multimodal
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
 
-Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video. For more details, refer to the blog post [Introducing Gemini](https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini).
+Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video. For more details, refer to the blog post https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini[Introducing Gemini].
 
 Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
 This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a simple code example extracted from [VertexAiGeminiChatClientIT.java](https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java), demonstrating the combination of user text with an image.
+Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java], demonstrating the combination of user text with an image.
 
 
 [source,java]
@@ -128,7 +126,7 @@ var userMessage = new UserMessage("Explain what do you see o this picture?",
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
 ----
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
 
