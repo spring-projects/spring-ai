@@ -119,7 +119,7 @@ public class OpenAiImageClient implements ImageClient {
 
 	/**
 	 * Convert the {@link ImageOptions} into {@link OpenAiImageOptions}.
-	 * @param defaultOptions the image options to use.
+	 * @param runtimeImageOptions the image options to use.
 	 * @return the converted {@link OpenAiImageOptions}.
 	 */
 	private OpenAiImageOptions toOpenAiImageOptions(ImageOptions runtimeImageOptions) {
