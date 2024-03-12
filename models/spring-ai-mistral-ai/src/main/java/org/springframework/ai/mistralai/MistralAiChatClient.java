@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.mistralai;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -113,13 +114,26 @@ public class MistralAiChatClient extends
 
 			List<Generation> generations = chatCompletion.choices()
 				.stream()
-				.map(choice -> new Generation(choice.message().content(),
-						Map.of("role", choice.message().role().name()))
+				.map(choice -> new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
 				.toList();
 
 			return new ChatResponse(generations);
 		});
+	}
+
+	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
+		Map<String, Object> map = new HashMap<>();
+
+		var message = choice.message();
+		if (message.role() != null) {
+			map.put("role", message.role().name());
+		}
+		if (choice.finishReason() != null) {
+			map.put("finishReason", choice.finishReason().name());
+		}
+		map.put("id", id);
+		return map;
 	}
 
 	@Override
