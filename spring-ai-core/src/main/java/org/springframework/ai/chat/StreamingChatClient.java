@@ -23,6 +23,13 @@ import org.springframework.ai.model.StreamingModelClient;
 @FunctionalInterface
 public interface StreamingChatClient extends StreamingModelClient<Prompt, ChatResponse> {
 
+	default Flux<String> stream(String message) {
+		Prompt prompt = new Prompt(message);
+		return stream(prompt).map(response -> (response.getResult() == null || response.getResult().getOutput() == null
+				|| response.getResult().getOutput().getContent() == null) ? ""
+						: response.getResult().getOutput().getContent());
+	}
+
 	@Override
 	Flux<ChatResponse> stream(Prompt prompt);
 

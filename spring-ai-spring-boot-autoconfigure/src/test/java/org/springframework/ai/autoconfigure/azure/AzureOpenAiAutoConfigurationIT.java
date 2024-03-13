@@ -56,11 +56,11 @@ public class AzureOpenAiAutoConfigurationIT {
 			"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 			"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"),
 
-			"spring.ai.azure.openai.chat.options.model=" + CHAT_MODEL_NAME,
+			"spring.ai.azure.openai.chat.options.deployment-name=" + CHAT_MODEL_NAME,
 			"spring.ai.azure.openai.chat.options.temperature=0.8",
 			"spring.ai.azure.openai.chat.options.maxTokens=123",
 
-			"spring.ai.azure.openai.embedding.options.model=" + EMBEDDING_MODEL_NAME
+			"spring.ai.azure.openai.embedding.options.deployment-name=" + EMBEDDING_MODEL_NAME
 			// @formatter:on
 	).withConfiguration(AutoConfigurations.of(AzureOpenAiAutoConfiguration.class));
 

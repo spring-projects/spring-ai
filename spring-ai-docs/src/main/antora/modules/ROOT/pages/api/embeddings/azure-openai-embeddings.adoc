@@ -74,7 +74,7 @@ The prefix `spring.ai.azure.openai.embeddings` is the property prefix that confi
 
 | spring.ai.azure.openai.embedding.enabled | Enable Azure OpenAI embedding client.  | true
 | spring.ai.azure.openai.embedding.metadata-mode | Document content extraction mode    | EMBED
-| spring.ai.azure.openai.embedding.options.model | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | text-embedding-ada-002
+| spring.ai.azure.openai.embedding.options.deployment-name | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | text-embedding-ada-002
 | spring.ai.azure.openai.embedding.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -
 |====
 

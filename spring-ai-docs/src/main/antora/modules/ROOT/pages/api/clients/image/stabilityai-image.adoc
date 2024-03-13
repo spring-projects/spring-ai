@@ -80,7 +80,7 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-stab
 
 On start-up, the default options can be configured with the `StabilityAiImageClient(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options)` constructor. Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
 
-At run-time you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+At runtime, you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
 For example to override the Stability AI specific options such as quality and the number of images to create, use the following code example:
 
 [source,java]

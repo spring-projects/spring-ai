@@ -28,18 +28,33 @@ public class MilvusVectorStoreProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.milvus";
 
 	/**
-	 * The database name
+	 * The name of the Milvus database to connect to.
 	 */
 	private String databaseName = MilvusVectorStore.DEFAULT_DATABASE_NAME;
 
+	/**
+	 * Milvus collection name to store the vectors.
+	 */
 	private String collectionName = MilvusVectorStore.DEFAULT_COLLECTION_NAME;
 
+	/**
+	 * The dimension of the vectors to be stored in the Milvus collection.
+	 */
 	private int embeddingDimension = MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
 
+	/**
+	 * The type of the index to be created for the Milvus collection.
+	 */
 	private MilvusIndexType indexType = MilvusIndexType.IVF_FLAT;
 
+	/**
+	 * The metric type to be used for the Milvus collection.
+	 */
 	private MilvusMetricType metricType = MilvusMetricType.COSINE;
 
+	/**
+	 * The index parameters to be used for the Milvus collection.
+	 */
 	private String indexParameters = "{\"nlist\":1024}";
 
 	public enum MilvusMetricType {

@@ -17,6 +17,7 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -673,6 +674,8 @@ public class OpenAiApi {
 				.toEntity(ChatCompletion.class);
 	}
 
+	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
+
 	/**
 	 * Creates a streaming chat response for the given chat conversation.
 	 *
@@ -684,6 +687,8 @@ public class OpenAiApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
 
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
 		return this.webClient.post()
 				.uri("/v1/chat/completions")
 				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -693,7 +698,34 @@ public class OpenAiApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				// filters out the "[DONE]" message.
 				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class));
+				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+				// Detect is the chunk is part of a streaming function call.
+ 				.map(chunk -> {
+					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+						isInsideTool.set(true);
+					}
+					return chunk;
+				})
+				// Group all chunks belonging to the same function call.
+				// Flux<ChatCompletionChunk> -> Flux<Flux<ChatCompletionChunk>>
+				.windowUntil(chunk -> {
+					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+						isInsideTool.set(false);
+						return true;
+					}
+					return !isInsideTool.get();
+				})
+				// Merging the window chunks into a single chunk.
+				// Reduce the inner Flux<ChatCompletionChunk> window into a single Mono<ChatCompletionChunk>,
+				// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
+				.concatMapIterable(window -> {
+					Mono<ChatCompletionChunk> monoChunk = window.reduce(
+							new ChatCompletionChunk(null, null, null, null, null, null),
+							(previous, current) -> this.chunkMerger.merge(previous, current));
+					return List.of(monoChunk);
+				})
+				// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
+				.flatMap(mono -> mono);
 	}
 
 	// Embeddings API
@@ -851,86 +883,5 @@ public class OpenAiApi {
 				});
 	}
 
-	// Transcription API
-
-	// @JsonInclude(Include.NON_NULL)
-	// public record Transcription(
-	// 		@JsonProperty("text") String text) {
-	// }
-
-	// 	/**
-	//  *
-	//  * @param model ID of the model to use.
-	//  * @param language The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency.
-	//  * @param prompt An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language.
-	//  * @param responseFormat An object specifying the format that the model must output.
-	//  * @param temperature What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
-	//  * more random, while lower values like 0.2 will make it more focused and deterministic. */
-	// @JsonInclude(Include.NON_NULL)
-	// public record TranscriptionRequest (
-	// 		@JsonProperty("model") String model,
-	// 		@JsonProperty("language") String language,
-	// 		@JsonProperty("prompt") String prompt,
-	// 		@JsonProperty("response_format") ResponseFormat responseFormat,
-	// 		@JsonProperty("temperature") Float temperature) {
-
-	// 	/**
-	// 	 * Shortcut constructor for a transcription request with the given model and temperature
-	// 	 *
-	// 	 * @param model ID of the model to use.
-	// 	 * @param temperature What sampling temperature to use, between 0 and 1.
-	// 	 */
-	// 	public TranscriptionRequest(String model, Float temperature) {
-	// 		this(model, null, null, null, temperature);
-	// 	}
-
-	// 	public TranscriptionRequest() {
-	// 		this(null, null, null, null, null);
-	// 	}
-
-	// 	/**
-	// 	 * An object specifying the format that the model must output.
-	// 	 * @param type Must be one of 'text' or 'json_object'.
-	// 	 */
-	// 	@JsonInclude(Include.NON_NULL)
-	// 	public record ResponseFormat(
-	// 			@JsonProperty("type") String type) {
-	// 	}
-	// }
-
-	// /**
-	//  * Creates a model response for the given transcription.
-	//  *
-	//  * @param transcriptionRequest The transcription request.
-	//  * @return Entity response with {@link Transcription} as a body and HTTP status code and headers.
-	//  */
-	// public ResponseEntity<Transcription> transcriptionEntityJson(MultiValueMap<String, Object> transcriptionRequest) {
-
-	// 	Assert.notNull(transcriptionRequest, "The request body can not be null.");
-
-	// 	return this.multipartRestClient.post()
-	// 			.uri("/v1/audio/transcriptions")
-	// 			.body(transcriptionRequest)
-	// 			.retrieve()
-	// 			.toEntity(Transcription.class);
-	// }
-
-	// /**
-	//  * Creates a model response for the given transcription.
-	//  *
-	//  * @param transcriptionRequest The transcription request.
-	//  * @return Entity response with {@link String} as a body and HTTP status code and headers.
-	//  */
-	// public ResponseEntity<String> transcriptionEntityText(MultiValueMap<String, Object> transcriptionRequest) {
-
-	// 	Assert.notNull(transcriptionRequest, "The request body can not be null.");
-
-	// 	return this.multipartRestClient.post()
-	// 			.uri("/v1/audio/transcriptions")
-	// 			.body(transcriptionRequest)
-	// 			.accept(MediaType.TEXT_PLAIN)
-	// 			.retrieve()
-	// 			.toEntity(String.class);
-	// }
 }
 // @formatter:on

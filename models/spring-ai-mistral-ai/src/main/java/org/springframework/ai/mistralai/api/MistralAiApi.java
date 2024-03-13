@@ -17,6 +17,7 @@ package org.springframework.ai.mistralai.api;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -704,6 +705,8 @@ public class MistralAiApi {
 			.toEntity(ChatCompletion.class);
 	}
 
+	private MIstralAiStreamFunctionCallingHelper chunkMerger = new MIstralAiStreamFunctionCallingHelper();
+
 	/**
 	 * Creates a streaming chat response for the given chat conversation.
 	 * @param chatRequest The chat completion request. Must have the stream property set
@@ -715,6 +718,8 @@ public class MistralAiApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
 
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
 		return this.webClient.post()
 			.uri("/v1/chat/completions")
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -722,7 +727,26 @@ public class MistralAiApi {
 			.bodyToFlux(String.class)
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class));
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(chunk -> {
+				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			.concatMapIterable(window -> {
+				Mono<ChatCompletionChunk> mono1 = window.reduce(new ChatCompletionChunk(null, null, null, null, null),
+						(previous, current) -> this.chunkMerger.merge(previous, current));
+				return List.of(mono1);
+			})
+			.flatMap(mono -> mono);
 	}
 
 }

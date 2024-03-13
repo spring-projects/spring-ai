@@ -57,13 +57,13 @@ public class MilvusServiceClientProperties {
 
 	/**
 	 * Keep-alive time value of client channel. The keep-alive value must be greater than
-	 * zero. Default is 55000 ms.
+	 * zero.
 	 */
 	private long keepAliveTimeMs = 55000;
 
 	/**
 	 * The keep-alive timeout value of client channel. The timeout value must be greater
-	 * than zero. Default value is 20000 ms.
+	 * than zero.
 	 */
 	private long keepAliveTimeoutMs = 20000;
 
@@ -121,12 +121,12 @@ public class MilvusServiceClientProperties {
 	private long idleTimeoutMs = TimeUnit.MILLISECONDS.convert(24, TimeUnit.HOURS);
 
 	/**
-	 * The username and password for this connection
+	 * The username and password for this connection.
 	 */
 	private String username = "root";
 
 	/**
-	 * The password for this connection
+	 * The password for this connection.
 	 */
 	private String password = "milvus";
 

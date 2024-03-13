@@ -78,8 +78,23 @@ public class DefaultContentFormatter implements ContentFormatter {
 	 * Start building a new configuration.
 	 * @return The entry point for creating a new configuration.
 	 */
-	public static Builder builder() {
-		return new Builder();
+	public static ContentFormatterBuilder builder() {
+		return new ContentFormatterBuilder();
+	}
+
+	/**
+	 * Initializes a new {@link ContentFormatterBuilder} with settings from an existing
+	 * {@link DefaultContentFormatter} object.
+	 * @param formatter The DefaultContentFormatter object whose settings are to be used.
+	 * @return A ContentFormatterBuilder instance initialized with the provided
+	 * DefaultContentFormatter settings.
+	 */
+	public static ContentFormatterBuilder builder(DefaultContentFormatter formatter) {
+		return builder().withExcludedEmbedMetadataKeys(formatter.getExcludedEmbedMetadataKeys())
+			.withExcludedInferenceMetadataKeys(formatter.getExcludedInferenceMetadataKeys())
+			.withMetadataSeparator(formatter.getMetadataSeparator())
+			.withMetadataTemplate(formatter.getMetadataTemplate())
+			.withTextTemplate(formatter.getTextTemplate());
 	}
 
 	/**
@@ -90,7 +105,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		return builder().build();
 	}
 
-	private DefaultContentFormatter(Builder builder) {
+	private DefaultContentFormatter(ContentFormatterBuilder builder) {
 		this.metadataTemplate = builder.metadataTemplate;
 		this.metadataSeparator = builder.metadataSeparator;
 		this.textTemplate = builder.textTemplate;
@@ -98,7 +113,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		this.excludedEmbedMetadataKeys = builder.excludedEmbedMetadataKeys;
 	}
 
-	public static class Builder {
+	public static class ContentFormatterBuilder {
 
 		private String metadataTemplate = DEFAULT_METADATA_TEMPLATE;
 
@@ -110,16 +125,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 
 		private List<String> excludedEmbedMetadataKeys = new ArrayList<>();
 
-		private Builder() {
-		}
-
-		public Builder from(DefaultContentFormatter fromFormatter) {
-			this.withExcludedEmbedMetadataKeys(fromFormatter.getExcludedEmbedMetadataKeys())
-				.withExcludedInferenceMetadataKeys(fromFormatter.getExcludedInferenceMetadataKeys())
-				.withMetadataSeparator(fromFormatter.getMetadataSeparator())
-				.withMetadataTemplate(fromFormatter.getMetadataTemplate())
-				.withTextTemplate(fromFormatter.getTextTemplate());
-			return this;
+		private ContentFormatterBuilder() {
 		}
 
 		/**
@@ -127,7 +133,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @param metadataTemplate Metadata template to use.
 		 * @return this builder
 		 */
-		public Builder withMetadataTemplate(String metadataTemplate) {
+		public ContentFormatterBuilder withMetadataTemplate(String metadataTemplate) {
 			Assert.hasText(metadataTemplate, "Metadata Template must not be empty");
 			this.metadataTemplate = metadataTemplate;
 			return this;
@@ -138,7 +144,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @param metadataSeparator Metadata separator to use.
 		 * @return this builder
 		 */
-		public Builder withMetadataSeparator(String metadataSeparator) {
+		public ContentFormatterBuilder withMetadataSeparator(String metadataSeparator) {
 			Assert.notNull(metadataSeparator, "Metadata separator must not be empty");
 			this.metadataSeparator = metadataSeparator;
 			return this;
@@ -149,7 +155,7 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @param textTemplate Document's content template.
 		 * @return this builder
 		 */
-		public Builder withTextTemplate(String textTemplate) {
+		public ContentFormatterBuilder withTextTemplate(String textTemplate) {
 			Assert.hasText(textTemplate, "Document's text template must not be empty");
 			this.textTemplate = textTemplate;
 			return this;
@@ -161,13 +167,13 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @param excludedInferenceMetadataKeys Excluded inference metadata keys to use.
 		 * @return this builder
 		 */
-		public Builder withExcludedInferenceMetadataKeys(List<String> excludedInferenceMetadataKeys) {
+		public ContentFormatterBuilder withExcludedInferenceMetadataKeys(List<String> excludedInferenceMetadataKeys) {
 			Assert.notNull(excludedInferenceMetadataKeys, "Excluded inference metadata keys must not be null");
 			this.excludedInferenceMetadataKeys = excludedInferenceMetadataKeys;
 			return this;
 		}
 
-		public Builder withExcludedInferenceMetadataKeys(String... keys) {
+		public ContentFormatterBuilder withExcludedInferenceMetadataKeys(String... keys) {
 			Assert.notNull(keys, "Excluded inference metadata keys must not be null");
 			this.excludedInferenceMetadataKeys.addAll(Arrays.asList(keys));
 			return this;
@@ -178,13 +184,13 @@ public class DefaultContentFormatter implements ContentFormatter {
 		 * @param excludedEmbedMetadataKeys Excluded Embed metadata keys to use.
 		 * @return this builder
 		 */
-		public Builder withExcludedEmbedMetadataKeys(List<String> excludedEmbedMetadataKeys) {
+		public ContentFormatterBuilder withExcludedEmbedMetadataKeys(List<String> excludedEmbedMetadataKeys) {
 			Assert.notNull(excludedEmbedMetadataKeys, "Excluded Embed metadata keys must not be null");
 			this.excludedEmbedMetadataKeys = excludedEmbedMetadataKeys;
 			return this;
 		}
 
-		public Builder withExcludedEmbedMetadataKeys(String... keys) {
+		public ContentFormatterBuilder withExcludedEmbedMetadataKeys(String... keys) {
 			Assert.notNull(keys, "Excluded Embed metadata keys must not be null");
 			this.excludedEmbedMetadataKeys.addAll(Arrays.asList(keys));
 			return this;

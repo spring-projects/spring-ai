@@ -19,17 +19,22 @@ import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
 /**
+ * The Media class represents the data and metadata of a media attachment in a message. It
+ * consists of a MIME type and the raw data.
+ *
+ * This class is used as a parameter in the constructor of the UserMessage class.
+ *
  * @author Christian Tzolov
+ * @since 0.8.1
  */
-public class MediaData {
+public class Media {
 
 	private final MimeType mimeType;
 
 	private final Object data;
 
-	public MediaData(MimeType mimeType, Object data) {
+	public Media(MimeType mimeType, Object data) {
 		Assert.notNull(mimeType, "MimeType must not be null");
-		// Assert.notNull(data, "Data must not be null");
 		this.mimeType = mimeType;
 		this.data = data;
 	}
