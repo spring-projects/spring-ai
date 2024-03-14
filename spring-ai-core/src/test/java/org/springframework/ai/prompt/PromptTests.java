@@ -33,7 +33,7 @@ class PromptTests {
 	@Test
 	void newApiPlaygroundTests() {
 		// Create a String, a PromptValue or Messages
-		String templateText = "Hello '{firstName}' '{lastName}' from Unix";
+		String templateText = "Hello '<firstName>' '<lastName>' from Unix";
 		PromptTemplate pt = new PromptTemplate(templateText);
 
 		final Map<String, Object> model = new HashMap<>();
@@ -94,7 +94,7 @@ class PromptTests {
 
 	@Test
 	void testSingleInputVariable() {
-		String template = "This is a {foo} test";
+		String template = "This is a <foo> test";
 		PromptTemplate promptTemplate = new PromptTemplate(template);
 		Set<String> inputVariables = promptTemplate.getInputVariables();
 		assertThat(inputVariables).isNotEmpty();
@@ -104,7 +104,7 @@ class PromptTests {
 
 	@Test
 	void testMultipleInputVariables() {
-		String template = "This {bar} is a {foo} test";
+		String template = "This <bar> is a <foo> test";
 		PromptTemplate promptTemplate = new PromptTemplate(template);
 		Set<String> inputVariables = promptTemplate.getInputVariables();
 		assertThat(inputVariables).isNotEmpty();
@@ -114,7 +114,7 @@ class PromptTests {
 
 	@Test
 	void testMultipleInputVariablesWithRepeats() {
-		String template = "This {bar} is a {foo} test {foo}.";
+		String template = "This <bar> is a <foo> test <foo>.";
 		PromptTemplate promptTemplate = new PromptTemplate(template);
 		Set<String> inputVariables = promptTemplate.getInputVariables();
 		assertThat(inputVariables).isNotEmpty();
@@ -124,7 +124,7 @@ class PromptTests {
 
 	@Test
 	void testBadFormatOfTemplateString() {
-		String template = "This is a {foo test";
+		String template = "This is a <foo test";
 		Assertions.assertThatThrownBy(() -> {
 			new PromptTemplate(template);
 		}).isInstanceOf(IllegalArgumentException.class).hasMessage("The template string is not valid.");
