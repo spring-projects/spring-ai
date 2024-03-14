@@ -38,6 +38,10 @@ public class Neo4jVectorStoreProperties {
 
 	private String indexName = Neo4jVectorStore.DEFAULT_INDEX_NAME;
 
+	private String idProperty = Neo4jVectorStore.DEFAULT_ID_PROPERTY;
+
+	private String constraintName = Neo4jVectorStore.DEFAULT_CONSTRAINT_NAME;
+
 	public String getDatabaseName() {
 		return this.databaseName;
 	}
@@ -84,6 +88,22 @@ public class Neo4jVectorStoreProperties {
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
+	}
+
+	public String getIdProperty() {
+		return this.idProperty;
+	}
+
+	public void setIdProperty(String idProperty) {
+		this.idProperty = idProperty;
+	}
+
+	public String getConstraintName() {
+		return this.constraintName;
+	}
+
+	public void setConstraintName(String constraintName) {
+		this.constraintName = constraintName;
 	}
 
 }
