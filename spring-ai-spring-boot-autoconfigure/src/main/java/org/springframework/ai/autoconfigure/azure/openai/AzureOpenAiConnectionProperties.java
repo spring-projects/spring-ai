@@ -58,6 +58,12 @@ public class AzureOpenAiConnectionProperties {
 	 */
 	private String tenantId;
 
+	/**
+	 * Azure OpenAI API enableLog. From the Azure AI OpenAI `Keys and Endpoint` section
+	 * under `Resource Management`.
+	 */
+	private Boolean enableLog;
+
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
 	}
@@ -104,6 +110,14 @@ public class AzureOpenAiConnectionProperties {
 
 	public void setTenantId(String tenantId) {
 		this.tenantId = tenantId;
+	}
+
+	public Boolean getEnableLog() {
+		return enableLog;
+	}
+
+	public void setEnableLog(Boolean enableLog) {
+		this.enableLog = enableLog;
 	}
 
 }
