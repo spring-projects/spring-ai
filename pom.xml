@@ -26,8 +26,6 @@
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
-		<module>models/spring-ai-anthropic</module>
-
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -56,17 +54,13 @@
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
-		<module>vector-stores/spring-ai-gemfire</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
 		<module>vector-stores/spring-ai-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 		<module>spring-ai-retry</module>
-		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
-		<module>spring-ai-spring-boot-testcontainers</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+		<module>vector-stores/spring-ai-elasticsearch-store</module>
 	</modules>
 
 	<organization>
@@ -117,7 +111,7 @@
 		<azure-open-ai-client.version>1.0.0-beta.7</azure-open-ai-client.version>
 		<jtokkit.version>1.0.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
-		<bedrockruntime.version>2.25.3</bedrockruntime.version>
+		<bedrockruntime.version>2.24.8</bedrockruntime.version>
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
@@ -140,7 +134,7 @@
 		<qdrant.version>1.7.1</qdrant.version>
 
 		<!-- testing dependencies -->
-		<testcontainers.version>1.19.7</testcontainers.version>
+		<testcontainers.version>1.19.6</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
