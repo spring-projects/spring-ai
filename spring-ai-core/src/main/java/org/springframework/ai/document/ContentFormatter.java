@@ -16,7 +16,8 @@
 package org.springframework.ai.document;
 
 /**
- * Converts the Document text and metadata into an AI, prompt-friendly text representation.
+ * Converts the Document text and metadata into an AI, prompt-friendly text
+ * representation.
  *
  * @author Christian Tzolov
  */
