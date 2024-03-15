@@ -34,6 +34,38 @@ public class AzureOpenAiConnectionProperties {
 	 */
 	private String endpoint;
 
+	/**
+	 * Azure OpenAI API authType. From the Azure AI OpenAI `Keys and Endpoint` section
+	 * under `Resource Management`.
+	 */
+	private String authType;
+
+	/**
+	 * Azure OpenAI API clientId. From the Azure AI OpenAI `Keys and Endpoint` section
+	 * under `Resource Management`.
+	 */
+	private String clientId;
+
+	/**
+	 * Azure OpenAI API clientSecret. From the Azure AI OpenAI `Keys and Endpoint` section
+	 * under `Resource Management`.
+	 */
+	private String clientSecret;
+
+	/**
+	 * Azure OpenAI API tenantId. From the Azure AI OpenAI `Keys and Endpoint` section
+	 * under `Resource Management`.
+	 */
+	private String tenantId;
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+	public String getApiKey() {
+		return apiKey;
+	}
+
 	public String getEndpoint() {
 		return endpoint;
 	}
@@ -42,12 +74,36 @@ public class AzureOpenAiConnectionProperties {
 		this.endpoint = endpoint;
 	}
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	public String getAuthType() {
+		return authType;
 	}
 
-	public String getApiKey() {
-		return apiKey;
+	public void setAuthType(String authType) {
+		this.authType = authType;
+	}
+
+	public String getClientId() {
+		return clientId;
+	}
+
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+
+	public String getClientSecret() {
+		return clientSecret;
+	}
+
+	public void setClientSecret(String clientSecret) {
+		this.clientSecret = clientSecret;
+	}
+
+	public String getTenantId() {
+		return tenantId;
+	}
+
+	public void setTenantId(String tenantId) {
+		this.tenantId = tenantId;
 	}
 
 }
