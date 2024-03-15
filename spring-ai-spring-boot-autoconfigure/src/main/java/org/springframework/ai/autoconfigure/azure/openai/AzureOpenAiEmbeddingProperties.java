@@ -33,7 +33,7 @@ public class AzureOpenAiEmbeddingProperties {
 
 	@NestedConfigurationProperty
 	private AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
-		.withModel("text-embedding-ada-002")
+		.withDeploymentName("text-embedding-ada-002")
 		.build();
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;

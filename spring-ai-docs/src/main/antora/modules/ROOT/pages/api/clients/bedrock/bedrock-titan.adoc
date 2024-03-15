@@ -1,6 +1,6 @@
 = Titan Chat
 
-link:https://aws.amazon.com/bedrock/titan/[Amazon Titan] foundation models (FMs) provide customers with a breadth of high-performing image, multimodal, and text model choices, via a fully managed API.
+link:https://aws.amazon.com/bedrock/titan/[Amazon Titan] foundation models (FMs) provide customers with a breadth of high-performing image, multimodal embeddings, and text model choices, via a fully managed API.
 Amazon Titan models are created by AWS and pretrained on large datasets, making them powerful, general-purpose models built to support a variety of use cases, while also supporting the responsible use of AI.
 Use them as is or privately customize them with your own data.
 

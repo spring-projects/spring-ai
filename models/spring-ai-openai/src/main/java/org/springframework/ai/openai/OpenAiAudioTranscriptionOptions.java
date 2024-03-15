@@ -38,8 +38,7 @@ public class OpenAiAudioTranscriptionOptions implements ModelOptions {
 	private @JsonProperty("model") String model;
 
 	/**
-	 * An object specifying the format that the model must output. Setting to { "type":
-	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
+	 * The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt.
 	 */
 	private @JsonProperty("response_format") TranscriptResponseFormat responseFormat;
 

@@ -147,13 +147,27 @@ public class OpenAiChatClient extends
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
 			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-				return new Generation(choice.message().content(), toMap(choice.message()))
+				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();
 
 			return new ChatResponse(generations,
 					OpenAiChatResponseMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
 		});
+	}
+
+	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
+		Map<String, Object> map = new HashMap<>();
+
+		var message = choice.message();
+		if (message.role() != null) {
+			map.put("role", message.role().name());
+		}
+		if (choice.finishReason() != null) {
+			map.put("finishReason", choice.finishReason().name());
+		}
+		map.put("id", id);
+		return map;
 	}
 
 	@Override
@@ -278,15 +292,6 @@ public class OpenAiChatClient extends
 					functionCallback.getName(), functionCallback.getInputTypeSchema());
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
-	}
-
-	private Map<String, Object> toMap(ChatCompletionMessage message) {
-		Map<String, Object> map = new HashMap<>();
-
-		if (message.role() != null) {
-			map.put("role", message.role().name());
-		}
-		return map;
 	}
 
 	@Override

@@ -17,6 +17,10 @@ package org.springframework.ai.chat.messages;
 
 import java.util.Map;
 
+/**
+ * The FunctionMessage class represents a message with a function content in a chat
+ * application.
+ */
 public class FunctionMessage extends AbstractMessage {
 
 	public FunctionMessage(String content) {

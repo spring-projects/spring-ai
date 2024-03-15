@@ -53,16 +53,43 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final MetadataMode metadataMode;
 
+	/**
+	 * Constructor for the OpenAiEmbeddingClient class.
+	 * @param openAiApi The OpenAiApi instance to use for making API requests.
+	 */
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi) {
 		this(openAiApi, MetadataMode.EMBED);
 	}
 
+	/**
+	 * Initializes a new instance of the OpenAiEmbeddingClient class.
+	 * @param openAiApi The OpenAiApi instance to use for making API requests.
+	 * @param metadataMode The mode for generating metadata.
+	 */
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode) {
 		this(openAiApi, metadataMode,
 				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
+	/**
+	 * Initializes a new instance of the OpenAiEmbeddingClient class.
+	 * @param openAiApi The OpenAiApi instance to use for making API requests.
+	 * @param metadataMode The mode for generating metadata.
+	 * @param openAiEmbeddingOptions The options for OpenAi embedding.
+	 */
+	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode,
+			OpenAiEmbeddingOptions openAiEmbeddingOptions) {
+		this(openAiApi, metadataMode, openAiEmbeddingOptions, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	/**
+	 * Initializes a new instance of the OpenAiEmbeddingClient class.
+	 * @param openAiApi - The OpenAiApi instance to use for making API requests.
+	 * @param metadataMode - The mode for generating metadata.
+	 * @param options - The options for OpenAI embedding.
+	 * @param retryTemplate - The RetryTemplate for retrying failed API requests.
+	 */
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode, OpenAiEmbeddingOptions options,
 			RetryTemplate retryTemplate) {
 		Assert.notNull(openAiApi, "OpenAiService must not be null");

@@ -1,7 +1,7 @@
 = OpenAI Image Generation
 
 
-Spring AI supports ChatGPT's DALL-E, the Image generation model from OpenAI.
+Spring AI supports DALL-E, the Image generation model from OpenAI.
 
 == Prerequisites
 
@@ -41,34 +41,6 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Image Generation Properties
 
-==== Retry Properties
-
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Image client.
-
-[cols="3,5,1"]
-|====
-| Property | Description | Default
-
-| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
-| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
-| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
-| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
-| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
-| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
-|====
-
-==== Connection Properties
-
-The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
-
-[cols="3,5,1"]
-|====
-| Property | Description | Default
-| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
-| spring.ai.openai.api-key    | The API Key           |  -
-|====
-
-==== Configuration Properties
 
 The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageClient` implementation for OpenAI.
 
@@ -89,13 +61,44 @@ The prefix `spring.ai.openai.image` is the property prefix that lets you configu
 | `spring.ai.openai.image.options.user`       | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
 |====
 
-=== Image Options [[image-options]]
+==== Connection Properties
+
+The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Image client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+|====
+
+
+== Runtime Options [[image-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiImageOptions.java[OpenAiImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
 
 On start-up, the default options can be configured with the `OpenAiImageClient(OpenAiImageApi openAiImageApi)` constructor and the `withDefaultOptions(OpenAiImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
 
-At run-time you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
 For example to override the OpenAI specific options such as quality and the number of images to create, use the following code example:
 
 [source,java]
