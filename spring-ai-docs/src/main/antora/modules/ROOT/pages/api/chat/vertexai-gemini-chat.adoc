@@ -106,6 +106,7 @@ This is a powerful technique to connect the LLM capabilities with external tools
 Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
 
 == Multimodal
+
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
 
 Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video. For more details, refer to the blog post https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini[Introducing Gemini].

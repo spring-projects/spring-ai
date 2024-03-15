@@ -21,6 +21,7 @@
 ***** xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Function Calling]
 *** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/functions/mistralai-chat-functions.adoc[Function Calling]
+*** xref:api/chat/anthropic-chat.adoc[Anthropic]
 ** xref:api/embeddings.adoc[]
 *** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 *** xref:api/embeddings/ollama-embeddings.adoc[Ollama]
