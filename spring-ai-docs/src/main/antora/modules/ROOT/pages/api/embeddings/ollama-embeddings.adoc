@@ -110,7 +110,7 @@ TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be ov
 
 === Embedding Options [[embedding-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tunning, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
 
 The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
 

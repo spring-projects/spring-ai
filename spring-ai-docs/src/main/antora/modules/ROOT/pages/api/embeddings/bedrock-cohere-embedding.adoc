@@ -69,7 +69,7 @@ The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbedd
 | Property | Description | Default
 | spring.ai.bedrock.cohere.embedding.enabled              | Enable or disable support for Cohere  | false
 | spring.ai.bedrock.cohere.embedding.model                | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/056b95a00efa5b014a1f488329fbd07a46c02378/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereEmbeddingBedrockApi.java#L150[CohereEmbeddingModel] for the supported models.  | cohere.embed-multilingual-v3
-| spring.ai.bedrock.cohere.embedding.options.input-type  | Prepends special tokens to differentiate each type from one another. You should not mix different types together, except when mixing types for for search and retrieval. In this case, embed your corpus with the search_document type and embedded queries with type search_query type.  | SEARCH_DOCUMENT
+| spring.ai.bedrock.cohere.embedding.options.input-type  | Prepends special tokens to differentiate each type from one another. You should not mix different types together, except when mixing types for search and retrieval. In this case, embed your corpus with the search_document type and embedded queries with type search_query type.  | SEARCH_DOCUMENT
 | spring.ai.bedrock.cohere.embedding.options.truncate  | Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the model.  | NONE
 |====
 
