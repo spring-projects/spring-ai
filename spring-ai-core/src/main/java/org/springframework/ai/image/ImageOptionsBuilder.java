@@ -105,7 +105,7 @@ public class ImageOptionsBuilder {
 
 		private final String responseFormat;
 
-		ImageOptionsImpl(final Integer n, final String model, final Integer width, final Integer height,
+		private ImageOptionsImpl(final Integer n, final String model, final Integer width, final Integer height,
 				final String responseFormat) {
 			this.n = n;
 			this.model = model;
