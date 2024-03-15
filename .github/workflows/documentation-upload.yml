@@ -28,7 +28,7 @@ jobs:
       - name: Generate Java docs
         run: mvn javadoc:aggregate
 
-      - name: Generate Reference docs
+      - name: Generate assembly
         working-directory: spring-ai-docs
         run: mvn assembly:single
 
@@ -50,7 +50,7 @@ jobs:
         working-directory: spring-ai-docs/target
         run: |
           unzip spring-ai-$RELEASE_VERSION-docs.zip
-          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir $RELEASE_VERSION"
+          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $RELEASE_VERSION/api"
           scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$RELEASE_VERSION
           ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "rm current && ln -s $RELEASE_VERSION current"
 
