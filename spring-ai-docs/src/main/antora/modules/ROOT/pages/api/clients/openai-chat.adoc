@@ -217,7 +217,7 @@ var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 
 var chatClient = new OpenAiChatClient(openAiApi)
     .withDefaultOptions(OpenAiChatOptions.builder()
-            .withModel("gpt-35-turbo")
+            .withModel("gpt-3.5-turbo")
             .withTemperature(0.4)
             .withMaxTokens(200)
         .build());

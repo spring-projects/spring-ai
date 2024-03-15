@@ -18,7 +18,6 @@ package org.springframework.ai.autoconfigure.openai;
 import java.util.List;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;

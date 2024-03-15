@@ -18,7 +18,6 @@ package org.springframework.ai.autoconfigure.transformers;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import ai.onnxruntime.OrtSession;
 
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -32,7 +31,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ TransformersEmbeddingClientProperties.class })
-@ConditionalOnClass({ OrtSession.class, HuggingFaceTokenizer.class })
+@ConditionalOnClass({ OrtSession.class, HuggingFaceTokenizer.class, TransformersEmbeddingClient.class })
 public class TransformersEmbeddingClientAutoConfiguration {
 
 	@Bean

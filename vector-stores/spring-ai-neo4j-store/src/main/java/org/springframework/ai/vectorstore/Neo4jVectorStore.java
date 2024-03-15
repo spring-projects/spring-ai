@@ -63,13 +63,18 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 		private final Neo4jDistanceType distanceType;
 
-		private final String label;
-
 		private final String embeddingProperty;
 
-		private final String quotedLabel;
+		private final String label;
 
 		private final String indexName;
+
+		// needed for similarity search call
+		private final String indexNameNotSanitized;
+
+		private final String idProperty;
+
+		private final String constraintName;
 
 		/**
 		 * Start building a new configuration.
@@ -96,10 +101,12 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 				.orElseGet(SessionConfig::defaultConfig);
 			this.embeddingDimension = builder.embeddingDimension;
 			this.distanceType = builder.distanceType;
-			this.label = builder.label;
-			this.embeddingProperty = builder.embeddingProperty;
-			this.quotedLabel = SchemaNames.sanitize(this.label).orElseThrow();
-			this.indexName = builder.indexName;
+			this.embeddingProperty = SchemaNames.sanitize(builder.embeddingProperty).orElseThrow();
+			this.label = SchemaNames.sanitize(builder.label).orElseThrow();
+			this.indexNameNotSanitized = builder.indexName;
+			this.indexName = SchemaNames.sanitize(builder.indexName, true).orElseThrow();
+			this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
+			this.idProperty = SchemaNames.sanitize(builder.idProperty).orElseThrow();
 		}
 
 		public static class Builder {
@@ -115,6 +122,10 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			private String embeddingProperty = DEFAULT_EMBEDDING_PROPERTY;
 
 			private String indexName = DEFAULT_INDEX_NAME;
+
+			private String idProperty = DEFAULT_ID_PROPERTY;
+
+			private String constraintName = DEFAULT_CONSTRAINT_NAME;
 
 			private Builder() {
 			}
@@ -203,6 +214,35 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			}
 
 			/**
+			 * Configures the id property to be used. Defaults to {@literal id}.
+			 * @param newIdProperty The name of the id property of the {@link Document}
+			 * entity
+			 * @return this builder
+			 */
+			public Builder withIdProperty(String newIdProperty) {
+
+				Assert.hasText(newIdProperty, "Id property may not be null or blank");
+
+				this.idProperty = newIdProperty;
+				return this;
+			}
+
+			/**
+			 * Configures the constraint name to be used. Defaults to
+			 * {@literal Document_unique_idx}.
+			 * @param newConstraintName The name of the unique constraint for the id
+			 * property.
+			 * @return this builder
+			 */
+			public Builder withConstraintName(String newConstraintName) {
+
+				Assert.hasText(newConstraintName, "Constraint name may not be null or blank");
+
+				this.constraintName = newConstraintName;
+				return this;
+			}
+
+			/**
 			 * {@return the immutable configuration}
 			 */
 			public Neo4jVectorStoreConfig build() {
@@ -221,6 +261,10 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
 	public static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
+
+	public static final String DEFAULT_ID_PROPERTY = "id";
+
+	public static final String DEFAULT_CONSTRAINT_NAME = DEFAULT_LABEL + "_unique_idx";
 
 	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
 
@@ -249,16 +293,16 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		try (var session = this.driver.session()) {
 			var statement = """
 						UNWIND $rows AS row
-						MERGE (u:%s {id: row.id})
+						MERGE (u:%s {%2$s: row.id})
 						ON CREATE
 							SET u += row.properties
 						ON MATCH
 							SET u = {}
-							SET u.id = row.id,
+							SET u.%2$s = row.id,
 								u += row.properties
 						WITH row, u
 						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row.embedding)
-					""".formatted(this.config.quotedLabel);
+					""".formatted(this.config.label, this.config.idProperty);
 			session.run(statement, Map.of("rows", rows, "embeddingProperty", this.config.embeddingProperty)).consume();
 		}
 	}
@@ -268,10 +312,12 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
-			var summary = session.run("""
-					MATCH (n:%s) WHERE n.id IN $ids
-					CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
-					 """.formatted(this.config.quotedLabel), Map.of("ids", idList, "transactionSize", 10_000))
+			var summary = session
+				.run("""
+						MATCH (n:%s) WHERE n.%s IN $ids
+						CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
+						 """.formatted(this.config.label, this.config.idProperty),
+						Map.of("ids", idList, "transactionSize", 10_000))
 				.consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
 		}
@@ -297,10 +343,9 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 					RETURN node, score""".formatted(condition);
 
 			return session
-				.run(query,
-						Map.of("indexName", this.config.indexName, "numberOfNearestNeighbours", request.getTopK(),
-								"embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
-				.list(Neo4jVectorStore::recordToDocument);
+				.run(query, Map.of("indexName", this.config.indexNameNotSanitized, "numberOfNearestNeighbours",
+						request.getTopK(), "embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
+				.list(this::recordToDocument);
 		}
 	}
 
@@ -310,8 +355,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
 			session
-				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.id IS UNIQUE".formatted(
-						SchemaNames.sanitize(this.config.label + "_unique_idx").orElseThrow(), this.config.quotedLabel))
+				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
+					.formatted(this.config.constraintName, this.config.label, this.config.idProperty))
 				.consume();
 
 			var statement = """
@@ -320,9 +365,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 							 `vector.dimensions`: %d,
 							 `vector.similarity_function`: '%s'
 							}}
-					""".formatted(SchemaNames.sanitize(this.config.indexName, true).orElseThrow(),
-					this.config.quotedLabel, this.config.embeddingProperty, this.config.embeddingDimension,
-					this.config.distanceType.name);
+					""".formatted(this.config.indexName, this.config.label, this.config.embeddingProperty,
+					this.config.embeddingDimension, this.config.distanceType.name);
 			session.run(statement).consume();
 			session.run("CALL db.awaitIndexes()").consume();
 		}
@@ -355,7 +399,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		return embeddingFloat;
 	}
 
-	private static Document recordToDocument(org.neo4j.driver.Record neoRecord) {
+	private Document recordToDocument(org.neo4j.driver.Record neoRecord) {
 		var node = neoRecord.get("node").asNode();
 		var score = neoRecord.get("score").asFloat();
 		var metaData = new HashMap<String, Object>();
@@ -366,7 +410,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			}
 		});
 
-		return new Document(node.get("id").asString(), node.get("text").asString(), Map.copyOf(metaData));
+		return new Document(node.get(this.config.idProperty).asString(), node.get("text").asString(),
+				Map.copyOf(metaData));
 	}
 
 }
