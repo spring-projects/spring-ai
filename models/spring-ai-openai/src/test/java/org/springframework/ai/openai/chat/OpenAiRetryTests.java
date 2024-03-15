@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.openai.OpenAiImageOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.prompt.Prompt;
@@ -36,7 +37,6 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.OpenAiImageClient;
-import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
@@ -130,7 +130,7 @@ public class OpenAiRetryTests {
 					.withResponseFormat(TranscriptResponseFormat.JSON)
 					.build(),
 				retryTemplate);
-		imageClient = new OpenAiImageClient(openAiImageApi, OpenAiImageOptions.builder().build(), retryTemplate);
+		imageClient = new OpenAiImageClient(openAiImageApi, OpenAiImageOptionsBuilder.builder().build(), retryTemplate);
 	}
 
 	@Test

@@ -48,14 +48,14 @@ public class OpenAiImageClient implements ImageClient {
 
 	private final static Logger logger = LoggerFactory.getLogger(OpenAiImageClient.class);
 
-	private OpenAiImageOptions defaultOptions;
+	private final OpenAiImageOptions defaultOptions;
 
 	private final OpenAiImageApi openAiImageApi;
 
 	public final RetryTemplate retryTemplate;
 
 	public OpenAiImageClient(OpenAiImageApi openAiImageApi) {
-		this(openAiImageApi, OpenAiImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		this(openAiImageApi, OpenAiImageOptionsBuilder.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public OpenAiImageClient(OpenAiImageApi openAiImageApi, OpenAiImageOptions defaultOptions,
@@ -123,39 +123,9 @@ public class OpenAiImageClient implements ImageClient {
 	 * @return the converted {@link OpenAiImageOptions}.
 	 */
 	private OpenAiImageOptions toOpenAiImageOptions(ImageOptions runtimeImageOptions) {
-		OpenAiImageOptions.Builder openAiImageOptionsBuilder = OpenAiImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			// Handle portable image options
-			if (runtimeImageOptions.getN() != null) {
-				openAiImageOptionsBuilder.withN(runtimeImageOptions.getN());
-			}
-			if (runtimeImageOptions.getModel() != null) {
-				openAiImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions.getResponseFormat() != null) {
-				openAiImageOptionsBuilder.withResponseFormat(runtimeImageOptions.getResponseFormat());
-			}
-			if (runtimeImageOptions.getWidth() != null) {
-				openAiImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
-			}
-			if (runtimeImageOptions.getHeight() != null) {
-				openAiImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
-			}
-			// Handle OpenAI specific image options
-			if (runtimeImageOptions instanceof OpenAiImageOptions) {
-				OpenAiImageOptions runtimeOpenAiImageOptions = (OpenAiImageOptions) runtimeImageOptions;
-				if (runtimeOpenAiImageOptions.getQuality() != null) {
-					openAiImageOptionsBuilder.withQuality(runtimeOpenAiImageOptions.getQuality());
-				}
-				if (runtimeOpenAiImageOptions.getStyle() != null) {
-					openAiImageOptionsBuilder.withStyle(runtimeOpenAiImageOptions.getStyle());
-				}
-				if (runtimeOpenAiImageOptions.getUser() != null) {
-					openAiImageOptionsBuilder.withUser(runtimeOpenAiImageOptions.getUser());
-				}
-			}
-		}
-		return openAiImageOptionsBuilder.build();
+		if (runtimeImageOptions instanceof OpenAiImageOptions)
+			return OpenAiImageOptionsBuilder.builder((OpenAiImageOptions) runtimeImageOptions).build();
+		return OpenAiImageOptionsBuilder.builder(runtimeImageOptions).build();
 	}
 
 }

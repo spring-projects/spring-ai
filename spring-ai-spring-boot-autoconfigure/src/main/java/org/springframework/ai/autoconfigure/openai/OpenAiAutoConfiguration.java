@@ -18,13 +18,13 @@ package org.springframework.ai.autoconfigure.openai;
 import java.util.List;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiImageOptionsBuilder;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -117,7 +117,8 @@ public class OpenAiAutoConfiguration {
 
 		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 
-		return new OpenAiImageClient(openAiImageApi, imageProperties.getOptions(), retryTemplate);
+		return new OpenAiImageClient(openAiImageApi,
+				OpenAiImageOptionsBuilder.builder(imageProperties.getOptions()).build(), retryTemplate);
 	}
 
 	@Bean
