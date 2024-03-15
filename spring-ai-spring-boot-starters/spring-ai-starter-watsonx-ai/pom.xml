@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai</artifactId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-
     <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - Watsonx.AI</name>
     <description>Spring AI Watsonx AI Auto Configuration</description>
     <url>https://github.com/spring-projects/spring-ai</url>
+
     <scm>
         <url>https://github.com/spring-projects/spring-ai</url>
         <connection>git://github.com/spring-projects/spring-ai.git</connection>
