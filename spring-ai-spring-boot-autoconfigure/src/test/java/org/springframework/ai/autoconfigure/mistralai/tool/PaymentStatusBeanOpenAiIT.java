@@ -32,7 +32,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -71,7 +71,7 @@ class PaymentStatusBeanOpenAiIT {
 
 				ChatResponse response = chatClient
 					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
-							OpenAiChatOptions.builder()
+							OpenAiChatOptionsBuilder.builder()
 								.withFunction("retrievePaymentStatus")
 								.withFunction("retrievePaymentDate")
 								.build()));

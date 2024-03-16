@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -35,7 +36,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.PortableFunctionCallingOptions;
 import org.springframework.ai.model.function.PortableFunctionCallingOptionsBuilder;
 import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -66,7 +66,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+					OpenAiChatOptionsBuilder.builder().withFunction("weatherFunction").build()));
 
 			logger.info("Response: {}", response);
 
@@ -74,7 +74,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			// Test weatherFunctionTwo
 			response = chatClient.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+					OpenAiChatOptionsBuilder.builder().withFunction("weatherFunctionTwo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -112,7 +112,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+					OpenAiChatOptionsBuilder.builder().withFunction("weatherFunction").build()));
 
 			String content = response.collectList()
 				.block()
@@ -130,7 +130,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			// Test weatherFunctionTwo
 			response = chatClient.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+					OpenAiChatOptionsBuilder.builder().withFunction("weatherFunctionTwo").build()));
 
 			content = response.collectList()
 				.block()

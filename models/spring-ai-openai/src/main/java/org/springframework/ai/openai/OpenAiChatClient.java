@@ -97,7 +97,10 @@ public class OpenAiChatClient extends
 	 */
 	public OpenAiChatClient(OpenAiApi openAiApi) {
 		this(openAiApi,
-				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
+				OpenAiChatOptionsBuilder.builder()
+					.withModel(OpenAiApi.DEFAULT_CHAT_MODEL)
+					.withTemperature(0.7f)
+					.build());
 	}
 
 	/**
@@ -249,20 +252,20 @@ public class OpenAiChatClient extends
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, OpenAiChatOptions.class);
-
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
-
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-			}
-			else {
+			OpenAiChatOptionsBuilder builder;
+			if (prompt.getOptions() instanceof OpenAiChatOptions runtimeOptions)
+				builder = OpenAiChatOptionsBuilder.builder(runtimeOptions);
+			else if (prompt.getOptions() instanceof ChatOptions runtimeOptions)
+				builder = OpenAiChatOptionsBuilder.builder().withChatOptions(runtimeOptions);
+			else
 				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
 						+ prompt.getOptions().getClass().getSimpleName());
-			}
+
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(builder.build(),
+					IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
+			builder.withFunctions(promptEnabledFunctions);
+			request = ModelOptionsUtils.merge(builder.build(), request, ChatCompletionRequest.class);
 		}
 
 		if (this.defaultOptions != null) {
@@ -278,9 +281,9 @@ public class OpenAiChatClient extends
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
-			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
-					request, ChatCompletionRequest.class);
+			request = ModelOptionsUtils.merge(OpenAiChatOptionsBuilder.builder()
+				.withTools(this.getFunctionTools(functionsForThisRequest))
+				.build(), request, ChatCompletionRequest.class);
 		}
 
 		return request;
