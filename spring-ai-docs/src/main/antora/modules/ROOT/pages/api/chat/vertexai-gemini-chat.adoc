@@ -103,7 +103,7 @@ TIP: In addition to the model specific `VertexAiChatPaLm2Options` you can use a 
 
 You can register custom Java functions with the VertexAiGeminiChatClient and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/clients/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
+Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
 
 == Multimodal
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.

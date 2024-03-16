@@ -108,7 +108,7 @@ NOTE: The `spring.ai.ollama.embedding.options.*` properties are based on the htt
 
 TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
-=== Embedding Options [[embedding-options]]
+== Runtime Options [[embedding-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
 
@@ -127,7 +127,7 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
             .withModel("Different-Embedding-Model-Deployment-Name"));
 ----
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
@@ -177,7 +177,7 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 NOTE: The `spring-ai-ollama` dependency provides access also to the `OllamaChatClient`.
-For more information about the `OllamaChatClient` refer to the link:../clients/ollama-chat.html[Ollama Chat Client] section.
+For more information about the `OllamaChatClient` refer to the link:../chat/ollama-chat.html[Ollama Chat Client] section.
 
 Next, create an `OllamaEmbeddingClient` instance and use it to compute the similarity between two input texts:
 

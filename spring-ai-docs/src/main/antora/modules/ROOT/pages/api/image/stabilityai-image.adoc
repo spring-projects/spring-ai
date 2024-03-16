@@ -74,7 +74,7 @@ The prefix `spring.ai.stabilityai.image` is the property prefix that lets you co
 |====
 
 
-=== Image Options [[image-options]]
+== Runtime Options [[image-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-stabilityai/src/main/java/org/springframework/ai/stabilityai/api/StabilityAiImageOptions.java[StabilityAiImageOptions.java] provides model configurations, such as the model to use, the style, the size, etc.
 

@@ -112,7 +112,7 @@ This is useful if you want to use different OpenAI accounts for different models
 
 TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-== Chat Options [[chat-options]]
+== Runtime Options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
@@ -139,9 +139,9 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 You can register custom Java functions with the OpenAiChatClient and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/clients/functions/openai-chat-functions.adoc[OpenAI Function Calling].
+Read more about xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Function Calling].
 
-== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-spring-boot-starter` to your pom (or gradle) dependencies.
 
@@ -233,7 +233,7 @@ Flux<ChatResponse> response = chatClient.stream(
 The `OpenAiChatOptions` provides the configuration information for the chat requests.
 The `OpenAiChatOptions.Builder` is fluent options builder.
 
-=== Low-level OpenAiApi Client [[low-level-api]]
+== Low-level OpenAiApi Client [[low-level-api]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi] provides is lightweight Java client for OpenAI Chat API link:https://platform.openai.com/docs/api-reference/chat[OpenAI Chat API].
 
@@ -262,7 +262,7 @@ Flux<ChatCompletionChunk> streamResponse = openAiApi.chatCompletionStream(
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.
 
-== Example Code
+=== Low-level API Examples
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/OpenAiApiIT.java[OpenAiApiIT.java] test provides some general examples how to use the lightweight library.
 
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
