@@ -29,7 +29,7 @@ public class MongoDBAtlasContainer extends GenericContainer<MongoDBAtlasContaine
 				"atlas deployments setup local-test --type local --port 27778 --bindIpAll --username root --password root --force && tail -f /dev/null");
 		withExposedPorts(27778);
 		waitingFor(Wait.forLogMessage(".*Deployment created!.*\\n", 1));
-		withStartupTimeout(Duration.ofMinutes(5)).withReuse(true);
+		withStartupTimeout(Duration.ofMinutes(5));
 	}
 
 	public String getConnectionString() {
