@@ -82,7 +82,7 @@ Supported values are: `amazon.titan-embed-image-v1` and `amazon.titan-embed-text
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 

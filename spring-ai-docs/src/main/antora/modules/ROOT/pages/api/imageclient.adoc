@@ -159,8 +159,8 @@ public class ImageGeneration implements ModelResult<Image> {
 
 `ImageClient` implementations are provided for the following Model providers:
 
-* xref:api/clients/image/openai-image.adoc[OpenAI Image Generation]
-* xref:api/clients/image/stabilityai-image.adoc[StabilityAI Image Generation]
+* xref:api/image/openai-image.adoc[OpenAI Image Generation]
+* xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
 
 == API Docs
 

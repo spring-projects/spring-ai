@@ -102,7 +102,7 @@ NOTE: The list of options for chat is to be reviewed. This https://github.com/sp
 
 TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-=== Chat Options [[chat-options]]
+== Runtime Options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides model configurations, such as the model to use, the temperature,  etc.
 
@@ -124,7 +124,7 @@ ChatResponse response = chatClient.call(
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-spring-boot-starter` to your pom (or gradle) dependencies.
 
@@ -218,7 +218,7 @@ Flux<ChatResponse> response = chatClient.stream(
 
 The `OllamaOptions` provides the configuration information for all chat requests.
 
-=== Low-level OpenAiApi Client [[low-level-api]]
+== Low-level OpenAiApi Client [[low-level-api]]
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaApi.java[OllamaApi] provides is lightweight Java client for Ollama Chat API link:https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion[Ollama Chat Completion API].
 
