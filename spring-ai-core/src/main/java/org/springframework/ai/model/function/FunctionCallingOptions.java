@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.model.function;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Set;
 
@@ -31,12 +32,14 @@ public interface FunctionCallingOptions {
 	 * ChatClient registry to be used in the chat completion requests.
 	 * @return Return the Function Callbacks to be registered with the ChatClient.
 	 */
+	@JsonIgnore
 	List<FunctionCallback> getFunctionCallbacks();
 
 	/**
 	 * @return List of function names from the ChatClient registry to be used in the next
 	 * chat completion requests.
 	 */
+	@JsonIgnore
 	Set<String> getFunctions();
 
 }
