@@ -39,7 +39,7 @@ public class OpenAiImageOptionsBuilder {
 			.withUser(options.getUser());
 	}
 
-	public OpenAiImageOptionsImpl build() {
+	public OpenAiImageOptions build() {
 		return new OpenAiImageOptionsImpl(this);
 	}
 
