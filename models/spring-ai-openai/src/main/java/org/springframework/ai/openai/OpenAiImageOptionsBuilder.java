@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 - 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -24,15 +39,9 @@ public class OpenAiImageOptionsBuilder {
 		return new OpenAiImageOptionsBuilder();
 	}
 
-	public static OpenAiImageOptionsBuilder builder(final ImageOptions options) {
-		return builder().withN(options.getN())
-			.withModel(options.getModel())
-			.withWidth(options.getWidth())
-			.withHeight(options.getHeight());
-	}
-
 	public static OpenAiImageOptionsBuilder builder(final OpenAiImageOptions options) {
-		return builder((ImageOptions) options).withQuality(options.getQuality())
+		return builder().withImageOptions(options)
+			.withQuality(options.getQuality())
 			.withResponseFormat(options.getResponseFormat())
 			.withSize(options.getSize())
 			.withStyle(options.getStyle())
@@ -43,47 +52,75 @@ public class OpenAiImageOptionsBuilder {
 		return new OpenAiImageOptionsImpl(this);
 	}
 
+	public OpenAiImageOptionsBuilder withImageOptions(final ImageOptions options) {
+		if (options == null)
+			return this;
+		withN(options.getN());
+		withModel(options.getModel());
+		withWidth(options.getWidth());
+		withHeight(options.getHeight());
+		return this;
+	}
+
 	public OpenAiImageOptionsBuilder withN(final Integer n) {
+		if (n == null)
+			return this;
 		this.imageOptionsBuilder.withN(n);
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withModel(final String model) {
+		if (model == null)
+			return this;
 		this.imageOptionsBuilder.withModel(model);
 		return this;
-	};
+	}
 
 	public OpenAiImageOptionsBuilder withWidth(final Integer width) {
+		if (width == null)
+			return this;
 		this.imageOptionsBuilder.withWidth(width);
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withHeight(final Integer height) {
+		if (height == null)
+			return this;
 		this.imageOptionsBuilder.withHeight(height);
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withResponseFormat(final String responseFormat) {
+		if (responseFormat == null)
+			return this;
 		this.imageOptionsBuilder.withResponseFormat(responseFormat);
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withQuality(final String quality) {
+		if (quality == null)
+			return this;
 		this.quality = quality;
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withSize(final String size) {
+		if (size == null)
+			return this;
 		this.size = size;
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withStyle(final String style) {
+		if (style == null)
+			return this;
 		this.style = style;
 		return this;
 	}
 
 	public OpenAiImageOptionsBuilder withUser(final String user) {
+		if (user == null)
+			return this;
 		this.user = user;
 		return this;
 	}

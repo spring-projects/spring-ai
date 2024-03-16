@@ -123,9 +123,9 @@ public class OpenAiImageClient implements ImageClient {
 	 * @return the converted {@link OpenAiImageOptions}.
 	 */
 	private OpenAiImageOptions toOpenAiImageOptions(ImageOptions runtimeImageOptions) {
-		if (runtimeImageOptions instanceof OpenAiImageOptions)
-			return OpenAiImageOptionsBuilder.builder((OpenAiImageOptions) runtimeImageOptions).build();
-		return OpenAiImageOptionsBuilder.builder(runtimeImageOptions).build();
+		if (runtimeImageOptions instanceof OpenAiImageOptions options)
+			return OpenAiImageOptionsBuilder.builder(options).build();
+		return OpenAiImageOptionsBuilder.builder().withImageOptions(runtimeImageOptions).build();
 	}
 
 }
