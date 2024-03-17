@@ -16,25 +16,21 @@
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -66,12 +62,13 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-				MongoDBAtlasVectorStoreAutoConfiguration.class))
-		.withUserConfiguration(Config.class)
+				MongoDBAtlasVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
 		.withPropertyValues("spring.data.mongodb.database=springaisample",
 				"spring.ai.vectorstore.mongodb.collection-name=test_collection",
-				"spring.ai.vectorstore.mongodb.path-name=test_path",
+				"spring.ai.vectorstore.mongodb.path-name=testembedding",
 				"spring.ai.vectorstore.mongodb.index-name=text_index",
+				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 				String.format(
 						"spring.data.mongodb.uri=" + String.format("mongodb://root:root@%s:%s/?directConnection=true",
 								mongo.getHost(), mongo.getMappedPort(27778))));
@@ -100,26 +97,6 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 			List<Document> results2 = vectorStore.similaritySearch(SearchRequest.query("Great").withTopK(1));
 			assertThat(results2).isEmpty();
 		});
-	}
-
-	public static String getText(String uri) {
-		var resource = new DefaultResourceLoader().getResource(uri);
-		try {
-			return resource.getContentAsString(StandardCharsets.UTF_8);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	static class Config {
-
-		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
-		}
-
 	}
 
 }
