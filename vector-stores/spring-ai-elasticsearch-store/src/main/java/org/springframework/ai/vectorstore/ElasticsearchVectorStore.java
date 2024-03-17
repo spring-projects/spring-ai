@@ -129,12 +129,12 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 				searchRequest.getFilterExpression());
 	}
 
-	public List<Document> similaritySearch(List<Double> embedding, int topK, float similarityThreshold,
+	public List<Document> similaritySearch(List<Double> embedding, int topK, double similarityThreshold,
 			Filter.Expression filterExpression) {
 		return similaritySearch(new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
 			.query(getElasticsearchSimilarityQuery(embedding, filterExpression))
 			.size(topK)
-			.minScore(Float.valueOf(similarityThreshold).doubleValue())
+			.minScore(similarityThreshold)
 			.build());
 	}
 
