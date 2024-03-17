@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionOptionsBuilder;
 import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
 import org.springframework.ai.openai.OpenAiImageOptionsBuilder;
 import reactor.core.publisher.Flux;
@@ -32,7 +33,6 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
@@ -125,7 +125,7 @@ public class OpenAiRetryTests {
 		embeddingClient = new OpenAiEmbeddingClient(openAiApi, MetadataMode.EMBED,
 				OpenAiEmbeddingOptions.builder().build(), retryTemplate);
 		audioTranscriptionClient = new OpenAiAudioTranscriptionClient(openAiAudioApi,
-				OpenAiAudioTranscriptionOptions.builder()
+				OpenAiAudioTranscriptionOptionsBuilder.builder()
 					.withModel("model")
 					.withResponseFormat(TranscriptResponseFormat.JSON)
 					.build(),

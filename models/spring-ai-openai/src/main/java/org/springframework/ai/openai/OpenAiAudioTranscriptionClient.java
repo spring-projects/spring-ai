@@ -75,7 +75,7 @@ public class OpenAiAudioTranscriptionClient
 	 */
 	public OpenAiAudioTranscriptionClient(OpenAiAudioApi audioApi) {
 		this(audioApi,
-				OpenAiAudioTranscriptionOptions.builder()
+				OpenAiAudioTranscriptionOptionsBuilder.builder()
 					.withModel(OpenAiAudioApi.WhisperModel.WHISPER_1.getValue())
 					.withResponseFormat(OpenAiAudioApi.TranscriptResponseFormat.JSON)
 					.withTemperature(0.7f)
@@ -207,19 +207,18 @@ public class OpenAiAudioTranscriptionClient
 
 	private OpenAiAudioTranscriptionOptions merge(OpenAiAudioTranscriptionOptions source,
 			OpenAiAudioTranscriptionOptions target) {
-
+		OpenAiAudioTranscriptionOptionsBuilder builder = OpenAiAudioTranscriptionOptionsBuilder.builder();
 		if (source == null) {
-			source = new OpenAiAudioTranscriptionOptions();
+			source = OpenAiAudioTranscriptionOptionsBuilder.builder().build();
 		}
 
-		OpenAiAudioTranscriptionOptions merged = new OpenAiAudioTranscriptionOptions();
-		merged.setLanguage(source.getLanguage() != null ? source.getLanguage() : target.getLanguage());
-		merged.setModel(source.getModel() != null ? source.getModel() : target.getModel());
-		merged.setPrompt(source.getPrompt() != null ? source.getPrompt() : target.getPrompt());
-		merged.setResponseFormat(
+		builder.withLanguage(source.getLanguage() != null ? source.getLanguage() : target.getLanguage());
+		builder.withModel(source.getModel() != null ? source.getModel() : target.getModel());
+		builder.withPrompt(source.getPrompt() != null ? source.getPrompt() : target.getPrompt());
+		builder.withResponseFormat(
 				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
-		merged.setTemperature(source.getTemperature() != null ? source.getTemperature() : target.getTemperature());
-		return merged;
+		builder.withTemperature(source.getTemperature() != null ? source.getTemperature() : target.getTemperature());
+		return builder.build();
 	}
 
 }
