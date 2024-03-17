@@ -59,7 +59,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public OpenAiEmbeddingClient(OpenAiApi openAiApi, MetadataMode metadataMode) {
 		this(openAiApi, metadataMode,
-				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+				OpenAiEmbeddingOptionsBuilder.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
