@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;

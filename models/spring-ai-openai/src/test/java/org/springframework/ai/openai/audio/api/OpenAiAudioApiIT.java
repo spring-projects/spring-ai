@@ -27,7 +27,6 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranslationRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
-import org.springframework.lang.NonNull;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TtsModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi.WhisperModel;
 import org.springframework.util.FileCopyUtils;
