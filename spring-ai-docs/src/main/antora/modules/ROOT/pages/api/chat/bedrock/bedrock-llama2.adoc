@@ -86,7 +86,7 @@ Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/lat
 
 TIP: All properties prefixed with `spring.ai.bedrock.llama2.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-=== Chat Options [[chat-options]]
+== Runtime Options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama2/BedrockLlama2ChatOptions.java[BedrockLlama2ChatOptions.java] provides model configurations, such as temperature, topK, topP, etc.
 
@@ -108,7 +108,7 @@ ChatResponse response = chatClient.call(
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama2/BedrockLlama2ChatOptions.java[BedrockLlama2ChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 

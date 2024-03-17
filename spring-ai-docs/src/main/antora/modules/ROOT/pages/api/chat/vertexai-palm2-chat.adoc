@@ -77,7 +77,7 @@ The prefix `spring.ai.vertex.ai.chat` is the property prefix that lets you confi
 
 TIP: All properties prefixed with `spring.ai.vertex.ai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-=== Chat Options [[chat-options]]
+== Runtime Options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-palm2/src/main/java/org/springframework/ai/vertexai/palm2/VertexAiPaLm2ChatOptions.java[VertexAiPaLm2ChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
@@ -99,7 +99,7 @@ ChatResponse response = chatClient.call(
 
 TIP: In addition to the model specific `VertexAiPaLm2ChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
 

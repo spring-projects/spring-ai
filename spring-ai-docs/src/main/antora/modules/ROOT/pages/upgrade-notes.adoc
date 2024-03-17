@@ -68,7 +68,7 @@ The following OpenAi Autoconfiguration chat properties has changed
 * from `spring.ai.openai.model` to `spring.ai.openai.chat.options.model`.
 * from `spring.ai.openai.temperature` to `spring.ai.openai.chat.options.temperature`.
 
-Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/clients/openai-chat.html
+Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/chat/openai-chat.html
 
 === December 27, 2023 Update
 

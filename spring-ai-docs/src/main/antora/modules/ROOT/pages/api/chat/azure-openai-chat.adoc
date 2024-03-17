@@ -111,7 +111,7 @@ Deployments model name to provide as part of this completions request.
 
 TIP: All properties prefixed with `spring.ai.azure.openai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
-=== Chat Options [[chat-options]]
+== Runtime Options [[chat-options]]
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
@@ -135,13 +135,13 @@ ChatResponse response = chatClient.call(
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 
-=== Function Calling
+== Function Calling
 
 You can register custom Java functions with the AzureOpenAiChatClient and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/clients/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
+Read more about xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-azure-openai-spring-boot-starter` to your pom (or gradle) dependencies.
 
@@ -210,7 +210,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../clients/azure-openai-chat.html[Azure OpenAI Chat] section.
+TIP: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../chat/azure-openai-chat.html[Azure OpenAI Chat] section.
 
 Next, create an `AzureOpenAiChatClient` instance and use it to generate text responses:
 
