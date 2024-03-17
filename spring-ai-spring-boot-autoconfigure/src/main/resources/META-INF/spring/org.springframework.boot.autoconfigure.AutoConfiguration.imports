@@ -25,3 +25,4 @@ org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfi
 org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 org.springframework.ai.autoconfigure.postgresml.PostgresMlAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.mongo.MongoDBAtlasVectorStoreAutoConfiguration
