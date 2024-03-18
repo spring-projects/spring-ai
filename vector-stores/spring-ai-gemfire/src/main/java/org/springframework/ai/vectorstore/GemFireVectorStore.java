@@ -430,7 +430,7 @@ public class GemFireVectorStore implements VectorStore {
 			embeddingsJson = embeddingString.substring("{\"embeddings\":".length());
 		}
 		catch (JsonProcessingException e) {
-			throw new RuntimeException("Embedding json parsing error :" + e.getMessage());
+			throw new RuntimeException(String.format("Embedding JSON parsing error: %s", e.getMessage()));
 		}
 
 		client.post()
@@ -462,27 +462,27 @@ public class GemFireVectorStore implements VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
+		if (request.hasFilterExpression()) {
+			throw new UnsupportedOperationException("Gemfire does not support metadata filter expressions yet.");
+		}
 		List<Double> vector = this.embeddingClient.embed(request.getQuery());
 		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
 
 		return client.post()
 			.uri("/" + indexName + QUERY)
-
 			.contentType(MediaType.APPLICATION_JSON)
 			.bodyValue(new QueryRequest(floatVector, request.getTopK(), topKPerBucket, true))
 			.retrieve()
-
 			.bodyToFlux(QueryResponse.class)
 			.filter(r -> r.score >= request.getSimilarityThreshold())
 			.map(r -> {
 				Map<String, Object> metadata = r.metadata;
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - r.score);
 				String content = (String) metadata.remove(documentField);
-
 				return new Document(r.key, content, metadata);
 			})
 			.collectList()
-			.onErrorMap(WebClientException.class, this::handleHttpClientException) // Handle
+			.onErrorMap(WebClientException.class, this::handleHttpClientException)
 			.block();
 	}
 
@@ -513,18 +513,17 @@ public class GemFireVectorStore implements VectorStore {
 
 	private Throwable handleHttpClientException(Throwable ex) {
 		if (!(ex instanceof WebClientResponseException clientException)) {
-			throw new RuntimeException("Got an unexpected error: {}", ex);
+			throw new RuntimeException(String.format("Got an unexpected error: %s", ex));
 		}
 
 		if (clientException.getStatusCode().equals(NOT_FOUND)) {
-			throw new RuntimeException("Index " + indexName + " not found :" + ex);
+			throw new RuntimeException(String.format("Index %s not found: %s", indexName, ex));
 		}
 		else if (clientException.getStatusCode().equals(BAD_REQUEST)) {
-			throw new RuntimeException("Bad Request :" + ex);
+			throw new RuntimeException(String.format("Bad Request: %s", ex));
 		}
 		else {
-			throw new RuntimeException("Got an unexpected HTTP error: {}", ex);
-
+			throw new RuntimeException(String.format("Got an unexpected HTTP error: %s", ex));
 		}
 	}
 
