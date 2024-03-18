@@ -19,14 +19,27 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Eddú Meléndez
+ * @author Christian Tzolov
+ * @since 1.0.0
  */
-@ConfigurationProperties("spring.ai.vectorstore.mongodb")
+@ConfigurationProperties(MongoDBAtlasVectorStoreProperties.CONFIG_PREFIX)
 public class MongoDBAtlasVectorStoreProperties {
 
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.mongodb";
+
+	/**
+	 * The name of the collection to store the vectors. Defaults to "vector_store".
+	 */
 	private String collectionName;
 
+	/**
+	 * The name of the path to store the vectors. Defaults to "embedding".
+	 */
 	private String pathName;
 
+	/**
+	 * The name of the index to store the vectors. Defaults to "vector_index".
+	 */
 	private String indexName;
 
 	public String getCollectionName() {

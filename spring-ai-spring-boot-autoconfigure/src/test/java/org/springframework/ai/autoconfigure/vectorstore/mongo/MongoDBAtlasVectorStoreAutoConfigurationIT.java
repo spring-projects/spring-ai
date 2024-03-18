@@ -66,7 +66,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
 		.withPropertyValues("spring.data.mongodb.database=springaisample",
 				"spring.ai.vectorstore.mongodb.collection-name=test_collection",
-				"spring.ai.vectorstore.mongodb.path-name=testembedding",
+				// "spring.ai.vectorstore.mongodb.path-name=testembedding",
 				"spring.ai.vectorstore.mongodb.index-name=text_index",
 				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 				String.format(

@@ -91,10 +91,12 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	 */
 	private org.bson.Document createSearchIndex() {
 		List<org.bson.Document> vectorFields = new ArrayList<>();
+
 		vectorFields.add(new org.bson.Document().append("type", "vector")
 			.append("path", this.config.pathName)
-			.append("numDimensions", 1536)
+			.append("numDimensions", this.embeddingClient.dimensions())
 			.append("similarity", "cosine"));
+
 		vectorFields.addAll(this.config.metadataFieldsToFilter.stream()
 			.map(fieldName -> new org.bson.Document().append("type", "filter").append("path", "metadata." + fieldName))
 			.toList());

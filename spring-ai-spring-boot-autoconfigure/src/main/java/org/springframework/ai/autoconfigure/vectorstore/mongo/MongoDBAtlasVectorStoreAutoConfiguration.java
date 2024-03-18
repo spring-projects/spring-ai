@@ -24,9 +24,12 @@ import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfigurat
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Eddú Meléndez
+ * @author Christian Tzolov
+ * @since 1.0.0
  */
 @AutoConfiguration(after = MongoDataAutoConfiguration.class)
 @ConditionalOnClass({ MongoDBAtlasVectorStore.class, EmbeddingClient.class, MongoTemplate.class })
@@ -37,12 +40,20 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
 			MongoDBAtlasVectorStoreProperties properties) {
-		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = MongoDBAtlasVectorStore.MongoDBVectorStoreConfig
-			.builder()
-			.withCollectionName(properties.getCollectionName())
-			.withPathName(properties.getPathName())
-			.withVectorIndexName(properties.getIndexName())
-			.build();
+
+		var builder = MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder();
+
+		if (StringUtils.hasText(properties.getCollectionName())) {
+			builder.withCollectionName(properties.getCollectionName());
+		}
+		if (StringUtils.hasText(properties.getPathName())) {
+			builder.withPathName(properties.getPathName());
+		}
+		if (StringUtils.hasText(properties.getIndexName())) {
+			builder.withVectorIndexName(properties.getIndexName());
+		}
+		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
+
 		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient, config);
 	}
 
