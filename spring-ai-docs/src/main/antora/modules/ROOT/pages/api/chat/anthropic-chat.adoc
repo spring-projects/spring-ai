@@ -1,0 +1,300 @@
+= Anthropic Chat
+
+link:https://www.anthropic.com/[Anthropic Claude] is a family of foundational AI models that can be used in a variety of applications.
+For developers and businesses, you can leverage the API access and build directly on top of link:https://www.anthropic.com/api[Anthropic's AI infrastructure].
+
+Spring AI supports the Anthropic link:https://docs.anthropic.com/claude/reference/messages_post[Messaging API] for sync and streaming text generations.
+
+TIP: Anthropic’s Claude models are also available through Amazon Bedrock.
+Spring AI provides dedicated xref:api/chat/bedrock/bedrock-anthropic.adoc[Amazon Bedrock Anthropic] client implementations as well.
+
+== Prerequisites
+
+You will need to create an API key on Anthropic portal.
+Create an account at https://console.anthropic.com/dashboard[Anthropic API dashboard] and generate the api key on the https://console.anthropic.com/settings/keys[Get API Keys] page.
+The Spring AI project defines a configuration property named `spring.ai.anthropic.api-key` that you should set to the value of the `API Key` obtained from anthropic.com.
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_ANTHROPIC_API_KEY=<INSERT KEY HERE>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Anthropic Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-anthropic-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Anthropic Chat client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+|====
+
+NOTE: currently the retry policies are not applicable for the streaming API.
+
+==== Connection Properties
+
+The prefix `spring.ai.anthropic` is used as the property prefix that lets you connect to Anthropic.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.anthropic.base-url   | The URL to connect to |  https://api.anthropic.com
+| spring.ai.anthropic.version   | Anthropic API version |  2023-06-01
+| spring.ai.anthropic.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+The prefix `spring.ai.anthropic.chat` is the property prefix that lets you configure the chat client implementation for Anthropic.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.anthropic.chat.enabled | Enable Anthropic chat client.  | true
+| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307` and the legacy `claude-2.1`, `claude-2.0` and `claude-instant-1.2` models. | `claude-3-opus-20240229`
+| spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
+| spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500
+| spring.ai.anthropic.chat.options.stop-sequence | Custom text sequences that will cause the model to stop generating. Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn". If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence. | -
+| spring.ai.anthropic.chat.options.top-p | Use nucleus sampling. In nucleus sampling, we compute the cumulative distribution over all the options for each subsequent token in decreasing probability order and cut it off once it reaches a particular probability specified by top_p. You should either alter temperature or top_p, but not both. Recommended for advanced use cases only. You usually only need to use temperature. | -
+| spring.ai.anthropic.chat.options.top-k | Only sample from the top K options for each subsequent token. Used to remove "long tail" low probability responses. Learn more technical details here. Recommended for advanced use cases only. You usually only need to use temperature. | -
+|====
+
+TIP: All properties prefixed with `spring.ai.anthropic.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] provides model configurations, such as the model to use, the temperature, the max token count, etc.
+
+On start-up, the default options can be configured with the `AnthropicChatClient(api, options)` constructor or the `spring.ai.anthropic.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        AnthropicChatOptions.builder()
+            .withModel("claude-2.1")
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
+
+Currently, Anthropic Claude 3 supports the `base64` source type for `images`, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.
+Check the link:https://docs.anthropic.com/claude/docs/vision[Vision guide] for more information.
+
+Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
+This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/test/java/org/springframework/ai/anthropic/AnthropicChatClientIT.java[AnthropicChatClientIT.java], demonstrating the combination of user text with an image.
+
+[source,java]
+----
+byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
+
+var userMessage = new UserMessage("Explain what do you see o this picture?",
+        List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+
+ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+
+logger.info(response.getResult().getOutput().getContent());
+----
+
+It takes as an input the `multimodal.test.png` image:
+
+image::multimodal.test.png[Multimodal Test Image, 200, 200, align="left"]
+
+along with the text message "Explain what do you see on this picture?", and generates a response something like:
+
+----
+The image shows a close-up view of a wire fruit basket containing several pieces of fruit.
+The basket appears to be made of thin metal wires formed into a round shape with an elevated handle.
+
+Inside the basket, there are a few yellow bananas and a couple of red apples or possibly tomatoes.
+The vibrant colors of the fruit contrast nicely against the metallic tones of the wire basket.
+
+The shallow depth of field in the photograph puts the focus squarely on the fruit in the foreground, while the basket handle extending upwards is slightly blurred, creating a pleasing bokeh effect in the background.
+
+The composition and lighting give the image a clean, minimalist aesthetic that highlights the natural beauty and freshness of the fruit displayed in this elegant wire basket.
+----
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-anthropic-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic Chat client:
+
+[source,application.properties]
+----
+spring.ai.anthropic.api-key=YOUR_API_KEY
+spring.ai.anthropic.chat.options.model=claude-3-opus-20240229
+spring.ai.anthropic.chat.options.temperature=0.7
+spring.ai.anthropic.chat.options.max-tokens=450
+----
+
+TIP: replace the `api-key` with your Anthropic credentials.
+
+This will create a `AnthropicChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final AnthropicChatClient chatClient;
+
+    @Autowired
+    public ChatController(AnthropicChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatClient.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatClient.java[AnthropicChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Anthropic service.
+
+Add the `spring-ai-anthropic` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-anthropic</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-anthropic'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `AnthropicChatClient` and use it for text generations:
+
+[source,java]
+----
+var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
+
+var chatClient = new AnthropicChatClient(anthropicApi,
+        AnthropicChatOptions.builder()
+            .withModel("claude-3-opus-20240229")
+            .withTemperature(0.4)
+            .withMaxTokens(200)
+        .build());
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> response = chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `AnthropicChatOptions` provides the configuration information for the chat requests.
+The `AnthropicChatOptions.Builder` is fluent options builder.
+
+== Low-level AnthropicApi Client [[low-level-api]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/api/AnthropicApi.java[AnthropicApi] provides is lightweight Java client for link:https://docs.anthropic.com/claude/reference/messages_post[Anthropic Message API].
+
+Following class diagram illustrates the `AnthropicApi` chat interfaces and building blocks:
+
+image::anthropic-claude3-class-diagram.jpg[AnthropicApi Chat API Diagram, 800, 600, align="center"]
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+AnthropicApi anthropicApi =
+    new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
+
+RequestMessage chatCompletionMessage = new RequestMessage(
+        List.of(new MediaContent("Tell me a Joke?")), Role.USER);
+
+// Sync request
+ResponseEntity<ChatCompletion> response = anthropicApi
+    .chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
+            List.of(chatCompletionMessage), null, 100, 0.8f, false));
+
+// Streaming request
+Flux<StreamResponse> response = anthropicApi
+    .chatCompletionStream(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
+            List.of(chatCompletionMessage), null, 100, 0.8f, true));
+----
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/api/AnthropicApi.java[AnthropicApi.java]'s JavaDoc for further information.
+
+=== Low-level API Examples
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/test/java/org/springframework/ai/anthropic/chat/api/AnthropicApiIT.java[AnthropicApiIT.java] test provides some general examples how to use the lightweight library.
+
+

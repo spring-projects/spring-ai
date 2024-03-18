@@ -223,10 +223,17 @@
 			<optional>true</optional>
 		</dependency>
 
+<<<<<<< HEAD
 		<!-- MongoDB Atlas Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-mongodb-atlas-store</artifactId>
+=======
+		<!-- Anthropic Chat Client -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-anthropic</artifactId>
+>>>>>>> fc73fd68 (Implement Anthropic Claude3 Message API client support (direct))
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>

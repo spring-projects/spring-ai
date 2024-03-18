@@ -15,29 +15,30 @@
  */
 package org.springframework.ai.anthropic.aot;
 
+import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.springframework.aot.hint.TypeReference;
 
+import java.util.Set;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
+import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
-/**
- * The AnthropicRuntimeHints class is responsible for registering runtime hints for
- * Anthropic API classes.
- *
- * @author Christian Tzolov
- * @since 1.0.0
- */
-public class AnthropicRuntimeHints implements RuntimeHintsRegistrar {
+class AnthropicRuntimeHintsTests {
 
-	@Override
-	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
-		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicApi.class))
-			hints.reflection().registerType(tr, mcs);
+	@Test
+	void registerHints() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		AnthropicRuntimeHints anthropicRuntimeHints = new AnthropicRuntimeHints();
+		anthropicRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(AnthropicApi.class);
+		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
+			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+		}
 	}
 
 }

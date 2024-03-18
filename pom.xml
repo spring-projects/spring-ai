@@ -63,7 +63,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 		<module>spring-ai-retry</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
+<<<<<<< HEAD
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
+=======
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+>>>>>>> fc73fd68 (Implement Anthropic Claude3 Message API client support (direct))
 	</modules>
 
 	<organization>
