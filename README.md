@@ -83,7 +83,15 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 
 Spring AI supports many AI models.  For an overview see here.  Specific models currently supported are
 * OpenAI
-*
+* Azure OpenAI
+* Amazon Bedrock (Anthropic, Llama2, Cohere, Titan)
+* HuggingFace
+* Google VertexAI (PaLM2, Gemini)
+* Mistral AI
+* Stability AI
+* Ollama
+* PostgresML
+* Transformers (ONNX)
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.
