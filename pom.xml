@@ -114,7 +114,7 @@
 		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.2.3</spring-boot.version>
+		<spring-boot.version>3.2.4-SNAPSHOT</spring-boot.version>
 		<spring-framework.version>6.1.4</spring-framework.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
 		<azure-open-ai-client.version>1.0.0-beta.7</azure-open-ai-client.version>
@@ -142,9 +142,6 @@
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.7.1</qdrant.version>
-
-		<!-- testing dependencies -->
-		<testcontainers.version>1.19.7</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
