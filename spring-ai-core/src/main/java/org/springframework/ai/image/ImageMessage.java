@@ -42,7 +42,7 @@ public class ImageMessage {
 
 	@Override
 	public String toString() {
-		return "mageMessage{" + "text='" + text + '\'' + ", weight=" + weight + '}';
+		return "ImageMessage{" + "text='" + text + '\'' + ", weight=" + weight + '}';
 	}
 
 	@Override

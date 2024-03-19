@@ -72,7 +72,7 @@ The prefix `spring.ai.vertex.ai.embedding` is the property prefix that lets you 
 |====
 
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
 
@@ -146,7 +146,7 @@ EmbeddingResponse embeddingResponse = embeddingClient
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
-=== Low-level VertexAiPaLm2Api Client [[low-level-api]]
+== Low-level VertexAiPaLm2Api Client [[low-level-api]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-palm2/src/main/java/org/springframework/ai/vertexai/palm2/api/VertexAiPaLm2Api.java[VertexAiPaLm2Api] provides is lightweight Java client for VertexAiPaLm2Api Chat API.
 

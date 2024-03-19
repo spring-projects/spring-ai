@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class, SearchIndexClient.class })
+@ConditionalOnClass({ EmbeddingClient.class, SearchIndexClient.class, AzureVectorStore.class })
 @EnableConfigurationProperties({ AzureVectorStoreProperties.class })
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.azure", value = { "url", "api-key", "index-name" })
 public class AzureVectorStoreAutoConfiguration {

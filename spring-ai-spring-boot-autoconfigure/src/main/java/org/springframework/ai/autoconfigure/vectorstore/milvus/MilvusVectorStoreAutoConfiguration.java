@@ -34,11 +34,19 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingClient.class })
 @EnableConfigurationProperties({ MilvusServiceClientProperties.class, MilvusVectorStoreProperties.class })
 public class MilvusVectorStoreAutoConfiguration {
+
+	@Bean
+	@ConditionalOnMissingBean(MilvusServiceClientConnectionDetails.class)
+	PropertiesMilvusServiceClientConnectionDetails milvusServiceClientConnectionDetails(
+			MilvusServiceClientProperties properties) {
+		return new PropertiesMilvusServiceClientConnectionDetails(properties);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -60,11 +68,11 @@ public class MilvusVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MilvusServiceClient milvusClient(MilvusVectorStoreProperties serverProperties,
-			MilvusServiceClientProperties clientProperties) {
+			MilvusServiceClientProperties clientProperties, MilvusServiceClientConnectionDetails connectionDetails) {
 
 		var builder = ConnectParam.newBuilder()
-			.withHost(clientProperties.getHost())
-			.withPort(clientProperties.getPort())
+			.withHost(connectionDetails.getHost())
+			.withPort(connectionDetails.getPort())
 			.withDatabaseName(serverProperties.getDatabaseName())
 			.withConnectTimeout(clientProperties.getConnectTimeoutMs(), TimeUnit.MILLISECONDS)
 			.withKeepAliveTime(clientProperties.getKeepAliveTimeMs(), TimeUnit.MILLISECONDS)
@@ -103,6 +111,27 @@ public class MilvusVectorStoreAutoConfiguration {
 		}
 
 		return new MilvusServiceClient(builder.build());
+	}
+
+	private static class PropertiesMilvusServiceClientConnectionDetails
+			implements MilvusServiceClientConnectionDetails {
+
+		private final MilvusServiceClientProperties properties;
+
+		PropertiesMilvusServiceClientConnectionDetails(MilvusServiceClientProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getHost() {
+			return this.properties.getHost();
+		}
+
+		@Override
+		public int getPort() {
+			return this.properties.getPort();
+		}
+
 	}
 
 }

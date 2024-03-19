@@ -121,11 +121,11 @@ public class BedrockTitanChatOptions implements ChatOptions {
 
 	@Override
 	public Integer getTopK() {
-		throw new UnsupportedOperationException("Bedrock Titian Chat does not support the 'TopK' option.");
+		throw new UnsupportedOperationException("Bedrock Titan Chat does not support the 'TopK' option.");
 	}
 
 	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Bedrock Titian Chat does not support the 'TopK' option.'");
+		throw new UnsupportedOperationException("Bedrock Titan Chat does not support the 'TopK' option.'");
 	}
 
 }

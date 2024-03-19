@@ -37,7 +37,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 @AutoConfiguration
-@ConditionalOnClass(OpenAIClientBuilder.class)
+@ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatClient.class })
 @EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
 		AzureOpenAiConnectionProperties.class })
 public class AzureOpenAiAutoConfiguration {

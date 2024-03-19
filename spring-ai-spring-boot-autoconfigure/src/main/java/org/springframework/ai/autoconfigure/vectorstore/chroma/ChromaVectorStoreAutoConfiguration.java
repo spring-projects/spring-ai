@@ -30,11 +30,18 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingClient.class, RestTemplate.class, ChromaVectorStore.class, ObjectMapper.class })
 @EnableConfigurationProperties({ ChromaApiProperties.class, ChromaVectorStoreProperties.class })
 public class ChromaVectorStoreAutoConfiguration {
+
+	@Bean
+	@ConditionalOnMissingBean(ChromaConnectionDetails.class)
+	PropertiesChromaConnectionDetails chromaConnectionDetails(ChromaApiProperties properties) {
+		return new PropertiesChromaConnectionDetails(properties);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -44,9 +51,10 @@ public class ChromaVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ChromaApi chromaApi(ChromaApiProperties apiProperties, RestTemplate restTemplate) {
+	public ChromaApi chromaApi(ChromaApiProperties apiProperties, RestTemplate restTemplate,
+			ChromaConnectionDetails connectionDetails) {
 
-		String chromaUrl = String.format("%s:%s", apiProperties.getHost(), apiProperties.getPort());
+		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
 		var chromaApi = new ChromaApi(chromaUrl, restTemplate, new ObjectMapper());
 
@@ -65,6 +73,26 @@ public class ChromaVectorStoreAutoConfiguration {
 	public ChromaVectorStore vectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi,
 			ChromaVectorStoreProperties storeProperties) {
 		return new ChromaVectorStore(embeddingClient, chromaApi, storeProperties.getCollectionName());
+	}
+
+	private static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {
+
+		private final ChromaApiProperties properties;
+
+		PropertiesChromaConnectionDetails(ChromaApiProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getHost() {
+			return this.properties.getHost();
+		}
+
+		@Override
+		public int getPort() {
+			return this.properties.getPort();
+		}
+
 	}
 
 }

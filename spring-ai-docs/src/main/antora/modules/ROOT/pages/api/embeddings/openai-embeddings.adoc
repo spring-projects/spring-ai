@@ -102,7 +102,7 @@ This is useful if you want to use different OpenAI accounts for different models
 
 TIP: All properties prefixed with `spring.ai.openai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
-=== Embedding Options [[embedding-options]]
+== Runtime Options [[embedding-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configurations, such as the model to use and etc.
 
@@ -122,7 +122,7 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
         .build()));
 ----
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
@@ -177,7 +177,7 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`.
-For more information about the `OpenAiChatClient` refer to the link:../clients/openai-chat.html[OpenAI Chat Client] section.
+For more information about the `OpenAiChatClient` refer to the link:../chat/openai-chat.html[OpenAI Chat Client] section.
 
 Next, create an `OpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
 

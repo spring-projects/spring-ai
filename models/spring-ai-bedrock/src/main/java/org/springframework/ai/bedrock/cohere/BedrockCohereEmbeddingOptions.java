@@ -32,7 +32,7 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	// @formatter:off
 	/**
 	 * Prepends special tokens to differentiate each type from one another. You should not mix
-	 * different types together, except when mixing types for for search and retrieval.
+	 * different types together, except when mixing types for search and retrieval.
 	 * In this case, embed your corpus with the search_document type and embedded queries with
 	 * type search_query type.
 	 */
