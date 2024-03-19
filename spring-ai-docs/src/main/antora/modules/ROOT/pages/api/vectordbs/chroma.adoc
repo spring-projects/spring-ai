@@ -12,7 +12,7 @@ link:https://docs.trychroma.com/[Chroma] is the open-source embedding database. 
 
 1. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
 
-2. Access to ChromeDB. The <<appendix-a, setup local ChromaDB>> appendix shows how to set up a DB locally with a Docker container.
+2. Access to ChromeDB. The <<Run Chroma Locally, setup local ChromaDB>> appendix shows how to set up a DB locally with a Docker container.
 
 On startup, the `ChromaVectorStore` creates the required collection if one is not provisioned already.
 

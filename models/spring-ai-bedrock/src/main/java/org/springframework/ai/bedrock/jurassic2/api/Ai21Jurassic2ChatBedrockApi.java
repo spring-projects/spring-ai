@@ -22,10 +22,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
 
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
  * Java client for the Bedrock Jurassic2 chat model.
@@ -47,6 +49,21 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	public Ai21Jurassic2ChatBedrockApi(String modelId, String region) {
 		super(modelId, region);
 	}
+
+
+	/**
+	 * Create a new Ai21Jurassic2ChatBedrockApi instance.
+	 *
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 */
+	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+									ObjectMapper objectMapper) {
+		super(modelId, credentialsProvider, region, objectMapper);
+	}
+
 
 	/**
 	 * AI21 Jurassic2 chat request parameters.
@@ -128,6 +145,74 @@ public class Ai21Jurassic2ChatBedrockApi extends
 				@JsonProperty("applyToNumbers") boolean applyToNumbers,
 				@JsonProperty("applyToStopwords") boolean applyToStopwords,
 				@JsonProperty("applyToEmojis") boolean applyToEmojis) {
+		}
+
+
+
+		public static Builder builder(String prompt) {
+			return new Builder(prompt);
+		}
+		public static class Builder {
+			private String prompt;
+			private Float temperature;
+			private Float topP;
+			private Integer maxTokens;
+			private List<String> stopSequences;
+			private IntegerScalePenalty countPenalty;
+			private FloatScalePenalty presencePenalty;
+			private IntegerScalePenalty frequencyPenalty;
+
+			public Builder(String prompt) {
+				this.prompt = prompt;
+			}
+
+			public Builder withTemperature(Float temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			public Builder withTopP(Float topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			public Builder withMaxTokens(Integer maxTokens) {
+				this.maxTokens = maxTokens;
+				return this;
+			}
+
+			public Builder withStopSequences(List<String> stopSequences) {
+				this.stopSequences = stopSequences;
+				return this;
+			}
+
+			public Builder withCountPenalty(IntegerScalePenalty countPenalty) {
+				this.countPenalty = countPenalty;
+				return this;
+			}
+
+			public Builder withPresencePenalty(FloatScalePenalty presencePenalty) {
+				this.presencePenalty = presencePenalty;
+				return this;
+			}
+
+			public Builder withFrequencyPenalty(IntegerScalePenalty frequencyPenalty) {
+				this.frequencyPenalty = frequencyPenalty;
+				return this;
+			}
+
+			public Ai21Jurassic2ChatRequest build() {
+				return new Ai21Jurassic2ChatRequest(
+						prompt,
+						temperature,
+						topP,
+						maxTokens,
+						stopSequences,
+						countPenalty,
+						presencePenalty,
+						frequencyPenalty
+				);
+			}
 		}
 	}
 
@@ -273,5 +358,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	public Ai21Jurassic2ChatResponse chatCompletion(Ai21Jurassic2ChatRequest request) {
 		return this.internalInvocation(request, Ai21Jurassic2ChatResponse.class);
 	}
+
+
 }
 // @formatter:on

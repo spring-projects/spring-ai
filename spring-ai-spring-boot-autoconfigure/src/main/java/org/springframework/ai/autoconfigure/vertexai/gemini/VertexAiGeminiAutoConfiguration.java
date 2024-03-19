@@ -39,7 +39,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @since 0.8.0
  */
-@ConditionalOnClass(VertexAI.class)
+@ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatClient.class })
 @EnableConfigurationProperties({ VertexAiGeminiChatProperties.class, VertexAiGeminiConnectionProperties.class })
 public class VertexAiGeminiAutoConfiguration {
 

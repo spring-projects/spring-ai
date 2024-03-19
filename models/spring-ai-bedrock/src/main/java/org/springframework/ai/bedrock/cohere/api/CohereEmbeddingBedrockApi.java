@@ -69,7 +69,7 @@ public class CohereEmbeddingBedrockApi extends
 	 * @param texts An array of strings for the model to embed. For optimal performance, we recommend reducing the
 	 * length of each text to less than 512 tokens. 1 token is about 4 characters.
 	 * @param inputType Prepends special tokens to differentiate each type from one another. You should not mix
-	 * different types together, except when mixing types for for search and retrieval. In this case, embed your corpus
+	 * different types together, except when mixing types for search and retrieval. In this case, embed your corpus
 	 * with the search_document type and embedded queries with type search_query type.
 	 * @param truncate Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or
 	 * RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the

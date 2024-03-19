@@ -36,7 +36,6 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 

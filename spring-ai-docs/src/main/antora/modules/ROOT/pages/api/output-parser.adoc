@@ -43,7 +43,7 @@ public interface FormatProvider {
 
 The `Parser` interface parses text strings to produce instances of the type T.
 
-The `FormatProvider` provides text instructions for the AI Model to format the output so that it an be parsed into the type T by the `Parser`.
+The `FormatProvider` provides text instructions for the AI Model to format the output so that it can be parsed into the type T by the `Parser`.
 These text instructions are most often appended to the end of the user input to the AI Model.
 
 

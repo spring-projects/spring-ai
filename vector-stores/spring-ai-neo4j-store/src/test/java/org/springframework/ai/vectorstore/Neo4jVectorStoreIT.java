@@ -58,7 +58,7 @@ class Neo4jVectorStoreIT {
 	// creation
 	// function.
 	@Container
-	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.15"))
+	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.18"))
 		.withRandomPassword();
 
 	List<Document> documents = List.of(
