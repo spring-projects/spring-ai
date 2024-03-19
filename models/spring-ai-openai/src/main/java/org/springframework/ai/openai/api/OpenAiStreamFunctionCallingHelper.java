@@ -63,8 +63,8 @@ public class OpenAiStreamFunctionCallingHelper {
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
-
-		return new ChatCompletionChunk(id, List.of(choice), created, model, systemFingerprint, object);
+		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
+		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {

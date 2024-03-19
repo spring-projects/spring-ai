@@ -72,7 +72,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>qdrant</artifactId>
-            <version>1.19.6</version>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
 

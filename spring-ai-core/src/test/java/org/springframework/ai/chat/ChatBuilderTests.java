@@ -29,7 +29,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
 
 /**
  * Unit Tests for {@link Prompt}.

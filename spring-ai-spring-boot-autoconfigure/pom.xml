@@ -233,6 +233,21 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-mongodb-atlas-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-anthropic</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- test dependencies -->
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
@@ -271,6 +286,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -304,7 +320,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>qdrant</artifactId>
-			<version>1.19.6</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -315,7 +331,6 @@
 			<scope>test</scope>
 		</dependency>
 
-
-	</dependencies>
+    </dependencies>
 
 </project>

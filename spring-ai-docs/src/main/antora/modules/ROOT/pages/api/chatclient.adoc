@@ -188,6 +188,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 ** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
 ** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]
 * xref:api/chat/mistralai-chat.adoc[Mistral AI Chat Completion] (streaming & function-calling support)
+* xref:api/chat/anthropic-chat.adoc[Anthropic Chat Completion] (streaming)
 
 == Chat Model API
 

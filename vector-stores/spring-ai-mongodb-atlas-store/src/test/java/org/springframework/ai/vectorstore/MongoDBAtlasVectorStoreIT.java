@@ -19,13 +19,11 @@ import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -44,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Chris Smith
  */
-
 @Testcontainers
 class MongoDBAtlasVectorStoreIT {
 
@@ -53,13 +50,12 @@ class MongoDBAtlasVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				String.format("spring.data.mongodb.database=" + "springaisample"),
+		.withPropertyValues("spring.data.mongodb.database=springaisample",
 				String.format("spring.data.mongodb.uri=" + container.getConnectionString()));
 
 	@BeforeEach
 	public void beforeEach() {
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 			MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
 			mongoTemplate.getCollection("vector_store").deleteMany(new org.bson.Document());
 		});
@@ -67,7 +63,7 @@ class MongoDBAtlasVectorStoreIT {
 
 	@Test
 	void vectorStoreTest() {
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			List<Document> documents = List.of(
@@ -102,7 +98,7 @@ class MongoDBAtlasVectorStoreIT {
 
 	@Test
 	void documentUpdateTest() {
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -137,7 +133,7 @@ class MongoDBAtlasVectorStoreIT {
 
 	@Test
 	void searchWithFilters() {
-		contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class)).run(context -> {
+		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",

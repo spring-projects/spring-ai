@@ -88,8 +88,7 @@ public class TextReader implements DocumentReader {
 			this.customMetadata.put(SOURCE_METADATA, this.resource.getFilename());
 
 			return List.of(new Document(document, this.customMetadata));
-			// return textSplitter.apply(Collections.singletonList(new Document(document,
-			// this.customMetadata)));
+
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
