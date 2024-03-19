@@ -21,7 +21,7 @@
 	</scm>
 
 	<properties>
-		<testcontainers-redis.version>2.0.1</testcontainers-redis.version>
+		<testcontainers-redis.version>2.2.0</testcontainers-redis.version>
 		<jedis.version>5.1.0</jedis.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
