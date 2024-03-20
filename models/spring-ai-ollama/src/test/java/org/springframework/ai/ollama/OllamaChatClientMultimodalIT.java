@@ -27,22 +27,29 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApiIT;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Disabled("For manual smoke testing only.")
 @Testcontainers
-class OllamaEmbeddingClientIT {
+@Disabled("For manual smoke testing only.")
+class OllamaChatClientMultimodalIT {
 
-	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
+	private static String MODEL = "llava";
+
+	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
 	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
@@ -51,23 +58,28 @@ class OllamaEmbeddingClientIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the 'orca-mini' generative (3GB) ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", "orca-mini");
-		logger.info("orca-mini pulling competed!");
+		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
+		ollamaContainer.execInContainer("ollama", "pull", MODEL);
+		logger.info(MODEL + " pulling competed!");
 
 		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
 	}
 
 	@Autowired
-	private OllamaEmbeddingClient embeddingClient;
+	private OllamaChatClient client;
 
 	@Test
-	void singleEmbedding() {
-		assertThat(embeddingClient).isNotNull();
-		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
-		assertThat(embeddingResponse.getResults()).hasSize(1);
-		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-		assertThat(embeddingClient.dimensions()).isEqualTo(3200);
+	void multiModalityTest() throws IOException {
+
+		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
+
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+
+		ChatResponse response = client.call(new Prompt(List.of(userMessage)));
+
+		logger.info(response.getResult().getOutput().getContent());
+		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
 	}
 
 	@SpringBootConfiguration
@@ -79,8 +91,8 @@ class OllamaEmbeddingClientIT {
 		}
 
 		@Bean
-		public OllamaEmbeddingClient ollamaEmbedding(OllamaApi ollamaApi) {
-			return new OllamaEmbeddingClient(ollamaApi).withModel("orca-mini");
+		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
+			return new OllamaChatClient(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
 		}
 
 	}

@@ -144,7 +144,7 @@ Below is a simple code example extracted from https://github.com/spring-projects
 ----
 byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
 
-var userMessage = new UserMessage("Explain what do you see o this picture?",
+var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
