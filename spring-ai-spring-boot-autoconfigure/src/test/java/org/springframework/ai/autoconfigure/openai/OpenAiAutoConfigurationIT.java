@@ -28,6 +28,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.image.OpenAiImageType;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
@@ -139,8 +140,9 @@ public class OpenAiAutoConfigurationIT {
 			OpenAiImageClient client = context.getBean(OpenAiImageClient.class);
 			ImageResponse imageResponse = client.call(new ImagePrompt("forest"));
 			assertThat(imageResponse.getResults()).hasSize(1);
-			assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-			logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			assertThat(imageResponse.getResult().getOutput().getData()).isNotNull();
+			assertThat(imageResponse.getResult().getOutput().getType()).isEqualTo(OpenAiImageType.URL);
+			logger.info("Generated image: " + imageResponse.getResult().getOutput().getData());
 		});
 	}
 

@@ -256,7 +256,7 @@ public class OpenAiRetryTests {
 		var result = imageClient.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getUrl()).isEqualTo("url678");
+		assertThat(result.getResult().getOutput().getData()).isEqualTo("url678");
 		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
 	}

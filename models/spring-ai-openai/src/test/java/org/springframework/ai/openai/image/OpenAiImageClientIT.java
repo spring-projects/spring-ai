@@ -48,9 +48,8 @@ public class OpenAiImageClientIT extends AbstractIT {
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
-		assertThat(image.getUrl()).isNotEmpty();
-		// System.out.println(image.getUrl());
-		assertThat(image.getB64Json()).isNull();
+		assertThat(image.getType()).isEqualTo(OpenAiImageType.URL);
+		assertThat(image.getData()).isNotNull();
 
 		var imageGenerationMetadata = generation.getMetadata();
 		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
