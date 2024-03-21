@@ -66,7 +66,7 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 |====
 
 
-The prefix `spring.ai.azure.openai.embeddings` is the property prefix that configures the `EmbeddingClient` implementation for Azure OpenAI
+The prefix `spring.ai.azure.openai.embedding` is the property prefix that configures the `EmbeddingClient` implementation for Azure OpenAI
 
 [cols="3,5,1"]
 |====
