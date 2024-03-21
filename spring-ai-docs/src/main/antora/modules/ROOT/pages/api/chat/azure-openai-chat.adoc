@@ -37,13 +37,13 @@ This Azure configuration will align with the default configurations of the Sprin
 If you use a different Deployment Name, update the configuration property accordingly:
 
 ```
-spring.ai.azure.openai.chat.options.model=<my deployment name>
+spring.ai.azure.openai.chat.options.deployment-name=<my deployment name>
 ```
 
 The different deployment structures of Azure OpenAI and OpenAI leads to a property in the Azure OpenAI client library named `deploymentOrModelName`.
 This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 
-In a subsequent release, Spring AI will rename the property `spring.ai.azure.openai.chat.options.model` to `spring.ai.azure.openai.chat.options.deployment-name` to avoid confusion.
+NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
 
 === Add Repositories and BOM
 
@@ -151,7 +151,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 ----
 spring.ai.azure.openai.api-key=YOUR_API_KEY
 spring.ai.azure.openai.endpoint=YOUR_ENDPOINT
-spring.ai.azure.openai.chat.options.model=gpt-35-turbo
+spring.ai.azure.openai.chat.options.deployment-name=gpt-35-turbo
 spring.ai.azure.openai.chat.options.temperature=0.7
 ----
 
