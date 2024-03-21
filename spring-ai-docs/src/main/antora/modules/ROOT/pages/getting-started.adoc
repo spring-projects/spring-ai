@@ -158,13 +158,12 @@ Each of the following sections in the documentation shows which dependencies you
 ** xref:api/image/openai-image.adoc[OpenAI Image Generation]
 ** xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
 
-=== Transcription Models
-* xref:api/transcriptions.adoc[]
-** xref:api/transcriptions/openai-transcriptions.adoc[OpenAI Transcriptions]
+=== Audio Models
 
-=== Text-To-Speech (TTS) Models
-* xref:api/speech.adoc[]
-** xref:api/speech/openai-speech.adoc[OpenAI Text-To-Speech]
+* xref:api/audio/transcriptions.adoc[Transcription Models]
+** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI Transcriptions]
+* xref:api/audio/speech.adoc[Text-To-Speech (TTS) Models]
+** xref:api/audio/speech/openai-speech.adoc[OpenAI Text-To-Speech]
 
 === Vector Databases
 * xref:api/vectordbs.adoc[Vector Database API]
