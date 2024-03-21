@@ -25,6 +25,14 @@
         <maven.compiler.source>17</maven.compiler.source>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>gemfire-release-repo</id>
+            <name>Pivotal GemFire Release Repository</name>
+            <url>https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -38,6 +46,13 @@
         </dependency>
 
         <!-- TESTING -->
+        <dependency>
+            <groupId>com.vmware.gemfire</groupId>
+            <artifactId>gemfire-testcontainers</artifactId>
+            <version>2.0.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-openai</artifactId>
@@ -70,10 +85,6 @@
             <artifactId>awaitility</artifactId>
             <version>3.0.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
         </dependency>
 
     </dependencies>

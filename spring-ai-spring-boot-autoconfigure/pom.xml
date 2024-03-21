@@ -18,6 +18,13 @@
 		<connection>git://github.com/spring-projects/spring-ai.git</connection>
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
+	<repositories>
+		<repository>
+			<id>gemfire-release-repo</id>
+			<name>Pivotal GemFire Release Repository</name>
+			<url>https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 
@@ -269,6 +276,13 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-gemfire-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-minimax</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -378,6 +392,13 @@
 			<groupId>org.skyscreamer</groupId>
 			<artifactId>jsonassert</artifactId>
 			<version>1.5.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.vmware.gemfire</groupId>
+			<artifactId>gemfire-testcontainers</artifactId>
+			<version>2.0.0</version>
 			<scope>test</scope>
 		</dependency>
 
