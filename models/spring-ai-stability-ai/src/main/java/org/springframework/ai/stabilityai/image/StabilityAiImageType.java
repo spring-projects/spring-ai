@@ -46,8 +46,7 @@ public enum StabilityAiImageType implements ImageType<StabilityAiImageType, Stri
 		return this.value;
 	}
 
-	@Override
-	public StabilityAiImageType fromValue(String value) {
+	public static StabilityAiImageType fromValue(final String value) {
 		return Arrays.stream(values())
 			.filter(v -> v.value.equals(value))
 			.findAny()

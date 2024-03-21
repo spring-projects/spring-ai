@@ -68,10 +68,9 @@ public class OpenAiImageCreationTests {
 	}
 
 	private Image tmpImageFactory(OpenAiImageRequest req, OpenAiImageResponse res) {
-		return switch (req.responseFormat()) {
-			case "b64_json" -> new OpenAiBase64Image(res.toString());
-			case "url" -> new OpenAiUrlImage(res.toString());
-			default -> null;
+		return switch (OpenAiImageType.fromValue(req.responseFormat())) {
+			case BASE64 -> new OpenAiBase64Image(res.toString());
+			case URL -> new OpenAiUrlImage(res.toString());
 		};
 	}
 

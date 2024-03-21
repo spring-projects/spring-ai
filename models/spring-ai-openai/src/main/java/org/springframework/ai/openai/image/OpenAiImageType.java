@@ -46,8 +46,7 @@ public enum OpenAiImageType implements ImageType<OpenAiImageType, String> {
 		return this.value;
 	}
 
-	@Override
-	public OpenAiImageType fromValue(String value) {
+	public static OpenAiImageType fromValue(final String value) {
 		return Arrays.stream(values())
 			.filter(v -> v.value.equals(value))
 			.findAny()

@@ -38,8 +38,7 @@ public enum DefaultImageType implements ImageType<DefaultImageType, String> {
 		return this.value;
 	}
 
-	@Override
-	public DefaultImageType fromValue(final String value) {
+	public static DefaultImageType fromValue(final String value) {
 		return Arrays.stream(values())
 			.filter(v -> v.value.equals(value))
 			.findAny()

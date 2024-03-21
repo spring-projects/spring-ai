@@ -20,10 +20,11 @@ package org.springframework.ai.image;
  * interface allows for the creation of type-safe enums that can be extended to include
  * new types of image references.
  *
- * @param <T> The concrete enum type that implements this interface. This type parameter
- * enables the enum to use methods defined in this interface in a type-safe manner.
- * @param <E> The type of the constants used by the enum implementing this interface. It
- * represents the type of the values associated with each enum constant.
+ * @param <T> The concrete enum type that extends Enum and implements this interface. This
+ * type parameter allows the enum to be part of the extensible enum pattern and to use
+ * methods defined in this interface in a type-safe manner.
+ * @param <E> The type of the value associated with the enum constants. It represents the
+ * data type of the values that each enum constant holds.
  * <p>
  * <strong>Example Usage:</strong>
  * </p>
@@ -43,21 +44,12 @@ package org.springframework.ai.image;
  * }
  * </pre>
  */
-public interface ImageType<T extends ImageType<T, E>, E> {
+public interface ImageType<T extends Enum<T> & ImageType<T, E>, E> {
 
 	/**
 	 * Returns the value associated with the enum constant.
 	 * @return The value of the enum constant of type {@code E}.
 	 */
 	E getValue();
-
-	/**
-	 * Returns an enum constant of type {@code T} corresponding to the specified value of
-	 * type {@code E}.
-	 * @param value The value of the enum constant to be returned.
-	 * @return An enum constant of type {@code T}.
-	 * @throws IllegalArgumentException if no constant with the specified value is found.
-	 */
-	T fromValue(final E value);
 
 }
