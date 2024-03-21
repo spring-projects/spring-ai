@@ -17,10 +17,10 @@ package org.springframework.ai.openai;
 
 import java.util.List;
 
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageClient;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageOptions;
@@ -109,9 +109,8 @@ public class OpenAiImageClient implements ImageClient {
 		}
 
 		List<ImageGeneration> imageGenerationList = imageApiResponse.data().stream().map(entry -> {
-			return new ImageGeneration(new Image(entry.url(), entry.b64Json()),
-					new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
-		}).toList();
+			return new ImageGeneration(entry.getImage(), new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
+		}).collect(Collectors.toList());
 
 		ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(imageApiResponse);
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);

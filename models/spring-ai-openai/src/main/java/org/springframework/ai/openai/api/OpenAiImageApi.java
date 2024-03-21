@@ -20,6 +20,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.image.Image;
+import org.springframework.ai.openai.image.OpenAiBase64Image;
+import org.springframework.ai.openai.image.OpenAiUrlImage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -129,6 +132,12 @@ public class OpenAiImageApi {
 		@JsonProperty("url") String url,
 		@JsonProperty("b64_json") String b64Json,
 		@JsonProperty("revised_prompt") String revisedPrompt) {
+		//	TODO : Develop Image Factory
+		public Image getImage() {
+			if (url != null) return new OpenAiUrlImage(url);
+			if (b64Json != null) return new OpenAiBase64Image(b64Json);
+			throw new IllegalArgumentException("Entry must have either url or b64Json");
+		}
 	}
 	// @formatter:onn
 
