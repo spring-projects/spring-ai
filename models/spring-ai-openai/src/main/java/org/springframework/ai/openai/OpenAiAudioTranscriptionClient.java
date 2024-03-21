@@ -51,6 +51,8 @@ import org.springframework.util.Assert;
 
 /**
  * OpenAI audio transcription client implementation for backed by {@link OpenAiAudioApi}.
+ * You provide as input the audio file you want to transcribe and the desired output file
+ * format of the transcription of the audio.
  *
  * @author Michael Lavelle
  * @author Christian Tzolov

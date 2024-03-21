@@ -1,4 +1,4 @@
-= Anthropic Chat
+= Anthropic 3 Chat
 
 link:https://www.anthropic.com/[Anthropic Claude] is a family of foundational AI models that can be used in a variety of applications.
 For developers and businesses, you can leverage the API access and build directly on top of link:https://www.anthropic.com/api[Anthropic's AI infrastructure].

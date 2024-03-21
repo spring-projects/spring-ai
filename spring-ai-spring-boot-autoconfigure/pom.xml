@@ -185,6 +185,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- WatsonX AI  -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-watsonx-ai</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Bedrock -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

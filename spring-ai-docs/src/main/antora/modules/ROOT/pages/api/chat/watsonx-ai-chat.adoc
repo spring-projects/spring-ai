@@ -1,0 +1,148 @@
+= watsonx.ai Chat
+
+With https://dataplatform.cloud.ibm.com/docs/content/wsj/getting-started/overview-wx.html?context=wx&audience=wdp[watsonx.ai] you can run various Large Language Models (LLMs) locally and generate text from them.
+Spring AI supports the watsonx.ai text generation with `WatsonxAiChatClient`.
+
+
+== Prerequisites
+
+You first need to have a SaaS instance of watsonx.ai (as well as an IBM Cloud account).
+
+Refer to https://eu-de.dataplatform.cloud.ibm.com/registration/stepone?context=wx&preselect_region=true[free-trial] to try watsonx.ai for free
+
+TIP: More info. can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the watsonx.ai Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-watsonx-ai-spring-boot-starter'
+}
+----
+
+=== Chat Properties
+
+==== Connection Properties
+
+The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you connect to watsonx.ai.
+
+[cols="4,3,3"]
+|====
+| Property | Description | Default
+
+| spring.ai.watsonx.ai.base-url         | The URL to connect to             |  https://us-south.ml.cloud.ibm.com
+| spring.ai.watsonx.ai.stream-endpoint  | The streaming endpoint            |  generation/stream?version=2023-05-29
+| spring.ai.watsonx.ai.text-endpoint    | The text endpoint                 |  generation/text?version=2023-05-29
+| spring.ai.watsonx.ai.project-id       | The project ID                    |  -
+| spring.ai.watsonx.ai.iam-token        | The IBM Cloud account IAM token   |  -
+|====
+
+==== Configuration Properties
+
+The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you configure the chat client implementation for Watsonx.AI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.watsonx.ai.chat.enabled | Enable Watsonx.AI chat client.  | true
+| spring.ai.watsonx.ai.chat.options.temperature | The temperature of the model. Increasing the temperature will make the model answer more creatively.  | 0.7
+| spring.ai.watsonx.ai.chat.options.top-p | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.2) will generate more focused and conservative text.  | 1.0
+| spring.ai.watsonx.ai.chat.options.top-k | Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative.   |  50
+| spring.ai.watsonx.ai.chat.options.decoding-method |  Decoding is the process that a model uses to choose the tokens in the generated output. | greedy
+| spring.ai.watsonx.ai.chat.options.max-new-tokens | Sets the limit of tokens that the LLM follow. | 20
+| spring.ai.watsonx.ai.chat.options.min-new-tokens | Sets how many tokens must the LLM generate.  | 0
+| spring.ai.watsonx.ai.chat.options.stop-sequences | Sets when the LLM should stop. (e.g., ["\n\n\n"]) then when the LLM generates three consecutive line breaks it will terminate. Stop sequences are ignored until after the number of tokens that are specified in the Min tokens parameter are generated.  | -
+| spring.ai.watsonx.ai.chat.options.repetition-penalty | Sets how strongly to penalize repetitions. A higher value (e.g., 1.8) will penalize repetitions more strongly, while a lower value (e.g., 1.1) will be more lenient.  | 1.0
+| spring.ai.watsonx.ai.chat.options.random-seed | Produce repeatable results, set the same random seed value every time.  | randomly generated
+| spring.ai.watsonx.ai.chat.options.model |  Model is the identifier of the LLM Model to be used. | ????
+|====
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-watsonx-ai/src/main/java/org/springframework/ai/watsonx/WatsonxAiChatOptions.java[WatsonxAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `WatsonxAiChatClient(api, options)` constructor or the `spring.ai.watsonxai.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        WatsonxAiChatOptions.builder()
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-watsonx-ai/src/main/java/org/springframework/ai/watsonx/WatsonxAiChatOptions.java[WatsonxAiChatOptions.java] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+NOTE: For more information go to https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-model-parameters.html?context=wx[watsonx-parameters-info]
+
+== Usage example
+
+[source,java]
+----
+public class MyClass {
+
+    private final static String MODEL = "google/flan-ul2";
+    private final WatsonxAiChatClient chat;
+
+    @Autowired
+    MyClass(WatsonxAiChatClient chat) {
+        this.chat = chat;
+    }
+
+    public String generate(String userInput) {
+
+        WatsonxAiOptions options = WatsonxAiOptions.create()
+            .withModel(MODEL)
+            .withDecodingMethod("sample")
+            .withRandomSeed(1);
+
+        Prompt prompt = new Prompt(new SystemMessage(userInput), options);
+
+        var results = chat.call(prompt);
+
+        var generatedText = results.getResult().getOutput().getContent();
+
+        return generatedText;
+    }
+
+    public String generateStream(String userInput) {
+
+        WatsonxAiOptions options = WatsonxAiOptions.create()
+            .withModel(MODEL)
+            .withDecodingMethod("greedy")
+            .withRandomSeed(2);
+
+        Prompt prompt = new Prompt(new SystemMessage(userInput), options);
+
+        var results = chat.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
+
+        var generatedText = results.stream()
+            .map(generation -> generation.getResult().getOutput().getContent())
+            .collect(Collectors.joining());
+
+        return generatedText;
+    }
+
+}
+----

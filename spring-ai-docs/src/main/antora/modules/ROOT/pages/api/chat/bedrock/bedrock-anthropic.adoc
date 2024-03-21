@@ -1,4 +1,7 @@
-= Anthropic Chat
+= Bedrock Anthropic 2 Chat
+
+NOTE: The Anthropic 2 Chat API is deprecated and replaced by the new Anthropic Claude 3 Message API.
+Please use the xref:api/chat/bedrock/bedrock-anthropic3.adoc[Anthropic Claude 3 Message API] for new projects.
 
 https://www.anthropic.com/product[Anthropic's Claude] is an AI assistant based on Anthropic’s research into training helpful, honest, and harmless AI systems.
 The Claude model has the following high level features
@@ -8,6 +11,9 @@ The Claude model has the following high level features
 * AI Safety Features: Built on Anthropic's safety research, Claude prioritizes helpfulness, honesty, and harmlessness in its interactions, reducing brand risk and ensuring responsible AI behavior.
 
 The https://aws.amazon.com/bedrock/claude[AWS Bedrock Anthropic Model Page] and https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock User Guide] contains detailed information on how to use the AWS hosted model.
+
+TIP: Anthropic’s Claude 2 and 3 models are also available directly on the Anthropic's own cloud platform.
+Spring AI provides dedicated xref:api/chat/anthropic-chat.adoc[Anthropic Claude] client to access it.
 
 == Prerequisites
 
