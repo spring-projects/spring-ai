@@ -50,8 +50,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AzureOpenAiChatClientFunctionCallIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatClientFunctionCallIT.class);
+
 	public static final String MODEL = "gpt4-turbo";
-//	public static final String MODEL = "gpt-4-0125-preview";
+
+	// public static final String MODEL = "gpt-4-0125-preview";
 
 	@Autowired
 	private AzureOpenAiChatClient chatClient;
@@ -81,7 +83,6 @@ class AzureOpenAiChatClientFunctionCallIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
 	}
 
-
 	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
@@ -89,24 +90,24 @@ class AzureOpenAiChatClientFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-				.withDeploymentName(MODEL)
-				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-						.withName("getCurrentWeather")
-						.withDescription("Get the current weather in a given location")
-						.withResponseConverter((response) -> "" + response.temp() + response.unit())
-						.build()))
-				.build();
+			.withDeploymentName(MODEL)
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription("Get the current weather in a given location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build()))
+			.build();
 
 		Flux<ChatResponse> response = chatClient.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
-				.collect(Collectors.joining());
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -127,10 +128,7 @@ class AzureOpenAiChatClientFunctionCallIT {
 		@Bean
 		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient) {
 			return new AzureOpenAiChatClient(openAIClient,
-					AzureOpenAiChatOptions.builder()
-						.withDeploymentName(MODEL)
-						.withMaxTokens(500)
-						.build());
+					AzureOpenAiChatOptions.builder().withDeploymentName(MODEL).withMaxTokens(500).build());
 		}
 
 	}

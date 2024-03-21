@@ -17,6 +17,7 @@ package org.springframework.ai.azure.openai.metadata;
 
 import com.azure.ai.openai.models.ChatCompletions;
 
+import org.springframework.ai.azure.openai.dto.AccessibleChatCompletions;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.Usage;
@@ -35,7 +36,7 @@ public class AzureOpenAiChatResponseMetadata implements ChatResponseMetadata {
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 
 	@SuppressWarnings("all")
-	public static AzureOpenAiChatResponseMetadata from(ChatCompletions chatCompletions,
+	public static AzureOpenAiChatResponseMetadata from(AccessibleChatCompletions chatCompletions,
 			PromptMetadata promptFilterMetadata) {
 		Assert.notNull(chatCompletions, "Azure OpenAI ChatCompletions must not be null");
 		String id = chatCompletions.getId();
