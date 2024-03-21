@@ -48,6 +48,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
@@ -166,6 +167,7 @@
 		<postgresql.version>42.7.2</postgresql.version>
 		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
 		<milvus.version>2.3.4</milvus.version>
+		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
 		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>

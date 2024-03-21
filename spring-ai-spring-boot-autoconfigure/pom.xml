@@ -299,6 +299,13 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-gemfire-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-minimax</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
@@ -455,6 +462,13 @@
 			<groupId>org.skyscreamer</groupId>
 			<artifactId>jsonassert</artifactId>
 			<version>1.5.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>dev.gemfire</groupId>
+			<artifactId>gemfire-testcontainers</artifactId>
+			<version>2.3.0</version>
 			<scope>test</scope>
 		</dependency>
 
