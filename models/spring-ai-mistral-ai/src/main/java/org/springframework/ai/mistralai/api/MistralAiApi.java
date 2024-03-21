@@ -705,7 +705,7 @@ public class MistralAiApi {
 			.toEntity(ChatCompletion.class);
 	}
 
-	private MIstralAiStreamFunctionCallingHelper chunkMerger = new MIstralAiStreamFunctionCallingHelper();
+	private MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
 
 	/**
 	 * Creates a streaming chat response for the given chat conversation.

@@ -380,7 +380,7 @@ public class OpenAiApi {
 			/**
 			 * Model can pick between generating a message or calling a function.
 			 */
-			public static final String AUTO = "none";
+			public static final String AUTO = "auto";
 			/**
 			 * Model will not call a function and instead generates a message
 			 */
