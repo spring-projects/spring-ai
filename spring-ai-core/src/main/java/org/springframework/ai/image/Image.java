@@ -15,58 +15,28 @@
  */
 package org.springframework.ai.image;
 
-import java.util.Objects;
-
-public class Image {
+/**
+ * An extensible interface for handling various types of image data.
+ *
+ * @param <T> The type of the image data this interface deals with. For instance, it could
+ * be a byte array, a file path, or a Base64 encoded string of the image.
+ * @author youngmon
+ * @version 0.8.1
+ */
+public interface Image<T> {
 
 	/**
-	 * The URL where the image can be accessed.
+	 * Returns the image data. The type of the data is determined by the type parameter
+	 * {@code T} of this interface.
+	 * @return Image data of type T.
 	 */
-	private String url;
+	T getData();
 
 	/**
-	 * Base64 encoded image string.
+	 * Returns the type of the image. The image type is defined by the {@link ImageType}.
+	 * Through this method, it's possible to know the type of the image.
+	 * @return The {@link ImageType} of the image.
 	 */
-	private String b64Json;
-
-	public Image(String url, String b64Json) {
-		this.url = url;
-		this.b64Json = b64Json;
-	}
-
-	public String getUrl() {
-		return url;
-	}
-
-	public void setUrl(String url) {
-		this.url = url;
-	}
-
-	public String getB64Json() {
-		return b64Json;
-	}
-
-	public void setB64Json(String b64Json) {
-		this.b64Json = b64Json;
-	}
-
-	@Override
-	public String toString() {
-		return "Image{" + "url='" + url + '\'' + ", b64Json='" + b64Json + '\'' + '}';
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof Image image))
-			return false;
-		return Objects.equals(url, image.url) && Objects.equals(b64Json, image.b64Json);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(url, b64Json);
-	}
+	ImageType getType();
 
 }
