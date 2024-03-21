@@ -97,7 +97,7 @@ public class GemFireVectorStore implements VectorStore {
 
 		public static class Builder {
 
-			private String host;
+			private String host = DEFAULT_HOST;
 
 			private int port = DEFAULT_PORT;
 
@@ -177,6 +177,8 @@ public class GemFireVectorStore implements VectorStore {
 	}
 
 	private static final int DEFAULT_PORT = 9090;
+
+	private static final String DEFAULT_HOST = "localhost";
 
 	public static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
 
