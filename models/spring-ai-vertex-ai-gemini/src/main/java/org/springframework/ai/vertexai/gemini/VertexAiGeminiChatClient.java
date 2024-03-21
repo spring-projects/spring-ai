@@ -15,12 +15,6 @@
  */
 package org.springframework.ai.vertexai.gemini;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.cloud.vertexai.VertexAI;
@@ -38,8 +32,6 @@ import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
 import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -60,9 +52,17 @@ import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Christian Tzolov
+ * @author Grogdunn
  * @since 0.8.1
  */
 public class VertexAiGeminiChatClient
@@ -167,18 +167,19 @@ public class VertexAiGeminiChatClient
 			ResponseStream<GenerateContentResponse> responseStream = request.model
 				.generateContentStream(request.contents);
 
-			return Flux.fromStream(responseStream.stream()).map(response -> {
-				response = handleFunctionCallOrReturn(request, response);
-				List<Generation> generations = response.getCandidatesList()
-					.stream()
-					.map(candidate -> candidate.getContent().getPartsList())
-					.flatMap(List::stream)
-					.map(Part::getText)
-					.map(t -> new Generation(t.toString()))
-					.toList();
+			return Flux.fromStream(responseStream.stream())
+				.switchMap(r -> handleFunctionCallOrReturnStream(request, Flux.just(r)))
+				.map(response -> {
+					List<Generation> generations = response.getCandidatesList()
+						.stream()
+						.map(candidate -> candidate.getContent().getPartsList())
+						.flatMap(List::stream)
+						.map(Part::getText)
+						.map(t -> new Generation(t.toString()))
+						.toList();
 
-				return new ChatResponse(generations, toChatResponseMetadata(response));
-			});
+					return new ChatResponse(generations, toChatResponseMetadata(response));
+				});
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);
@@ -444,6 +445,19 @@ public class VertexAiGeminiChatClient
 	protected GenerateContentResponse doChatCompletion(GeminiRequest request) {
 		try {
 			return request.model.generateContent(request.contents);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to generate content", e);
+		}
+	}
+
+	@Override
+	protected Flux<GenerateContentResponse> doChatCompletionStream(GeminiRequest request) {
+		try {
+			ResponseStream<GenerateContentResponse> responseStream = request.model
+				.generateContentStream(request.contents);
+
+			return Flux.fromStream(responseStream.stream());
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);
