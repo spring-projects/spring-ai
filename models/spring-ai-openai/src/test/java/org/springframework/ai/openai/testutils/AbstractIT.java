@@ -31,6 +31,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.image.ImageClient;
 import org.springframework.ai.openai.OpenAiAudioSpeechClient;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
+import org.springframework.ai.openai.OpenAiModerationClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -56,6 +57,9 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected StreamingChatClient openStreamingChatClient;
+
+	@Autowired
+	protected OpenAiModerationClient openAiModerationClient;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
