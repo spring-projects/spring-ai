@@ -37,7 +37,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @since 0.8.1
  */
-public class MIstralAiStreamFunctionCallingHelper {
+public class MistralAiStreamFunctionCallingHelper {
 
 	/**
 	 * Merge the previous and current ChatCompletionChunk into a single one.
