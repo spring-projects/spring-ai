@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.openai.chat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -47,7 +49,9 @@ import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,7 +71,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = openAiChatClient.call(prompt);
+		ChatResponse response = chatClient.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
@@ -86,7 +90,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.openAiChatClient.call(prompt).getResult();
+		Generation generation = this.chatClient.call(prompt).getResult();
 
 		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
@@ -105,7 +109,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiChatClient.call(prompt).getResult();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -124,7 +128,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiChatClient.call(prompt).getResult();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputParser.parse(generation.getOutput().getContent());
 	}
@@ -144,7 +148,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = openAiChatClient.call(prompt).getResult();
+		Generation generation = chatClient.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
@@ -165,7 +169,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = openStreamingChatClient.stream(prompt)
+		String generationTextFromStream = streamingChatClient.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -197,7 +201,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.build()))
 			.build();
 
-		ChatResponse response = openAiChatClient.call(new Prompt(messages, promptOptions));
+		ChatResponse response = chatClient.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
@@ -222,7 +226,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = openStreamingChatClient.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
 			.block()
@@ -237,6 +241,57 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
 		assertThat(content).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void multiModalityEmbeddedImage() throws IOException {
+
+		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
+
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+
+		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+
+		logger.info(response.getResult().getOutput().getContent());
+		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "bowl");
+	}
+
+	@Test
+	void multiModalityImageUrl() throws IOException {
+
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
+						"https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
+
+		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+
+		logger.info(response.getResult().getOutput().getContent());
+		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "bowl");
+	}
+
+	@Test
+	void streamingMultiModalityImageUrl() throws IOException {
+
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
+				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
+						"https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
+
+		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(List.of(userMessage),
+				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+
+		String content = response.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(content).contains("bananas", "apple", "bowl");
 	}
 
 }
