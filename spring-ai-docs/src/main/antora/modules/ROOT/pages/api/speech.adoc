@@ -1,5 +1,5 @@
 [[Speech]]
-= Speech API
+= Text-To-Speech (TTS) API
 
 Spring AI provides support for OpenAI's Speech API.
 When additional providers for Speech are implemented, a common `SpeechClient`  and `StreamingSpeechClient` interface will be extracted.
