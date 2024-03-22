@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,11 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Geet Rawat
  */
-@Getter
-@Setter
 @ConfigurationProperties(GemFireVectorStoreProperties.CONFIG_PREFIX)
 public class GemFireVectorStoreProperties {
 
@@ -35,5 +31,29 @@ public class GemFireVectorStoreProperties {
 	private int port;
 
 	private String indexName;
+
+	public int getPort() {
+		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public String getIndexName() {
+		return indexName;
+	}
+
+	public void setIndexName(String indexName) {
+		this.indexName = indexName;
+	}
 
 }
