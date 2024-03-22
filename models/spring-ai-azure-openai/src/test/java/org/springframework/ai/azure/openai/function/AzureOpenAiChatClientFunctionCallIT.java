@@ -51,9 +51,9 @@ class AzureOpenAiChatClientFunctionCallIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatClientFunctionCallIT.class);
 
-	public static final String MODEL = "gpt4-turbo";
+//	public static final String MODEL = "gpt4-turbo";
 
-	// public static final String MODEL = "gpt-4-0125-preview";
+	public static final String MODEL = "gpt-4-0125-preview";
 
 	@Autowired
 	private AzureOpenAiChatClient chatClient;
