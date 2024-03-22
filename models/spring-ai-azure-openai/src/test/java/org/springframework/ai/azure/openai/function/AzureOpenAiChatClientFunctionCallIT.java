@@ -17,6 +17,7 @@ package org.springframework.ai.azure.openai.function;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -51,10 +52,9 @@ class AzureOpenAiChatClientFunctionCallIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatClientFunctionCallIT.class);
 
-//	public static final String MODEL = "gpt4-turbo";
 
-	public static final String MODEL = "gpt-4-0125-preview";
-
+	@Autowired
+	private String selectedModel;
 	@Autowired
 	private AzureOpenAiChatClient chatClient;
 
@@ -66,13 +66,13 @@ class AzureOpenAiChatClientFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
 
 		ChatResponse response = chatClient.call(new Prompt(messages, promptOptions));
 
@@ -90,24 +90,24 @@ class AzureOpenAiChatClientFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(MODEL)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
 
 		Flux<ChatResponse> response = chatClient.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -121,14 +121,19 @@ class AzureOpenAiChatClientFunctionCallIT {
 		@Bean
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
+					.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.buildClient();
 		}
 
 		@Bean
-		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient) {
+		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient, String selectedModel) {
 			return new AzureOpenAiChatClient(openAIClient,
-					AzureOpenAiChatOptions.builder().withDeploymentName(MODEL).withMaxTokens(500).build());
+					AzureOpenAiChatOptions.builder().withDeploymentName(selectedModel).withMaxTokens(500).build());
+		}
+
+		@Bean
+		public String selectedModel() {
+			return Optional.ofNullable(System.getenv("AZURE_OPENAI_MODEL")).orElse("gpt-4-0125-preview");
 		}
 
 	}
