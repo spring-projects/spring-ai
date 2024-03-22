@@ -410,8 +410,7 @@ public class OpenAiApi {
 	 * @param rawContent The contents of the message. Can be either a {@link MediaContent} or a {@link String}.
 	 * The response message content is always a {@link String}.
 	 * @param role The role of the messages author. Could be one of the {@link Role} types.
-	 * @param name An optional name for the participant. Provides the model information to differentiate between
-	 * participants of the same role. In case of Function calling, the name is the function name that the message is
+	 * @param name In case of Function calling, the name is the function name that the message is
 	 * responding to.
 	 * @param toolCallId Tool call that this message is responding to. Only applicable for the {@link Role#TOOL} role
 	 * and null otherwise.
@@ -446,6 +445,19 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null);
+		}
+
+		/**
+		 * Create a chat completion message with the given content and role. All other fields are null.
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 * @param name In case of Function calling, the name is the function name that the message is
+	     * responding to.
+		 * @param toolCallId Tool call that this message is responding to. Only applicable for
+		 * the {@link Role#TOOL} role
+		 */
+		public ChatCompletionMessage(Object content, Role role, String name, String toolCallId) {
+			this(content, role, name, toolCallId, null);
 		}
 
 		/**

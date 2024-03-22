@@ -103,7 +103,19 @@ class BedrockAnthropicChatClientIT {
 
 		ChatResponse response = client.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		Generation generation = response.getResults().get(0);
+		assertThat(generation.getOutput().getContent()).contains("Blackbeard");
+		logger.info(response.toString());
+
+		assertThat(response.getId()).isNotBlank();
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isEqualTo(response.getId());
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
 	}
 
 	@Test
@@ -182,10 +194,11 @@ class BedrockAnthropicChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
+		Flux<ChatResponse> response = client.stream(prompt);
+
+		List<ChatResponse> chatResponseList = response.collectList().block();
+
+		String generationTextFromStream = chatResponseList.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -196,6 +209,41 @@ class BedrockAnthropicChatClientIT {
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+
+		var firstResponse = chatResponseList.get(0);
+
+		for (int i = 0; i < chatResponseList.size() - 1; i++) {
+			var responseX = chatResponseList.get(i);
+			assertThat(responseX.getId()).isEqualTo(firstResponse.getId());
+
+			assertThat(responseX.getResults()).hasSize(1);
+			var generation = responseX.getResults().get(0);
+
+			assertThat(generation.getId()).isEqualTo(firstResponse.getId());
+			assertThat(generation.getIndex()).isEqualTo(0);
+			assertThat(generation.isCompleted()).isFalse();
+
+			AssistantMessage assistantMessage = generation.getOutput();
+
+			assertThat(assistantMessage.getId()).isEqualTo(firstResponse.getId());
+			assertThat(assistantMessage.getIndex()).isEqualTo(0);
+			assertThat(assistantMessage.isCompleted()).isFalse();
+		}
+
+		var lastResponse = chatResponseList.get(chatResponseList.size() - 1);
+		assertThat(lastResponse.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastResponse.getResults()).hasSize(1);
+		var lastGeneration = lastResponse.getResults().get(0);
+
+		assertThat(lastGeneration.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastGeneration.getIndex()).isEqualTo(0);
+		assertThat(lastGeneration.isCompleted()).isTrue();
+
+		AssistantMessage lastAssistantMessage = lastGeneration.getOutput();
+
+		assertThat(lastAssistantMessage.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastAssistantMessage.getIndex()).isEqualTo(0);
+		assertThat(lastAssistantMessage.isCompleted()).isTrue();
 	}
 
 	@SpringBootConfiguration

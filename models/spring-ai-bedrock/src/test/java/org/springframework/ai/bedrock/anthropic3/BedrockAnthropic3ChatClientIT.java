@@ -97,6 +97,33 @@ class BedrockAnthropic3ChatClientIT {
 	}
 
 	@Test
+	void multipleStreamRequests() {
+
+		Flux<ChatResponse> joke1 = client.stream(new Prompt(new UserMessage("Tell me a joke?")));
+		Flux<ChatResponse> joke2 = client.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
+
+		List<ChatResponse> joke1List = joke1.collectList().block();
+		List<ChatResponse> joke2List = joke2.collectList().block();
+
+		String id1 = joke1List.get(0).getId();
+		joke1List.stream().forEach(response -> assertThat(response.getId()).isEqualTo(id1));
+		joke1List.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getId)
+			.forEach(id -> assertThat(id).isEqualTo(id1));
+
+		String id2 = joke2List.get(0).getId();
+		assertThat(id2).isNotEqualTo(id1);
+		joke2List.stream().forEach(response -> assertThat(response.getId()).isEqualTo(id2));
+		joke2List.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getId)
+			.forEach(id -> assertThat(id).isEqualTo(id2));
+	}
+
+	@Test
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -107,7 +134,20 @@ class BedrockAnthropic3ChatClientIT {
 
 		ChatResponse response = client.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		Generation generation = response.getResults().get(0);
+		assertThat(generation.getOutput().getContent()).contains("Blackbeard");
+		// assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
+		logger.info(response.toString());
+
+		assertThat(response.getId()).isNotBlank();
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isEqualTo(response.getId());
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
 	}
 
 	@Test
@@ -187,10 +227,11 @@ class BedrockAnthropic3ChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
+		Flux<ChatResponse> response = client.stream(prompt);
+
+		List<ChatResponse> chatResponseList = response.collectList().block();
+
+		String generationTextFromStream = chatResponseList.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -201,6 +242,41 @@ class BedrockAnthropic3ChatClientIT {
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+
+		var firstResponse = chatResponseList.get(0);
+
+		for (int i = 0; i < chatResponseList.size() - 1; i++) {
+			var responseX = chatResponseList.get(i);
+			assertThat(responseX.getId()).isEqualTo(firstResponse.getId());
+
+			assertThat(responseX.getResults()).hasSize(1);
+			var generation = responseX.getResults().get(0);
+
+			assertThat(generation.getId()).isEqualTo(firstResponse.getId());
+			assertThat(generation.getIndex()).isEqualTo(0);
+			assertThat(generation.isCompleted()).isFalse();
+
+			AssistantMessage assistantMessage = generation.getOutput();
+
+			assertThat(assistantMessage.getId()).isEqualTo(firstResponse.getId());
+			assertThat(assistantMessage.getIndex()).isEqualTo(0);
+			assertThat(assistantMessage.isCompleted()).isFalse();
+		}
+
+		var lastResponse = chatResponseList.get(chatResponseList.size() - 1);
+		assertThat(lastResponse.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastResponse.getResults()).hasSize(1);
+		var lastGeneration = lastResponse.getResults().get(0);
+
+		assertThat(lastGeneration.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastGeneration.getIndex()).isEqualTo(0);
+		assertThat(lastGeneration.isCompleted()).isTrue();
+
+		AssistantMessage lastAssistantMessage = lastGeneration.getOutput();
+
+		assertThat(lastAssistantMessage.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastAssistantMessage.getIndex()).isEqualTo(0);
+		assertThat(lastAssistantMessage.isCompleted()).isTrue();
 	}
 
 	@Test

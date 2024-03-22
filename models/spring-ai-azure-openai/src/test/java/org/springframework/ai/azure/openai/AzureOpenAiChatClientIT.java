@@ -18,7 +18,6 @@ package org.springframework.ai.azure.openai;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -26,18 +25,21 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.parser.BeanOutputParser;
+import org.springframework.ai.parser.ListOutputParser;
+import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,6 +52,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 class AzureOpenAiChatClientIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatClientIT.class);
 
 	@Autowired
 	private AzureOpenAiChatClient chatClient;
@@ -71,6 +75,17 @@ class AzureOpenAiChatClientIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = chatClient.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+
+		assertThat(response.getId()).isNotBlank();
+		var generation = response.getResults().get(0);
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isEqualTo(response.getId());
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
 	}
 
 	@Test
@@ -148,7 +163,9 @@ class AzureOpenAiChatClientIT {
 		Generation generation = chatClient.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
-		System.out.println(actorsFilms);
+
+		logger.info("ActorsFilmsRecord: {}", actorsFilms);
+
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -166,21 +183,61 @@ class AzureOpenAiChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatClient.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
+		Flux<ChatResponse> response = chatClient.stream(prompt);
+
+		List<ChatResponse> chatResponseList = response.collectList().block();
+
+		String generationTextFromStream = chatResponseList.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getContent)
-			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-		System.out.println(actorsFilms);
+
+		logger.info("ActorsFilmsRecord: {}", actorsFilms);
+
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+
+		assertThat(chatResponseList).hasSizeGreaterThan(1);
+
+		var firstResponse = chatResponseList.get(0);
+
+		for (int i = 0; i < chatResponseList.size() - 1; i++) {
+			var responseX = chatResponseList.get(i);
+			assertThat(responseX.getId()).isEqualTo(firstResponse.getId());
+
+			assertThat(responseX.getResults()).hasSize(1);
+			var generation = responseX.getResults().get(0);
+
+			assertThat(generation.getId()).isEqualTo(firstResponse.getId());
+			assertThat(generation.getIndex()).isEqualTo(0);
+			assertThat(generation.isCompleted()).isFalse();
+
+			AssistantMessage assistantMessage = generation.getOutput();
+
+			assertThat(assistantMessage.getId()).isEqualTo(firstResponse.getId());
+			assertThat(assistantMessage.getIndex()).isEqualTo(0);
+			assertThat(assistantMessage.isCompleted()).isFalse();
+		}
+
+		var lastResponse = chatResponseList.get(chatResponseList.size() - 1);
+		assertThat(lastResponse.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastResponse.getResults()).hasSize(1);
+		var lastGeneration = lastResponse.getResults().get(0);
+
+		assertThat(lastGeneration.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastGeneration.getIndex()).isEqualTo(0);
+		assertThat(lastGeneration.isCompleted()).isTrue();
+
+		AssistantMessage lastAssistantMessage = lastGeneration.getOutput();
+
+		assertThat(lastAssistantMessage.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastAssistantMessage.getIndex()).isEqualTo(0);
+		assertThat(lastAssistantMessage.isCompleted()).isTrue();
+
 	}
 
 	@SpringBootConfiguration

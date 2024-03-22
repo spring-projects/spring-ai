@@ -16,7 +16,12 @@
 package org.springframework.ai.ollama;
 
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
 
@@ -27,6 +32,7 @@ import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -97,28 +103,71 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
 		OllamaApi.ChatResponse response = this.chatApi.chat(ollamaChatRequest(prompt, false));
 
-		var generator = new Generation(response.message().content());
-		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator
-				.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(response)));
-		}
-		return new ChatResponse(List.of(generator));
+		Integer index = 0;
+		String id = UUID.randomUUID().toString();
+		String content = (response.message() != null) ? response.message().content() : "";
+		boolean isCompleted = Boolean.TRUE.equals(response.done());
+		ChatGenerationMetadata chatGenerationMetadata = (isCompleted)
+				? ChatGenerationMetadata.from("unknown", extractUsage(response)) : ChatGenerationMetadata.NULL;
+		Map<String, Object> properties = extractProperties(response);
+
+		var generator = new Generation(id, index, isCompleted, content, properties, chatGenerationMetadata);
+
+		return new ChatResponse(id, List.of(generator), ChatResponseMetadata.NULL);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		Flux<OllamaApi.ChatResponse> response = this.chatApi.streamingChat(ollamaChatRequest(prompt, true));
+		Flux<OllamaApi.ChatResponse> responseStream = this.chatApi.streamingChat(ollamaChatRequest(prompt, true));
 
-		return response.map(chunk -> {
-			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
-					: new Generation("");
-			if (Boolean.TRUE.equals(chunk.done())) {
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(chunk)));
+		AtomicReference<String> syntheticId = new AtomicReference<>(UUID.randomUUID().toString());
+		AtomicInteger syntheticIndex = new AtomicInteger(0);
+
+		return responseStream.map(response -> {
+
+			Integer index = syntheticIndex.getAndIncrement();
+			String id = syntheticId.get();
+			String content = (response.message() != null) ? response.message().content() : "";
+			boolean isCompleted = Boolean.TRUE.equals(response.done());
+			ChatGenerationMetadata chatGenerationMetadata = (isCompleted)
+					? ChatGenerationMetadata.from("unknown", extractUsage(response)) : ChatGenerationMetadata.NULL;
+			Map<String, Object> properties = extractProperties(response);
+
+			Generation generation = new Generation(id, index, isCompleted, content, properties, chatGenerationMetadata);
+
+			// Reset the synthetic id and index if the chunk is done.
+			if (Boolean.TRUE.equals(response.done())) {
+				syntheticId.set(UUID.randomUUID().toString());
+				syntheticIndex.set(0);
 			}
-			return new ChatResponse(List.of(generation));
+
+			return new ChatResponse(id, List.of(generation), ChatResponseMetadata.NULL);
 		});
+	}
+
+	private Map<String, Object> extractProperties(OllamaApi.ChatResponse response) {
+		Map<String, Object> map = new HashMap<>();
+
+		if (response.model() != null) {
+			map.put("model", response.model());
+		}
+		if (response.createdAt() != null) {
+			map.put("createdAt", response.createdAt());
+		}
+		if (response.totalDuration() != null) {
+			map.put("totalDuration", response.totalDuration());
+		}
+		if (response.loadDuration() != null) {
+			map.put("loadDuration", response.loadDuration());
+		}
+		if (response.promptEvalDuration() != null) {
+			map.put("promptEvalDuration", response.promptEvalDuration());
+		}
+		if (response.evalDuration() != null) {
+			map.put("evalDuration", response.evalDuration());
+		}
+		return map;
 	}
 
 	private Usage extractUsage(OllamaApi.ChatResponse response) {

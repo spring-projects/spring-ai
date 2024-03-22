@@ -16,6 +16,9 @@
 package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
 
@@ -25,12 +28,13 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
@@ -60,23 +64,42 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
-		List<Generation> generations = response.generations().stream().map(g -> {
-			return new Generation(g.text());
+		var responseId = response.id();
+		List<Generation> generations = response.generations().stream().map(cohereGeneration -> {
+			var id = cohereGeneration.id();
+			var isCompleted = cohereGeneration.finishReason() != null;
+			ChatGenerationMetadata metadata = (cohereGeneration.finishReason() != null)
+					? ChatGenerationMetadata.from(cohereGeneration.finishReason().name(), null)
+					: ChatGenerationMetadata.NULL;
+			return new Generation(id, 0, isCompleted, cohereGeneration.text(), Map.of(), metadata);
 		}).toList();
 
-		return new ChatResponse(generations);
+		return new ChatResponse(responseId, generations, ChatResponseMetadata.NULL);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(g -> {
-			if (g.isFinished()) {
-				String finishReason = g.finishReason().name();
-				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
-				return new ChatResponse(List
-					.of(new Generation("").withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
+		AtomicReference<String> syntheticId = new AtomicReference<>(UUID.randomUUID().toString());
+
+		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(cohereGeneration -> {
+
+			var index = (cohereGeneration.index() != null) ? cohereGeneration.index() : 0;
+			var isCompleted = cohereGeneration.isFinished();
+
+			ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.NULL;
+
+			if (isCompleted) {
+				String finishReason = cohereGeneration.finishReason().name();
+				Usage usage = BedrockUsage.from(cohereGeneration.amazonBedrockInvocationMetrics());
+				chatGenerationMetadata = ChatGenerationMetadata.from(finishReason, usage);
 			}
-			return new ChatResponse(List.of(new Generation(g.text())));
+
+			String text = (cohereGeneration.text() != null) ? cohereGeneration.text() : "";
+
+			var generation = new Generation(syntheticId.get(), index, isCompleted, text, Map.of(),
+					chatGenerationMetadata);
+
+			return new ChatResponse(syntheticId.get(), List.of(generation), ChatResponseMetadata.NULL);
 		});
 	}
 

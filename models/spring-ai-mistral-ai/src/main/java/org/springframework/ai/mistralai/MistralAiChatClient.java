@@ -32,6 +32,7 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -112,27 +113,27 @@ public class MistralAiChatClient extends
 				return new ChatResponse(List.of());
 			}
 
-			List<Generation> generations = chatCompletion.choices()
-				.stream()
-				.map(choice -> new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
-					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
-				.toList();
+			var id = chatCompletion.id();
+			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+				String role = (choice.message().role() != null) ? choice.message().role().name() : "";
+				boolean isCompleted = choice.finishReason() != null;
+				int index = choice.index();
 
-			return new ChatResponse(generations);
+				return new Generation(id, index, isCompleted, choice.message().content(), toMap(role, choice),
+						ChatGenerationMetadata.from(choice.finishReason().name(), null));
+			}).toList();
+
+			return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 		});
 	}
 
-	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
-		Map<String, Object> map = new HashMap<>();
+	private Map<String, Object> toMap(String role, ChatCompletion.Choice choice) {
 
-		var message = choice.message();
-		if (message.role() != null) {
-			map.put("role", message.role().name());
-		}
+		Map<String, Object> map = new HashMap<>();
+		map.put("role", role);
 		if (choice.finishReason() != null) {
 			map.put("finishReason", choice.finishReason().name());
 		}
-		map.put("id", id);
 		return map;
 	}
 
@@ -160,16 +161,19 @@ public class MistralAiChatClient extends
 					if (choice.message().role() != null) {
 						roleMap.putIfAbsent(id, choice.message().role().name());
 					}
-					String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-					var generation = new Generation(choice.message().content(),
-							Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
-					if (choice.finishReason() != null) {
-						generation = generation
-							.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
-					}
+					boolean isCompleted = choice.finishReason() != null;
+					int index = choice.index();
+					ChatGenerationMetadata chatGenerationMetadata = (choice.finishReason() != null)
+							? ChatGenerationMetadata.from(choice.finishReason().name(), null)
+							: ChatGenerationMetadata.NULL;
+
+					var generation = new Generation(id, index, isCompleted, choice.message().content(),
+							toMap(roleMap.get(id), choice), chatGenerationMetadata);
+
 					return generation;
 				}).toList();
-				return new ChatResponse(generations);
+
+				return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 			});
 		});
 	}

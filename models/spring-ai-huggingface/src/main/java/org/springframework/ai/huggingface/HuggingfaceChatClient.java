@@ -18,6 +18,7 @@ package org.springframework.ai.huggingface;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
 import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
@@ -99,9 +102,10 @@ public class HuggingfaceChatClient implements ChatClient {
 		Map<String, Object> detailsMap = objectMapper.convertValue(allOfGenerateResponseDetails,
 				new TypeReference<Map<String, Object>>() {
 				});
-		Generation generation = new Generation(generatedText, detailsMap);
+		var id = UUID.randomUUID().toString();
+		Generation generation = new Generation(id, 0, true, generatedText, detailsMap, ChatGenerationMetadata.NULL);
 		generations.add(generation);
-		return new ChatResponse(generations);
+		return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 	}
 
 	/**

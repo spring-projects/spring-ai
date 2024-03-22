@@ -16,15 +16,22 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.Candidate;
+import com.google.cloud.vertexai.api.Candidate.FinishReason;
+import com.google.cloud.vertexai.api.Citation;
 import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.FunctionCall;
 import com.google.cloud.vertexai.api.FunctionDeclaration;
@@ -32,11 +39,14 @@ import com.google.cloud.vertexai.api.FunctionResponse;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Part;
+import com.google.cloud.vertexai.api.SafetyRating;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
+import com.google.cloud.vertexai.generativeai.GenerateContentConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
 import reactor.core.publisher.Flux;
@@ -49,6 +59,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -153,15 +164,8 @@ public class VertexAiGeminiChatClient
 		// this.chatCompletionWithFunctionCallSupport(geminiRequest);
 		GenerateContentResponse response = this.callWithFunctionSupport(geminiRequest);
 
-		List<Generation> generations = response.getCandidatesList()
-			.stream()
-			.map(candidate -> candidate.getContent().getPartsList())
-			.flatMap(List::stream)
-			.map(Part::getText)
-			.map(t -> new Generation(t.toString()))
-			.toList();
-
-		return new ChatResponse(generations, toChatResponseMetadata(response));
+		AtomicReference<String> syntheticResponseId = new AtomicReference<>(UUID.randomUUID().toString());
+		return this.toChatResponse(syntheticResponseId.get(), response);
 	}
 
 	@Override
@@ -173,17 +177,11 @@ public class VertexAiGeminiChatClient
 			ResponseStream<GenerateContentResponse> responseStream = request.model
 				.generateContentStream(request.contents, request.config);
 
+			AtomicReference<String> syntheticResponseId = new AtomicReference<>(UUID.randomUUID().toString());
+
 			return Flux.fromStream(responseStream.stream()).map(response -> {
 				response = handleFunctionCallOrReturn(request, response);
-				List<Generation> generations = response.getCandidatesList()
-					.stream()
-					.map(candidate -> candidate.getContent().getPartsList())
-					.flatMap(List::stream)
-					.map(Part::getText)
-					.map(t -> new Generation(t.toString()))
-					.toList();
-
-				return new ChatResponse(generations, toChatResponseMetadata(response));
+				return this.toChatResponse(syntheticResponseId.get(), response);
 			});
 		}
 		catch (Exception e) {
@@ -191,12 +189,64 @@ public class VertexAiGeminiChatClient
 		}
 	}
 
+	private ChatResponse toChatResponse(String responseId, GenerateContentResponse response) {
+
+		List<Generation> generations = response.getCandidatesList()
+			.stream()
+			.map(candidate -> this.candidateToGenerations(responseId, candidate))
+			.flatMap(List::stream)
+			.toList();
+
+		return new ChatResponse(responseId, generations, toChatResponseMetadata(response));
+	}
+
+	private List<Generation> candidateToGenerations(String responseId, Candidate candidate) {
+
+		return candidate.getContent().getPartsList().stream().map(part -> {
+
+			int index = candidate.getIndex();
+			boolean isCompleted = candidate.getFinishReason() != null
+					&& candidate.getFinishReason() != FinishReason.FINISH_REASON_UNSPECIFIED;
+
+			ChatGenerationMetadata chatGenerationMetadata = (candidate.getFinishReason() != null)
+					? ChatGenerationMetadata.from(candidate.getFinishReason().name(), null)
+					: ChatGenerationMetadata.NULL;
+
+			Map<String, Object> properties = new HashMap<>();
+
+			if (candidate.getFinishMessage() != null) {
+				properties.put("finishMessage", candidate.getFinishMessage());
+			}
+			if (candidate.getCitationMetadata() != null
+					&& !CollectionUtils.isEmpty(candidate.getCitationMetadata().getCitationsList())) {
+				properties.put("citationMetadata",
+						String.format("[%s]",
+								candidate.getCitationMetadata()
+									.getCitationsList()
+									.stream()
+									.map((Citation citation) -> generatedMessageV3ToJson(citation))
+									.collect(Collectors.joining("," + System.lineSeparator()))));
+			}
+			if (!CollectionUtils.isEmpty(candidate.getSafetyRatingsList())) {
+				properties.put("safetyRatings",
+						String.format("[%s]",
+								candidate.getSafetyRatingsList()
+									.stream()
+									.map((SafetyRating safetyRating) -> generatedMessageV3ToJson(safetyRating))
+									.collect(Collectors.joining("," + System.lineSeparator()))));
+			}
+
+			return new Generation(responseId, index, isCompleted, part.getText(), properties, chatGenerationMetadata);
+		}).toList();
+
+	}
+
 	private VertexAiChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
 		return new VertexAiChatResponseMetadata(new VertexAiUsage(response.getUsageMetadata()));
 	}
 
 	@JsonInclude(Include.NON_NULL)
-	public record GeminiRequest(List<Content> contents, GenerativeModel model, GenerationConfig config) {
+	public record GeminiRequest(List<Content> contents, GenerativeModel model, GenerateContentConfig config) {
 	}
 
 	private GeminiRequest createGeminiRequest(Prompt prompt) {
@@ -252,13 +302,24 @@ public class VertexAiGeminiChatClient
 			generationConfig = toGenerationConfig(updatedRuntimeOptions);
 		}
 
+		return new GeminiRequest(toGeminiContent(prompt), generativeModel,
+				toGenerationContentConfig(generationConfig, functionsForThisRequest));
+	}
+
+	private GenerateContentConfig toGenerationContentConfig(GenerationConfig generationConfig,
+			Set<String> functionsForThisRequest) {
+
+		GenerateContentConfig.Builder generateContentConfigBuilder = GenerateContentConfig.newBuilder();
+
+		generateContentConfigBuilder.setGenerationConfig(generationConfig);
+
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 			List<Tool> tools = this.getFunctionTools(functionsForThisRequest);
-			generativeModel.setTools(tools);
+			generateContentConfigBuilder.setTools(tools);
 		}
 
-		return new GeminiRequest(toGeminiContent(prompt), generativeModel, generationConfig);
+		return generateContentConfigBuilder.build();
 	}
 
 	private GenerationConfig toGenerationConfig(VertexAiGeminiChatOptions options) {
@@ -370,6 +431,15 @@ public class VertexAiGeminiChatClient
 	private static String structToJson(Struct struct) {
 		try {
 			return JsonFormat.printer().print(struct);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static String generatedMessageV3ToJson(GeneratedMessageV3 generatedMessageV3) {
+		try {
+			return JsonFormat.printer().print(generatedMessageV3);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

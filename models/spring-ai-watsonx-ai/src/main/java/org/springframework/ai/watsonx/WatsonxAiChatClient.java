@@ -17,6 +17,8 @@ package org.springframework.ai.watsonx;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
 
@@ -25,6 +27,7 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -80,12 +83,19 @@ public class WatsonxAiChatClient implements ChatClient, StreamingChatClient {
 		WatsonxAiRequest request = request(prompt);
 
 		WatsonxAiResponse response = this.watsonxAiApi.generate(request).getBody();
-		var generator = new Generation(response.results().get(0).generatedText());
 
-		generator = generator.withGenerationMetadata(
-				ChatGenerationMetadata.from(response.results().get(0).stopReason(), response.system()));
+		String id = (response.createdAt() != null) ? response.createdAt().toString() : UUID.randomUUID().toString();
+		AtomicInteger index = new AtomicInteger(0);
+		List<Generation> generations = response.results().stream().map(result -> {
+			var text = result.generatedText();
+			var isCompleted = result.stopReason() != null;
+			var stopReason = result.stopReason();
+			var metadata = ChatGenerationMetadata.from(stopReason, response.system());
+			return new Generation(id, index.getAndIncrement(), isCompleted, text, Map.of(), metadata);
 
-		return new ChatResponse(List.of(generator));
+		}).toList();
+
+		return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 	}
 
 	@Override
@@ -95,13 +105,21 @@ public class WatsonxAiChatClient implements ChatClient, StreamingChatClient {
 
 		Flux<WatsonxAiResponse> response = this.watsonxAiApi.generateStreaming(request);
 
-		return response.map(chunk -> {
-			Generation generation = new Generation(chunk.results().get(0).generatedText());
-			if (chunk.system() != null) {
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(chunk.results().get(0).stopReason(), chunk.system()));
-			}
-			return new ChatResponse(List.of(generation));
+		return response.map(responseChunk -> {
+
+			String id = (responseChunk.createdAt() != null) ? responseChunk.createdAt().toString()
+					: UUID.randomUUID().toString();
+			AtomicInteger index = new AtomicInteger(0);
+
+			List<Generation> generations = responseChunk.results().stream().map(result -> {
+				var text = result.generatedText();
+				var isCompleted = result.stopReason() != null;
+				var stopReason = result.stopReason();
+				var metadata = ChatGenerationMetadata.from(stopReason, responseChunk.system());
+				return new Generation(id, index.getAndIncrement(), isCompleted, text, Map.of(), metadata);
+			}).toList();
+
+			return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 		});
 	}
 

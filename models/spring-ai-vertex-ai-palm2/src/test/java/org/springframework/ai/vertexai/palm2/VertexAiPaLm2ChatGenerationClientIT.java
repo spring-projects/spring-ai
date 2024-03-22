@@ -24,6 +24,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -63,7 +64,18 @@ class VertexAiPaLm2ChatGenerationClientIT {
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = client.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).contains("Bartholomew");
+		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+
+		assertThat(response.getId()).isNotBlank();
+		var generation = response.getResults().get(0);
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isEqualTo(response.getId());
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
 	}
 
 	// @Test

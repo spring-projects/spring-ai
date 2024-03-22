@@ -24,6 +24,9 @@ import java.util.stream.Collectors;
 import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -55,11 +58,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 class VertexAiGeminiChatClientIT {
 
+	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiChatClientIT.class);
+
 	@Autowired
 	private VertexAiGeminiChatClient client;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
+
+	@Test
+	void multipleStreamRequests() {
+
+		Flux<ChatResponse> joke1 = client.stream(new Prompt(new UserMessage("Tell me a joke?")));
+		Flux<ChatResponse> joke2 = client.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
+
+		List<ChatResponse> joke1List = joke1.collectList().block();
+		List<ChatResponse> joke2List = joke2.collectList().block();
+
+		String id1 = joke1List.get(0).getId();
+		joke1List.stream().forEach(response -> assertThat(response.getId()).isEqualTo(id1));
+		joke1List.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getId)
+			.forEach(id -> assertThat(id).isEqualTo(id1));
+
+		String id2 = joke2List.get(0).getId();
+		assertThat(id2).isNotEqualTo(id1);
+		joke2List.stream().forEach(response -> assertThat(response.getId()).isEqualTo(id2));
+		joke2List.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getId)
+			.forEach(id -> assertThat(id).isEqualTo(id2));
+	}
 
 	@Test
 	void roleTest() {
@@ -72,6 +104,19 @@ class VertexAiGeminiChatClientIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = client.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+
+		assertThat(response.getId()).isNotBlank();
+		var generation = response.getResults().get(0);
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isEqualTo(response.getId());
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
+
+		logger.info("Output Message properties: {}", generation.getOutput().getProperties().toString());
 	}
 
 	@Test
@@ -167,10 +212,11 @@ class VertexAiGeminiChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
+		Flux<ChatResponse> response = client.stream(prompt);
+
+		List<ChatResponse> chatResponseList = response.collectList().block();
+
+		String generationTextFromStream = chatResponseList.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -178,9 +224,50 @@ class VertexAiGeminiChatClientIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-		// logger.info("" + actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+
+		assertThat(chatResponseList).hasSizeGreaterThan(1);
+
+		var firstResponse = chatResponseList.get(0);
+
+		for (int i = 0; i < chatResponseList.size() - 1; i++) {
+			var responseX = chatResponseList.get(i);
+			assertThat(responseX.getId()).isEqualTo(firstResponse.getId());
+
+			assertThat(responseX.getResults()).hasSize(1);
+			var generation = responseX.getResults().get(0);
+
+			assertThat(generation.getId()).isEqualTo(firstResponse.getId());
+			assertThat(generation.getIndex()).isEqualTo(0);
+			assertThat(generation.isCompleted()).isFalse();
+
+			AssistantMessage assistantMessage = generation.getOutput();
+
+			assertThat(assistantMessage.getId()).isEqualTo(firstResponse.getId());
+			assertThat(assistantMessage.getIndex()).isEqualTo(0);
+			assertThat(assistantMessage.isCompleted()).isFalse();
+
+			logger.info("Output Message properties: {}", assistantMessage.getProperties().toString());
+		}
+
+		var lastResponse = chatResponseList.get(chatResponseList.size() - 1);
+		assertThat(lastResponse.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastResponse.getResults()).hasSize(1);
+		var lastGeneration = lastResponse.getResults().get(0);
+
+		assertThat(lastGeneration.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastGeneration.getIndex()).isEqualTo(0);
+		assertThat(lastGeneration.isCompleted()).isTrue();
+
+		AssistantMessage lastAssistantMessage = lastGeneration.getOutput();
+
+		assertThat(lastAssistantMessage.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastAssistantMessage.getIndex()).isEqualTo(0);
+		assertThat(lastAssistantMessage.isCompleted()).isTrue();
+
+		logger.info("Output Message properties: {}", lastAssistantMessage.getProperties().toString());
 	}
 
 	@Test

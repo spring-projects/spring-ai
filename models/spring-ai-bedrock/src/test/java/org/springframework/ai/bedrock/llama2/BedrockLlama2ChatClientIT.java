@@ -101,7 +101,19 @@ class BedrockLlama2ChatClientIT {
 
 		ChatResponse response = client.call(prompt);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		Generation generation = response.getResults().get(0);
+		assertThat(generation.getOutput().getContent()).contains("Blackbeard");
+
+		assertThat(response.getId()).isNotBlank();
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isNotBlank();
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
+
 	}
 
 	@Disabled("TODO: Fix the parser instructions to return the correct format")
@@ -178,7 +190,6 @@ class BedrockLlama2ChatClientIT {
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
-				Remove Markdown code blocks from the output.
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
@@ -194,7 +205,6 @@ class BedrockLlama2ChatClientIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-		System.out.println(actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

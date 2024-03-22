@@ -206,12 +206,26 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 			return new ChatResponse(List.of());
 		}
 
-		List<Generation> generations = chatCompletion.content().stream().map(content -> {
-			return new Generation(content.text(), Map.of())
-				.withGenerationMetadata(ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
-		}).toList();
+		var id = chatCompletion.id();
+		int index = 0;
 
-		return new ChatResponse(generations, AnthropicChatResponseMetadata.from(chatCompletion));
+		boolean isCompleted = ("message_stop".equals(chatCompletion.type()) || "message".equals(chatCompletion.type()))
+				&& (chatCompletion.stopReason() != null);
+		if (isCompleted) {
+			logger.info("Chat completion is completed: " + chatCompletion.stopReason());
+		}
+
+		// "Currently, the only type in responses is 'text'."
+		// https://docs.anthropic.com/claude/reference/messages_post
+		String aggregatedText = chatCompletion.content()
+			.stream()
+			.map(content -> content.text())
+			.collect(Collectors.joining());
+
+		Generation generation = new Generation(id, index, isCompleted, aggregatedText, Map.of(),
+				ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
+
+		return new ChatResponse(id, List.of(generation), AnthropicChatResponseMetadata.from(chatCompletion));
 	}
 
 	private String fromMediaData(Object mediaData) {

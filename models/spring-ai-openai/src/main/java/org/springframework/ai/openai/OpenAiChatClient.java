@@ -33,7 +33,10 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.messages.FunctionMessage;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -148,32 +151,24 @@ public class OpenAiChatClient extends
 				return new ChatResponse(List.of());
 			}
 
+			var id = chatCompletion.id();
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
 			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
-					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
+				String role = (choice.message().role() != null) ? choice.message().role().name() : "";
+				boolean isCompleted = choice.finishReason() != null;
+				int index = choice.index();
+
+				return new Generation(id, index, isCompleted, choice.message().content(), toMap(role, choice),
+						ChatGenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();
 
-			return new ChatResponse(generations,
+			return new ChatResponse(id, generations,
 					OpenAiChatResponseMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
 		});
 	}
 
-	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
-		Map<String, Object> map = new HashMap<>();
-
-		var message = choice.message();
-		if (message.role() != null) {
-			map.put("role", message.role().name());
-		}
-		if (choice.finishReason() != null) {
-			map.put("finishReason", choice.finishReason().name());
-		}
-		map.put("id", id);
-		return map;
-	}
-
+	@SuppressWarnings("null")
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
@@ -194,24 +189,23 @@ public class OpenAiChatClient extends
 					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
 						.getBody();
 
-					@SuppressWarnings("null")
 					String id = chatCompletion.id();
 
 					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
 						if (choice.message().role() != null) {
 							roleMap.putIfAbsent(id, choice.message().role().name());
 						}
-						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-						var generation = new Generation(choice.message().content(),
-								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
-						if (choice.finishReason() != null) {
-							generation = generation.withGenerationMetadata(
-									ChatGenerationMetadata.from(choice.finishReason().name(), null));
-						}
-						return generation;
+						boolean isCompleted = choice.finishReason() != null;
+						int index = choice.index();
+
+						ChatGenerationMetadata chatGenerationMetadata = (choice.finishReason() != null)
+								? ChatGenerationMetadata.from(choice.finishReason().name(), null)
+								: ChatGenerationMetadata.NULL;
+						return new Generation(id, index, isCompleted, choice.message().content(),
+								toMap(roleMap.get(id), choice), chatGenerationMetadata);
 					}).toList();
 
-					return new ChatResponse(generations);
+					return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 				}
 				catch (Exception e) {
 					logger.error("Error processing chat completion", e);
@@ -220,6 +214,16 @@ public class OpenAiChatClient extends
 
 			});
 		});
+	}
+
+	private Map<String, Object> toMap(String role, ChatCompletion.Choice choice) {
+
+		Map<String, Object> map = new HashMap<>();
+		map.put("role", role);
+		if (choice.finishReason() != null) {
+			map.put("finishReason", choice.finishReason().name());
+		}
+		return map;
 	}
 
 	/**
@@ -256,7 +260,15 @@ public class OpenAiChatClient extends
 					.toList());
 			}
 
-			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+			var role = ChatCompletionMessage.Role.valueOf(m.getMessageType().name());
+			if (m.getMessageType() == MessageType.FUNCTION) {
+				var functionMessage = (FunctionMessage) m;
+				return new ChatCompletionMessage(contents, role, functionMessage.getFunctionName(),
+						functionMessage.getCorrelationId().get());
+			}
+			else {
+				return new ChatCompletionMessage(contents, role);
+			}
 		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);

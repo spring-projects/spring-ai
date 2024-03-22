@@ -16,11 +16,16 @@
 package org.springframework.ai.bedrock.anthropic;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
@@ -67,7 +72,13 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.completion())));
+		var id = UUID.randomUUID().toString();
+		var text = response.completion();
+		var isCompleted = response.stopReason() != null;
+		var metadata = ChatGenerationMetadata.from(response.stopReason(), response.amazonBedrockInvocationMetrics());
+
+		return new ChatResponse(id, List.of(new Generation(id, 0, isCompleted, text, Map.of(), metadata)),
+				ChatResponseMetadata.NULL);
 	}
 
 	@Override
@@ -77,14 +88,23 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 
 		Flux<AnthropicChatResponse> fluxResponse = this.anthropicChatApi.chatCompletionStream(request);
 
+		AtomicReference<String> idRef = new AtomicReference<>(UUID.randomUUID().toString());
+
 		return fluxResponse.map(response -> {
+
+			String id = idRef.get();
 			String stopReason = response.stopReason() != null ? response.stopReason() : null;
-			var generation = new Generation(response.completion());
-			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+			var text = response.completion();
+			var isCompleted = response.stopReason() != null;
+			var metadata = ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics());
+
+			var generation = new Generation(id, 0, isCompleted, text, Map.of(), metadata);
+
+			if (isCompleted) {
+				idRef.set(UUID.randomUUID().toString());
 			}
-			return new ChatResponse(List.of(generation));
+
+			return new ChatResponse(id, List.of(generation), ChatResponseMetadata.NULL);
 		});
 	}
 

@@ -44,12 +44,6 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 
 	private final BedrockCohereEmbeddingOptions defaultOptions;
 
-	// private CohereEmbeddingRequest.InputType inputType =
-	// CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT;
-
-	// private CohereEmbeddingRequest.Truncate truncate =
-	// CohereEmbeddingRequest.Truncate.NONE;
-
 	public BedrockCohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi) {
 		this(cohereEmbeddingBedrockApi,
 				BedrockCohereEmbeddingOptions.builder()
@@ -65,31 +59,6 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 		this.embeddingApi = cohereEmbeddingBedrockApi;
 		this.defaultOptions = options;
 	}
-
-	// /**
-	// * Cohere Embedding API input types.
-	// * @param inputType the input type to use.
-	// * @return this client.
-	// */
-	// public BedrockCohereEmbeddingClient withInputType(CohereEmbeddingRequest.InputType
-	// inputType) {
-	// this.inputType = inputType;
-	// return this;
-	// }
-
-	// /**
-	// * Specifies how the API handles inputs longer than the maximum token length. If you
-	// specify LEFT or RIGHT, the
-	// * model discards the input until the remaining input is exactly the maximum input
-	// token length for the model.
-	// * @param truncate the truncate option to use.
-	// * @return this client.
-	// */
-	// public BedrockCohereEmbeddingClient withTruncate(CohereEmbeddingRequest.Truncate
-	// truncate) {
-	// this.truncate = truncate;
-	// return this;
-	// }
 
 	@Override
 	public List<Double> embed(Document document) {

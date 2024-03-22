@@ -32,6 +32,9 @@ public class AzureOpenAiUsage implements Usage {
 
 	public static AzureOpenAiUsage from(ChatCompletions chatCompletions) {
 		Assert.notNull(chatCompletions, "ChatCompletions must not be null");
+		if (chatCompletions.getUsage() == null) {
+			return null;
+		}
 		return from(chatCompletions.getUsage());
 	}
 

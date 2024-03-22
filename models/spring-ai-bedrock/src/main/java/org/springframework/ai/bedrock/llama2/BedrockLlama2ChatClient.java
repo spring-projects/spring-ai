@@ -16,6 +16,9 @@
 package org.springframework.ai.bedrock.llama2;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
 
@@ -29,6 +32,7 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -67,8 +71,14 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 
 		Llama2ChatResponse response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.generation()).withGenerationMetadata(
-				ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
+		var id = UUID.randomUUID().toString();
+		var isCompleted = response.stopReason() != null;
+		var stopReason = response.stopReason() != null ? response.stopReason().name() : "";
+		var metadata = ChatGenerationMetadata.from(stopReason, extractUsage(response));
+
+		var generation = new Generation(id, 0, isCompleted, response.generation(), Map.of(), metadata);
+
+		return new ChatResponse(id, List.of(generation), ChatResponseMetadata.NULL);
 	}
 
 	@Override
@@ -78,10 +88,17 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 
 		Flux<Llama2ChatResponse> fluxResponse = this.chatApi.chatCompletionStream(request);
 
+		AtomicReference<String> syntheticId = new AtomicReference<>(UUID.randomUUID().toString());
+
 		return fluxResponse.map(response -> {
-			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
-			return new ChatResponse(List.of(new Generation(response.generation())
-				.withGenerationMetadata(ChatGenerationMetadata.from(stopReason, extractUsage(response)))));
+			var isCompleted = response.stopReason() != null;
+			var stopReason = response.stopReason() != null ? response.stopReason().name() : null;
+			var metadata = ChatGenerationMetadata.from(stopReason, extractUsage(response));
+
+			var generation = new Generation(syntheticId.get(), 0, isCompleted, response.generation(), Map.of(),
+					metadata);
+
+			return new ChatResponse(syntheticId.get(), List.of(generation), ChatResponseMetadata.NULL);
 		});
 	}
 

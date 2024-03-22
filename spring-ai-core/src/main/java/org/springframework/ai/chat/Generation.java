@@ -15,8 +15,10 @@
  */
 package org.springframework.ai.chat;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.ai.model.ModelResult;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -28,16 +30,64 @@ import org.springframework.lang.Nullable;
  */
 public class Generation implements ModelResult<AssistantMessage> {
 
-	private AssistantMessage assistantMessage;
+	private final AssistantMessage assistantMessage;
 
-	private ChatGenerationMetadata chatGenerationMetadata;
+	private final ChatGenerationMetadata chatGenerationMetadata;
+
+	private final String id;
+
+	private final Integer index;
+
+	private final boolean isCompleted;
 
 	public Generation(String text) {
-		this.assistantMessage = new AssistantMessage(text);
+		this(text, new HashMap<>(), null);
+	}
+
+	public Generation(String text, @Nullable ChatGenerationMetadata chatGenerationMetadata) {
+		this(text, new HashMap<>(), chatGenerationMetadata);
 	}
 
 	public Generation(String text, Map<String, Object> properties) {
-		this.assistantMessage = new AssistantMessage(text, properties);
+		this(text, properties, null);
+	}
+
+	public Generation(String text, Map<String, Object> properties,
+			@Nullable ChatGenerationMetadata chatGenerationMetadata) {
+		this(UUID.randomUUID().toString(), 0, true, text, properties, chatGenerationMetadata);
+	}
+
+	public Generation(String id, Integer index, boolean isCompleted, String text, Map<String, Object> properties,
+			@Nullable ChatGenerationMetadata chatGenerationMetadata) {
+
+		this.id = id;
+		this.index = index;
+		this.isCompleted = isCompleted;
+
+		Map<String, Object> newProperties = new HashMap<>(properties);
+		if (chatGenerationMetadata != null) {
+			this.chatGenerationMetadata = chatGenerationMetadata;
+			newProperties.put("finishReason", chatGenerationMetadata.getFinishReason());
+			newProperties.put("index", index);
+			newProperties.put("isCompleted", isCompleted);
+		}
+		else {
+			this.chatGenerationMetadata = ChatGenerationMetadata.NULL;
+		}
+
+		this.assistantMessage = new AssistantMessage(id, index, isCompleted, text, newProperties);
+	}
+
+	public String getId() {
+		return this.id;
+	}
+
+	public Integer getIndex() {
+		return this.index;
+	}
+
+	public boolean isCompleted() {
+		return this.isCompleted;
 	}
 
 	@Override
@@ -49,11 +99,6 @@ public class Generation implements ModelResult<AssistantMessage> {
 	public ChatGenerationMetadata getMetadata() {
 		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
 		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
-	}
-
-	public Generation withGenerationMetadata(@Nullable ChatGenerationMetadata chatGenerationMetadata) {
-		this.chatGenerationMetadata = chatGenerationMetadata;
-		return this;
 	}
 
 	@Override
@@ -73,8 +118,8 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 	@Override
 	public String toString() {
-		return "Generation{" + "assistantMessage=" + assistantMessage + ", chatGenerationMetadata="
-				+ chatGenerationMetadata + '}';
+		return "Generation [assistantMessage=" + assistantMessage + ", chatGenerationMetadata=" + chatGenerationMetadata
+				+ ", id=" + id + ", index=" + index + ", isCompleted=" + isCompleted + "]";
 	}
 
 }

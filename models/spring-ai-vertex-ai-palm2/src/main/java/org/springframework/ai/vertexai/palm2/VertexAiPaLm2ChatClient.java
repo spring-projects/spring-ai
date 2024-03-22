@@ -16,6 +16,8 @@
 package org.springframework.ai.vertexai.palm2;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.ChatClient;
@@ -29,6 +31,8 @@ import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessag
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.GenerateMessageResponse;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api.MessagePrompt;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -61,12 +65,14 @@ public class VertexAiPaLm2ChatClient implements ChatClient {
 
 		GenerateMessageResponse response = this.vertexAiApi.generateMessage(request);
 
+		var id = UUID.randomUUID().toString();
+
 		List<Generation> generations = response.candidates()
 			.stream()
-			.map(vmsg -> new Generation(vmsg.content()))
+			.map(vmsg -> new Generation(id, 0, true, vmsg.content(), Map.of(), ChatGenerationMetadata.NULL))
 			.toList();
 
-		return new ChatResponse(generations);
+		return new ChatResponse(id, generations, ChatResponseMetadata.NULL);
 	}
 
 	/**

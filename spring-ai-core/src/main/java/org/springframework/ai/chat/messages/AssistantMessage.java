@@ -25,18 +25,106 @@ import java.util.Map;
  */
 public class AssistantMessage extends AbstractMessage {
 
-	public AssistantMessage(String content) {
-		super(MessageType.ASSISTANT, content);
+	private final String id;
+
+	private final Integer index;
+
+	private final boolean isCompleted;
+
+	private final boolean isToolCallRequest;
+
+	public AssistantMessage(String responseId, Integer index, boolean isCompleted, String content,
+			Map<String, Object> properties) {
+
+		this(responseId, index, isCompleted, content, properties, false);
 	}
 
-	public AssistantMessage(String content, Map<String, Object> properties) {
+	public AssistantMessage(String responseId, Integer index, boolean isCompleted, String content,
+			Map<String, Object> properties, boolean isToolCallRequest) {
+
 		super(MessageType.ASSISTANT, content, properties);
+		this.id = responseId;
+		this.index = index;
+		this.isCompleted = isCompleted;
+		this.isToolCallRequest = isToolCallRequest;
+	}
+
+	public String getId() {
+		return this.id;
+	}
+
+	public Integer getIndex() {
+		return this.index;
+	}
+
+	public boolean isCompleted() {
+		return this.isCompleted;
+	}
+
+	public boolean isToolCallRequest() {
+		return this.isToolCallRequest;
 	}
 
 	@Override
 	public String toString() {
-		return "AssistantMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
-				+ messageType + '}';
+		return "AssistantMessage [responseId=" + id + ", index=" + index + ", isCompleted=" + isCompleted
+				+ ", messageType=" + messageType + ", textContent=" + textContent + ", mediaData=" + mediaData
+				+ ", properties=" + properties + "]";
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String id;
+
+		private Integer index = 0;
+
+		private boolean isCompleted;
+
+		private boolean isToolCallRequest = false;
+
+		private String content;
+
+		private Map<String, Object> properties = Map.of();
+
+		public Builder withId(String id) {
+			this.id = id;
+			return this;
+		}
+
+		public Builder withIndex(Integer index) {
+			this.index = index;
+			return this;
+		}
+
+		public Builder withIsCompleted(boolean isCompleted) {
+			this.isCompleted = isCompleted;
+			return this;
+		}
+
+		public Builder withIsToolCallRequest(boolean isToolCallRequest) {
+			this.isToolCallRequest = isToolCallRequest;
+			return this;
+		}
+
+		public Builder withContent(String content) {
+			this.content = content;
+			return this;
+		}
+
+		public Builder withProperties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		public AssistantMessage build() {
+			return new AssistantMessage(this.id, this.index, this.isCompleted, this.content, this.properties,
+					this.isToolCallRequest);
+		}
+
 	}
 
 }

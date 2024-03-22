@@ -18,6 +18,7 @@ package org.springframework.ai.azure.openai;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -37,6 +38,8 @@ import com.azure.ai.openai.models.ChatResponseMessage;
 import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.FunctionDefinition;
+import com.azure.ai.openai.models.MaxTokensFinishDetails;
+import com.azure.ai.openai.models.StopFinishDetails;
 import com.azure.core.util.BinaryData;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
@@ -137,15 +140,18 @@ public class AzureOpenAiChatClient
 		ChatCompletions chatCompletions = this.callWithFunctionSupport(options);
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
-		List<Generation> generations = chatCompletions.getChoices()
-			.stream()
-			.map(choice -> new Generation(choice.getMessage().getContent())
-				.withGenerationMetadata(generateChoiceMetadata(choice)))
-			.toList();
+		var id = chatCompletions.getId();
+
+		List<Generation> generations = chatCompletions.getChoices().stream().map(choice -> {
+			boolean isCompleted = choice.getFinishReason() != null || choice.getFinishDetails() != null;
+			int index = choice.getIndex();
+			return new Generation(id, index, isCompleted, choice.getMessage().getContent(), Map.of(),
+					generateChoiceMetadata(choice));
+		}).toList();
 
 		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
 
-		return new ChatResponse(generations,
+		return new ChatResponse(id, generations,
 				AzureOpenAiChatResponseMetadata.from(chatCompletions, promptFilterMetadata));
 	}
 
@@ -162,12 +168,17 @@ public class AzureOpenAiChatClient
 			// Note: the first chat completions can be ignored when using Azure OpenAI
 			// service which is a known service bug.
 			.skip(1)
-			.map(ChatCompletions::getChoices)
-			.flatMap(List::stream)
-			.map(choice -> {
-				var content = (choice.getDelta() != null) ? choice.getDelta().getContent() : null;
-				var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
-				return new ChatResponse(List.of(generation));
+			.map(completion -> {
+				var id = completion.getId();
+				var generations = completion.getChoices().stream().map(choice -> {
+					boolean isCompleted = choice.getFinishReason() != null || choice.getFinishDetails() != null;
+					int index = choice.getIndex();
+					var content = (choice.getDelta() != null) ? choice.getDelta().getContent() : null;
+					return new Generation(id, index, isCompleted, content, Map.of(), generateChoiceMetadata(choice));
+				}).toList();
+
+				return new ChatResponse(id, generations,
+						AzureOpenAiChatResponseMetadata.from(completion, generatePromptMetadata(completion)));
 			}));
 	}
 

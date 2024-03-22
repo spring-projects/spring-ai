@@ -16,6 +16,9 @@
 package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
 
@@ -30,6 +33,7 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -60,7 +64,8 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 	public ChatResponse call(Prompt prompt) {
 		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
 		List<Generation> generations = response.results().stream().map(result -> {
-			return new Generation(result.outputText());
+			return new Generation(UUID.randomUUID().toString(), 0, true, result.outputText(), Map.of(),
+					ChatGenerationMetadata.NULL);
 		}).toList();
 
 		return new ChatResponse(generations);
@@ -68,22 +73,27 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
+		AtomicReference<String> syntheticId = new AtomicReference<>(UUID.randomUUID().toString());
+
 		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
 
-			Generation generation = new Generation(chunk.outputText());
-
+			var text = chunk.outputText();
+			boolean isCompleted = chunk.completionReason() != null;
+			String completionReason = (chunk.completionReason() != null) ? chunk.completionReason().name() : "";
+			ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 			if (chunk.amazonBedrockInvocationMetrics() != null) {
-				String completionReason = chunk.completionReason().name();
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
+				generationMetadata = ChatGenerationMetadata.from(completionReason,
+						chunk.amazonBedrockInvocationMetrics());
 			}
 			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
-				String completionReason = chunk.completionReason().name();
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
-
+				generationMetadata = ChatGenerationMetadata.from(completionReason, extractUsage(chunk));
 			}
-			return new ChatResponse(List.of(generation));
+
+			Generation generation = new Generation(syntheticId.get(), 0, isCompleted, text, Map.of(),
+					generationMetadata);
+
+			return new ChatResponse(syntheticId.get(), List.of(generation), ChatResponseMetadata.NULL);
 		});
 	}
 

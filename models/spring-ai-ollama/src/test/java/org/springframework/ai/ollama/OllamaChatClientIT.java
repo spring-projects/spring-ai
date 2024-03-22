@@ -21,29 +21,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.messages.AssistantMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -59,7 +60,7 @@ class OllamaChatClientIT {
 
 	private static String MODEL = "mistral";
 
-	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaChatClientIT.class);
 
 	@Container
 	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
@@ -71,12 +72,38 @@ class OllamaChatClientIT {
 		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL);
 		logger.info(MODEL + " pulling competed!");
-
 		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
 	}
 
 	@Autowired
 	private OllamaChatClient client;
+
+	@Test
+	void multipleStreamRequests() {
+
+		Flux<ChatResponse> joke1 = client.stream(new Prompt(new UserMessage("Tell me a joke?")));
+		Flux<ChatResponse> joke2 = client.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
+
+		List<ChatResponse> joke1List = joke1.collectList().block();
+		List<ChatResponse> joke2List = joke2.collectList().block();
+
+		String id1 = joke1List.get(0).getId();
+		joke1List.stream().forEach(response -> assertThat(response.getId()).isEqualTo(id1));
+		joke1List.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getId)
+			.forEach(id -> assertThat(id).isEqualTo(id1));
+
+		String id2 = joke2List.get(0).getId();
+		assertThat(id2).isNotEqualTo(id1);
+		joke2List.stream().forEach(response -> assertThat(response.getId()).isEqualTo(id2));
+		joke2List.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getId)
+			.forEach(id -> assertThat(id).isEqualTo(id2));
+	}
 
 	@Test
 	void roleTest() {
@@ -103,6 +130,18 @@ class OllamaChatClientIT {
 		response = client.call(new Prompt(List.of(userMessage, systemMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 
+		assertThat(response.getId()).isNotBlank();
+		var generation = response.getResults().get(0);
+
+		assertThat(generation.getIndex()).isEqualTo(0);
+		assertThat(generation.isCompleted()).isTrue();
+
+		AssistantMessage assistantMessage = generation.getOutput();
+		assertThat(assistantMessage.getId()).isEqualTo(response.getId());
+		assertThat(assistantMessage.getIndex()).isEqualTo(generation.getIndex());
+		assertThat(assistantMessage.isCompleted()).isTrue();
+
+		logger.info("Output Message properties: {}", generation.getOutput().getProperties().toString());
 	}
 
 	@Test
@@ -181,10 +220,11 @@ class OllamaChatClientIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = client.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
+		Flux<ChatResponse> response = client.stream(prompt);
+
+		List<ChatResponse> chatResponseList = response.collectList().block();
+
+		String generationTextFromStream = chatResponseList.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -192,9 +232,50 @@ class OllamaChatClientIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
-
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+
+		assertThat(chatResponseList).hasSizeGreaterThan(1);
+
+		var firstResponse = chatResponseList.get(0);
+
+		for (int i = 0; i < chatResponseList.size() - 1; i++) {
+			var responseX = chatResponseList.get(i);
+			assertThat(responseX.getId()).isEqualTo(firstResponse.getId());
+
+			assertThat(responseX.getResults()).hasSize(1);
+			var generation = responseX.getResults().get(0);
+
+			assertThat(generation.getId()).isEqualTo(firstResponse.getId());
+			// assertThat(generation.getIndex()).isEqualTo(0);
+			assertThat(generation.isCompleted()).isFalse();
+
+			AssistantMessage assistantMessage = generation.getOutput();
+
+			assertThat(assistantMessage.getId()).isEqualTo(firstResponse.getId());
+			assertThat(assistantMessage.getIndex()).isEqualTo(0);
+			assertThat(assistantMessage.isCompleted()).isFalse();
+
+			logger.info("Output Message properties: {}", assistantMessage.getProperties().toString());
+		}
+
+		var lastResponse = chatResponseList.get(chatResponseList.size() - 1);
+		assertThat(lastResponse.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastResponse.getResults()).hasSize(1);
+		var lastGeneration = lastResponse.getResults().get(0);
+
+		assertThat(lastGeneration.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastGeneration.getIndex()).isEqualTo(0);
+		assertThat(lastGeneration.isCompleted()).isTrue();
+
+		AssistantMessage lastAssistantMessage = lastGeneration.getOutput();
+
+		assertThat(lastAssistantMessage.getId()).isEqualTo(firstResponse.getId());
+		assertThat(lastAssistantMessage.getIndex()).isEqualTo(0);
+		assertThat(lastAssistantMessage.isCompleted()).isTrue();
+
+		logger.info("Output Message properties: {}", lastAssistantMessage.getProperties().toString());
 	}
 
 	@SpringBootConfiguration
@@ -207,8 +288,7 @@ class OllamaChatClientIT {
 
 		@Bean
 		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatClient(ollamaApi).withModel(MODEL)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
+			return new OllamaChatClient(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
 		}
 
 	}

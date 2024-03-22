@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.jurassic2;
 
+import java.util.Map;
+
 import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
@@ -63,11 +65,15 @@ public class BedrockAi21Jurassic2ChatClient implements ChatClient {
 		var request = createRequest(prompt);
 		var response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(response.completions()
-			.stream()
-			.map(completion -> new Generation(completion.data().text())
-				.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
-			.toList());
+		var id = response.id();
+
+		return new ChatResponse(response.completions().stream().map(completion -> {
+			String stopReason = (completion.finishReason() != null) ? completion.finishReason().reason() : null;
+			boolean isComplete = completion.finishReason() != null;
+			;
+			return new Generation(id, 0, isComplete, completion.data().text(), Map.of(),
+					ChatGenerationMetadata.from(stopReason, null));
+		}).toList());
 	}
 
 	private Ai21Jurassic2ChatRequest createRequest(Prompt prompt) {

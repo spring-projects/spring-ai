@@ -15,13 +15,19 @@
  */
 package org.springframework.ai.watsonx.utils;
 
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
-import org.springframework.ai.chat.messages.*;
 
-import java.util.List;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.FunctionMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -45,14 +51,14 @@ public class MessageToPromptConverterTest {
 
 	@Test
 	public void testSingleAssistantMessage() {
-		Message assistantMessage = new AssistantMessage("Assistant message");
+		Message assistantMessage = new AssistantMessage("Id", 0, true, "Assistant message", Map.of());
 		String expected = "Assistant message";
 		Assert.assertEquals(expected, converter.messageToString(assistantMessage));
 	}
 
 	@Disabled
 	public void testFunctionMessageType() {
-		Message functionMessage = new FunctionMessage("Function message");
+		Message functionMessage = new FunctionMessage("testFunction", "Unsupported message", Map.of());
 		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
 			converter.messageToString(functionMessage);
 		});
@@ -76,7 +82,7 @@ public class MessageToPromptConverterTest {
 	@Test
 	public void testCustomAssistantPrompt() {
 		converter.withAssistantPrompt("Custom Assistant: ");
-		Message assistantMessage = new AssistantMessage("Assistant message");
+		Message assistantMessage = new AssistantMessage("id", 0, true, "Assistant message", Map.of());
 		String expected = "Custom Assistant: Assistant message";
 		Assert.assertEquals(expected, converter.messageToString(assistantMessage));
 	}
@@ -103,7 +109,7 @@ public class MessageToPromptConverterTest {
 
 	@Disabled
 	public void testUnsupportedMessageType() {
-		List<Message> messages = List.of(new FunctionMessage("Unsupported message"));
+		List<Message> messages = List.of(new FunctionMessage("testFunction", "Unsupported message", Map.of()));
 		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
 			converter.toPrompt(messages);
 		});

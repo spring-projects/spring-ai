@@ -16,6 +16,7 @@
 package org.springframework.ai.chat.messages;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The FunctionMessage class represents a message with a function content in a chat
@@ -23,12 +24,28 @@ import java.util.Map;
  */
 public class FunctionMessage extends AbstractMessage {
 
-	public FunctionMessage(String content) {
-		super(MessageType.FUNCTION, content);
+	private final String functionName;
+
+	private final Optional<String> correlationId;
+
+	public FunctionMessage(String functionName, String content, Map<String, Object> properties) {
+		super(MessageType.FUNCTION, content, properties);
+		this.functionName = functionName;
+		this.correlationId = Optional.empty();
 	}
 
-	public FunctionMessage(String content, Map<String, Object> properties) {
+	public FunctionMessage(String functionName, String correlationId, String content, Map<String, Object> properties) {
 		super(MessageType.FUNCTION, content, properties);
+		this.functionName = functionName;
+		this.correlationId = Optional.of(correlationId);
+	}
+
+	public String getFunctionName() {
+		return this.functionName;
+	}
+
+	public Optional<String> getCorrelationId() {
+		return this.correlationId;
 	}
 
 	@Override

@@ -307,10 +307,15 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param usage Metrics about the model invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record AnthropicChatResponse(@JsonProperty("id") String id, @JsonProperty("model") String model,
-			@JsonProperty("type") String type, @JsonProperty("role") String role,
-			@JsonProperty("content") List<MediaContent> content, @JsonProperty("stop_reason") String stopReason,
-			@JsonProperty("stop_sequence") String stopSequence, @JsonProperty("usage") AnthropicUsage usage) {
+	public record AnthropicChatResponse( // @formatter:off
+			@JsonProperty("id") String id,
+			@JsonProperty("model") String model,
+			@JsonProperty("type") String type,
+			@JsonProperty("role") String role,
+			@JsonProperty("content") List<MediaContent> content,
+			@JsonProperty("stop_reason") String stopReason,
+			@JsonProperty("stop_sequence") String stopSequence,
+			@JsonProperty("usage") AnthropicUsage usage) { // @formatter:on
 	}
 
 	/**
@@ -326,10 +331,13 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param usage The usage data.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record AnthropicChatStreamingResponse(@JsonProperty("type") StreamingType type,
-			@JsonProperty("message") AnthropicChatResponse message, @JsonProperty("index") Integer index,
-			@JsonProperty("content_block") MediaContent contentBlock, @JsonProperty("delta") Delta delta,
-			@JsonProperty("usage") AnthropicUsage usage) {
+	public record AnthropicChatStreamingResponse(// @formatter:off
+			@JsonProperty("type") StreamingType type,
+			@JsonProperty("message") AnthropicChatResponse message,
+			@JsonProperty("index") Integer index,
+			@JsonProperty("content_block") MediaContent contentBlock,
+			@JsonProperty("delta") Delta delta,
+			@JsonProperty("usage") AnthropicUsage usage) {// @formatter:on
 
 		/**
 		 * The streaming type of this message.
@@ -384,8 +392,11 @@ public class Anthropic3ChatBedrockApi extends
 		 * @param stopSequence The stop sequence.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record Delta(@JsonProperty("type") String type, @JsonProperty("text") String text,
-				@JsonProperty("stop_reason") String stopReason, @JsonProperty("stop_sequence") String stopSequence) {
+		public record Delta(// @formatter:off
+				@JsonProperty("type") String type,
+				@JsonProperty("text") String text,
+				@JsonProperty("stop_reason") String stopReason,
+				@JsonProperty("stop_sequence") String stopSequence) { // @formatter:on
 		}
 	}
 

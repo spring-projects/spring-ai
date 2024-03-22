@@ -17,6 +17,7 @@ package org.springframework.ai.chat;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +27,8 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
  * The chat completion (e.g. generation) response returned by an AI provider.
  */
 public class ChatResponse implements ModelResponse<Generation> {
+
+	private String id;
 
 	private final ChatResponseMetadata chatResponseMetadata;
 
@@ -51,8 +54,24 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * about the use of the AI provider's API.
 	 */
 	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
+		this(UUID.randomUUID().toString(), generations, chatResponseMetadata);
+	}
+
+	/**
+	 * Construct a new {@link ChatResponse} instance.
+	 * @param generations the {@link List} of {@link Generation} returned by the AI
+	 * provider.
+	 * @param chatResponseMetadata {@link ChatResponseMetadata} containing information
+	 * about the use of the AI provider's API.
+	 */
+	public ChatResponse(String id, List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
+		this.id = id;
 		this.chatResponseMetadata = chatResponseMetadata;
 		this.generations = List.copyOf(generations);
+	}
+
+	public String getId() {
+		return this.id;
 	}
 
 	/**

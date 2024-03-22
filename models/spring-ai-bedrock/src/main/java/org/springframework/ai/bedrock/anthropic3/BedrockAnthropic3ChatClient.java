@@ -29,6 +29,7 @@ import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -39,6 +40,7 @@ import reactor.core.publisher.Flux;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -78,7 +80,14 @@ public class BedrockAnthropic3ChatClient implements ChatClient, StreamingChatCli
 
 		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+		var id = response.id();
+		boolean isCompleted = response.stopReason() != null;
+		int index = 0;
+
+		var generation = new Generation(id, index, isCompleted, response.content().get(0).text(), Map.of(),
+				ChatGenerationMetadata.NULL);
+
+		return new ChatResponse(id, List.of(generation), ChatResponseMetadata.NULL);
 	}
 
 	@Override
@@ -90,21 +99,28 @@ public class BedrockAnthropic3ChatClient implements ChatClient, StreamingChatCli
 			.chatCompletionStream(request);
 
 		AtomicReference<Integer> inputTokens = new AtomicReference<>(0);
+		AtomicReference<String> id = new AtomicReference<>();
+		AtomicReference<ChatGenerationMetadata> chatGenerationMetadata = new AtomicReference<>(
+				ChatGenerationMetadata.NULL);
+
 		return fluxResponse.map(response -> {
 			if (response.type() == StreamingType.MESSAGE_START) {
 				inputTokens.set(response.message().usage().inputTokens());
+				id.set(response.message().id());
 			}
 			String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
 
-			var generation = new Generation(content);
-
 			if (response.type() == StreamingType.MESSAGE_DELTA) {
-				generation = generation.withGenerationMetadata(ChatGenerationMetadata
-					.from(response.delta().stopReason(), new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
-							response.usage().outputTokens())));
+				chatGenerationMetadata.set(ChatGenerationMetadata.from(response.delta().stopReason(),
+						new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
+								response.usage().outputTokens())));
 			}
 
-			return new ChatResponse(List.of(generation));
+			boolean isCompleted = (response.type() == StreamingType.MESSAGE_STOP);
+
+			var generation = new Generation(id.get(), 0, isCompleted, content, Map.of(), chatGenerationMetadata.get());
+
+			return new ChatResponse(id.get(), List.of(generation), ChatResponseMetadata.NULL);
 		});
 	}
 
