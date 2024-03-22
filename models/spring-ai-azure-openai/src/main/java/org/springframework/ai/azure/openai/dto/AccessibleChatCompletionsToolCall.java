@@ -25,11 +25,15 @@ public class AccessibleChatCompletionsToolCall {
 		throw new UnsupportedOperationException("Only function chat completion tool is supported");
 	}
 
-	public static AccessibleChatCompletionsToolCall merge(AccessibleChatCompletionsToolCall left, AccessibleChatCompletionsToolCall right) {
-		Assert.isTrue(Objects.equals(left.type, right.type), "Cannot merge different type of AccessibleChatCompletionsToolCall");
+	public static AccessibleChatCompletionsToolCall merge(AccessibleChatCompletionsToolCall left,
+			AccessibleChatCompletionsToolCall right) {
+		Assert.isTrue(Objects.equals(left.type, right.type),
+				"Cannot merge different type of AccessibleChatCompletionsToolCall");
 		if (!"function".equals(left.type)) {
 			throw new UnsupportedOperationException("Only function chat completion tool is supported");
 		}
-		return AccessibleChatCompletionsFunctionToolCall.merge((AccessibleChatCompletionsFunctionToolCall) left, (AccessibleChatCompletionsFunctionToolCall) right);
+		return AccessibleChatCompletionsFunctionToolCall.merge((AccessibleChatCompletionsFunctionToolCall) left,
+				(AccessibleChatCompletionsFunctionToolCall) right);
 	}
+
 }

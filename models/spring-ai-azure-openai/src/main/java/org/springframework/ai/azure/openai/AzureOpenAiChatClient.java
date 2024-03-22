@@ -146,40 +146,37 @@ public class AzureOpenAiChatClient
 
 		final var isFunctionCall = new AtomicBoolean(false);
 		return Flux.fromStream(chatCompletionsStream.stream())
-				// Note: the first chat completions can be ignored when using Azure OpenAI
-				// service which is a known service bug.
-				.skip(1)
-				.map(chatCompletions -> {
-					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
-					isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
-					return chatCompletions;
-				})
-				.windowUntil(chatCompletions -> {
-					if (isFunctionCall.get() && chatCompletions.getChoices()
-							.get(0)
-							.getFinishReason() == CompletionsFinishReason.TOOL_CALLS
-					) {
-						isFunctionCall.set(false);
-						return true;
-					}
-					return false;
-				}, false)
-				.concatMapIterable(window -> {
-					final var reduce = window.reduce(AccessibleChatCompletions.empty(), AccessibleChatCompletions::merge);
-					return List.of(reduce);
-				})
-				.flatMap(mono -> mono)
-				.flatMapIterable(accessibleChatCompletions -> {
-					var acc = handleFunctionCallOrReturn(options, accessibleChatCompletions);
+			// Note: the first chat completions can be ignored when using Azure OpenAI
+			// service which is a known service bug.
+			.skip(1)
+			.map(chatCompletions -> {
+				final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+				isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
+				return chatCompletions;
+			})
+			.windowUntil(chatCompletions -> {
+				if (isFunctionCall.get() && chatCompletions.getChoices()
+					.get(0)
+					.getFinishReason() == CompletionsFinishReason.TOOL_CALLS) {
+					isFunctionCall.set(false);
+					return true;
+				}
+				return false;
+			}, false)
+			.concatMapIterable(window -> {
+				final var reduce = window.reduce(AccessibleChatCompletions.empty(), AccessibleChatCompletions::merge);
+				return List.of(reduce);
+			})
+			.flatMap(mono -> mono)
+			.flatMapIterable(accessibleChatCompletions -> {
+				var acc = handleFunctionCallOrReturn(options, accessibleChatCompletions);
 
-					return acc.getChoices().stream()
-							.map(choice -> {
-								var content = Optional.ofNullable(choice.message).orElse(choice.delta).getContent();
-								var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
-								return new ChatResponse(List.of(generation));
-							})
-							.toList();
-				});
+				return acc.getChoices().stream().map(choice -> {
+					var content = Optional.ofNullable(choice.message).orElse(choice.delta).getContent();
+					var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
+					return new ChatResponse(List.of(generation));
+				}).toList();
+			});
 	}
 
 	/**
@@ -534,7 +531,8 @@ public class AzureOpenAiChatClient
 	@Override
 	protected ChatRequestMessage doGetToolResponseMessage(AccessibleChatCompletions response) {
 		final var accessibleChatChoice = response.getChoices().get(0);
-		var responseMessage = Optional.ofNullable(accessibleChatChoice.getMessage()).orElse(accessibleChatChoice.getDelta());
+		var responseMessage = Optional.ofNullable(accessibleChatChoice.getMessage())
+			.orElse(accessibleChatChoice.getDelta());
 		ChatRequestAssistantMessage assistantMessage = new ChatRequestAssistantMessage("");
 		final var toolCalls = responseMessage.getToolCalls();
 		assistantMessage.setToolCalls(toolCalls.stream().map(tc -> {

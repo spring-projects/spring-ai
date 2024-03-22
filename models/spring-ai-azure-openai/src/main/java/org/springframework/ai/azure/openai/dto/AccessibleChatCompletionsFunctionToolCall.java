@@ -14,7 +14,8 @@ public class AccessibleChatCompletionsFunctionToolCall extends AccessibleChatCom
 		return functionToolCall;
 	}
 
-	public static AccessibleChatCompletionsFunctionToolCall merge(AccessibleChatCompletionsFunctionToolCall left, AccessibleChatCompletionsFunctionToolCall right) {
+	public static AccessibleChatCompletionsFunctionToolCall merge(AccessibleChatCompletionsFunctionToolCall left,
+			AccessibleChatCompletionsFunctionToolCall right) {
 		final var instance = new AccessibleChatCompletionsFunctionToolCall();
 		instance.id = left.id != null ? left.id : right.id;
 		instance.type = "function";

@@ -26,11 +26,14 @@ public class AccessibleFunctionCall {
 		instance.name = left.name != null ? left.name : right.name;
 		if (left.arguments != null && right.arguments != null) {
 			instance.arguments = left.arguments + right.arguments;
-		} else if (left.arguments == null) {
+		}
+		else if (left.arguments == null) {
 			instance.arguments = right.arguments;
-		} else {
+		}
+		else {
 			instance.arguments = left.arguments;
 		}
 		return instance;
 	}
+
 }
