@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -31,6 +32,24 @@ public class GemFireVectorStoreProperties {
 	private int port;
 
 	private String indexName;
+
+	private int beamWidth = 100;
+
+	private int maxConnections = 16;
+
+	private String vectorSimilarityFunction = "COSINE";
+
+	private String[] fields = new String[] { "vector" };
+
+	private int buckets = 0;
+
+	public int getBeamWidth() {
+		return beamWidth;
+	}
+
+	public void setBeamWidth(int beamWidth) {
+		this.beamWidth = beamWidth;
+	}
 
 	public int getPort() {
 		return port;
@@ -54,6 +73,30 @@ public class GemFireVectorStoreProperties {
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
+	}
+
+	public int getMaxConnections() {
+		return maxConnections;
+	}
+
+	public void setMaxConnections(int maxConnections) {
+		this.maxConnections = maxConnections;
+	}
+
+	public String getVectorSimilarityFunction() {
+		return vectorSimilarityFunction;
+	}
+
+	public void setVectorSimilarityFunction(String vectorSimilarityFunction) {
+		this.vectorSimilarityFunction = vectorSimilarityFunction;
+	}
+
+	public String[] getFields() {
+		return fields;
+	}
+
+	public void setFields(String[] fields) {
+		this.fields = fields;
 	}
 
 }
