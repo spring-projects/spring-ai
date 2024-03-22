@@ -64,6 +64,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 | spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
 | spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
 | spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
 |====
 
 ==== Connection Properties
