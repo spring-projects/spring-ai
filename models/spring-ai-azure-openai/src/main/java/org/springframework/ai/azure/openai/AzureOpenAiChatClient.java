@@ -41,14 +41,10 @@ import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * {@link ChatClient} implementation for {@literal Microsoft Azure AI} backed by
@@ -149,46 +145,61 @@ public class AzureOpenAiChatClient
 			.getChatCompletionsStream(options.getModel(), options);
 
 		final var isFunctionCall = new AtomicBoolean(false);
+		final var functionId = new AtomicReference<String>();
 		final var accessibleChatCompletionsFlux = Flux.fromStream(chatCompletionsStream.stream())
-			// Note: the first chat completions can be ignored when using Azure OpenAI
-			// service which is a known service bug.
-			.skip(1)
-			.map(chatCompletions -> {
-				final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
-				isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
-				return chatCompletions;
-			})
-			.windowUntil(chatCompletions -> {
-				if (isFunctionCall.get() && chatCompletions.getChoices()
-					.get(0)
-					.getFinishReason() == CompletionsFinishReason.FUNCTION_CALL) {
-					isFunctionCall.set(false);
-					return true;
-				}
-				return !isFunctionCall.get();
-			})
-			.concatMapIterable(window -> {
+				// Note: the first chat completions can be ignored when using Azure OpenAI
+				// service which is a known service bug.
+				.skip(1)
+				.map(chatCompletions -> {
+					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+//					if (toolCalls != null && !toolCalls.isEmpty()) {
+//						if (toolCalls.get(0).id != null) {
+//							functionId.set(toolCalls.get(0).id);
+//						}
+//					}
+					isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
+					return chatCompletions;
+				})
+				.windowUntil(chatCompletions -> {
+					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+					if (toolCalls != null && !toolCalls.isEmpty()) {
+						final var currentFunctionId = toolCalls.get(0).id;
+						if (currentFunctionId != null) {
+							var needSplit = !Objects.equals(functionId.get(), currentFunctionId);
+							functionId.set(currentFunctionId);
+							return needSplit;
+						}
+					}
 
-				final var reduce = window.reduce(new AccessibleChatCompletions(), (accumulator, chatCompletions) -> {
-					return accumulator.merge(chatCompletions);
+//					if (isFunctionCall.get() && chatCompletions.getChoices()
+//							.get(0)
+//							.getFinishReason() == CompletionsFinishReason.TOOL_CALLS
+//					) {
+//						isFunctionCall.set(false);
+//						return true;
+//					}
+					return false;
+				}, true)
+				.concatMapIterable(window -> {
+					final var reduce = window.reduce(AccessibleChatCompletions.empty(), AccessibleChatCompletions::merge);
+					return List.of(reduce);
+				})
+				.flatMap(mono -> mono);
+
+		final var map = accessibleChatCompletionsFlux
+				.flatMapIterable(accessibleChatCompletions -> {
+					var acc = handleFunctionCallOrReturn(options, accessibleChatCompletions);
+
+					return acc.getChoices().stream()
+							.map(choice -> {
+								var content = Optional.ofNullable(choice.message).orElse(choice.delta).getContent();
+								var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
+								return new ChatResponse(List.of(generation));
+							})
+							.toList();
 				});
 
-				return List.of(reduce);
-			})
-			.flatMap(mono -> mono);
-		final var blasd = accessibleChatCompletionsFlux.buffer().blockLast();
-		System.out.println(blasd);
-		// .map(ChatCompletions::getChoices)
-		// .flatMap(List::stream)
-		// .map(choice -> {
-		// var content = (choice.getDelta() != null) ? choice.getDelta().getContent() :
-		// null;
-		// var generation = new
-		// Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
-		// return new ChatResponse(List.of(generation));
-		// }));
-
-		return null;
+		return map;
 	}
 
 	/**
@@ -542,9 +553,11 @@ public class AzureOpenAiChatClient
 
 	@Override
 	protected ChatRequestMessage doGetToolResponseMessage(AccessibleChatCompletions response) {
-		var responseMessage = response.getChoices().get(0).getMessage();
+		final var accessibleChatChoice = response.getChoices().get(0);
+		var responseMessage = Optional.ofNullable(accessibleChatChoice.getMessage()).orElse(accessibleChatChoice.getDelta());
 		ChatRequestAssistantMessage assistantMessage = new ChatRequestAssistantMessage("");
-		assistantMessage.setToolCalls(responseMessage.getToolCalls().stream().map(tc -> {
+		final var toolCalls = responseMessage.getToolCalls();
+		assistantMessage.setToolCalls(toolCalls.stream().map(tc -> {
 			final var tc1 = (AccessibleChatCompletionsFunctionToolCall) tc;
 			var toDowncast = new ChatCompletionsFunctionToolCall(tc.id,
 					new FunctionCall(tc1.function.name, tc1.function.arguments));

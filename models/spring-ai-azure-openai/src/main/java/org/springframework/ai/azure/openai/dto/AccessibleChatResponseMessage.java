@@ -40,6 +40,34 @@ public class AccessibleChatResponseMessage {
 		return mapped;
 	}
 
+	public static AccessibleChatResponseMessage merge(AccessibleChatResponseMessage left, AccessibleChatResponseMessage right) {
+		final var instance = new AccessibleChatResponseMessage();
+		instance.role = left.role != null ? left.role : right.role;
+		if (left.content != null && right.content != null) {
+			instance.content = left.content.concat(right.content);
+		} else if (left.content == null) {
+			instance.content = right.content;
+		} else {
+			instance.content = left.content;
+		}
+
+		if (left.toolCalls == null) {
+			instance.toolCalls = right.toolCalls;
+		} else if (right.toolCalls == null) {
+			instance.toolCalls = left.toolCalls;
+		} else {
+			instance.toolCalls = List.of(AccessibleChatCompletionsToolCall.merge(left.toolCalls.get(0), right.toolCalls.get(0)));
+		}
+
+		if (left.functionCall == null) {
+			instance.functionCall = right.functionCall;
+		} else {
+			instance.functionCall = AccessibleFunctionCall.merge(left.functionCall, right.functionCall);
+		}
+		instance.context = left.context != null ? left.context : right.context;
+		return instance;
+	}
+
 	public ChatRole getRole() {
 		return role;
 	}

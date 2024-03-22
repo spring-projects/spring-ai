@@ -42,6 +42,7 @@ public class AccessibleChatChoice {
 		return acc;
 	}
 
+
 	public AccessibleChatResponseMessage getMessage() {
 		return message;
 	}
@@ -74,4 +75,25 @@ public class AccessibleChatChoice {
 		return logprobs;
 	}
 
+	public static AccessibleChatChoice merge(AccessibleChatChoice left, AccessibleChatChoice right) {
+		final var instance = new AccessibleChatChoice();
+		if (left.message == null) {
+			instance.message = right.message;
+		} else {
+			instance.message = AccessibleChatResponseMessage.merge(left.message, right.message);
+		}
+		instance.index = Math.max(left.index, right.index);
+		instance.finishReason = left.finishReason != null ? left.finishReason : right.finishReason;
+		if (left.delta == null) {
+			instance.delta = right.delta;
+		} else {
+			instance.delta = AccessibleChatResponseMessage.merge(left.delta, right.delta);
+		}
+
+		instance.contentFilterResults = left.contentFilterResults != null ? left.contentFilterResults : right.contentFilterResults;
+		instance.finishDetails = left.finishDetails != null ? left.finishDetails : right.finishDetails;
+		instance.enhancements = left.enhancements != null ? left.enhancements : right.enhancements;
+		instance.logprobs = left.logprobs != null ? left.logprobs : right.logprobs;
+		return instance;
+	}
 }

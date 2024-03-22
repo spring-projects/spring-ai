@@ -4,6 +4,7 @@ import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.CompletionsUsage;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.util.Assert;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -40,6 +41,17 @@ public class AccessibleChatCompletions {
 		return item;
 	}
 
+	public static AccessibleChatCompletions empty() {
+		final var item = new AccessibleChatCompletions();
+		item.id = null;
+		item.choices = new ArrayList<>();
+		item.usage = null;
+		item.createdAt = OffsetDateTime.MIN;
+		item.promptFilterResults = new ArrayList<>();
+		item.systemFingerprint = null;
+		return item;
+	}
+
 	public String getId() {
 		return id;
 	}
@@ -64,25 +76,34 @@ public class AccessibleChatCompletions {
 		return systemFingerprint;
 	}
 
-	public AccessibleChatCompletions merge(AccessibleChatCompletions other) {
-		if (this.id == null && other.id != null) {
-			this.id = other.getId();
+	public static AccessibleChatCompletions merge(AccessibleChatCompletions left, AccessibleChatCompletions right) {
+		Assert.isTrue(left != null, "");
+		if (right == null) {
+			Assert.isTrue(left.id != null, "");
+			return left;
+		}
+		Assert.isTrue(left.id != null || right.id != null, "");
+
+		final var instance = new AccessibleChatCompletions();
+		instance.id = left.id != null ? left.id : right.id;
+
+		if (right.choices == null) {
+			instance.choices = left.choices;
+		} else {
+			if (left.choices == null || left.choices.isEmpty()) {
+				instance.choices = right.choices;
+			} else {
+				instance.choices = List.of(AccessibleChatChoice.merge(left.choices.get(0), right.choices.get(0)));
+			}
 		}
 
-		var choices = new ArrayList<AccessibleChatChoice>();
-		if (this.choices != null) {
-			choices.addAll(this.choices);
-		}
-		if (other.choices != null) {
-			choices.addAll(other.choices);
-		}
-		this.choices = choices;
-		this.usage = other.usage != null ? other.usage : this.usage;
-		this.createdAt = other.createdAt != null ? other.createdAt : this.createdAt;
-		this.promptFilterResults = other.promptFilterResults != null ? other.promptFilterResults
-				: this.promptFilterResults;
-		this.systemFingerprint = other.systemFingerprint != null ? other.systemFingerprint : this.systemFingerprint;
-		return this;
+		//For these properties if right contains that use it!
+		instance.usage = right.usage == null ? left.usage : right.usage;
+		instance.createdAt = left.createdAt.isAfter(right.createdAt) ? left.createdAt : right.createdAt;
+		instance.promptFilterResults = right.promptFilterResults == null ? left.promptFilterResults
+				: right.promptFilterResults;
+		instance.systemFingerprint = right.systemFingerprint == null ? left.systemFingerprint : right.systemFingerprint;
+		return instance;
 	}
 
 }
