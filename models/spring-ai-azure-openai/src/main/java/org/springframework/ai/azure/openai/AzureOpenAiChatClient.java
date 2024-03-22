@@ -145,7 +145,7 @@ public class AzureOpenAiChatClient
 			.getChatCompletionsStream(options.getModel(), options);
 
 		final var isFunctionCall = new AtomicBoolean(false);
-		return Flux.fromStream(chatCompletionsStream.stream())
+		final var accessibleChatCompletionsFlux = Flux.fromStream(chatCompletionsStream.stream())
 			// Note: the first chat completions can be ignored when using Azure OpenAI
 			// service which is a known service bug.
 			.skip(1)
@@ -167,16 +167,16 @@ public class AzureOpenAiChatClient
 				final var reduce = window.reduce(AccessibleChatCompletions.empty(), AccessibleChatCompletions::merge);
 				return List.of(reduce);
 			})
-			.flatMap(mono -> mono)
-			.flatMapIterable(accessibleChatCompletions -> {
-				var acc = handleFunctionCallOrReturn(options, accessibleChatCompletions);
-
-				return acc.getChoices().stream().map(choice -> {
-					var content = Optional.ofNullable(choice.message).orElse(choice.delta).getContent();
-					var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
-					return new ChatResponse(List.of(generation));
-				}).toList();
+			.flatMap(mono -> mono);
+		return accessibleChatCompletionsFlux
+			.map(accessibleChatCompletions -> handleFunctionCallOrReturn(options, accessibleChatCompletions))
+			.flatMapIterable(AccessibleChatCompletions::getChoices)
+			.map(choice -> {
+				var content = Optional.ofNullable(choice.message).orElse(choice.delta).getContent();
+				var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
+				return new ChatResponse(List.of(generation));
 			});
+
 	}
 
 	/**
