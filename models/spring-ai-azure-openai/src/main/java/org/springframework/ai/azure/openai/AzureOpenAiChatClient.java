@@ -161,25 +161,25 @@ public class AzureOpenAiChatClient
 					return chatCompletions;
 				})
 				.windowUntil(chatCompletions -> {
-					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
-					if (toolCalls != null && !toolCalls.isEmpty()) {
-						final var currentFunctionId = toolCalls.get(0).id;
-						if (currentFunctionId != null) {
-							var needSplit = !Objects.equals(functionId.get(), currentFunctionId);
-							functionId.set(currentFunctionId);
-							return needSplit;
-						}
-					}
-
-//					if (isFunctionCall.get() && chatCompletions.getChoices()
-//							.get(0)
-//							.getFinishReason() == CompletionsFinishReason.TOOL_CALLS
-//					) {
-//						isFunctionCall.set(false);
-//						return true;
+//					final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+//					if (toolCalls != null && !toolCalls.isEmpty()) {
+//						final var currentFunctionId = toolCalls.get(0).id;
+//						if (currentFunctionId != null) {
+//							var needSplit = !Objects.equals(functionId.get(), currentFunctionId);
+//							functionId.set(currentFunctionId);
+//							return needSplit;
+//						}
 //					}
+
+					if (isFunctionCall.get() && chatCompletions.getChoices()
+							.get(0)
+							.getFinishReason() == CompletionsFinishReason.TOOL_CALLS
+					) {
+						isFunctionCall.set(false);
+						return true;
+					}
 					return false;
-				}, true)
+				}, false)
 				.concatMapIterable(window -> {
 					final var reduce = window.reduce(AccessibleChatCompletions.empty(), AccessibleChatCompletions::merge);
 					return List.of(reduce);

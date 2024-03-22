@@ -5,6 +5,7 @@ import com.azure.ai.openai.models.ChatResponseMessage;
 import com.azure.ai.openai.models.ChatRole;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,12 +52,25 @@ public class AccessibleChatResponseMessage {
 			instance.content = left.content;
 		}
 
+
+		instance.toolCalls = new ArrayList<>();
 		if (left.toolCalls == null) {
-			instance.toolCalls = right.toolCalls;
+			if (right.toolCalls != null) {
+				instance.toolCalls.addAll(right.toolCalls);
+			}
 		} else if (right.toolCalls == null) {
-			instance.toolCalls = left.toolCalls;
+			instance.toolCalls.addAll(left.toolCalls);
 		} else {
-			instance.toolCalls = List.of(AccessibleChatCompletionsToolCall.merge(left.toolCalls.get(0), right.toolCalls.get(0)));
+			instance.toolCalls.addAll(left.toolCalls);
+			final var lastToolIndex = instance.toolCalls.size() - 1;
+			var lastTool = instance.toolCalls.get(lastToolIndex);
+			if (right.toolCalls.get(0).id == null) {
+				lastTool = AccessibleChatCompletionsToolCall.merge(lastTool, right.toolCalls.get(0));
+				instance.toolCalls.remove(lastToolIndex);
+				instance.toolCalls.add(lastTool);
+			} else {
+				instance.toolCalls.add(right.toolCalls.get(0));
+			}
 		}
 
 		if (left.functionCall == null) {
