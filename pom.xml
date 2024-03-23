@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.ai</groupId>
@@ -20,6 +20,7 @@
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
+		<module>spring-ai-spring-cloud-bindings</module>
 
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
@@ -144,6 +145,7 @@
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.35.0</jsonschema.version>
 		<swagger-annotations.version>2.2.20</swagger-annotations.version>
+		<spring-cloud-bindings.version>2.0.2</spring-cloud-bindings.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
@@ -303,72 +305,72 @@
 			</activation>
 			<build>
 				<plugins>
-								<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>4.1</version>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<properties>
-						<owner>the original author or authors.</owner>
-						<email/>
-						<year>2024</year>
-					</properties>
-					<licenseSets>
-						<licenseSet>
-							<inlineHeader>
-<!-- @formatter:off -->
-Copyright 2023 - ${year} the original author or authors.
+					<plugin>
+						<groupId>com.mycila</groupId>
+						<artifactId>license-maven-plugin</artifactId>
+						<version>4.1</version>
+						<executions>
+							<execution>
+								<phase>validate</phase>
+								<goals>
+									<goal>check</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<properties>
+								<owner>the original author or authors.</owner>
+								<email/>
+								<year>2024</year>
+							</properties>
+							<licenseSets>
+								<licenseSet>
+									<inlineHeader>
+										<!-- @formatter:off -->
+										Copyright 2023 - ${year} the original author or authors.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+										Licensed under the Apache License, Version 2.0 (the "License");
+										you may not use this file except in compliance with the License.
+										You may obtain a copy of the License at
 
-https://www.apache.org/licenses/LICENSE-2.0
+										https://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-<!-- @formatter:on -->
-							</inlineHeader>
-							<excludes>
-								<exclude>**/.antlr/**</exclude>
-								<exclude>**/aot.factories</exclude>
-								<exclude>**/.sdkmanrc</exclude>
-								<exclude>**/*.adoc</exclude>
-								<exclude>**/*.puml</exclude>
-								<exclude>**/pom.xml</exclude>
-								<exclude>**/*.properties</exclude>
-								<exclude>**/*.yaml</exclude>
-								<exclude>**/*.yml</exclude>
-								<exclude>**/*.map</exclude>
-								<exclude>**/*.html</exclude>
-								<exclude>**/*.xhtml</exclude>
-								<exclude>**/*.jsp</exclude>
-								<exclude>**/*.js</exclude>
-								<exclude>**/*.css</exclude>
-								<exclude>**/*.txt</exclude>
-								<exclude>**/*.xjb</exclude>
-								<exclude>**/*.ftl</exclude>
-								<exclude>**/*.xsd</exclude>
-								<exclude>**/*.xml</exclude>
-								<exclude>**/*.sh</exclude>
-								<exclude>**/generated/**</exclude>
-								<exclude>**/Dockerfile</exclude>
-							</excludes>
-						</licenseSet>
-					</licenseSets>
-				</configuration>
-			</plugin>
+										Unless required by applicable law or agreed to in writing, software
+										distributed under the License is distributed on an "AS IS" BASIS,
+										WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+										See the License for the specific language governing permissions and
+										limitations under the License.
+										<!-- @formatter:on -->
+									</inlineHeader>
+									<excludes>
+										<exclude>**/.antlr/**</exclude>
+										<exclude>**/aot.factories</exclude>
+										<exclude>**/.sdkmanrc</exclude>
+										<exclude>**/*.adoc</exclude>
+										<exclude>**/*.puml</exclude>
+										<exclude>**/pom.xml</exclude>
+										<exclude>**/*.properties</exclude>
+										<exclude>**/*.yaml</exclude>
+										<exclude>**/*.yml</exclude>
+										<exclude>**/*.map</exclude>
+										<exclude>**/*.html</exclude>
+										<exclude>**/*.xhtml</exclude>
+										<exclude>**/*.jsp</exclude>
+										<exclude>**/*.js</exclude>
+										<exclude>**/*.css</exclude>
+										<exclude>**/*.txt</exclude>
+										<exclude>**/*.xjb</exclude>
+										<exclude>**/*.ftl</exclude>
+										<exclude>**/*.xsd</exclude>
+										<exclude>**/*.xml</exclude>
+										<exclude>**/*.sh</exclude>
+										<exclude>**/generated/**</exclude>
+										<exclude>**/Dockerfile</exclude>
+									</excludes>
+								</licenseSet>
+							</licenseSets>
+						</configuration>
+					</plugin>
 
 				</plugins>
 			</build>
