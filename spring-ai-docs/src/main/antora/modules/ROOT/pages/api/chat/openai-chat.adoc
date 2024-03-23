@@ -265,13 +265,13 @@ Next, create a `OpenAiChatClient` and use it for text generations:
 [source,java]
 ----
 var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
-
-var chatClient = new OpenAiChatClient(openAiApi)
-    .withDefaultOptions(OpenAiChatOptions.builder()
+var openAiChatOptions = OpenAiChatOptions.builder()
             .withModel("gpt-3.5-turbo")
             .withTemperature(0.4)
             .withMaxTokens(200)
-        .build());
+        .build();
+var chatClient = new OpenAiChatClient(openAiApi, openAiChatOptions)
+
 
 ChatResponse response = chatClient.call(
     new Prompt("Generate the names of 5 famous pirates."));
