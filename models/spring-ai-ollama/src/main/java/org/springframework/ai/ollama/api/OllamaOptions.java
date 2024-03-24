@@ -111,11 +111,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	/**
 	 * ???
 	 */
-	@JsonProperty("embedding_only") private Boolean embeddingOnly;
-
-	/**
-	 * ???
-	 */
 	@JsonProperty("rope_frequency_base") private Float ropeFrequencyBase;
 
 	/**
@@ -319,11 +314,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		return this;
 	}
 
-	public OllamaOptions withEmbeddingOnly(Boolean embeddingOnly) {
-		this.embeddingOnly = embeddingOnly;
-		return this;
-	}
-
 	public OllamaOptions withRopeFrequencyBase(Float ropeFrequencyBase) {
 		this.ropeFrequencyBase = ropeFrequencyBase;
 		return this;
@@ -518,14 +508,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public void setUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
-	}
-
-	public Boolean getEmbeddingOnly() {
-		return embeddingOnly;
-	}
-
-	public void setEmbeddingOnly(Boolean embeddingOnly) {
-		this.embeddingOnly = embeddingOnly;
 	}
 
 	public Float getRopeFrequencyBase() {
