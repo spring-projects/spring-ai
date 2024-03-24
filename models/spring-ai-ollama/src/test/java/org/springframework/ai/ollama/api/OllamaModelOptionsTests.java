@@ -33,7 +33,6 @@ public class OllamaModelOptionsTests {
 		var optionsMap = options.toMap();
 		System.out.println(optionsMap);
 		assertThat(optionsMap).containsEntry("temperature", 3.14);
-		assertThat(optionsMap).containsEntry("embedding_only", false);
 		assertThat(optionsMap).containsEntry("top_k", 30);
 		assertThat(optionsMap).containsEntry("stop", List.of("a", "b", "c"));
 	}
