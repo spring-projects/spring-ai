@@ -74,7 +74,6 @@ NOTE: The `options` properties are based on the link:https://github.com/jmorganc
 | spring.ai.ollama.chat.options.vocab-only        | ???                                                             | -
 | spring.ai.ollama.chat.options.use-mmap          | ???                                                             | true
 | spring.ai.ollama.chat.options.use-mlock         | ???                                                             | false
-| spring.ai.ollama.chat.options.embedding-only    | ???                                                             | false
 | spring.ai.ollama.chat.options.rope-frequency-base | ???                                                           | 10000.0
 | spring.ai.ollama.chat.options.rope-frequency-scale | ???                                                          | 1.0
 | spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). 0 = let the runtime decide | 0

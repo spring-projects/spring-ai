@@ -28,11 +28,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testOptions() {
-		var options = OllamaOptions.create()
-			.withTemperature(3.14f)
-			.withEmbeddingOnly(false)
-			.withTopK(30)
-			.withStop(List.of("a", "b", "c"));
+		var options = OllamaOptions.create().withTemperature(3.14f).withTopK(30).withStop(List.of("a", "b", "c"));
 
 		var optionsMap = options.toMap();
 		System.out.println(optionsMap);
