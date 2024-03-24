@@ -233,7 +233,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 
 		for (IndexingResult indexingResult : result.getResults()) {
 			Assert.isTrue(indexingResult.isSucceeded(),
-					String.format("Document with key %s upload is not successfully", indexingResult.getKey()));
+					String.format("Document with key %s did not upload successfully", indexingResult.getKey()));
 		}
 	}
 
