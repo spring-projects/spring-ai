@@ -10,7 +10,7 @@ You first need to have a SaaS instance of watsonx.ai (as well as an IBM Cloud ac
 
 Refer to https://eu-de.dataplatform.cloud.ibm.com/registration/stepone?context=wx&preselect_region=true[free-trial] to try watsonx.ai for free
 
-TIP: More info. can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
+TIP: More info can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
 
 == Auto-configuration
 
