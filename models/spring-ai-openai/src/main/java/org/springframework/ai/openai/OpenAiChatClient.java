@@ -181,37 +181,37 @@ public class OpenAiChatClient extends
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
-			return completionChunks.map(chunk -> chunkToChatCompletion(chunk)).map(chatCompletion -> {
-				try {
-					// TODO: use Streaming version
-					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
-						.getBody();
+			return completionChunks.map(chunk -> chunkToChatCompletion(chunk))
+				.switchMap(
+						cc -> handleFunctionCallOrReturnStream(request, Flux.just(ResponseEntity.of(Optional.of(cc)))))
+				.map(ResponseEntity::getBody)
+				.map(chatCompletion -> {
+					try {
+						@SuppressWarnings("null")
+						String id = chatCompletion.id();
 
-					@SuppressWarnings("null")
-					String id = chatCompletion.id();
+						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+							if (choice.message().role() != null) {
+								roleMap.putIfAbsent(id, choice.message().role().name());
+							}
+							String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
+							var generation = new Generation(choice.message().content(),
+									Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
+							if (choice.finishReason() != null) {
+								generation = generation.withGenerationMetadata(
+										ChatGenerationMetadata.from(choice.finishReason().name(), null));
+							}
+							return generation;
+						}).toList();
 
-					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-						if (choice.message().role() != null) {
-							roleMap.putIfAbsent(id, choice.message().role().name());
-						}
-						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-						var generation = new Generation(choice.message().content(),
-								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
-						if (choice.finishReason() != null) {
-							generation = generation.withGenerationMetadata(
-									ChatGenerationMetadata.from(choice.finishReason().name(), null));
-						}
-						return generation;
-					}).toList();
+						return new ChatResponse(generations);
+					}
+					catch (Exception e) {
+						logger.error("Error processing chat completion", e);
+						return new ChatResponse(List.of());
+					}
 
-					return new ChatResponse(generations);
-				}
-				catch (Exception e) {
-					logger.error("Error processing chat completion", e);
-					return new ChatResponse(List.of());
-				}
-
-			});
+				});
 		});
 	}
 

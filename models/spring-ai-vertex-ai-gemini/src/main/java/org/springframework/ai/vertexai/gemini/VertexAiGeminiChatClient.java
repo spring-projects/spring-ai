@@ -158,19 +158,19 @@ public class VertexAiGeminiChatClient
 			ResponseStream<GenerateContentResponse> responseStream = request.model
 				.generateContentStream(request.contents);
 
-			return Flux.fromStream(responseStream.stream()).map(response -> {
-				// TODO: use Streaming version
-				response = handleFunctionCallOrReturn(request, response);
-				List<Generation> generations = response.getCandidatesList()
-					.stream()
-					.map(candidate -> candidate.getContent().getPartsList())
-					.flatMap(List::stream)
-					.map(Part::getText)
-					.map(t -> new Generation(t.toString()))
-					.toList();
+			return Flux.fromStream(responseStream.stream())
+				.switchMap(r -> handleFunctionCallOrReturnStream(request, Flux.just(r)))
+				.map(response -> {
+					List<Generation> generations = response.getCandidatesList()
+						.stream()
+						.map(candidate -> candidate.getContent().getPartsList())
+						.flatMap(List::stream)
+						.map(Part::getText)
+						.map(t -> new Generation(t.toString()))
+						.toList();
 
-				return new ChatResponse(generations, toChatResponseMetadata(response));
-			});
+					return new ChatResponse(generations, toChatResponseMetadata(response));
+				});
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);
