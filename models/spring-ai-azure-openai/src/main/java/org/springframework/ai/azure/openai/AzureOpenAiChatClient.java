@@ -18,7 +18,6 @@ package org.springframework.ai.azure.openai;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.*;
 import com.azure.core.util.BinaryData;
-import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.azure.openai.dto.AccessibleChatChoice;
@@ -44,7 +43,6 @@ import reactor.core.publisher.Flux;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * {@link ChatClient} implementation for {@literal Microsoft Azure AI} backed by
@@ -141,11 +139,11 @@ public class AzureOpenAiChatClient
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(true);
 
-		IterableStream<AccessibleChatCompletions> chatCompletionsStream = this.openAIClient
+		Flux<AccessibleChatCompletions> chatCompletionsStream = this.openAIClient
 			.getChatCompletionsStream(options.getModel(), options);
 
 		final var isFunctionCall = new AtomicBoolean(false);
-		final var accessibleChatCompletionsFlux = Flux.fromStream(chatCompletionsStream.stream())
+		final var accessibleChatCompletionsFlux = chatCompletionsStream
 			// Note: the first chat completions can be ignored when using Azure OpenAI
 			// service which is a known service bug.
 			.skip(1)
@@ -169,7 +167,8 @@ public class AzureOpenAiChatClient
 			})
 			.flatMap(mono -> mono);
 		return accessibleChatCompletionsFlux
-			.map(accessibleChatCompletions -> handleFunctionCallOrReturn(options, accessibleChatCompletions))
+			.switchMap(accessibleChatCompletions -> handleFunctionCallOrReturnStream(options,
+					Flux.just(accessibleChatCompletions)))
 			.flatMapIterable(AccessibleChatCompletions::getChoices)
 			.map(choice -> {
 				var content = Optional.ofNullable(choice.message).orElse(choice.delta).getContent();
@@ -547,6 +546,11 @@ public class AzureOpenAiChatClient
 	@Override
 	protected AccessibleChatCompletions doChatCompletion(ChatCompletionsOptions request) {
 		return this.openAIClient.getChatCompletions(request.getModel(), request);
+	}
+
+	@Override
+	protected Flux<AccessibleChatCompletions> doChatCompletionStream(ChatCompletionsOptions request) {
+		return this.openAIClient.getChatCompletionsStream(request.getModel(), request);
 	}
 
 	@Override

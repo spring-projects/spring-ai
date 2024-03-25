@@ -18,6 +18,7 @@ package org.springframework.ai.azure.openai.function;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -100,7 +101,9 @@ class AzureOpenAiChatClientFunctionCallIT {
 
 		Flux<ChatResponse> response = chatClient.stream(new Prompt(messages, promptOptions));
 
-		String content = response.collectList()
+		final var counter = new AtomicInteger();
+		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
+			.collectList()
 			.block()
 			.stream()
 			.map(ChatResponse::getResults)
@@ -109,7 +112,7 @@ class AzureOpenAiChatClientFunctionCallIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
-
+		assertThat(counter.get()).isGreaterThan(2);
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
 		assertThat(content).containsAnyOf("15.0", "15");

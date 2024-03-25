@@ -15,18 +15,8 @@
  */
 package org.springframework.ai.mistralai;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -49,6 +39,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Ricken Bazolo
@@ -150,6 +144,7 @@ public class MistralAiChatClient extends
 
 			return completionChunks.map(chunk -> toChatCompletion(chunk)).map(chatCompletion -> {
 
+				// TODO: use Streaming version
 				chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
 					.getBody();
 
@@ -297,6 +292,14 @@ public class MistralAiChatClient extends
 	@Override
 	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
 		return this.mistralAiApi.chatCompletionEntity(request);
+	}
+
+	@Override
+	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
+		return this.mistralAiApi.chatCompletionStream(request)
+			.map(this::toChatCompletion)
+			.map(Optional::ofNullable)
+			.map(ResponseEntity::of);
 	}
 
 	@Override

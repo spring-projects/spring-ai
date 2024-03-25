@@ -15,20 +15,8 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -57,6 +45,10 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import reactor.core.publisher.Flux;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatClient} and {@link StreamingChatClient} implementation for {@literal OpenAI}
@@ -191,6 +183,7 @@ public class OpenAiChatClient extends
 			// the function call handling logic.
 			return completionChunks.map(chunk -> chunkToChatCompletion(chunk)).map(chatCompletion -> {
 				try {
+					// TODO: use Streaming version
 					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
 						.getBody();
 
@@ -366,6 +359,14 @@ public class OpenAiChatClient extends
 	@Override
 	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
 		return this.openAiApi.chatCompletionEntity(request);
+	}
+
+	@Override
+	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
+		return this.openAiApi.chatCompletionStream(request)
+			.map(this::chunkToChatCompletion)
+			.map(Optional::ofNullable)
+			.map(ResponseEntity::of);
 	}
 
 	@Override
