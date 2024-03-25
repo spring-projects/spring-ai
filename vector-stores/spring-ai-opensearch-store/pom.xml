@@ -35,13 +35,13 @@
 		<dependency>
 			<groupId>org.opensearch.client</groupId>
 			<artifactId>opensearch-java</artifactId>
-			<version>${opensearch-client.version}</version>
+			<version>2.9.1</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.httpcomponents.client5</groupId>
 			<artifactId>httpclient5</artifactId>
-			<version>${httpclient5.version}</version>
+			<version>5.3.1</version>
 		</dependency>
 
 		<!-- TESTING -->
