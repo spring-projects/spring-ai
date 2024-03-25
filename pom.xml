@@ -89,7 +89,9 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
-    </modules>
+		<module>vector-stores/spring-ai-opensearch-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
+	</modules>
 
 	<organization>
 		<name>VMware Inc.</name>
@@ -169,8 +171,14 @@
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.7.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
+		<opensearch-client.version>2.10.1</opensearch-client.version>
 
 		<!-- testing dependencies -->
+		<httpclient5.version>5.3.1</httpclient5.version>
+
+		<!-- testing dependencies -->
+		<testcontainers.version>1.19.7</testcontainers.version>
+		<testcontainers.opensearch.version>2.0.1</testcontainers.opensearch.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
