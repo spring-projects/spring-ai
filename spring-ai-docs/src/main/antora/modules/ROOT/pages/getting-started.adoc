@@ -98,7 +98,7 @@ If you’re a Maven user, you can use the BOM by adding the following to your po
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-bom</artifactId>
-            <version>0.8.1-SNAPSHOT</version>
+            <version>1.0.0-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
