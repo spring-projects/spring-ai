@@ -27,7 +27,7 @@
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-anthropic</module>
-
+		<module>models/spring-ai-watsonx-ai</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -67,6 +67,9 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+		<module>vector-stores/spring-ai-elasticsearch-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
 	</modules>
 
 	<organization>
@@ -117,13 +120,14 @@
 		<azure-open-ai-client.version>1.0.0-beta.7</azure-open-ai-client.version>
 		<jtokkit.version>1.0.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
-		<bedrockruntime.version>2.24.8</bedrockruntime.version>
+		<bedrockruntime.version>2.25.3</bedrockruntime.version>
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
 		<com.google.cloud.version>26.34.0</com.google.cloud.version>
 		<qdrant.version>1.7.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>
+		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
@@ -366,7 +370,7 @@ limitations under the License.
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>${maven-javadoc-plugin.version}</version>
 						<configuration>
-							<excludePackageNames>org.springframework.ai.sample.*</excludePackageNames>
+							<excludePackageNames>org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
 							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
 							<doclint>all,-missing</doclint>

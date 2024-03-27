@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.api;
 
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -25,10 +26,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.publisher.Sinks.EmitResult;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
@@ -60,7 +63,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
  */
 public abstract class AbstractBedrockApi<I, O, SO> {
 
-	private static final Log logger = LogFactory.getLog(AbstractBedrockApi.class);
+	private static final Logger logger = LoggerFactory.getLogger(AbstractBedrockApi.class);
 
 	private final String modelId;
 	private final ObjectMapper objectMapper;
@@ -68,7 +71,6 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	private final String region;
 	private final BedrockRuntimeClient client;
 	private final BedrockRuntimeAsyncClient clientStreaming;
-	private final Sinks.Many<SO> eventSink;
 
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
@@ -95,8 +97,6 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		this.objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		this.credentialsProvider = credentialsProvider;
 		this.region = region;
-
-		this.eventSink = Sinks.many().unicast().onBackpressureError();
 
 		this.client = BedrockRuntimeClient.builder()
 				.region(Region.of(this.region))
@@ -220,13 +220,16 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 */
 	protected Flux<SO> internalInvocationStream(I request, Class<SO> clazz) {
 
+		// final Sinks.Many<SO> eventSink = Sinks.many().unicast().onBackpressureError();
+		final Sinks.Many<SO> eventSink = Sinks.many().multicast().onBackpressureBuffer();
+
 		SdkBytes body;
 		try {
 			body = SdkBytes.fromUtf8String(this.objectMapper.writeValueAsString(request));
 		}
 		catch (JsonProcessingException e) {
-			this.eventSink.tryEmitError(e);
-			return this.eventSink.asFlux();
+			eventSink.tryEmitError(e);
+			return eventSink.asFlux();
 		}
 
 		InvokeModelWithResponseStreamRequest invokeRequest = InvokeModelWithResponseStreamRequest.builder()
@@ -240,16 +243,16 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 					try {
 						logger.debug("Received chunk: " + chunk.bytes().asString(StandardCharsets.UTF_8));
 						SO response = this.objectMapper.readValue(chunk.bytes().asByteArray(), clazz);
-						this.eventSink.tryEmitNext(response);
+						eventSink.tryEmitNext(response);
 					}
 					catch (Exception e) {
 						logger.error("Failed to unmarshall", e);
-						this.eventSink.tryEmitError(e);
+						eventSink.tryEmitError(e);
 					}
 				})
 				.onDefault((event) -> {
 					logger.error("Unknown or unhandled event: " + event.toString());
-					this.eventSink.tryEmitError(new Throwable("Unknown or unhandled event: " + event.toString()));
+					eventSink.tryEmitError(new Throwable("Unknown or unhandled event: " + event.toString()));
 				})
 				.build();
 
@@ -257,12 +260,18 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.builder()
 				.onComplete(
 						() -> {
-							this.eventSink.tryEmitComplete();
+							EmitResult emitResult = eventSink.tryEmitComplete();
+							while(!emitResult.isSuccess()){
+								System.out.println("Emitting complete:" + emitResult);
+								emitResult = eventSink.tryEmitComplete();
+							};
+							eventSink.emitComplete(EmitFailureHandler.busyLooping(Duration.ofSeconds(3)));
+							// EmitResult emitResult = eventSink.tryEmitComplete();
 							logger.debug("\nCompleted streaming response.");
 						})
 				.onError((error) -> {
 					logger.error("\n\nError streaming response: " + error.getMessage());
-					this.eventSink.tryEmitError(error);
+					eventSink.tryEmitError(error);
 				})
 				.onEventStream((stream) -> {
 					stream.subscribe(
@@ -274,7 +283,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 		this.clientStreaming.invokeModelWithResponseStream(invokeRequest, responseHandler);
 
-		return this.eventSink.asFlux();
+		return eventSink.asFlux();
 	}
 }
 // @formatter:on

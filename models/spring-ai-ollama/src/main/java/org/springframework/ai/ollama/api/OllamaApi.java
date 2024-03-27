@@ -333,13 +333,14 @@ public class OllamaApi {
 	 *
 	 * @param role The role of the message of type {@link Role}.
 	 * @param content The content of the message.
-	 * @param images The list of images to send with the message.
+	 * @param images The list of base64-encoded images to send with the message.
+	 * 				 Requires multimodal models such as llava or bakllava.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
-			@JsonProperty("images") List<byte[]> images) {
+			@JsonProperty("images") List<String> images) {
 
 		/**
 		 * The role of the message in the conversation.
@@ -369,7 +370,7 @@ public class OllamaApi {
 
 			private final Role role;
 			private String content;
-			private List<byte[]> images;
+			private List<String> images;
 
 			public Builder(Role role) {
 				this.role = role;
@@ -380,7 +381,7 @@ public class OllamaApi {
 				return this;
 			}
 
-			public Builder withImages(List<byte[]> images) {
+			public Builder withImages(List<String> images) {
 				this.images = images;
 				return this;
 			}

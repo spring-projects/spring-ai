@@ -34,6 +34,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.StreamResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
+import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent.Type;
 import org.springframework.ai.anthropic.metadata.AnthropicChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
@@ -160,7 +161,8 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 				chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
 			}
 			else if (chunk.type().equals("content_block_delta")) {
-				var content = new MediaContent("text_delta", null, (String) chunk.delta().get("text"), chunk.index());
+				var content = new MediaContent(Type.TEXT_DELTA, null, (String) chunk.delta().get("text"),
+						chunk.index());
 				chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
 			}
 			else if (chunk.type().equals("message_delta")) {

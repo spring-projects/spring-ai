@@ -24,6 +24,7 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiAudioSpeechClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -48,7 +49,8 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class })
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class,
+		OpenAiAudioSpeechProperties.class })
 public class OpenAiAutoConfiguration {
 
 	@Bean
@@ -140,6 +142,28 @@ public class OpenAiAutoConfiguration {
 				transcriptionProperties.getOptions(), retryTemplate);
 
 		return openAiChatClient;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiAudioSpeechClient openAiAudioSpeechClient(OpenAiConnectionProperties commonProperties,
+			OpenAiAudioSpeechProperties speechProperties, ResponseErrorHandler responseErrorHandler) {
+
+		String apiKey = StringUtils.hasText(speechProperties.getApiKey()) ? speechProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(speechProperties.getBaseUrl()) ? speechProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder(), responseErrorHandler);
+
+		OpenAiAudioSpeechClient openAiSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi,
+				speechProperties.getOptions());
+
+		return openAiSpeechClient;
 	}
 
 	@Bean

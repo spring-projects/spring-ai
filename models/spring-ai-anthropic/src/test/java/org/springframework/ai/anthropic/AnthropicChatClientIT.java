@@ -50,7 +50,7 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = AnthropicTestConfiguration.class)
+@SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatClientIT {
 
@@ -180,7 +180,7 @@ class AnthropicChatClientIT {
 
 		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
 
-		var userMessage = new UserMessage("Explain what do you see o this picture?",
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));

@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.vectorstore.filter;
 
-import org.springframework.ai.vectorstore.filter.Filter;
-
 /**
  * Converters a generic, portable {@link Filter.Expression} into a
  * {@link org.springframework.ai.vectorstore.VectorStore} specific expression language

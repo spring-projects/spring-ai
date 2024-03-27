@@ -55,6 +55,11 @@ public class SpringAiRetryProperties {
 	private List<Integer> excludeOnHttpCodes = new ArrayList<>();
 
 	/**
+	 * List of HTTP status codes that should trigger a retry.
+	 */
+	private List<Integer> onHttpCodes = new ArrayList<>();
+
+	/**
 	 * Exponential Backoff properties.
 	 */
 	public static class Backoff {
@@ -126,6 +131,14 @@ public class SpringAiRetryProperties {
 
 	public void setOnClientErrors(boolean onClientErrors) {
 		this.onClientErrors = onClientErrors;
+	}
+
+	public List<Integer> getOnHttpCodes() {
+		return this.onHttpCodes;
+	}
+
+	public void setOnHttpCodes(List<Integer> onHttpCodes) {
+		this.onHttpCodes = onHttpCodes;
 	}
 
 }

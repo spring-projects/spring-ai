@@ -17,6 +17,8 @@ package org.springframework.ai.bedrock.aot;
 
 import org.springframework.ai.bedrock.anthropic.AnthropicChatOptions;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
+import org.springframework.ai.bedrock.anthropic3.Anthropic3ChatOptions;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingOptions;
@@ -76,6 +78,11 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
 		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatOptions.class))
+			hints.reflection().registerType(tr, mcs);
+
+		for (var tr : findJsonAnnotatedClassesInPackage(Anthropic3ChatBedrockApi.class))
+			hints.reflection().registerType(tr, mcs);
+		for (var tr : findJsonAnnotatedClassesInPackage(Anthropic3ChatOptions.class))
 			hints.reflection().registerType(tr, mcs);
 	}
 

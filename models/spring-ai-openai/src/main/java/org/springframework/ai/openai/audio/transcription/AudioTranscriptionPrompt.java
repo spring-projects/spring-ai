@@ -20,6 +20,10 @@ import org.springframework.ai.model.ModelRequest;
 import org.springframework.core.io.Resource;
 
 /**
+ * Represents an audio transcription prompt for an AI model. It implements the
+ * {@link ModelRequest} interface and provides the necessary information required to
+ * interact with an AI model, including the audio resource and model options.
+ *
  * @author Michael Lavelle
  * @since 0.8.1
  */
@@ -29,10 +33,23 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 
 	private ModelOptions modelOptions;
 
+	/**
+	 * Construct a new AudioTranscriptionPrompt given the resource representing the audio
+	 * file. The following input file types are supported: mp3, mp4, mpeg, mpga, m4a, wav,
+	 * and webm.
+	 * @param audioResource resource of the audio file.
+	 */
 	public AudioTranscriptionPrompt(Resource audioResource) {
 		this.audioResource = audioResource;
 	}
 
+	/**
+	 * Construct a new AudioTranscriptionPrompt given the resource representing the audio
+	 * file. The following input file types are supported: mp3, mp4, mpeg, mpga, m4a, wav,
+	 * and webm.
+	 * @param audioResource resource of the audio file.
+	 * @param modelOptions
+	 */
 	public AudioTranscriptionPrompt(Resource audioResource, ModelOptions modelOptions) {
 		this.audioResource = audioResource;
 		this.modelOptions = modelOptions;

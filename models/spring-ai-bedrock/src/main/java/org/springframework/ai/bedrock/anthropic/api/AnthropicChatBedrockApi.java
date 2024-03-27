@@ -115,7 +115,6 @@ public class AnthropicChatBedrockApi extends
 			private Integer topK;// = 10;
 			private Float topP;
 			private List<String> stopSequences;
-			// private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 			private String anthropicVersion;
 
 			private Builder(String prompt) {

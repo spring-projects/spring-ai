@@ -15,12 +15,12 @@
  */
 package org.springframework.ai.ollama;
 
+import java.util.Base64;
 import java.util.List;
 
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
@@ -28,11 +28,14 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -59,10 +62,17 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 	/**
 	 * Default options to be used for all chat requests.
 	 */
-	private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+	private OllamaOptions defaultOptions;
 
 	public OllamaChatClient(OllamaApi chatApi) {
+		this(chatApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
+	}
+
+	public OllamaChatClient(OllamaApi chatApi, OllamaOptions defaultOptions) {
+		Assert.notNull(chatApi, "OllamaApi must not be null");
+		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
 		this.chatApi = chatApi;
+		this.defaultOptions = defaultOptions;
 	}
 
 	/**
@@ -74,6 +84,9 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link OllamaOptions} constructor instead.
+	 */
 	public OllamaChatClient withDefaultOptions(OllamaOptions options) {
 		this.defaultOptions = options;
 		return this;
@@ -83,6 +96,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 	public ChatResponse call(Prompt prompt) {
 
 		OllamaApi.ChatResponse response = this.chatApi.chat(ollamaChatRequest(prompt, false));
+
 		var generator = new Generation(response.message().content());
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
 			generator = generator
@@ -132,7 +146,15 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			.filter(message -> message.getMessageType() == MessageType.USER
 					|| message.getMessageType() == MessageType.ASSISTANT
 					|| message.getMessageType() == MessageType.SYSTEM)
-			.map(m -> OllamaApi.Message.builder(toRole(m)).withContent(m.getContent()).build())
+			.map(m -> {
+				var messageBuilder = OllamaApi.Message.builder(toRole(m)).withContent(m.getContent());
+
+				if (!CollectionUtils.isEmpty(m.getMedia())) {
+					messageBuilder
+						.withImages(m.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
+				}
+				return messageBuilder.build();
+			})
 			.toList();
 
 		// runtime options
@@ -161,6 +183,19 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			.withMessages(ollamaMessages)
 			.withOptions(mergedOptions)
 			.build();
+	}
+
+	private String fromMediaData(Object mediaData) {
+		if (mediaData instanceof byte[] bytes) {
+			return Base64.getEncoder().encodeToString(bytes);
+		}
+		else if (mediaData instanceof String text) {
+			return text;
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
+		}
+
 	}
 
 	private OllamaApi.Message.Role toRole(Message message) {

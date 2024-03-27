@@ -42,6 +42,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class AnthropicApi {
 
+	private static final String HEADER_X_API_KEY = "x-api-key";
+
+	private static final String HEADER_ANTHROPIC_VERSION = "anthropic-version";
+
 	public static final String DEFAULT_BASE_URL = "https://api.anthropic.com";
 
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
@@ -81,8 +85,8 @@ public class AnthropicApi {
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.add("x-api-key", anthropicApiKey);
-			headers.add("anthropic-version", anthropicVersion);
+			headers.add(HEADER_X_API_KEY, anthropicApiKey);
+			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -181,6 +185,11 @@ public class AnthropicApi {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null);
 		}
 
+		public ChatCompletionRequest(String model, List<RequestMessage> messages, String system, Integer maxTokens,
+				List<String> stopSequences, Float temperature, Boolean stream) {
+			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null);
+		}
+
 		/**
 		 * @param userId An external identifier for the user who is associated with the
 		 * request. This should be a uuid, hash value, or other opaque identifier.
@@ -226,7 +235,7 @@ public class AnthropicApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record MediaContent( // @formatter:off
-		@JsonProperty("type") String type,
+		@JsonProperty("type") Type type,
 		@JsonProperty("source") Source source,
 		@JsonProperty("text") String text,
 		@JsonProperty("index") Integer index // applicable only for streaming responses.
@@ -238,11 +247,36 @@ public class AnthropicApi {
 		}
 
 		public MediaContent(Source source) {
-			this("image", source, null, null);
+			this(Type.IMAGE, source, null, null);
 		}
 
 		public MediaContent(String text) {
-			this("text", null, text, null);
+			this(Type.TEXT, null, text, null);
+		}
+
+		/**
+		 * The type of this message.
+		 */
+		public enum Type {
+
+			/**
+			 * Text message.
+			 */
+			@JsonProperty("text")
+			TEXT,
+
+			/**
+			 * Text delta message. Returned from the streaming response.
+			 */
+			@JsonProperty("text_delta")
+			TEXT_DELTA,
+
+			/**
+			 * Image message.
+			 */
+			@JsonProperty("image")
+			IMAGE;
+
 		}
 
 		/**

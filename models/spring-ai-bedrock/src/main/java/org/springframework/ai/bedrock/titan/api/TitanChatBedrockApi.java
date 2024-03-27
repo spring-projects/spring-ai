@@ -43,7 +43,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 public class TitanChatBedrockApi extends
 		AbstractBedrockApi<TitanChatRequest, TitanChatResponse, TitanChatResponseChunk> {
 
-	TitanChatBedrockApi(String modelId, String region) {
+	public TitanChatBedrockApi(String modelId, String region) {
 		super(modelId, region);
 	}
 

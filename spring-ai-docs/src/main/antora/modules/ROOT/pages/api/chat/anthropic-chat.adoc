@@ -1,4 +1,4 @@
-= Anthropic Chat
+= Anthropic 3 Chat
 
 link:https://www.anthropic.com/[Anthropic Claude] is a family of foundational AI models that can be used in a variety of applications.
 For developers and businesses, you can leverage the API access and build directly on top of link:https://www.anthropic.com/api[Anthropic's AI infrastructure].
@@ -67,7 +67,8 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 | spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
 | spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
 | spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
-| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should NOT trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
 |====
 
 NOTE: currently the retry policies are not applicable for the streaming API.
@@ -144,7 +145,7 @@ Below is a simple code example extracted from https://github.com/spring-projects
 ----
 byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
 
-var userMessage = new UserMessage("Explain what do you see o this picture?",
+var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));

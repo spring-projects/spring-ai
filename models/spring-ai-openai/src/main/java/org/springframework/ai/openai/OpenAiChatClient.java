@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +45,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionFinishReason;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.MediaContent;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
@@ -53,6 +56,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 
 /**
  * {@link ChatClient} and {@link StreamingChatClient} implementation for {@literal OpenAI}
@@ -240,11 +244,20 @@ public class OpenAiChatClient extends
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
-			.stream()
-			.map(m -> new ChatCompletionMessage(m.getContent(),
-					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-			.toList();
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
+			// Add text content.
+			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
+			if (!CollectionUtils.isEmpty(m.getMedia())) {
+				// Add media content.
+				contents.addAll(m.getMedia()
+					.stream()
+					.map(media -> new MediaContent(
+							new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
+					.toList());
+			}
+
+			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
@@ -284,6 +297,22 @@ public class OpenAiChatClient extends
 		}
 
 		return request;
+	}
+
+	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
+		if (mediaContentData instanceof byte[] bytes) {
+			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+			// following the prefix pattern.
+			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+		}
+		else if (mediaContentData instanceof String text) {
+			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
+			return text;
+		}
+		else {
+			throw new IllegalArgumentException(
+					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+		}
 	}
 
 	private List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {

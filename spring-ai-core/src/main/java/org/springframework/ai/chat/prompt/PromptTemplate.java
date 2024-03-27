@@ -18,6 +18,7 @@ package org.springframework.ai.chat.prompt;
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.springframework.ai.parser.OutputParser;
+import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.io.Resource;
@@ -171,6 +172,11 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	@Override
 	public Message createMessage() {
 		return new UserMessage(render());
+	}
+
+	@Override
+	public Message createMessage(List<Media> mediaList) {
+		return new UserMessage(render(), mediaList);
 	}
 
 	@Override
