@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.openai;
 
+import java.time.Duration;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(OpenAiConnectionProperties.CONFIG_PREFIX)
@@ -24,8 +26,11 @@ public class OpenAiConnectionProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_BASE_URL = "https://api.openai.com";
 
+	public static final Duration DEFAULT_READ_TIMEOUT = Duration.ofMinutes(1);
+
 	public OpenAiConnectionProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
+		super.setReadTimeout(DEFAULT_READ_TIMEOUT);
 	}
 
 }
