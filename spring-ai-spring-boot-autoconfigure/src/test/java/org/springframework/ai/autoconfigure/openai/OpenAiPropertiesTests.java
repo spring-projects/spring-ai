@@ -23,6 +23,7 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiModerationClient;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
@@ -645,6 +646,39 @@ public class OpenAiPropertiesTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isNotEmpty();
+			});
+
+	}
+
+	@Test
+	void moderationActivation() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.moderation.enabled=false")
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiModerationProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiModerationClient.class)).isEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiModerationProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiModerationClient.class)).isNotEmpty();
+			});
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+					"spring.ai.openai.moderation.enabled=true")
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiModerationProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiModerationClient.class)).isNotEmpty();
 			});
 
 	}

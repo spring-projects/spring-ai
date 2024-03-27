@@ -20,14 +20,11 @@ import java.util.List;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.OpenAiImageClient;
-import org.springframework.ai.openai.OpenAiAudioSpeechClient;
+import org.springframework.ai.openai.*;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -50,7 +47,7 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class,
-		OpenAiAudioSpeechProperties.class })
+		OpenAiAudioSpeechProperties.class, OpenAiModerationProperties.class })
 public class OpenAiAutoConfiguration {
 
 	@Bean
@@ -172,6 +169,28 @@ public class OpenAiAutoConfiguration {
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setApplicationContext(context);
 		return manager;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiModerationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public OpenAiModerationClient openAiModerationClient(OpenAiConnectionProperties commonProperties,
+			OpenAiModerationProperties moderationProperties, RestClient.Builder restClientBuilder,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
+
+		String apiKey = StringUtils.hasText(moderationProperties.getApiKey()) ? moderationProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(moderationProperties.getBaseUrl()) ? moderationProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiModerationApi = new OpenAiModerationApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
+
+		return new OpenAiModerationClient(openAiModerationApi, moderationProperties.getOptions(), retryTemplate);
 	}
 
 }

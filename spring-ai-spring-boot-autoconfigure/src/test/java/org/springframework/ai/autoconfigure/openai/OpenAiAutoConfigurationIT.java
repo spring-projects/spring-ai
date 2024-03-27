@@ -27,18 +27,15 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.*;
+import org.springframework.ai.openai.moderation.ModerationPrompt;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
-import org.springframework.ai.openai.OpenAiAudioSpeechClient;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -141,6 +138,18 @@ public class OpenAiAutoConfigurationIT {
 			assertThat(imageResponse.getResults()).hasSize(1);
 			assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
 			logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+		});
+	}
+
+	@Test
+	void moderation() {
+		contextRunner.run(context -> {
+			var client = context.getBean(OpenAiModerationClient.class);
+			var moderationResponse = client.call(new ModerationPrompt("I want to kill them."));
+			assertThat(moderationResponse.getResults()).hasSize(1);
+			assertThat(moderationResponse.getResult().getOutput().results().get(0).categories().sexual()).isFalse();
+			assertThat(moderationResponse.getResult().getOutput().results().get(0).categories().harassment()).isTrue();
+			assertThat(moderationResponse.getResult().getOutput().results().get(0).categories().violence()).isTrue();
 		});
 	}
 
