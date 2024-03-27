@@ -98,9 +98,9 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		OllamaApi.ChatResponse response = this.chatApi.chat(ollamaChatRequest(prompt, false));
 
 		var generator = new Generation(response.message().content());
-		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator
-				.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(response)));
+		if (response.promptEvalCount() != null || response.evalCount() != null) {
+			generator = generator.withGenerationMetadata(ChatGenerationMetadata
+				.from(Boolean.TRUE.equals(response.done()) ? "done" : "unknown", extractUsage(response)));
 		}
 		return new ChatResponse(List.of(generator));
 	}
@@ -115,7 +115,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 					: new Generation("");
 			if (Boolean.TRUE.equals(chunk.done())) {
 				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(chunk)));
+					.withGenerationMetadata(ChatGenerationMetadata.from("done", extractUsage(chunk)));
 			}
 			return new ChatResponse(List.of(generation));
 		});
@@ -126,12 +126,12 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
 			@Override
 			public Long getPromptTokens() {
-				return response.promptEvalCount().longValue();
+				return response.promptEvalCount() != null ? response.promptEvalCount().longValue() : 0;
 			}
 
 			@Override
 			public Long getGenerationTokens() {
-				return response.evalCount().longValue();
+				return response.evalCount() != null ? response.evalCount().longValue() : 0;
 			}
 		};
 	}
