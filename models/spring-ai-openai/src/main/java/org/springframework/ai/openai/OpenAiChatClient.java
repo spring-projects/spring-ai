@@ -15,20 +15,8 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -57,6 +45,10 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import reactor.core.publisher.Flux;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatClient} and {@link StreamingChatClient} implementation for {@literal OpenAI}
@@ -189,36 +181,37 @@ public class OpenAiChatClient extends
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
-			return completionChunks.map(chunk -> chunkToChatCompletion(chunk)).map(chatCompletion -> {
-				try {
-					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
-						.getBody();
+			return completionChunks.map(chunk -> chunkToChatCompletion(chunk))
+				.switchMap(
+						cc -> handleFunctionCallOrReturnStream(request, Flux.just(ResponseEntity.of(Optional.of(cc)))))
+				.map(ResponseEntity::getBody)
+				.map(chatCompletion -> {
+					try {
+						@SuppressWarnings("null")
+						String id = chatCompletion.id();
 
-					@SuppressWarnings("null")
-					String id = chatCompletion.id();
+						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+							if (choice.message().role() != null) {
+								roleMap.putIfAbsent(id, choice.message().role().name());
+							}
+							String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
+							var generation = new Generation(choice.message().content(),
+									Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
+							if (choice.finishReason() != null) {
+								generation = generation.withGenerationMetadata(
+										ChatGenerationMetadata.from(choice.finishReason().name(), null));
+							}
+							return generation;
+						}).toList();
 
-					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-						if (choice.message().role() != null) {
-							roleMap.putIfAbsent(id, choice.message().role().name());
-						}
-						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-						var generation = new Generation(choice.message().content(),
-								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
-						if (choice.finishReason() != null) {
-							generation = generation.withGenerationMetadata(
-									ChatGenerationMetadata.from(choice.finishReason().name(), null));
-						}
-						return generation;
-					}).toList();
+						return new ChatResponse(generations);
+					}
+					catch (Exception e) {
+						logger.error("Error processing chat completion", e);
+						return new ChatResponse(List.of());
+					}
 
-					return new ChatResponse(generations);
-				}
-				catch (Exception e) {
-					logger.error("Error processing chat completion", e);
-					return new ChatResponse(List.of());
-				}
-
-			});
+				});
 		});
 	}
 
@@ -366,6 +359,14 @@ public class OpenAiChatClient extends
 	@Override
 	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
 		return this.openAiApi.chatCompletionEntity(request);
+	}
+
+	@Override
+	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
+		return this.openAiApi.chatCompletionStream(request)
+			.map(this::chunkToChatCompletion)
+			.map(Optional::ofNullable)
+			.map(ResponseEntity::of);
 	}
 
 	@Override

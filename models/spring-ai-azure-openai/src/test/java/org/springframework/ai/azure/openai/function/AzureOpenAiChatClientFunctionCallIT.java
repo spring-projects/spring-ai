@@ -17,6 +17,9 @@ package org.springframework.ai.azure.openai.function;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
@@ -29,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -37,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,6 +52,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AzureOpenAiChatClientFunctionCallIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatClientFunctionCallIT.class);
+
+	@Autowired
+	private String selectedModel;
 
 	@Autowired
 	private AzureOpenAiChatClient chatClient;
@@ -58,7 +67,7 @@ class AzureOpenAiChatClientFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName("gpt-4-0125-preview")
+			.withDeploymentName(selectedModel)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the current weather in a given location")
@@ -75,6 +84,40 @@ class AzureOpenAiChatClientFunctionCallIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
 	}
 
+	@Test
+	void streamFunctionCallTest() {
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AzureOpenAiChatOptions.builder()
+			.withDeploymentName(selectedModel)
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription("Get the current weather in a given location")
+				.withResponseConverter((response) -> "" + response.temp() + response.unit())
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = chatClient.stream(new Prompt(messages, promptOptions));
+
+		final var counter = new AtomicInteger();
+		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
+			.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(counter.get()).isGreaterThan(2);
+		assertThat(content).containsAnyOf("30.0", "30");
+		assertThat(content).containsAnyOf("10.0", "10");
+		assertThat(content).containsAnyOf("15.0", "15");
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
@@ -86,12 +129,14 @@ class AzureOpenAiChatClientFunctionCallIT {
 		}
 
 		@Bean
-		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient) {
+		public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient, String selectedModel) {
 			return new AzureOpenAiChatClient(openAIClient,
-					AzureOpenAiChatOptions.builder()
-						.withDeploymentName("gpt-4-0125-preview")
-						.withMaxTokens(500)
-						.build());
+					AzureOpenAiChatOptions.builder().withDeploymentName(selectedModel).withMaxTokens(500).build());
+		}
+
+		@Bean
+		public String selectedModel() {
+			return Optional.ofNullable(System.getenv("AZURE_OPENAI_MODEL")).orElse("gpt-4-0125-preview");
 		}
 
 	}
