@@ -33,7 +33,7 @@ import org.springframework.ai.image.ImageType;
  */
 public enum StabilityAiImageType implements ImageType<StabilityAiImageType, String> {
 
-	BASE64("base64");
+	BASE64("base64"), PNG("png"), JPEG("jpeg"), WEBP("webp");
 
 	private final String value;
 
