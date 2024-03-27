@@ -194,12 +194,12 @@ The method `Prompt create(Map<String, Object> model)`: Expands prompt creation c
 
 == Example Usage
 
-A simple example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/2-README-prompt-templating.md[AI Workshop on PromptTemplates] is shown below.
+A simple example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/2-README-prompt-templating.md[AI Workshop on PromptTemplates] is shown below. Context variable will be delimited by `<` and `>`. The delimiters can be escaped with `\` as stated in the https://github.com/antlr/stringtemplate4/blob/master/doc/cheatsheet.md#stringtemplate-cheat-sheet[StringTemplate documentation].
 
 
 ```java
 
-PromptTemplate promptTemplate = new PromptTemplate("Tell me a {adjective} joke about {topic}");
+PromptTemplate promptTemplate = new PromptTemplate("Tell me a <adjective> joke about <topic>");
 
 Prompt prompt = promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
 
@@ -218,8 +218,8 @@ Message userMessage = new UserMessage(userText);
 
 String systemText = """
   You are a helpful AI assistant that helps people find information.
-  Your name is {name}
-  You should reply to the user's request with your name and also in the style of a {voice}.
+  Your name is <name>
+  You should reply to the user's request with your name and also in the style of a <voice>.
   """;
 
 SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemText);

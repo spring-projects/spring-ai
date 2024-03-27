@@ -54,7 +54,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			throw new RuntimeException("Failed to read resource", ex);
 		}
 		try {
-			this.st = new ST(this.template, '{', '}');
+			this.st = new ST(this.template);
 		}
 		catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
@@ -65,7 +65,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		this.template = template;
 		// If the template string is not valid, an exception will be thrown
 		try {
-			this.st = new ST(this.template, '{', '}');
+			this.st = new ST(this.template);
 		}
 		catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
@@ -76,7 +76,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		this.template = template;
 		// If the template string is not valid, an exception will be thrown
 		try {
-			this.st = new ST(this.template, '{', '}');
+			this.st = new ST(this.template);
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
 				dynamicModel.put(entry.getKey(), entry.getValue());
@@ -96,7 +96,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 		// If the template string is not valid, an exception will be thrown
 		try {
-			this.st = new ST(this.template, '{', '}');
+			this.st = new ST(this.template);
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
 				dynamicModel.put(entry.getKey(), entry.getValue());

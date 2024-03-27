@@ -42,7 +42,7 @@ public class PromptTemplateTest {
 		model.put("key3", 100);
 
 		// Create a simple template with placeholders for keys in the generative
-		String template = "This is a {key1}, it is {key2}, and it costs {key3}";
+		String template = "This is a <key1>, it is <key2>, and it costs <key3>";
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
 
 		// The expected result after rendering the template with the generative
@@ -55,6 +55,33 @@ public class PromptTemplateTest {
 		model.put("key3", 200);
 		expected = "This is a value1, it is true, and it costs 200";
 		result = promptTemplate.render(model);
+		assertEquals(expected, result);
+	}
+	@Test
+	public void testRenderJson() {
+		Map<String, Object> model = new HashMap<>();
+		model.put("jsonValue", "bar");
+
+		String template = "{'foo': '<jsonValue>'}";
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+
+		String expected = "{'foo': 'bar'}";
+		String result = promptTemplate.render();
+
+		assertEquals(expected, result);
+	}
+
+	@Test
+	public void testRenderEscapedString() {
+		Map<String, Object> model = new HashMap<>();
+		model.put("xmlValue", "bar");
+
+		String template = "\\<foo><xmlValue>\\</foo>";
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+
+		String expected = "<foo>bar</foo>";
+		String result = promptTemplate.render();
+
 		assertEquals(expected, result);
 	}
 
@@ -74,7 +101,7 @@ public class PromptTemplateTest {
 		model.put("key3", resource);
 
 		// Create a simple template with placeholders for keys in the generative
-		String template = "{key1}, {key2}, {key3}";
+		String template = "<key1>, <key2>, <key3>";
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
 
 		// The expected result after rendering the template with the generative
@@ -93,7 +120,7 @@ public class PromptTemplateTest {
 		model.put("key1", "value1");
 
 		// Create a simple template that includes a key not present in the generative
-		String template = "This is a {key2}!";
+		String template = "This is a <key2>!";
 		PromptTemplate promptTemplate = new PromptTemplate(template, model);
 
 		// Rendering the template with a missing key should throw an exception
