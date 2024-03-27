@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.testcontainers.containers.GenericContainer;
@@ -103,6 +104,20 @@ class OllamaChatClientIT {
 		response = client.call(new Prompt(List.of(userMessage, systemMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 
+	}
+
+	@Test
+	void statisticTest() {
+		Prompt prompt = new Prompt(
+				"Tell me a joke about pasta, use #PastaJoke in your response. example: this is a pasta joke #PastaJoke");
+		ChatResponse response = client.call(prompt);
+		assertThat(response.getResult().getOutput().getContent()).contains("pasta");
+		Usage generationTokens = response.getResult().getMetadata().getContentFilterMetadata();
+
+		assertThat(generationTokens).isNotNull();
+		assertThat(generationTokens.getPromptTokens()).isPositive();
+		assertThat(generationTokens.getGenerationTokens()).isPositive();
+		assertThat(generationTokens.getTotalTokens()).isPositive();
 	}
 
 	@Test
