@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,12 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.http.policy.HttpLogDetailLevel;
+import com.azure.core.http.policy.HttpLogOptions;
+import com.azure.core.management.AzureEnvironment;
+import com.azure.core.management.profile.AzureProfile;
+import com.azure.identity.ClientSecretCredentialBuilder;
 import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -46,13 +52,50 @@ public class AzureOpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
 
-		Assert.hasText(connectionProperties.getApiKey(), "API key must not be empty");
-		Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
+		HttpLogOptions options = new HttpLogOptions();
+		if (connectionProperties.getEnableLog()) {
+			HttpLogDetailLevel level = HttpLogDetailLevel.BODY_AND_HEADERS;
+			options.setLogLevel(level);
+			options.setPrettyPrintBody(true);
+		}
 
-		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
-			.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
-			.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
-			.buildClient();
+		/*
+		 * https://learn.microsoft.com/en-us/azure/databricks/dev-tools/service-prin-aad-
+		 * token
+		 */
+		if ("entra".equals(connectionProperties.getAuthType())) {
+			Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
+			Assert.hasText(connectionProperties.getClientId(), "Client ID must not be empty");
+			Assert.hasText(connectionProperties.getClientSecret(), "Client Secret must not be empty");
+			Assert.hasText(connectionProperties.getTenantId(), "Tenant ID must not be empty");
+
+			AzureProfile azureProfile = new AzureProfile(AzureEnvironment.AZURE);
+
+			TokenCredential tokenCredential = new ClientSecretCredentialBuilder()
+				.clientId(connectionProperties.getClientId())
+				.clientSecret(connectionProperties.getClientSecret())
+				.tenantId(connectionProperties.getTenantId())
+				.authorityHost(azureProfile.getEnvironment().getActiveDirectoryEndpoint())
+				.build();
+
+			return new OpenAIClientBuilder().httpLogOptions(options)
+				.endpoint(connectionProperties.getEndpoint())
+				.credential(tokenCredential)
+				.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
+				.buildClient();
+		}
+		else {
+			Assert.hasText(connectionProperties.getApiKey(), "API key must not be empty");
+			Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
+
+			AzureKeyCredential keyCredential = new AzureKeyCredential(connectionProperties.getApiKey());
+
+			return new OpenAIClientBuilder().httpLogOptions(options)
+				.endpoint(connectionProperties.getEndpoint())
+				.credential(keyCredential)
+				.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
+				.buildClient();
+		}
 	}
 
 	@Bean
