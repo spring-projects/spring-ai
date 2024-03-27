@@ -15,28 +15,34 @@
  */
 package org.springframework.ai.image;
 
+import java.util.Arrays;
+
 /**
- * An extensible interface for handling various types of image data.
+ * Default Image Type
  *
- * @param <T> The type of the image data this interface deals with. For instance, it could
- * be a byte array, a file path, or a Base64 encoded string of the image.
  * @author youngmon
  * @version 0.8.1
  */
-public interface Image<T> {
+public enum DefaultImageType implements ImageType<DefaultImageType, String> {
 
-	/**
-	 * Returns the image data. The type of the data is determined by the type parameter
-	 * {@code T} of this interface.
-	 * @return Image data of type T.
-	 */
-	T getData();
+	URL("url"), B64("b64");
 
-	/**
-	 * Returns the type of the image. The image type is defined by the {@link ImageType}.
-	 * Through this method, it's possible to know the type of the image.
-	 * @return The {@link ImageType} of the image.
-	 */
-	ImageType getType();
+	private final String value;
+
+	DefaultImageType(final String value) {
+		this.value = value;
+	}
+
+	@Override
+	public String getValue() {
+		return this.value;
+	}
+
+	public static DefaultImageType fromValue(final String value) {
+		return Arrays.stream(values())
+			.filter(v -> v.value.equals(value))
+			.findAny()
+			.orElseThrow(() -> new IllegalArgumentException("Invalid Value"));
+	}
 
 }

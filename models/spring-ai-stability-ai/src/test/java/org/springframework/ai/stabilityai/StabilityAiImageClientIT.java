@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.image.*;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
+import org.springframework.ai.stabilityai.image.StabilityAiBase64Image;
+import org.springframework.ai.stabilityai.image.StabilityAiImageType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -54,13 +56,14 @@ public class StabilityAiImageClientIT {
 		ImageGeneration imageGeneration = imageResponse.getResult();
 		Image image = imageGeneration.getOutput();
 
-		assertThat(image.getB64Json()).isNotEmpty();
+		assertThat(image.getType()).isEqualTo(StabilityAiImageType.BASE64);
+		assertThat(image.getData()).isNotNull();
 
 		writeFile(image);
 	}
 
 	private static void writeFile(Image image) throws IOException {
-		byte[] imageBytes = Base64.getDecoder().decode(image.getB64Json());
+		byte[] imageBytes = Base64.getDecoder().decode((String) image.getData());
 		String systemTempDir = System.getProperty("java.io.tmpdir");
 		String filePath = systemTempDir + File.separator + "dog.png";
 		File file = new File(filePath);

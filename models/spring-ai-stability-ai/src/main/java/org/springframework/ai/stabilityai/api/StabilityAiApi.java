@@ -21,7 +21,9 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.image.Image;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.stabilityai.image.StabilityAiBase64Image;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -190,6 +192,12 @@ public class StabilityAiApi {
 			@JsonProperty("artifacts") List<Artifacts> artifacts) {
 		public record Artifacts(@JsonProperty("seed") long seed, @JsonProperty("base64") String base64,
 				@JsonProperty("finishReason") String finishReason) {
+			// TODO : Develop Image Factory
+			public Image getImage() {
+				if (base64 != null)
+					return new StabilityAiBase64Image(base64);
+				throw new IllegalArgumentException("Entry must have base64");
+			}
 		}
 	}
 

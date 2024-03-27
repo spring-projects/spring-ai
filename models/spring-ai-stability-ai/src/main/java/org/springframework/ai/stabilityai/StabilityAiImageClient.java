@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageClient;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageOptions;
@@ -115,7 +114,7 @@ public class StabilityAiImageClient implements ImageClient {
 
 	private ImageResponse convertResponse(StabilityAiApi.GenerateImageResponse generateImageResponse) {
 		List<ImageGeneration> imageGenerationList = generateImageResponse.artifacts().stream().map(entry -> {
-			return new ImageGeneration(new Image(null, entry.base64()),
+			return new ImageGeneration(entry.getImage(),
 					new StabilityAiImageGenerationMetadata(entry.finishReason(), entry.seed()));
 		}).toList();
 
