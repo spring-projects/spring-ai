@@ -48,7 +48,7 @@ public class Anthropic3ChatBedrockApiIT {
 
 	private Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
 			AnthropicChatModel.CLAUDE_INSTANT_V1.id(), EnvironmentVariableCredentialsProvider.create(),
-			Region.US_EAST_1.id(), new ObjectMapper());
+			Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 
 	@Test
 	public void chatCompletion() {
