@@ -146,7 +146,7 @@ class BedrockAi21Jurassic2ChatClientIT {
 		public Ai21Jurassic2ChatBedrockApi jurassic2ChatBedrockApi() {
 			return new Ai21Jurassic2ChatBedrockApi(
 					Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 		}
 
 		@Bean

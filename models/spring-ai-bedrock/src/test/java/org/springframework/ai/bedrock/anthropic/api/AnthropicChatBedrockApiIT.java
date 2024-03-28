@@ -43,7 +43,7 @@ public class AnthropicChatBedrockApiIT {
 	private final Logger logger = LoggerFactory.getLogger(AnthropicChatBedrockApiIT.class);
 
 	private AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(AnthropicChatModel.CLAUDE_V2.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_WEST_2.id(), new ObjectMapper());
+			EnvironmentVariableCredentialsProvider.create(), Region.US_WEST_2.id(), new ObjectMapper(), 1000L);
 
 	@Test
 	public void chatCompletion() {

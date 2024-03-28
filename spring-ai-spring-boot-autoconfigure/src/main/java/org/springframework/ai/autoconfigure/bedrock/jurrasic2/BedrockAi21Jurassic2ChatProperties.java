@@ -43,6 +43,11 @@ public class BedrockAi21Jurassic2ChatProperties {
 	 */
 	private String model = Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id();
 
+	/**
+	 * Set model timeout. 1000 ms by default.
+	 */
+	private Long timeout = 1000L;
+
 	@NestedConfigurationProperty
 	private BedrockAi21Jurassic2ChatOptions options = BedrockAi21Jurassic2ChatOptions.builder()
 		.withTemperature(0.7f)
@@ -73,4 +78,11 @@ public class BedrockAi21Jurassic2ChatProperties {
 		this.options = options;
 	}
 
+	public Long getTimeout() {
+		return timeout;
+	}
+
+	public void setTimeout(Long timeout) {
+		this.timeout = timeout;
+	}
 }

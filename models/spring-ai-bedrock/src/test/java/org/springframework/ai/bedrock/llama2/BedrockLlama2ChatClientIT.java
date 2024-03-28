@@ -205,7 +205,7 @@ class BedrockLlama2ChatClientIT {
 		@Bean
 		public Llama2ChatBedrockApi llama2Api() {
 			return new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 		}
 
 		@Bean

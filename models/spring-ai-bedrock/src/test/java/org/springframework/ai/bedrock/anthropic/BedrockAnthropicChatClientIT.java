@@ -204,7 +204,7 @@ class BedrockAnthropicChatClientIT {
 		@Bean
 		public AnthropicChatBedrockApi anthropicApi() {
 			return new AnthropicChatBedrockApi(AnthropicChatBedrockApi.AnthropicChatModel.CLAUDE_V2.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 		}
 
 		@Bean

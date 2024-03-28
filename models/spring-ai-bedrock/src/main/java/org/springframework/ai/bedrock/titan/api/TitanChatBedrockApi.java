@@ -43,8 +43,8 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 public class TitanChatBedrockApi extends
 		AbstractBedrockApi<TitanChatRequest, TitanChatResponse, TitanChatResponseChunk> {
 
-	public TitanChatBedrockApi(String modelId, String region) {
-		super(modelId, region);
+	public TitanChatBedrockApi(String modelId, String region, Long timeout) {
+		super(modelId, region, timeout);
 	}
 
 	/**
@@ -54,10 +54,11 @@ public class TitanChatBedrockApi extends
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use, unit millis.
 	 */
 	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
-		super(modelId, credentialsProvider, region, objectMapper);
+			ObjectMapper objectMapper, Long timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**

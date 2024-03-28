@@ -69,7 +69,7 @@ class BedrockTitanEmbeddingClientIT {
 
 		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
-			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id());
+			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id(), 1000L);
 		}
 
 		@Bean

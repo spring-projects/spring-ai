@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockTitanChatCreateRequestTests {
 
 	private TitanChatBedrockApi api = new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 
 	@Test
 	public void createRequestWithChatOptions() {

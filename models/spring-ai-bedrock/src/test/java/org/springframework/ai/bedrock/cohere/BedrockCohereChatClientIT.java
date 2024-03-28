@@ -200,7 +200,7 @@ class BedrockCohereChatClientIT {
 		@Bean
 		public CohereChatBedrockApi cohereApi() {
 			return new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 		}
 
 		@Bean

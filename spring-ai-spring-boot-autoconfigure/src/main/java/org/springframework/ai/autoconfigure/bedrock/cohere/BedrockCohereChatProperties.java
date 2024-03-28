@@ -41,6 +41,11 @@ public class BedrockCohereChatProperties {
 	 */
 	private String model = CohereChatBedrockApi.CohereChatModel.COHERE_COMMAND_V14.id();
 
+	/**
+	 * Set model timeout. 1000 ms by default.
+	 */
+	private Long timeout = 1000L;
+
 	@NestedConfigurationProperty
 	private BedrockCohereChatOptions options = BedrockCohereChatOptions.builder().build();
 
@@ -68,4 +73,11 @@ public class BedrockCohereChatProperties {
 		this.options = options;
 	}
 
+	public Long getTimeout() {
+		return timeout;
+	}
+
+	public void setTimeout(Long timeout) {
+		this.timeout = timeout;
+	}
 }
