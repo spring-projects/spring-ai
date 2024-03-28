@@ -24,6 +24,7 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiImageOptionsBuilder;
 import org.springframework.ai.openai.OpenAiAudioSpeechClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -118,7 +119,8 @@ public class OpenAiAutoConfiguration {
 
 		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 
-		return new OpenAiImageClient(openAiImageApi, imageProperties.getOptions(), retryTemplate);
+		return new OpenAiImageClient(openAiImageApi,
+				OpenAiImageOptionsBuilder.builder(imageProperties.getOptions()).build(), retryTemplate);
 	}
 
 	@Bean

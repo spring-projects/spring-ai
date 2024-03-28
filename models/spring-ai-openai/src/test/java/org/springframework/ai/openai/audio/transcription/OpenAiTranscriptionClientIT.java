@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionOptionsBuilder;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
@@ -38,7 +39,7 @@ class OpenAiTranscriptionClientIT extends AbstractIT {
 
 	@Test
 	void transcriptionTest() {
-		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
+		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptionsBuilder.builder()
 			.withResponseFormat(TranscriptResponseFormat.TEXT)
 			.withTemperature(0f)
 			.build();
@@ -52,7 +53,7 @@ class OpenAiTranscriptionClientIT extends AbstractIT {
 	void transcriptionTestWithOptions() {
 		OpenAiAudioApi.TranscriptResponseFormat responseFormat = OpenAiAudioApi.TranscriptResponseFormat.VTT;
 
-		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
+		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptionsBuilder.builder()
 			.withLanguage("en")
 			.withPrompt("Ask not this, but ask that")
 			.withTemperature(0f)

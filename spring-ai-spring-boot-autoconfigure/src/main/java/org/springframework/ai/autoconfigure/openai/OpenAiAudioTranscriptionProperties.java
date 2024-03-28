@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.openai;
 
-import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
-import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -25,24 +23,14 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.transcription";
 
-	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.WhisperModel.WHISPER_1.getValue();
-
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
-	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
-
 	@NestedConfigurationProperty
-	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
-		.withModel(DEFAULT_TRANSCRIPTION_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE.floatValue())
-		.withResponseFormat(DEFAULT_RESPONSE_FORMAT)
-		.build();
+	private OpenAiAudioTranscriptionOptionProperties options = new OpenAiAudioTranscriptionOptionProperties();
 
-	public OpenAiAudioTranscriptionOptions getOptions() {
+	public OpenAiAudioTranscriptionOptionProperties getOptions() {
 		return options;
 	}
 
-	public void setOptions(OpenAiAudioTranscriptionOptions options) {
+	public void setOptions(OpenAiAudioTranscriptionOptionProperties options) {
 		this.options = options;
 	}
 

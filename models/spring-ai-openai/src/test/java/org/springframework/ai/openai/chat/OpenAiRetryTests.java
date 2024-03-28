@@ -23,6 +23,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionOptionsBuilder;
+import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
+import org.springframework.ai.openai.OpenAiEmbeddingOptionsBuilder;
+import org.springframework.ai.openai.OpenAiImageOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.prompt.Prompt;
@@ -30,13 +34,9 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.OpenAiImageClient;
-import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
@@ -121,16 +121,16 @@ public class OpenAiRetryTests {
 		retryListener = new TestRetryListener();
 		retryTemplate.registerListener(retryListener);
 
-		chatClient = new OpenAiChatClient(openAiApi, OpenAiChatOptions.builder().build(), null, retryTemplate);
+		chatClient = new OpenAiChatClient(openAiApi, OpenAiChatOptionsBuilder.builder().build(), null, retryTemplate);
 		embeddingClient = new OpenAiEmbeddingClient(openAiApi, MetadataMode.EMBED,
-				OpenAiEmbeddingOptions.builder().build(), retryTemplate);
+				OpenAiEmbeddingOptionsBuilder.builder().build(), retryTemplate);
 		audioTranscriptionClient = new OpenAiAudioTranscriptionClient(openAiAudioApi,
-				OpenAiAudioTranscriptionOptions.builder()
+				OpenAiAudioTranscriptionOptionsBuilder.builder()
 					.withModel("model")
 					.withResponseFormat(TranscriptResponseFormat.JSON)
 					.build(),
 				retryTemplate);
-		imageClient = new OpenAiImageClient(openAiImageApi, OpenAiImageOptions.builder().build(), retryTemplate);
+		imageClient = new OpenAiImageClient(openAiImageApi, OpenAiImageOptionsBuilder.builder().build(), retryTemplate);
 	}
 
 	@Test
