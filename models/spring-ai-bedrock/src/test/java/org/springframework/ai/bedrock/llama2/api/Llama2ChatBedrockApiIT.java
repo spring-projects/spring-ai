@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.llama2.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class Llama2ChatBedrockApiIT {
 
 	private Llama2ChatBedrockApi llama2ChatApi = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-			Region.US_EAST_1.id());
+			Region.US_EAST_1.id(), Duration.ofMinutes(2));
 
 	@Test
 	public void chatCompletion() {

@@ -31,6 +31,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ public class Anthropic3ChatBedrockApiIT {
 
 	private Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
 			AnthropicChatModel.CLAUDE_INSTANT_V1.id(), EnvironmentVariableCredentialsProvider.create(),
-			Region.US_EAST_1.id(), new ObjectMapper());
+			Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
 
 	@Test
 	public void chatCompletion() {
@@ -64,7 +65,8 @@ public class Anthropic3ChatBedrockApiIT {
 
 		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
 
-		System.out.println(response.content());
+		logger.info("" + response.content());
+
 		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
 		assertThat(response.content().get(0).text()).contains("Blackbeard");
@@ -103,7 +105,7 @@ public class Anthropic3ChatBedrockApiIT {
 
 		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
 
-		System.out.println(response.content());
+		logger.info("" + response.content());
 		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
 		assertThat(response.content().get(0).text()).contains("Blackbeard");

@@ -48,7 +48,7 @@ public class BedrockTitanChatAutoConfiguration {
 			BedrockTitanChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 
 		return new TitanChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
