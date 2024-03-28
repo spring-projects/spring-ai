@@ -28,8 +28,10 @@ public interface FunctionCallingOptions {
 	 * functionCallbacks are automatically enabled for the duration of the prompt
 	 * execution. For Default Options the FunctionCallbacks are registered but disabled by
 	 * default. You have to use "functions" property to list the function names from the
-	 * ChatClient registry to be used in the chat completion requests.
-	 * @return Return the Function Callbacks to be registered with the ChatClient.
+	 * ChatClient registry to be used in the chat completion requests. Attempting to
+	 * modify this list will result in an {@link UnsupportedOperationException}.
+	 * @return Return the Function Callbacks to be registered with the ChatClient as
+	 * immutable List.
 	 */
 	List<FunctionCallback> getFunctionCallbacks();
 
@@ -41,8 +43,10 @@ public interface FunctionCallingOptions {
 	void setFunctionCallbacks(List<FunctionCallback> functionCallbacks);
 
 	/**
+	 * Returns a Set of Functions as immutable Set. Attempting to modify this set will
+	 * result in an {@link UnsupportedOperationException}.
 	 * @return List of function names from the ChatClient registry to be used in the next
-	 * chat completion requests.
+	 * chat completion requests as immutable Set.
 	 */
 	Set<String> getFunctions();
 
