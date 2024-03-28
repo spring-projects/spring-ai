@@ -80,4 +80,5 @@ public class BedrockCohereChatProperties {
 	public void setTimeout(Long timeout) {
 		this.timeout = timeout;
 	}
+
 }

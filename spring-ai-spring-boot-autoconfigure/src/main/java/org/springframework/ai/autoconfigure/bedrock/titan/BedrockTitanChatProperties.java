@@ -80,4 +80,5 @@ public class BedrockTitanChatProperties {
 	public void setTimeout(Long timeout) {
 		this.timeout = timeout;
 	}
+
 }

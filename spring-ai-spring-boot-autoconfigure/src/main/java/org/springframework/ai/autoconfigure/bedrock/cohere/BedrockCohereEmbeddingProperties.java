@@ -86,4 +86,5 @@ public class BedrockCohereEmbeddingProperties {
 	public void setTimeout(Long timeout) {
 		this.timeout = timeout;
 	}
+
 }

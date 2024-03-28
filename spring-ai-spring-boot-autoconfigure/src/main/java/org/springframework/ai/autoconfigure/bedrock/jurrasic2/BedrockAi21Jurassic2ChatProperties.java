@@ -85,4 +85,5 @@ public class BedrockAi21Jurassic2ChatProperties {
 	public void setTimeout(Long timeout) {
 		this.timeout = timeout;
 	}
+
 }

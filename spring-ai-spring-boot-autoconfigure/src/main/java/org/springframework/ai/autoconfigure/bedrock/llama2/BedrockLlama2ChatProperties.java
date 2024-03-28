@@ -83,4 +83,5 @@ public class BedrockLlama2ChatProperties {
 	public void setTimeout(Long timeout) {
 		this.timeout = timeout;
 	}
+
 }

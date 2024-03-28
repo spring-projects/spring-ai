@@ -86,4 +86,5 @@ public class BedrockTitanEmbeddingProperties {
 	public void setTimeout(Long timeout) {
 		this.timeout = timeout;
 	}
+
 }
