@@ -87,7 +87,7 @@ class BedrockCohereEmbeddingClientIT {
 		@Bean
 		public CohereEmbeddingBedrockApi cohereEmbeddingApi() {
 			return new CohereEmbeddingBedrockApi(CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 		}
 
 		@Bean

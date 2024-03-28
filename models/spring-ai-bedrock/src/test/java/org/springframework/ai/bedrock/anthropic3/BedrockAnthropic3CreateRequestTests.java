@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockAnthropic3CreateRequestTests {
 
 	private Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(AnthropicChatModel.CLAUDE_V2.id(),
-			Region.EU_CENTRAL_1.id());
+			Region.EU_CENTRAL_1.id(), 1000L);
 
 	@Test
 	public void createRequestWithChatOptions() {

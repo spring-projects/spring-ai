@@ -45,9 +45,10 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 *
 	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatModel} for the supported models.
 	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use, unit millis.
 	 */
-	public Ai21Jurassic2ChatBedrockApi(String modelId, String region) {
-		super(modelId, region);
+	public Ai21Jurassic2ChatBedrockApi(String modelId, String region, Long timeout) {
+		super(modelId, region, timeout);
 	}
 
 
@@ -60,8 +61,8 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
 	 */
 	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-									ObjectMapper objectMapper) {
-		super(modelId, credentialsProvider, region, objectMapper);
+									ObjectMapper objectMapper, Long timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 

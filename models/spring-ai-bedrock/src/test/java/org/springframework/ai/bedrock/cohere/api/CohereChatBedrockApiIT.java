@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;;
 public class CohereChatBedrockApiIT {
 
 	private CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-			Region.US_EAST_1.id());
+			Region.US_EAST_1.id(), 1000L);
 
 	@Test
 	public void requestBuilder() {

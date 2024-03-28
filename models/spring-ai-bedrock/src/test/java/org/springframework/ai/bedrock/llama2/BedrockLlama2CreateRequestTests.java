@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockLlama2CreateRequestTests {
 
 	private Llama2ChatBedrockApi api = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 
 	@Test
 	public void createRequestWithChatOptions() {

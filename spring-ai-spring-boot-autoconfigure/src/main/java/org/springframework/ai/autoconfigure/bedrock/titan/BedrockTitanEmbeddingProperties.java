@@ -46,6 +46,11 @@ public class BedrockTitanEmbeddingProperties {
 	 */
 	private InputType inputType = InputType.IMAGE;
 
+	/**
+	 * Set model timeout. 1000 ms by default.
+	 */
+	private Long timeout = 1000L;
+
 	public boolean isEnabled() {
 		return enabled;
 	}
@@ -72,6 +77,14 @@ public class BedrockTitanEmbeddingProperties {
 
 	public InputType getInputType() {
 		return inputType;
+	}
+
+	public Long getTimeout() {
+		return timeout;
+	}
+
+	public void setTimeout(Long timeout) {
+		this.timeout = timeout;
 	}
 
 }

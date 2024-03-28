@@ -44,9 +44,10 @@ public class CohereEmbeddingBedrockApi extends
 	 *
 	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the supported models.
 	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use, unit millis.
 	 */
-	public CohereEmbeddingBedrockApi(String modelId, String region) {
-		super(modelId, region);
+	public CohereEmbeddingBedrockApi(String modelId, String region, Long timeout) {
+		super(modelId, region, timeout);
 	}
 
 	/**
@@ -57,10 +58,11 @@ public class CohereEmbeddingBedrockApi extends
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use, unit millis.
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
-		super(modelId, credentialsProvider, region, objectMapper);
+			ObjectMapper objectMapper, Long timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**

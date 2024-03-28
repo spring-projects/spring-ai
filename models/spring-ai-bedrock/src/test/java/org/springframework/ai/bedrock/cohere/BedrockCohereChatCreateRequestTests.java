@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockCohereChatCreateRequestTests {
 
 	private CohereChatBedrockApi chatApi = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
 
 	@Test
 	public void createRequestWithChatOptions() {

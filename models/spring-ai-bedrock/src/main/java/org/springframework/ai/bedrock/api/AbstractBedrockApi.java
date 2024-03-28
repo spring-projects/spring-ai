@@ -71,15 +71,17 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	private final String region;
 	private final BedrockRuntimeClient client;
 	private final BedrockRuntimeAsyncClient clientStreaming;
+	private final Long timeout;
 
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
 	 *
 	 * @param modelId The model id to use.
 	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use, unit millis.
 	 */
-	public AbstractBedrockApi(String modelId, String region) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, new ObjectMapper());
+	public AbstractBedrockApi(String modelId, String region, Long timeout) {
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, new ObjectMapper(), timeout);
 	}
 
 	/**
@@ -89,23 +91,27 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use, unit millis.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, Long timeout) {
 
 		this.modelId = modelId;
 		this.objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		this.credentialsProvider = credentialsProvider;
 		this.region = region;
+		this.timeout = timeout;
 
 		this.client = BedrockRuntimeClient.builder()
 				.region(Region.of(this.region))
 				.credentialsProvider(this.credentialsProvider)
+				.overrideConfiguration(c -> c.apiCallTimeout(Duration.ofMillis(timeout)))
 				.build();
 
 		this.clientStreaming = BedrockRuntimeAsyncClient.builder()
 				.region(Region.of(this.region))
 				.credentialsProvider(this.credentialsProvider)
+				.overrideConfiguration(c -> c.apiCallTimeout(Duration.ofMillis(timeout)))
 				.build();
 	}
 
