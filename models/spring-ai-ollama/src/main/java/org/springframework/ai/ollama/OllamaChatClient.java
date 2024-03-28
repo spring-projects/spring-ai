@@ -18,6 +18,7 @@ package org.springframework.ai.ollama;
 import java.util.Base64;
 import java.util.List;
 
+import org.springframework.ai.ollama.metadata.OllamaChatResponseMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
@@ -27,7 +28,6 @@ import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -99,10 +99,9 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 
 		var generator = new Generation(response.message().content());
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator
-				.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(response)));
+			generator = generator.withGenerationMetadata(ChatGenerationMetadata.from("unknown", null));
 		}
-		return new ChatResponse(List.of(generator));
+		return new ChatResponse(List.of(generator), OllamaChatResponseMetadata.from(response));
 	}
 
 	@Override
@@ -114,26 +113,10 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
 					: new Generation("");
 			if (Boolean.TRUE.equals(chunk.done())) {
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from("unknown", extractUsage(chunk)));
+				generation = generation.withGenerationMetadata(ChatGenerationMetadata.from("unknown", null));
 			}
-			return new ChatResponse(List.of(generation));
+			return new ChatResponse(List.of(generation), OllamaChatResponseMetadata.from(chunk));
 		});
-	}
-
-	private Usage extractUsage(OllamaApi.ChatResponse response) {
-		return new Usage() {
-
-			@Override
-			public Long getPromptTokens() {
-				return response.promptEvalCount().longValue();
-			}
-
-			@Override
-			public Long getGenerationTokens() {
-				return response.evalCount().longValue();
-			}
-		};
 	}
 
 	/**
