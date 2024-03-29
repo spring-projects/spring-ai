@@ -1,0 +1,177 @@
+= Apache Cassandra
+
+This section walks you through setting up `CassandraVectorStore` to store document embeddings and perform similarity searches.
+
+== What is Apache Cassandra?
+
+link:https://cassandra.apache.org[Apache Cassandra] is an open source distributed database reknown for scalability and high availability without compromising performance.  Linear scalability and proven fault-tolerance on commodity hardware or cloud infrastructure make it the perfect platform for mission-critical data.  Its Vector Similarity Search (VSS) is based on the JVector library that offers superior performance and relevancy than other vector databases.
+
+Apache Cassandra's VSS is done in Cassandra's Query Language (CQL):
+```
+SELECT content FROM table ORDER BY content_vector ANN OF query_embedding;
+```
+
+More docs on direct usage of VSS in CQL can be read link:https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
+
+== What is JVector Vector Search?
+
+link:https://github.com/jbellis/jvector[JVector] is a pure Java embedded vector search engine.
+
+It stands out from other HNSW Vector Similarity Search implementations as its
+
+* Algorithmic-fast. JVector uses state of the art graph algorithms inspired by DiskANN and related research that offer high recall and low latency.
+* Implementation-fast. JVector uses the Panama SIMD API to accelerate index build and queries.
+* Memory efficient. JVector compresses vectors using product quantization so they can stay in memory during searches. (As part of our PQ implementation, our SIMD-accelerated kmeans class is 5x faster than the one in Apache Commons Math.)
+* Disk-aware. JVector’s disk layout is designed to do the minimum necessary iops at query time.
+* Concurrent. Index builds scale linearly to at least 32 threads. Double the threads, half the build time.
+* Incremental. Query your index as you build it. No delay between adding a vector and being able to find it in search results.
+* Easy to embed. API designed for easy embedding, by people using it in production.
+
+== Prerequisites
+
+1. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+
+- `Transformers Embedding` - computes the embedding in your local environment. Follow the ONNX Transformers Embedding instructions.
+- `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
+- You can also use the `Azure OpenAI Embedding`.
+
+2. An Apache Cassandra instance, from version 5.0-beta2
+a. link:https://cassandra.apache.org/_/quickstart.html[DIY Quick Start]
+b. https://astra.datastax.com/[Astra DB] (free tier cloud offering)
+
+
+== Dependencies
+
+Add these dependencies to your project:
+
+* Embedding Client boot starter, required for calculating embeddings.
+
+* Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions.
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or use OpenAI (Cloud)
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+You'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+
+[source,bash]
+----
+export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+----
+
+* Add the Cassandra Vector Store
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-cassandra</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Usage
+
+Create a CassandraVectorStore instance connected to your Apache Cassandra database:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+  CassandraVectorStoreConfig config = CassandraVectorStoreConfig.builder()
+//FIXME
+     .build();
+
+  return new CassandraVectorStore(config, embeddingClient);
+}
+----
+
+> [NOTE]
+> It is more convenient and preferred to create the `CassandraVectorStore` as a Bean.
+> But if you decide to create it manually, then you must call the `CassandraVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
+
+> [NOTE]
+> You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
+> The `withMetadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
+>
+
+Then in your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
+   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
+   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+Now add the documents to your vector store:
+
+
+[source,java]
+----
+vectorStore.add(documents);
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest
+      .query("Spring")
+      .withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with CassandraVectorStore as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+----
+
+The portable filter expressions get automatically converted into link:https://cassandra.apache.org/doc/latest/cassandra/developing/cql/index.html[CQL queries].

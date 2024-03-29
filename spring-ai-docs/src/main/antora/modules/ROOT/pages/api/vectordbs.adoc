@@ -87,6 +87,7 @@ Find more information on the `Filter.Expression` in the <<metadata-filters>> sec
 
 These are the available implementations of the `VectorStore` interface:
 
+* xref:api/vectordbs/apache-cassandra.adoc[Apache Cassandra] - The https://cassandra.apache.org/doc/latest/cassandra/vector-search/overview.html[Apache Cassandra] vector store.
 * xref:api/vectordbs/azure.adoc[ Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
 * xref:api/vectordbs/chroma.adoc[ChromaVectorStore] - The https://www.trychroma.com/[Chroma] vector store.
 * xref:api/vectordbs/milvus.adoc[MilvusVectorStore] - The https://milvus.io/[Milvus] vector store.
