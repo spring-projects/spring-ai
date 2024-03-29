@@ -31,3 +31,4 @@ org.springframework.ai.autoconfigure.vectorstore.mongo.MongoDBAtlasVectorStoreAu
 org.springframework.ai.autoconfigure.anthropic.AnthropicAutoConfiguration
 org.springframework.ai.autoconfigure.watsonxai.WatsonxAiAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.elasticsearch.ElasticsearchVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.cassandra.CassandraVectorStoreAutoConfiguration

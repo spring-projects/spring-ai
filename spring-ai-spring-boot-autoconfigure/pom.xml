@@ -146,6 +146,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Apache Cassandra Vector Store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-cassandra</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Weaviate Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -309,6 +317,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>cassandra</artifactId>
+			<scope>test</scope>
+		</dependency>
+        
 		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>

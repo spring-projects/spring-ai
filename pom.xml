@@ -34,6 +34,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
@@ -47,6 +48,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
 		<module>spring-ai-docs</module>
+		<module>vector-stores/spring-ai-cassandra</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
@@ -138,6 +140,7 @@
 		<protobuf-java.version>3.25.2</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
+		<cassandra.java-driver.version>4.18.0</cassandra.java-driver.version>
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
