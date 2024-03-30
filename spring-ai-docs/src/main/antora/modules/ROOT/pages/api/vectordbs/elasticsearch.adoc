@@ -79,22 +79,16 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-To connect to Elasticsearch, create a `RestClient` bean and provide the access details for your instance.
-
-[source,java]
-----
-@Bean
-public RestClient restClient() {
-    return RestClient.builder(HttpHost.create("http://localhost:9200"))
-            .build();
-}
-----
-
-Next, you can provide the `ElasticsearchVectorStore` configuration via Spring Boot's `application.yml`:
+To connect to and configure Elasticsearch, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's `application.yml`
 
 [source,yaml]
 ----
 spring:
+  elasticsearch:
+    uris: <elasticsearch instance URIs>
+    username: <elasticsearch username>
+    password: <elasticsearch password>
   ai:
     vectorstore:
       elasticsearch:
