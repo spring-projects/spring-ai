@@ -15,15 +15,21 @@
  */
 package org.springframework.ai.watsonx;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -111,6 +117,11 @@ public class WatsonxAiChatOptions implements ChatOptions {
      */
     @JsonProperty("model") private String model;
 
+    /**
+     * Set additional request params (some model have non-predefined options)
+     */
+    private Map<String, Object> additional = new HashMap<>();
+
 
     public Float getTemperature() {
         return temperature;
@@ -192,6 +203,16 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.model = model;
     }
 
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        return additional;
+    }
+
+    @JsonAnySetter
+    public void addAdditionalProperty(String key, Object value) {
+        additional.put(key, value);
+    }
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -250,6 +271,16 @@ public class WatsonxAiChatOptions implements ChatOptions {
             return this;
         }
 
+        public Builder withAdditionalProperty(String key, Object value) {
+            this.options.additional.put(key, value);
+            return this;
+        }
+
+        public Builder withAdditionalProperties(Map<String, Object> properties) {
+            this.options.additional.putAll(properties);
+            return this;
+        }
+
         public WatsonxAiChatOptions build() {
             return this.options;
         }
@@ -261,9 +292,18 @@ public class WatsonxAiChatOptions implements ChatOptions {
      */
     public Map<String, Object> toMap() {
         try {
-            var json = new ObjectMapper().writeValueAsString(this);
-            return new ObjectMapper().readValue(json, new TypeReference<Map<String, Object>>() {
-            });
+            var mapper = new ObjectMapper();
+
+            if(Objects.nonNull(this.additional)) {
+                this.additional = this.additional.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                entry -> convertToSnakeCase(entry.getKey()),
+                                Map.Entry::getValue
+                        ));
+            }
+
+            var json = mapper.writeValueAsString(this);
+            return mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         }
         catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -280,6 +320,11 @@ public class WatsonxAiChatOptions implements ChatOptions {
                 .filter(e -> !e.getKey().equals("model"))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private static String convertToSnakeCase(String text) {
+        if(text.indexOf('_') != -1) return text.toLowerCase();
+        return text.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase();
     }
 
 }
