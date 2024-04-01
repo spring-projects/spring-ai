@@ -60,18 +60,18 @@ public class WatsonxAiChatOptionTest {
 	@Test
 	public void testOptionsWithAdditionalParamsOneByOne() {
 		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
-				.withDecodingMethod("sample")
-				.withTemperature(1.2f)
-				.withTopK(20)
-				.withTopP(0.5f)
-				.withMaxNewTokens(100)
-				.withMinNewTokens(20)
-				.withStopSequences(List.of("\n\n\n"))
-				.withRepetitionPenalty(1.1f)
-				.withRandomSeed(4)
-				.withAdditionalProperty("HAP", true)
-				.withAdditionalProperty("typicalP", 0.5f)
-				.build();
+			.withDecodingMethod("sample")
+			.withTemperature(1.2f)
+			.withTopK(20)
+			.withTopP(0.5f)
+			.withMaxNewTokens(100)
+			.withMinNewTokens(20)
+			.withStopSequences(List.of("\n\n\n"))
+			.withRepetitionPenalty(1.1f)
+			.withRandomSeed(4)
+			.withAdditionalProperty("HAP", true)
+			.withAdditionalProperty("typicalP", 0.5f)
+			.build();
 
 		var optionsMap = options.toMap();
 
@@ -91,17 +91,17 @@ public class WatsonxAiChatOptionTest {
 	@Test
 	public void testOptionsWithAdditionalParamsMap() {
 		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
-				.withDecodingMethod("sample")
-				.withTemperature(1.2f)
-				.withTopK(20)
-				.withTopP(0.5f)
-				.withMaxNewTokens(100)
-				.withMinNewTokens(20)
-				.withStopSequences(List.of("\n\n\n"))
-				.withRepetitionPenalty(1.1f)
-				.withRandomSeed(4)
-				.withAdditionalProperties(Map.of("HAP", true, "typicalP", 0.5f, "test_value", "test"))
-				.build();
+			.withDecodingMethod("sample")
+			.withTemperature(1.2f)
+			.withTopK(20)
+			.withTopP(0.5f)
+			.withMaxNewTokens(100)
+			.withMinNewTokens(20)
+			.withStopSequences(List.of("\n\n\n"))
+			.withRepetitionPenalty(1.1f)
+			.withRandomSeed(4)
+			.withAdditionalProperties(Map.of("HAP", true, "typicalP", 0.5f, "test_value", "test"))
+			.build();
 
 		var optionsMap = options.toMap();
 
@@ -118,7 +118,6 @@ public class WatsonxAiChatOptionTest {
 		assertThat(optionsMap).containsEntry("typical_p", 0.5);
 		assertThat(optionsMap).containsEntry("test_value", "test");
 	}
-
 
 	@Test
 	public void testFilterOut() {
