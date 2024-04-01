@@ -320,9 +320,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     }
 
     private static String convertToSnakeCase(String text) {
-        if(text.indexOf('_') != -1) return text.toLowerCase();
         return text.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase();
     }
-
 }
 // @formatter:on
