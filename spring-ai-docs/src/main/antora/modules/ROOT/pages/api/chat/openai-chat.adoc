@@ -315,8 +315,8 @@ Flux<ChatCompletionChunk> streamResponse = openAiApi.chatCompletionStream(
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.
 
 === Low-level API Examples
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/OpenAiApiIT.java[OpenAiApiIT.java] test provides some general examples how to use the lightweight library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiApiIT.java[OpenAiApiIT.java] test provides some general examples how to use the lightweight library.
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
 Based on the link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling] tutorial.
 
