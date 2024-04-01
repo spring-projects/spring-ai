@@ -39,16 +39,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HanaCloudVectorStoreIT {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(HanaTestApplication.class);
-//            .withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("SPRING_AI_OPENAI_API_KEY"),
-
-                    // JdbcTemplate configuration
-//                    String.format("spring.data.mongodb.uri=mongodb://localhost:%d/test"));
-
 
     @Test
     public void vectorStoreTest() {
         contextRunner
-//                .withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
                 .run(context -> {
 
             VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -87,7 +81,7 @@ public class HanaCloudVectorStoreIT {
     public static class HanaTestApplication {
 
         @Value("${hana.table.name}")
-        private String tableName = "CRICKET_WORLD_CUP";
+        private String tableName;
 
         @Value("${hana.similarity.search.topK}")
         private int topK;
