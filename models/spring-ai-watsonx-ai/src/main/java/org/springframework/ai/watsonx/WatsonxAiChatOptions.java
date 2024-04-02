@@ -89,7 +89,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     /**
      * Sets how many tokens must the LLM generate. (Default: 0)
      */
-    @JsonProperty("min_new_tokens") private Integer minNewTokens = 0;
+    @JsonProperty("min_new_tokens") private Integer minNewTokens;
 
     /**
      * Sets when the LLM should stop.
@@ -103,7 +103,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
      * (e.g., 1.8) will penalize repetitions more strongly, while a lower value (e.g.,
      * 1.1) will be more lenient. (Default: 1.0)
      */
-    @JsonProperty("repetition_penalty") private Float repetitionPenalty;
+    @JsonProperty("repetition_penalty") private Float repetitionPenalty = 1.0f;
 
     /**
      * Produce repeatable results, set the same random seed value every time. (Default: randomly generated)
@@ -118,6 +118,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     /**
      * Set additional request params (some model have non-predefined options)
      */
+    @JsonProperty("additional")
     private Map<String, Object> additional = new HashMap<>();
 
     @JsonIgnore
