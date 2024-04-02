@@ -114,7 +114,10 @@ public class WatsonxAiChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
+			if (prompt.getOptions() instanceof WatsonxAiChatOptions runtimeOptions) {
+				options = ModelOptionsUtils.merge(runtimeOptions, options, WatsonxAiChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
 				var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ChatOptions.class,
 						WatsonxAiChatOptions.class);
 
