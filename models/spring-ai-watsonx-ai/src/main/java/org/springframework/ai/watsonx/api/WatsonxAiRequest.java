@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.watsonx.WatsonxAiChatOptions;
+import org.springframework.util.Assert;
 
 // @formatter:off
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -71,6 +72,7 @@ public class WatsonxAiRequest {
         }
 
         public Builder withParameters(Map<String, Object> parameters) {
+            Assert.notNull(parameters.get("model"), "Model parameter is required");
             this.model = parameters.get("model").toString();
             this.parameters = WatsonxAiChatOptions.filterNonSupportedFields(parameters);
             return this;
