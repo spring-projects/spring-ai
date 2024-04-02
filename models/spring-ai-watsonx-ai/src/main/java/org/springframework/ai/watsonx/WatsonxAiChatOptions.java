@@ -18,15 +18,12 @@ package org.springframework.ai.watsonx;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -119,6 +116,8 @@ public class WatsonxAiChatOptions implements ChatOptions {
      */
     private Map<String, Object> additional = new HashMap<>();
 
+    @JsonIgnore
+    private ObjectMapper mapper = new ObjectMapper();
 
     public Float getTemperature() {
         return temperature;
@@ -202,7 +201,11 @@ public class WatsonxAiChatOptions implements ChatOptions {
 
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
-        return additional;
+        return additional.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> toSnakeCase(entry.getKey()),
+                        Map.Entry::getValue
+                ));
     }
 
     @JsonAnySetter
@@ -289,16 +292,6 @@ public class WatsonxAiChatOptions implements ChatOptions {
      */
     public Map<String, Object> toMap() {
         try {
-            var mapper = new ObjectMapper();
-
-            if(Objects.nonNull(this.additional)) {
-                this.additional = this.additional.entrySet().stream()
-                        .collect(Collectors.toMap(
-                                entry -> convertToSnakeCase(entry.getKey()),
-                                Map.Entry::getValue
-                        ));
-            }
-
             var json = mapper.writeValueAsString(this);
             return mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         }
@@ -319,8 +312,9 @@ public class WatsonxAiChatOptions implements ChatOptions {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private static String convertToSnakeCase(String text) {
-        return text.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase();
+    private String toSnakeCase(String input) {
+        return input != null ? input.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase() : null;
     }
+
 }
 // @formatter:on
