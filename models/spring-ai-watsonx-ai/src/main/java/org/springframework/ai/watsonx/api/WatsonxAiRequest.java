@@ -63,7 +63,7 @@ public class WatsonxAiRequest {
     public static Builder builder(String input) { return new Builder(input); }
 
     public static class Builder {
-        private final String input;
+        public static final String MODEL_PARAMETER_IS_REQUIRED = "Model parameter is required";private final String input;
         private Map<String, Object> parameters;
         private String model = "";
 
@@ -72,7 +72,7 @@ public class WatsonxAiRequest {
         }
 
         public Builder withParameters(Map<String, Object> parameters) {
-            Assert.notNull(parameters.get("model"), "Model parameter is required");
+            Assert.notNull(parameters.get("model"), MODEL_PARAMETER_IS_REQUIRED);
             this.model = parameters.get("model").toString();
             this.parameters = WatsonxAiChatOptions.filterNonSupportedFields(parameters);
             return this;
