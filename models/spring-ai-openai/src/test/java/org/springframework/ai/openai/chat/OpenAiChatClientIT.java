@@ -181,6 +181,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
 		logger.info("" + actorsFilms);
+
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

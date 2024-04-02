@@ -121,9 +121,10 @@ public abstract class AbstractMessage implements Message {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((messageType == null) ? 0 : messageType.hashCode());
+		result = prime * result + ((textContent == null) ? 0 : textContent.hashCode());
 		result = prime * result + ((mediaData == null) ? 0 : mediaData.hashCode());
 		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
-		result = prime * result + ((messageType == null) ? 0 : messageType.hashCode());
 		return result;
 	}
 
@@ -136,6 +137,14 @@ public abstract class AbstractMessage implements Message {
 		if (getClass() != obj.getClass())
 			return false;
 		AbstractMessage other = (AbstractMessage) obj;
+		if (messageType != other.messageType)
+			return false;
+		if (textContent == null) {
+			if (other.textContent != null)
+				return false;
+		}
+		else if (!textContent.equals(other.textContent))
+			return false;
 		if (mediaData == null) {
 			if (other.mediaData != null)
 				return false;
@@ -147,8 +156,6 @@ public abstract class AbstractMessage implements Message {
 				return false;
 		}
 		else if (!properties.equals(other.properties))
-			return false;
-		if (messageType != other.messageType)
 			return false;
 		return true;
 	}
