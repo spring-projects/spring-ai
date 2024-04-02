@@ -298,7 +298,10 @@ public class WatsonxAiChatOptions implements ChatOptions {
     public Map<String, Object> toMap() {
         try {
             var json = mapper.writeValueAsString(this);
-            return mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            var map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            map.remove("additional");
+
+            return map;
         }
         catch (JsonProcessingException e) {
             throw new RuntimeException(e);
