@@ -15,21 +15,22 @@
  */
 package org.springframework.ai.vectorstore;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Rahul Mittal
@@ -45,57 +46,34 @@ public class HanaCloudVectorStoreIT {
         contextRunner
                 .run(context -> {
 
-            VectorStore vectorStore = context.getBean(VectorStore.class);
+                    VectorStore hanaCloudVectorStore = context.getBean(VectorStore.class);
+                    Supplier<List<Document>> reader = new PagePdfDocumentReader("classpath:Cricket_World_Cup.pdf");
+                    Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
+                    List<Document> documents = splitter.apply(reader.get());
+                    hanaCloudVectorStore.accept(documents);
 
-            List<Document> documents = List.of(
-                    new Document(
-                            "Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
-                            Collections.singletonMap("meta1", "meta1")),
-                    new Document("Hello World Hello World Hello World Hello World Hello World Hello World Hello World"),
-                    new Document(
-                            "Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
-                            Collections.singletonMap("meta2", "meta2")));
+                    List<Document> results = hanaCloudVectorStore.similaritySearch("Who won the 2023 cricket world cup finals?");
+                    Assertions.assertEquals(1, results.size());
+                    Assertions.assertTrue(results.get(0).getContent().contains("Australia"));
 
-            vectorStore.add(documents);
-
-            List<Document> results = vectorStore.similaritySearch("Great");
-
-            assertThat(results).hasSize(1);
-            Document resultDoc = results.get(0);
-            assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-            assertThat(resultDoc.getContent()).isEqualTo(
-                    "Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
-            assertThat(resultDoc.getMetadata().get("meta2")).isEqualTo("meta2");
-
-            // Remove all documents from the store
-            vectorStore.delete(documents.stream().map(doc -> doc.getId()).collect(Collectors.toList()));
-
-            List<Document> results2 = vectorStore.similaritySearch("Great");
-            assertThat(results2).hasSize(0);
-
-        });
+                    // Remove all documents from the store
+                    hanaCloudVectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
+                    List<Document> results2 = hanaCloudVectorStore.similaritySearch("Australia");
+                    Assertions.assertEquals(0, results2.size());
+                });
     }
 
     @SpringBootConfiguration
     @EnableAutoConfiguration
     public static class HanaTestApplication {
-
-        @Value("${hana.table.name}")
-        private String tableName;
-
-        @Value("${hana.similarity.search.topK}")
-        private int topK;
-
         @Bean
         public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
                                                 EmbeddingClient embeddingClient) {
             return new HanaCloudVectorStore(cricketWorldCupRepository, embeddingClient,
                     HanaCloudVectorStoreConfig.builder()
-                            .tableName(tableName)
-                            .topK(topK)
+                            .tableName("CRICKET_WORLD_CUP")
+                            .topK(1)
                             .build());
         }
-
     }
-
 }
