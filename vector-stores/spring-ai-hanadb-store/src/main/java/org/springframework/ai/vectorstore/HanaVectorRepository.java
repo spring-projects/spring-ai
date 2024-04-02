@@ -21,7 +21,7 @@ import java.util.List;
  * @author Rahul Mittal
  * @since 1.0.0
  */
-public interface HanaVectorRepository<T> {
+public interface HanaVectorRepository<T extends HanaVectorEntity> {
 
 	void save(String tableName, String id, String embedding, String content);
 

@@ -2,7 +2,7 @@
 
 ## How to setup a project that uses SAP Hana Cloud as the vector DB and leverage OpenAI to implement RAG pattern
 
-1. Create a table CRICKET_WORLD_CUP in SAP Hana DB:
+1. Create a table `CRICKET_WORLD_CUP` in **SAP Hana DB**:
 ``` roomsql
 CREATE TABLE CRICKET_WORLD_CUP (
     _ID VARCHAR2(255) PRIMARY KEY,
@@ -63,7 +63,8 @@ hana.table.name=CRICKET_WORLD_CUP
 hana.similarity.search.topK=5
 ```
 
-5. Add the CRICKET_WORLD_CUP.pdf to `src/main/resources` directory:
+5. Add the **Cricket_World_Cup.pdf** to `src/main/resources` directory:
+
 ![Alt text](readme-assets/2.png?raw=true "Title")
 
 6. Create an **Entity** class named `CricketWorldCup` that **extends** from `HanaVectorEntity`:
