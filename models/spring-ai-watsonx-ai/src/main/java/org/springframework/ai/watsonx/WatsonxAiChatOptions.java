@@ -20,10 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -37,6 +40,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * valid Parameters and values</a>
  */
 // @formatter:off
+
 public class WatsonxAiChatOptions implements ChatOptions {
 
     /**
