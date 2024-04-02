@@ -70,6 +70,7 @@
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
+		<module>vector-stores/spring-ai-hanadb-store</module>
 	</modules>
 
 	<organization>
