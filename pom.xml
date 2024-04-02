@@ -37,6 +37,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-weaviate-store</module>
@@ -47,6 +48,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
+		<module>vector-stores/spring-ai-hanadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
 		<module>document-readers/pdf-reader</module>
@@ -138,6 +140,7 @@
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
+		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<milvus.version>2.3.4</milvus.version>
 		<pinecone.version>0.8.0</pinecone.version>
