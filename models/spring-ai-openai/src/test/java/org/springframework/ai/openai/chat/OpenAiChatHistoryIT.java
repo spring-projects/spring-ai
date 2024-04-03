@@ -22,11 +22,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.chat.history.TokenCountSlidingWindowChatHistory;
-import org.springframework.ai.chat.history.ChatClientHistoryDecorator;
 import org.springframework.ai.chat.history.ChatEngine;
 import org.springframework.ai.chat.history.ChatHistory2;
 import org.springframework.ai.chat.history.ChatHistoryRetriever;
@@ -54,25 +49,6 @@ public class OpenAiChatHistoryIT {
 
 	@Autowired
 	private OpenAiChatClient openAiChatClient;
-
-	@Test
-	void responseFormatTest() {
-
-		var clientWithHistory = ChatClientHistoryDecorator.builder()
-			.withChatClient(openAiChatClient)
-			.withSessionId("test-session-id")
-			.withChatHistory(new TokenCountSlidingWindowChatHistory(4000))
-			.build();
-
-		ChatResponse response1 = clientWithHistory
-			.call(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff?"))));
-		logger.info("Response1: " + response1.getResult().getOutput().getContent());
-		assertThat(response1.getResult().getOutput().getContent()).contains("John");
-
-		ChatResponse response2 = clientWithHistory.call(new Prompt(List.of(new UserMessage("What is my name?"))));
-		logger.info("Response2: " + response2.getResult().getOutput().getContent());
-		assertThat(response2.getResult().getOutput().getContent()).contains("John Vincent Atanasoff");
-	}
 
 	@Test
 	void responseFormatTest2() {
