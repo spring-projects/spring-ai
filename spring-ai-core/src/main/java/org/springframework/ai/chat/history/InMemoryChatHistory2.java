@@ -16,21 +16,38 @@
 
 package org.springframework.ai.chat.history;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import org.springframework.ai.chat.prompt.Prompt;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Hook to to implement the augmentation of the {@link Prompt} based on the
- * {@link ChatHistory}.
- *
  * @author Christian Tzolov
- * @since 1.0.0
  */
-public interface PromptHistoryAugmenter2 {
+public class InMemoryChatHistory2 implements ChatHistory2 {
 
 	/**
+	 * Chat history storage.
 	 */
-	Prompt augment(Prompt originalPrompt, List<ChatMessages> chatHistoryGroups);
+	protected final ConcurrentHashMap<String, List<ChatMessages>> chatHistory;
+
+	public InMemoryChatHistory2() {
+		this.chatHistory = new ConcurrentHashMap<>();
+	}
+
+	@Override
+	public void add(ChatMessages historyGroup) {
+		this.chatHistory.putIfAbsent(historyGroup.getSessionId(), new ArrayList<>());
+		this.chatHistory.get(historyGroup.getSessionId()).add(historyGroup);
+	}
+
+	@Override
+	public List<ChatMessages> get(String sessionId) {
+		return this.chatHistory.get(sessionId);
+	}
+
+	@Override
+	public void clear(String sessionId) {
+		this.chatHistory.remove(sessionId);
+	}
 
 }

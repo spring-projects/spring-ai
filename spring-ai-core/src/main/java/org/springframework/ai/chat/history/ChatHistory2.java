@@ -25,9 +25,9 @@ import java.util.List;
  */
 public interface ChatHistory2 {
 
-	void add(ChatHistoryGroup historyGroup);
+	void add(ChatMessages historyGroup);
 
-	List<ChatHistoryGroup> get(String sessionId);
+	List<ChatMessages> get(String sessionId);
 
 	void clear(String sessionId);
 

@@ -27,13 +27,12 @@ public class EngineResponse {
 
 	private final List<Document> retrievedDocuments;
 
-	private final List<ChatHistoryGroup> chatHistoryGroups;
+	private final List<ChatMessages> retrievedMessages;
 
-	public EngineResponse(ChatResponse chatResponse, List<Document> documents,
-			List<ChatHistoryGroup> chatHistoryGroups) {
+	public EngineResponse(ChatResponse chatResponse, List<Document> documents, List<ChatMessages> chatMessages) {
 		this.chatResponse = chatResponse;
 		this.retrievedDocuments = documents;
-		this.chatHistoryGroups = chatHistoryGroups;
+		this.retrievedMessages = chatMessages;
 	}
 
 	public ChatResponse getChatResponse() {
@@ -44,13 +43,14 @@ public class EngineResponse {
 		return this.retrievedDocuments;
 	}
 
-	public List<ChatHistoryGroup> getChatHistoryGroups() {
-		return this.chatHistoryGroups;
+	public List<ChatMessages> getRetrievedMessages() {
+		return this.retrievedMessages;
 	}
 
 	@Override
 	public String toString() {
-		return "EngineResponse{" + "chatResponse=" + chatResponse + ", documents=" + retrievedDocuments + '}';
+		return "EngineResponse{" + "chatResponse=" + chatResponse + ", retrievedDocuments=" + retrievedDocuments
+				+ ", retrievedMessages=" + retrievedMessages + '}';
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public class EngineResponse {
 		int result = 1;
 		result = prime * result + ((chatResponse == null) ? 0 : chatResponse.hashCode());
 		result = prime * result + ((retrievedDocuments == null) ? 0 : retrievedDocuments.hashCode());
-		result = prime * result + ((chatHistoryGroups == null) ? 0 : chatHistoryGroups.hashCode());
+		result = prime * result + ((retrievedMessages == null) ? 0 : retrievedMessages.hashCode());
 		return result;
 	}
 
@@ -84,11 +84,11 @@ public class EngineResponse {
 		}
 		else if (!retrievedDocuments.equals(other.retrievedDocuments))
 			return false;
-		if (chatHistoryGroups == null) {
-			if (other.chatHistoryGroups != null)
+		if (retrievedMessages == null) {
+			if (other.retrievedMessages != null)
 				return false;
 		}
-		else if (!chatHistoryGroups.equals(other.chatHistoryGroups))
+		else if (!retrievedMessages.equals(other.retrievedMessages))
 			return false;
 		return true;
 	}

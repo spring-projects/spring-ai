@@ -19,13 +19,15 @@ package org.springframework.ai.chat.history;
 import java.time.Instant;
 import java.util.List;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 
 /**
+ *
+ * Represents single request response set of messages.
+ *
  * @author Christian Tzolov
  */
-public class ChatHistoryGroup {
+public class ChatMessages {
 
 	private final String sessionId;
 
@@ -33,20 +35,14 @@ public class ChatHistoryGroup {
 
 	private final long timestamp;
 
-	public ChatHistoryGroup(String sessionId, List<Message> messages, long timestamp) {
+	public ChatMessages(String sessionId, List<Message> messages, long timestamp) {
 		this.sessionId = sessionId;
 		this.messages = messages;
 		this.timestamp = timestamp;
 	}
 
-	public ChatHistoryGroup(String sessionId, List<Message> messages) {
+	public ChatMessages(String sessionId, List<Message> messages) {
 		this(sessionId, messages, Instant.now().toEpochMilli());
-	}
-
-	public ChatHistoryGroup(String sessionId, AssistantMessage assistantMessage, long timestamp) {
-		this.sessionId = sessionId;
-		this.messages = List.of(assistantMessage);
-		this.timestamp = timestamp;
 	}
 
 	public List<Message> getMessages() {
