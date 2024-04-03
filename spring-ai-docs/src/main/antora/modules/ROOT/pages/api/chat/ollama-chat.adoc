@@ -283,7 +283,7 @@ var request = ChatRequest.builder("orca-mini")
                 .build(),
             Message.builder(Role.USER)
                 .withContent("What is the capital of Bulgaria and what is the size? "
-                        + "What it the national anthem?")
+                        + "What is the national anthem?")
                 .build()))
     .withOptions(OllamaOptions.create().withTemperature(0.9f))
     .build();
@@ -294,7 +294,7 @@ ChatResponse response = ollamaApi.chat(request);
 var request2 = ChatRequest.builder("orca-mini")
     .withStream(true) // streaming
     .withMessages(List.of(Message.builder(Role.USER)
-        .withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
+        .withContent("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
     .withOptions(OllamaOptions.create().withTemperature(0.9f).toMap())
     .build();
