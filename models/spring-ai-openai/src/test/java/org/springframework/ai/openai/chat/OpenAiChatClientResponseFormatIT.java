@@ -41,9 +41,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = OpenAiChatClient2IT.Config.class)
+@SpringBootTest(classes = OpenAiChatClientResponseFormatIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class OpenAiChatClient2IT {
+public class OpenAiChatClientResponseFormatIT {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 

@@ -16,17 +16,30 @@
 
 package org.springframework.ai.chat.history;
 
-import java.util.List;
-
 /**
- * Retrieves the chat history. The retrieved chat history is represented as a list of
- * {@link ChatExchange} instances. to be used in the {@link Prompt} request.
- *
  * @author Christian Tzolov
- * @since 1.0.0
  */
-public interface ChatHistoryRetriever {
+public class RetrieverRequest {
 
-	List<ChatExchange> retrieve(RetrieverRequest retrievalRequest);
+	private final String conversationId;
+
+	private int tokenRunningTotal;
+
+	public RetrieverRequest(String conversationId) {
+		this.conversationId = conversationId;
+		this.tokenRunningTotal = 0;
+	}
+
+	public void addTokenCount(int tokenCount) {
+		this.tokenRunningTotal += tokenCount;
+	}
+
+	public String getConversationId() {
+		return this.conversationId;
+	}
+
+	public int getTokenRunningTotal() {
+		return this.tokenRunningTotal;
+	}
 
 }

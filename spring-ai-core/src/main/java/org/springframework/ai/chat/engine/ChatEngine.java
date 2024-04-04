@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.engine;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import reactor.core.publisher.Flux;
@@ -26,9 +24,17 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.history.ChatExchange;
+import org.springframework.ai.chat.history.ChatHistory;
+import org.springframework.ai.chat.history.ChatHistoryRetriever;
+import org.springframework.ai.chat.history.MessageAggregator;
+import org.springframework.ai.chat.history.PromptHistoryAugmenter;
+import org.springframework.ai.chat.history.RetrieverRequest;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
+import org.springframework.ai.tokenizer.TokenCountEstimator;
 
 /**
  * @author Christian Tzolov
@@ -41,50 +47,37 @@ public class ChatEngine implements Engine, StreamingEngine {
 
 	private final ChatHistory chatHistory;
 
-	private final String sessionId;
+	private final String conversationId;
 
 	private final PromptHistoryAugmenter promptHistoryAugmenter;
 
 	private final ChatHistoryRetriever chatHistoryRetriever;
 
-	private static final PromptHistoryAugmenter DEFAULT_HISTORY_AUGMENTER = new PromptHistoryAugmenter() {
-
-		@Override
-		public Prompt augment(Prompt originalPrompt, List<ChatExchange> retrievedChatMessages) {
-
-			List<Message> messages = retrievedChatMessages.stream()
-				.map(g -> g.getMessages())
-				.flatMap(List::stream)
-				.toList();
-
-			var promptMessages = new ArrayList<>(messages);
-
-			promptMessages.addAll(originalPrompt.getInstructions());
-
-			return new Prompt(promptMessages, (ChatOptions) originalPrompt.getOptions());
-		}
-	};
+	private final TokenCountEstimator tokenCountEstimator;
 
 	public ChatEngine(ChatClient chatClient, StreamingChatClient streamingChatClient, ChatHistory chatHistory,
-			String sessionId, ChatHistoryRetriever chatHistoryRetriever) {
-		this(chatClient, streamingChatClient, chatHistory, sessionId, chatHistoryRetriever, DEFAULT_HISTORY_AUGMENTER);
-	}
+			String sessionId, ChatHistoryRetriever chatHistoryRetriever, PromptHistoryAugmenter promptHistoryAugmenter,
+			TokenCountEstimator tokenCountEstimator) {
 
-	public ChatEngine(ChatClient chatClient, StreamingChatClient streamingChatClient, ChatHistory chatHistory,
-			String sessionId, ChatHistoryRetriever chatHistoryRetriever,
-			PromptHistoryAugmenter promptHistoryAugmenter) {
 		this.chatClient = chatClient;
 		this.streamingChatClient = streamingChatClient;
 		this.chatHistory = chatHistory;
-		this.sessionId = sessionId;
+		this.conversationId = sessionId;
 		this.promptHistoryAugmenter = promptHistoryAugmenter;
 		this.chatHistoryRetriever = chatHistoryRetriever;
+		this.tokenCountEstimator = tokenCountEstimator;
 	}
 
 	@Override
 	public EngineResponse call(Prompt originalPrompt) {
 
-		List<ChatExchange> retrievedHistory = this.chatHistoryRetriever.retrieve(this.sessionId, originalPrompt);
+		var retrievalRequest = new RetrieverRequest(this.conversationId);
+
+		int originalPromptTokenCount = this.tokenCountEstimator.estimate(originalPrompt.getInstructions());
+
+		retrievalRequest.addTokenCount(originalPromptTokenCount);
+
+		List<ChatExchange> retrievedHistory = this.chatHistoryRetriever.retrieve(retrievalRequest);
 
 		Prompt augmentedPrompt = this.promptHistoryAugmenter.augment(originalPrompt, retrievedHistory);
 
@@ -93,7 +86,7 @@ public class ChatEngine implements Engine, StreamingEngine {
 		List<Message> historyMessages = new ArrayList<>(originalPrompt.getInstructions());
 		historyMessages.add(response.getResult().getOutput());
 
-		this.chatHistory.add(new ChatExchange(this.sessionId, historyMessages));
+		this.chatHistory.add(new ChatExchange(this.conversationId, historyMessages));
 
 		return new EngineResponse(response, null, retrievedHistory);
 	}
@@ -101,15 +94,16 @@ public class ChatEngine implements Engine, StreamingEngine {
 	@Override
 	public Flux<EngineResponse> stream(Prompt originalPrompt) {
 
-		List<ChatExchange> retrievedHistory = this.chatHistoryRetriever.retrieve(this.sessionId, originalPrompt);
+		var retrievalRequest = new RetrieverRequest(this.conversationId);
+
+		List<ChatExchange> retrievedHistory = this.chatHistoryRetriever.retrieve(retrievalRequest);
 
 		Prompt augmentedPrompt = this.promptHistoryAugmenter.augment(originalPrompt, retrievedHistory);
 
-		return MessageAggregator.aggregate(this.streamingChatClient.stream(augmentedPrompt), assistantMessage -> {
+		return new MessageAggregator().aggregate(this.streamingChatClient.stream(augmentedPrompt), assistantMessage -> {
 			List<Message> historyMessages = new ArrayList<>(originalPrompt.getInstructions());
 			historyMessages.add(assistantMessage);
-
-			this.chatHistory.add(new ChatExchange(this.sessionId, historyMessages));
+			this.chatHistory.add(new ChatExchange(this.conversationId, historyMessages));
 		}).map(chatResponse -> new EngineResponse(chatResponse, null, retrievedHistory));
 	}
 

@@ -16,15 +16,31 @@
 
 package org.springframework.ai.chat.history;
 
-import reactor.core.publisher.Flux;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * @author Christian Tzolov
  */
-public interface StreamingEngine {
+public class MessageListPromptHistoryAugmenter implements PromptHistoryAugmenter {
 
-	Flux<EngineResponse> stream(Prompt prompt);
+	@Override
+	public Prompt augment(Prompt originalPrompt, List<ChatExchange> retrievedChatExchanges) {
+
+		List<Message> messages = retrievedChatExchanges.stream()
+			.map(g -> g.getMessages())
+			.flatMap(List::stream)
+			.toList();
+
+		var promptMessages = new ArrayList<>(messages);
+
+		promptMessages.addAll(originalPrompt.getInstructions());
+
+		return new Prompt(promptMessages, (ChatOptions) originalPrompt.getOptions());
+	}
 
 }

@@ -39,26 +39,28 @@ public class MessageAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
 
-	public static Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
+	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<AssistantMessage> onAggregationComplete) {
 
 		AtomicReference<StringBuilder> stringBufferRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> mapRef = new AtomicReference<>();
 
 		return fluxChatResponse.doOnSubscribe(subscription -> {
-			logger.info("Aggregation Subscribe:" + subscription);
+			// logger.info("Aggregation Subscribe:" + subscription);
 			stringBufferRef.set(new StringBuilder());
 			mapRef.set(new HashMap<>());
 		}).doOnNext(chatResponse -> {
-			logger.info("Aggregation Next:" + chatResponse);
-			if (chatResponse.getResult().getOutput().getContent() != null) {
-				stringBufferRef.get().append(chatResponse.getResult().getOutput().getContent());
-			}
-			if (chatResponse.getResult().getOutput().getProperties() != null) {
-				mapRef.get().putAll(chatResponse.getResult().getOutput().getProperties());
+			// logger.info("Aggregation Next:" + chatResponse);
+			if (chatResponse.getResult() != null) {
+				if (chatResponse.getResult().getOutput().getContent() != null) {
+					stringBufferRef.get().append(chatResponse.getResult().getOutput().getContent());
+				}
+				if (chatResponse.getResult().getOutput().getProperties() != null) {
+					mapRef.get().putAll(chatResponse.getResult().getOutput().getProperties());
+				}
 			}
 		}).doOnComplete(() -> {
-			logger.info("Aggregation Complete");
+			// logger.debug("Aggregation Complete");
 			onAggregationComplete.accept(new AssistantMessage(stringBufferRef.get().toString(), mapRef.get()));
 			stringBufferRef.set(new StringBuilder());
 			mapRef.set(new HashMap<>());

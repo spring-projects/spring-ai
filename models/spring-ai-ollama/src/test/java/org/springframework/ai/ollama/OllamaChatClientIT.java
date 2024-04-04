@@ -220,8 +220,7 @@ class OllamaChatClientIT {
 
 		@Bean
 		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatClient(ollamaApi).withModel(MODEL)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
+			return new OllamaChatClient(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
 		}
 
 	}

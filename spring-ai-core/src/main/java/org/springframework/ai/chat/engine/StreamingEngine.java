@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.engine;
+
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * @author Christian Tzolov
  */
-public interface Engine {
+public interface StreamingEngine {
 
-	EngineResponse call(Prompt prompt);
+	Flux<EngineResponse> stream(Prompt prompt);
 
 }

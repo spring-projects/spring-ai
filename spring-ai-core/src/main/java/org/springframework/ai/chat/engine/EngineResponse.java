@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.engine;
 
 import java.util.List;
 
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.history.ChatExchange;
 import org.springframework.ai.document.Document;
 
 public class EngineResponse {

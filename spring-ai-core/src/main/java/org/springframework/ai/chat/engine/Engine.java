@@ -14,28 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history.store;
+package org.springframework.ai.chat.engine;
 
-import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
  * @author Christian Tzolov
  */
-// @Entity
-public class MessageEntity {
+public interface Engine {
 
-	// @Id
-	private String id;
-
-	private String sessionId;
-
-	private String textContent;
-
-	// @Enumerated(EnumType.STRING)
-	private MessageType type;
-
-	// Media content
-
-	private String properties;
+	EngineResponse call(Prompt prompt);
 
 }

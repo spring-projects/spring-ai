@@ -67,6 +67,10 @@ public abstract class RetryUtils {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
 				String message = String.format("%s - %s", response.getStatusCode().value(), error);
+
+				if (response.getStatusCode().value() == 429) {
+					throw new TransientAiException(message);
+				}
 				/**
 				 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
 				 * 401 - You must be a member of an organization to use the API, 429 -

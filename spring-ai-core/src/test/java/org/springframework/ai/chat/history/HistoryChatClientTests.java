@@ -17,7 +17,6 @@
 package org.springframework.ai.chat.history;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,16 +24,17 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.engine.ChatEngine;
+import org.springframework.ai.chat.engine.EngineResponse;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -65,7 +65,7 @@ public class HistoryChatClientTests {
 		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 10);
 
 		ChatEngine chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
-				chatHistoryRetriever);
+				chatHistoryRetriever, new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
 
 		when(chatClient.call(promptCaptor.capture()))
 			.thenReturn(new ChatResponse(List.of(new Generation("assistant:1"))))

@@ -19,17 +19,16 @@ package org.springframework.ai.chat.history;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.knuddels.jtokkit.Encodings;
-import com.knuddels.jtokkit.api.Encoding;
-import com.knuddels.jtokkit.api.EncodingType;
-
-import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
+import org.springframework.ai.tokenizer.TokenCountEstimator;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * Chat history retriever that retrieves the chat history window based on the max token
+ * count.
+ *
  * @author Christian Tzolov
  */
 public class TokenWindowChatHistoryRetriever implements ChatHistoryRetriever {
@@ -37,9 +36,9 @@ public class TokenWindowChatHistoryRetriever implements ChatHistoryRetriever {
 	private final ChatHistory chatHistory;
 
 	/**
-	 * Token encoding used to estimate the size of the message content.
+	 * Token encoding used to estimate the token count.
 	 */
-	protected final Encoding tokenEncoding;
+	protected final TokenCountEstimator tokenCountEstimator;
 
 	/**
 	 * Maximum token size allowed in the chat history.
@@ -47,27 +46,30 @@ public class TokenWindowChatHistoryRetriever implements ChatHistoryRetriever {
 	private final int maxTokenSize;
 
 	public TokenWindowChatHistoryRetriever(ChatHistory chatHistory, int maxTokenSize) {
-		this(chatHistory, Encodings.newLazyEncodingRegistry().getEncoding(EncodingType.CL100K_BASE), maxTokenSize);
+		this(chatHistory, new JTokkitTokenCountEstimator(), maxTokenSize);
 	}
 
-	public TokenWindowChatHistoryRetriever(ChatHistory chatHistory, Encoding tokenEncoding, int maxTokenSize) {
+	public TokenWindowChatHistoryRetriever(ChatHistory chatHistory, TokenCountEstimator tokenCountEstimator,
+			int maxTokenSize) {
 		this.chatHistory = chatHistory;
-		this.tokenEncoding = tokenEncoding;
+		this.tokenCountEstimator = tokenCountEstimator;
 		this.maxTokenSize = maxTokenSize;
 	}
 
 	@Override
-	public List<ChatExchange> retrieve(String chatId, Prompt originalPrompt) {
+	public List<ChatExchange> retrieve(RetrieverRequest retrievalRequest) {
 
-		List<ChatExchange> nonSystemChatMessages = (chatHistory.get(chatId) != null) ? chatHistory.get(chatId)
-			.stream()
-			.map(g -> new ChatExchange(chatId,
-					g.getMessages().stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).toList()))
-			.toList() : List.of();
+		List<ChatExchange> nonSystemChatMessages = (this.chatHistory.get(retrievalRequest.getConversationId()) != null)
+				? this.chatHistory.get(retrievalRequest.getConversationId())
+					.stream()
+					.map(g -> new ChatExchange(retrievalRequest.getConversationId(),
+							g.getMessages().stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).toList()))
+					.toList()
+				: List.of();
 
 		var flatMessages = nonSystemChatMessages.stream().map(g -> g.getMessages()).flatMap(List::stream).toList();
 
-		int totalSize = this.estimateTokenCount(flatMessages);
+		int totalSize = this.tokenCountEstimator.estimate(flatMessages) - retrievalRequest.getTokenRunningTotal();
 
 		if (totalSize <= this.maxTokenSize) {
 			return nonSystemChatMessages;
@@ -92,7 +94,7 @@ public class TokenWindowChatHistoryRetriever implements ChatHistoryRetriever {
 
 		while (index < sessionMessages.size() && totalSize > this.maxTokenSize) {
 			Message oldMessage = sessionMessages.get(index++);
-			int oldMessageTokenSize = estimateTokenCount(oldMessage);
+			int oldMessageTokenSize = this.tokenCountEstimator.estimate(oldMessage);
 			totalSize = totalSize - oldMessageTokenSize;
 		}
 
@@ -104,50 +106,6 @@ public class TokenWindowChatHistoryRetriever implements ChatHistoryRetriever {
 		newList.addAll(sessionMessages.subList(index, sessionMessages.size()));
 
 		return newList;
-	}
-
-	protected int estimateTokenCount(List<Message> sessionMessages) {
-		if (CollectionUtils.isEmpty(sessionMessages)) {
-			return 0;
-		}
-
-		int totalSize = 0;
-		for (Message message : sessionMessages) {
-			totalSize += this.estimateTokenCount(message);
-		}
-		return totalSize;
-	}
-
-	protected int estimateTokenCount(String text) {
-		if (text == null) {
-			return 0;
-		}
-		return this.tokenEncoding.countTokens(text);
-	}
-
-	public int estimateTokenCount(Message message) {
-		int tokenCount = 0;
-
-		if (message.getContent() != null) {
-			tokenCount += this.estimateTokenCount(message.getContent());
-		}
-
-		if (!CollectionUtils.isEmpty(message.getMedia())) {
-
-			for (Media media : message.getMedia()) {
-
-				tokenCount += this.estimateTokenCount(media.getMimeType().toString());
-
-				if (media.getData() instanceof String textData) {
-					tokenCount += this.estimateTokenCount(textData);
-				}
-				else if (media.getData() instanceof byte[] binaryData) {
-					tokenCount += binaryData.length; // This is likely incorrect.
-				}
-			}
-		}
-
-		return tokenCount;
 	}
 
 }
