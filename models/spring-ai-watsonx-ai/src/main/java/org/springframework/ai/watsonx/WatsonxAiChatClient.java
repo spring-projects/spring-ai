@@ -64,6 +64,7 @@ public class WatsonxAiChatClient implements ChatClient, StreamingChatClient {
 					.withMaxNewTokens(20)
 					.withMinNewTokens(0)
 					.withRepetitionPenalty(1.0f)
+					.withStopSequences(List.of())
 					.build());
 	}
 
