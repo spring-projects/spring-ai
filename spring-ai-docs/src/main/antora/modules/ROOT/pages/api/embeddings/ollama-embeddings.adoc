@@ -81,7 +81,6 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 | spring.ai.ollama.embedding.options.vocab-only        | ???                                                             | -
 | spring.ai.ollama.embedding.options.use-mmap          | ???                                                             | -
 | spring.ai.ollama.embedding.options.use-mlock         | ???                                                             | -
-| spring.ai.ollama.embedding.options.embedding-only    | ???                                                             | -
 | spring.ai.ollama.embedding.options.rope-frequency-base | ???                                                           | -
 | spring.ai.ollama.embedding.options.rope-frequency-scale | ???                                                          | -
 | spring.ai.ollama.embedding.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). | -

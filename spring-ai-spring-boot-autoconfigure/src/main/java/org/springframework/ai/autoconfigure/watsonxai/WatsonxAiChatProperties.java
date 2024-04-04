@@ -40,6 +40,7 @@ public class WatsonxAiChatProperties {
 	 */
 	@NestedConfigurationProperty
 	private WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+		.withModel("google/flan-ul2")
 		.withTemperature(0.7f)
 		.withTopP(1.0f)
 		.withTopK(50)
