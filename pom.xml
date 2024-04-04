@@ -142,6 +142,8 @@
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.7.1</qdrant.version>
+		<opensearch-client.version>2.9.1</opensearch-client.version>
+		<httpclient5.version>5.3.1</httpclient5.version>
 
 		<!-- testing dependencies -->
 		<testcontainers.version>1.19.7</testcontainers.version>
