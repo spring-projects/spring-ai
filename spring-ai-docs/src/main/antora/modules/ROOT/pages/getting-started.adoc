@@ -98,7 +98,7 @@ If you’re a Maven user, you can use the BOM by adding the following to your po
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-bom</artifactId>
-            <version>0.8.1-SNAPSHOT</version>
+            <version>1.0.0-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -113,7 +113,7 @@ As shown in the snippet below this can then be followed by version-less declarat
 [source,gradle]
 ----
 dependencies {
-  implementation platform("org.springframework.ai:spring-ai-bom:0.8.1-SNAPSHOT")
+  implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
   // Replace the following with the starter dependencies of specific modules you wish to use
   implementation 'org.springframework.ai:spring-ai-openai'
 }
@@ -135,26 +135,35 @@ Each of the following sections in the documentation shows which dependencies you
 ** xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
 ** xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
 ** xref:api/embeddings/vertexai-embeddings.adoc[Spring AI VertexAI Embeddings]
+** xref:api/embeddings/mistralai-embeddings.adoc[Spring AI MistralAI Embeddings]
 
 === Chat Models
 * xref:api/chatclient.adoc[Chat Completion API]
-** xref:api/clients/openai-chat.adoc[OpenAI Chat Completion] (streaming and function-calling support)
-** xref:api/clients/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming and function-calling support)
-** xref:api/clients/ollama-chat.adoc[Ollama Chat Completion]
-** xref:api/clients/huggingface.adoc[HuggingFace Chat Completion] (no streaming support)
-** xref:api/clients/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
-** xref:api/clients/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
+** xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming and function-calling support)
+** xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming and function-calling support)
+** xref:api/chat/ollama-chat.adoc[Ollama Chat Completion]
+** xref:api/chat/huggingface.adoc[HuggingFace Chat Completion] (no streaming support)
+** xref:api/chat/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
+** xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 ** xref:api/bedrock.adoc[Amazon Bedrock]
-*** xref:api/clients/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
-*** xref:api/clients/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
-*** xref:api/clients/bedrock/bedrock-titan.adoc[Titan Chat Completion]
-*** xref:api/clients/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
-// ** xref:api/clients/bedrock/bedrock-jurassic.adoc[Jurassic2 Chat Completion] (WIP, no streaming support)
+*** xref:api/chat/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
+*** xref:api/chat/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
+*** xref:api/chat/bedrock/bedrock-titan.adoc[Titan Chat Completion]
+*** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
+*** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]
+** xref:api/chat/mistralai-chat.adoc[MistralAI Chat Completion] (streaming and function-calling support)
 
 === Image Generation Models
 * xref:api/imageclient.adoc[]
-** xref:api/clients/image/openai-image.adoc[OpenAI Image Generation]
-** xref:api/clients/image/stabilityai-image.adoc[StabilityAI Image Generation]
+** xref:api/image/openai-image.adoc[OpenAI Image Generation]
+** xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
+
+=== Audio Models
+
+* xref:api/audio/transcriptions.adoc[Transcription Models]
+** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI Transcriptions]
+* xref:api/audio/speech.adoc[Text-To-Speech (TTS) Models]
+** xref:api/audio/speech/openai-speech.adoc[OpenAI Text-To-Speech]
 
 === Vector Databases
 * xref:api/vectordbs.adoc[Vector Database API]
@@ -181,7 +190,9 @@ You can clone these projects on GitHub to get started.
 === Azure OpenAI
 
 * https://github.com/rd-1-2022/ai-azure-openai-helloworld
-* https://github.com/rd-1-2022/ai-azure-stuff-prompt
-* https://github.com/rd-1-2022/ai-azure-prompt-template
-* https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
-* https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
+* https://github.com/Azure-Samples/spring-ai-azure-workshop
+
+// * https://github.com/rd-1-2022/ai-azure-stuff-prompt
+// * https://github.com/rd-1-2022/ai-azure-prompt-template
+// * https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
+// * https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation

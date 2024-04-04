@@ -15,32 +15,27 @@
  */
 package org.springframework.ai.mistralai.api;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -70,8 +65,6 @@ public class MistralAiApi {
 
 	private WebClient webClient;
 
-	private final ObjectMapper objectMapper;
-
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
 	 * @param mistralAiApiKey Mistral api Key.
@@ -86,7 +79,7 @@ public class MistralAiApi {
 	 * @param mistralAiApiKey Mistral api Key.
 	 */
 	public MistralAiApi(String baseUrl, String mistralAiApiKey) {
-		this(baseUrl, mistralAiApiKey, RestClient.builder());
+		this(baseUrl, mistralAiApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -94,67 +87,22 @@ public class MistralAiApi {
 	 * @param baseUrl api base URL.
 	 * @param mistralAiApiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder) {
-
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(mistralAiApiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		var responseErrorHandler = new ResponseErrorHandler() {
-
-			@Override
-			public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
-				return response.getStatusCode().isError();
-			}
-
-			@Override
-			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
-				if (response.getStatusCode().isError()) {
-					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-					String message = String.format("%s - %s", response.getStatusCode().value(), error);
-					if (response.getStatusCode().is4xxClientError()) {
-						throw new MistralAiApiClientErrorException(message);
-					}
-					throw new MistralAiApiException(message);
-				}
-			}
-		};
-
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
+
 		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
-	}
-
-	public static class MistralAiApiException extends RuntimeException {
-
-		public MistralAiApiException(String message) {
-			super(message);
-		}
-
-		public MistralAiApiException(String message, Throwable t) {
-			super(message, t);
-		}
-
-	}
-
-	/**
-	 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided, 401 - You
-	 * must be a member of an organization to use the API, 429 - Rate limit reached for
-	 * requests, 429 - You exceeded your current quota , please check your plan and
-	 * billing details.
-	 */
-	public static class MistralAiApiClientErrorException extends RuntimeException {
-
-		public MistralAiApiClientErrorException(String message) {
-			super(message);
-		}
-
 	}
 
 	/**
@@ -594,7 +542,7 @@ public class MistralAiApi {
 		 // anticipation of future changes. Based on:
 		 // https://github.com/mistralai/client-python/blob/main/src/mistralai/models/chat_completion.py
 		 @JsonProperty("error") ERROR,
-		 
+
 		 @JsonProperty("tool_calls") TOOL_CALLS
 		 // @formatter:on
 
@@ -757,6 +705,8 @@ public class MistralAiApi {
 			.toEntity(ChatCompletion.class);
 	}
 
+	private MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
+
 	/**
 	 * Creates a streaming chat response for the given chat conversation.
 	 * @param chatRequest The chat completion request. Must have the stream property set
@@ -768,6 +718,8 @@ public class MistralAiApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
 
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
 		return this.webClient.post()
 			.uri("/v1/chat/completions")
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -775,7 +727,26 @@ public class MistralAiApi {
 			.bodyToFlux(String.class)
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class));
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(chunk -> {
+				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			.concatMapIterable(window -> {
+				Mono<ChatCompletionChunk> mono1 = window.reduce(new ChatCompletionChunk(null, null, null, null, null),
+						(previous, current) -> this.chunkMerger.merge(previous, current));
+				return List.of(mono1);
+			})
+			.flatMap(mono -> mono);
 	}
 
 }

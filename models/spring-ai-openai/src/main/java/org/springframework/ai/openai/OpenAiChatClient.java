@@ -15,11 +15,13 @@
  */
 package org.springframework.ai.openai;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,20 +42,21 @@ import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionFinishReason;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.MediaContent;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
-import org.springframework.ai.openai.api.common.OpenAiApiException;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 
 /**
  * {@link ChatClient} and {@link StreamingChatClient} implementation for {@literal OpenAI}
@@ -73,7 +76,7 @@ public class OpenAiChatClient extends
 		AbstractFunctionCallSupport<ChatCompletionMessage, OpenAiApi.ChatCompletionRequest, ResponseEntity<ChatCompletion>>
 		implements ChatClient, StreamingChatClient {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClient.class);
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -83,48 +86,59 @@ public class OpenAiChatClient extends
 	/**
 	 * The retry template used to retry the OpenAI API calls.
 	 */
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(OpenAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			@Override
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	public final RetryTemplate retryTemplate;
 
 	/**
 	 * Low-level access to the OpenAI API.
 	 */
 	private final OpenAiApi openAiApi;
 
+	/**
+	 * Creates an instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @throws IllegalArgumentException if openAiApi is null
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi) {
 		this(openAiApi,
 				OpenAiChatOptions.builder().withModel(OpenAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7f).build());
 	}
 
+	/**
+	 * Initializes an instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat client.
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options) {
-		this(openAiApi, options, null);
+		this(openAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
+	/**
+	 * Initializes a new instance of the OpenAiChatClient.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat client.
+	 * @param functionCallbackContext The function callback context.
+	 * @param retryTemplate The retry template.
+	 */
 	public OpenAiChatClient(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
 		super(functionCallbackContext);
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
-		return this.retryTemplate.execute(ctx -> {
+		ChatCompletionRequest request = createRequest(prompt, false);
 
-			ChatCompletionRequest request = createRequest(prompt, false);
+		return this.retryTemplate.execute(ctx -> {
 
 			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 
@@ -137,7 +151,7 @@ public class OpenAiChatClient extends
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
 			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-				return new Generation(choice.message().content(), toMap(choice.message()))
+				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();
 
@@ -146,10 +160,26 @@ public class OpenAiChatClient extends
 		});
 	}
 
+	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
+		Map<String, Object> map = new HashMap<>();
+
+		var message = choice.message();
+		if (message.role() != null) {
+			map.put("role", message.role().name());
+		}
+		if (choice.finishReason() != null) {
+			map.put("finishReason", choice.finishReason().name());
+		}
+		map.put("id", id);
+		return map;
+	}
+
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+
+		ChatCompletionRequest request = createRequest(prompt, true);
+
 		return this.retryTemplate.execute(ctx -> {
-			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request);
 
@@ -157,22 +187,54 @@ public class OpenAiChatClient extends
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			return completionChunks.map(chunk -> {
-				String chunkId = chunk.id();
-				List<Generation> generations = chunk.choices().stream().map(choice -> {
-					if (choice.delta().role() != null) {
-						roleMap.putIfAbsent(chunkId, choice.delta().role().name());
-					}
-					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
-					if (choice.finishReason() != null) {
-						generation = generation
-							.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
-					}
-					return generation;
-				}).toList();
-				return new ChatResponse(generations);
+			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+			// the function call handling logic.
+			return completionChunks.map(chunk -> chunkToChatCompletion(chunk)).map(chatCompletion -> {
+				try {
+					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
+						.getBody();
+
+					@SuppressWarnings("null")
+					String id = chatCompletion.id();
+
+					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+						if (choice.message().role() != null) {
+							roleMap.putIfAbsent(id, choice.message().role().name());
+						}
+						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
+						var generation = new Generation(choice.message().content(),
+								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
+						if (choice.finishReason() != null) {
+							generation = generation.withGenerationMetadata(
+									ChatGenerationMetadata.from(choice.finishReason().name(), null));
+						}
+						return generation;
+					}).toList();
+
+					return new ChatResponse(generations);
+				}
+				catch (Exception e) {
+					logger.error("Error processing chat completion", e);
+					return new ChatResponse(List.of());
+				}
+
 			});
 		});
+	}
+
+	/**
+	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
+	 * @param chunk the ChatCompletionChunk to convert
+	 * @return the ChatCompletion
+	 */
+	private OpenAiApi.ChatCompletion chunkToChatCompletion(OpenAiApi.ChatCompletionChunk chunk) {
+		List<Choice> choices = chunk.choices()
+			.stream()
+			.map(cc -> new Choice(cc.finishReason(), cc.index(), cc.delta(), cc.logprobs()))
+			.toList();
+
+		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
+				chunk.systemFingerprint(), "chat.completion", null);
 	}
 
 	/**
@@ -182,11 +244,20 @@ public class OpenAiChatClient extends
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
-			.stream()
-			.map(m -> new ChatCompletionMessage(m.getContent(),
-					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-			.toList();
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
+			// Add text content.
+			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
+			if (!CollectionUtils.isEmpty(m.getMedia())) {
+				// Add media content.
+				contents.addAll(m.getMedia()
+					.stream()
+					.map(media -> new MediaContent(
+							new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
+					.toList());
+			}
+
+			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
@@ -220,10 +291,6 @@ public class OpenAiChatClient extends
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
-			if (stream) {
-				throw new IllegalArgumentException("Currently tool functions are not supported in streaming mode");
-			}
-
 			request = ModelOptionsUtils.merge(
 					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
@@ -232,31 +299,28 @@ public class OpenAiChatClient extends
 		return request;
 	}
 
+	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
+		if (mediaContentData instanceof byte[] bytes) {
+			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+			// following the prefix pattern.
+			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+		}
+		else if (mediaContentData instanceof String text) {
+			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
+			return text;
+		}
+		else {
+			throw new IllegalArgumentException(
+					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+		}
+	}
+
 	private List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
 			var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
 					functionCallback.getName(), functionCallback.getInputTypeSchema());
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
-	}
-
-	private Map<String, Object> toMap(ChatCompletionMessage message) {
-		Map<String, Object> map = new HashMap<>();
-
-		// The tool_calls and tool_call_id are not used by the OpenAiChatClient functions
-		// call support! Useful only for users that want to use the tool_calls and
-		// tool_call_id in their applications.
-		if (message.toolCalls() != null) {
-			map.put("tool_calls", message.toolCalls());
-		}
-		if (message.toolCallId() != null) {
-			map.put("tool_call_id", message.toolCallId());
-		}
-
-		if (message.role() != null) {
-			map.put("role", message.role().name());
-		}
-		return map;
 	}
 
 	@Override
@@ -283,7 +347,7 @@ public class OpenAiChatClient extends
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
 		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, previousRequest.stream());
+		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, false);
 		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
 
 		return newRequest;
@@ -316,7 +380,9 @@ public class OpenAiChatClient extends
 			return false;
 		}
 
-		return !CollectionUtils.isEmpty(choices.get(0).message().toolCalls());
+		var choice = choices.get(0);
+		return !CollectionUtils.isEmpty(choice.message().toolCalls())
+				&& choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
 }

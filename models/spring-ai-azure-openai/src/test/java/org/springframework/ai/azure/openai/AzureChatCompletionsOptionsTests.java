@@ -17,9 +17,14 @@ package org.springframework.ai.azure.openai;
 
 import com.azure.ai.openai.OpenAIClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import org.springframework.ai.chat.prompt.Prompt;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +38,7 @@ public class AzureChatCompletionsOptionsTests {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
 		var client = new AzureOpenAiChatClient(mockClient,
-				AzureOpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
+				AzureOpenAiChatOptions.builder().withDeploymentName("DEFAULT_MODEL").withTemperature(66.6f).build());
 
 		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content"));
 
@@ -43,12 +48,43 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getTemperature()).isEqualTo(66.6f);
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content",
-				AzureOpenAiChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9f).build()));
+				AzureOpenAiChatOptions.builder().withDeploymentName("PROMPT_MODEL").withTemperature(99.9f).build()));
 
 		assertThat(requestOptions.getMessages()).hasSize(1);
 
 		assertThat(requestOptions.getModel()).isEqualTo("PROMPT_MODEL");
 		assertThat(requestOptions.getTemperature()).isEqualTo(99.9f);
+	}
+
+	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
+		return Stream.of(Arguments.of(0.0f, 0.0f), Arguments.of(0.0f, 1.0f), Arguments.of(1.0f, 0.0f),
+				Arguments.of(1.0f, 1.0f), Arguments.of(1.0f, null), Arguments.of(null, 1.0f), Arguments.of(null, null));
+	}
+
+	@ParameterizedTest
+	@MethodSource("providePresencePenaltyAndFrequencyPenaltyTest")
+	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Float presencePenalty, Float frequencyPenalty) {
+		var options = AzureOpenAiChatOptions.builder()
+			.withMaxTokens(800)
+			.withTemperature(0.7F)
+			.withTopP(0.95F)
+			.withPresencePenalty(presencePenalty)
+			.withFrequencyPenalty(frequencyPenalty)
+			.build();
+
+		if (presencePenalty == null) {
+			assertThat(options.getPresencePenalty()).isEqualTo(null);
+		}
+		else {
+			assertThat(options.getPresencePenalty().floatValue()).isEqualTo(presencePenalty);
+		}
+
+		if (frequencyPenalty == null) {
+			assertThat(options.getFrequencyPenalty()).isEqualTo(null);
+		}
+		else {
+			assertThat(options.getFrequencyPenalty().floatValue()).isEqualTo(frequencyPenalty);
+		}
 	}
 
 }

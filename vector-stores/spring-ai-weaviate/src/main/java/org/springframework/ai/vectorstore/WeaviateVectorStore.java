@@ -400,7 +400,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 				.getMessages()
 				.stream()
 				.map(wm -> wm.getMessage())
-				.collect(Collectors.joining("\n")));
+				.collect(Collectors.joining(System.lineSeparator())));
 			throw new RuntimeException("Failed to add documents because: \n" + errorMessages);
 		}
 
@@ -408,8 +408,10 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 			for (var r : response.getResult()) {
 				if (r.getResult() != null && r.getResult().getErrors() != null) {
 					var error = r.getResult().getErrors();
-					errorMessages
-						.add(error.getError().stream().map(e -> e.getMessage()).collect(Collectors.joining("\n")));
+					errorMessages.add(error.getError()
+						.stream()
+						.map(e -> e.getMessage())
+						.collect(Collectors.joining(System.lineSeparator())));
 				}
 			}
 		}
@@ -515,13 +517,14 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 				.getMessages()
 				.stream()
 				.map(WeaviateErrorMessage::getMessage)
-				.collect(Collectors.joining("\n")));
+				.collect(Collectors.joining(System.lineSeparator())));
 		}
 
 		GraphQLError[] errors = result.getResult().getErrors();
 		if (errors != null && errors.length > 0) {
-			throw new IllegalArgumentException(
-					Arrays.stream(errors).map(GraphQLError::getMessage).collect(Collectors.joining("\n")));
+			throw new IllegalArgumentException(Arrays.stream(errors)
+				.map(GraphQLError::getMessage)
+				.collect(Collectors.joining(System.lineSeparator())));
 		}
 
 		@SuppressWarnings("unchecked")

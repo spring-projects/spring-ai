@@ -21,7 +21,6 @@ import com.azure.search.documents.indexes.SearchIndexClientBuilder;
 
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,7 +32,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class, SearchIndexClient.class })
+@ConditionalOnClass({ EmbeddingClient.class, SearchIndexClient.class, AzureVectorStore.class })
 @EnableConfigurationProperties({ AzureVectorStoreProperties.class })
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.azure", value = { "url", "api-key", "index-name" })
 public class AzureVectorStoreAutoConfiguration {
@@ -48,7 +47,7 @@ public class AzureVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient,
+	public AzureVectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient,
 			AzureVectorStoreProperties properties) {
 
 		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingClient);

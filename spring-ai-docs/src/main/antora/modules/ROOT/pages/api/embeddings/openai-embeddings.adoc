@@ -50,6 +50,25 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Embedding Properties
 
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Embedding client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
 The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
 
 [cols="3,5,1"]
@@ -59,6 +78,8 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
 | spring.ai.openai.api-key    | The API Key           |  -
 |====
+
+==== Configuration Properties
 
 The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingClient` implementation for OpenAI.
 
@@ -82,7 +103,7 @@ This is useful if you want to use different OpenAI accounts for different models
 
 TIP: All properties prefixed with `spring.ai.openai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
-=== Embedding Options [[embedding-options]]
+== Runtime Options [[embedding-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiEmbeddingOptions.java[OpenAiEmbeddingOptions.java] provides the OpenAI configurations, such as the model to use and etc.
 
@@ -102,7 +123,7 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
         .build()));
 ----
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 This will create a `EmbeddingClient` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
@@ -157,7 +178,7 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 NOTE: The `spring-ai-openai` dependency provides access also to the `OpenAiChatClient`.
-For more information about the `OpenAiChatClient` refer to the link:../clients/openai-chat.html[OpenAI Chat Client] section.
+For more information about the `OpenAiChatClient` refer to the link:../chat/openai-chat.html[OpenAI Chat Client] section.
 
 Next, create an `OpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
 

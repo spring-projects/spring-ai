@@ -18,7 +18,6 @@ package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.PineconeVectorStore;
 import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,7 +34,7 @@ public class PineconeVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(EmbeddingClient embeddingClient, PineconeVectorStoreProperties properties) {
+	public PineconeVectorStore vectorStore(EmbeddingClient embeddingClient, PineconeVectorStoreProperties properties) {
 
 		var config = PineconeVectorStoreConfig.builder()
 			.withApiKey(properties.getApiKey())

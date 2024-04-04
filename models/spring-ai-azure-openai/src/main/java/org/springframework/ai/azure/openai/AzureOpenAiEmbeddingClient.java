@@ -53,7 +53,7 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, MetadataMode metadataMode) {
 		this(azureOpenAiClient, metadataMode,
-				AzureOpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
+				AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build());
 	}
 
 	public AzureOpenAiEmbeddingClient(OpenAIClient azureOpenAiClient, MetadataMode metadataMode,
@@ -93,7 +93,7 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	EmbeddingsOptions toEmbeddingOptions(EmbeddingRequest embeddingRequest) {
 		var azureOptions = new EmbeddingsOptions(embeddingRequest.getInstructions());
 		if (this.defaultOptions != null) {
-			azureOptions.setModel(this.defaultOptions.getModel());
+			azureOptions.setModel(this.defaultOptions.getDeploymentName());
 			azureOptions.setUser(this.defaultOptions.getUser());
 		}
 		if (embeddingRequest.getOptions() != null && !EmbeddingOptions.EMPTY.equals(embeddingRequest.getOptions())) {

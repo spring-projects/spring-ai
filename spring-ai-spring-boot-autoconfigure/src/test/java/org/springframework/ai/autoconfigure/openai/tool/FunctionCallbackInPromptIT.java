@@ -16,14 +16,19 @@
 package org.springframework.ai.autoconfigure.openai.tool;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -42,7 +47,8 @@ public class FunctionCallbackInPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
@@ -65,6 +71,41 @@ public class FunctionCallbackInPromptIT {
 			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getContent()).contains("30.0", "10.0", "15.0");
+		});
+	}
+
+	@Test
+	void streamingFunctionCallTest() {
+
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+
+			OpenAiChatClient chatClient = context.getBean(OpenAiChatClient.class);
+
+			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+			var promptOptions = OpenAiChatOptions.builder()
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+					.withName("CurrentWeatherService")
+					.withDescription("Get the weather in location")
+					.withResponseConverter((response) -> "" + response.temp() + response.unit())
+					.build()))
+				.build();
+
+			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage), promptOptions));
+
+			String content = response.collectList()
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.collect(Collectors.joining());
+			logger.info("Response: {}", content);
+
+			assertThat(content).containsAnyOf("30.0", "30");
+			assertThat(content).containsAnyOf("10.0", "10");
+			assertThat(content).containsAnyOf("15.0", "15");
 		});
 	}
 

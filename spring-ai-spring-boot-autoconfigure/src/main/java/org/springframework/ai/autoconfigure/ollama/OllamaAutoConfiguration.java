@@ -31,6 +31,7 @@ import org.springframework.web.client.RestClient;
  * {@link AutoConfiguration Auto-configuration} for Ollama Chat Client.
  *
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  * @since 0.8.0
  */
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
@@ -40,9 +41,15 @@ import org.springframework.web.client.RestClient;
 public class OllamaAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(OllamaConnectionDetails.class)
+	public PropertiesOllamaConnectionDetails ollamaConnectionDetails(OllamaConnectionProperties properties) {
+		return new PropertiesOllamaConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaConnectionProperties properties, RestClient.Builder restClientBuilder) {
-		return new OllamaApi(properties.getBaseUrl(), restClientBuilder);
+	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails, RestClient.Builder restClientBuilder) {
+		return new OllamaApi(connectionDetails.getBaseUrl(), restClientBuilder);
 	}
 
 	@Bean
@@ -63,6 +70,21 @@ public class OllamaAutoConfiguration {
 
 		return new OllamaEmbeddingClient(ollamaApi).withModel(properties.getModel())
 			.withDefaultOptions(properties.getOptions());
+	}
+
+	private static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
+
+		private final OllamaConnectionProperties properties;
+
+		PropertiesOllamaConnectionDetails(OllamaConnectionProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getBaseUrl() {
+			return this.properties.getBaseUrl();
+		}
+
 	}
 
 }

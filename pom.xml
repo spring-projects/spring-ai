@@ -4,7 +4,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai</artifactId>
-	<version>0.8.1-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
@@ -26,6 +26,8 @@
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
+		<module>models/spring-ai-anthropic</module>
+		<module>models/spring-ai-watsonx-ai</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -54,11 +56,20 @@
 		<module>vector-stores/spring-ai-azure</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
+		<module>vector-stores/spring-ai-gemfire</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
 		<module>vector-stores/spring-ai-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
+		<module>spring-ai-retry</module>
+		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
+		<module>spring-ai-spring-boot-testcontainers</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+		<module>vector-stores/spring-ai-elasticsearch-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
 	</modules>
 
 	<organization>
@@ -103,18 +114,20 @@
 		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.2.3</spring-boot.version>
+		<spring-boot.version>3.2.4</spring-boot.version>
 		<spring-framework.version>6.1.4</spring-framework.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
 		<azure-open-ai-client.version>1.0.0-beta.7</azure-open-ai-client.version>
 		<jtokkit.version>1.0.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
-		<bedrockruntime.version>2.24.8</bedrockruntime.version>
+		<bedrockruntime.version>2.25.3</bedrockruntime.version>
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
-		<com.google.cloud.version>26.33.0</com.google.cloud.version>
+		<com.google.cloud.version>26.34.0</com.google.cloud.version>
 		<qdrant.version>1.7.1</qdrant.version>
+		<spring-retry.version>2.0.5</spring-retry.version>
+		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
@@ -129,9 +142,6 @@
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.7.1</qdrant.version>
-
-		<!-- testing dependencies -->
-		<testcontainers.version>1.19.7</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
@@ -260,6 +270,22 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${maven-deploy-plugin.version}</version>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>license</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+								<plugin>
 				<groupId>com.mycila</groupId>
 				<artifactId>license-maven-plugin</artifactId>
 				<version>4.1</version>
@@ -297,6 +323,8 @@ limitations under the License.
 <!-- @formatter:on -->
 							</inlineHeader>
 							<excludes>
+								<exclude>**/.antlr/**</exclude>
+								<exclude>**/aot.factories</exclude>
 								<exclude>**/.sdkmanrc</exclude>
 								<exclude>**/*.adoc</exclude>
 								<exclude>**/*.puml</exclude>
@@ -323,15 +351,10 @@ limitations under the License.
 					</licenseSets>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-deploy-plugin</artifactId>
-				<version>${maven-deploy-plugin.version}</version>
-			</plugin>
-		</plugins>
-	</build>
 
-	<profiles>
+				</plugins>
+			</build>
+		</profile>
 		<profile>
 			<id>javadoc</id>
 			<activation>
@@ -344,7 +367,7 @@ limitations under the License.
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>${maven-javadoc-plugin.version}</version>
 						<configuration>
-							<excludePackageNames>org.springframework.ai.sample.*</excludePackageNames>
+							<excludePackageNames>org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
 							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
 							<doclint>all,-missing</doclint>

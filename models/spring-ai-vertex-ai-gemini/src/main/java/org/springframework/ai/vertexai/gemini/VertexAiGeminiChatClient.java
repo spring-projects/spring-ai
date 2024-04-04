@@ -293,7 +293,7 @@ public class VertexAiGeminiChatClient
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.map(m -> m.getContent())
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		List<Content> contents = prompt.getInstructions()
 			.stream()
@@ -333,7 +333,7 @@ public class VertexAiGeminiChatClient
 
 			List<Part> parts = new ArrayList<>(List.of(textPart));
 
-			List<Part> mediaParts = userMessage.getMediaData()
+			List<Part> mediaParts = userMessage.getMedia()
 				.stream()
 				.map(mediaData -> PartMaker.fromMimeTypeAndData(mediaData.getMimeType().toString(),
 						mediaData.getData()))

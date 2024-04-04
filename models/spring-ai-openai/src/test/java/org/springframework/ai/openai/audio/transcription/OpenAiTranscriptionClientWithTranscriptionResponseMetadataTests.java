@@ -26,6 +26,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionMetadata;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -151,7 +152,7 @@ public class OpenAiTranscriptionClientWithTranscriptionResponseMetadataTests {
 
 		@Bean
 		public OpenAiAudioApi chatCompletionApi(RestClient.Builder builder) {
-			return new OpenAiAudioApi("", TEST_API_KEY, builder);
+			return new OpenAiAudioApi("", TEST_API_KEY, builder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 		}
 
 		@Bean

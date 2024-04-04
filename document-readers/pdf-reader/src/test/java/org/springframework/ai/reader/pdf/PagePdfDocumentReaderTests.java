@@ -50,7 +50,7 @@ public class PagePdfDocumentReaderTests {
 
 		assertThat(docs).hasSize(4);
 
-		String allText = docs.stream().map(d -> d.getContent()).collect(Collectors.joining("\n"));
+		String allText = docs.stream().map(d -> d.getContent()).collect(Collectors.joining(System.lineSeparator()));
 
 		assertThat(allText).doesNotContain(
 				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));

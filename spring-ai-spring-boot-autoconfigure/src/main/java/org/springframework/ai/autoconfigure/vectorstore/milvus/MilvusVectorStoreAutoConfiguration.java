@@ -25,7 +25,6 @@ import io.milvus.param.MetricType;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,6 +34,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingClient.class })
@@ -42,8 +42,15 @@ import org.springframework.util.StringUtils;
 public class MilvusVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(MilvusServiceClientConnectionDetails.class)
+	PropertiesMilvusServiceClientConnectionDetails milvusServiceClientConnectionDetails(
+			MilvusServiceClientProperties properties) {
+		return new PropertiesMilvusServiceClientConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient,
+	public MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient,
 			MilvusVectorStoreProperties properties) {
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
@@ -61,11 +68,11 @@ public class MilvusVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MilvusServiceClient milvusClient(MilvusVectorStoreProperties serverProperties,
-			MilvusServiceClientProperties clientProperties) {
+			MilvusServiceClientProperties clientProperties, MilvusServiceClientConnectionDetails connectionDetails) {
 
 		var builder = ConnectParam.newBuilder()
-			.withHost(clientProperties.getHost())
-			.withPort(clientProperties.getPort())
+			.withHost(connectionDetails.getHost())
+			.withPort(connectionDetails.getPort())
 			.withDatabaseName(serverProperties.getDatabaseName())
 			.withConnectTimeout(clientProperties.getConnectTimeoutMs(), TimeUnit.MILLISECONDS)
 			.withKeepAliveTime(clientProperties.getKeepAliveTimeMs(), TimeUnit.MILLISECONDS)
@@ -104,6 +111,27 @@ public class MilvusVectorStoreAutoConfiguration {
 		}
 
 		return new MilvusServiceClient(builder.build());
+	}
+
+	private static class PropertiesMilvusServiceClientConnectionDetails
+			implements MilvusServiceClientConnectionDetails {
+
+		private final MilvusServiceClientProperties properties;
+
+		PropertiesMilvusServiceClientConnectionDetails(MilvusServiceClientProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getHost() {
+			return this.properties.getHost();
+		}
+
+		@Override
+		public int getPort() {
+			return this.properties.getPort();
+		}
+
 	}
 
 }

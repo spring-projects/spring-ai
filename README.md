@@ -6,7 +6,7 @@ The Spring AI project provides a Spring-friendly API and abstractions for develo
 
 Let's make your `@Beans` intelligent!
 
-For further information go to our [Spring AI refernce documentation](https://docs.spring.io/spring-ai/reference/).
+For further information go to our [Spring AI reference documentation](https://docs.spring.io/spring-ai/reference/).
 
 ## Project Links
 
@@ -83,7 +83,16 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 
 Spring AI supports many AI models.  For an overview see here.  Specific models currently supported are
 * OpenAI
-* 
+* Azure OpenAI
+* Amazon Bedrock (Anthropic, Llama2, Cohere, Titan, Jurassic2)
+* HuggingFace
+* Google VertexAI (PaLM2, Gemini)
+* Mistral AI
+* Stability AI
+* Ollama
+* PostgresML
+* Transformers (ONNX)
+* Anthropic Claude3
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.
@@ -196,5 +205,10 @@ To reformat using the [java-format plugin](https://github.com/spring-io/spring-j
 
 To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
 ```shell
-./mvnw license:update-file-header
+./mvnw license:update-file-header -Plicense
+```
+
+To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
+```shell
+./mvnw javadoc:javadoc -Pjavadoc
 ```

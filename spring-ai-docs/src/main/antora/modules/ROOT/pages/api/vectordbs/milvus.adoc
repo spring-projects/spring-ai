@@ -2,9 +2,190 @@
 
 link:https://milvus.io/[Milvus] is an open-source vector database that has garnered significant attention in the fields of data science and machine learning. One of its standout features lies in its robust support for vector indexing and querying. Milvus employs state-of-the-art, cutting-edge algorithms to accelerate the search process, making it exceptionally efficient at retrieving similar vectors, even when handling extensive datasets.
 
-Milvus's popularity also comes from its ease of integration with popular Python-based frameworks such as PyTorch and TensorFlow, allowing for seamless inclusion in existing machine learning workflows.
+== Prerequisites
 
-In the e-commerce industry, Milvus is used in recommendation systems, which suggest products based on user preferences. In image and video analysis, it excels in tasks like object recognition, image similarity search, and content-based image retrieval. Additionally, it is commonly used in natural language processing for document clustering, semantic search, and question-answering systems.
+* A running Milvus instance. The following options are available:
+** link:https://milvus.io/docs/install_standalone-docker.md[Milvus Standalone]: Docker, Operator, Helm,DEB/RPM, Docker Compose.
+** link:https://milvus.io/docs/install_cluster-milvusoperator.md[Milvus Cluster]: Operator, Helm.
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `MilvusVectorStore`.
+
+== Dependencies
+
+Then add the Milvus VectorStore boot starter dependency to your project:
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-milvus-store-spring-boot-starter'
+}
+----
+
+The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+To connect to and configure the `MilvusVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's `application.yml`
+
+[yml]
+----
+spring:
+	ai:
+		vectorstore:
+			milvus:
+				client:
+					host: "localhost"
+					port: 19530
+					username: "root"
+					password: "milvus"
+				databaseName: "default"
+				collectionName: "vector_store"
+				embeddingDimension: 1536
+				indexType: IVF_FLAT
+				metricType: COSINE
+----
+
+TIP: Check the list of xref:#milvus-properties[configuration parameters] to learn about the default values and configuration options.
+
+Now you can Auto-wire the Milvus Vector Store in your application and use it
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to PGVector
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+=== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the `MilvusVectorStore`.
+To add the following dependencies to your project:
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-milvus-store</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+To configure MilvusVectorStore in your application, you can use the following setup:
+
+[source,java]
+----
+	@Bean
+	public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient) {
+		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
+			.withCollectionName("test_vector_store")
+			.withDatabaseName("default")
+			.withIndexType(IndexType.IVF_FLAT)
+			.withMetricType(MetricType.COSINE)
+			.build();
+		return new MilvusVectorStore(milvusClient, embeddingClient, config);
+	}
+
+	@Bean
+	public MilvusServiceClient milvusClient() {
+		return new MilvusServiceClient(ConnectParam.newBuilder()
+			.withAuthorization("minioadmin", "minioadmin")
+			.withUri(milvusContainer.getEndpoint())
+			.build());
+	}
+----
+
+== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Milvus store.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("john", "jill"),
+        b.eq("article_type", "blog")).build()));
+----
+
+NOTE: These filter expressions are converted into the equivalent PgVector filters.
+
+[[milvus-properties]]
+== Milvus VectorStore properties
+
+You can use the following properties in your Spring Boot configuration to customize the Milvus vector store.
+
+[cols="4,5,1"]
+|===
+|Property| Description | Default value
+
+|spring.ai.vectorstore.milvus.database-name |  The name of the Milvus database to use.  | default
+|spring.ai.vectorstore.milvus.collection-name | Milvus collection name to store the vectors  | vector_store
+|spring.ai.vectorstore.milvus.embedding-dimension | The dimension of the vectors to be stored in the Milvus collection.  | 1536
+|spring.ai.vectorstore.milvus.index-type | The type of the index to be created for the Milvus collection.  | IVF_FLAT
+|spring.ai.vectorstore.milvus.metric-type | The metric type to be used for the Milvus collection.  | COSINE
+|spring.ai.vectorstore.milvus.index-parameters | The index parameters to be used for the Milvus collection.  | {"nlist":1024}
+|spring.ai.vectorstore.milvus.client.host |  The name or address of the host. | localhost
+|spring.ai.vectorstore.milvus.client.port |  The connection port. | 19530
+|spring.ai.vectorstore.milvus.client.uri |  The uri of Milvus instance | -
+|spring.ai.vectorstore.milvus.client.token	| Token serving as the key for identification and authentication purposes.  | -
+|spring.ai.vectorstore.milvus.client.connect-timeout-ms | Connection timeout value of client channel. The timeout value must be greater than zero . | 10000
+|spring.ai.vectorstore.milvus.client.keep-alive-time-ms | Keep-alive time value of client channel. The keep-alive value must be greater than zero.  | 55000
+|spring.ai.vectorstore.milvus.client.keep-alive-timeout-ms | The keep-alive timeout value of client channel. The timeout value must be greater than zero. | 20000
+|spring.ai.vectorstore.milvus.client.rpc-deadline-ms | Deadline for how long you are willing to wait for a reply from the server. With a deadline setting, the client will wait when encounter fast RPC fail caused by network fluctuations. The deadline value must be larger than or equal to zero. | 0
+|spring.ai.vectorstore.milvus.client.client-key-path |  The client.key path for tls two-way authentication, only takes effect when "secure" is true | -
+|spring.ai.vectorstore.milvus.client.client-pem-path |  The client.pem path for tls two-way authentication, only takes effect when "secure" is true | -
+|spring.ai.vectorstore.milvus.client.ca-pem-path | The ca.pem path for tls two-way authentication, only takes effect when "secure" is true  | -
+|spring.ai.vectorstore.milvus.client.server-pem-path | server.pem path for tls one-way authentication, only takes effect when "secure" is true.  | -
+|spring.ai.vectorstore.milvus.client.server-name |  Sets the target name override for SSL host name checking, only takes effect when "secure" is True. Note: this value is passed to grpc.ssl_target_name_override  | -
+|spring.ai.vectorstore.milvus.client.secure | Secure the authorization for this connection, set to True to enable TLS.  | false
+|spring.ai.vectorstore.milvus.client.idle-timeout-ms | Idle timeout value of client channel. The timeout value must be larger than zero.  | 24h
+|spring.ai.vectorstore.milvus.client.username | The username and password for this connection.  | root
+|spring.ai.vectorstore.milvus.client.password | The password for this connection.  | milvus
+|===
+
+
 
 == Starting Milvus Store
 

@@ -38,7 +38,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.azure.openai.api-key=TEST_API_KEY",
 					"spring.ai.azure.openai.endpoint=TEST_ENDPOINT",
-					"spring.ai.azure.openai.embedding.options.model=MODEL_XYZ")
+					"spring.ai.azure.openai.embedding.options.deployment-name=MODEL_XYZ")
 			.withConfiguration(AutoConfigurations.of(AzureOpenAiAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiEmbeddingProperties.class);
@@ -47,7 +47,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("TEST_API_KEY");
 				assertThat(connectionProperties.getEndpoint()).isEqualTo("TEST_ENDPOINT");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getDeploymentName()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -59,7 +59,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				"spring.ai.azure.openai.api-key=API_KEY",
 				"spring.ai.azure.openai.endpoint=ENDPOINT",
 
-				"spring.ai.azure.openai.chat.options.model=MODEL_XYZ",
+				"spring.ai.azure.openai.chat.options.deployment-name=MODEL_XYZ",
 				"spring.ai.azure.openai.chat.options.frequencyPenalty=-1.5",
 				"spring.ai.azure.openai.chat.options.logitBias.myTokenId=-5",
 				"spring.ai.azure.openai.chat.options.maxTokens=123",
@@ -80,9 +80,9 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				assertThat(connectionProperties.getEndpoint()).isEqualTo("ENDPOINT");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("text-embedding-ada-002");
+				assertThat(embeddingProperties.getOptions().getDeploymentName()).isEqualTo("text-embedding-ada-002");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getDeploymentName()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
 				assertThat(chatProperties.getOptions().getLogitBias().get("myTokenId")).isEqualTo(-5);
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);

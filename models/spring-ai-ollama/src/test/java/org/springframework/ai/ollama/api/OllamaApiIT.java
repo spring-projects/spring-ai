@@ -50,7 +50,7 @@ public class OllamaApiIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
 
 	static OllamaApi ollamaApi;
 
@@ -128,7 +128,7 @@ public class OllamaApiIT {
 		assertThat(responses.stream()
 			.filter(r -> r.message() != null)
 			.map(r -> r.message().content())
-			.collect(Collectors.joining("\n"))).contains("Sofia");
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();

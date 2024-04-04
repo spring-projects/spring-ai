@@ -27,13 +27,20 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 
+/**
+ * The AbstractMessage class is an abstract implementation of the Message interface. It
+ * provides a base implementation for message content, media attachments, properties, and
+ * message type.
+ *
+ * @see Message
+ */
 public abstract class AbstractMessage implements Message {
 
 	protected final MessageType messageType;
 
 	protected final String textContent;
 
-	protected final List<MediaData> mediaData;
+	protected final List<Media> mediaData;
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
@@ -46,18 +53,17 @@ public abstract class AbstractMessage implements Message {
 
 	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> messageProperties) {
 		Assert.notNull(messageType, "Message type must not be null");
-		// Assert.notNull(content, "Content must not be null");
 		this.messageType = messageType;
 		this.textContent = content;
 		this.mediaData = new ArrayList<>();
 		this.properties = messageProperties;
 	}
 
-	protected AbstractMessage(MessageType messageType, String textContent, List<MediaData> mediaData) {
+	protected AbstractMessage(MessageType messageType, String textContent, List<Media> mediaData) {
 		this(messageType, textContent, mediaData, Map.of());
 	}
 
-	protected AbstractMessage(MessageType messageType, String textContent, List<MediaData> mediaData,
+	protected AbstractMessage(MessageType messageType, String textContent, List<Media> mediaData,
 			Map<String, Object> messageProperties) {
 
 		Assert.notNull(messageType, "Message type must not be null");
@@ -97,7 +103,7 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	@Override
-	public List<MediaData> getMediaData() {
+	public List<Media> getMedia() {
 		return this.mediaData;
 	}
 

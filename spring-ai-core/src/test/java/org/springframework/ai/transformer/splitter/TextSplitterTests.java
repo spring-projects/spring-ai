@@ -19,12 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.transformer.splitter.TextSplitter;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -81,9 +81,9 @@ public class TextSplitterTests {
 
 		// Verify that the same, merged metadata is copied to all chunks.
 		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
-		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(2).getMetadata());
-		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(3).getMetadata());
-		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2", "key3");
+		assertThat(chunks.get(2).getMetadata()).isEqualTo(chunks.get(3).getMetadata());
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
 
 		// Verify that the content formatters are copied from the parents to the chunks.
 		// doc1 -> chunk0, chunk1 and doc2 -> chunk2, chunk3

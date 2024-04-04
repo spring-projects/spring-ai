@@ -120,12 +120,11 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	private Double frequencyPenalty;
 
 	/**
-	 * The model name to provide as part of this completions request. Not applicable to
-	 * Azure OpenAI, where deployment information should be included in the Azure resource
-	 * URI that's connected to.
+	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
+	 * backed by an Azure OpenAI base model.
 	 */
-	@JsonProperty(value = "model")
-	private String model;
+	@JsonProperty(value = "deployment_name")
+	private String deploymentName;
 
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatClient. For Prompt Options
@@ -169,13 +168,15 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
-			this.options.model = model;
+		public Builder withDeploymentName(String deploymentName) {
+			this.options.deploymentName = deploymentName;
 			return this;
 		}
 
 		public Builder withFrequencyPenalty(Float frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty.doubleValue();
+			if (frequencyPenalty != null) {
+				this.options.frequencyPenalty = frequencyPenalty.doubleValue();
+			}
 			return this;
 		}
 
@@ -195,7 +196,9 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withPresencePenalty(Float presencePenalty) {
-			this.options.presencePenalty = presencePenalty.doubleValue();
+			if (presencePenalty != null) {
+				this.options.presencePenalty = presencePenalty.doubleValue();
+			}
 			return this;
 		}
 
@@ -298,12 +301,12 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
-	public String getModel() {
-		return this.model;
+	public String getDeploymentName() {
+		return this.deploymentName;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	public void setDeploymentName(String deploymentName) {
+		this.deploymentName = deploymentName;
 	}
 
 	@Override

@@ -17,13 +17,14 @@ package org.springframework.ai.autoconfigure.openai;
 
 import java.util.List;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiAudioSpeechClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -35,18 +36,21 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
  * @author Christian Tzolov
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
-		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class })
+		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class,
+		OpenAiAudioSpeechProperties.class })
 public class OpenAiAutoConfiguration {
 
 	@Bean
@@ -55,34 +59,36 @@ public class OpenAiAutoConfiguration {
 			matchIfMissing = true)
 	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var openAiApi = openAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder);
+				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext);
+		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public EmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder) {
+	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder);
+				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
 		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions());
+				embeddingProperties.getOptions(), retryTemplate);
 	}
 
 	private OpenAiApi openAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
-			RestClient.Builder restClientBuilder) {
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "OpenAI base URL must be set");
@@ -90,7 +96,7 @@ public class OpenAiAutoConfiguration {
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		Assert.hasText(resolvedApiKey, "OpenAI API key must be set");
 
-		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder);
+		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
 	}
 
 	@Bean
@@ -98,7 +104,9 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
-			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder) {
+			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
+
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
 
@@ -108,15 +116,16 @@ public class OpenAiAutoConfiguration {
 		Assert.hasText(apiKey, "OpenAI API key must be set");
 		Assert.hasText(baseUrl, "OpenAI base URL must be set");
 
-		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder);
+		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 
-		return new OpenAiImageClient(openAiImageApi).withDefaultOptions(imageProperties.getOptions());
+		return new OpenAiImageClient(openAiImageApi, imageProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiAudioTranscriptionClient openAiAudioTranscriptionClient(OpenAiConnectionProperties commonProperties,
-			OpenAiAudioTranscriptionProperties transcriptionProperties) {
+			OpenAiAudioTranscriptionProperties transcriptionProperties, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
 
 		String apiKey = StringUtils.hasText(transcriptionProperties.getApiKey()) ? transcriptionProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -127,12 +136,34 @@ public class OpenAiAutoConfiguration {
 		Assert.hasText(apiKey, "OpenAI API key must be set");
 		Assert.hasText(baseUrl, "OpenAI base URL must be set");
 
-		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder());
+		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder(), responseErrorHandler);
 
 		OpenAiAudioTranscriptionClient openAiChatClient = new OpenAiAudioTranscriptionClient(openAiAudioApi,
-				transcriptionProperties.getOptions());
+				transcriptionProperties.getOptions(), retryTemplate);
 
 		return openAiChatClient;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiAudioSpeechClient openAiAudioSpeechClient(OpenAiConnectionProperties commonProperties,
+			OpenAiAudioSpeechProperties speechProperties, ResponseErrorHandler responseErrorHandler) {
+
+		String apiKey = StringUtils.hasText(speechProperties.getApiKey()) ? speechProperties.getApiKey()
+				: commonProperties.getApiKey();
+
+		String baseUrl = StringUtils.hasText(speechProperties.getBaseUrl()) ? speechProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+
+		Assert.hasText(apiKey, "OpenAI API key must be set");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+
+		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder(), responseErrorHandler);
+
+		OpenAiAudioSpeechClient openAiSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi,
+				speechProperties.getOptions());
+
+		return openAiSpeechClient;
 	}
 
 	@Bean

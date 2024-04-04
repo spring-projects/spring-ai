@@ -1,7 +1,7 @@
 = Titan Embeddings
 
 Provides Bedrock Titan Embedding client.
-link:https://aws.amazon.com/bedrock/titan/[Amazon Titan] foundation models (FMs) provide customers with a breadth of high-performing image, multimodal, and text model choices, via a fully managed API.
+link:https://aws.amazon.com/bedrock/titan/[Amazon Titan] foundation models (FMs) provide customers with a breadth of high-performing image, multimodal embeddings, and text model choices, via a fully managed API.
 Amazon Titan models are created by AWS and pretrained on large datasets, making them powerful, general-purpose models built to support a variety of use cases, while also supporting the responsible use of AI.
 Use them as is or privately customize them with your own data.
 
@@ -82,7 +82,7 @@ Supported values are: `amazon.titan-embed-image-v1` and `amazon.titan-embed-text
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 
-=== Sample Controller (Auto-configuration)
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 

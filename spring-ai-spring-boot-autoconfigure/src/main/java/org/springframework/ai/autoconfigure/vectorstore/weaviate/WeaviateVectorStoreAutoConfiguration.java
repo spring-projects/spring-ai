@@ -16,7 +16,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
@@ -28,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingClient.class, WeaviateVectorStore.class })
@@ -35,13 +35,20 @@ import org.springframework.context.annotation.Bean;
 public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(WeaviateConnectionDetails.class)
+	public PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+		return new PropertiesWeaviateConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateVectorStoreProperties properties) {
+	public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateVectorStoreProperties properties,
+			WeaviateConnectionDetails connectionDetails) {
 
 		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
 			.withScheme(properties.getScheme())
 			.withApiKey(properties.getApiKey())
-			.withHost(properties.getHost())
+			.withHost(connectionDetails.getHost())
 			.withHeaders(properties.getHeaders())
 			.withObjectClass(properties.getObjectClass())
 			.withFilterableMetadataFields(properties.getFilterField()
@@ -52,6 +59,21 @@ public class WeaviateVectorStoreAutoConfiguration {
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
 		return new WeaviateVectorStore(configBuilder.build(), embeddingClient);
+	}
+
+	private static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {
+
+		private final WeaviateVectorStoreProperties properties;
+
+		PropertiesWeaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String getHost() {
+			return this.properties.getHost();
+		}
+
 	}
 
 }

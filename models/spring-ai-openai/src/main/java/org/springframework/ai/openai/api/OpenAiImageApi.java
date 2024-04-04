@@ -20,9 +20,10 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.openai.api.common.ApiUtils;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -44,11 +45,29 @@ public class OpenAiImageApi {
 		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
 	}
 
+	/**
+	 * Create a new OpenAI Image API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 */
 	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	}
+
+	/**
+	 * Create a new OpenAI Image API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 * @param responseErrorHandler the response error handler to use.
+	 */
+	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
-			.defaultStatusHandler(ApiUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+			.defaultStatusHandler(responseErrorHandler)
 			.build();
 	}
 

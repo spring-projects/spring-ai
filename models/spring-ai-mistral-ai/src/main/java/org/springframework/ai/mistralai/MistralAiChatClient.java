@@ -15,10 +15,11 @@
  */
 package org.springframework.ai.mistralai;
 
-import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,16 +36,16 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion.Choice;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -70,17 +71,7 @@ public class MistralAiChatClient extends
 	 */
 	private final MistralAiApi mistralAiApi;
 
-	private final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(MistralAiApi.MistralAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.withListener(new RetryListener() {
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				log.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
-			};
-		})
-		.build();
+	private final RetryTemplate retryTemplate;
 
 	public MistralAiChatClient(MistralAiApi mistralAiApi) {
 		this(mistralAiApi,
@@ -93,46 +84,63 @@ public class MistralAiChatClient extends
 	}
 
 	public MistralAiChatClient(MistralAiApi mistralAiApi, MistralAiChatOptions options) {
-		this(mistralAiApi, options, null);
+		this(mistralAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public MistralAiChatClient(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
 		super(functionCallbackContext);
 		Assert.notNull(mistralAiApi, "MistralAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		this.mistralAiApi = mistralAiApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		// return retryTemplate.execute(ctx -> {
 		var request = createRequest(prompt, false);
 
-		// var completionEntity = this.mistralAiApi.chatCompletionEntity(request);
-		ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+		return retryTemplate.execute(ctx -> {
 
-		var chatCompletion = completionEntity.getBody();
-		if (chatCompletion == null) {
-			log.warn("No chat completion returned for prompt: {}", prompt);
-			return new ChatResponse(List.of());
+			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+
+			var chatCompletion = completionEntity.getBody();
+			if (chatCompletion == null) {
+				log.warn("No chat completion returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
+
+			List<Generation> generations = chatCompletion.choices()
+				.stream()
+				.map(choice -> new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
+					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
+				.toList();
+
+			return new ChatResponse(generations);
+		});
+	}
+
+	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
+		Map<String, Object> map = new HashMap<>();
+
+		var message = choice.message();
+		if (message.role() != null) {
+			map.put("role", message.role().name());
 		}
-
-		List<Generation> generations = chatCompletion.choices()
-			.stream()
-			.map(choice -> new Generation(choice.message().content(), Map.of("role", choice.message().role().name()))
-				.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
-			.toList();
-
-		return new ChatResponse(generations);
-		// });
+		if (choice.finishReason() != null) {
+			map.put("finishReason", choice.finishReason().name());
+		}
+		map.put("id", id);
+		return map;
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		var request = createRequest(prompt, true);
+
 		return retryTemplate.execute(ctx -> {
-			var request = createRequest(prompt, true);
 
 			var completionChunks = this.mistralAiApi.chatCompletionStream(request);
 
@@ -140,13 +148,21 @@ public class MistralAiChatClient extends
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			return completionChunks.map(chunk -> {
-				String chunkId = chunk.id();
-				List<Generation> generations = chunk.choices().stream().map(choice -> {
-					if (choice.delta().role() != null) {
-						roleMap.putIfAbsent(chunkId, choice.delta().role().name());
+			return completionChunks.map(chunk -> toChatCompletion(chunk)).map(chatCompletion -> {
+
+				chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
+					.getBody();
+
+				@SuppressWarnings("null")
+				String id = chatCompletion.id();
+
+				List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+					if (choice.message().role() != null) {
+						roleMap.putIfAbsent(id, choice.message().role().name());
 					}
-					var generation = new Generation(choice.delta().content(), Map.of("role", roleMap.get(chunkId)));
+					String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
+					var generation = new Generation(choice.message().content(),
+							Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
 					if (choice.finishReason() != null) {
 						generation = generation
 							.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
@@ -156,6 +172,15 @@ public class MistralAiChatClient extends
 				return new ChatResponse(generations);
 			});
 		});
+	}
+
+	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {
+		List<Choice> choices = chunk.choices()
+			.stream()
+			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason()))
+			.toList();
+
+		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, null);
 	}
 
 	/**
@@ -203,10 +228,6 @@ public class MistralAiChatClient extends
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 
-			if (stream) {
-				throw new IllegalArgumentException("Currently tool functions are not supported in streaming mode");
-			}
-
 			request = ModelOptionsUtils.merge(
 					MistralAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
@@ -250,7 +271,7 @@ public class MistralAiChatClient extends
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
 		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, previousRequest.stream());
+		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, false);
 		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
 
 		return newRequest;
@@ -261,6 +282,7 @@ public class MistralAiChatClient extends
 		return request.messages();
 	}
 
+	@SuppressWarnings("null")
 	@Override
 	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
 		return chatCompletion.getBody().choices().iterator().next().message();

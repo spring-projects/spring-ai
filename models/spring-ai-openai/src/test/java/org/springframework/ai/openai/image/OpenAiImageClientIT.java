@@ -39,7 +39,7 @@ public class OpenAiImageClientIT extends AbstractIT {
 
 		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
 
-		ImageResponse imageResponse = openaiImageClient.call(imagePrompt);
+		ImageResponse imageResponse = imageClient.call(imagePrompt);
 
 		assertThat(imageResponse.getResults()).hasSize(1);
 
