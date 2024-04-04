@@ -174,9 +174,9 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withFrequencyPenalty(Float frequencyPenalty) {
-            if(frequencyPenalty != null) {
-                this.options.frequencyPenalty = frequencyPenalty.doubleValue();
-            }
+			if (frequencyPenalty != null) {
+				this.options.frequencyPenalty = frequencyPenalty.doubleValue();
+			}
 			return this;
 		}
 
@@ -196,9 +196,9 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withPresencePenalty(Float presencePenalty) {
-            if(presencePenalty != null) {
-                this.options.presencePenalty = presencePenalty.doubleValue();
-            }
+			if (presencePenalty != null) {
+				this.options.presencePenalty = presencePenalty.doubleValue();
+			}
 			return this;
 		}
 

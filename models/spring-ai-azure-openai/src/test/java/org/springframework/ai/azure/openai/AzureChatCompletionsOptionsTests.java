@@ -56,39 +56,35 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getTemperature()).isEqualTo(99.9f);
 	}
 
-    private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
-        return Stream.of(
-                Arguments.of(0.0f, 0.0f),
-                Arguments.of(0.0f, 1.0f),
-                Arguments.of(1.0f, 0.0f),
-                Arguments.of(1.0f, 1.0f),
-                Arguments.of(1.0f, null),
-                Arguments.of(null, 1.0f),
-                Arguments.of(null, null)
-        );
-    }
+	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {
+		return Stream.of(Arguments.of(0.0f, 0.0f), Arguments.of(0.0f, 1.0f), Arguments.of(1.0f, 0.0f),
+				Arguments.of(1.0f, 1.0f), Arguments.of(1.0f, null), Arguments.of(null, 1.0f), Arguments.of(null, null));
+	}
 
-    @ParameterizedTest
-    @MethodSource("providePresencePenaltyAndFrequencyPenaltyTest")
-    public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Float presencePenalty, Float frequencyPenalty) {
-        var options = AzureOpenAiChatOptions.builder()
-                .withMaxTokens(800)
-                .withTemperature(0.7F)
-                .withTopP(0.95F)
-                .withPresencePenalty(presencePenalty)
-                .withFrequencyPenalty(frequencyPenalty)
-                .build();
+	@ParameterizedTest
+	@MethodSource("providePresencePenaltyAndFrequencyPenaltyTest")
+	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Float presencePenalty, Float frequencyPenalty) {
+		var options = AzureOpenAiChatOptions.builder()
+			.withMaxTokens(800)
+			.withTemperature(0.7F)
+			.withTopP(0.95F)
+			.withPresencePenalty(presencePenalty)
+			.withFrequencyPenalty(frequencyPenalty)
+			.build();
 
-        if (presencePenalty == null) {
-            assertThat(options.getPresencePenalty()).isEqualTo(null);
-        } else {
-            assertThat(options.getPresencePenalty().floatValue()).isEqualTo(presencePenalty);
-        }
+		if (presencePenalty == null) {
+			assertThat(options.getPresencePenalty()).isEqualTo(null);
+		}
+		else {
+			assertThat(options.getPresencePenalty().floatValue()).isEqualTo(presencePenalty);
+		}
 
-        if (frequencyPenalty == null) {
-            assertThat(options.getFrequencyPenalty()).isEqualTo(null);
-        } else {
-            assertThat(options.getFrequencyPenalty().floatValue()).isEqualTo(frequencyPenalty);
-        }
-    }
+		if (frequencyPenalty == null) {
+			assertThat(options.getFrequencyPenalty()).isEqualTo(null);
+		}
+		else {
+			assertThat(options.getFrequencyPenalty().floatValue()).isEqualTo(frequencyPenalty);
+		}
+	}
+
 }
