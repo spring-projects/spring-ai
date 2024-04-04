@@ -63,7 +63,8 @@ public class WatsonxAiRequest {
     public static Builder builder(String input) { return new Builder(input); }
 
     public static class Builder {
-        public static final String MODEL_PARAMETER_IS_REQUIRED = "Model parameter is required";private final String input;
+        public static final String MODEL_PARAMETER_IS_REQUIRED = "Model parameter is required";
+        private final String input;
         private Map<String, Object> parameters;
         private String model = "";
 
