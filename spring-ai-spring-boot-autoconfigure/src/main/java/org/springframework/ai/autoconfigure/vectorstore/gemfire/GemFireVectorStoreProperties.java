@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -25,22 +24,51 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(GemFireVectorStoreProperties.CONFIG_PREFIX)
 public class GemFireVectorStoreProperties {
 
+	/**
+	 * Configuration prefix for Spring AI VectorStore GemFire.
+	 */
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.gemfire";
 
+	/**
+	 * The host of the GemFire to connect to.
+	 */
 	private String host;
 
+	/**
+	 * The port of the GemFire to connect to.
+	 */
 	private int port;
 
+	/**
+	 * The name of the index in the GemFire.
+	 */
 	private String indexName;
 
+	/**
+	 * The beam width for similarity queries. Default value is {@code 100}.
+	 */
 	private int beamWidth = 100;
 
+	/**
+	 * The maximum number of connections allowed. Default value is {@code 16}.
+	 */
 	private int maxConnections = 16;
 
+	/**
+	 * The similarity function to be used for vector comparisons. Default value is
+	 * {@code "COSINE"}.
+	 */
 	private String vectorSimilarityFunction = "COSINE";
 
+	/**
+	 * The fields to be used for queries. Default value is an array containing
+	 * {@code "vector"}.
+	 */
 	private String[] fields = new String[] { "vector" };
 
+	/**
+	 * The number of buckets to use for partitioning the data. Default value is {@code 0}.
+	 */
 	private int buckets = 0;
 
 	public int getBeamWidth() {
