@@ -96,14 +96,14 @@ public class WatsonxAiChatOptions implements ChatOptions {
      * (e.g., ["\n\n\n"]) then when the LLM generates three consecutive line breaks it will terminate.
      * Stop sequences are ignored until after the number of tokens that are specified in the Min tokens parameter are generated.
      */
-    @JsonProperty("stop_sequences") private List<String> stopSequences = List.of();
+    @JsonProperty("stop_sequences") private List<String> stopSequences;
 
     /**
      * Sets how strongly to penalize repetitions. A higher value
      * (e.g., 1.8) will penalize repetitions more strongly, while a lower value (e.g.,
      * 1.1) will be more lenient. (Default: 1.0)
      */
-    @JsonProperty("repetition_penalty") private Float repetitionPenalty = 1.0f;
+    @JsonProperty("repetition_penalty") private Float repetitionPenalty;
 
     /**
      * Produce repeatable results, set the same random seed value every time. (Default: randomly generated)
