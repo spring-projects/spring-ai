@@ -27,10 +27,10 @@ import org.springframework.ai.chat.prompt.Prompt;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public interface PromptHistoryAugmenter2 {
+public interface PromptHistoryAugmenter {
 
 	/**
 	 */
-	Prompt augment(Prompt originalPrompt, List<ChatMessages> chatHistoryGroups);
+	Prompt augment(Prompt originalPrompt, List<ChatExchange> chatHistoryGroups);
 
 }

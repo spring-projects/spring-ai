@@ -23,11 +23,11 @@ import java.util.List;
  *
  * @author Christian Tzolov
  */
-public interface ChatHistory2 {
+public interface ChatHistory {
 
-	void add(ChatMessages historyGroup);
+	void add(ChatExchange historyGroup);
 
-	List<ChatMessages> get(String sessionId);
+	List<ChatExchange> get(String sessionId);
 
 	void clear(String sessionId);
 

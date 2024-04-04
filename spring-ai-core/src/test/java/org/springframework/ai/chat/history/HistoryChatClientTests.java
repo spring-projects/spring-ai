@@ -54,15 +54,15 @@ public class HistoryChatClientTests {
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
 
-	private List<Message> flatten(List<ChatMessages> chatMessages) {
+	private List<Message> flatten(List<ChatExchange> chatMessages) {
 		return chatMessages.stream().flatMap(c -> c.getMessages().stream()).toList();
 	}
 
 	@Test
 	public void chatClientUserMessages() {
 
-		ChatHistory2 chatHistory = new InMemoryChatHistory2();
-		ChatHistoryRetriever chatHistoryRetriever = new ChatHistoryRetriever(chatHistory, 10);
+		ChatHistory chatHistory = new InMemoryChatHistory();
+		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 10);
 
 		ChatEngine chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
 				chatHistoryRetriever);

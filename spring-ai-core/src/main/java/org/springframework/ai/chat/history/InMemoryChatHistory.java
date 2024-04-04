@@ -16,45 +16,38 @@
 
 package org.springframework.ai.chat.history;
 
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-
-import org.springframework.ai.chat.messages.Message;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- *
- * Represents single request response set of messages.
- *
  * @author Christian Tzolov
  */
-public class ChatMessages {
+public class InMemoryChatHistory implements ChatHistory {
 
-	private final String sessionId;
+	/**
+	 * Chat history storage.
+	 */
+	protected final ConcurrentHashMap<String, List<ChatExchange>> chatHistory;
 
-	private final List<Message> messages;
-
-	private final long timestamp;
-
-	public ChatMessages(String sessionId, List<Message> messages, long timestamp) {
-		this.sessionId = sessionId;
-		this.messages = messages;
-		this.timestamp = timestamp;
+	public InMemoryChatHistory() {
+		this.chatHistory = new ConcurrentHashMap<>();
 	}
 
-	public ChatMessages(String sessionId, List<Message> messages) {
-		this(sessionId, messages, Instant.now().toEpochMilli());
+	@Override
+	public void add(ChatExchange historyGroup) {
+		this.chatHistory.putIfAbsent(historyGroup.getSessionId(), new ArrayList<>());
+		this.chatHistory.get(historyGroup.getSessionId()).add(historyGroup);
 	}
 
-	public List<Message> getMessages() {
-		return this.messages;
+	@Override
+	public List<ChatExchange> get(String sessionId) {
+		return this.chatHistory.get(sessionId);
 	}
 
-	public String getSessionId() {
-		return this.sessionId;
-	}
-
-	public long getTimestamp() {
-		return this.timestamp;
+	@Override
+	public void clear(String sessionId) {
+		this.chatHistory.remove(sessionId);
 	}
 
 }

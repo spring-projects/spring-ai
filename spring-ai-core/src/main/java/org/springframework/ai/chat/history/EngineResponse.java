@@ -27,9 +27,9 @@ public class EngineResponse {
 
 	private final List<Document> retrievedDocuments;
 
-	private final List<ChatMessages> retrievedMessages;
+	private final List<ChatExchange> retrievedMessages;
 
-	public EngineResponse(ChatResponse chatResponse, List<Document> documents, List<ChatMessages> chatMessages) {
+	public EngineResponse(ChatResponse chatResponse, List<Document> documents, List<ChatExchange> chatMessages) {
 		this.chatResponse = chatResponse;
 		this.retrievedDocuments = documents;
 		this.retrievedMessages = chatMessages;
@@ -43,7 +43,7 @@ public class EngineResponse {
 		return this.retrievedDocuments;
 	}
 
-	public List<ChatMessages> getRetrievedMessages() {
+	public List<ChatExchange> getRetrievedMessages() {
 		return this.retrievedMessages;
 	}
 

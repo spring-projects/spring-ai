@@ -16,17 +16,20 @@
 package org.springframework.ai.openai.chat;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.history.ChatEngine;
-import org.springframework.ai.chat.history.ChatHistory2;
+import org.springframework.ai.chat.history.ChatHistory;
 import org.springframework.ai.chat.history.ChatHistoryRetriever;
+import org.springframework.ai.chat.history.TokenWindowChatHistoryRetriever;
 import org.springframework.ai.chat.history.EngineResponse;
-import org.springframework.ai.chat.history.InMemoryChatHistory2;
+import org.springframework.ai.chat.history.InMemoryChatHistory;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatClient;
@@ -51,12 +54,14 @@ public class OpenAiChatHistoryIT {
 	private OpenAiChatClient openAiChatClient;
 
 	@Test
-	void responseFormatTest2() {
+	void chatHistory() {
 
-		ChatHistory2 chatHistory = new InMemoryChatHistory2();
+		ChatHistory chatHistory = new InMemoryChatHistory();
+
+		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 4000);
 
 		var chatEngine = new ChatEngine(openAiChatClient, openAiChatClient, chatHistory, "test-session-id",
-				new ChatHistoryRetriever(chatHistory, 4000));
+				chatHistoryRetriever);
 
 		EngineResponse response1 = chatEngine
 			.call(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff?"))));
@@ -67,6 +72,42 @@ public class OpenAiChatHistoryIT {
 
 		logger.info("Response2: " + response2.getChatResponse().getResult().getOutput().getContent());
 		assertThat(response2.getChatResponse().getResult().getOutput().getContent()).contains("John Vincent Atanasoff");
+
+	}
+
+	@Test
+	void streamingChatHistory() {
+
+		ChatHistory chatHistory = new InMemoryChatHistory();
+
+		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 4000);
+
+		var chatEngine = new ChatEngine(openAiChatClient, openAiChatClient, chatHistory, "test-session-id",
+				chatHistoryRetriever);
+
+		Flux<EngineResponse> fluxResponse1 = chatEngine
+			.stream(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff?"))));
+
+		var response1 = fluxResponse1.collectList()
+			.block()
+			.stream()
+			.map(fr -> fr.getChatResponse().getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+
+		logger.info("Response1: " + response1);
+		assertThat(response1).contains("John");
+
+		Flux<EngineResponse> fluxResponse2 = chatEngine
+			.stream(new Prompt(List.of(new UserMessage("What is my name?"))));
+
+		var response2 = fluxResponse2.collectList()
+			.block()
+			.stream()
+			.map(fr -> fr.getChatResponse().getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+
+		logger.info("Response2: " + response2);
+		assertThat(response2).contains("John Vincent Atanasoff");
 
 	}
 
