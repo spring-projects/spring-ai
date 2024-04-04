@@ -30,7 +30,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 public interface PromptHistoryAugmenter {
 
 	/**
+	 * Augment the original {@link Prompt} with the historical {@link ChatExchange}
+	 * @param originalPrompt the original {@link Prompt} to augment
+	 * @param chatExchangeList the list of {@link ChatExchange} to use for augmentation.
+	 * The list is ordered from the oldest to the newest {@link ChatExchange}.
 	 */
-	Prompt augment(Prompt originalPrompt, List<ChatExchange> chatHistoryGroups);
+	Prompt augment(Prompt originalPrompt, List<ChatExchange> chatExchangeList);
 
 }

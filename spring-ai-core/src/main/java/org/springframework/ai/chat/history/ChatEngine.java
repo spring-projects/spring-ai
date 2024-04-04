@@ -67,11 +67,17 @@ public class ChatEngine implements Engine, StreamingEngine {
 
 	public ChatEngine(ChatClient chatClient, StreamingChatClient streamingChatClient, ChatHistory chatHistory,
 			String sessionId, ChatHistoryRetriever chatHistoryRetriever) {
+		this(chatClient, streamingChatClient, chatHistory, sessionId, chatHistoryRetriever, DEFAULT_HISTORY_AUGMENTER);
+	}
+
+	public ChatEngine(ChatClient chatClient, StreamingChatClient streamingChatClient, ChatHistory chatHistory,
+			String sessionId, ChatHistoryRetriever chatHistoryRetriever,
+			PromptHistoryAugmenter promptHistoryAugmenter) {
 		this.chatClient = chatClient;
 		this.streamingChatClient = streamingChatClient;
 		this.chatHistory = chatHistory;
 		this.sessionId = sessionId;
-		this.promptHistoryAugmenter = DEFAULT_HISTORY_AUGMENTER;
+		this.promptHistoryAugmenter = promptHistoryAugmenter;
 		this.chatHistoryRetriever = chatHistoryRetriever;
 	}
 
