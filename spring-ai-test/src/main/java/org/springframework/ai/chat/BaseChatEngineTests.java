@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.engine.ChatEngine;
+import org.springframework.ai.chat.engine.EngineRequest;
 import org.springframework.ai.chat.engine.EngineResponse;
 import org.springframework.ai.chat.history.ChatHistory;
 import org.springframework.ai.chat.history.ChatHistoryRetriever;
@@ -60,15 +61,16 @@ public class BaseChatEngineTests {
 
 		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 4000);
 
-		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
-				chatHistoryRetriever, new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
+		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, chatHistoryRetriever,
+				new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
 
-		EngineResponse response1 = chatEngine
-			.call(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff"))));
+		EngineResponse response1 = chatEngine.call(new EngineRequest("test-session-id",
+				new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff")))));
 		logger.info("Response1: " + response1.getChatResponse().getResult().getOutput().getContent());
 		assertThat(response1.getChatResponse().getResult().getOutput().getContent()).contains("John");
 
-		EngineResponse response2 = chatEngine.call(new Prompt(List.of(new UserMessage("What is my name?"))));
+		EngineResponse response2 = chatEngine
+			.call(new EngineRequest("test-session-id", new Prompt(List.of(new UserMessage("What is my name?")))));
 
 		logger.info("Response2: " + response2.getChatResponse().getResult().getOutput().getContent());
 		assertThat(response2.getChatResponse().getResult().getOutput().getContent()).contains("John Vincent Atanasoff");
@@ -81,20 +83,22 @@ public class BaseChatEngineTests {
 
 		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 4000);
 
-		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
-				chatHistoryRetriever, new TextPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
+		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, chatHistoryRetriever,
+				new TextPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
 
-		EngineResponse response1 = chatEngine
-			.call(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff"))));
+		EngineResponse response1 = chatEngine.call(new EngineRequest("test-session-id",
+				new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff")))));
 		logger.info("Response1: " + response1.getChatResponse().getResult().getOutput().getContent());
 		assertThat(response1.getChatResponse().getResult().getOutput().getContent()).contains("John");
 
-		EngineResponse response2 = chatEngine.call(new Prompt(List.of(new UserMessage("What is my name?"))));
+		EngineResponse response2 = chatEngine
+			.call(new EngineRequest("test-session-id", new Prompt(List.of(new UserMessage("What is my name?")))));
 
 		logger.info("Response2: " + response2.getChatResponse().getResult().getOutput().getContent());
 		assertThat(response2.getChatResponse().getResult().getOutput().getContent()).contains("John Vincent Atanasoff");
 
-		EngineResponse response3 = chatEngine.call(new Prompt(List.of(new UserMessage("Tell me more about me?"))));
+		EngineResponse response3 = chatEngine
+			.call(new EngineRequest("test-session-id", new Prompt(List.of(new UserMessage("Tell me more about me?")))));
 		logger.info("Response3: " + response3.getChatResponse().getResult().getOutput().getContent());
 	}
 
@@ -105,11 +109,11 @@ public class BaseChatEngineTests {
 
 		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 4000);
 
-		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
-				chatHistoryRetriever, new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
+		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, chatHistoryRetriever,
+				new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
 
-		Flux<EngineResponse> fluxResponse1 = chatEngine
-			.stream(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff"))));
+		Flux<EngineResponse> fluxResponse1 = chatEngine.stream(new EngineRequest("test-session-id",
+				new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff")))));
 
 		var response1 = fluxResponse1.collectList()
 			.block()
@@ -121,8 +125,8 @@ public class BaseChatEngineTests {
 		logger.info("Response1: " + response1);
 		assertThat(response1).contains("John");
 
-		Flux<EngineResponse> fluxResponse2 = chatEngine
-			.stream(new Prompt(List.of(new UserMessage("What is my full name?"))));
+		Flux<EngineResponse> fluxResponse2 = chatEngine.stream(
+				new EngineRequest("test-session-id", new Prompt(List.of(new UserMessage("What is my full name?")))));
 
 		var response2 = fluxResponse2.collectList()
 			.block()
@@ -142,11 +146,11 @@ public class BaseChatEngineTests {
 
 		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 4000);
 
-		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
-				chatHistoryRetriever, new TextPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
+		var chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, chatHistoryRetriever,
+				new TextPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
 
-		Flux<EngineResponse> fluxResponse1 = chatEngine
-			.stream(new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff."))));
+		Flux<EngineResponse> fluxResponse1 = chatEngine.stream(new EngineRequest("test-session-id",
+				new Prompt(List.of(new UserMessage("Hello my name is John Vincent Atanasoff.")))));
 
 		var response1 = fluxResponse1.collectList()
 			.block()
@@ -159,7 +163,7 @@ public class BaseChatEngineTests {
 		assertThat(response1).contains("John");
 
 		Flux<EngineResponse> fluxResponse2 = chatEngine
-			.stream(new Prompt(List.of(new UserMessage("What is my name?"))));
+			.stream(new EngineRequest("test-session-id", new Prompt(List.of(new UserMessage("What is my name?")))));
 
 		var response2 = fluxResponse2.collectList()
 			.block()

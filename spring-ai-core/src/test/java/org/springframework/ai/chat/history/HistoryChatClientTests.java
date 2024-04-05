@@ -30,6 +30,7 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.engine.ChatEngine;
+import org.springframework.ai.chat.engine.EngineRequest;
 import org.springframework.ai.chat.engine.EngineResponse;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -62,22 +63,23 @@ public class HistoryChatClientTests {
 	public void chatClientUserMessages() {
 
 		ChatHistory chatHistory = new InMemoryChatHistory();
-		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 10);
+		ChatHistoryRetriever chatHistoryRetriever = new TokenWindowChatHistoryRetriever(chatHistory, 5);
 
-		ChatEngine chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, "test-session-id",
-				chatHistoryRetriever, new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
+		ChatEngine chatEngine = new ChatEngine(chatClient, streamingChatClient, chatHistory, chatHistoryRetriever,
+				new MessageListPromptHistoryAugmenter(), new JTokkitTokenCountEstimator());
 
 		when(chatClient.call(promptCaptor.capture()))
 			.thenReturn(new ChatResponse(List.of(new Generation("assistant:1"))))
 			.thenReturn(new ChatResponse(List.of(new Generation("assistant:2"))))
 			.thenReturn(new ChatResponse(List.of(new Generation("assistant:3"))));
 
-		EngineResponse response1 = chatEngine
-			.call(new Prompt(List.of(new UserMessage("user:1"), new UserMessage("user:2"), new UserMessage("user:3"),
-					new UserMessage("user:4"), new UserMessage("user:5"))));
+		EngineResponse response1 = chatEngine.call(new EngineRequest("test-session-id",
+				new Prompt(List.of(new UserMessage("user:1"), new UserMessage("user:2"), new UserMessage("user:3"),
+						new UserMessage("user:4"), new UserMessage("user:5")))));
 
 		assertThat(response1.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:1");
 
+		List<Message> messages2 = promptCaptor.getValue().getInstructions();
 		List<Message> history = flatten(chatHistory.get("test-session-id"));
 
 		assertThat(history).hasSize(3);
@@ -85,8 +87,8 @@ public class HistoryChatClientTests {
 		assertThat(history.get(1).getContent()).isEqualTo("user:5");
 		assertThat(history.get(2).getContent()).isEqualTo("assistant:1");
 
-		EngineResponse response2 = chatEngine
-			.call(new Prompt(List.of(new UserMessage("user:6"), new UserMessage("user:7"), new UserMessage("user:8"))));
+		EngineResponse response2 = chatEngine.call(new EngineRequest("test-session-id",
+				new Prompt(List.of(new UserMessage("user:6"), new UserMessage("user:7"), new UserMessage("user:8")))));
 
 		assertThat(response2.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:2");
 
@@ -97,7 +99,8 @@ public class HistoryChatClientTests {
 		assertThat(history.get(1).getContent()).isEqualTo("user:8");
 		assertThat(history.get(2).getContent()).isEqualTo("assistant:2");
 
-		EngineResponse response3 = chatEngine.call(new Prompt(List.of(new UserMessage("user:9"))));
+		EngineResponse response3 = chatEngine
+			.call(new EngineRequest("test-session-id", new Prompt(List.of(new UserMessage("user:9")))));
 
 		assertThat(response3.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:3");
 

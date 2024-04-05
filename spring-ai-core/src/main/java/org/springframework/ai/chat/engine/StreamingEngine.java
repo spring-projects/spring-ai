@@ -18,13 +18,11 @@ package org.springframework.ai.chat.engine;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.prompt.Prompt;
-
 /**
  * @author Christian Tzolov
  */
 public interface StreamingEngine {
 
-	Flux<EngineResponse> stream(Prompt prompt);
+	Flux<EngineResponse> stream(EngineRequest request);
 
 }

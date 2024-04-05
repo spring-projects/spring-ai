@@ -16,13 +16,11 @@
 
 package org.springframework.ai.chat.engine;
 
-import org.springframework.ai.chat.prompt.Prompt;
-
 /**
  * @author Christian Tzolov
  */
 public interface Engine {
 
-	EngineResponse call(Prompt prompt);
+	EngineResponse call(EngineRequest request);
 
 }
