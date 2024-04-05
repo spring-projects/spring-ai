@@ -53,26 +53,27 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 	private List<Document> doSplitDocuments(List<Document> documents) {
 		List<String> texts = new ArrayList<>();
-		Map<String, Object> metadata = new HashMap<>();
+		List<Map<String, Object>> metadataList = new ArrayList<>();
 		List<ContentFormatter> formatters = new ArrayList<>();
 
 		for (Document doc : documents) {
 			texts.add(doc.getContent());
-			metadata.putAll(doc.getMetadata());
+			metadataList.add(doc.getMetadata());
 			formatters.add(doc.getContentFormatter());
 		}
 
-		return createDocuments(texts, formatters, metadata);
+		return createDocuments(texts, formatters, metadataList);
 	}
 
 	private List<Document> createDocuments(List<String> texts, List<ContentFormatter> formatters,
-			Map<String, Object> metadata) {
+			List<Map<String, Object>> metadataList) {
 
 		// Process the data in a column oriented way and recreate the Document
 		List<Document> documents = new ArrayList<>();
 
 		for (int i = 0; i < texts.size(); i++) {
 			String text = texts.get(i);
+			Map<String, Object> metadata = metadataList.get(i);
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
 				logger.info("Splitting up document into " + chunks.size() + " chunks.");
