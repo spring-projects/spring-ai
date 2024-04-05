@@ -15,19 +15,54 @@
  */
 package org.springframework.ai.vectorstore;
 
-import lombok.Builder;
-import lombok.Getter;
-
 /**
  * @author Rahul Mittal
  * @since 1.0.0
  */
-@Builder
-@Getter
 public class HanaCloudVectorStoreConfig {
 
-	private final String tableName;
+	private String tableName;
 
-	private final int topK;
+	private int topK;
+
+	private HanaCloudVectorStoreConfig() {
+	}
+
+	public static HanaCloudVectorStoreConfigBuilder builder() {
+		return new HanaCloudVectorStoreConfigBuilder();
+	}
+
+	public String getTableName() {
+		return tableName;
+	}
+
+	public int getTopK() {
+		return topK;
+	}
+
+	public static class HanaCloudVectorStoreConfigBuilder {
+
+		private String tableName;
+
+		private int topK;
+
+		public HanaCloudVectorStoreConfigBuilder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
+		public HanaCloudVectorStoreConfigBuilder topK(int topK) {
+			this.topK = topK;
+			return this;
+		}
+
+		public HanaCloudVectorStoreConfig build() {
+			HanaCloudVectorStoreConfig config = new HanaCloudVectorStoreConfig();
+			config.tableName = tableName;
+			config.topK = topK;
+			return config;
+		}
+
+	}
 
 }

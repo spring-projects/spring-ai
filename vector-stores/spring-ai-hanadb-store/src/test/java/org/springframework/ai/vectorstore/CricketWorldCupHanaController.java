@@ -15,7 +15,8 @@
  */
 package org.springframework.ai.vectorstore;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -52,8 +53,9 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 @RestController
-@Slf4j
 public class CricketWorldCupHanaController {
+
+	private static final Logger logger = LoggerFactory.getLogger(CricketWorldCupHanaController.class);
 
 	private final VectorStore hanaCloudVectorStore;
 
@@ -72,7 +74,7 @@ public class CricketWorldCupHanaController {
 	@PostMapping("/ai/hana-vector-store/cricket-world-cup/purge-embeddings")
 	public ResponseEntity<String> purgeEmbeddings() {
 		int deleteCount = ((HanaCloudVectorStore) this.hanaCloudVectorStore).purgeEmbeddings();
-		log.info("{} embeddings purged from CRICKET_WORLD_CUP table in Hana DB", deleteCount);
+		logger.info("{} embeddings purged from CRICKET_WORLD_CUP table in Hana DB", deleteCount);
 		return ResponseEntity.ok()
 			.body(String.format("%d embeddings purged from CRICKET_WORLD_CUP table in Hana DB", deleteCount));
 	}
@@ -83,7 +85,7 @@ public class CricketWorldCupHanaController {
 		Supplier<List<Document>> reader = new PagePdfDocumentReader(pdf);
 		Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
 		List<Document> documents = splitter.apply(reader.get());
-		log.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
+		logger.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
 		hanaCloudVectorStore.accept(documents);
 		return ResponseEntity.ok()
 			.body(String.format("%d documents created from pdf file: %s", documents.size(), pdf.getFilename()));
@@ -99,7 +101,7 @@ public class CricketWorldCupHanaController {
 		var userMessage = new UserMessage(message);
 		Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
 		String generation = chatClient.call(prompt).getResult().getOutput().getContent();
-		log.info("Generation: {}", generation);
+		logger.info("Generation: {}", generation);
 		return Map.of("generation", generation);
 	}
 
@@ -120,12 +122,12 @@ public class CricketWorldCupHanaController {
 		var userMessage = new UserMessage(message);
 		Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
 		String textResponse = chatClient.call(prompt).getResult().getOutput().getContent();
-		log.info("Generation: {}", textResponse);
+		logger.info("Generation: {}", textResponse);
 
 		SpeechPrompt speechPrompt = new SpeechPrompt(textResponse, speechOptions);
 		SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
 		byte[] audioBytes = response.getResult().getOutput();
-		log.info("Speech response generated");
+		logger.info("Speech response generated");
 		return ResponseEntity.status(HttpStatus.OK)
 			.contentType(MediaType.parseMediaType("audio/mpeg"))
 			.header("Accept-Ranges", "bytes")

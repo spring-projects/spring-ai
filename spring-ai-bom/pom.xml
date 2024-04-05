@@ -198,6 +198,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-hanadb-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Utilities -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>

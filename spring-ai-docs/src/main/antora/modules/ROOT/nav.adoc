@@ -54,6 +54,7 @@
 *** xref:api/vectordbs/pinecone.adoc[]
 *** xref:api/vectordbs/qdrant.adoc[]
 *** xref:api/vectordbs/gemfire.adoc[GemFire]
+*** xref:api/vectordbs/hana.adoc[SAP Hana Vector Engine]
 ** xref:api/functions.adoc[Function Calling]
 ** xref:api/prompt.adoc[]
 ** xref:api/output-parser.adoc[]

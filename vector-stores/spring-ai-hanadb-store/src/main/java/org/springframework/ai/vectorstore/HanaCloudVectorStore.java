@@ -16,7 +16,8 @@
 package org.springframework.ai.vectorstore;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 
@@ -62,8 +63,9 @@ import java.util.stream.Collectors;
  * @author Rahul Mittal
  * @since 1.0.0
  */
-@Slf4j
 public class HanaCloudVectorStore implements VectorStore {
+
+	private static final Logger logger = LoggerFactory.getLogger(HanaCloudVectorStore.class);
 
 	private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
@@ -82,25 +84,25 @@ public class HanaCloudVectorStore implements VectorStore {
 	public void add(List<Document> documents) {
 		int count = 1;
 		for (Document document : documents) {
-			log.info("[{}/{}] Calling EmbeddingClient for document id = {}", count++, documents.size(),
+			logger.info("[{}/{}] Calling EmbeddingClient for document id = {}", count++, documents.size(),
 					document.getId());
 			String content = document.getContent().replaceAll("\\s+", " ");
 			String embedding = getEmbedding(document);
 			repository.save(config.getTableName(), document.getId(), embedding, content);
 		}
-		log.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
+		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
 	}
 
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
 		int deleteCount = repository.deleteEmbeddingsById(config.getTableName(), idList);
-		log.info("{} embeddings deleted", deleteCount);
+		logger.info("{} embeddings deleted", deleteCount);
 		return Optional.of(deleteCount == idList.size());
 	}
 
 	public int purgeEmbeddings() {
 		int deleteCount = repository.deleteAllEmbeddings(config.getTableName());
-		log.info("{} embeddings deleted", deleteCount);
+		logger.info("{} embeddings deleted", deleteCount);
 		return deleteCount;
 	}
 
@@ -111,10 +113,15 @@ public class HanaCloudVectorStore implements VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
+		if (request.hasFilterExpression()) {
+			throw new UnsupportedOperationException(
+					"SAPHanaVectorEngine does not support metadata filter expressions yet.");
+		}
+
 		String queryEmbedding = getEmbedding(request);
 		List<? extends HanaVectorEntity> searchResult = repository.cosineSimilaritySearch(config.getTableName(),
 				request.getTopK(), queryEmbedding);
-		log.info("Hana cosine-similarity returned {} results for topK={}", searchResult.size(), request.getTopK());
+		logger.info("Hana cosine-similarity returned {} results for topK={}", searchResult.size(), request.getTopK());
 		return searchResult.stream().map(c -> {
 			try {
 				return new Document(c.get_id(), c.toJson(), Collections.emptyMap());

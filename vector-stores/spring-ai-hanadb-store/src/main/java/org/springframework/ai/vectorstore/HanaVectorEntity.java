@@ -20,26 +20,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 /**
  * @author Rahul Mittal
  * @since 1.0.0
  */
-@Data
-@SuperBuilder(toBuilder = true)
 @MappedSuperclass
-@NoArgsConstructor
 public abstract class HanaVectorEntity {
 
 	@Id
 	@Column(name = "_id")
 	protected String _id;
 
+	public HanaVectorEntity() {
+	}
+
 	public String toJson() throws JsonProcessingException {
 		return new ObjectMapper().writeValueAsString(this);
+	}
+
+	public String get_id() {
+		return _id;
 	}
 
 }
