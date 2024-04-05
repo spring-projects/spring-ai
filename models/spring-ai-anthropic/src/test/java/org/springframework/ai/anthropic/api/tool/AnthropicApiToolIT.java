@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.anthropic.api.tool;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -28,58 +29,33 @@ import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
+import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.api.tool.XmlHelper.FunctionCalls;
-import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools;
-import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools.ToolDescription;
-import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools.ToolDescription.Parameter;
+import org.springframework.ai.anthropic.api.AnthropicApi.Tool;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Experiments with
- * <a href="https://docs.anthropic.com/claude/docs/functions-external-tools">Anthropic
- * Functions & external tools</a>.
  *
- * <p>
- * <a href=
- * "https://www.linkedin.com/pulse/tool-usefunction-calling-anthropics-claude-3-opus-llm-micky-multani-fsmrc">Tool
- * Use(Function Calling) with Anthropic's Claude 3 Opus LLM</a>
- * <p>
- * <a href=
- * "https://www.codeproject.com/Articles/5379174/Csharp-Anthropic-Claude-Library-You-Can-Call-Claud">Anthropic
- * Functions & external tools</a>
+ * <a href="https://docs.anthropic.com/claude/docs/tool-use-examples">Tool use
+ * examples</a> <br/>
+ * <a href="https://docs.anthropic.com/claude/docs/tool-use">Tool use (function
+ * calling)</a>
  *
  * @author Christian Tzolov
+ * @since 1.0.0
  */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 @SuppressWarnings("null")
 public class AnthropicApiToolIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiToolIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiLegacyToolIT.class);
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
-
-	public static final String TOO_SYSTEM_PROMPT_TEMPLATE = """
-			In this environment you have access to a set of tools you can use to answer the user's question.
-
-			You may call them like this:
-			<function_calls>
-				<invoke>
-					<tool_name>$TOOL_NAME</tool_name>
-					<parameters>
-						<$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-						...
-					</parameters>
-				</invoke>
-			</function_calls>
-
-			Here are the tools available:
-			<tools>%s</tools>
-			""";
 
 	public static final ConcurrentHashMap<String, Function> FUNCTIONS = new ConcurrentHashMap<>();
 
@@ -87,66 +63,96 @@ public class AnthropicApiToolIT {
 		FUNCTIONS.put("getCurrentWeather", new MockWeatherService());
 	}
 
+	List<Tool> tools = List.of(new Tool("getCurrentWeather",
+			"Get the weather in location. Return temperature in 30°F or 30°C format.", ModelOptionsUtils.jsonToMap("""
+					{
+						"type": "object",
+						"properties": {
+							"location": {
+								"type": "string",
+								"description": "The city and state e.g. San Francisco, CA"
+							},
+							"unit": {
+								"type": "string",
+								"enum": ["C", "F"]
+							}
+						},
+						"required": ["location", "unit"]
+					}
+					""")));
+
 	@Test
 	void toolCalls() {
 
-		String toolDescription = XmlHelper.toXml(new Tools(List.of(new ToolDescription("getCurrentWeather",
-				"Get the weather in location. Return temperature in 30°F or 30°C format.",
-				List.of(new Parameter("location", "string", "The city and state e.g. San Francisco, CA"),
-						new Parameter("unit", "enum", "Temperature unit. Use only C or F. Default is C."))))));
+		List<RequestMessage> messageConversation = new ArrayList<>();
 
-		logger.info("TOOLS: " + toolDescription);
-
-		String systemPrompt = String.format(TOO_SYSTEM_PROMPT_TEMPLATE, toolDescription);
-
-		RequestMessage chatCompletionMessage = new RequestMessage(
-				List.of(new MediaContent("What's the weather like in Paris? Show the temperature in Celsius.")),
-				// "What's the weather like in San Francisco, Tokyo, and Paris? Show the
-				// temperature in Celsius.")),
+		RequestMessage chatCompletionMessage = new RequestMessage(List.of(new MediaContent(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Show the temperature in Celsius.")),
 				Role.USER);
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), systemPrompt, 500,
-				0.8f, false);
+		messageConversation.add(chatCompletionMessage);
 
-		ResponseEntity<ChatCompletion> chatCompletion = doCall(chatCompletionRequest);
+		ResponseEntity<ChatCompletion> chatCompletion = doCall(messageConversation);
 
 		var responseText = chatCompletion.getBody().content().get(0).text();
 		logger.info("FINAL RESPONSE: " + responseText);
 
 		assertThat(responseText).contains("15");
+		assertThat(responseText).contains("10");
+		assertThat(responseText).contains("30");
 	}
 
-	private ResponseEntity<ChatCompletion> doCall(ChatCompletionRequest chatCompletionRequest) {
+	private ResponseEntity<ChatCompletion> doCall(List<RequestMessage> messageConversation) {
+
+		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.withMessages(messageConversation)
+			.withMaxTokens(1500)
+			.withTemperature(0.8f)
+			.withTools(tools)
+			.build();
 
 		ResponseEntity<ChatCompletion> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
 
-		FunctionCalls functionCalls = XmlHelper.extractFunctionCalls(response.getBody().content().get(0).text());
+		List<MediaContent> toolToUseList = response.getBody()
+			.content()
+			.stream()
+			.filter(c -> c.type() == MediaContent.Type.TOOL_USE)
+			.toList();
 
-		if (functionCalls == null) {
+		if (CollectionUtils.isEmpty(toolToUseList)) {
 			return response;
 		}
+		// Add use tool message to the conversation history
+		messageConversation.add(new RequestMessage(response.getBody().content(), Role.ASSISTANT));
 
-		logger.info("FunctionCalls from the LLM: " + functionCalls);
+		List<MediaContent> toolResults = new ArrayList<>();
 
-		MockWeatherService.Request request = ModelOptionsUtils.mapToClass(functionCalls.invoke().parameters(),
-				MockWeatherService.Request.class);
+		for (MediaContent toolToUse : toolToUseList) {
 
-		logger.info("Resolved function request param: " + request);
+			var id = toolToUse.id();
+			var name = toolToUse.name();
+			var input = toolToUse.input();
 
-		Object functionCallResponseData = FUNCTIONS.get(functionCalls.invoke().toolName()).apply(request);
+			logger.info("FunctionCalls from the LLM: " + name);
 
-		XmlHelper.FunctionResults functionResults = new XmlHelper.FunctionResults(List
-			.of(new XmlHelper.FunctionResults.Result(functionCalls.invoke().toolName(), functionCallResponseData)));
+			MockWeatherService.Request request = ModelOptionsUtils.mapToClass(input, MockWeatherService.Request.class);
 
-		String content = XmlHelper.toXml(functionResults);
+			logger.info("Resolved function request param: " + request);
 
-		logger.info("Function response XML : " + content);
+			Object functionCallResponseData = FUNCTIONS.get(name).apply(request);
 
-		RequestMessage chatCompletionMessage2 = new RequestMessage(List.of(new MediaContent(content)), Role.USER);
+			String content = ModelOptionsUtils.toJsonString(functionCallResponseData);
 
-		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-				List.of(chatCompletionMessage2), null, 500, 0.8f, false));
+			logger.info("Function response : " + content);
+
+			toolResults.add(new MediaContent(Type.TOOL_RESULT, id, content));
+		}
+
+		// Add function response message to the conversation history
+		messageConversation.add(new RequestMessage(toolResults, Role.USER));
+
+		return doCall(messageConversation);
 	}
 
 }
