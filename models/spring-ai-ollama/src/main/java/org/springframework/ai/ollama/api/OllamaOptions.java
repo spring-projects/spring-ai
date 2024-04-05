@@ -45,7 +45,20 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive");
+
 	// @formatter:off
+	/**
+	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
+	 */
+	@JsonProperty("format") private String format;
+
+	/**
+	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
+	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
+	 */
+	@JsonProperty("keep_alive") private String keepAlive;
+
 	/**
 	 * useNUMA Whether to use NUMA.
 	 */
@@ -254,6 +267,16 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		this.model = model;
 	}
 
+	public OllamaOptions withFormat(String format) {
+		this.format = format;
+		return this;
+	}
+
+	public OllamaOptions withKeepAlive(String keepAlive) {
+		this.keepAlive = keepAlive;
+		return this;
+	}
+
 	public OllamaOptions withUseNUMA(Boolean useNUMA) {
 		this.useNUMA = useNUMA;
 		return this;
@@ -412,6 +435,14 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	public OllamaOptions withStop(List<String> stop) {
 		this.stop = stop;
 		return this;
+	}
+
+	public String getFormat() {
+		return format;
+	}
+
+	public String getKeepAlive() {
+		return keepAlive;
 	}
 
 	public Boolean getUseNUMA() {
@@ -694,13 +725,13 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	}
 
 	/**
-	 * Filter out the non supported fields from the options.
+	 * Filter out the non-supported fields from the options.
 	 * @param options The options to filter.
 	 * @return The filtered options.
 	 */
 	public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
 		return options.entrySet().stream()
-			.filter(e -> !e.getKey().equals("model"))
+			.filter(e -> !NON_SUPPORTED_FIELDS.contains(e.getKey()))
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 

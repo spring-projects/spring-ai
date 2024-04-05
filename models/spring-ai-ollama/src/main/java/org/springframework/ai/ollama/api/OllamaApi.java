@@ -399,8 +399,9 @@ public class OllamaApi {
 	 * @param model The model to use for completion.
 	 * @param messages The list of messages to chat with.
 	 * @param stream Whether to stream the response.
-	 * @param format The format to return the response in. Currently the only accepted
+	 * @param format The format to return the response in. Currently, the only accepted
 	 * value is "json".
+	 * @param keepAlive The duration to keep the model loaded in ollama while idle. https://pkg.go.dev/time#ParseDuration
 	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
 	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
 	 * map.
@@ -411,6 +412,7 @@ public class OllamaApi {
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options) {
 
 		public static Builder builder(String model) {
@@ -423,6 +425,7 @@ public class OllamaApi {
 			private List<Message> messages = List.of();
 			private boolean stream = false;
 			private String format;
+			private String keepAlive;
 			private Map<String, Object> options = Map.of();
 
 			public Builder(String model) {
@@ -445,6 +448,11 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withKeepAlive(String keepAlive) {
+				this.keepAlive = keepAlive;
+				return this;
+			}
+
 			public Builder withOptions(Map<String, Object> options) {
 				Objects.requireNonNullElse(options, "The options can not be null.");
 
@@ -459,7 +467,7 @@ public class OllamaApi {
 			}
 
 			public ChatRequest build() {
-				return new ChatRequest(model, messages, stream, format, options);
+				return new ChatRequest(model, messages, stream, format, keepAlive, options);
 			}
 		}
 	}
