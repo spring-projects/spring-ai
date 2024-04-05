@@ -161,11 +161,22 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		String model = mergedOptions.getModel();
-		return OllamaApi.ChatRequest.builder(model)
+		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(model)
 			.withStream(stream)
 			.withMessages(ollamaMessages)
-			.withOptions(mergedOptions)
-			.build();
+			.withOptions(mergedOptions);
+
+		if (mergedOptions.getFormat() != null) {
+			requestBuilder.withFormat(mergedOptions.getFormat());
+		}
+
+		if (mergedOptions.getKeepAlive() != null) {
+			requestBuilder.withKeepAlive(mergedOptions.getKeepAlive());
+		}
+
+		if (mergedOptions.getTemp)
+
+			return requestBuilder.build();
 	}
 
 	private String fromMediaData(Object mediaData) {

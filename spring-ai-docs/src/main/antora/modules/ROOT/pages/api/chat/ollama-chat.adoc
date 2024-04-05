@@ -52,9 +52,10 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 | spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
 |====
 
-The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the chat client implementation for Ollama.
+The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat client .
+It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, `format` and `template` as well as the Ollama model `options` properties.
 
-NOTE: The `options` properties are based on the link:https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/jmorganca/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
+Here are the advanced request parameter for the Ollama chat client:
 
 [cols="3,6,1"]
 |====
@@ -62,6 +63,15 @@ NOTE: The `options` properties are based on the link:https://github.com/jmorganc
 
 | spring.ai.ollama.chat.enabled      | Enable Ollama chat client. | true
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported models] to use. | mistral
+| spring.ai.ollama.chat.options.format  | The format to return a response in. Currently the only accepted value is `json` | -
+| spring.ai.ollama.chat.options.keep_alive  | controls how long the model will stay loaded into memory following the request | 5m
+|====
+
+The `options` properties are based on the link:https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/jmorganca/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
+
+[cols="3,6,1"]
+|====
+| Property | Description | Default
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.chat.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
 | spring.ai.ollama.chat.options.num-batch         | ???                                                             | 512
@@ -79,7 +89,6 @@ NOTE: The `options` properties are based on the link:https://github.com/jmorganc
 | spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). 0 = let the runtime decide | 0
 | spring.ai.ollama.chat.options.num-keep          | ???                                                             | 0
 | spring.ai.ollama.chat.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | -1
-
 | spring.ai.ollama.chat.options.num-predict       | Maximum number of tokens to predict when generating text. (-1 = infinite generation, -2 = fill context) | -1
 | spring.ai.ollama.chat.options.top-k             | Reduces the probability of generating nonsense. A higher value (e.g., 100) will give more diverse answers, while a lower value (e.g., 10) will be more conservative.  | 40
 | spring.ai.ollama.chat.options.top-p             | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.  | 0.9
