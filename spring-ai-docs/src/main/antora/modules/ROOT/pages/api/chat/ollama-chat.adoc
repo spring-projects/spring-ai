@@ -64,7 +64,8 @@ Here are the advanced request parameter for the Ollama chat client:
 | spring.ai.ollama.chat.enabled      | Enable Ollama chat client. | true
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported models] to use. | mistral
 | spring.ai.ollama.chat.options.format  | The format to return a response in. Currently the only accepted value is `json` | -
-| spring.ai.ollama.chat.options.keep_alive  | controls how long the model will stay loaded into memory following the request | 5m
+| spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
+| spring.ai.ollama.chat.options.template  | The prompt template to use (overrides what is defined in the Modelfile) | -
 |====
 
 The `options` properties are based on the link:https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/jmorganca/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
