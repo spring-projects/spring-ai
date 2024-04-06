@@ -30,6 +30,7 @@
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
+
 		<module>vector-stores/spring-ai-gemfire-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
@@ -40,8 +41,9 @@
 		<module>vector-stores/spring-ai-pinecone-store</module>
 		<module>vector-stores/spring-ai-qdrant-store</module>
 		<module>vector-stores/spring-ai-redis-store</module>
-		<module>vector-stores/spring-ai-weaviate-store</module>
+		<module>vector-stores/spring-ai-typesense-store</module>
 
+		<module>vector-stores/spring-ai-weaviate-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
@@ -55,8 +57,8 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-typesense-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-weaviate-store</module>
-
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
@@ -72,7 +74,6 @@
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
-
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
@@ -88,7 +89,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
-	</modules>
+    </modules>
 
 	<organization>
 		<name>VMware Inc.</name>
@@ -167,6 +168,7 @@
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.7.1</qdrant.version>
+		<typesense.version>0.5.0</typesense.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>

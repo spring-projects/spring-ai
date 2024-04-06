@@ -68,6 +68,7 @@
 *** xref:api/vectordbs/qdrant.adoc[]
 *** xref:api/vectordbs/redis.adoc[]
 *** xref:api/vectordbs/hana.adoc[SAP Hana]
+*** xref:api/vectordbs/typesense.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
 
 
