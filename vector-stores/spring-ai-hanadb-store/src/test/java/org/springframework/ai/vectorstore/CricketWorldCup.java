@@ -30,4 +30,7 @@ public class CricketWorldCup extends HanaVectorEntity {
 	@Column(name = "content")
 	private String content;
 
+	public String getContent() {
+		return content;
+	}
 }
