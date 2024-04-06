@@ -24,6 +24,7 @@ org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfi
 org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.hanadb.HanaCloudVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 org.springframework.ai.autoconfigure.postgresml.PostgresMlAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.mongo.MongoDBAtlasVectorStoreAutoConfiguration

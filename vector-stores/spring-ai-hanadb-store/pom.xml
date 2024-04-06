@@ -10,9 +10,9 @@
     </parent>
     <artifactId>spring-ai-hanadb-store</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI HanaDB Vector Store</name>
+    <name>Spring AI Vector Store - HanaDB</name>
     <description>Spring AI HanaDB Vector Store</description>
-    <url>https://github.com/spring-projects-experimental/spring-ai</url>
+    <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
         <url>https://github.com/spring-projects/spring-ai</url>
@@ -42,7 +42,20 @@
         <!-- TESTING -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <artifactId>spring-ai-openai</artifactId>
+            <version>${parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-test</artifactId>
             <version>${parent.version}</version>
             <scope>test</scope>
         </dependency>
@@ -54,11 +67,13 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>-->
+<!--            <version>${parent.version}</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
