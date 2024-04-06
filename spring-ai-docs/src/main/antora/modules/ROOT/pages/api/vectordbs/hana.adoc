@@ -62,7 +62,7 @@ spring.ai.vectorstore.hanadb.tableName=CRICKET_WORLD_CUP
 spring.ai.vectorstore.hanadb.topK=3
 ----
 
-==== Create an `Entity` class named `CricketWorldCup` that extends* from `HanaVectorEntity`:
+==== Create an `Entity` class named `CricketWorldCup` that extends from `HanaVectorEntity`:
 [source,java]
 ----
 package com.interviewpedia.spring.ai.hana;
