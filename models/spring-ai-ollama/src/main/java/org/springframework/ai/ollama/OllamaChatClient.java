@@ -174,9 +174,11 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 			requestBuilder.withKeepAlive(mergedOptions.getKeepAlive());
 		}
 
-		if (mergedOptions.getTemp)
+		if (mergedOptions.getTemplate() != null) {
+			requestBuilder.withTemplate(mergedOptions.getTemplate());
+		}
 
-			return requestBuilder.build();
+		return requestBuilder.build();
 	}
 
 	private String fromMediaData(Object mediaData) {

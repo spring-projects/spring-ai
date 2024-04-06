@@ -426,6 +426,7 @@ public class OllamaApi {
 			private boolean stream = false;
 			private String format;
 			private String keepAlive;
+			private String template;
 			private Map<String, Object> options = Map.of();
 
 			public Builder(String model) {
@@ -450,6 +451,11 @@ public class OllamaApi {
 
 			public Builder withKeepAlive(String keepAlive) {
 				this.keepAlive = keepAlive;
+				return this;
+			}
+
+			public Builder withTemplate(String template) {
+				this.template = template;
 				return this;
 			}
 
