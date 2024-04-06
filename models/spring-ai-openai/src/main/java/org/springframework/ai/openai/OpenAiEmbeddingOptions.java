@@ -38,6 +38,10 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private @JsonProperty("encoding_format") String encodingFormat;
 	/**
+	 * The number of dimensions the resulting output embeddings should have. Only supported in text-embedding-3 and later models.
+	 */
+	private @JsonProperty("dimensions") Integer dimensions;
+	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
 	private @JsonProperty("user") String user;
@@ -62,6 +66,11 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder withEncodingFormat(String encodingFormat) {
 			this.options.setEncodingFormat(encodingFormat);
+			return this;
+		}
+
+		public Builder withDimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
 			return this;
 		}
 
@@ -90,6 +99,14 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 
 	public void setEncodingFormat(String encodingFormat) {
 		this.encodingFormat = encodingFormat;
+	}
+
+	public Integer getDimensions() {
+		return dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 	public String getUser() {

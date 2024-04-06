@@ -118,7 +118,7 @@ public class OpenAiEmbeddingClient extends AbstractEmbeddingClient {
 			org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
 					? new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
 							this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat(),
-							this.defaultOptions.getUser())
+							this.defaultOptions.getDimensions(), this.defaultOptions.getUser())
 					: new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
 							OpenAiApi.DEFAULT_EMBEDDING_MODEL);
 
