@@ -1,0 +1,242 @@
+= Typesense
+
+This section walks you through setting up `TypesenseVectorStore` to store document embeddings and perform similarity searches.
+
+link:https://typesense.org[Typesense] Typesense is an open source, typo tolerant search engine that is optimized for instant sub-50ms searches, while providing an intuitive developer experience.
+
+== Prerequisites
+
+1. A Typesense instance
+- link:https://typesense.org/docs/guide/install-typesense.html[Typesense Cloud] (recommended)
+- link:https://hub.docker.com/r/typesense/typesense/[Docker] image _typesense/typesense:latest_
+
+2. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `TypesenseVectorStore`.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Typesense Vector Sore.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-typesense-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-typesense-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+Here is an example of the needed bean:
+
+[source,java]
+----
+@Bean
+public EmbeddingClient embeddingClient() {
+    // Can be any other EmbeddingClient implementation.
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
+----
+
+To connect to Typesense you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.yml_,
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      typesense:
+          collectionName: "vector_store"
+          embeddingDimension: 1536
+          client:
+              protocl: http
+              host: localhost
+              port: 8108
+              apiKey: xyz
+----
+
+Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+Now you can Auto-wire the Typesense Vector Store in your application and use it
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Typesense
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+=== Configuration properties
+
+You can use the following properties in your Spring Boot configuration to customize the Typesense vector store.
+
+|===
+|Property| Description | Default value
+
+|`spring.ai.vectorstore.typesense.client.protocol`| HTTP Protocol | `http`
+|`spring.ai.vectorstore.typesense.client.host`| Hostname | `localhost`
+|`spring.ai.vectorstore.typesense.client.port`| Port | `8108`
+|`spring.ai.vectorstore.typesense.client.apiKey`| ApiKey | `xyz`
+|`spring.ai.vectorstore.typesense.collectionName`| Collection Name | `vector_store`
+|`spring.ai.vectorstore.typesense.embeddingDimension`| Embedding Dimension | `1536`
+
+|===
+
+== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with `TypesenseVectorStore` as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+----
+
+The portable filter expressions get automatically converted into link:https://typesense.org/docs/0.24.0/api/search.html#filter-parameters[Typesense Search Filters].
+For example, the following portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into Typesense filter:
+
+[source]
+----
+country: ['UK', 'NL'] && year: >=2020
+----
+
+== Manual configuration
+
+If you prefer not to use the auto-configuration, you can manually configure the Typesense Vector Store.
+Add the Typesense Vector Store and Jedis dependencies
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-typesense</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Then, create a `TypesenseVectorStore` bean in your Spring configuration:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(Client client, EmbeddingClient embeddingClient) {
+
+    TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
+        .withCollectionName("test_vector_store")
+        .withEmbeddingDimension(embeddingClient.dimensions())
+        .build();
+
+    return new TypesenseVectorStore(client, embeddingClient, config);
+}
+
+@Bean
+public Client typesenseClient() {
+    List<Node> nodes = new ArrayList<>();
+    nodes
+        .add(new Node("http", typesenseContainer.getHost(), typesenseContainer.getMappedPort(8108).toString()));
+
+    Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), "xyz");
+    return new Client(configuration);
+}
+----
+
+[NOTE]
+====
+It is more convenient and preferred to create the `TypesenseVectorStore` as a Bean.
+But if you decide to create it manually, then you must call the `TypesenseVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
+====
+
+
+Then in your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
+   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
+   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+Now add the documents to your vector store:
+
+
+[source,java]
+----
+vectorStore.add(documents);
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest
+      .query("Spring")
+      .withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+[NOTE]
+====
+If you are not retrieveing the documents in the expected order or the search results are not as expected, check the embedding model you are using.
+
+Embedding models can have a significant impact on the search results (i.e. make sure if your data is in Spanish to use a Spanish or multilingual embedding model).
+====
+
