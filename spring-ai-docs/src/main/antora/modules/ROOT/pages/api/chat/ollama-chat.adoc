@@ -275,7 +275,7 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai
 
 Following class diagram illustrates the `OllamaApi` chat interfaces and building blocks:
 
-image::ollama-chat-completion-api.png[OllamaApi Chat Completion API Diagram]
+image::ollama-chat-completion-api.jpg[OllamaApi Chat Completion API Diagram, 800, 600]
 
 Here is a simple snippet how to use the api programmatically:
 
