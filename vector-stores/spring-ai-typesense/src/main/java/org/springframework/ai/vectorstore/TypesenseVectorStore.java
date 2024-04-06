@@ -48,7 +48,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient, TypesenseConfig config) {
-		Assert.notNull(client, "MilvusServiceClient must not be null");
+		Assert.notNull(client, "Typesense must not be null");
 		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
 
 		this.client = client;
