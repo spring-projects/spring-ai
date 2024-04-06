@@ -441,8 +441,16 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		return format;
 	}
 
+	public void setFormat(String format) {
+		this.format = format;
+	}
+
 	public String getKeepAlive() {
 		return keepAlive;
+	}
+
+	public void setKeepAlive(String keepAlive) {
+		this.keepAlive = keepAlive;
 	}
 
 	public Boolean getUseNUMA() {
