@@ -150,7 +150,9 @@ public class OllamaApi {
 			@JsonProperty("template") String template,
 			@JsonProperty("context") List<Integer> context,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("raw") Boolean raw) {
+			@JsonProperty("raw") Boolean raw,
+			@JsonProperty("images") List<String> images,
+			@JsonProperty("keep_alive") String keepAlive) {
 
 		/**
 		 * Short cut constructor to create a CompletionRequest without options.
@@ -159,7 +161,7 @@ public class OllamaApi {
 		 * @param stream Whether to stream the response.
 		 */
 		public GenerateRequest(String model, String prompt, Boolean stream) {
-			this(model, prompt, null, null, null, null, null, stream, null);
+			this(model, prompt, null, null, null, null, null, stream, null, null, null);
 		}
 
 		/**
@@ -170,7 +172,7 @@ public class OllamaApi {
 		 * @param stream Whether to stream the response.
 		 */
 		public GenerateRequest(String model, String prompt, boolean enableJsonFormat, Boolean stream) {
-			this(model, prompt, (enableJsonFormat) ? "json" : null, null, null, null, null, stream, null);
+			this(model, prompt, (enableJsonFormat) ? "json" : null, null, null, null, null, stream, null, null, null);
 		}
 
 		/**
@@ -192,6 +194,8 @@ public class OllamaApi {
 			private List<Integer> context;
 			private Boolean stream;
 			private Boolean raw;
+			private List<String> images;
+			private String keepAlive;
 
 			public Builder(String prompt) {
 				this.prompt = prompt;
@@ -242,8 +246,18 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withImages(List<String> images) {
+				this.images = images;
+				return this;
+			}
+
+			public Builder withKeepAlive(String keepAlive) {
+				this.keepAlive = keepAlive;
+				return this;
+			}
+
 			public GenerateRequest build() {
-				return new GenerateRequest(model, prompt, format, options, system, template, context, stream, raw);
+				return new GenerateRequest(model, prompt, format, options, system, template, context, stream, raw, images, keepAlive);
 			}
 
 		}
@@ -462,14 +476,14 @@ public class OllamaApi {
 			}
 
 			public Builder withOptions(Map<String, Object> options) {
-				Objects.requireNonNullElse(options, "The options can not be null.");
+				Objects.requireNonNull(options, "The options can not be null.");
 
 				this.options = OllamaOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
 			public Builder withOptions(OllamaOptions options) {
-				Objects.requireNonNullElse(options, "The options can not be null.");
+				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
@@ -574,6 +588,7 @@ public class OllamaApi {
 	public record EmbeddingRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("prompt") String prompt,
+			@JsonProperty("keep_alive") Duration keepAlive,
 			@JsonProperty("options") Map<String, Object> options) {
 
 		/**
@@ -582,7 +597,7 @@ public class OllamaApi {
 		 * @param prompt The text to generate embeddings for.
 		 */
 		public EmbeddingRequest(String model, String prompt) {
-			this(model, prompt, null);
+			this(model, prompt, null, null);
 		}
 	}
 
