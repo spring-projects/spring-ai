@@ -29,13 +29,13 @@ You may set the property `spring-ai-version` as `<spring-ai-version>1.0.0-SNAPSH
 
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-hanadb-store</artifactId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
     <version>${spring-ai-version}</version>
 </dependency>
 
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
     <version>${spring-ai-version}</version>
 </dependency>
 
@@ -58,21 +58,20 @@ spring.datasource.url=<YOUR_HANA_CLOUD_DB_URL>
 spring.datasource.username=<HANA_DB_USERNAME>
 spring.datasource.password=<HANA_DB_PASSWORD>
 
-hana.table.name=CRICKET_WORLD_CUP
-hana.similarity.search.topK=5
+spring.ai.vectorstore.hanadb.tableName=CRICKET_WORLD_CUP
+spring.ai.vectorstore.hanadb.topK=3
 ----
 
 ==== Create an `Entity` class named `CricketWorldCup` that extends* from `HanaVectorEntity`:
 [source,java]
 ----
-package com.interviewpedia.spring.ai.openai.rag;
+package com.interviewpedia.spring.ai.hana;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 import org.springframework.ai.vectorstore.HanaVectorEntity;
 
@@ -80,18 +79,18 @@ import org.springframework.ai.vectorstore.HanaVectorEntity;
 @Table(name = "CRICKET_WORLD_CUP")
 @Data
 @Jacksonized
-@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 public class CricketWorldCup extends HanaVectorEntity {
     @Column(name = "content")
     private String content;
 }
+
 ----
 
 ==== Create a `Repository` named `CricketWorldCupRepository` that implements `HanaVectorRepository` interface:
 [source,java]
 ----
-package com.interviewpedia.spring.ai.openai.rag;
+package com.interviewpedia.spring.ai.hana;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -158,48 +157,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
 }
 ----
 
-==== Create a `Configuration` class named `CricketWorldCupConfig` as follows:
-[source,java]
-----
-package com.interviewpedia.spring.ai.openai.rag;
-
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.image.ImageClient;
-import org.springframework.ai.openai.OpenAiImageClient;
-import org.springframework.ai.openai.api.OpenAiImageApi;
-import org.springframework.ai.vectorstore.HanaCloudVectorStore;
-import org.springframework.ai.vectorstore.HanaCloudVectorStoreConfig;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ResourceLoader;
-
-@Configuration
-public class CricketWorldCupConfig {
-    @Autowired
-    private ResourceLoader resourceLoader;
-
-    @Value("${hana.table.name}")
-    private String tableName;
-
-    @Value("${hana.similarity.search.topK}")
-    private int topK;
-
-    @Bean
-    public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
-                                            EmbeddingClient embeddingClient) {
-        return new HanaCloudVectorStore(cricketWorldCupRepository, embeddingClient,
-                HanaCloudVectorStoreConfig.builder()
-                        .tableName(tableName)
-                        .topK(topK)
-                        .build());
-    }
-}
-----
-
-==== Now, create a `REST Controller` class `CricketWorldCupHanaController`, and autowire `ChatClient` and `VectorStore` as dependencies:
+==== Now, create a REST Controller class `CricketWorldCupHanaController`, and autowire `ChatClient` and `VectorStore` as dependencies:
 In this controller class, create the following REST endpoints:
 
 - `/ai/hana-vector-store/cricket-world-cup/purge-embeddings` - to purge all the embeddings from the Vector Store  
@@ -208,7 +166,7 @@ In this controller class, create the following REST endpoints:
 
 [source,java]
 ----
-package com.interviewpedia.spring.ai.openai.rag;
+package com.interviewpedia.spring.ai.hana;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.ChatClient;
@@ -284,5 +242,5 @@ public class CricketWorldCupHanaController {
 ----
 
 
-==== Download a `contextual` pdf file
+==== Use a `contextual` pdf file from wikipedia
 Go to link:https://en.wikipedia.org/wiki/Cricket_World_Cup[wikipedia] and link:https://en.wikipedia.org/w/index.php?title=Special:DownloadAsPdf&page=Cricket_World_Cup&action=show-download-screen[download] `Cricket World Cup` page as a PDF file. Upload this PDF file using the file-upload REST endpoint that we created in the previous step.
