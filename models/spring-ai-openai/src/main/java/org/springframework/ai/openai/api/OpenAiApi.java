@@ -319,7 +319,7 @@ public class OpenAiApi {
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") String toolChoice,
+			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("user") String user) {
 
 		/**
@@ -360,7 +360,7 @@ public class OpenAiApi {
 		 * @param toolChoice Controls which (if any) function is called by the model.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
-				List<FunctionTool> tools, String toolChoice) {
+				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null,
 					null, null, null, false, 0.8f, null,
 					tools, toolChoice, null);
@@ -396,8 +396,8 @@ public class OpenAiApi {
 			/**
 			 * Specifying a particular function forces the model to call that function.
 			 */
-			public static String FUNCTION(String functionName) {
-				return ModelOptionsUtils.toJsonString(Map.of("type", "function", "function", Map.of("name", functionName)));
+			public static Object FUNCTION(String functionName) {
+				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 		}
 
