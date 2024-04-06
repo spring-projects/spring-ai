@@ -244,5 +244,7 @@ public class CricketWorldCupHanaController {
 
 ==== Use a `contextual` pdf file from wikipedia
 Go to link:https://en.wikipedia.org/wiki/Cricket_World_Cup[wikipedia] and link:https://en.wikipedia.org/w/index.php?title=Special:DownloadAsPdf&page=Cricket_World_Cup&action=show-download-screen[download] `Cricket World Cup` page as a PDF file.
+
 image:hanadb/wikipedia.png[title="Cricket World Cup", width=800, link=https://en.wikipedia.org/wiki/Cricket_World_Cup]
+
 Upload this PDF file using the file-upload REST endpoint that we created in the previous step.
