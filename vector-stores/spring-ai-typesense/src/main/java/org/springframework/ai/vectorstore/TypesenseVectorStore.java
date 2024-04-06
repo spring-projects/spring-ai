@@ -66,6 +66,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
 			List<Double> embedding = this.embeddingClient.embed(document.getContent());
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, embedding);
 
 			return typesenseDoc;
 		}).toList();
