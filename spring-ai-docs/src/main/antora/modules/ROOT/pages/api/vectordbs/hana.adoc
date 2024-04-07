@@ -53,13 +53,13 @@ You may set the property `spring-ai-version` as `<spring-ai-version>1.0.0-SNAPSH
 ==== Add the following properties in `application.properties` file:
 [yml]
 ----
-spring.ai.openai.api-key=<YOUR_OPENAI_API_KEY>
+spring.ai.openai.api-key=${OPENAI_API_KEY}
 spring.ai.openai.embedding.options.model=text-embedding-ada-002
 
 spring.datasource.driver-class-name=com.sap.db.jdbc.Driver
-spring.datasource.url=<YOUR_HANA_CLOUD_DB_URL>
-spring.datasource.username=<HANA_DB_USERNAME>
-spring.datasource.password=<HANA_DB_PASSWORD>
+spring.datasource.url=${HANA_DATASOURCE_URL}
+spring.datasource.username=${HANA_DATASOURCE_USERNAME}
+spring.datasource.password=${HANA_DATASOURCE_PASSWORD}
 
 spring.ai.vectorstore.hanadb.tableName=CRICKET_WORLD_CUP
 spring.ai.vectorstore.hanadb.topK=3
