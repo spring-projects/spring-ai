@@ -76,7 +76,7 @@ public class HanaCloudVectorStoreIT {
 			Assertions.assertTrue(results.get(0).getContent().contains("Australia"));
 
 			// Remove all documents from the store
-			vectorStore.delete(documents.stream().map(Document::getId).collect(Collectors.toList()));
+			vectorStore.delete(documents.stream().map(Document::getId).toList());
 			List<Document> results2 = vectorStore.similaritySearch("Who won the 2023 cricket world cup finals?");
 			Assertions.assertEquals(0, results2.size());
 		});

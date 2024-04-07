@@ -2,7 +2,7 @@
 
 == Below are the steps to provision SAP Hana Database using a trial account
 
-Let's us start with creating a link:https://temp-mail.org/en/[temporary email] for registration purposes
+Let's start with creating a link:https://temp-mail.org/en/[temporary email] for registration purposes
 
 image::../images/hanadb/0.png[width=800]
 
