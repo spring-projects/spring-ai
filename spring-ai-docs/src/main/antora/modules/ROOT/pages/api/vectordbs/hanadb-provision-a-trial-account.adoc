@@ -2,11 +2,11 @@
 
 == Below are the steps to provision SAP Hana Database using a trial account
 
-Let us start with creating a link:https://temp-mail.org/en/[temporary email] for registration purposes
+Let's us start with creating a link:https://temp-mail.org/en/[temporary email] for registration purposes
 
 image::../images/hanadb/0.png[width=800]
 
-Note: do not close the above window, otherwise a new email id would get generated.
+TIP: Don't close the above window, otherwise a new email id would get generated.
 
 Go to link:https://sap.com/[sap.com] and navigate to `products` -> `Trials and Demos`
 
@@ -32,7 +32,7 @@ We fill in our details and click `Submit`
 
 image::../images/hanadb/6.png[width=800]
 
-We receive a message to check our emails
+It's time to check the inbox of our temporary email account
 
 image::../images/hanadb/7.png[width=800]
 
@@ -44,7 +44,7 @@ Open the email and `click to activate` the trial account
 
 image::../images/hanadb/9.png[width=800]
 
-It will prompt to create a `password`. Click `Submit`
+It will prompt to create a `password`. Provide a password and click `Submit`
 
 image::../images/hanadb/10.png[width=800]
 
@@ -56,7 +56,7 @@ Provide your phone number and click `Continue`
 
 image::../images/hanadb/13.png[width=800]
 
-We receive an OTP on the phone number. Key in the `code` and `continue`
+We receive an OTP on the phone number. Provide the `code` and click `continue`
 
 image::../images/hanadb/14.png[width=800]
 
@@ -68,7 +68,7 @@ Click `Continue`
 
 image::../images/hanadb/16.png[width=800]
 
-Click `Go to your Trial account`
+The `SAP BTP trial` account is ready. Click `Go to your Trial account`
 
 image::../images/hanadb/17.png[width=800]
 
@@ -80,17 +80,19 @@ Open `Instances and Subscriptions`
 
 image::../images/hanadb/19.png[width=800]
 
-Click `Create` to create a subscription
+It's time to create a subscription. Click the `Create` button
 
-image::../images/hanadb/20.png[width=800]
+image::../images/hanadb/20.1.png[width=800]
 
-TODO: add a slide to show the selections
+While creating a subscription, Select `service` as `SAP Hana Cloud` and `Plan` as `tools` and click `Create`
+
+image::../images/hanadb/20.2.png[width=800]
 
 Notice that `SAP Hana Cloud` subscription is now created. Click `Users` on the left panel
 
 image::../images/hanadb/21.png[width=800]
 
-Select the username (temporary email that we supplied earlier) and click `Assign Rolw Collection`
+Select the username (temporary email that we supplied earlier) and click `Assign Role Collection`
 
 image::../images/hanadb/22.png[width=800]
 
@@ -98,7 +100,7 @@ Search `hana` and select all the 3 role collections that gets displayed. Click `
 
 image::../images/hanadb/23.png[width=800]
 
-Notice that our `user` now has all the 3 role collections. Click `Instances and Subscriptions`
+Our `user` now has all the 3 role collections. Click `Instances and Subscriptions`
 
 image::../images/hanadb/24.png[width=800]
 
@@ -106,11 +108,11 @@ Now, click `SAP Hana Cloud` application under subscriptions
 
 image::../images/hanadb/25.png[width=800]
 
-Click `Create Instance`
+There are no instances yet. Let's click `Create Instance`
 
 image::../images/hanadb/26.png[width=800]
 
-Select Type as `SAP HANA Cloud, SAP HANA Database`. Click `Next`
+Select Type as `SAP HANA Cloud, SAP HANA Database`. Click `Next Step`
 
 image::../images/hanadb/27.png[width=800]
 
@@ -139,11 +141,11 @@ Click `Create Instance`
 
 image::../images/hanadb/33.png[width=800]
 
-Notice that the provisioning of SAP Hana DB instance has started. It takes some time to provision.
+Notice that the provisioning of `SAP Hana Database` instance has started. It takes some time to provision - please be patient.
 
 image::../images/hanadb/34.1.png[width=800]
 
-Once the instance is provisioned (status is displayed as `Running`) we can get the `datasource url` (SQL Endpoint) by clicking the instance and selecting `Connections`
+Once the instance is provisioned (status is displayed as `Running`) we can get the datasource url (`SQL Endpoint`) by clicking the instance and selecting `Connections`
 
 image::../images/hanadb/34.2.png[width=800]
 
@@ -167,15 +169,15 @@ CREATE TABLE CRICKET_WORLD_CUP (
 
 image::../images/hanadb/37.png[width=800]
 
-Navigate to `hana_dev_db -> Catelog -> Tables` to find our table `CRICKET_WROLD_CUP`
+Navigate to `hana_dev_db -> Catalog -> Tables` to find our table `CRICKET_WORLD_CUP`
 
 image::../images/hanadb/38.png[width=800]
 
-Right click on the table and click `Open Data`
+Right-click on the table and click `Open Data`
 
 image::../images/hanadb/39.png[width=800]
 
-Notice that the table data is now displayed. There are now rows as we didn't create any touples yet.
+Notice that the table data is now displayed. There are now rows as we didn't create any embeddings yet.
 
 image::../images/hanadb/40.png[width=800]
 
