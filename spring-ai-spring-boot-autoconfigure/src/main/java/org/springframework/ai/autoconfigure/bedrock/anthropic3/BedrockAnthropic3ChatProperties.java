@@ -44,11 +44,6 @@ public class BedrockAnthropic3ChatProperties {
 	 */
 	private String model = AnthropicChatModel.CLAUDE_V3_SONNET.id();
 
-	/**
-	 * Set model timeout. 1000 ms by default.
-	 */
-	private Long timeout = 1000L;
-
 	@NestedConfigurationProperty
 	private Anthropic3ChatOptions options = Anthropic3ChatOptions.builder()
 		.withTemperature(0.7f)
@@ -76,14 +71,6 @@ public class BedrockAnthropic3ChatProperties {
 
 	public Anthropic3ChatOptions getOptions() {
 		return options;
-	}
-
-	public Long getTimeout() {
-		return timeout;
-	}
-
-	public void setTimeout(Long timeout) {
-		this.timeout = timeout;
 	}
 
 	public void setOptions(Anthropic3ChatOptions options) {

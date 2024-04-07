@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -55,7 +56,7 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use, unit millis.
 	 */
-	public Anthropic3ChatBedrockApi(String modelId, String region, Long timeout) {
+	public Anthropic3ChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
@@ -69,7 +70,7 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param timeout The timeout to use, unit millis.
 	 */
 	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Long timeout) {
+			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 

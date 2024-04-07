@@ -44,11 +44,6 @@ public class BedrockCohereEmbeddingProperties {
 	 */
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id();
 
-	/**
-	 * Set model timeout. 1000 ms by default.
-	 */
-	private Long timeout = 1000L;
-
 	@NestedConfigurationProperty
 	private BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
 		.withInputType(InputType.SEARCH_DOCUMENT)
@@ -77,14 +72,6 @@ public class BedrockCohereEmbeddingProperties {
 
 	public void setOptions(BedrockCohereEmbeddingOptions options) {
 		this.options = options;
-	}
-
-	public Long getTimeout() {
-		return timeout;
-	}
-
-	public void setTimeout(Long timeout) {
-		this.timeout = timeout;
 	}
 
 }

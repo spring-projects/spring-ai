@@ -26,6 +26,8 @@ import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
 
+import java.time.Duration;
+
 // @formatter:off
 /**
  * Java client for the Bedrock Llama2 chat model.
@@ -45,7 +47,7 @@ public class Llama2ChatBedrockApi extends
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use, unit millis.
 	 */
-	public Llama2ChatBedrockApi(String modelId, String region, Long timeout) {
+	public Llama2ChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
@@ -59,7 +61,7 @@ public class Llama2ChatBedrockApi extends
 	 * @param timeout The timeout to use, unit millis.
 	 */
 	public Llama2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Long timeout) {
+			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 

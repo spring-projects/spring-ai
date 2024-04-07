@@ -71,7 +71,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	private final String region;
 	private final BedrockRuntimeClient client;
 	private final BedrockRuntimeAsyncClient clientStreaming;
-	private final Long timeout;
+	private final Duration timeout;
 
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
@@ -80,7 +80,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use, unit millis.
 	 */
-	public AbstractBedrockApi(String modelId, String region, Long timeout) {
+	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
 		this(modelId, ProfileCredentialsProvider.builder().build(), region, new ObjectMapper(), timeout);
 	}
 
@@ -94,7 +94,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param timeout The timeout to use, unit millis.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Long timeout) {
+			ObjectMapper objectMapper, Duration timeout) {
 
 		this.modelId = modelId;
 		this.objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -105,13 +105,13 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		this.client = BedrockRuntimeClient.builder()
 				.region(Region.of(this.region))
 				.credentialsProvider(this.credentialsProvider)
-				.overrideConfiguration(c -> c.apiCallTimeout(Duration.ofMillis(timeout)))
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
 				.build();
 
 		this.clientStreaming = BedrockRuntimeAsyncClient.builder()
 				.region(Region.of(this.region))
 				.credentialsProvider(this.credentialsProvider)
-				.overrideConfiguration(c -> c.apiCallTimeout(Duration.ofMillis(timeout)))
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
 				.build();
 	}
 

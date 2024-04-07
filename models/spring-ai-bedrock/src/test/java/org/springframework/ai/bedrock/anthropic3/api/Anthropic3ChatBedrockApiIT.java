@@ -31,6 +31,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ public class Anthropic3ChatBedrockApiIT {
 
 	private Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
 			AnthropicChatModel.CLAUDE_INSTANT_V1.id(), EnvironmentVariableCredentialsProvider.create(),
-			Region.US_EAST_1.id(), new ObjectMapper(), 1000L);
+			Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMillis(1000L));
 
 	@Test
 	public void chatCompletion() {

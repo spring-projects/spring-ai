@@ -48,7 +48,7 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
 			BedrockTitanEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper(), properties.getTimeout());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean

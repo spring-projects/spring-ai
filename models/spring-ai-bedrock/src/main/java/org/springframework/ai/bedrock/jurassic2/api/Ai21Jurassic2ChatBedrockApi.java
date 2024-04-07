@@ -16,6 +16,7 @@
 // @formatter:off
 package org.springframework.ai.bedrock.jurassic2.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -47,7 +48,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use, unit millis.
 	 */
-	public Ai21Jurassic2ChatBedrockApi(String modelId, String region, Long timeout) {
+	public Ai21Jurassic2ChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
@@ -61,7 +62,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
 	 */
 	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-									ObjectMapper objectMapper, Long timeout) {
+									ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 

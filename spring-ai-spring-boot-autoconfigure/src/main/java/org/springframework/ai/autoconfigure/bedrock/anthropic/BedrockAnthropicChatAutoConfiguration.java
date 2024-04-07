@@ -49,7 +49,7 @@ public class BedrockAnthropicChatAutoConfiguration {
 	public AnthropicChatBedrockApi anthropicApi(AwsCredentialsProvider credentialsProvider,
 			BedrockAnthropicChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new AnthropicChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper(), properties.getTimeout());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean

@@ -41,11 +41,6 @@ public class BedrockLlama2ChatProperties {
 	 */
 	private String model = Llama2ChatModel.LLAMA2_70B_CHAT_V1.id();
 
-	/**
-	 * Set model timeout. 1000 ms by default.
-	 */
-	private Long timeout = 1000L;
-
 	@NestedConfigurationProperty
 	private BedrockLlama2ChatOptions options = BedrockLlama2ChatOptions.builder()
 		.withTemperature(0.7f)
@@ -74,14 +69,6 @@ public class BedrockLlama2ChatProperties {
 
 	public void setOptions(BedrockLlama2ChatOptions options) {
 		this.options = options;
-	}
-
-	public Long getTimeout() {
-		return timeout;
-	}
-
-	public void setTimeout(Long timeout) {
-		this.timeout = timeout;
 	}
 
 }

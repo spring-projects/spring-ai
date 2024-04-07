@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.jurassic2.api;
 
+import java.time.Duration;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class Ai21Jurassic2ChatBedrockApiIT {
 
 	Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(Ai21Jurassic2ChatModel.AI21_J2_ULTRA_V1.id(),
-			Region.US_EAST_1.id(), 1000L);
+			Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 	@Test
 	public void chatCompletion() {

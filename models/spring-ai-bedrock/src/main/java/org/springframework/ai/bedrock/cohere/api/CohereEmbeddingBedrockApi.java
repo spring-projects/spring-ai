@@ -16,6 +16,7 @@
 // @formatter:off
 package org.springframework.ai.bedrock.cohere.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -46,7 +47,7 @@ public class CohereEmbeddingBedrockApi extends
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use, unit millis.
 	 */
-	public CohereEmbeddingBedrockApi(String modelId, String region, Long timeout) {
+	public CohereEmbeddingBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
@@ -61,7 +62,7 @@ public class CohereEmbeddingBedrockApi extends
 	 * @param timeout The timeout to use, unit millis.
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Long timeout) {
+			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 

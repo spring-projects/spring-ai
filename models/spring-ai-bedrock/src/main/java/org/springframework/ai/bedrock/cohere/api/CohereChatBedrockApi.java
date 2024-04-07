@@ -16,6 +16,7 @@
 // @formatter:off
 package org.springframework.ai.bedrock.cohere.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -47,9 +48,8 @@ public class CohereChatBedrockApi extends
 	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use, unit millis.
-	 * @param timeout The timeout to use, unit millis.
 	 */
-	public CohereChatBedrockApi(String modelId, String region, Long timeout) {
+	public CohereChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
@@ -63,7 +63,7 @@ public class CohereChatBedrockApi extends
 	 * @param timeout The timeout to use, unit millis.
 	 */
 	public CohereChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Long timeout) {
+			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 

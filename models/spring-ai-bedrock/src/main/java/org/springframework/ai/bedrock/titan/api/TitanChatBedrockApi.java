@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.titan.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -43,7 +44,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 public class TitanChatBedrockApi extends
 		AbstractBedrockApi<TitanChatRequest, TitanChatResponse, TitanChatResponseChunk> {
 
-	public TitanChatBedrockApi(String modelId, String region, Long timeout) {
+	public TitanChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
@@ -57,7 +58,7 @@ public class TitanChatBedrockApi extends
 	 * @param timeout The timeout to use, unit millis.
 	 */
 	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Long timeout) {
+			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 

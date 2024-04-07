@@ -41,11 +41,6 @@ public class BedrockTitanChatProperties {
 	 */
 	private String model = TitanChatModel.TITAN_TEXT_EXPRESS_V1.id();
 
-	/**
-	 * Set model timeout. 1000 ms by default.
-	 */
-	private Long timeout = 1000L;
-
 	@NestedConfigurationProperty
 	private BedrockTitanChatOptions options = BedrockTitanChatOptions.builder().withTemperature(0.7f).build();
 
@@ -71,14 +66,6 @@ public class BedrockTitanChatProperties {
 
 	public void setOptions(BedrockTitanChatOptions options) {
 		this.options = options;
-	}
-
-	public Long getTimeout() {
-		return timeout;
-	}
-
-	public void setTimeout(Long timeout) {
-		this.timeout = timeout;
 	}
 
 }

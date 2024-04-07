@@ -48,7 +48,7 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	public CohereEmbeddingBedrockApi cohereEmbeddingApi(AwsCredentialsProvider credentialsProvider,
 			BedrockCohereEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper(), properties.getTimeout());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean

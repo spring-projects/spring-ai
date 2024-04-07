@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.titan.api;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TitanChatBedrockApiIT {
 
 	TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
-			Region.EU_CENTRAL_1.id(), 1000L);
+			Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
 
 	TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
 		.withTemperature(0.5f)

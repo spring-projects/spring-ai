@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.anthropic.api;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,8 @@ public class AnthropicChatBedrockApiIT {
 	private final Logger logger = LoggerFactory.getLogger(AnthropicChatBedrockApiIT.class);
 
 	private AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(AnthropicChatModel.CLAUDE_V2.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_WEST_2.id(), new ObjectMapper(), 1000L);
+			EnvironmentVariableCredentialsProvider.create(), Region.US_WEST_2.id(), new ObjectMapper(),
+			Duration.ofMillis(1000L));
 
 	@Test
 	public void chatCompletion() {
