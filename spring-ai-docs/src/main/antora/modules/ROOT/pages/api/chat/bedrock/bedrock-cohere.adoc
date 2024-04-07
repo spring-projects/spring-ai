@@ -188,7 +188,10 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 [source,java]
 ----
 CohereChatBedrockApi api = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+		EnvironmentVariableCredentialsProvider.create(),
+		Region.US_EAST_1.id(),
+		new ObjectMapper(),
+		Duration.ofMillis(1000L));
 
 BedrockCohereChatClient chatClient = new BedrockCohereChatClient(api,
 	    BedrockCohereChatOptions.builder()
