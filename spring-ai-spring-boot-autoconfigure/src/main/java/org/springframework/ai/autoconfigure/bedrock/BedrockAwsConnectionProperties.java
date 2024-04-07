@@ -46,9 +46,9 @@ public class BedrockAwsConnectionProperties {
 	private String secretKey;
 
 	/**
-	 * Set model timeout
+	 * Set model timeout, Defaults 1000 ms.
 	 */
-	private Duration timeout;
+	private Duration timeout = Duration.ofMillis(1000L);
 
 	public String getRegion() {
 		return region;
