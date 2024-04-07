@@ -45,7 +45,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
-	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "template");
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive");
 
 	// @formatter:off
 	/**
@@ -256,13 +256,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("keep_alive") private String keepAlive;
 
 	/**
-	 * The prompt template to use (overrides what is defined in the Modelfile).
-	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
-	 */
-	@JsonProperty("template") private String template;
-
-
-	/**
 	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
 	 */
 	public OllamaOptions withModel(String model) {
@@ -285,11 +278,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public OllamaOptions withKeepAlive(String keepAlive) {
 		this.keepAlive = keepAlive;
-		return this;
-	}
-
-	public OllamaOptions withTemplate(String template) {
-		this.template = template;
 		return this;
 	}
 
@@ -467,14 +455,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public void setKeepAlive(String keepAlive) {
 		this.keepAlive = keepAlive;
-	}
-
-	public String getTemplate() {
-		return this.template;
-	}
-
-	public void setTemplate(String template) {
-		this.template = template;
 	}
 
 	public Boolean getUseNUMA() {
