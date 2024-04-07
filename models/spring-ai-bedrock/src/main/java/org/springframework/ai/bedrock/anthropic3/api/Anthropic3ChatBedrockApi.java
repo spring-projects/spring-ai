@@ -54,7 +54,7 @@ public class Anthropic3ChatBedrockApi extends
 	 * Create a new AnthropicChatBedrockApi instance using the default credentials provider chain, the default object.
 	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
 	 * @param region The AWS region to use.
-	 * @param timeout The timeout to use, unit millis.
+	 * @param timeout The timeout to use.
 	 */
 	public Anthropic3ChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
@@ -67,7 +67,7 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
-	 * @param timeout The timeout to use, unit millis.
+	 * @param timeout The timeout to use.
 	 */
 	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper, Duration timeout) {

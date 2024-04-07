@@ -78,7 +78,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 *
 	 * @param modelId The model id to use.
 	 * @param region The AWS region to use.
-	 * @param timeout The timeout to use, unit millis.
+	 * @param timeout The timeout to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
 		this(modelId, ProfileCredentialsProvider.builder().build(), region, new ObjectMapper(), timeout);
@@ -91,7 +91,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
-	 * @param timeout The timeout to use, unit millis.
+	 * @param timeout The timeout to use.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper, Duration timeout) {

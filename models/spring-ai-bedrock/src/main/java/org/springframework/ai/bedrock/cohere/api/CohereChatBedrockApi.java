@@ -47,7 +47,7 @@ public class CohereChatBedrockApi extends
 	 *
 	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
 	 * @param region The AWS region to use.
-	 * @param timeout The timeout to use, unit millis.
+	 * @param timeout The timeout to use.
 	 */
 	public CohereChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
@@ -60,7 +60,7 @@ public class CohereChatBedrockApi extends
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
-	 * @param timeout The timeout to use, unit millis.
+	 * @param timeout The timeout to use.
 	 */
 	public CohereChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper, Duration timeout) {
