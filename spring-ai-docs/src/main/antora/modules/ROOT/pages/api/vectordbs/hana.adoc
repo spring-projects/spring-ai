@@ -2,6 +2,9 @@
 
 == How to setup a project that uses SAP Hana Cloud as the vector DB and leverage OpenAI to implement RAG pattern
 
+Refer xref:api/vectordbs/hanadb-provision-a-trial-account.adoc[SAP HANA Cloud vector engine - provision a trial account] guide
+to create a trial account
+
 ==== Create a table `CRICKET_WORLD_CUP` in SAP Hana DB:
 [sql]
 ----
@@ -245,6 +248,6 @@ public class CricketWorldCupHanaController {
 ==== Use a `contextual` pdf file from wikipedia
 Go to link:https://en.wikipedia.org/wiki/Cricket_World_Cup[wikipedia] and link:https://en.wikipedia.org/w/index.php?title=Special:DownloadAsPdf&page=Cricket_World_Cup&action=show-download-screen[download] `Cricket World Cup` page as a PDF file.
 
-image::hanadb/wikipedia.png[width=800]
+image::../images/hanadb/wikipedia.png[width=800]
 
 Upload this PDF file using the file-upload REST endpoint that we created in the previous step.
