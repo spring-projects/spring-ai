@@ -83,10 +83,6 @@ class WikiVectorStoreExample {
 		public CassandraVectorStore store(EmbeddingClient embeddingClient) {
 
 			CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
-
-				// .withContactPoint(cassandraContainer.getContactPoint())
-				// .withLocalDatacenter(cassandraContainer.getLocalDatacenter())
-
 				.withKeyspaceName("wikidata")
 				.withTableName("articles")
 
