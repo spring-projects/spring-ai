@@ -8,12 +8,11 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
-import org.typesense.model.CollectionSchema;
-import org.typesense.model.Field;
-import org.typesense.model.ImportDocumentsParameters;
+import org.typesense.model.*;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -39,12 +38,76 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	public static class TypesenseConfig {
 
-		private String collectionName;
+		private final String collectionName;
+
+		private final int embeddingDimension;
+
+		public TypesenseConfig(String collectionName, int embeddingDimension) {
+			this.collectionName = collectionName;
+			this.embeddingDimension = embeddingDimension;
+		}
+
+		/**
+		 * {@return the default config}
+		 */
+		public static TypesenseConfig defaultConfig() {
+			return builder().build();
+		}
+
+		private TypesenseConfig(Builder builder) {
+			this.collectionName = builder.collectionName;
+			this.embeddingDimension = builder.embeddingDimension;
+		}
+
+		/**
+		 * Start building a new configuration.
+		 * @return The entry point for creating a new configuration.
+		 */
+		public static Builder builder() {
+
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private String collectionName;
+
+			private int embeddingDimension;
+
+			/**
+			 * Set the collection name.
+			 * @param collectionName The collection name.
+			 * @return The builder.
+			 */
+			public Builder withCollectionName(String collectionName) {
+				this.collectionName = collectionName;
+				return this;
+			}
+
+			/**
+			 * Set the embedding dimension.
+			 * @param embeddingDimension The embedding dimension.
+			 * @return The builder.
+			 */
+			public Builder withEmbeddingDimension(int embeddingDimension) {
+				this.embeddingDimension = embeddingDimension;
+				return this;
+			}
+
+			/**
+			 * Build the configuration.
+			 * @return The configuration.
+			 */
+			public TypesenseConfig build() {
+				return new TypesenseConfig(this);
+			}
+
+		}
 
 	}
 
 	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient) {
-		this(client, embeddingClient, new TypesenseConfig());
+		this(client, embeddingClient, TypesenseConfig.defaultConfig());
 	}
 
 	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient, TypesenseConfig config) {
@@ -86,15 +149,45 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
-		return Optional.empty();
+		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
+		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":[" + String.join(",", idList) + "]");
+
+		try {
+			int deletedDocst = (Integer) this.client.collections(this.config.collectionName)
+				.documents()
+				.delete(deleteDocumentsParameters)
+				.getOrDefault("num_deleted", 0);
+			return Optional.of(deletedDocst > 0);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents", e);
+			return Optional.of(Boolean.FALSE);
+		}
 	}
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 		Assert.notNull(request.getQuery(), "Query string must not be null");
-		return null;
-	}
 
+		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
+
+		HashMap<String, String> search = new HashMap<>();
+		search.put("collection", this.config.collectionName);
+		search.put("q", "*");
+		search.put("vector_query", String.join(",", embedding.stream().map(String::valueOf).toList()));
+
+		SearchParameters searchParameters = new SearchParameters()
+				.q("*")
+				.vectorQuery("vec:([" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "])");
+
+		try {
+			SearchResult searchResult = client.collections(this.config.collectionName).documents().search(searchParameters);
+			return List.of();
+		} catch (Exception e) {
+			logger.error("Failed to search documents", e);
+			return List.of();
+		}
+	}
 	// ---------------------------------------------------------------------------------
 	// Initialization
 	// ---------------------------------------------------------------------------------
