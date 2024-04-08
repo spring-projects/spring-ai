@@ -78,8 +78,6 @@ public class VertexAiGeminiChatClient
 
 	private final GenerationConfig generationConfig;
 
-	private GenerativeModel generativeModel;
-
 	public enum GeminiMessageType {
 
 		USER("user"),
@@ -140,7 +138,6 @@ public class VertexAiGeminiChatClient
 		this.vertexAI = vertexAI;
 		this.defaultOptions = options;
 		this.generationConfig = toGenerationConfig(options);
-		this.generativeModel = new GenerativeModel(options.getModel(), vertexAI);
 	}
 
 	// https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
@@ -204,7 +201,8 @@ public class VertexAiGeminiChatClient
 		Set<String> functionsForThisRequest = new HashSet<>();
 
 		GenerationConfig generationConfig = this.generationConfig;
-		GenerativeModel generativeModel = this.generativeModel;
+
+		GenerativeModel generativeModel = new GenerativeModel(this.defaultOptions.getModel(), this.vertexAI);
 
 		VertexAiGeminiChatOptions updatedRuntimeOptions = null;
 

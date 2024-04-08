@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vertexai.gemini.tool;
+package org.springframework.ai.autoconfigure.anthropic.tool;
 
 import java.util.List;
 import java.util.function.Function;
@@ -23,14 +23,18 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration;
+import org.springframework.ai.anthropic.AnthropicChatClient;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.autoconfigure.anthropic.AnthropicAutoConfiguration;
+import org.springframework.ai.autoconfigure.anthropic.tool.MockWeatherService.Request;
+import org.springframework.ai.autoconfigure.anthropic.tool.MockWeatherService.Response;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,57 +42,43 @@ import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
 class FunctionCallWithFunctionBeanIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
-				"spring.ai.vertex.ai.gemini.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"))
-
-		.withConfiguration(AutoConfigurations.of(VertexAiGeminiAutoConfiguration.class))
+		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
 
 		contextRunner
-			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.withPropertyValues(
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
 			.run(context -> {
 
-				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				AnthropicChatClient chatClient = context.getBean(AnthropicChatClient.class);
 
-				var systemMessage = new SystemMessage("""
-						Use Multi-turn function calling.
-						Answer for all listed locations.
-						If the information was not fetched call the function again. Repeat at most 3 times.
-						""");
 				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Paris and in Tokyo (Japan)?");
+						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
-
-				logger.info("Response: {}", response);
-
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
-
-				response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
+				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+						AnthropicChatOptions.builder().withFunction("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				response = chatClient
-					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
+				response = chatClient.call(new Prompt(List.of(userMessage),
+						AnthropicChatOptions.builder().withFunction("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 			});
 	}
@@ -97,8 +87,8 @@ class FunctionCallWithFunctionBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get the weather in location")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
+		@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+		public Function<Request, Response> weatherFunction() {
 			return new MockWeatherService();
 		}
 

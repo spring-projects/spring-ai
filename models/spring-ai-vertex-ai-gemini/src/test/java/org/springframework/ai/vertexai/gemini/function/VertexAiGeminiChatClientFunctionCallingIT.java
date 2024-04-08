@@ -146,7 +146,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
+				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
