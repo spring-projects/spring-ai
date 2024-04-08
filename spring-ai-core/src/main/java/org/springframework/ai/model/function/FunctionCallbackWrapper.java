@@ -35,9 +35,8 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 	private final Function<I, O> function;
 
 	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, Function<I, O> function) {
-		super(name, description, inputTypeSchema, inputType, responseConverter,
-				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+			Function<O, String> responseConverter, ObjectMapper objectMapper, Function<I, O> function) {
+		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
 		this.function = function;
 	}
@@ -148,7 +147,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			}
 
 			return new FunctionCallbackWrapper<>(this.name, this.description, this.inputTypeSchema, this.inputType,
-					this.responseConverter, this.function);
+					this.responseConverter, this.objectMapper, this.function);
 		}
 
 	}
