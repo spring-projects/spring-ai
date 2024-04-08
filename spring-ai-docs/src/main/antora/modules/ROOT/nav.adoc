@@ -23,7 +23,7 @@
 *** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/functions/mistralai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/anthropic-chat.adoc[Anthropic 3]
-***** xref:api/chat/functions/anthropic-chat-functions.adoc[Function Calling]
+**** xref:api/chat/functions/anthropic-chat-functions.adoc[Function Calling]
 *** xref:api/chat/watsonx-ai-chat.adoc[Watsonx.AI]
 ** xref:api/embeddings.adoc[]
 *** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
