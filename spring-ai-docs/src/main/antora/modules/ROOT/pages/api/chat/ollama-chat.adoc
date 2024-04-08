@@ -268,7 +268,7 @@ Flux<ChatResponse> response = chatClient.stream(
 
 The `OllamaOptions` provides the configuration information for all chat requests.
 
-== Low-level OpenAiApi Client [[low-level-api]]
+== Low-level OllamaApi Client [[low-level-api]]
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaApi.java[OllamaApi] provides is lightweight Java client for Ollama Chat API link:https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion[Ollama Chat Completion API].
 
