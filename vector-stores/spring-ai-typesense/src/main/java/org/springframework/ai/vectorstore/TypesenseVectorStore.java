@@ -12,7 +12,6 @@ import org.typesense.model.*;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -22,7 +21,11 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
 
-	public static final String DOC_ID_FIELD_NAME = "doc_id";
+	/**
+	 * The name of the field that contains the document ID. It is mandatory to "id" as the
+	 * field name because that is the name that typesense is going to look for.
+	 */
+	public static final String DOC_ID_FIELD_NAME = "id";
 
 	public static final String CONTENT_FIELD_NAME = "content";
 
@@ -34,15 +37,15 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	private final EmbeddingClient embeddingClient;
 
-	private final TypesenseConfig config;
+	private final TypesenseVectorStoreConfig config;
 
-	public static class TypesenseConfig {
+	public static class TypesenseVectorStoreConfig {
 
 		private final String collectionName;
 
 		private final int embeddingDimension;
 
-		public TypesenseConfig(String collectionName, int embeddingDimension) {
+		public TypesenseVectorStoreConfig(String collectionName, int embeddingDimension) {
 			this.collectionName = collectionName;
 			this.embeddingDimension = embeddingDimension;
 		}
@@ -50,11 +53,11 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		/**
 		 * {@return the default config}
 		 */
-		public static TypesenseConfig defaultConfig() {
+		public static TypesenseVectorStoreConfig defaultConfig() {
 			return builder().build();
 		}
 
-		private TypesenseConfig(Builder builder) {
+		private TypesenseVectorStoreConfig(Builder builder) {
 			this.collectionName = builder.collectionName;
 			this.embeddingDimension = builder.embeddingDimension;
 		}
@@ -98,8 +101,8 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			 * Build the configuration.
 			 * @return The configuration.
 			 */
-			public TypesenseConfig build() {
-				return new TypesenseConfig(this);
+			public TypesenseVectorStoreConfig build() {
+				return new TypesenseVectorStoreConfig(this);
 			}
 
 		}
@@ -107,10 +110,10 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient) {
-		this(client, embeddingClient, TypesenseConfig.defaultConfig());
+		this(client, embeddingClient, TypesenseVectorStoreConfig.defaultConfig());
 	}
 
-	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient, TypesenseConfig config) {
+	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient, TypesenseVectorStoreConfig config) {
 		Assert.notNull(client, "Typesense must not be null");
 		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
 
@@ -141,6 +144,8 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			this.client.collections(this.config.collectionName)
 				.documents()
 				.import_(documentList, importDocumentsParameters);
+
+			logger.info("Added {} documents", documentList.size());
 		}
 		catch (Exception e) {
 			logger.error("Failed to add documents", e);
@@ -153,11 +158,16 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":[" + String.join(",", idList) + "]");
 
 		try {
-			int deletedDocst = (Integer) this.client.collections(this.config.collectionName)
+			int deletedDocs = (Integer) this.client.collections(this.config.collectionName)
 				.documents()
 				.delete(deleteDocumentsParameters)
 				.getOrDefault("num_deleted", 0);
-			return Optional.of(deletedDocst > 0);
+
+			if (deletedDocs < idList.size()) {
+				logger.warn("Failed to delete all documents");
+			}
+
+			return Optional.of(deletedDocs > 0);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents", e);
@@ -176,18 +186,21 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		search.put("q", "*");
 		search.put("vector_query", String.join(",", embedding.stream().map(String::valueOf).toList()));
 
-		SearchParameters searchParameters = new SearchParameters()
-				.q("*")
-				.vectorQuery("vec:([" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "])");
+		SearchParameters searchParameters = new SearchParameters().q("*")
+			.vectorQuery("vec:([" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "])");
 
 		try {
-			SearchResult searchResult = client.collections(this.config.collectionName).documents().search(searchParameters);
+			SearchResult searchResult = client.collections(this.config.collectionName)
+				.documents()
+				.search(searchParameters);
 			return List.of();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to search documents", e);
 			return List.of();
 		}
 	}
+
 	// ---------------------------------------------------------------------------------
 	// Initialization
 	// ---------------------------------------------------------------------------------
@@ -221,7 +234,8 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			.addFieldsItem(new Field().name(EMBEDDING_FIELD_NAME)
 				.type(FieldTypes.FLOAT_ARRAY)
 				.numDim(this.embeddingClient.dimensions())
-				.optional(false));
+				.optional(false))
+			.enableNestedFields(true);
 
 		try {
 			this.client.collections().create(collectionSchema);
@@ -229,6 +243,21 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		}
 		catch (Exception e) {
 			logger.error("Failed to create collection {}", this.config.collectionName, e);
+		}
+	}
+
+	void dropCollection() {
+		if (!this.hasCollection()) {
+			logger.info("Collection {} does not exist", this.config.collectionName);
+			return;
+		}
+
+		try {
+			this.client.collections(this.config.collectionName).delete();
+			logger.info("Collection {} dropped", this.config.collectionName);
+		}
+		catch (Exception e) {
+			logger.error("Failed to drop collection {}", this.config.collectionName, e);
 		}
 	}
 
