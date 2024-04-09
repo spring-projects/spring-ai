@@ -15,16 +15,24 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import static org.assertj.core.api.Assertions.assertThat;
+
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.Group;
+import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.Filter.Value;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
@@ -32,12 +40,6 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.vectorstore.filter.Filter.Expression;
-import org.springframework.ai.vectorstore.filter.Filter.Group;
-import org.springframework.ai.vectorstore.filter.Filter.Key;
-import org.springframework.ai.vectorstore.filter.Filter.Value;
 
 /**
  * @author Mick Semb Wever

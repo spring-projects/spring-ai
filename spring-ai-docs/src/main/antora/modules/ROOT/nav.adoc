@@ -44,6 +44,7 @@
 *** xref:api/audio/speech.adoc[]
 **** xref:api/audio/speech/openai-speech.adoc[OpenAI]
 ** xref:api/vectordbs.adoc[]
+*** xref:api/vectordbs/apache-cassandra.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
 *** xref:api/vectordbs/milvus.adoc[]

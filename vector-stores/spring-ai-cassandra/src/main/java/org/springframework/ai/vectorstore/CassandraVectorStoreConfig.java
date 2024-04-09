@@ -15,6 +15,16 @@
  */
 package org.springframework.ai.vectorstore;
 
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -32,16 +42,6 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-import static java.lang.String.format;
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,22 +59,22 @@ import org.slf4j.LoggerFactory;
  */
 public final class CassandraVectorStoreConfig implements AutoCloseable {
 
-	public static final String DEFAULT_KEYSPACE_NAME = "springframework_ai_vector";
+	public static final String DEFAULT_KEYSPACE_NAME = "springframework";
 
-	public static final String DEFAULT_TABLE_NAME = "springframework_ai_vector_store";
+	public static final String DEFAULT_TABLE_NAME = "ai_vector_store";
 
 	public static final String DEFAULT_ID_NAME = "id";
 
 	public static final String DEFAULT_INDEX_NAME = "embedding_index";
 
-	public static final String DEFAULT_CONTENT_FIELD_NAME = "content";
+	public static final String DEFAULT_CONTENT_COLUMN_NAME = "content";
 
-	public static final String DEFAULT_EMBEDDING_FIELD_NAME = "embedding";
+	public static final String DEFAULT_EMBEDDING_COLUMN_NAME = "embedding";
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
 
 	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
-			String content, String embedding, String index, Set<SchemaColumn> metadataFields) {
+			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
 
 	}
 
@@ -116,19 +116,22 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	final Schema schema;
 
-	final boolean disallowSchemaCreation;
+	final boolean disallowSchemaChanges;
 
 	final DocumentIdTranslator documentIdTranslator;
 
 	final PrimaryKeyTranslator primaryKeyTranslator;
 
+	private final boolean closeSessionOnClose;
+
 	private CassandraVectorStoreConfig(Builder builder) {
-		this.session = builder.sessionBuilder.build();
+		this.session = null != builder.session ? builder.session : builder.sessionBuilder.build();
+		this.closeSessionOnClose = null == builder.session;
 
 		this.schema = new Schema(builder.keyspace, builder.table, builder.partitionKeys, builder.clusteringKeys,
-				builder.contentFieldName, builder.embeddingFieldName, builder.indexName, builder.metadataFields);
+				builder.contentColumnName, builder.embeddingColumnName, builder.indexName, builder.metadataColumns);
 
-		this.disallowSchemaCreation = builder.disallowSchemaCreation;
+		this.disallowSchemaChanges = builder.disallowSchemaCreation;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
 	}
@@ -139,23 +142,27 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		session.close();
+		if (this.closeSessionOnClose) {
+			this.session.close();
+		}
 	}
 
 	SchemaColumn getPrimaryKeyColumn(int index) {
-		return index < schema.partitionKeys().size() ? schema.partitionKeys().get(index)
-				: schema.clusteringKeys().get(index - schema.partitionKeys().size());
+		return index < this.schema.partitionKeys().size() ? this.schema.partitionKeys().get(index)
+				: this.schema.clusteringKeys().get(index - this.schema.partitionKeys().size());
 	}
 
 	@VisibleForTesting
 	void dropKeyspace() {
-		Preconditions.checkState(schema.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
-		session.execute(SchemaBuilder.dropKeyspace(schema.keyspace).ifExists().build());
+		Preconditions.checkState(this.schema.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
+		this.session.execute(SchemaBuilder.dropKeyspace(this.schema.keyspace).ifExists().build());
 	}
 
 	public static class Builder {
 
-		private CqlSessionBuilder sessionBuilder = CqlSession.builder();
+		private CqlSession session = null;
+
+		private CqlSessionBuilder sessionBuilder = null;
 
 		private String keyspace = DEFAULT_KEYSPACE_NAME;
 
@@ -167,42 +174,50 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 		private String indexName = DEFAULT_INDEX_NAME;
 
-		private String contentFieldName = DEFAULT_CONTENT_FIELD_NAME;
+		private String contentColumnName = DEFAULT_CONTENT_COLUMN_NAME;
 
-		private String embeddingFieldName = DEFAULT_EMBEDDING_FIELD_NAME;
+		private String embeddingColumnName = DEFAULT_EMBEDDING_COLUMN_NAME;
 
-		private Set<SchemaColumn> metadataFields = new HashSet<>();
+		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private boolean disallowSchemaCreation = false;
 
-		private DocumentIdTranslator documentIdTranslator = new DocumentIdTranslator() {
-			@Override
-			public List<Object> apply(String id) {
-				return List.of(id);
-			}
-		};
+		private DocumentIdTranslator documentIdTranslator = (String id) -> List.of(id);
 
-		private PrimaryKeyTranslator primaryKeyTranslator = new PrimaryKeyTranslator() {
-			@Override
-			public String apply(List<Object> primaryKeyColumns) {
-				if (primaryKeyColumns.isEmpty()) {
-					return "test";
-				}
-				Preconditions.checkArgument(1 == primaryKeyColumns.size());
-				return (String) primaryKeyColumns.get(0);
+		private PrimaryKeyTranslator primaryKeyTranslator = (List<Object> primaryKeyColumns) -> {
+			if (primaryKeyColumns.isEmpty()) {
+				return "test";
 			}
+			Preconditions.checkArgument(1 == primaryKeyColumns.size());
+			return (String) primaryKeyColumns.get(0);
 		};
 
 		private Builder() {
 		}
 
-		public Builder withContactPoint(InetSocketAddress contactPoint) {
-			sessionBuilder.addContactPoint(contactPoint);
+		public Builder withCqlSession(CqlSession session) {
+			Preconditions.checkState(null == this.sessionBuilder,
+					"Cannot call withContactPoint(..) or withLocalDatacenter(..) and this method");
+
+			this.session = session;
+			return this;
+		}
+
+		public Builder addContactPoint(InetSocketAddress contactPoint) {
+			Preconditions.checkState(null == this.session, "Cannot call withCqlSession(..) and this method");
+			if (null == this.sessionBuilder) {
+				this.sessionBuilder = new CqlSessionBuilder();
+			}
+			this.sessionBuilder.addContactPoint(contactPoint);
 			return this;
 		}
 
 		public Builder withLocalDatacenter(String localDC) {
-			sessionBuilder.withLocalDatacenter(localDC);
+			Preconditions.checkState(null == this.session, "Cannot call withCqlSession(..) and this method");
+			if (null == this.sessionBuilder) {
+				this.sessionBuilder = new CqlSessionBuilder();
+			}
+			this.sessionBuilder.withLocalDatacenter(localDC);
 			return this;
 		}
 
@@ -231,34 +246,34 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
-		public Builder withContentFieldName(String name) {
-			this.contentFieldName = name;
+		public Builder withContentColumnName(String name) {
+			this.contentColumnName = name;
 			return this;
 		}
 
-		public Builder withEmbeddingFieldName(String name) {
-			this.embeddingFieldName = name;
+		public Builder withEmbeddingColumnName(String name) {
+			this.embeddingColumnName = name;
 			return this;
 		}
 
-		public Builder addMetadataFields(SchemaColumn... fields) {
+		public Builder addMetadataColumn(SchemaColumn... fields) {
 			Builder builder = this;
 			for (SchemaColumn f : fields) {
-				builder = builder.addMetadataField(f);
+				builder = builder.addMetadataColumn(f);
 			}
 			return builder;
 		}
 
-		public Builder addMetadataField(SchemaColumn field) {
+		public Builder addMetadataColumn(SchemaColumn field) {
 
-			Preconditions.checkArgument(metadataFields.stream().noneMatch((sc) -> sc.name().equals(field.name())),
+			Preconditions.checkArgument(this.metadataColumns.stream().noneMatch((sc) -> sc.name().equals(field.name())),
 					"A metadata field with name %s has already been added", field.name());
 
-			this.metadataFields.add(field);
+			this.metadataColumns.add(field);
 			return this;
 		}
 
-		public Builder disallowSchemaCreation() {
+		public Builder disallowSchemaChanges() {
 			this.disallowSchemaCreation = true;
 			return this;
 		}
@@ -274,32 +289,34 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 
 		public CassandraVectorStoreConfig build() {
-			for (SchemaColumn metadata : metadataFields) {
+			for (SchemaColumn metadata : this.metadataColumns) {
 
-				Preconditions.checkArgument(!partitionKeys.stream().anyMatch((c) -> c.name().equals(metadata.name())),
-						"MetadataField %s cannot have same name as a partition key", metadata.name());
+				Preconditions.checkArgument(
+						!this.partitionKeys.stream().anyMatch((c) -> c.name().equals(metadata.name())),
+						"metadataColumn %s cannot have same name as a partition key", metadata.name());
 
-				Preconditions.checkArgument(!clusteringKeys.stream().anyMatch((c) -> c.name().equals(metadata.name())),
-						"MetadataField %s cannot have same name as a clustering key", metadata.name());
+				Preconditions.checkArgument(
+						!this.clusteringKeys.stream().anyMatch((c) -> c.name().equals(metadata.name())),
+						"metadataColumn %s cannot have same name as a clustering key", metadata.name());
 
-				Preconditions.checkArgument(!metadata.name().equals(contentFieldName),
-						"MetadataField %s cannot have same name as content column name", contentFieldName);
+				Preconditions.checkArgument(!metadata.name().equals(this.contentColumnName),
+						"metadataColumn %s cannot have same name as content column name", this.contentColumnName);
 
-				Preconditions.checkArgument(!metadata.name().equals(embeddingFieldName),
-						"MetadataField %s cannot have same name as embedding column name", embeddingFieldName);
+				Preconditions.checkArgument(!metadata.name().equals(this.embeddingColumnName),
+						"metadataColumn %s cannot have same name as embedding column name", this.embeddingColumnName);
 
 			}
 			{
-				int primaryKeyColumnsCount = partitionKeys.size() + clusteringKeys.size();
-				String exampleId = primaryKeyTranslator.apply(Collections.emptyList());
-				List<Object> testIdTranslation = documentIdTranslator.apply(exampleId);
+				int primaryKeyColumnsCount = this.partitionKeys.size() + this.clusteringKeys.size();
+				String exampleId = this.primaryKeyTranslator.apply(Collections.emptyList());
+				List<Object> testIdTranslation = this.documentIdTranslator.apply(exampleId);
 
 				Preconditions.checkArgument(testIdTranslation.size() == primaryKeyColumnsCount,
 						"documentIdTranslator results length %s doesn't match number of primary key columns %s",
 						String.valueOf(testIdTranslation.size()), String.valueOf(primaryKeyColumnsCount));
 
 				Preconditions.checkArgument(
-						exampleId.equals(primaryKeyTranslator.apply(documentIdTranslator.apply(exampleId))),
+						exampleId.equals(this.primaryKeyTranslator.apply(this.documentIdTranslator.apply(exampleId))),
 						"primaryKeyTranslator is not an inverse function to documentIdTranslator");
 			}
 			return new CassandraVectorStoreConfig(this);
@@ -308,7 +325,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	void ensureSchemaExists(int vectorDimension) {
-		if (!disallowSchemaCreation) {
+		if (!this.disallowSchemaChanges) {
 			ensureKeyspaceExists();
 			ensureTableExists(vectorDimension);
 			ensureTableColumnsExist(vectorDimension);
@@ -321,7 +338,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	private void checkSchemaAgreement() throws IllegalStateException {
-		if (!session.checkSchemaAgreement()) {
+		if (!this.session.checkSchemaAgreement()) {
 			logger.warn("Waiting for cluster schema agreement, sleeping 10s…");
 			try {
 				Thread.sleep(Duration.ofSeconds(10).toMillis());
@@ -330,7 +347,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				Thread.currentThread().interrupt();
 				throw new IllegalStateException(ex);
 			}
-			if (!session.checkSchemaAgreement()) {
+			if (!this.session.checkSchemaAgreement()) {
 				logger.error("no cluster schema agreement still, continuing, let's hope this works…");
 			}
 		}
@@ -338,30 +355,33 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	void checkSchemaValid(int vectorDimension) {
 
-		Preconditions.checkState(session.getMetadata().getKeyspace(schema.keyspace).isPresent(),
-				"keyspace %s does not exist", schema.keyspace);
+		Preconditions.checkState(this.session.getMetadata().getKeyspace(this.schema.keyspace).isPresent(),
+				"keyspace %s does not exist", this.schema.keyspace);
 
-		Preconditions.checkState(
-				session.getMetadata().getKeyspace(schema.keyspace).get().getTable(schema.table).isPresent(),
-				"table %s does not exist");
-
-		TableMetadata tableMetadata = session.getMetadata()
-			.getKeyspace(schema.keyspace)
+		Preconditions.checkState(this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
 			.get()
-			.getTable(schema.table)
+			.getTable(this.schema.table)
+			.isPresent(), "table %s does not exist");
+
+		TableMetadata tableMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
+			.get()
+			.getTable(this.schema.table)
 			.get();
 
-		Preconditions.checkState(tableMetadata.getColumn(schema.content).isPresent(), "column %s does not exist",
-				schema.content);
-		Preconditions.checkState(tableMetadata.getColumn(schema.embedding).isPresent(), "column %s does not exist",
-				schema.embedding);
+		Preconditions.checkState(tableMetadata.getColumn(this.schema.content).isPresent(), "column %s does not exist",
+				this.schema.content);
 
-		for (SchemaColumn m : schema.metadataFields) {
+		Preconditions.checkState(tableMetadata.getColumn(this.schema.embedding).isPresent(), "column %s does not exist",
+				this.schema.embedding);
+
+		for (SchemaColumn m : this.schema.metadataColumns) {
 			Optional<ColumnMetadata> column = tableMetadata.getColumn(m.name());
 			Preconditions.checkState(column.isPresent(), "column %s does not exist", m.name());
 
 			Preconditions.checkArgument(column.get().getType().equals(m.type()),
-					"Mismatching type on metadata field %s of %s vs %s", m.name(), column.get().getType(), m.type());
+					"Mismatching type on metadata column %s of %s vs %s", m.name(), column.get().getType(), m.type());
 
 			if (m.indexed()) {
 				Preconditions.checkState(
@@ -374,50 +394,52 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	private void ensureIndexesExists() {
 		{
-			SimpleStatement indexStmt = SchemaBuilder.createIndex(schema.index)
+			SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
 				.ifNotExists()
 				.custom("SAI")
-				.onTable(schema.keyspace, schema.table)
-				.andColumn(schema.embedding)
+				.onTable(this.schema.keyspace, this.schema.table)
+				.andColumn(this.schema.embedding)
 				.build();
 
 			logger.debug("Executing {}", indexStmt.getQuery());
-			session.execute(indexStmt);
+			this.session.execute(indexStmt);
 		}
 		Stream
-			.concat(schema.partitionKeys.stream(),
-					Stream.concat(schema.clusteringKeys.stream(), schema.metadataFields.stream()))
+			.concat(this.schema.partitionKeys.stream(),
+					Stream.concat(this.schema.clusteringKeys.stream(), this.schema.metadataColumns.stream()))
 			.filter((cs) -> cs.indexed())
 			.forEach((metadata) -> {
 
-				SimpleStatement indexStmt = SchemaBuilder.createIndex(format("%s_idx", metadata.name()))
+				SimpleStatement indexStmt = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
 					.ifNotExists()
 					.custom("SAI")
-					.onTable(schema.keyspace, schema.table)
+					.onTable(this.schema.keyspace, this.schema.table)
 					.andColumn(metadata.name())
 					.build();
 
 				logger.debug("Executing {}", indexStmt.getQuery());
-				session.execute(indexStmt);
+				this.session.execute(indexStmt);
 			});
 	}
 
 	private void ensureTableExists(int vectorDimension) {
 
 		CreateTable createTable = null;
-		CreateTableStart createTableStart = SchemaBuilder.createTable(schema.keyspace, schema.table).ifNotExists();
 
-		for (SchemaColumn partitionKey : schema.partitionKeys) {
+		CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
+			.ifNotExists();
+
+		for (SchemaColumn partitionKey : this.schema.partitionKeys) {
 			createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
 					partitionKey.type);
 		}
-		for (SchemaColumn clusteringKey : schema.clusteringKeys) {
+		for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
 			createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
 		}
 
-		createTable = createTable.withColumn(schema.content, DataTypes.TEXT);
+		createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
 
-		for (SchemaColumn metadata : schema.metadataFields) {
+		for (SchemaColumn metadata : this.schema.metadataColumns) {
 			createTable = createTable.withColumn(metadata.name(), metadata.type());
 		}
 
@@ -427,24 +449,28 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 		StringBuilder tableStmt = new StringBuilder(createTable.asCql());
 		tableStmt.setLength(tableStmt.length() - 1);
-		tableStmt.append(',').append(schema.embedding).append(" vector<float,").append(vectorDimension).append(">)");
+		tableStmt.append(',')
+			.append(this.schema.embedding)
+			.append(" vector<float,")
+			.append(vectorDimension)
+			.append(">)");
 		logger.debug("Executing {}", tableStmt.toString());
-		session.execute(tableStmt.toString());
+		this.session.execute(tableStmt.toString());
 	}
 
 	private void ensureTableColumnsExist(int vectorDimension) {
 
-		TableMetadata tableMetadata = session.getMetadata()
-			.getKeyspace(schema.keyspace)
+		TableMetadata tableMetadata = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace)
 			.get()
-			.getTable(schema.table)
+			.getTable(this.schema.table)
 			.get();
 
 		Set<SchemaColumn> newColumns = new HashSet<>();
-		boolean addContent = tableMetadata.getColumn(schema.content).isEmpty();
-		boolean addEmbedding = tableMetadata.getColumn(schema.embedding).isEmpty();
+		boolean addContent = tableMetadata.getColumn(this.schema.content).isEmpty();
+		boolean addEmbedding = tableMetadata.getColumn(this.schema.embedding).isEmpty();
 
-		for (SchemaColumn metadata : schema.metadataFields) {
+		for (SchemaColumn metadata : this.schema.metadataColumns) {
 			Optional<ColumnMetadata> column = tableMetadata.getColumn(metadata.name());
 			if (column.isPresent()) {
 
@@ -458,12 +484,12 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 
 		if (!newColumns.isEmpty() || addContent || addEmbedding) {
-			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(schema.keyspace, schema.table);
+			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(this.schema.keyspace, this.schema.table);
 			for (SchemaColumn metadata : newColumns) {
 				alterTable = alterTable.addColumn(metadata.name(), metadata.type());
 			}
 			if (addContent) {
-				alterTable = alterTable.addColumn(schema.content, DataTypes.TEXT);
+				alterTable = alterTable.addColumn(this.schema.content, DataTypes.TEXT);
 			}
 			if (addEmbedding) {
 				// special case for embedding column, bc JAVA-3118, as above
@@ -475,27 +501,31 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 					alterTableStmt.setLength(alterTableStmt.length() - 1);
 					alterTableStmt.append(',');
 				}
-				alterTableStmt.append(schema.embedding).append(" vector<float,").append(vectorDimension).append(">");
+				alterTableStmt.append(this.schema.embedding)
+					.append(" vector<float,")
+					.append(vectorDimension)
+					.append(">");
+
 				logger.debug("Executing {}", alterTableStmt.toString());
-				session.execute(alterTableStmt.toString());
+				this.session.execute(alterTableStmt.toString());
 			}
 			else {
 				SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
 				logger.debug("Executing {}", stmt.getQuery());
-				session.execute(stmt);
+				this.session.execute(stmt);
 			}
 		}
 	}
 
 	private void ensureKeyspaceExists() {
 
-		SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(schema.keyspace)
+		SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(this.schema.keyspace)
 			.ifNotExists()
 			.withSimpleStrategy(1)
 			.build();
 
 		logger.debug("Executing {}", keyspaceStmt.getQuery());
-		session.execute(keyspaceStmt);
+		this.session.execute(keyspaceStmt);
 	}
 
 }

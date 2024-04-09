@@ -15,14 +15,7 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
-import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
-import static java.lang.String.format;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -30,9 +23,19 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
@@ -40,14 +43,13 @@ import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColum
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.containers.CassandraContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Use `mvn failsafe:integration-test -Dit.test=CassandraRichSchemaVectorStoreIT`
@@ -97,7 +99,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void ensureSchemaNoCreation() {
 		this.contextRunner.run(context -> {
-			executeCqlFile("test_wiki_full_schema.cql");
+			executeCqlFile(context, "test_wiki_full_schema.cql");
 			var wrapper = createStore(context, List.of(), true, false);
 			try {
 				Assertions.assertNotNull(wrapper.store());
@@ -106,12 +108,13 @@ class CassandraRichSchemaVectorStoreIT {
 				wrapper.store().similaritySearch(SearchRequest.query("1843").withTopK(1));
 
 				wrapper.conf().dropKeyspace();
-				executeCqlFile("test_wiki_partial_3_schema.cql");
+				executeCqlFile(context, "test_wiki_partial_3_schema.cql");
 
 				// IllegalStateException: column all_minilm_l6_v2_embedding does not exist
 				IllegalStateException ise = Assertions.assertThrows(IllegalStateException.class, () -> {
 					createStore(context, List.of(), true, false);
 				});
+
 				Assertions.assertEquals("column all_minilm_l6_v2_embedding does not exist", ise.getMessage());
 			}
 			finally {
@@ -125,7 +128,7 @@ class CassandraRichSchemaVectorStoreIT {
 	void ensureSchemaPartialCreation() {
 		this.contextRunner.run(context -> {
 			for (int i = 0; i < 4; ++i) {
-				executeCqlFile(format("test_wiki_partial_%d_schema.cql", i));
+				executeCqlFile(context, format("test_wiki_partial_%d_schema.cql", i));
 				var wrapper = createStore(context, List.of(), false, false);
 				try {
 					Assertions.assertNotNull(wrapper.store());
@@ -187,9 +190,9 @@ class CassandraRichSchemaVectorStoreIT {
 				assertThat(results).hasSize(3);
 				assertThat(results.get(0).getId()).isEqualTo(documents.get(1).getId());
 
-				// CASSANDRA BUG "ANN ordering by vector requires all restricted column(s)
-				// to
-				// be indexed" when full primary key is specified
+				// BUG CASSANDRA-19544
+				// should be able to restrict on clustering keys (when filtering isn't
+				// required)
 				//
 				// results = store.similaritySearch(SearchRequest.query("Great Dark Spot")
 				// .withTopK(5)
@@ -434,17 +437,26 @@ class CassandraRichSchemaVectorStoreIT {
 			return new TransformersEmbeddingClient();
 		}
 
+		@Bean
+		public CqlSession cqlSession() {
+			return new CqlSessionBuilder()
+				// comment next two lines out to connect to a local C* cluster
+				.addContactPoint(cassandraContainer.getContactPoint())
+				.withLocalDatacenter(cassandraContainer.getLocalDatacenter())
+				.build();
+		}
+
 	}
 
-	private StoreWrapper<CassandraVectorStore, CassandraVectorStoreConfig> createStore(
-			AssertableApplicationContext context, boolean disallowSchemaCreation) throws IOException {
+	private StoreWrapper<CassandraVectorStore, CassandraVectorStoreConfig> createStore(ApplicationContext context,
+			boolean disallowSchemaCreation) throws IOException {
 
 		return createStore(context, List.of(), disallowSchemaCreation, true);
 	}
 
-	private StoreWrapper<CassandraVectorStore, CassandraVectorStoreConfig> createStore(
-			AssertableApplicationContext context, List<SchemaColumn> extraMetadataFields,
-			boolean disallowSchemaCreation, boolean dropKeyspaceFirst) throws IOException {
+	private StoreWrapper<CassandraVectorStore, CassandraVectorStoreConfig> createStore(ApplicationContext context,
+			List<SchemaColumn> extraMetadataFields, boolean disallowSchemaCreation, boolean dropKeyspaceFirst)
+			throws IOException {
 
 		Optional<SchemaColumn> wikiOverride = extraMetadataFields.stream()
 			.filter((f) -> "wiki".equals(f.name()))
@@ -471,18 +483,16 @@ class CassandraRichSchemaVectorStoreIT {
 		List<SchemaColumn> clusteringKeys = List.of(chunkNoSC);
 
 		CassandraVectorStoreConfig.Builder builder = CassandraVectorStoreConfig.builder()
-			// comment out the next two lines to debug against local C* server
-			.withContactPoint(cassandraContainer.getContactPoint())
-			.withLocalDatacenter(cassandraContainer.getLocalDatacenter())
+			.withCqlSession(context.getBean(CqlSession.class))
 			.withKeyspaceName("test_wikidata")
 			.withTableName("articles")
 			.withPartitionKeys(partitionKeys)
 			.withClusteringKeys(clusteringKeys)
-			.withContentFieldName("body")
-			.withEmbeddingFieldName("all_minilm_l6_v2_embedding")
+			.withContentColumnName("body")
+			.withEmbeddingColumnName("all_minilm_l6_v2_embedding")
 			.withIndexName("all_minilm_l6_v2_ann")
 
-			.addMetadataFields(new SchemaColumn("revision", DataTypes.INT),
+			.addMetadataColumn(new SchemaColumn("revision", DataTypes.INT),
 					new SchemaColumn("id", DataTypes.INT, CassandraVectorStoreConfig.SchemaColumnTags.INDEXED))
 
 			// this store uses '§¶' as a deliminator in the document id between db columns
@@ -502,12 +512,12 @@ class CassandraRichSchemaVectorStoreIT {
 
 		for (SchemaColumn cf : extraMetadataFields) {
 			if (!partitionKeys.contains(cf) && !clusteringKeys.contains(cf)) {
-				builder = builder.addMetadataField(cf);
+				builder = builder.addMetadataColumn(cf);
 			}
 		}
 
 		if (disallowSchemaCreation) {
-			builder = builder.disallowSchemaCreation();
+			builder = builder.disallowSchemaChanges();
 		}
 
 		CassandraVectorStoreConfig conf = builder.build();
@@ -517,23 +527,18 @@ class CassandraRichSchemaVectorStoreIT {
 		return new StoreWrapper(new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class)), conf);
 	}
 
-	private void executeCqlFile(String filename) throws IOException {
+	private void executeCqlFile(ApplicationContext context, String filename) throws IOException {
 		logger.info("executing {}", filename);
 
-		try (CqlSession session = CqlSession.builder()
-			// comment out the next two lines to debug against local C* server
-			.addContactPoint(cassandraContainer.getContactPoint())
-			.withLocalDatacenter(cassandraContainer.getLocalDatacenter())
-			.build()) {
+		CqlSession session = context.getBean(CqlSession.class);
 
-			String[] cql = new DefaultResourceLoader().getResource(filename)
-				.getContentAsString(StandardCharsets.UTF_8)
-				.trim()
-				.split(";");
+		String[] cql = new DefaultResourceLoader().getResource(filename)
+			.getContentAsString(StandardCharsets.UTF_8)
+			.trim()
+			.split(";");
 
-			for (var c : cql) {
-				session.execute(c.trim());
-			}
+		for (var c : cql) {
+			session.execute(c.trim());
 		}
 	}
 

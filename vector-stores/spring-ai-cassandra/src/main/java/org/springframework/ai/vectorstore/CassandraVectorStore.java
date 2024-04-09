@@ -15,6 +15,14 @@
  */
 package org.springframework.ai.vectorstore;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -27,17 +35,9 @@ import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-import static java.lang.String.format;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
@@ -86,7 +86,7 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 	}
 
-	private static final String QUERY_FORMAT = "select %s,%s,%s,%s from %s.%s ? order by %s ann of ? limit ?";
+	private static final String QUERY_FORMAT = "select %s,%s,%s%s from %s.%s ? order by %s ann of ? limit ?";
 
 	public static final String SIMILARITY_FIELD_NAME = "similarity_score";
 
@@ -125,6 +125,7 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 		this.similarity = getIndexSimilarity(cassandraMetadata);
 		this.similarityStmt = similaritySearchStatement();
+
 		this.filterExpressionConverter = new CassandraFilterExpressionConverter(
 				cassandraMetadata.getColumns().values());
 	}
@@ -134,29 +135,27 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 		CompletableFuture[] futures = new CompletableFuture[documents.size()];
 		short i = 0;
 		for (Document d : documents) {
-			List<Object> primaryKeyValues = conf.documentIdTranslator.apply(d.getId());
-			var embedding = embeddingClient.embed(d).stream().map(Double::floatValue).toList();
+			List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
+			var embedding = this.embeddingClient.embed(d).stream().map(Double::floatValue).toList();
 
 			BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
 			for (int k = 0; k < primaryKeyValues.size(); ++k) {
-				SchemaColumn keyColumn = conf.getPrimaryKeyColumn(k);
+				SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
 				builder = builder.set(keyColumn.name(), primaryKeyValues.get(k), keyColumn.javaType());
 			}
 
-			builder = builder.setString(conf.schema.content(), d.getContent())
-				.setVector(conf.schema.embedding(), CqlVector.newInstance(embedding), Float.class);
+			builder = builder.setString(this.conf.schema.content(), d.getContent())
+				.setVector(this.conf.schema.embedding(), CqlVector.newInstance(embedding), Float.class);
 
-			for (var docField : d.getMetadata().entrySet()) {
+			for (var metadataColumn : this.conf.schema.metadataColumns()
+				.stream()
+				.filter((mc) -> d.getMetadata().containsKey(mc.name()))
+				.toList()) {
 
-				var metadata = conf.schema.metadataFields()
-					.stream()
-					.filter((m) -> m.name().equals(docField.getKey()))
-					.findFirst()
-					.get();
-
-				builder = builder.set(docField.getKey(), docField.getValue(), metadata.javaType());
+				builder = builder.set(metadataColumn.name(), d.getMetadata().get(metadataColumn.name()),
+						metadataColumn.javaType());
 			}
-			futures[i++] = conf.session.executeAsync(builder.build()).toCompletableFuture();
+			futures[i++] = this.conf.session.executeAsync(builder.build()).toCompletableFuture();
 		}
 		CompletableFuture.allOf(futures).join();
 	}
@@ -166,9 +165,9 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 		CompletableFuture[] futures = new CompletableFuture[idList.size()];
 		short i = 0;
 		for (String id : idList) {
-			List<Object> primaryKeyValues = conf.documentIdTranslator.apply(id);
-			BoundStatement s = deleteStmt.bind(primaryKeyValues.toArray());
-			futures[i++] = conf.session.executeAsync(s).toCompletableFuture();
+			List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(id);
+			BoundStatement s = this.deleteStmt.bind(primaryKeyValues.toArray());
+			futures[i++] = this.conf.session.executeAsync(s).toCompletableFuture();
 		}
 		CompletableFuture.allOf(futures).join();
 		return Optional.of(Boolean.TRUE);
@@ -177,36 +176,36 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 		Preconditions.checkArgument(request.getTopK() <= 1000);
-		var embedding = embeddingClient.embed(request.getQuery()).stream().map(Double::floatValue).toList();
+		var embedding = this.embeddingClient.embed(request.getQuery()).stream().map(Double::floatValue).toList();
 		CqlVector<Float> cqlVector = CqlVector.newInstance(embedding);
 
 		String whereClause = "";
 		if (request.hasFilterExpression()) {
-			String expression = filterExpressionConverter.convertExpression(request.getFilterExpression());
+			String expression = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			if (!expression.isBlank()) {
-				whereClause = format("where %s", expression);
+				whereClause = String.format("where %s", expression);
 			}
 		}
 
-		String query = format(similarityStmt, cqlVector, whereClause, cqlVector, request.getTopK());
+		String query = String.format(this.similarityStmt, cqlVector, whereClause, cqlVector, request.getTopK());
 		List<Document> documents = new ArrayList<>();
 		logger.trace("Executing {}", query);
 
-		for (Row row : conf.session.execute(query)) {
+		for (Row row : this.conf.session.execute(query)) {
 			float score = row.getFloat(0);
 			if (score < request.getSimilarityThreshold()) {
 				break;
 			}
 			Map<String, Object> docFields = new HashMap<>();
 			docFields.put(SIMILARITY_FIELD_NAME, score);
-			for (var metadata : conf.schema.metadataFields()) {
+			for (var metadata : this.conf.schema.metadataColumns()) {
 				var value = row.get(metadata.name(), metadata.javaType());
 				if (null != value) {
 					docFields.put(metadata.name(), value);
 				}
 			}
 
-			documents.add(new Document(getDocumentId(row), row.getString(conf.schema.content()), docFields));
+			documents.add(new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields));
 		}
 		return documents;
 	}
@@ -217,16 +216,16 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 	@Override
 	public void close() throws Exception {
-		conf.close();
+		this.conf.close();
 	}
 
 	void checkSchemaValid() {
-		conf.checkSchemaValid(embeddingClient.dimensions());
+		this.conf.checkSchemaValid(embeddingClient.dimensions());
 	}
 
 	private Similarity getIndexSimilarity(TableMetadata metadata) {
 
-		return Similarity.valueOf(metadata.getIndex(conf.schema.index())
+		return Similarity.valueOf(metadata.getIndex(this.conf.schema.index())
 			.get()
 			.getOptions()
 			.getOrDefault("similarity_function", "COSINE")
@@ -237,67 +236,69 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 		Delete stmt = null;
 		DeleteSelection stmtStart = QueryBuilder.deleteFrom(conf.schema.keyspace(), conf.schema.table());
 
-		for (var c : conf.schema.partitionKeys()) {
+		for (var c : this.conf.schema.partitionKeys()) {
 			stmt = (null != stmt ? stmt : stmtStart).whereColumn(c.name()).isEqualTo(QueryBuilder.bindMarker(c.name()));
 		}
-		for (var c : conf.schema.clusteringKeys()) {
+		for (var c : this.conf.schema.clusteringKeys()) {
 			stmt = stmt.whereColumn(c.name()).isEqualTo(QueryBuilder.bindMarker(c.name()));
 		}
 
-		return conf.session.prepare(stmt.build());
+		return this.conf.session.prepare(stmt.build());
 	}
 
 	private PreparedStatement prepareAddStatement(Set<String> metadataFields) {
-		if (!addStmts.containsKey(metadataFields)) {
-
+		if (!this.addStmts.containsKey(metadataFields)) {
 			RegularInsert stmt = null;
-			InsertInto stmtStart = QueryBuilder.insertInto(conf.schema.keyspace(), conf.schema.table());
+			InsertInto stmtStart = QueryBuilder.insertInto(this.conf.schema.keyspace(), this.conf.schema.table());
 
-			for (var c : conf.schema.partitionKeys()) {
+			for (var c : this.conf.schema.partitionKeys()) {
 				stmt = (null != stmt ? stmt : stmtStart).value(c.name(), QueryBuilder.bindMarker(c.name()));
 			}
-			for (var c : conf.schema.clusteringKeys()) {
+			for (var c : this.conf.schema.clusteringKeys()) {
 				stmt = stmt.value(c.name(), QueryBuilder.bindMarker(c.name()));
 			}
 
-			stmt = stmt.value(conf.schema.content(), QueryBuilder.bindMarker(conf.schema.content()))
-				.value(conf.schema.embedding(), QueryBuilder.bindMarker(conf.schema.embedding()));
+			stmt = stmt.value(this.conf.schema.content(), QueryBuilder.bindMarker(this.conf.schema.content()))
+				.value(this.conf.schema.embedding(), QueryBuilder.bindMarker(this.conf.schema.embedding()));
 
-			for (String metadataField : metadataFields) {
+			for (String metadataField : this.conf.schema.metadataColumns()
+				.stream()
+				.map((mc) -> mc.name())
+				.filter((mc) -> metadataFields.contains(mc))
+				.toList()) {
+
 				stmt = stmt.value(metadataField, QueryBuilder.bindMarker(metadataField));
 			}
-			addStmts.putIfAbsent(metadataFields, conf.session.prepare(stmt.build()));
+			this.addStmts.putIfAbsent(metadataFields, this.conf.session.prepare(stmt.build()));
 		}
-		return addStmts.get(metadataFields);
+		return this.addStmts.get(metadataFields);
 	}
 
 	private String similaritySearchStatement() {
 		StringBuilder ids = new StringBuilder();
-		for (var m : conf.schema.partitionKeys()) {
+		for (var m : this.conf.schema.partitionKeys()) {
 			ids.append(m.name()).append(',');
 		}
-		for (var m : conf.schema.clusteringKeys()) {
+		for (var m : this.conf.schema.clusteringKeys()) {
 			ids.append(m.name()).append(',');
 		}
 		ids.deleteCharAt(ids.length() - 1);
 
-		String similarityFunction = new StringBuilder("similarity_").append(similarity.toString().toLowerCase())
+		String similarityFunction = new StringBuilder("similarity_").append(this.similarity.toString().toLowerCase())
 			.append('(')
 			.append(conf.schema.embedding())
 			.append(",?)")
 			.toString();
 
 		StringBuilder extraSelectFields = new StringBuilder();
-		for (var m : conf.schema.metadataFields()) {
-			extraSelectFields.append(m.name()).append(',');
-		}
-		if (0 < extraSelectFields.length()) {
-			extraSelectFields.deleteCharAt(extraSelectFields.length() - 1);
+		for (var m : this.conf.schema.metadataColumns()) {
+			extraSelectFields.append(',').append(m.name());
 		}
 
 		// java-driver-query-builder doesn't support orderByAnnOf yet
-		String query = format(QUERY_FORMAT, similarityFunction, ids.toString(), conf.schema.content(),
-				extraSelectFields.toString(), conf.schema.keyspace(), conf.schema.table(), conf.schema.embedding());
+		String query = String.format(QUERY_FORMAT, similarityFunction, ids.toString(), this.conf.schema.content(),
+				extraSelectFields.toString(), this.conf.schema.keyspace(), this.conf.schema.table(),
+				this.conf.schema.embedding());
 
 		query = query.replace("?", "%s");
 		logger.debug("preparing {}", query);
@@ -306,13 +307,13 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 	private String getDocumentId(Row row) {
 		List<Object> primaryKeyValues = new ArrayList<>();
-		for (var m : conf.schema.partitionKeys()) {
+		for (var m : this.conf.schema.partitionKeys()) {
 			primaryKeyValues.add(row.get(m.name(), m.javaType()));
 		}
-		for (var m : conf.schema.clusteringKeys()) {
+		for (var m : this.conf.schema.clusteringKeys()) {
 			primaryKeyValues.add(row.get(m.name(), m.javaType()));
 		}
-		return conf.primaryKeyTranslator.apply(primaryKeyValues);
+		return this.conf.primaryKeyTranslator.apply(primaryKeyValues);
 	}
 
 }

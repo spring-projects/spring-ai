@@ -6,7 +6,7 @@ This section walks you through setting up `CassandraVectorStore` to store docume
 
 link:https://cassandra.apache.org[Apache Cassandra] is a true open source distributed database reknown for scalability and high availability without compromising performance.
 
-Linear scalability and proven fault-tolerance on commodity hardware or cloud infrastructure makes it the perfect platform for mission-critical data.  Its Vector Similarity Search (VSS) is based on the JVector library that offers best-in-class performance and relevancy.
+Linear scalability, proven fault-tolerance and low latency on commodity hardware makes it the perfect platform for mission-critical data.  Its Vector Similarity Search (VSS) is based on the JVector library that ensures best-in-class performance and relevancy.
 
 A vector search in Apache Cassandra is done as simply as:
 ```
@@ -15,9 +15,9 @@ SELECT content FROM table ORDER BY content_vector ANN OF query_embedding ;
 
 More docs on this can be read https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
 
-The Spring AI Cassandra Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.  This vector store may also equally be used for non-RAG non_AI use-cases, e.g. semantic searcing in an existing database.  The Vector Store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaCreation`.
+The Spring AI Cassandra Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.  This vector store may also equally be used for non-RAG non_AI use-cases, e.g. semantic searcing in an existing database.  The Vector Store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
 
-== What is JVector Vector Search?
+== What is JVector Vector Search ?
 
 link:https://github.com/jbellis/jvector[JVector] is a pure Java embedded vector search engine.
 
@@ -95,7 +95,7 @@ public VectorStore vectorStore(EmbeddingClient embeddingClient) {
 
 > [NOTE]
 > It is more convenient and preferred to create the `CassandraVectorStore` as a Bean.
-> 
+>
 > But if you decide you can create it manually.
 
 > [NOTE]
@@ -132,12 +132,18 @@ And finally, retrieve documents similar to a query:
 [source,java]
 ----
 List<Document> results = vectorStore.similaritySearch(
-   SearchRequest
-      .query("Spring")
-      .withTopK(5));
+   SearchRequest.query("Spring").withTopK(5));
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+You can also limit results based on a similarity threshold:
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest.query("Spring").withTopK(5)
+      .withSimilarityThreshold(0.5d));
+----
 
 === Metadata filtering
 
@@ -148,10 +154,7 @@ For example, you can use either the text expression language:
 [source,java]
 ----
 vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+   SearchRequest.query("The World").withTopK(TOP_K)
       .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
 ----
 
@@ -159,18 +162,103 @@ or programmatically using the expression DSL:
 
 [source,java]
 ----
-FilterExpressionBuilder b = new FilterExpressionBuilder();
+Filter.Expression f = new FilterExpressionBuilder()
+    .and(f.in("country", "UK", "NL"), f.gte("year", 2020)).build();
 
 vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression(b.and(
-         b.in("country", "UK", "NL"),
-         b.gte("year", 2020)).build()));
+   SearchRequest.query("The World").withTopK(TOP_K)
+      .withFilterExpression(f));
 ----
 
 The portable filter expressions get automatically converted into link:https://cassandra.apache.org/doc/latest/cassandra/developing/cql/index.html[CQL queries].
 
 Metadata fields to be searchable need to be either primary key columns or SAI indexed.  To do this configure the metadata field with the `SchemaColumnTags.INDEXED`.
+
+
+== Advanced Example: Vector Store ontop full Wikipedia dataset
+
+The following example demonstrates how to use the store on an existing schema.  Here we use the schema from the https://github.com/datastax-labs/colbert-wikipedia-data project which comes with the full wikipedia dataset ready vectorised for you.
+
+
+== Usage
+
+Create the schema in the Cassandra database first:
+
+[source,bash]
+----
+wget https://raw.githubusercontent.com/datastax-labs/colbert-wikipedia-data/main/schema.cql -O colbert-wikipedia-schema.cql
+cqlsh -f colbert-wikipedia-schema.cql
+----
+
+Then configure the store like:
+
+[source,java]
+----
+@Bean
+public CassandraVectorStore store(EmbeddingClient embeddingClient) {
+
+    List<SchemaColumn> partitionColumns = List.of(new SchemaColumn("wiki", DataTypes.TEXT),
+            new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT));
+
+    List<SchemaColumn> clusteringColumns = List.of(new SchemaColumn("chunk_no", DataTypes.INT),
+            new SchemaColumn("bert_embedding_no", DataTypes.INT));
+
+    List<SchemaColumn> extraColumns = List.of(new SchemaColumn("revision", DataTypes.INT),
+            new SchemaColumn("id", DataTypes.INT));
+
+    CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
+        .withKeyspaceName("wikidata")
+        .withTableName("articles")
+        .withPartitionKeys(partitionColumns)
+        .withClusteringKeys(clusteringColumns)
+        .withContentFieldName("body")
+        .withEmbeddingFieldName("all_minilm_l6_v2_embedding")
+        .withIndexName("all_minilm_l6_v2_ann")
+        .disallowSchemaChanges()
+        .addMetadataFields(extraColumns)
+        .withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
+            // the deliminator used to join fields together into the document's id
+            // is arbitary, here "§¶" is used
+            if (primaryKeys.isEmpty()) {
+                return "test§¶0";
+            }
+            return format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
+        })
+        .withDocumentIdTranslator((id) -> {
+            String[] parts = id.split("§¶");
+            String title = parts[0];
+            int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
+            return List.of("simplewiki", "en", title, chunk_no, 0);
+        })
+        .build();
+
+    return new CassandraVectorStore(conf, embeddingClient());
+}
+
+@Bean
+public EmbeddingClient embeddingClient() {
+    // default is ONNX all-MiniLM-L6-v2 which is what we want
+    return new TransformersEmbeddingClient();
+}
+----
+
+And, if you would like to load the full wikipedia dataset.
+First download the `simplewiki-sstable.tar` from this link https://drive.google.com/file/d/1CcMMsj8jTKRVGep4A7hmOSvaPepsaKYP/view?usp=share_link .  This will take a while, the file is tens of GBs.
+
+[source,bash]
+----
+tar -xf simplewiki-sstable.tar -C ${CASSANDRA_DATA}/data/wikidata/articles-*/
+
+nodetool import wikidata articles ${CASSANDRA_DATA}/data/wikidata/articles-*/
+----
+> [NOTE]
+> If you have existing data in this table you'll want to check the tarball's files don't clobber existing sstables when doing the `tar`.
+>
+
+> [NOTE]
+> An alternative to the `nodetool import` is to just restart Cassandra.
+>
+
+> [NOTE]
+> If there are any failures in the indexes they will be rebuilt automatically.
+>

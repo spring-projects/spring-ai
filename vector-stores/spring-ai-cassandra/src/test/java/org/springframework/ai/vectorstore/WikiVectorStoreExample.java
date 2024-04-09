@@ -15,18 +15,15 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import static java.lang.String.format;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
-import org.junit.jupiter.api.Assertions;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.Document;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
@@ -35,8 +32,9 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Example integration-test to use against the schema and full wiki datasets in sstable
@@ -80,9 +78,10 @@ class WikiVectorStoreExample {
 	public static class TestApplication {
 
 		@Bean
-		public CassandraVectorStore store(EmbeddingClient embeddingClient) {
+		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingClient embeddingClient) {
 
 			CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
+				.withCqlSession(cqlSession)
 				.withKeyspaceName("wikidata")
 				.withTableName("articles")
 
@@ -92,12 +91,12 @@ class WikiVectorStoreExample {
 				.withClusteringKeys(List.of(new SchemaColumn("chunk_no", DataTypes.INT),
 						new SchemaColumn("bert_embedding_no", DataTypes.INT)))
 
-				.withContentFieldName("body")
-				.withEmbeddingFieldName("all_minilm_l6_v2_embedding")
+				.withContentColumnName("body")
+				.withEmbeddingColumnName("all_minilm_l6_v2_embedding")
 				.withIndexName("all_minilm_l6_v2_ann")
-				.disallowSchemaCreation()
+				.disallowSchemaChanges()
 
-				.addMetadataFields(new SchemaColumn("revision", DataTypes.INT), new SchemaColumn("id", DataTypes.INT))
+				.addMetadataColumn(new SchemaColumn("revision", DataTypes.INT), new SchemaColumn("id", DataTypes.INT))
 
 				.withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
 					if (primaryKeys.isEmpty()) {
@@ -121,6 +120,13 @@ class WikiVectorStoreExample {
 		public EmbeddingClient embeddingClient() {
 			// default is ONNX all-MiniLM-L6-v2 which is what we want
 			return new TransformersEmbeddingClient();
+		}
+
+		@Bean
+		public CqlSession cqlSession() {
+			return new CqlSessionBuilder()
+				// presumes a local C* cluster is running
+				.build();
 		}
 
 	}

@@ -15,22 +15,25 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
-import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
-import static java.lang.String.format;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import static java.util.Collections.emptyMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
@@ -39,14 +42,14 @@ import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColum
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.containers.CassandraContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+
+import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Use `mvn failsafe:integration-test -Dit.test=CassandraVectorStoreIT`
@@ -67,7 +70,8 @@ class CassandraVectorStoreIT {
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
-			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+			new Document("3", getText("classpath:/test/data/great.depression.txt"),
+					Map.of("meta2", "meta2", "something_extra", "blue")));
 
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
@@ -337,10 +341,10 @@ class CassandraVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public CassandraVectorStore store(EmbeddingClient embeddingClient) {
+		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingClient embeddingClient) {
 
-			CassandraVectorStoreConfig conf = storeBuilder()
-				.addMetadataFields(new SchemaColumn("meta1", DataTypes.TEXT), new SchemaColumn("meta2", DataTypes.TEXT),
+			CassandraVectorStoreConfig conf = storeBuilder(cqlSession)
+				.addMetadataColumn(new SchemaColumn("meta1", DataTypes.TEXT), new SchemaColumn("meta2", DataTypes.TEXT),
 						new SchemaColumn("country", DataTypes.TEXT), new SchemaColumn("year", DataTypes.SMALLINT))
 				.build();
 
@@ -353,18 +357,28 @@ class CassandraVectorStoreIT {
 			return new TransformersEmbeddingClient();
 		}
 
+		@Bean
+		public CqlSession cqlSession() {
+			return new CqlSessionBuilder()
+				// comment next two lines out to connect to a local C* cluster
+				.addContactPoint(cassandraContainer.getContactPoint())
+				.withLocalDatacenter(cassandraContainer.getLocalDatacenter())
+				.build();
+		}
+
 	}
 
-	static CassandraVectorStoreConfig.Builder storeBuilder() {
+	static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
 		return CassandraVectorStoreConfig.builder()
-			// comment next two lines out to connect to a local C* cluster
-			.withContactPoint(cassandraContainer.getContactPoint())
-			.withLocalDatacenter(cassandraContainer.getLocalDatacenter())
+			.withCqlSession(cqlSession)
 			.withKeyspaceName("test_" + CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
 	}
 
-	private CassandraVectorStore createTestStore(AssertableApplicationContext context, SchemaColumn... metadataFields) {
-		CassandraVectorStoreConfig.Builder builder = storeBuilder().addMetadataFields(metadataFields);
+	private CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
+
+		CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
+			.addMetadataColumn(metadataFields);
+
 		CassandraVectorStoreConfig conf = builder.build();
 		conf.dropKeyspace();
 		return new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class));
