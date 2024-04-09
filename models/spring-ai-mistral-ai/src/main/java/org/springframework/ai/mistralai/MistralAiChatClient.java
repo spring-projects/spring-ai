@@ -177,7 +177,7 @@ public class MistralAiChatClient extends
 	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {
 		List<Choice> choices = chunk.choices()
 			.stream()
-			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason()))
+			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason(), cc.logprobs()))
 			.toList();
 
 		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, null);

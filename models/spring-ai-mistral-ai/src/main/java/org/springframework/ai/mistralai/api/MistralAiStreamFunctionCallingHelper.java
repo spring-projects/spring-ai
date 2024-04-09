@@ -27,6 +27,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.mistralai.api.MistralAiApi.LogProbs;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -83,8 +84,10 @@ public class MistralAiStreamFunctionCallingHelper {
 						.toList();
 
 					var role = current.delta().role() != null ? current.delta().role() : Role.ASSISTANT;
-					current = new ChunkChoice(current.index(), new ChatCompletionMessage(current.delta().content(),
-							role, current.delta().name(), toolCallsWithID), current.finishReason());
+					current = new ChunkChoice(
+							current.index(), new ChatCompletionMessage(current.delta().content(), role,
+									current.delta().name(), toolCallsWithID),
+							current.finishReason(), current.logprobs());
 				}
 			}
 			return current;
@@ -95,8 +98,9 @@ public class MistralAiStreamFunctionCallingHelper {
 		Integer index = (current.index() != null ? current.index() : previous.index());
 
 		ChatCompletionMessage message = merge(previous.delta(), current.delta());
+		LogProbs logprobs = (current.logprobs() != null ? current.logprobs() : previous.logprobs());
 
-		return new ChunkChoice(index, message, finishReason);
+		return new ChunkChoice(index, message, finishReason, logprobs);
 	}
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
