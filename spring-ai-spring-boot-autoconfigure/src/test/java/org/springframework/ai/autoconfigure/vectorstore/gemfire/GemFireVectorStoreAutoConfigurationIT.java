@@ -37,7 +37,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * @author Geet Rawat
@@ -55,11 +54,22 @@ class GemFireVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(GemFireVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.gemfire.indexName=spring-ai-index");
+		.withPropertyValues("spring.ai.vectorstore.gemfire.indexName=spring-ai-index")
+		.withPropertyValues("spring.ai.vectorstore.gemfire.host=localhost")
+		.withPropertyValues("spring.ai.vectorstore.gemfire.port=9090");
 
 	@BeforeEach
 	public void createIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME));
+		contextRunner.run(c -> {
+			GemFireVectorStoreProperties properties = c.getBean(GemFireVectorStoreProperties.class);
+			properties.setFields(new String[] { "vector1" });
+			properties.setBeamWidth(100);
+			properties.setMaxConnections(16);
+			properties.setBuckets(10);
+			properties.setVectorSimilarityFunction("COSINE");
+			properties.setIndexName(INDEX_NAME);
+			c.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME);
+		});
 	}
 
 	@AfterEach
@@ -69,8 +79,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void addAndSearchTest() {
-
-		contextRunner.withPropertyValues("spring.ai.vectorstore.gemfire.indexName=" + INDEX_NAME).run(context -> {
+		contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			vectorStore.add(documents);
 

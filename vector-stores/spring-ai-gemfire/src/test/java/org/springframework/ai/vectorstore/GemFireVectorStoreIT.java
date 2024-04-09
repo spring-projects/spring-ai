@@ -185,14 +185,16 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStoreConfig gemfireVectorStoreConfig() {
-			return GemFireVectorStoreConfig.builder().withHost("localhost").build();
+			return GemFireVectorStoreConfig.builder()
+				.withHost("localhost")
+				.withPort(9090)
+				.withIndexName(INDEX_NAME)
+				.build();
 		}
 
 		@Bean
 		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingClient embeddingClient) {
-			GemFireVectorStore gemFireVectorStore = new GemFireVectorStore(config, embeddingClient);
-			gemFireVectorStore.setIndexName(INDEX_NAME);
-			return gemFireVectorStore;
+			return new GemFireVectorStore(config, embeddingClient);
 		}
 
 		@Bean
