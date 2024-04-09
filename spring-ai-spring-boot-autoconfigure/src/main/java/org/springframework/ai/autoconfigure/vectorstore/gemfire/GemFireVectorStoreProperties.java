@@ -127,4 +127,12 @@ public class GemFireVectorStoreProperties {
 		this.fields = fields;
 	}
 
+	public int getBuckets() {
+		return buckets;
+	}
+
+	public void setBuckets(int buckets) {
+		this.buckets = buckets;
+	}
+
 }
