@@ -514,6 +514,10 @@ public class GemFireVectorStore implements VectorStore {
 			.filter(r -> r.score >= request.getSimilarityThreshold())
 			.map(r -> {
 				Map<String, Object> metadata = r.metadata;
+				if (r.metadata == null) {
+					metadata = new HashMap<>();
+					metadata.put(documentField, "Deleted content");
+				}
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - r.score);
 				String content = (String) metadata.remove(documentField);
 				return new Document(r.key, content, metadata);
