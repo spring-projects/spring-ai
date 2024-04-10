@@ -164,7 +164,7 @@ public class GemFireVectorStore implements VectorStore {
 			}
 
 			public Builder withPort(int port) {
-				Assert.isTrue(port > 0, "port must be postive");
+				Assert.isTrue(port > 0, "port must be positive");
 				this.port = port;
 				return this;
 			}
@@ -182,20 +182,20 @@ public class GemFireVectorStore implements VectorStore {
 
 			public Builder withBeamWidth(int beamWidth) {
 				Assert.isTrue(beamWidth > 0, "beamWidth must be positive");
-				Assert.isTrue(beamWidth < 3200, "beamWidth must be less than 3200");
+				Assert.isTrue(beamWidth <= 3200, "beamWidth must be less than or equal to 3200");
 				this.beamWidth = beamWidth;
 				return this;
 			}
 
 			public Builder withMaxConnections(int maxConnections) {
 				Assert.isTrue(maxConnections > 0, "maxConnections must be positive");
-				Assert.isTrue(maxConnections <= 512, "maxConnections must be less than 512");
+				Assert.isTrue(maxConnections <= 512, "maxConnections must be less than or equal to 512");
 				this.maxConnections = maxConnections;
 				return this;
 			}
 
 			public Builder withBuckets(int buckets) {
-				Assert.isTrue(buckets >= 0, "bucket must be positive");
+				Assert.isTrue(buckets >= 0, "bucket must be 1 or more");
 				this.buckets = buckets;
 				return this;
 			}
