@@ -17,23 +17,29 @@ package org.springframework.ai.vectorstore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.Assertions;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
@@ -170,6 +176,51 @@ class CassandraRichSchemaVectorStoreIT {
 
 				results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).isEmpty();
+			}
+		});
+	}
+
+	@Test
+	void addAndSearchPoormansBench() {
+		// todo – replace with JMH (parameters: nThreads, rounds, runs, docsPerAdd)
+		int nThreads = CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY;
+		int runs = 10; // 100;
+		int docsPerAdd = 12; // 128;
+		int rounds = 3;
+
+		contextRunner.run(context -> {
+
+			try (CassandraVectorStore store = new CassandraVectorStore(
+					storeBuilder(context, List.of()).withFixedThreadPoolExecutorSize(nThreads).build(),
+					context.getBean(EmbeddingClient.class))) {
+
+				var executor = Executors.newFixedThreadPool((int) (nThreads * 1.2));
+				for (int k = 0; k < rounds; ++k) {
+					long start = System.nanoTime();
+					var futures = new CompletableFuture[runs];
+					for (int j = 0; j < runs; ++j) {
+						futures[j] = CompletableFuture.runAsync(() -> {
+							List<Document> documents = new ArrayList<>();
+							for (int i = docsPerAdd; i >= 0; --i) {
+
+								documents.add(new Document(
+										RandomStringUtils.randomAlphanumeric(4) + "§¶"
+												+ ThreadLocalRandom.current().nextInt(1, 10),
+										RandomStringUtils.randomAlphanumeric(1024), Map.of("revision",
+												ThreadLocalRandom.current().nextInt(1, 100000), "id", 1000)));
+							}
+							store.add(documents);
+
+							var results = store.similaritySearch(
+									SearchRequest.query(RandomStringUtils.randomAlphanumeric(20)).withTopK(10));
+
+							assertThat(results).hasSize(10);
+						}, executor);
+					}
+					CompletableFuture.allOf(futures).join();
+					long time = System.nanoTime() - start;
+					logger.info("add+search took an average of {} ms", Duration.ofNanos(time / runs).toMillis());
+				}
 			}
 		});
 	}
@@ -456,22 +507,37 @@ class CassandraRichSchemaVectorStoreIT {
 	}
 
 	private StoreWrapper<CassandraVectorStore, CassandraVectorStoreConfig> createStore(ApplicationContext context,
-			List<SchemaColumn> extraMetadataFields, boolean disallowSchemaCreation, boolean dropKeyspaceFirst)
+			List<SchemaColumn> columnOverrides, boolean disallowSchemaCreation, boolean dropKeyspaceFirst)
 			throws IOException {
 
-		Optional<SchemaColumn> wikiOverride = extraMetadataFields.stream()
+		CassandraVectorStoreConfig.Builder builder = storeBuilder(context, columnOverrides);
+		if (disallowSchemaCreation) {
+			builder = builder.disallowSchemaChanges();
+		}
+
+		CassandraVectorStoreConfig conf = builder.build();
+		if (dropKeyspaceFirst) {
+			conf.dropKeyspace();
+		}
+		return new StoreWrapper(new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class)), conf);
+	}
+
+	static CassandraVectorStoreConfig.Builder storeBuilder(ApplicationContext context,
+			List<SchemaColumn> columnOverrides) throws IOException {
+
+		Optional<SchemaColumn> wikiOverride = columnOverrides.stream()
 			.filter((f) -> "wiki".equals(f.name()))
 			.findFirst();
 
-		Optional<SchemaColumn> langOverride = extraMetadataFields.stream()
+		Optional<SchemaColumn> langOverride = columnOverrides.stream()
 			.filter((f) -> "language".equals(f.name()))
 			.findFirst();
 
-		Optional<SchemaColumn> titleOverride = extraMetadataFields.stream()
+		Optional<SchemaColumn> titleOverride = columnOverrides.stream()
 			.filter((f) -> "title".equals(f.name()))
 			.findFirst();
 
-		Optional<SchemaColumn> chunkNoOverride = extraMetadataFields.stream()
+		Optional<SchemaColumn> chunkNoOverride = columnOverrides.stream()
 			.filter((f) -> "chunk_no".equals(f.name()))
 			.findFirst();
 
@@ -493,7 +559,7 @@ class CassandraRichSchemaVectorStoreIT {
 			.withEmbeddingColumnName("all_minilm_l6_v2_embedding")
 			.withIndexName("all_minilm_l6_v2_ann")
 
-			.addMetadataColumn(new SchemaColumn("revision", DataTypes.INT),
+			.addMetadataColumns(new SchemaColumn("revision", DataTypes.INT),
 					new SchemaColumn("id", DataTypes.INT, CassandraVectorStoreConfig.SchemaColumnTags.INDEXED))
 
 			// this store uses '§¶' as a deliminator in the document id between db columns
@@ -511,21 +577,7 @@ class CassandraRichSchemaVectorStoreIT {
 				return List.of("simplewiki", "en", title, chunk_no);
 			});
 
-		for (SchemaColumn cf : extraMetadataFields) {
-			if (!partitionKeys.contains(cf) && !clusteringKeys.contains(cf)) {
-				builder = builder.addMetadataColumn(cf);
-			}
-		}
-
-		if (disallowSchemaCreation) {
-			builder = builder.disallowSchemaChanges();
-		}
-
-		CassandraVectorStoreConfig conf = builder.build();
-		if (dropKeyspaceFirst) {
-			conf.dropKeyspace();
-		}
-		return new StoreWrapper(new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class)), conf);
+		return builder;
 	}
 
 	private void executeCqlFile(ApplicationContext context, String filename) throws IOException {

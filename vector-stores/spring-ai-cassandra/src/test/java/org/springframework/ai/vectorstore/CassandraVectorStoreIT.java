@@ -345,8 +345,9 @@ class CassandraVectorStoreIT {
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingClient embeddingClient) {
 
 			CassandraVectorStoreConfig conf = storeBuilder(cqlSession)
-				.addMetadataColumn(new SchemaColumn("meta1", DataTypes.TEXT), new SchemaColumn("meta2", DataTypes.TEXT),
-						new SchemaColumn("country", DataTypes.TEXT), new SchemaColumn("year", DataTypes.SMALLINT))
+				.addMetadataColumns(new SchemaColumn("meta1", DataTypes.TEXT),
+						new SchemaColumn("meta2", DataTypes.TEXT), new SchemaColumn("country", DataTypes.TEXT),
+						new SchemaColumn("year", DataTypes.SMALLINT))
 				.build();
 
 			conf.dropKeyspace();
@@ -378,7 +379,7 @@ class CassandraVectorStoreIT {
 	private CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
 
 		CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
-			.addMetadataColumn(metadataFields);
+			.addMetadataColumns(metadataFields);
 
 		CassandraVectorStoreConfig conf = builder.build();
 		conf.dropKeyspace();
