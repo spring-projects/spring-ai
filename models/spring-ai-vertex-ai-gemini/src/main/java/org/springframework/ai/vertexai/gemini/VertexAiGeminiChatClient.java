@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.FunctionCall;
@@ -146,8 +145,6 @@ public class VertexAiGeminiChatClient
 
 		var geminiRequest = createGeminiRequest(prompt);
 
-		// GenerateContentResponse response =
-		// this.chatCompletionWithFunctionCallSupport(geminiRequest);
 		GenerateContentResponse response = this.callWithFunctionSupport(geminiRequest);
 
 		List<Generation> generations = response.getCandidatesList()
@@ -168,7 +165,7 @@ public class VertexAiGeminiChatClient
 			var request = createGeminiRequest(prompt);
 
 			ResponseStream<GenerateContentResponse> responseStream = request.model
-				.generateContentStream(request.contents, request.config);
+				.generateContentStream(request.contents);
 
 			return Flux.fromStream(responseStream.stream()).map(response -> {
 				response = handleFunctionCallOrReturn(request, response);
@@ -193,7 +190,7 @@ public class VertexAiGeminiChatClient
 	}
 
 	@JsonInclude(Include.NON_NULL)
-	public record GeminiRequest(List<Content> contents, GenerativeModel model, GenerationConfig config) {
+	public record GeminiRequest(List<Content> contents, GenerativeModel model) {
 	}
 
 	private GeminiRequest createGeminiRequest(Prompt prompt) {
@@ -202,7 +199,8 @@ public class VertexAiGeminiChatClient
 
 		GenerationConfig generationConfig = this.generationConfig;
 
-		GenerativeModel generativeModel = new GenerativeModel(this.defaultOptions.getModel(), this.vertexAI);
+		var generativeModelBuilder = new GenerativeModel.Builder().setModelName(this.defaultOptions.getModel())
+			.setVertexAi(this.vertexAI);
 
 		VertexAiGeminiChatOptions updatedRuntimeOptions = null;
 
@@ -237,14 +235,8 @@ public class VertexAiGeminiChatClient
 
 			if (StringUtils.hasText(updatedRuntimeOptions.getModel())
 					&& !updatedRuntimeOptions.getModel().equals(this.defaultOptions.getModel())) {
-				generativeModel = new GenerativeModel(updatedRuntimeOptions.getModel(), vertexAI);
-			}
-
-			if (updatedRuntimeOptions.getTransportType() != null) {
-				Transport transport = (updatedRuntimeOptions
-					.getTransportType() == VertexAiGeminiChatOptions.TransportType.GRPC) ? Transport.GRPC
-							: Transport.REST;
-				generativeModel.setTransport(transport);
+				// Override model name
+				generativeModelBuilder.setModelName(updatedRuntimeOptions.getModel());
 			}
 
 			generationConfig = toGenerationConfig(updatedRuntimeOptions);
@@ -253,10 +245,14 @@ public class VertexAiGeminiChatClient
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 			List<Tool> tools = this.getFunctionTools(functionsForThisRequest);
-			generativeModel.setTools(tools);
+			generativeModelBuilder.setTools(tools);
 		}
 
-		return new GeminiRequest(toGeminiContent(prompt), generativeModel, generationConfig);
+		generativeModelBuilder.setGenerationConfig(generationConfig);
+
+		GenerativeModel generativeModel = generativeModelBuilder.build();
+
+		return new GeminiRequest(toGeminiContent(prompt), generativeModel);
 	}
 
 	private GenerationConfig toGenerationConfig(VertexAiGeminiChatOptions options) {
@@ -429,7 +425,7 @@ public class VertexAiGeminiChatClient
 
 		conversationHistory.add(contentFnResp);
 
-		return new GeminiRequest(conversationHistory, previousRequest.model(), previousRequest.config());
+		return new GeminiRequest(conversationHistory, previousRequest.model());
 	}
 
 	@Override
@@ -445,7 +441,7 @@ public class VertexAiGeminiChatClient
 	@Override
 	protected GenerateContentResponse doChatCompletion(GeminiRequest request) {
 		try {
-			return request.model.generateContent(request.contents, request.config);
+			return request.model.generateContent(request.contents);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);

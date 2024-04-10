@@ -127,7 +127,7 @@
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
-		<com.google.cloud.version>26.34.0</com.google.cloud.version>
+		<com.google.cloud.version>26.37.0</com.google.cloud.version>
 		<qdrant.version>1.7.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
