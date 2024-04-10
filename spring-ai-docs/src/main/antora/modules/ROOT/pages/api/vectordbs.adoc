@@ -92,6 +92,7 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/chroma.adoc[Chroma Vector Store] - The https://www.trychroma.com/[Chroma] vector store.
 * xref:api/vectordbs/gemfire.adoc[GemFire Vector Store] - The https://tanzu.vmware.com/content/blog/vmware-gemfire-vector-database-extension[GemFire] vector store.
 * xref:api/vectordbs/milvus.adoc[Milvus Vector Store] - The https://milvus.io/[Milvus] vector store.
+* xref:api/vectordbs/mongodb.adoc[MongoDB Atlas Vector Store] - The https://www.mongodb.com/atlas/database[MongoDB Atlas] vector store.
 * xref:api/vectordbs/neo4j.adoc[Neo4j Vector Store] - The https://neo4j.com/[Neo4j] vector store.
 * xref:api/vectordbs/pgvector.adoc[PgVectorStore] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
 * xref:api/vectordbs/pinecone.adoc[Pinecone Vector Store] - https://www.pinecone.io/[PineCone] vector store.

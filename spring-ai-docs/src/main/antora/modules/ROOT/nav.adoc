@@ -50,6 +50,7 @@
 *** xref:api/vectordbs/chroma.adoc[]
 *** xref:api/vectordbs/gemfire.adoc[GemFire]
 *** xref:api/vectordbs/milvus.adoc[]
+*** xref:api/vectordbs/mongodb.adoc[]
 *** xref:api/vectordbs/neo4j.adoc[]
 *** xref:api/vectordbs/pgvector.adoc[]
 *** xref:api/vectordbs/pinecone.adoc[]
@@ -57,6 +58,7 @@
 *** xref:api/vectordbs/redis.adoc[]
 *** xref:api/vectordbs/hana.adoc[SAP Hana]
 *** xref:api/vectordbs/weaviate.adoc[]
+
 
 ** xref:api/functions.adoc[Function Calling]
 ** xref:api/prompt.adoc[]
