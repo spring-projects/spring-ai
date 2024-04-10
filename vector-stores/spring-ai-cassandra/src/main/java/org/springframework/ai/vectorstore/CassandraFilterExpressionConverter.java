@@ -79,7 +79,7 @@ final class CassandraFilterExpressionConverter extends AbstractFilterExpressionC
 			// TODO SAI supports collections
 			// reach out to mck@apache.org if you'd like these implemented
 			// case CONTAINS -> context.append(" CONTAINS ");
-			// case CONTAINS_KEY -> context.append(" CONTAINS KEY ");
+			// case CONTAINS_KEY -> context.append(" CONTAINS_KEY ");
 			default -> throw new UnsupportedOperationException(
 					String.format("Expression type %s not yet implemented. Patches welcome.", type));
 		}

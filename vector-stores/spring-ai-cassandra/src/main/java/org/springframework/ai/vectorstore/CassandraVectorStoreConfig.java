@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -48,15 +50,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Configuration for the Cassandra vector store.
  *
- * All metadata fields configured to the store will be fetched and added to all queried
+ * All metadata columns configured to the store will be fetched and added to all queried
  * documents.
  *
- * If you wish to metadata search against a field its 'searchable' argument must be true.
+ * To filter expression search against a metadata column configure it with
+ * SchemaColumnTags.INDEXED
  *
  * The Cassandra Java Driver is configured via the application.conf resource found in the
  * classpath. See
  * https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration
  *
+ * @author Mick Semb Wever
  * @since 1.0.0
  */
 public final class CassandraVectorStoreConfig implements AutoCloseable {
@@ -72,6 +76,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	public static final String DEFAULT_CONTENT_COLUMN_NAME = "content";
 
 	public static final String DEFAULT_EMBEDDING_COLUMN_NAME = "embedding";
+
+	public static final int DEFAULT_ADD_CONCURRENCY = 16;
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
 
@@ -127,6 +133,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	final PrimaryKeyTranslator primaryKeyTranslator;
 
+	final Executor executor;
+
 	private final boolean closeSessionOnClose;
 
 	private CassandraVectorStoreConfig(Builder builder) {
@@ -139,6 +147,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		this.disallowSchemaChanges = builder.disallowSchemaCreation;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
+		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
 	}
 
 	public static Builder builder() {
@@ -186,6 +195,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private boolean disallowSchemaCreation = false;
+
+		private int fixedThreadPoolExecutorSize = DEFAULT_ADD_CONCURRENCY;
 
 		private DocumentIdTranslator documentIdTranslator = (String id) -> List.of(id);
 
@@ -261,25 +272,44 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
-		public Builder addMetadataColumn(SchemaColumn... fields) {
+		public Builder addMetadataColumns(SchemaColumn... columns) {
 			Builder builder = this;
-			for (SchemaColumn f : fields) {
+			for (SchemaColumn f : columns) {
 				builder = builder.addMetadataColumn(f);
 			}
 			return builder;
 		}
 
-		public Builder addMetadataColumn(SchemaColumn field) {
+		public Builder addMetadataColumns(List<SchemaColumn> columns) {
+			Builder builder = this;
+			this.metadataColumns.addAll(columns);
+			return builder;
+		}
 
-			Preconditions.checkArgument(this.metadataColumns.stream().noneMatch((sc) -> sc.name().equals(field.name())),
-					"A metadata field with name %s has already been added", field.name());
+		public Builder addMetadataColumn(SchemaColumn column) {
 
-			this.metadataColumns.add(field);
+			Preconditions.checkArgument(
+					this.metadataColumns.stream().noneMatch((sc) -> sc.name().equals(column.name())),
+					"A metadata column with name %s has already been added", column.name());
+
+			this.metadataColumns.add(column);
 			return this;
 		}
 
 		public Builder disallowSchemaChanges() {
 			this.disallowSchemaCreation = true;
+			return this;
+		}
+
+		/**
+		 * Executor to use when adding documents. The hotspot is the call to the
+		 * embeddingClient. For remote transformers you probably want a higher value to
+		 * utilize network. For local transformers you probably want a lower value to
+		 * avoid saturation.
+		 **/
+		public Builder withFixedThreadPoolExecutorSize(int threads) {
+			Preconditions.checkArgument(0 < threads);
+			this.fixedThreadPoolExecutorSize = threads;
 			return this;
 		}
 
@@ -480,7 +510,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			if (column.isPresent()) {
 
 				Preconditions.checkArgument(column.get().getType().equals(metadata.type()),
-						"Cannot change type on metadata field %s from %s to %s", metadata.name(),
+						"Cannot change type on metadata column %s from %s to %s", metadata.name(),
 						column.get().getType(), metadata.type());
 			}
 			else {

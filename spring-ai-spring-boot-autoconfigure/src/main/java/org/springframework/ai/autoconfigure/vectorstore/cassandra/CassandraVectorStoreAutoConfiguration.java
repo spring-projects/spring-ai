@@ -15,16 +15,17 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
+import java.time.Duration;
 
-import com.google.common.base.Preconditions;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.CassandraVectorStore;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
+import org.springframework.boot.autoconfigure.cassandra.DriverConfigLoaderBuilderCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,37 +35,24 @@ import org.springframework.context.annotation.Bean;
  * @author Mick Semb Wever
  * @since 1.0.0
  */
-@AutoConfiguration
-@ConditionalOnClass({ CassandraVectorStore.class, EmbeddingClient.class })
+@AutoConfiguration(after = CassandraAutoConfiguration.class)
+@ConditionalOnClass({ CassandraVectorStore.class, EmbeddingClient.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraVectorStoreProperties.class)
 public class CassandraVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(CassandraConnectionDetails.class)
-	public PropertiesCassandraConnectionDetails cassandraConnectionDetails(CassandraVectorStoreProperties properties) {
-		return new PropertiesCassandraConnectionDetails(properties);
-	}
-
-	@Bean
 	@ConditionalOnMissingBean
 	public CassandraVectorStore vectorStore(EmbeddingClient embeddingClient, CassandraVectorStoreProperties properties,
-			CassandraConnectionDetails cassandraConnectionDetails) {
+			CqlSession cqlSession) {
 
-		var builder = CassandraVectorStoreConfig.builder();
-		if (cassandraConnectionDetails.hasCassandraContactPoints()) {
-			for (InetSocketAddress contactPoint : cassandraConnectionDetails.getCassandraContactPoints()) {
-				builder = builder.addContactPoint(contactPoint);
-			}
-		}
-		if (cassandraConnectionDetails.hasCassandraLocalDatacenter()) {
-			builder = builder.withLocalDatacenter(cassandraConnectionDetails.getCassandraLocalDatacenter());
-		}
+		var builder = CassandraVectorStoreConfig.builder().withCqlSession(cqlSession);
 
 		builder = builder.withKeyspaceName(properties.getKeyspace())
 			.withTableName(properties.getTable())
-			.withContentColumnName(properties.getContentFieldName())
-			.withEmbeddingColumnName(properties.getEmbeddingFieldName())
-			.withIndexName(properties.getIndexName());
+			.withContentColumnName(properties.getContentColumnName())
+			.withEmbeddingColumnName(properties.getEmbeddingColumnName())
+			.withIndexName(properties.getIndexName())
+			.withFixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize());
 
 		if (properties.getDisallowSchemaCreation()) {
 			builder = builder.disallowSchemaChanges();
@@ -73,46 +61,20 @@ public class CassandraVectorStoreAutoConfiguration {
 		return new CassandraVectorStore(builder.build(), embeddingClient);
 	}
 
-	private static class PropertiesCassandraConnectionDetails implements CassandraConnectionDetails {
-
-		private final CassandraVectorStoreProperties properties;
-
-		public PropertiesCassandraConnectionDetails(CassandraVectorStoreProperties properties) {
-			this.properties = properties;
-		}
-
-		private String[] getCassandraContactPointHosts() {
-			return this.properties.getCassandraContactPointHosts().split("(,| )");
-		}
-
-		@Override
-		public List<InetSocketAddress> getCassandraContactPoints() {
-
-			Preconditions.checkState(hasCassandraContactPoints(), "cassandraContactPointHosts has not been set");
-			final int port = this.properties.getCassandraContactPointPort();
-
-			return Arrays.asList(getCassandraContactPointHosts())
-				.stream()
-				.map((host) -> InetSocketAddress.createUnresolved(host, port))
-				.toList();
-		}
-
-		@Override
-		public String getCassandraLocalDatacenter() {
-			Preconditions.checkState(hasCassandraLocalDatacenter(), "cassandraLocalDatacenter has not been set");
-			return this.properties.getCassandraLocalDatacenter();
-		}
-
-		@Override
-		public boolean hasCassandraContactPoints() {
-			return null != this.properties.getCassandraContactPointHosts();
-		}
-
-		@Override
-		public boolean hasCassandraLocalDatacenter() {
-			return null != this.properties.getCassandraLocalDatacenter();
-		}
-
+	@Bean
+	public DriverConfigLoaderBuilderCustomizer driverConfigLoaderBuilderCustomizer() {
+		// this replaces spring-ai-cassandra-*.jar!application.conf
+		// as spring-boot autoconfigure will not resolve the default driver configs
+		return (builder) -> builder.startProfile(CassandraVectorStore.DRIVER_PROFILE_UPDATES)
+			.withString(DefaultDriverOption.REQUEST_CONSISTENCY, "LOCAL_QUORUM")
+			.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(1))
+			.withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)
+			.endProfile()
+			.startProfile(CassandraVectorStore.DRIVER_PROFILE_SEARCH)
+			.withString(DefaultDriverOption.REQUEST_CONSISTENCY, "LOCAL_ONE")
+			.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(10))
+			.withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)
+			.endProfile();
 	}
 
 }

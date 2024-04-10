@@ -17,16 +17,20 @@ package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
@@ -40,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -53,13 +58,13 @@ import org.springframework.beans.factory.InitializingBean;
  * fields in the documents to be stored alongside the vector and content data.
  *
  * This class requires a CassandraVectorStoreConfig configuration object for
- * initialization, which includes settings like connection details, index name, field
+ * initialization, which includes settings like connection details, index name, column
  * names, etc. It also requires an EmbeddingClient to convert documents into embeddings
  * before storing them.
  *
  * A schema matching the configuration is automatically created if it doesn't exist.
  * Missing columns and indexes in existing tables will also be automatically created.
- * Disable this with the disallowSchemaCreation.
+ * Disable this with the CassandraVectorStoreConfig#disallowSchemaChanges().
  *
  * This class is designed to work with brand new tables that it creates for you, or on top
  * of existing Cassandra tables. The latter is appropriate when wanting to keep data in
@@ -69,9 +74,20 @@ import org.springframework.beans.factory.InitializingBean;
  * Instances of this class are not dynamic against server-side schema changes. If you
  * change the schema server-side you need a new CassandraVectorStore instance.
  *
+ * When adding documents with the method {@link #add(List<Document>)} it first calls
+ * embeddingClient to create the embeddings. This is slow. Configure
+ * {@link CassandraVectorStoreConfig.Builder#withFixedThreadPoolExecutorSize(int)}
+ * accordingly to improve performance so embeddings are created and the documents are
+ * added concurrently. The default concurrency is 16
+ * ({@link CassandraVectorStoreConfig#DEFAULT_ADD_CONCURRENCY}). Remote transformers
+ * probably want higher concurrency, and local transformers may need lower concurrency.
+ * This concurrency limit does not need to be higher than the max parallel calls made to
+ * the {@link #add(List<Document>)} method multiplied by the list size. This setting can
+ * also serve as a protecting throttle against your embedding model.
+ *
  * @author Mick Semb Wever
  * @see VectorStore
- * @see CassandraVectorStoreConfig
+ * @see org.springframework.ai.vectorstore.CassandraVectorStoreConfig
  * @see EmbeddingClient
  * @since 1.0.0
  */
@@ -87,9 +103,13 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 	}
 
-	private static final String QUERY_FORMAT = "select %s,%s,%s%s from %s.%s ? order by %s ann of ? limit ?";
-
 	public static final String SIMILARITY_FIELD_NAME = "similarity_score";
+
+	public static final String DRIVER_PROFILE_UPDATES = "spring-ai-updates";
+
+	public static final String DRIVER_PROFILE_SEARCH = "spring-ai-search";
+
+	private static final String QUERY_FORMAT = "select %s,%s,%s%s from %s.%s ? order by %s ann of ? limit ?";
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
 
@@ -99,7 +119,7 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 	private final FilterExpressionConverter filterExpressionConverter;
 
-	private final Map<Set<String>, PreparedStatement> addStmts = new HashMap<>();
+	private final ConcurrentMap<Set<String>, PreparedStatement> addStmts = new ConcurrentHashMap<>();
 
 	private final PreparedStatement deleteStmt;
 
@@ -133,30 +153,39 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 
 	@Override
 	public void add(List<Document> documents) {
-		CompletableFuture[] futures = new CompletableFuture[documents.size()];
-		short i = 0;
+		var futures = new CompletableFuture[documents.size()];
+
+		int i = 0;
 		for (Document d : documents) {
-			List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
-			var embedding = this.embeddingClient.embed(d).stream().map(Double::floatValue).toList();
+			futures[i++] = CompletableFuture.runAsync(() -> {
+				List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
 
-			BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
-			for (int k = 0; k < primaryKeyValues.size(); ++k) {
-				SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
-				builder = builder.set(keyColumn.name(), primaryKeyValues.get(k), keyColumn.javaType());
-			}
+				var embedding = (null != d.getEmbedding() && !d.getEmbedding().isEmpty() ? d.getEmbedding()
+						: this.embeddingClient.embed(d))
+					.stream()
+					.map(Double::floatValue)
+					.toList();
 
-			builder = builder.setString(this.conf.schema.content(), d.getContent())
-				.setVector(this.conf.schema.embedding(), CqlVector.newInstance(embedding), Float.class);
+				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
+				for (int k = 0; k < primaryKeyValues.size(); ++k) {
+					SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
+					builder = builder.set(keyColumn.name(), primaryKeyValues.get(k), keyColumn.javaType());
+				}
 
-			for (var metadataColumn : this.conf.schema.metadataColumns()
-				.stream()
-				.filter((mc) -> d.getMetadata().containsKey(mc.name()))
-				.toList()) {
+				builder = builder.setString(this.conf.schema.content(), d.getContent())
+					.setVector(this.conf.schema.embedding(), CqlVector.newInstance(embedding), Float.class);
 
-				builder = builder.set(metadataColumn.name(), d.getMetadata().get(metadataColumn.name()),
-						metadataColumn.javaType());
-			}
-			futures[i++] = this.conf.session.executeAsync(builder.build()).toCompletableFuture();
+				for (var metadataColumn : this.conf.schema.metadataColumns()
+					.stream()
+					.filter((mc) -> d.getMetadata().containsKey(mc.name()))
+					.toList()) {
+
+					builder = builder.set(metadataColumn.name(), d.getMetadata().get(metadataColumn.name()),
+							metadataColumn.javaType());
+				}
+				BoundStatement s = builder.build().setExecutionProfileName(DRIVER_PROFILE_UPDATES);
+				this.conf.session.execute(s);
+			}, this.conf.executor);
 		}
 		CompletableFuture.allOf(futures).join();
 	}
@@ -164,7 +193,7 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
 		CompletableFuture[] futures = new CompletableFuture[idList.size()];
-		short i = 0;
+		int i = 0;
 		for (String id : idList) {
 			List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(id);
 			BoundStatement s = this.deleteStmt.bind(primaryKeyValues.toArray());
@@ -191,8 +220,9 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 		String query = String.format(this.similarityStmt, cqlVector, whereClause, cqlVector, request.getTopK());
 		List<Document> documents = new ArrayList<>();
 		logger.trace("Executing {}", query);
+		SimpleStatement s = SimpleStatement.newInstance(query).setExecutionProfileName(DRIVER_PROFILE_SEARCH);
 
-		for (Row row : this.conf.session.execute(query)) {
+		for (Row row : this.conf.session.execute(s)) {
 			float score = row.getFloat(0);
 			if (score < request.getSimilarityThreshold()) {
 				break;
@@ -248,7 +278,16 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 	}
 
 	private PreparedStatement prepareAddStatement(Set<String> metadataFields) {
-		if (!this.addStmts.containsKey(metadataFields)) {
+
+		// metadata fields that are not configured as metadata columns are not added
+		Set<String> fieldsThatAreColumns = new HashSet<>(this.conf.schema.metadataColumns()
+			.stream()
+			.map((mc) -> mc.name())
+			.filter((mc) -> metadataFields.contains(mc))
+			.toList());
+
+		return this.addStmts.computeIfAbsent(fieldsThatAreColumns, (fields) -> {
+
 			RegularInsert stmt = null;
 			InsertInto stmtStart = QueryBuilder.insertInto(this.conf.schema.keyspace(), this.conf.schema.table());
 
@@ -262,17 +301,11 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 			stmt = stmt.value(this.conf.schema.content(), QueryBuilder.bindMarker(this.conf.schema.content()))
 				.value(this.conf.schema.embedding(), QueryBuilder.bindMarker(this.conf.schema.embedding()));
 
-			for (String metadataField : this.conf.schema.metadataColumns()
-				.stream()
-				.map((mc) -> mc.name())
-				.filter((mc) -> metadataFields.contains(mc))
-				.toList()) {
-
+			for (String metadataField : fields) {
 				stmt = stmt.value(metadataField, QueryBuilder.bindMarker(metadataField));
 			}
-			this.addStmts.putIfAbsent(metadataFields, this.conf.session.prepare(stmt.build()));
-		}
-		return this.addStmts.get(metadataFields);
+			return this.conf.session.prepare(stmt.build());
+		});
 	}
 
 	private String similaritySearchStatement() {

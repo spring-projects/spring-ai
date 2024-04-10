@@ -30,39 +30,34 @@ class CassandraVectorStorePropertiesTests {
 	@Test
 	void defaultValues() {
 		var props = new CassandraVectorStoreProperties();
-		assertThat(props.getCassandraContactPointHosts()).isNull();
-		assertThat(props.getCassandraContactPointPort()).isEqualTo(9042);
-		assertThat(props.getCassandraLocalDatacenter()).isNull();
 		assertThat(props.getKeyspace()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
 		assertThat(props.getTable()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_TABLE_NAME);
-		assertThat(props.getContentFieldName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME);
-		assertThat(props.getEmbeddingFieldName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME);
+		assertThat(props.getContentColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME);
+		assertThat(props.getEmbeddingColumnName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME);
 		assertThat(props.getIndexName()).isEqualTo(CassandraVectorStoreConfig.DEFAULT_INDEX_NAME);
 		assertThat(props.getDisallowSchemaCreation()).isFalse();
+		assertThat(props.getFixedThreadPoolExecutorSize())
+			.isEqualTo(CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY);
 	}
 
 	@Test
 	void customValues() {
 		var props = new CassandraVectorStoreProperties();
-		props.setCassandraContactPointHosts("127.0.0.1,127.0.0.2");
-		props.setCassandraContactPointPort(9043);
-		props.setCassandraLocalDatacenter("dc1");
 		props.setKeyspace("my_keyspace");
 		props.setTable("my_table");
-		props.setContentFieldName("my_content");
-		props.setEmbeddingFieldName("my_vector");
+		props.setContentColumnName("my_content");
+		props.setEmbeddingColumnName("my_vector");
 		props.setIndexName("my_sai");
 		props.setDisallowSchemaCreation(true);
+		props.setFixedThreadPoolExecutorSize(10);
 
-		assertThat(props.getCassandraContactPointHosts()).isEqualTo("127.0.0.1,127.0.0.2");
-		assertThat(props.getCassandraContactPointPort()).isEqualTo(9043);
-		assertThat(props.getCassandraLocalDatacenter()).isEqualTo("dc1");
 		assertThat(props.getKeyspace()).isEqualTo("my_keyspace");
 		assertThat(props.getTable()).isEqualTo("my_table");
-		assertThat(props.getContentFieldName()).isEqualTo("my_content");
-		assertThat(props.getEmbeddingFieldName()).isEqualTo("my_vector");
+		assertThat(props.getContentColumnName()).isEqualTo("my_content");
+		assertThat(props.getEmbeddingColumnName()).isEqualTo("my_vector");
 		assertThat(props.getIndexName()).isEqualTo("my_sai");
 		assertThat(props.getDisallowSchemaCreation()).isTrue();
+		assertThat(props.getFixedThreadPoolExecutorSize()).isEqualTo(10);
 	}
 
 }
