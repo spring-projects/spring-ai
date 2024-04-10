@@ -516,7 +516,7 @@ public class GemFireVectorStore implements VectorStore {
 				Map<String, Object> metadata = r.metadata;
 				if (r.metadata == null) {
 					metadata = new HashMap<>();
-					metadata.put(documentField, "Deleted content");
+					metadata.put(documentField, "--Deleted--");
 				}
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - r.score);
 				String content = (String) metadata.remove(documentField);
