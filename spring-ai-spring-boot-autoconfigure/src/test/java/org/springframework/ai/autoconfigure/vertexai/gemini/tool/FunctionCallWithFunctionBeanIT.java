@@ -83,6 +83,13 @@ class FunctionCallWithFunctionBeanIT {
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
+				response = chatClient
+					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+
 			});
 	}
 

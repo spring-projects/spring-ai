@@ -57,7 +57,8 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.aws.region     |   AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.region     | AWS region to use.  | us-east-1
+| spring.ai.bedrock.aws.timeout    | AWS timeout to use. | 5m
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
@@ -112,6 +113,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source]
 ----
 spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.timeout=1000ms
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 
@@ -174,7 +176,10 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 [source,java]
 ----
 Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(),
-    EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+    EnvironmentVariableCredentialsProvider.create(),
+    Region.US_EAST_1.id(),
+    new ObjectMapper(),
+    Duration.ofMillis(1000L));
 
 BedrockAi21Jurassic2ChatClient chatClient = new BedrockAi21Jurassic2ChatClient(api,
     BedrockAi21Jurassic2ChatOptions.builder()
@@ -200,7 +205,8 @@ Here is a simple snippet on how to use the API programmatically:
 ----
 Ai21Jurassic2ChatBedrockApi jurassic2ChatApi = new Ai21Jurassic2ChatBedrockApi(
         Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(),
-        Region.US_EAST_1.id());
+        Region.US_EAST_1.id(),
+        Duration.ofMillis(1000L));
 
 Ai21Jurassic2ChatRequest request = Ai21Jurassic2ChatRequest.builder("Hello, my name is")
         .withTemperature(0.9f)

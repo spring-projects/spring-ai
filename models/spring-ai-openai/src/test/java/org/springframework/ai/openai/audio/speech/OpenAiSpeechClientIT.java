@@ -38,8 +38,7 @@ class OpenAiSpeechClientIT extends AbstractIT {
 
 	@Test
 	void shouldSuccessfullyStreamAudioBytesForEmptyMessage() {
-		Flux<byte[]> response = openAiAudioSpeechClient
-			.stream("Today is a wonderful day to build something people love!");
+		Flux<byte[]> response = speechClient.stream("Today is a wonderful day to build something people love!");
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
 		System.out.println(response.collectList().block());
@@ -47,7 +46,7 @@ class OpenAiSpeechClientIT extends AbstractIT {
 
 	@Test
 	void shouldProduceAudioBytesDirectlyFromMessage() {
-		byte[] audioBytes = openAiAudioSpeechClient.call("Today is a wonderful day to build something people love!");
+		byte[] audioBytes = speechClient.call("Today is a wonderful day to build something people love!");
 		assertThat(audioBytes).hasSizeGreaterThan(0);
 
 	}
@@ -62,7 +61,7 @@ class OpenAiSpeechClientIT extends AbstractIT {
 			.build();
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
+		SpeechResponse response = speechClient.call(speechPrompt);
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
@@ -80,7 +79,7 @@ class OpenAiSpeechClientIT extends AbstractIT {
 			.build();
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
+		SpeechResponse response = speechClient.call(speechPrompt);
 		OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
 		assertThat(metadata).isNotNull();
 		assertThat(metadata.getRateLimit()).isNotNull();
@@ -101,7 +100,7 @@ class OpenAiSpeechClientIT extends AbstractIT {
 
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
 				speechOptions);
-		Flux<SpeechResponse> responseFlux = openAiAudioSpeechClient.stream(speechPrompt);
+		Flux<SpeechResponse> responseFlux = speechClient.stream(speechPrompt);
 		assertThat(responseFlux).isNotNull();
 		List<SpeechResponse> responses = responseFlux.collectList().block();
 		assertThat(responses).isNotNull();

@@ -60,6 +60,17 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 */
 	private @JsonProperty("logit_bias") Map<String, Integer> logitBias;
 	/**
+	 * Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities
+	 * of each output token returned in the 'content' of 'message'. This option is currently not available
+	 * on the 'gpt-4-vision-preview' model.
+	 */
+	private @JsonProperty("logprobs") Boolean logprobs;
+	/**
+	 * An integer between 0 and 5 specifying the number of most likely tokens to return at each token position,
+	 * each with an associated log probability. 'logprobs' must be set to 'true' if this parameter is used.
+	 */
+	private @JsonProperty("top_logprobs") Integer topLogprobs;
+	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
@@ -177,6 +188,16 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
+		public Builder withLogprobs(Boolean logprobs) {
+			this.options.logprobs = logprobs;
+			return this;
+		}
+
+		public Builder withTopLogprobs(Integer topLogprobs) {
+			this.options.topLogprobs = topLogprobs;
+			return this;
+		}
+
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
@@ -277,6 +298,22 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setLogitBias(Map<String, Integer> logitBias) {
 		this.logitBias = logitBias;
+	}
+
+	public Boolean getLogprobs() {
+		return this.logprobs;
+	}
+
+	public void setLogprobs(Boolean logprobs) {
+		this.logprobs = logprobs;
+	}
+
+	public Integer getTopLogprobs() {
+		return this.topLogprobs;
+	}
+
+	public void setTopLogprobs(Integer topLogprobs) {
+		this.topLogprobs = topLogprobs;
 	}
 
 	public Integer getMaxTokens() {
@@ -395,6 +432,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((model == null) ? 0 : model.hashCode());
 		result = prime * result + ((frequencyPenalty == null) ? 0 : frequencyPenalty.hashCode());
 		result = prime * result + ((logitBias == null) ? 0 : logitBias.hashCode());
+		result = prime * result + ((logprobs == null) ? 0 : logprobs.hashCode());
+		result = prime * result + ((topLogprobs == null) ? 0 : topLogprobs.hashCode());
 		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
 		result = prime * result + ((n == null) ? 0 : n.hashCode());
 		result = prime * result + ((presencePenalty == null) ? 0 : presencePenalty.hashCode());
@@ -435,6 +474,18 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 				return false;
 		}
 		else if (!this.logitBias.equals(other.logitBias))
+			return false;
+		if (this.logprobs == null) {
+			if (other.logprobs != null)
+				return false;
+		}
+		else if (!this.logprobs.equals(other.logprobs))
+			return false;
+		if (this.topLogprobs == null) {
+			if (other.topLogprobs != null)
+				return false;
+		}
+		else if (!this.topLogprobs.equals(other.topLogprobs))
 			return false;
 		if (this.maxTokens == null) {
 			if (other.maxTokens != null)

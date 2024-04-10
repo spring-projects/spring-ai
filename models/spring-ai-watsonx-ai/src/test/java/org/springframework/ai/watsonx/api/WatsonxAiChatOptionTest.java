@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.springframework.ai.watsonx.WatsonxAiChatOptions;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -54,6 +55,68 @@ public class WatsonxAiChatOptionTest {
 		assertThat(optionsMap).containsEntry("stop_sequences", List.of("\n\n\n"));
 		assertThat(optionsMap).containsEntry("repetition_penalty", 1.1);
 		assertThat(optionsMap).containsEntry("random_seed", 4);
+	}
+
+	@Test
+	public void testOptionsWithAdditionalParamsOneByOne() {
+		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+			.withDecodingMethod("sample")
+			.withTemperature(1.2f)
+			.withTopK(20)
+			.withTopP(0.5f)
+			.withMaxNewTokens(100)
+			.withMinNewTokens(20)
+			.withStopSequences(List.of("\n\n\n"))
+			.withRepetitionPenalty(1.1f)
+			.withRandomSeed(4)
+			.withAdditionalProperty("HAP", true)
+			.withAdditionalProperty("typicalP", 0.5f)
+			.build();
+
+		var optionsMap = options.toMap();
+
+		assertThat(optionsMap).containsEntry("decoding_method", "sample");
+		assertThat(optionsMap).containsEntry("temperature", 1.2);
+		assertThat(optionsMap).containsEntry("top_k", 20);
+		assertThat(optionsMap).containsEntry("top_p", 0.5);
+		assertThat(optionsMap).containsEntry("max_new_tokens", 100);
+		assertThat(optionsMap).containsEntry("min_new_tokens", 20);
+		assertThat(optionsMap).containsEntry("stop_sequences", List.of("\n\n\n"));
+		assertThat(optionsMap).containsEntry("repetition_penalty", 1.1);
+		assertThat(optionsMap).containsEntry("random_seed", 4);
+		assertThat(optionsMap).containsEntry("hap", true);
+		assertThat(optionsMap).containsEntry("typical_p", 0.5);
+	}
+
+	@Test
+	public void testOptionsWithAdditionalParamsMap() {
+		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
+			.withDecodingMethod("sample")
+			.withTemperature(1.2f)
+			.withTopK(20)
+			.withTopP(0.5f)
+			.withMaxNewTokens(100)
+			.withMinNewTokens(20)
+			.withStopSequences(List.of("\n\n\n"))
+			.withRepetitionPenalty(1.1f)
+			.withRandomSeed(4)
+			.withAdditionalProperties(Map.of("HAP", true, "typicalP", 0.5f, "test_value", "test"))
+			.build();
+
+		var optionsMap = options.toMap();
+
+		assertThat(optionsMap).containsEntry("decoding_method", "sample");
+		assertThat(optionsMap).containsEntry("temperature", 1.2);
+		assertThat(optionsMap).containsEntry("top_k", 20);
+		assertThat(optionsMap).containsEntry("top_p", 0.5);
+		assertThat(optionsMap).containsEntry("max_new_tokens", 100);
+		assertThat(optionsMap).containsEntry("min_new_tokens", 20);
+		assertThat(optionsMap).containsEntry("stop_sequences", List.of("\n\n\n"));
+		assertThat(optionsMap).containsEntry("repetition_penalty", 1.1);
+		assertThat(optionsMap).containsEntry("random_seed", 4);
+		assertThat(optionsMap).containsEntry("hap", true);
+		assertThat(optionsMap).containsEntry("typical_p", 0.5);
+		assertThat(optionsMap).containsEntry("test_value", "test");
 	}
 
 	@Test

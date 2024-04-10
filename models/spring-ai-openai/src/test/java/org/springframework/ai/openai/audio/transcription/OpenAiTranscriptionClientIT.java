@@ -43,7 +43,7 @@ class OpenAiTranscriptionClientIT extends AbstractIT {
 			.withTemperature(0f)
 			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
-		AudioTranscriptionResponse response = openAiTranscriptionClient.call(transcriptionRequest);
+		AudioTranscriptionResponse response = transcriptionClient.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();
 	}
@@ -59,7 +59,7 @@ class OpenAiTranscriptionClientIT extends AbstractIT {
 			.withResponseFormat(responseFormat)
 			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
-		AudioTranscriptionResponse response = openAiTranscriptionClient.call(transcriptionRequest);
+		AudioTranscriptionResponse response = transcriptionClient.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();
 	}

@@ -1,0 +1,93 @@
+= MongoDB Atlas
+
+WIP: Please consider contributing docs:  https://github.com/spring-projects/spring-ai/issues/456[Add documentation for the MongoDB Atlas Vector Store]
+
+https://www.mongodb.com/basics/vector-databases[MongoDB Atlas Vector Search] is a fully managed cloud database service that provides the easiest way to deploy, operate, and scale a MongoDB database in the cloud.
+
+== Prerequisites
+
+TODO: Add prerequisites instructions
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the MongoDB Atlas Vector Sore.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mongodb-atlas-store-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-mongodb-atlas-store-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+Here is an example of the needed bean:
+
+[source,java]
+----
+@Bean
+public EmbeddingClient embeddingClient() {
+    // Can be any other EmbeddingClient implementation.
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
+----
+
+== Metadata filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with MongoDB Atlas store as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+                    SearchRequest.defaults()
+                            .withQuery("The World")
+                            .withTopK(TOP_K)
+                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                            .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+                    .withQuery("The World")
+                    .withTopK(TOP_K)
+                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+                    .withFilterExpression(b.and(
+                            b.in("john", "jill"),
+                            b.eq("article_type", "blog")).build()));
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary MongoDB Atlas filter expressions.
+
+== MongoDB Atlas properties
+
+You can use the following properties in your Spring Boot configuration to customize the MongoDB Atlas vector store.
+
+|===
+|Property| Description | Default value
+
+|`spring.ai.vectorstore.mongodb.collection-name`| The name of the collection to store the vectors. | `vector_store`
+|`spring.ai.vectorstore.mongodb.path-name`| The name of the path to store the vectors. | `embedding`
+|`spring.ai.vectorstore.mongodb.indexName`| The name of the index to store the vectors. | `vector_index`
+|===

@@ -34,9 +34,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-weaviate-store</module>
@@ -47,7 +49,9 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
 		<module>spring-ai-docs</module>
+		<module>vector-stores/spring-ai-cassandra</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
+		<module>vector-stores/spring-ai-hanadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
 		<module>document-readers/pdf-reader</module>
@@ -115,7 +119,8 @@
 		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.2.3</spring-boot.version>
+		<spring-cloud-function-context.version>4.1.1</spring-cloud-function-context.version>
+		<spring-boot.version>3.2.4</spring-boot.version>
 		<spring-framework.version>6.1.4</spring-framework.version>
 		<stringtemplate.version>4.0.2</stringtemplate.version>
 		<azure-open-ai-client.version>1.0.0-beta.7</azure-open-ai-client.version>
@@ -125,17 +130,21 @@
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.26.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
-		<com.google.cloud.version>26.34.0</com.google.cloud.version>
+		<com.google.cloud.version>26.37.0</com.google.cloud.version>
 		<qdrant.version>1.7.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
+		<jsonschema.version>4.35.0</jsonschema.version>
+		<swagger-annotations.version>2.2.20</swagger-annotations.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
+		<cassandra.java-driver.version>4.18.0</cassandra.java-driver.version>
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
+		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<milvus.version>2.3.4</milvus.version>
 		<pinecone.version>0.8.0</pinecone.version>
@@ -143,9 +152,6 @@
 		<azure-search.version>11.6.1</azure-search.version>
 		<weaviate-client.version>4.5.1</weaviate-client.version>
 		<qdrant.version>1.7.1</qdrant.version>
-
-		<!-- testing dependencies -->
-		<testcontainers.version>1.19.7</testcontainers.version>
 
 		<!-- documentation dependencies -->
 		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
