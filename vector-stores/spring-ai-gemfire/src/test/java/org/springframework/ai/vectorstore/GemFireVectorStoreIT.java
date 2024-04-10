@@ -185,11 +185,7 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStoreConfig gemfireVectorStoreConfig() {
-			return GemFireVectorStoreConfig.builder()
-				.withHost("localhost")
-				.withPort(9090)
-				.withIndexName(INDEX_NAME)
-				.build();
+			return new GemFireVectorStoreConfig().setHost("localhost").setPort(9090).setIndexName(INDEX_NAME);
 		}
 
 		@Bean
