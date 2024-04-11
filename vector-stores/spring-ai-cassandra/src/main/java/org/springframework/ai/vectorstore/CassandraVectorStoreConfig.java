@@ -73,7 +73,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final String DEFAULT_EMBEDDING_COLUMN_NAME = "embedding";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreConfig.class);
 
 	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
 			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
