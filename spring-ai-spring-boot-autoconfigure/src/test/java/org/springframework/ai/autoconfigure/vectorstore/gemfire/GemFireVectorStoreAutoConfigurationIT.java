@@ -62,7 +62,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 	public void createIndex() {
 		contextRunner.run(c -> {
 			GemFireVectorStoreProperties properties = c.getBean(GemFireVectorStoreProperties.class);
-			properties.setFields(new String[] { "vector1" });
+			properties.setFields(new String[] {});
 			properties.setBeamWidth(100);
 			properties.setMaxConnections(16);
 			properties.setBuckets(10);

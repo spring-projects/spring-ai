@@ -37,16 +37,16 @@ public class GemFireVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public GemFireVectorStore vectorStore(EmbeddingClient embeddingClient, GemFireVectorStoreProperties properties) {
-		var config = GemFireVectorStore.GemFireVectorStoreConfig.builder()
-			.withHost(properties.getHost())
-			.withIndexName(properties.getIndexName())
-			.withPort(properties.getPort())
-			.withBeamWidth(properties.getBeamWidth())
-			.withMaxConnections(properties.getMaxConnections())
-			.withBuckets(properties.getBuckets())
-			.withVectorSimilarityFunction(properties.getVectorSimilarityFunction())
-			.withFields(properties.getFields())
-			.build();
+		var config = new GemFireVectorStore.GemFireVectorStoreConfig();
+
+		config.setHost(properties.getHost())
+			.setIndexName(properties.getIndexName())
+			.setPort(properties.getPort())
+			.setBeamWidth(properties.getBeamWidth())
+			.setMaxConnections(properties.getMaxConnections())
+			.setBuckets(properties.getBuckets())
+			.setVectorSimilarityFunction(properties.getVectorSimilarityFunction())
+			.setFields(properties.getFields());
 		return new GemFireVectorStore(config, embeddingClient);
 	}
 
