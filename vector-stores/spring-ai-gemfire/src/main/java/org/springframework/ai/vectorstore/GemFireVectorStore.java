@@ -66,7 +66,7 @@ public class GemFireVectorStore implements VectorStore {
 
 	// Create Index DEFAULT Values
 
-	private static final String[] DEFAULT_VECTOR_FIELD = new String[] { "vector" };
+	private static final String[] DEFAULT_FIELDS = new String[] {};
 
 	private static final String DEFAULT_SIMILARITY_FUNCTION = "COSINE";
 
@@ -76,7 +76,7 @@ public class GemFireVectorStore implements VectorStore {
 
 	private static final int DEFAULT_MAX_CONNECTIONS = 16;
 
-	private static final String DEFAULT_DOCUMENT_FIELD = "document";
+	private static final String DOCUMENT_FIELD = "document";
 
 	// Create Index Parameters
 
@@ -91,8 +91,6 @@ public class GemFireVectorStore implements VectorStore {
 	private String vectorSimilarityFunction;
 
 	private String[] fields;
-
-	private final String documentField;
 
 	// Query Defaults
 	private static final String QUERY = "/query";
@@ -115,11 +113,9 @@ public class GemFireVectorStore implements VectorStore {
 
 		private String vectorSimilarityFunction = DEFAULT_SIMILARITY_FUNCTION;
 
-		private String[] fields = DEFAULT_VECTOR_FIELD;
+		private String[] fields = DEFAULT_FIELDS;
 
 		private int buckets = DEFAULT_BUCKETS;
-
-		private String documentField = DEFAULT_DOCUMENT_FIELD;
 
 		public GemFireVectorStoreConfig setHost(String host) {
 			Assert.hasText(host, "host must have a value");
@@ -175,12 +171,6 @@ public class GemFireVectorStore implements VectorStore {
 			return this;
 		}
 
-		public GemFireVectorStoreConfig setDocumentFields(String documentField) {
-			Assert.hasText(documentField, "documentField must have a value");
-			this.documentField = documentField;
-			return this;
-		}
-
 		public GemFireVectorStoreConfig() {
 
 		}
@@ -197,7 +187,6 @@ public class GemFireVectorStore implements VectorStore {
 		this.buckets = config.buckets;
 		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
 		this.fields = config.fields;
-		this.documentField = config.documentField;
 
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
 			.build(config.sslEnabled ? "s" : "", config.host, config.port)
@@ -220,7 +209,7 @@ public class GemFireVectorStore implements VectorStore {
 		private String vectorSimilarityFunction = DEFAULT_SIMILARITY_FUNCTION;
 
 		@JsonProperty("fields")
-		private String[] fields = DEFAULT_VECTOR_FIELD;
+		private String[] fields = DEFAULT_FIELDS;
 
 		@JsonProperty("buckets")
 		private int buckets = DEFAULT_BUCKETS;
@@ -422,7 +411,7 @@ public class GemFireVectorStore implements VectorStore {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingClient.embed(document));
 			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
-			return new UploadRequest.Embedding(document.getId(), floatVector, documentField, document.getContent(),
+			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
 					document.getMetadata());
 		}).toList());
 
@@ -482,10 +471,10 @@ public class GemFireVectorStore implements VectorStore {
 				Map<String, Object> metadata = r.metadata;
 				if (r.metadata == null) {
 					metadata = new HashMap<>();
-					metadata.put(documentField, "--Deleted--");
+					metadata.put(DOCUMENT_FIELD, "--Deleted--");
 				}
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - r.score);
-				String content = (String) metadata.remove(documentField);
+				String content = (String) metadata.remove(DOCUMENT_FIELD);
 				return new Document(r.key, content, metadata);
 			})
 			.collectList()
