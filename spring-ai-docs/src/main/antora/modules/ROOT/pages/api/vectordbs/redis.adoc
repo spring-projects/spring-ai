@@ -108,33 +108,49 @@ You can use the following properties in your Spring Boot configuration to custom
 
 == Metadata filtering
 
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Redis vector store.
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with RedisVectorStore as well.
 
 For example, you can use either the text expression language:
 
 [source,java]
 ----
 vectorStore.similaritySearch(
-    SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
 ----
 
-or programmatically using the `Filter.Expression` DSL:
+or programmatically using the expression DSL:
 
 [source,java]
 ----
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
-vectorStore.similaritySearch(SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-    .withFilterExpression(b.and(
-        b.in("author", "john", "jill"),
-        b.eq("article_type", "blog")).build()));
+vectorStore.similaritySearch(
+   SearchRequest
+      .query("The World")
+      .withTopK(TOP_K)
+      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+      .withFilterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()));
+----
+
+The portable filter expressions get automatically converted into link:https://redis.io/docs/interact/search-and-query/query/[Redis search queries].
+For example, the following portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into Redis query:
+
+[source]
+----
+@country:{UK | NL} @year:[2020 inf]
 ----
 
 == Manual configuration
@@ -218,50 +234,3 @@ List<Document> results = vectorStore.similaritySearch(
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
-
-=== Metadata filtering
-
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with RedisVectorStore as well.
-
-For example, you can use either the text expression language:
-
-[source,java]
-----
-vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
-----
-
-or programmatically using the expression DSL:
-
-[source,java]
-----
-FilterExpressionBuilder b = new FilterExpressionBuilder();
-
-vectorStore.similaritySearch(
-   SearchRequest
-      .query("The World")
-      .withTopK(TOP_K)
-      .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-      .withFilterExpression(b.and(
-         b.in("country", "UK", "NL"),
-         b.gte("year", 2020)).build()));
-----
-
-The portable filter expressions get automatically converted into link:https://redis.io/docs/interact/search-and-query/query/[Redis search queries].
-For example, the following portable filter expression:
-
-[source,sql]
-----
-country in ['UK', 'NL'] && year >= 2020
-----
-
-is converted into Redis query:
-
-[source]
-----
-@country:{UK | NL} @year:[2020 inf]
-----
