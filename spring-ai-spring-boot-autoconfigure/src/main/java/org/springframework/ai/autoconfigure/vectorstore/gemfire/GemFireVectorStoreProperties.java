@@ -64,7 +64,7 @@ public class GemFireVectorStoreProperties {
 	 * The fields to be used for queries. Default value is an array containing
 	 * {@code "vector"}.
 	 */
-	private String[] fields = new String[] { "vector" };
+	private String[] fields = new String[] {};
 
 	/**
 	 * The number of buckets to use for partitioning the data. Default value is {@code 0}.
