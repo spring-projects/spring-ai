@@ -56,7 +56,7 @@ public class GemFireVectorStore implements VectorStore {
 
 	private static final String DEFAULT_HOST = "localhost";
 
-	private static final String DEFAULT_URI = "http://{host}:{port}/gemfire-vectordb/v1/indexes";
+	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
 
 	private static final String EMBEDDINGS = "/embeddings";
 
@@ -107,6 +107,8 @@ public class GemFireVectorStore implements VectorStore {
 
 		private int port = DEFAULT_PORT;
 
+		private boolean sslEnabled = false;
+
 		private String indexName;
 
 		private int beamWidth = DEFAULT_BEAM_WIDTH;
@@ -128,6 +130,11 @@ public class GemFireVectorStore implements VectorStore {
 		public GemFireVectorStoreConfig setPort(int port) {
 			Assert.isTrue(port > 0, "port must be positive");
 			this.port = port;
+			return this;
+		}
+
+		public GemFireVectorStoreConfig setSslEnabled(boolean sslEnabled) {
+			this.sslEnabled = sslEnabled;
 			return this;
 		}
 
@@ -186,7 +193,9 @@ public class GemFireVectorStore implements VectorStore {
 		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
 		this.fields = config.fields;
 
-		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI).build(config.host, config.port).toString();
+		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
+			.build(config.sslEnabled ? "s" : "", config.host, config.port)
+			.toString();
 		this.client = WebClient.create(base);
 	}
 
