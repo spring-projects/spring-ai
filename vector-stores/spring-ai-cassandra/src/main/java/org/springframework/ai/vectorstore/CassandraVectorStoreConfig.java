@@ -79,7 +79,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final int DEFAULT_ADD_CONCURRENCY = 16;
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreConfig.class);
 
 	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
 			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
