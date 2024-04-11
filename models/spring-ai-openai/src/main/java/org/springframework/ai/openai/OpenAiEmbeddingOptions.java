@@ -86,7 +86,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -94,7 +94,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public String getEncodingFormat() {
-		return encodingFormat;
+		return this.encodingFormat;
 	}
 
 	public void setEncodingFormat(String encodingFormat) {
@@ -102,7 +102,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public Integer getDimensions() {
-		return dimensions;
+		return this.dimensions;
 	}
 
 	public void setDimensions(Integer dimensions) {
@@ -110,7 +110,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public String getUser() {
-		return user;
+		return this.user;
 	}
 
 	public void setUser(String user) {
