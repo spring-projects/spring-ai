@@ -2,11 +2,7 @@
 
 This section walks you through setting up `RedisVectorStore` to store document embeddings and perform similarity searches.
 
-== What is Redis?
-
 link:https://redis.io[Redis] is an open source (BSD licensed), in-memory data structure store used as a database, cache, message broker, and streaming engine. Redis provides data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes, and streams.
-
-== What is Redis Vector Search?
 
 link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] extends the core features of Redis OSS and allows you to use Redis as a vector database:
 
@@ -16,53 +12,135 @@ link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] ex
 
 == Prerequisites
 
-1. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+1. A Redis Stack instance
+- https://app.redislabs.com/#/[Redis Cloud] (recommended)
+- link:https://hub.docker.com/r/redis/redis-stack[Docker] image _redis/redis-stack:latest_
 
-- `Transformers Embedding` - computes the embedding in your local environment. Follow the ONNX Transformers Embedding instructions.
-- `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
-- You can also use the `Azure OpenAI Embedding`.
+2. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `RedisVectorStore`.
 
-2. A Redis Stack instance
-a. https://app.redislabs.com/#/[Redis Cloud] (recommended)
-b. link:https://hub.docker.com/r/redis/redis-stack[Docker] image _redis/redis-stack:latest_
+== Auto-configuration
 
+Spring AI provides Spring Boot auto-configuration for the Redis Vector Sore.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
-== Dependencies
-
-Add these dependencies to your project:
-
-* Embedding Client boot starter, required for calculating embeddings.
-
-* Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions.
-
-[source,xml]
-----
-<dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or use OpenAI (Cloud)
-
-[source,xml]
+[source, xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
 </dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-transformers-spring-boot-starter'
+}
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-You'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-[source,bash]
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+Here is an example of the needed bean:
+
+[source,java]
 ----
-export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+@Bean
+public EmbeddingClient embeddingClient() {
+    // Can be any other EmbeddingClient implementation.
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
 ----
 
-* Add the Redis Vector Store and Jedis dependencies
+To connect to Redis you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.properties_,
+
+[source,properties]
+----
+spring.ai.vectorstore.redis.uri=<host of your redis instance>
+spring.ai.vectorstore.redis.index=<your index name>
+spring.ai.vectorstore.redis.prefix=<your prefix>
+
+# API key if needed, e.g. OpenAI
+spring.ai.openai.api.key=<api-key>
+----
+
+Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+Now you can Auto-wire the Redis Vector Store in your application and use it
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Redis
+vectorStore.add(List.of(document));
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+=== Configuration properties
+
+You can use the following properties in your Spring Boot configuration to customize the Redis vector store.
+
+|===
+|Property| Description | Default value
+
+|`spring.ai.vectorstore.redis.uri`| Server connection URI | redis://localhost:6379
+|`spring.ai.vectorstore.redis.index`| Index name (REQUIRED) | -
+|`spring.ai.vectorstore.redis.prefix`| (REQUIRED) | -
+
+|===
+
+== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Redis vector store.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("author", "john", "jill"),
+        b.eq("article_type", "blog")).build()));
+----
+
+== Manual configuration
+
+If you prefer not to use the auto-configuration, you can manually configure the Redis Vector Store.
+Add the Redis Vector Store and Jedis dependencies
 
 [source,xml]
 ----
@@ -80,9 +158,7 @@ export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-== Usage
-
-Create a RedisVectorStore instance connected to your Redis database:
+Then, create a `RedisVectorStore` bean in your Spring configuration:
 
 [source,java]
 ----
@@ -101,14 +177,17 @@ public VectorStore vectorStore(EmbeddingClient embeddingClient) {
 }
 ----
 
-> [NOTE]
-> It is more convenient and preferred to create the `RedisVectorStore` as a Bean.
-> But if you decide to create it manually, then you must call the `RedisVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
+[NOTE]
+====
+It is more convenient and preferred to create the `RedisVectorStore` as a Bean.
+But if you decide to create it manually, then you must call the `RedisVectorStore#afterPropertiesSet()` after setting the properties and before using the client.
+====
 
-> [NOTE]
-> You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
-> The `withMetadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
->
+[NOTE]
+====
+You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expression.
+The `withMetadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
+====
 
 Then in your main code, create some documents:
 
