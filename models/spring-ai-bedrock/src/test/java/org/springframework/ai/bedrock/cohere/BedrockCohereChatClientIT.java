@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.cohere;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -200,7 +201,8 @@ class BedrockCohereChatClientIT {
 		@Bean
 		public CohereChatBedrockApi cohereApi() {
 			return new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+					Duration.ofMinutes(2));
 		}
 
 		@Bean

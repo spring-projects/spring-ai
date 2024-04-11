@@ -21,6 +21,7 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.chat.prompt.Prompt;
 import software.amazon.awssdk.regions.Region;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockAnthropic3CreateRequestTests {
 
 	private Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(AnthropicChatModel.CLAUDE_V2.id(),
-			Region.EU_CENTRAL_1.id());
+			Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
 
 	@Test
 	public void createRequestWithChatOptions() {

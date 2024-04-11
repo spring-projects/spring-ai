@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.cohere.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;;
 public class CohereChatBedrockApiIT {
 
 	private CohereChatBedrockApi cohereChatApi = new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-			Region.US_EAST_1.id());
+			Region.US_EAST_1.id(), Duration.ofMinutes(2));
 
 	@Test
 	public void requestBuilder() {

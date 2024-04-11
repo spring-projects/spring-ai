@@ -15,15 +15,18 @@
  */
 package org.springframework.ai.watsonx;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -37,6 +40,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * valid Parameters and values</a>
  */
 // @formatter:off
+
 public class WatsonxAiChatOptions implements ChatOptions {
 
     /**
@@ -85,14 +89,14 @@ public class WatsonxAiChatOptions implements ChatOptions {
     /**
      * Sets how many tokens must the LLM generate. (Default: 0)
      */
-    @JsonProperty("min_new_tokens") private Integer minNewTokens = 0;
+    @JsonProperty("min_new_tokens") private Integer minNewTokens;
 
     /**
      * Sets when the LLM should stop.
      * (e.g., ["\n\n\n"]) then when the LLM generates three consecutive line breaks it will terminate.
      * Stop sequences are ignored until after the number of tokens that are specified in the Min tokens parameter are generated.
      */
-    @JsonProperty("stop_sequences") private List<String> stopSequences = List.of();
+    @JsonProperty("stop_sequences") private List<String> stopSequences;
 
     /**
      * Sets how strongly to penalize repetitions. A higher value
@@ -111,6 +115,14 @@ public class WatsonxAiChatOptions implements ChatOptions {
      */
     @JsonProperty("model") private String model;
 
+    /**
+     * Set additional request params (some model have non-predefined options)
+     */
+    @JsonProperty("additional")
+    private Map<String, Object> additional = new HashMap<>();
+
+    @JsonIgnore
+    private ObjectMapper mapper = new ObjectMapper();
 
     public Float getTemperature() {
         return temperature;
@@ -192,6 +204,20 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.model = model;
     }
 
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        return additional.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> toSnakeCase(entry.getKey()),
+                        Map.Entry::getValue
+                ));
+    }
+
+    @JsonAnySetter
+    public void addAdditionalProperty(String key, Object value) {
+        additional.put(key, value);
+    }
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -250,6 +276,16 @@ public class WatsonxAiChatOptions implements ChatOptions {
             return this;
         }
 
+        public Builder withAdditionalProperty(String key, Object value) {
+            this.options.additional.put(key, value);
+            return this;
+        }
+
+        public Builder withAdditionalProperties(Map<String, Object> properties) {
+            this.options.additional.putAll(properties);
+            return this;
+        }
+
         public WatsonxAiChatOptions build() {
             return this.options;
         }
@@ -261,9 +297,11 @@ public class WatsonxAiChatOptions implements ChatOptions {
      */
     public Map<String, Object> toMap() {
         try {
-            var json = new ObjectMapper().writeValueAsString(this);
-            return new ObjectMapper().readValue(json, new TypeReference<Map<String, Object>>() {
-            });
+            var json = mapper.writeValueAsString(this);
+            var map = mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            map.remove("additional");
+
+            return map;
         }
         catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -280,6 +318,10 @@ public class WatsonxAiChatOptions implements ChatOptions {
                 .filter(e -> !e.getKey().equals("model"))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private String toSnakeCase(String input) {
+        return input != null ? input.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase() : null;
     }
 
 }

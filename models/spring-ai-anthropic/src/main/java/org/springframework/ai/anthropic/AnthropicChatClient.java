@@ -17,8 +17,10 @@ package org.springframework.ai.anthropic;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -28,13 +30,13 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
-import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
+import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent.Type;
+import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.StreamResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent.Type;
 import org.springframework.ai.anthropic.metadata.AnthropicChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
@@ -45,6 +47,8 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -57,7 +61,9 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class AnthropicChatClient implements ChatClient, StreamingChatClient {
+public class AnthropicChatClient extends
+		AbstractFunctionCallSupport<AnthropicApi.RequestMessage, AnthropicApi.ChatCompletionRequest, ResponseEntity<AnthropicApi.ChatCompletion>>
+		implements ChatClient, StreamingChatClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatClient.class);
 
@@ -112,6 +118,22 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 	 */
 	public AnthropicChatClient(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
 			RetryTemplate retryTemplate) {
+		this(anthropicApi, defaultOptions, retryTemplate, null);
+	}
+
+	/**
+	 * Construct a new {@link AnthropicChatClient} instance.
+	 * @param anthropicApi the lower-level API for the Anthropic service.
+	 * @param defaultOptions the default options used for the chat completion requests.
+	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
+	 * @param functionCallbackContext the function callback context used to store the
+	 * state of the function calls.
+	 */
+	public AnthropicChatClient(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
+			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext) {
+
+		super(functionCallbackContext);
+
 		Assert.notNull(anthropicApi, "AnthropicApi must not be null");
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
@@ -127,7 +149,7 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		return this.retryTemplate.execute(ctx -> {
-			ResponseEntity<ChatCompletion> completionEntity = this.anthropicApi.chatCompletionEntity(request);
+			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 			return toChatResponse(completionEntity.getBody());
 		});
 	}
@@ -229,6 +251,8 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
+		Set<String> functionsForThisRequest = new HashSet<>();
+
 		List<RequestMessage> userMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() != MessageType.SYSTEM)
@@ -260,6 +284,10 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 				AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
 						ChatOptions.class, AnthropicChatOptions.class);
 
+				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+						IS_RUNTIME_CALL);
+				functionsForThisRequest.addAll(promptEnabledFunctions);
+
 				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 			}
 			else {
@@ -269,10 +297,30 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 		}
 
 		if (this.defaultOptions != null) {
+			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
+					!IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(defaultEnabledFunctions);
+
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 		}
 
+		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
+
+			List<AnthropicApi.Tool> tools = getFunctionTools(functionsForThisRequest);
+
+			request = ChatCompletionRequest.from(request).withTools(tools).build();
+		}
+
 		return request;
+	}
+
+	private List<AnthropicApi.Tool> getFunctionTools(Set<String> functionNames) {
+		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
+			var description = functionCallback.getDescription();
+			var name = functionCallback.getName();
+			String inputSchema = functionCallback.getInputTypeSchema();
+			return new AnthropicApi.Tool(name, description, ModelOptionsUtils.jsonToMap(inputSchema));
+		}).toList();
 	}
 
 	private static class ChatCompletionBuilder {
@@ -341,6 +389,65 @@ public class AnthropicChatClient implements ChatClient, StreamingChatClient {
 					this.stopSequence, this.usage);
 		}
 
+	}
+
+	@Override
+	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
+			RequestMessage responseMessage, List<RequestMessage> conversationHistory) {
+
+		List<MediaContent> toolToUseList = responseMessage.content()
+			.stream()
+			.filter(c -> c.type() == MediaContent.Type.TOOL_USE)
+			.toList();
+
+		List<MediaContent> toolResults = new ArrayList<>();
+
+		for (MediaContent toolToUse : toolToUseList) {
+
+			var functionCallId = toolToUse.id();
+			var functionName = toolToUse.name();
+			var functionArguments = toolToUse.input();
+
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.functionCallbackRegister.get(functionName)
+				.call(ModelOptionsUtils.toJsonString(functionArguments));
+
+			toolResults.add(new MediaContent(Type.TOOL_RESULT, functionCallId, functionResponse));
+		}
+
+		// Add the function response to the conversation.
+		conversationHistory.add(new RequestMessage(toolResults, Role.USER));
+
+		// Recursively call chatCompletionWithTools until the model doesn't call a
+		// functions anymore.
+		return ChatCompletionRequest.from(previousRequest).withMessages(conversationHistory).build();
+	}
+
+	@Override
+	protected List<RequestMessage> doGetUserMessages(ChatCompletionRequest request) {
+		return request.messages();
+	}
+
+	@Override
+	protected RequestMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> response) {
+		return new RequestMessage(response.getBody().content(), Role.ASSISTANT);
+	}
+
+	@Override
+	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
+		return this.anthropicApi.chatCompletionEntity(request);
+	}
+
+	@SuppressWarnings("null")
+	@Override
+	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletion> response) {
+		if (response == null || response.getBody() == null || CollectionUtils.isEmpty(response.getBody().content())) {
+			return false;
+		}
+		return response.getBody().content().stream().anyMatch(content -> content.type() == MediaContent.Type.TOOL_USE);
 	}
 
 }

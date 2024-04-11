@@ -15,17 +15,23 @@
  */
 package org.springframework.ai.autoconfigure.anthropic;
 
+import java.util.List;
+
 import org.springframework.ai.anthropic.AnthropicChatClient;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -52,8 +58,23 @@ public class AnthropicAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AnthropicChatClient anthropicChatClient(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
-			RetryTemplate retryTemplate) {
-		return new AnthropicChatClient(anthropicApi, chatProperties.getOptions(), retryTemplate);
+			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
+			List<FunctionCallback> toolFunctionCallbacks) {
+
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+		}
+
+		return new AnthropicChatClient(anthropicApi, chatProperties.getOptions(), retryTemplate,
+				functionCallbackContext);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

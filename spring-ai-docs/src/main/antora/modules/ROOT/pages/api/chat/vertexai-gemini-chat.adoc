@@ -54,6 +54,9 @@ The prefix `spring.ai.vertex.ai.gemini` is used as the property prefix that lets
 | spring.ai.vertex.ai.gemini.projectId   | Google Cloud Platform project ID |  -
 | spring.ai.vertex.ai.gemini.location    | Region           |  -
 | spring.ai.vertex.ai.gemini.credentialsUri    | URI to Vertex AI Gemini credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -
+| spring.ai.vertex.ai.gemini.apiEndpoint | Vertex AI Gemini API endpoint. |  -
+| spring.ai.vertex.ai.gemini.scopes |  |  -
+| spring.ai.vertex.ai.gemini.transport | API transport. GRPC or REST. |  GRPC
 |====
 
 The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets you configure the chat client implementation for VertexAI Gemini Chat.
