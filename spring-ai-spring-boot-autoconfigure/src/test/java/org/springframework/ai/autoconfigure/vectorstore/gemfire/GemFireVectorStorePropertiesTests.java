@@ -19,6 +19,7 @@ package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.vectorstore.GemFireVectorStore;
 
 /**
  * @author Geet Rawat
@@ -33,7 +34,7 @@ class GemFireVectorStorePropertiesTests {
 		assertThat(props.getPort()).isEqualTo(0);
 		assertThat(props.getBeamWidth()).isEqualTo(100);
 		assertThat(props.getMaxConnections()).isEqualTo(16);
-		assertThat(props.getFields()).isEqualTo(new String[] { "vector" });
+		assertThat(props.getFields()).isEqualTo(new String[] {});
 		assertThat(props.getBuckets()).isEqualTo(0);
 	}
 
@@ -47,6 +48,9 @@ class GemFireVectorStorePropertiesTests {
 		props.setMaxConnections(10);
 		props.setFields(new String[] { "test" });
 		props.setBuckets(10);
+
+		var config = new GemFireVectorStore.GemFireVectorStoreConfig();
+
 		assertThat(props.getIndexName()).isEqualTo("spring-ai-index");
 		assertThat(props.getHost()).isEqualTo("localhost");
 		assertThat(props.getPort()).isEqualTo(9090);
