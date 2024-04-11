@@ -30,44 +30,55 @@ public class GemFireVectorStoreProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.gemfire";
 
 	/**
-	 * The host of the GemFire to connect to.
+	 * The host of the GemFire to connect to. To specify a custom host, use
+	 * "spring.ai.vectorstore.gemfire.host";
+	 *
 	 */
 	private String host;
 
 	/**
-	 * The port of the GemFire to connect to.
+	 * The port of the GemFire to connect to. To specify a custom port, use
+	 * "spring.ai.vectorstore.gemfire.port";
 	 */
 	private int port;
 
 	/**
-	 * The name of the index in the GemFire.
+	 * The name of the index in the GemFire. To specify a custom index, use
+	 * "spring.ai.vectorstore.gemfire.index";
 	 */
 	private String indexName;
 
 	/**
-	 * The beam width for similarity queries. Default value is {@code 100}.
+	 * The beam width for similarity queries. Default value is {@code 100}. To specify a
+	 * custom beamWidth, use "spring.ai.vectorstore.gemfire.beamwidth";
 	 */
 	private int beamWidth = 100;
 
 	/**
-	 * The maximum number of connections allowed. Default value is {@code 16}.
+	 * The maximum number of connections allowed. Default value is {@code 16}. To specify
+	 * custom number of connections, use "spring.ai.vectorstore.gemfire.maxConnections";
 	 */
 	private int maxConnections = 16;
 
 	/**
 	 * The similarity function to be used for vector comparisons. Default value is
-	 * {@code "COSINE"}.
+	 * {@code "COSINE"}. To specify custom vectorSimilarityFunction, use
+	 * "spring.ai.vectorstore.gemfire.vectorSimilarityFunction";
+	 *
 	 */
 	private String vectorSimilarityFunction = "COSINE";
 
 	/**
 	 * The fields to be used for queries. Default value is an array containing
-	 * {@code "vector"}.
+	 * {@code "vector"}. To specify custom fields, use
+	 * "spring.ai.vectorstore.gemfire.fields"
 	 */
 	private String[] fields = new String[] {};
 
 	/**
 	 * The number of buckets to use for partitioning the data. Default value is {@code 0}.
+	 * To specify custom bucket, use "spring.ai.vectorstore.gemfire.bucket";
+	 *
 	 */
 	private int buckets = 0;
 

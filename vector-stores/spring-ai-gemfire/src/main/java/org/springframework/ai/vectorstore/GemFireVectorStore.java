@@ -56,7 +56,7 @@ public class GemFireVectorStore implements VectorStore {
 
 	private static final String DEFAULT_HOST = "localhost";
 
-	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
+	private static final String DEFAULT_URI = "http://{host}:{port}/gemfire-vectordb/v1/indexes";
 
 	private static final String EMBEDDINGS = "/embeddings";
 
@@ -72,9 +72,13 @@ public class GemFireVectorStore implements VectorStore {
 
 	private static final int DEFAULT_BEAM_WIDTH = 100;
 
+	private static final int MAX_BEAM_WIDTH = 3200;
+
 	private static final int DEFAULT_BUCKETS = 0;
 
 	private static final int DEFAULT_MAX_CONNECTIONS = 16;
+
+	private static final int MAX_CONNECTIONS = 512;
 
 	private static final String DOCUMENT_FIELD = "document";
 
@@ -103,8 +107,6 @@ public class GemFireVectorStore implements VectorStore {
 
 		private int port = DEFAULT_PORT;
 
-		private boolean sslEnabled = false;
-
 		private String indexName;
 
 		private int beamWidth = DEFAULT_BEAM_WIDTH;
@@ -129,11 +131,6 @@ public class GemFireVectorStore implements VectorStore {
 			return this;
 		}
 
-		public GemFireVectorStoreConfig setSslEnabled(boolean sslEnabled) {
-			this.sslEnabled = sslEnabled;
-			return this;
-		}
-
 		public GemFireVectorStoreConfig setIndexName(String indexName) {
 			Assert.hasText(indexName, "indexName must have a value");
 			this.indexName = indexName;
@@ -142,14 +139,15 @@ public class GemFireVectorStore implements VectorStore {
 
 		public GemFireVectorStoreConfig setBeamWidth(int beamWidth) {
 			Assert.isTrue(beamWidth > 0, "beamWidth must be positive");
-			Assert.isTrue(beamWidth <= 3200, "beamWidth must be less than or equal to 3200");
+			Assert.isTrue(beamWidth <= MAX_BEAM_WIDTH, "beamWidth must be less than or equal to " + MAX_BEAM_WIDTH);
 			this.beamWidth = beamWidth;
 			return this;
 		}
 
 		public GemFireVectorStoreConfig setMaxConnections(int maxConnections) {
 			Assert.isTrue(maxConnections > 0, "maxConnections must be positive");
-			Assert.isTrue(maxConnections <= 512, "maxConnections must be less than or equal to 512");
+			Assert.isTrue(maxConnections <= MAX_CONNECTIONS,
+					"maxConnections must be less than or equal to " + MAX_CONNECTIONS);
 			this.maxConnections = maxConnections;
 			return this;
 		}
@@ -188,9 +186,7 @@ public class GemFireVectorStore implements VectorStore {
 		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
 		this.fields = config.fields;
 
-		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
-			.build(config.sslEnabled ? "s" : "", config.host, config.port)
-			.toString();
+		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI).build(config.host, config.port).toString();
 		this.client = WebClient.create(base);
 	}
 
