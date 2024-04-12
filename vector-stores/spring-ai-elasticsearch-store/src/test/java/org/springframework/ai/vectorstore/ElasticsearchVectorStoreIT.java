@@ -25,6 +25,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
@@ -36,7 +42,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -62,11 +67,7 @@ class ElasticsearchVectorStoreIT {
 			"docker.elastic.co/elasticsearch/elasticsearch:8.12.2")
 		.withEnv("xpack.security.enabled", "false");
 
-	private static final String DEFAULT = "default cosine similarity";
-
-	protected final ObjectMapper objectMapper = new ObjectMapper();
-
-	private List<Document> documents = List.of(
+	private final List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
 			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
@@ -92,28 +93,41 @@ class ElasticsearchVectorStoreIT {
 		return new ApplicationContextRunner().withUserConfiguration(TestApplication.class);
 	}
 
+	private void prepareMapping(String similarityFunction, ElasticsearchVectorStore vectorStore) {
+		if (!similarityFunction.equals("cosine")) { // cosine is the default similarity
+													// function, no need for custom
+													// mapping
+
+			// vector dimension 1536 is openAI specific
+			TypeMapping mapping = TypeMapping.of(tm -> tm.properties("embedding",
+					p -> p.denseVector(dv -> dv.dims(1536).index(true).similarity(similarityFunction))));
+
+			vectorStore.createIndexMapping("spring-ai-document-index", mapping);
+		}
+	}
+
 	@BeforeEach
 	void cleanDatabase() {
 		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			vectorStore.delete(List.of("_all"));
+			// deleting index so that it can be recreated with new mapping containing a
+			// different similarity function
+			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
+			if (elasticsearchClient.indices().exists(ex -> ex.index("spring-ai-document-index")).value()) {
+				elasticsearchClient.indices().delete(del -> del.index("spring-ai-document-index"));
+			}
 		});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "max_inner_product" })
 	public void addAndSearchTest(String similarityFunction) {
 
 		getContextRunner().run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
 
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+			prepareMapping(similarityFunction, vectorStore);
 
 			vectorStore.add(documents);
 
@@ -144,19 +158,13 @@ class ElasticsearchVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "max_inner_product" })
 	public void searchWithFilters(String similarityFunction) {
 
 		getContextRunner().run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
 
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+			prepareMapping(similarityFunction, vectorStore);
 
 			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
@@ -246,18 +254,13 @@ class ElasticsearchVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "max_inner_product" })
 	public void documentUpdateTest(String similarityFunction) {
 
 		getContextRunner().run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+
+			prepareMapping(similarityFunction, vectorStore);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 					Map.of("meta1", "meta1"));
@@ -306,18 +309,12 @@ class ElasticsearchVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "max_inner_product" })
 	public void searchThresholdTest(String similarityFunction) {
-
 		getContextRunner().run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+
+			prepareMapping(similarityFunction, vectorStore);
 
 			vectorStore.add(documents);
 
@@ -360,15 +357,24 @@ class ElasticsearchVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public ElasticsearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			return new ElasticsearchVectorStore(
-					RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build(),
-					embeddingModel, true);
+		public ElasticsearchVectorStore vectorStore(EmbeddingClient embeddingClient, RestClient restClient) {
+			return new ElasticsearchVectorStore(restClient, embeddingClient);
 		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		}
+
+		@Bean
+		RestClient restClient() {
+			return RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build();
+		}
+
+		@Bean
+		ElasticsearchClient elasticsearchClient(RestClient restClient) {
+			return new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
+					new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
 		}
 
 	}
