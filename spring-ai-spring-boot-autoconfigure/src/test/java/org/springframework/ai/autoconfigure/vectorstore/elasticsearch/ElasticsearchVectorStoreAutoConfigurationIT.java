@@ -18,13 +18,12 @@ package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.SimilarityFunction;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -51,8 +50,6 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 			"docker.elastic.co/elasticsearch/elasticsearch:8.12.2")
 		.withEnv("xpack.security.enabled", "false");
 
-	private static final String DEFAULT = "default cosine similarity";
-
 	private List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
@@ -65,20 +62,13 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
-	public void addAndSearchTest(String similarityFunction) {
+	// No parametrized test based on similarity function,
+	// by default the bean will be created using cosine.
+	@Test
+	public void addAndSearchTest() {
 
 		this.contextRunner.run(context -> {
 			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
-
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
 
 			vectorStore.add(documents);
 
@@ -120,7 +110,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.elasticsearch.index-name=example",
 					"spring.ai.vectorstore.elasticsearch.dimensions=1024",
 					"spring.ai.vectorstore.elasticsearch.dense-vector-indexing=true",
-					"spring.ai.vectorstore.elasticsearch.similarity=dot_product")
+					"spring.ai.vectorstore.elasticsearch.similarity=cosine")
 			.run(context -> {
 				var properties = context.getBean(ElasticsearchVectorStoreProperties.class);
 				var elasticsearchVectorStore = context.getBean(ElasticsearchVectorStore.class);
@@ -128,8 +118,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 				assertThat(properties).isNotNull();
 				assertThat(properties.getIndexName()).isEqualTo("example");
 				assertThat(properties.getDimensions()).isEqualTo(1024);
-				assertThat(properties.isDenseVectorIndexing()).isTrue();
-				assertThat(properties.getSimilarity()).isEqualTo("dot_product");
+				assertThat(properties.getSimilarity()).isEqualTo(SimilarityFunction.cosine);
 
 				assertThat(elasticsearchVectorStore).isNotNull();
 			});
