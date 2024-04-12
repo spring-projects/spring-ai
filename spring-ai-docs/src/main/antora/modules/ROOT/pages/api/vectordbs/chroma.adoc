@@ -2,73 +2,113 @@
 
 This section will walk you through setting up the Chroma VectorStore to store document embeddings and perform similarity searches.
 
-link:https://github.com/chroma-core/chroma/pkgs/container/chroma[Chroma Container]
-
-== What is Chroma?
-
 link:https://docs.trychroma.com/[Chroma] is the open-source embedding database. It gives you the tools to store document embeddings, content, and metadata and to search through those embeddings, including metadata filtering.
 
-=== Prerequisites
+== Prerequisites
 
-1. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
+1. Access to ChromeDB. The <<Run Chroma Locally, setup local ChromaDB>> appendix shows how to set up a DB locally with a Docker container.
 
-2. Access to ChromeDB. The <<Run Chroma Locally, setup local ChromaDB>> appendix shows how to set up a DB locally with a Docker container.
+2. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `ChromaVectorStore`.
 
 On startup, the `ChromaVectorStore` creates the required collection if one is not provisioned already.
 
-== Configuration
+== Auto-configuration
 
-To set up ChromaVectorStore, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+Spring AI provides Spring Boot auto-configuration for the Chroma Vector Sore.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
-[source,bash]
-----
-export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
-----
-
-== Dependencies
-
-Add these dependencies to your project:
-
-* OpenAI: Required for calculating embeddings.
-
-[source,xml]
+[source, xml]
 ----
 <dependency>
- <groupId>org.springframework.ai</groupId>
- <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-chroma-store-spring-boot-starter</artifactId>
 </dependency>
 ----
 
-* Chroma VectorStore.
+or to your Gradle `build.gradle` build file.
 
-[source,xml]
+[source,groovy]
 ----
-<dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-chroma-store</artifactId>
-</dependency>
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-chroma-store-spring-boot-starter'
+}
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-== Sample Code
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Create a `RestTemplate` instance with proper ChromaDB authorization configurations and Use it to create a `ChromaApi` instance:
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+Here is an example of the needed bean:
 
 [source,java]
 ----
 @Bean
-public RestTemplate restTemplate() {
-   return new RestTemplate();
-}
-
-@Bean
-public ChromaApi chromaApi(RestTemplate restTemplate) {
-   String chromaUrl = "http://localhost:8000";
-   ChromaApi chromaApi = new ChromaApi(chromaUrl, restTemplate);
-   return chromaApi;
+public EmbeddingClient embeddingClient() {
+    // Can be any other EmbeddingClient implementation.
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
 }
 ----
+
+To connect to Chroma you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.properties_,
+
+[source,properties]
+----
+# Chroma Vector Store connection properties
+spring.ai.vectorstore.chroma.client.host=<your Chroma instance host>
+spring.ai.vectorstore.chroma.client.port=<your Chroma instance port>
+spring.ai.vectorstore.chroma.client.key-token=<your access token (if configure)>
+spring.ai.vectorstore.chroma.client.username=<your username (if configure)>
+spring.ai.vectorstore.chroma.client.password=<your password (if configure)>
+
+# Chroma Vector Store collection properties
+spring.ai.vectorstore.chroma.store.collection-name=<your collection name>
+
+# Chroma Vector Store configuration properties
+
+# OpenAI API key if the OpenAI auto-configuration is used.
+spring.ai.openai.api.key=<OpenAI Api-key>
+----
+
+Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+Now you can Auto-wire the Chroma Vector Store in your application and use it
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents
+vectorStore.add(List.of(document));
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+=== Configuration properties
+
+You can use the following properties in your Spring Boot configuration to customize the vector store.
+
+|===
+|Property| Description | Default value
+
+|`spring.ai.vectorstore.chroma.client.host`| Server connection host | `http://localhost`
+|`spring.ai.vectorstore.chroma.client.port`| Server connection port | `8000`
+|`spring.ai.vectorstore.chroma.client.key-token`| Access token (if configured) | -
+|`spring.ai.vectorstore.chroma.client.username`| Access username (if configured) | -
+|`spring.ai.vectorstore.chroma.client.password`| Access password (if configured) | -
+|`spring.ai.vectorstore.chroma.store.collection-name`| Collection name | `SpringAiCollection`
+|===
 
 [NOTE]
 ====
@@ -77,43 +117,7 @@ For ChromaDB secured with link:https://docs.trychroma.com/usage-guide#static-api
 For ChromaDB secured with link:https://docs.trychroma.com/usage-guide#basic-authentication[Basic Authentication] use the `ChromaApi#withBasicAuth(<your user>, <your password>)` method to set your credentials. Check the `BasicAuthChromaWhereIT` for an example.
 ====
 
-Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to your project. This provides you with an implementation of the Embeddings client:
-
-[source,java]
-----
-@Bean
-public VectorStore chromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi) {
- return new ChromaVectorStore(embeddingClient, chromaApi, "TestCollection");
-}
-----
-
-In your main code, create some documents:
-
-[source,java]
-----
-List<Document> documents = List.of(
- new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
- new Document("The World is Big and Salvation Lurks Around the Corner"),
- new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
-----
-
-Add the documents to your vector store:
-
-[source,java]
-----
-vectorStore.add(documents);
-----
-
-And finally, retrieve documents similar to a query:
-
-[source,java]
-----
-List<Document> results = vectorStore.similaritySearch("Spring");
-----
-
-If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
-
-=== Metadata filtering
+== Metadata filtering
 
 You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with ChromaVector store as well.
 
@@ -160,6 +164,91 @@ is converted into the proprietary Chroma format
 	{"article_type":{"$eq":"blog"}}]
 }
 ```
+
+
+== Manual Configuration
+
+If you prefer to configure the Chroma Vector Store manually, you can do so by creating a `ChromaVectorStore` bean in your Spring Boot application.
+
+Add these dependencies to your project:
+* Chroma VectorStore.
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-chroma-store</artifactId>
+</dependency>
+----
+
+* OpenAI: Required for calculating embeddings. You can use any other embedding client implementation.
+
+[source,xml]
+----
+<dependency>
+ <groupId>org.springframework.ai</groupId>
+ <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Sample Code
+
+Create a `RestTemplate` instance with proper ChromaDB authorization configurations and Use it to create a `ChromaApi` instance:
+
+[source,java]
+----
+@Bean
+public RestTemplate restTemplate() {
+   return new RestTemplate();
+}
+
+@Bean
+public ChromaApi chromaApi(RestTemplate restTemplate) {
+   String chromaUrl = "http://localhost:8000";
+   ChromaApi chromaApi = new ChromaApi(chromaUrl, restTemplate);
+   return chromaApi;
+}
+----
+
+Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to your project. This provides you with an implementation of the Embeddings client:
+
+[source,java]
+----
+@Bean
+public VectorStore chromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi) {
+ return new ChromaVectorStore(embeddingClient, chromaApi, "TestCollection");
+}
+----
+
+In your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+ new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+ new Document("The World is Big and Salvation Lurks Around the Corner"),
+ new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+----
+
+Add the documents to your vector store:
+
+[source,java]
+----
+vectorStore.add(documents);
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch("Spring");
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
 
 === Run Chroma Locally
 
