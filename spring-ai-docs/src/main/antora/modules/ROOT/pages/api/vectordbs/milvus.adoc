@@ -149,7 +149,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
         b.eq("article_type", "blog")).build()));
 ----
 
-NOTE: These filter expressions are converted into the equivalent PgVector filters.
+NOTE: These filter expressions are converted into the equivalent Milvus filters.
 
 [[milvus-properties]]
 == Milvus VectorStore properties
