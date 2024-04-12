@@ -63,7 +63,7 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 
 [source,properties]
 ----
-spring.ai.vectorstore.redis.uri=<host of your redis instance>
+spring.ai.vectorstore.redis.uri=<your redis instance uri>
 spring.ai.vectorstore.redis.index=<your index name>
 spring.ai.vectorstore.redis.prefix=<your prefix>
 
@@ -100,9 +100,9 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.redis.uri`| Server connection URI | redis://localhost:6379
-|`spring.ai.vectorstore.redis.index`| Index name (REQUIRED) | -
-|`spring.ai.vectorstore.redis.prefix`| (REQUIRED) | -
+|`spring.ai.vectorstore.redis.uri`| Server connection URI | `redis://localhost:6379`
+|`spring.ai.vectorstore.redis.index`| Index name  | `default-index`
+|`spring.ai.vectorstore.redis.prefix`| Prefix | `default:`
 
 |===
 

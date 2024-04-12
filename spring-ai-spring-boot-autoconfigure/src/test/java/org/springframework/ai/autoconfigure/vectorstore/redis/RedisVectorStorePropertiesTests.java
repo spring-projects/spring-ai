@@ -28,8 +28,8 @@ class RedisVectorStorePropertiesTests {
 	void defaultValues() {
 		var props = new RedisVectorStoreProperties();
 		assertThat(props.getUri()).isEqualTo("redis://localhost:6379");
-		assertThat(props.getIndex()).isNull();
-		assertThat(props.getPrefix()).isNull();
+		assertThat(props.getIndex()).isEqualTo("default-index");
+		assertThat(props.getPrefix()).isEqualTo("default:");
 	}
 
 	@Test
