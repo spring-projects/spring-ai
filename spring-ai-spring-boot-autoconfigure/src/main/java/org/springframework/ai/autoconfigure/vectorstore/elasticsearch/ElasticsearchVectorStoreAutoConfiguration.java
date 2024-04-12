@@ -52,10 +52,7 @@ class ElasticsearchVectorStoreAutoConfiguration {
 		if (properties.getDimensions() != null) {
 			elasticsearchVectorStoreOptions.setDimensions(properties.getDimensions());
 		}
-		if (properties.isDenseVectorIndexing() != null) {
-			elasticsearchVectorStoreOptions.setDenseVectorIndexing(properties.isDenseVectorIndexing());
-		}
-		if (StringUtils.hasText(properties.getSimilarity())) {
+		if (properties.getSimilarity() != null) {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
 		}
 

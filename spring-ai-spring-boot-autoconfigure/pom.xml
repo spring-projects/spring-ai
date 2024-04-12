@@ -289,6 +289,7 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Elasticsearch Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-elasticsearch-store</artifactId>
@@ -323,6 +324,14 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-opensearch-store</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Elastic Search vector store -->
+		<dependency>
+			<groupId>co.elastic.clients</groupId>
+			<artifactId>elasticsearch-java</artifactId>
+			<version>${elasticsearch-java.version}</version>
 			<optional>true</optional>
 		</dependency>
 
