@@ -34,7 +34,7 @@ TIP: replace the `1536` with the actual embedding dimension if you are using a d
 
 Next if required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `PgVectorStore`.
 
-== Dependencies
+== Auto-Configuration
 
 Then add the PgVectorStore boot starter dependency to your project:
 
@@ -120,41 +120,21 @@ vectorStore.add(List.of(document));
 List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
 ----
 
-=== Manual Configuration
+[[pgvector-properties]]
+=== Configuration properties
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the `PgVectorStore`.
-For this you need to add the PostgreSQL connection and `JdbcTemplate` auto-configuration dependencies to your project:
+You can use the following properties in your Spring Boot configuration to customize the PGVector vector store.
 
-[source,xml]
-----
-<dependency>
-	<groupId>org.springframework.boot</groupId>
-	<artifactId>spring-boot-starter-jdbc</artifactId>
-</dependency>
+[cols="2,5,1"]
+|===
+|Property| Description | Default value
 
-<dependency>
-	<groupId>org.postgresql</groupId>
-	<artifactId>postgresql</artifactId>
-	<scope>runtime</scope>
-</dependency>
+|`spring.ai.vectorstore.pgvector.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVFFlat` - index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVFFlat, but has better query performance (in terms of speed-recall tradeoff). There’s no training step like IVFFlat, so the index can be created without any data in the table.| HNSW
+|`spring.ai.vectorstore.pgvector.distance-type`| Search distance type. Defaults to `COSINE_DISTANCE`. But if vectors are normalized to length 1, you can use `EUCLIDEAN_DISTANCE` or `NEGATIVE_INNER_PRODUCT` for best performance.| COSINE_DISTANCE
+|`spring.ai.vectorstore.pgvector.dimension`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingClient`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to re-create the vector_store table as well. | -
+|`spring.ai.vectorstore.pgvector.remove-existing-vector-store-table` | Deletes the existing `vector_store` table on start up.  | false
 
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-pgvector-store</artifactId>
-</dependency>
-----
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-To configure PgVector in your application, you can use the following setup:
-
-[source,java]
-----
-@Bean
-public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-	return new PgVectorStore(jdbcTemplate, embeddingClient);
-}
-----
+|===
 
 == Metadata filtering
 
@@ -189,21 +169,41 @@ vectorStore.similaritySearch(SearchRequest.defaults()
 
 NOTE: These filter expressions are converted into the equivalent PgVector filters.
 
-[[pgvector-properties]]
-== PgVectorStore properties
+== Manual Configuration
 
-You can use the following properties in your Spring Boot configuration to customize the PGVector vector store.
+Instead of using the Spring Boot auto-configuration, you can manually configure the `PgVectorStore`.
+For this you need to add the PostgreSQL connection and `JdbcTemplate` auto-configuration dependencies to your project:
 
-[cols="2,5,1"]
-|===
-|Property| Description | Default value
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
 
-|`spring.ai.vectorstore.pgvector.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVFFlat` - index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVFFlat, but has better query performance (in terms of speed-recall tradeoff). There’s no training step like IVFFlat, so the index can be created without any data in the table.| HNSW
-|`spring.ai.vectorstore.pgvector.distance-type`| Search distance type. Defaults to `COSINE_DISTANCE`. But if vectors are normalized to length 1, you can use `EUCLIDEAN_DISTANCE` or `NEGATIVE_INNER_PRODUCT` for best performance.| COSINE_DISTANCE
-|`spring.ai.vectorstore.pgvector.dimension`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingClient`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to re-create the vector_store table as well. | -
-|spring.ai.vectorstore.pgvector.remove-existing-vector-store-table| Deletes the existing `vector_store` table on start up.  | false
-|===
+<dependency>
+	<groupId>org.postgresql</groupId>
+	<artifactId>postgresql</artifactId>
+	<scope>runtime</scope>
+</dependency>
 
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-pgvector-store</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+To configure PgVector in your application, you can use the following setup:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
+	return new PgVectorStore(jdbcTemplate, embeddingClient);
+}
+----
 
 == Run Postgres & PGVector DB locally
 
