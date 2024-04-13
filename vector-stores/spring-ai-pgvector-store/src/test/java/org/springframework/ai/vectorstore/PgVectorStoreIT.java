@@ -157,6 +157,11 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
+				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country in ['NL', 'SP']"));
+
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
 				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'BG'"));
 
 				assertThat(results).hasSize(2);

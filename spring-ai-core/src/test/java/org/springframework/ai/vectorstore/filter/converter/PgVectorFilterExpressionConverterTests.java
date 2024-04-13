@@ -46,7 +46,7 @@ public class PgVectorFilterExpressionConverterTests {
 	public void testEQ() {
 		// country == "BG"
 		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("$.country == \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata::jsonb->>'country' = 'BG'");
 	}
 
 	@Test
@@ -55,7 +55,7 @@ public class PgVectorFilterExpressionConverterTests {
 		String vectorExpr = converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 					new Expression(GTE, new Key("year"), new Value(2020))));
-		assertThat(vectorExpr).isEqualTo("$.genre == \"drama\" && $.year >= 2020");
+		assertThat(vectorExpr).isEqualTo("metadata::jsonb->>'genre' = 'drama' AND metadata::jsonb->>'year' >= 2020");
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class PgVectorFilterExpressionConverterTests {
 		// genre in ["comedy", "documentary", "drama"]
 		String vectorExpr = converter.convertExpression(
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("$.genre in [\"comedy\",\"documentary\",\"drama\"]");
+		assertThat(vectorExpr).isEqualTo("metadata::jsonb->>'genre' IN ('comedy','documentary','drama')");
 	}
 
 	@Test
@@ -73,7 +73,8 @@ public class PgVectorFilterExpressionConverterTests {
 			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 					new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 							new Expression(NE, new Key("city"), new Value("Sofia")))));
-		assertThat(vectorExpr).isEqualTo("$.year >= 2020 || $.country == \"BG\" && $.city != \"Sofia\"");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata::jsonb->>'year' >= 2020 OR metadata::jsonb->>'country' = 'BG' AND metadata::jsonb->>'city' != 'Sofia'");
 	}
 
 	@Test
@@ -83,8 +84,8 @@ public class PgVectorFilterExpressionConverterTests {
 				new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
-		assertThat(vectorExpr)
-			.isEqualTo("($.year >= 2020 || $.country == \"BG\") && $.city nin [\"Sofia\",\"Plovdiv\"]");
+		assertThat(vectorExpr).isEqualTo(
+				"(metadata::jsonb->>'year' >= 2020 OR metadata::jsonb->>'country' = 'BG') AND metadata::jsonb->>'city' NOT IN ('Sofia','Plovdiv')");
 	}
 
 	@Test
@@ -95,7 +96,8 @@ public class PgVectorFilterExpressionConverterTests {
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
 
-		assertThat(vectorExpr).isEqualTo("$.isOpen == true && $.year >= 2020 && $.country in [\"BG\",\"NL\",\"US\"]");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata::jsonb->>'isOpen' = true AND metadata::jsonb->>'year' >= 2020 AND metadata::jsonb->>'country' IN ('BG','NL','US')");
 	}
 
 	@Test
@@ -105,14 +107,15 @@ public class PgVectorFilterExpressionConverterTests {
 			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
 					new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
-		assertThat(vectorExpr).isEqualTo("$.temperature >= -15.6 && $.temperature <= 20.13");
+		assertThat(vectorExpr)
+			.isEqualTo("metadata::jsonb->>'temperature' >= -15.6 AND metadata::jsonb->>'temperature' <= 20.13");
 	}
 
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("$.\"country 1 2 3\" == \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata::jsonb->>'country 1 2 3' = 'BG'");
 	}
 
 }
