@@ -16,9 +16,11 @@
 package org.springframework.ai.vectorstore;
 
 
+import jakarta.json.stream.JsonParser;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -36,6 +38,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +52,17 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
 
-    private static final String INDEX_NAME = "spring-ai-document-index";
+    public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
+    public static final String DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536 = """
+            {
+               "properties":{
+                  "embedding":{
+                     "type":"knn_vector",
+                     "dimension":1536
+                  }
+               }
+            }
+            """;
 
     private final EmbeddingClient embeddingClient;
 
@@ -59,19 +72,27 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
     private final FilterExpressionConverter filterExpressionConverter;
 
+    private final String mappingJson;
+
     private String similarityFunction;
 
     public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingClient embeddingClient) {
-        this(INDEX_NAME, openSearchClient, embeddingClient);
+        this(openSearchClient, embeddingClient, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
+    }
+
+    public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingClient embeddingClient,
+            String mappingJson) {
+        this(DEFAULT_INDEX_NAME, openSearchClient, embeddingClient, mappingJson);
     }
 
     public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient,
-            EmbeddingClient embeddingClient) {
+            EmbeddingClient embeddingClient, String mappingJson) {
         Objects.requireNonNull(embeddingClient, "RestClient must not be null");
         Objects.requireNonNull(embeddingClient, "EmbeddingClient must not be null");
         this.openSearchClient = openSearchClient;
         this.embeddingClient = embeddingClient;
         this.index = index;
+        this.mappingJson = mappingJson;
         this.filterExpressionConverter = new OpenSearchAiSearchFilterExpressionConverter();
         // the potential functions for vector fields at
         // https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
@@ -183,11 +204,13 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
         }
     }
 
-    public CreateIndexResponse createIndexMapping(String index, Map<String, Property> properties) {
+    private CreateIndexResponse createIndexMapping(String index, String mappingJson) {
+        JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+        JsonParser parser = mapper.jsonProvider().createParser(new StringReader(mappingJson));
         try {
-            return this.openSearchClient.indices()
-                    .create(new CreateIndexRequest.Builder().index(index).settings(setting -> setting.knn(true))
-                            .mappings(propertiesBuilder -> propertiesBuilder.properties(properties)).build());
+            return this.openSearchClient.indices().create(new CreateIndexRequest.Builder().index(index)
+                    .settings(settingsBuilder -> settingsBuilder.knn(true))
+                    .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper)).build());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -196,7 +219,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
     @Override
     public void afterPropertiesSet() {
         if (!exists(this.index)) {
-            createIndexMapping(this.index, Map.of("embedding", Property.of(p -> p.knnVector(k -> k.dimension(1536)))));
+            createIndexMapping(this.index, mappingJson);
         }
     }
 }
