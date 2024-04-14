@@ -50,7 +50,7 @@ public class BedrockLlama2ChatAutoConfiguration {
 	public Llama2ChatBedrockApi llama2Api(AwsCredentialsProvider credentialsProvider,
 			BedrockLlama2ChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new Llama2ChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean

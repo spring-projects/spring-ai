@@ -20,11 +20,6 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<!-- testing -->
-		<hikari-cp.version>4.0.3</hikari-cp.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -33,8 +28,13 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
 		</dependency>
 
 		<dependency>
@@ -80,13 +80,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-			<version>${hikari-cp.version}</version>
 			<scope>test</scope>
 		</dependency>
 

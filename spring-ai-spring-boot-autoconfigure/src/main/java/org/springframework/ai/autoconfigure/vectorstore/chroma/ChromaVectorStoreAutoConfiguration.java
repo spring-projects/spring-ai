@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorsore.ChromaVectorStore;
+import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

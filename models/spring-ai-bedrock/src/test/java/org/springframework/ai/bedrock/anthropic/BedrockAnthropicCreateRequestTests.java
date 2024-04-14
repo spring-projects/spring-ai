@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.anthropic;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockAnthropicCreateRequestTests {
 
 	private AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(AnthropicChatModel.CLAUDE_V2.id(),
-			Region.US_EAST_1.id());
+			Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 	@Test
 	public void createRequestWithChatOptions() {

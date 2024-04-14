@@ -19,6 +19,8 @@ import org.springframework.ai.watsonx.WatsonxAiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+import java.util.List;
+
 /**
  * Chat properties for Watsonx.AI Chat.
  *
@@ -48,6 +50,7 @@ public class WatsonxAiChatProperties {
 		.withMaxNewTokens(20)
 		.withMinNewTokens(0)
 		.withRepetitionPenalty(1.0f)
+		.withStopSequences(List.of())
 		.build();
 
 	public boolean isEnabled() {

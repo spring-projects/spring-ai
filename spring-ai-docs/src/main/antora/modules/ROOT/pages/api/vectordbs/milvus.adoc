@@ -145,11 +145,11 @@ vectorStore.similaritySearch(SearchRequest.defaults()
     .withTopK(TOP_K)
     .withSimilarityThreshold(SIMILARITY_THRESHOLD)
     .withFilterExpression(b.and(
-        b.in("john", "jill"),
+        b.in("author","john", "jill"),
         b.eq("article_type", "blog")).build()));
 ----
 
-NOTE: These filter expressions are converted into the equivalent PgVector filters.
+NOTE: These filter expressions are converted into the equivalent Milvus filters.
 
 [[milvus-properties]]
 == Milvus VectorStore properties

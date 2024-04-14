@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.titan.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -44,9 +45,10 @@ public class TitanEmbeddingBedrockApi extends
 	 * mapper.
 	 * @param modelId The model id to use. See the {@link TitanEmbeddingModel} for the supported models.
 	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
 	 */
-	public TitanEmbeddingBedrockApi(String modelId, String region) {
-		super(modelId, region);
+	public TitanEmbeddingBedrockApi(String modelId, String region, Duration timeout) {
+		super(modelId, region, timeout);
 	}
 
 	/**
@@ -56,10 +58,11 @@ public class TitanEmbeddingBedrockApi extends
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
 	 */
 	public TitanEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
-		super(modelId, credentialsProvider, region, objectMapper);
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**

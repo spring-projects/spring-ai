@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.vertexai.gemini;
 
+import java.util.List;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -44,6 +46,30 @@ public class VertexAiGeminiConnectionProperties {
 	 */
 	private Resource credentialsUri;
 
+	/**
+	 * Vertex AI Gemini API endpoint.
+	 */
+	private String apiEndpoint;
+
+	/**
+	 *
+	 */
+	private List<String> scopes = List.of();
+
+	private Transport transport = Transport.GRPC;
+
+	public enum Transport {
+
+		/** When used, the clients will send REST requests to the backing service. */
+		REST,
+		/**
+		 * When used, the clients will send gRPC to the backing service. This is usually
+		 * more efficient and is the default transport.
+		 */
+		GRPC
+
+	}
+
 	public String getProjectId() {
 		return this.projectId;
 	}
@@ -66,6 +92,30 @@ public class VertexAiGeminiConnectionProperties {
 
 	public void setCredentialsUri(Resource credentialsUri) {
 		this.credentialsUri = credentialsUri;
+	}
+
+	public String getApiEndpoint() {
+		return this.apiEndpoint;
+	}
+
+	public List<String> getScopes() {
+		return this.scopes;
+	}
+
+	public void setScopes(List<String> scopes) {
+		this.scopes = scopes;
+	}
+
+	public void setApiEndpoint(String apiEndpoint) {
+		this.apiEndpoint = apiEndpoint;
+	}
+
+	public Transport getTransport() {
+		return this.transport;
+	}
+
+	public void setTransport(Transport transport) {
+		this.transport = transport;
 	}
 
 }
