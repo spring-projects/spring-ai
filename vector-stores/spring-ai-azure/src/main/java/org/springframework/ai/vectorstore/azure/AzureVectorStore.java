@@ -320,7 +320,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	}
 
 	/**
-	 * Internal data structure for retrieving and and storing documents.
+	 * Internal data structure for retrieving and storing documents.
 	 */
 	private record AzureSearchDocument(String id, String content, List<Double> embedding, String metadata) {
 	}
