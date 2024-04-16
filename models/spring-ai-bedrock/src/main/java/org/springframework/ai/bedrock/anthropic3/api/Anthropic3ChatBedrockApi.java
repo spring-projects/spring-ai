@@ -441,7 +441,11 @@ public class Anthropic3ChatBedrockApi extends
 		/**
 		 * anthropic.claude-3-haiku-20240307-v1:0
 		 */
-		CLAUDE_V3_HAIKU("anthropic.claude-3-haiku-20240307-v1:0");
+		CLAUDE_V3_HAIKU("anthropic.claude-3-haiku-20240307-v1:0"),
+		/**
+		 * anthropic.claude-3-opus-20240229-v1:0
+		 */
+		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0");
 
 		private final String id;
 
