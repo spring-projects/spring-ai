@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -42,6 +43,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.sqrt;
+
 /**
  * @author Jemin Huh
  * @author Wei Jiang
@@ -56,6 +59,8 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	private final ElasticsearchClient elasticsearchClient;
 
 	private final ElasticsearchVectorStoreOptions options;
+
+	private String similarityFunction = SIMILARITY_DEFAULT;
 
 	private final FilterExpressionConverter filterExpressionConverter;
 
@@ -131,10 +136,10 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 			SearchResponse<Document> res = elasticsearchClient.search(
 					sr -> sr.index(this.index)
-						.minScore(searchRequest.getSimilarityThreshold())
 						.knn(knn -> knn.queryVector(vectors)
+							.similarity((float) searchRequest.getSimilarityThreshold())
 							.k(searchRequest.getTopK())
-							.field(EMBEDDING_FIELD)
+							.field(EMBEDDING)
 							.numCandidates((long) (1.5 * searchRequest.getTopK()))
 							.filter(fl -> fl.queryString(
 									qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression()))))),
@@ -156,11 +161,25 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
-		document.getMetadata().put("distance", 1 - hit.score().floatValue());
+		document.getMetadata().put("distance", calculateDistance(hit.score().floatValue()));
 		return document;
 	}
 
-	private boolean indexExists() {
+	// more info on score/distance calculation
+	// https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html#knn-similarity-search
+	private float calculateDistance(Float score) {
+		switch (similarityFunction) {
+			case "l2_norm":
+				// the returned value of l2_norm is the opposite of the other functions
+				// (closest to zero means more accurate)
+				return (float) (sqrt((1 / score) - 1));
+			// cosine and dot_product
+			default:
+				return (2 * score) - 1;
+		}
+	}
+
+	public boolean existsIndex() {
 		try {
 			return this.elasticsearchClient.indices().exists(ex -> ex.index(this.index)).value();
 		}
