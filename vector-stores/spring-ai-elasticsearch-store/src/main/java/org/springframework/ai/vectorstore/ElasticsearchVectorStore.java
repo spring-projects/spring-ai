@@ -128,15 +128,22 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
-		return similaritySearch(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest.getTopK(),
-				Double.valueOf(searchRequest.getSimilarityThreshold()).floatValue(),
-				searchRequest.getFilterExpression());
-	}
+		try {
+			float threshold = (float) searchRequest.getSimilarityThreshold();
+			// reverting l2_norm distance to its original value
+			if (similarityFunction.equals("l2_norm")) {
+				threshold = 1 - threshold;
+			}
+			final float finalThreshold = threshold;
+			List<Float> vectors = this.embeddingClient.embed(searchRequest.getQuery())
+				.stream()
+				.map(Double::floatValue)
+				.toList();
 
 			SearchResponse<Document> res = elasticsearchClient.search(
 					sr -> sr.index(this.index)
 						.knn(knn -> knn.queryVector(vectors)
-							.similarity((float) searchRequest.getSimilarityThreshold())
+							.similarity(finalThreshold)
 							.k(searchRequest.getTopK())
 							.field(EMBEDDING)
 							.numCandidates((long) (1.5 * searchRequest.getTopK()))
@@ -170,8 +177,10 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 		switch (similarityFunction) {
 			case "l2_norm":
 				// the returned value of l2_norm is the opposite of the other functions
-				// (closest to zero means more accurate)
-				return (float) (sqrt((1 / score) - 1));
+				// (closest to zero means more accurate), so to make it consistent
+				// with the other functions the reverse is returned applying a "1-"
+				// to the standard transformation
+				return (float) (1 - (sqrt((1 / score) - 1)));
 			// cosine and dot_product
 			default:
 				return (2 * score) - 1;
