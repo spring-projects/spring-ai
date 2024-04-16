@@ -132,13 +132,12 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.add(documents);
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression")
-					.withTopK(1)
-					.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)), hasSize(1));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThresholdAll()),
+						hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression")
-				.withTopK(1)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThresholdAll());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -152,9 +151,9 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression")
-					.withTopK(1)
-					.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)), hasSize(0));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThresholdAll()),
+						hasSize(0));
 		});
 	}
 
@@ -177,13 +176,13 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)), hasSize(3));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("The World").withTopK(5).withSimilarityThresholdAll()),
+						hasSize(3));
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("country == 'NL'"));
 
 			assertThat(results).hasSize(1);
@@ -191,7 +190,7 @@ class ElasticsearchVectorStoreIT {
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("country == 'BG'"));
 
 			assertThat(results).hasSize(2);
@@ -200,7 +199,7 @@ class ElasticsearchVectorStoreIT {
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("country == 'BG' && year == 2020"));
 
 			assertThat(results).hasSize(1);
@@ -208,7 +207,7 @@ class ElasticsearchVectorStoreIT {
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("country in ['BG']"));
 
 			assertThat(results).hasSize(2);
@@ -217,14 +216,14 @@ class ElasticsearchVectorStoreIT {
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("country in ['BG','NL']"));
 
 			assertThat(results).hasSize(3);
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("country not in ['BG']"));
 
 			assertThat(results).hasSize(1);
@@ -232,7 +231,7 @@ class ElasticsearchVectorStoreIT {
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression("NOT(country not in ['BG'])"));
 
 			assertThat(results).hasSize(2);
@@ -241,7 +240,7 @@ class ElasticsearchVectorStoreIT {
 
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
+				.withSimilarityThresholdAll()
 				.withFilterExpression(
 						"activationDate > " + ZonedDateTime.parse("1970-01-01T00:00:02Z").toInstant().toEpochMilli()));
 
@@ -270,13 +269,12 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.add(List.of(document));
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Spring")
-					.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
-					.withTopK(5)), hasSize(1));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Spring").withSimilarityThresholdAll().withTopK(5)),
+						hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring")
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)
-				.withTopK(5));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Spring").withSimilarityThresholdAll().withTopK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -289,9 +287,7 @@ class ElasticsearchVectorStoreIT {
 					"The World is Big and Salvation Lurks Around the Corner", Map.of("meta2", "meta2"));
 
 			vectorStore.add(List.of(sameIdDocument));
-			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar")
-				.withTopK(5)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
+			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5).withSimilarityThresholdAll();
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
@@ -324,9 +320,7 @@ class ElasticsearchVectorStoreIT {
 
 			vectorStore.add(documents);
 
-			SearchRequest query = SearchRequest.query("Great Depression")
-				.withTopK(50)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
+			SearchRequest query = SearchRequest.query("Great Depression").withTopK(50).withSimilarityThresholdAll();
 
 			Awaitility.await().until(() -> vectorStore.similaritySearch(query), hasSize(3));
 
@@ -352,9 +346,8 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression")
-					.withTopK(50)
-					.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL)), hasSize(0));
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.query("Great Depression").withTopK(50).withSimilarityThresholdAll()), hasSize(0));
 		});
 	}
 
