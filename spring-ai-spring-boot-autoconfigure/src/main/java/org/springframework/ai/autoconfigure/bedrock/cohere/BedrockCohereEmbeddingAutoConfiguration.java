@@ -17,12 +17,14 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingClient;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,6 +36,7 @@ import org.springframework.context.annotation.Import;
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Client.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -45,14 +48,17 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public CohereEmbeddingBedrockApi cohereEmbeddingApi(AwsCredentialsProvider credentialsProvider,
-			BedrockCohereEmbeddingProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
+			AwsRegionProvider regionProvider, BedrockCohereEmbeddingProperties properties,
+			BedrockAwsConnectionProperties awsProperties) {
+		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
 				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean(CohereEmbeddingBedrockApi.class)
 	public BedrockCohereEmbeddingClient cohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingApi,
 			BedrockCohereEmbeddingProperties properties) {
 

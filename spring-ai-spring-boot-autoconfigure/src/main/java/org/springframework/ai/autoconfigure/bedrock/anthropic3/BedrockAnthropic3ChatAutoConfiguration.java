@@ -21,6 +21,7 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperti
 import org.springframework.ai.bedrock.anthropic3.BedrockAnthropic3ChatClient;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,6 +29,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Anthropic Chat Client.
@@ -47,13 +49,16 @@ public class BedrockAnthropic3ChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public Anthropic3ChatBedrockApi anthropic3Api(AwsCredentialsProvider credentialsProvider,
-			BedrockAnthropic3ChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new Anthropic3ChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
+			AwsRegionProvider regionProvider, BedrockAnthropic3ChatProperties properties,
+			BedrockAwsConnectionProperties awsProperties) {
+		return new Anthropic3ChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
 				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
+	@ConditionalOnBean(Anthropic3ChatBedrockApi.class)
 	public BedrockAnthropic3ChatClient anthropic3ChatClient(Anthropic3ChatBedrockApi anthropicApi,
 			BedrockAnthropic3ChatProperties properties) {
 		return new BedrockAnthropic3ChatClient(anthropicApi, properties.getOptions());

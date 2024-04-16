@@ -21,6 +21,7 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperti
 import org.springframework.ai.bedrock.anthropic.BedrockAnthropicChatClient;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,6 +29,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Anthropic Chat Client.
@@ -35,6 +37,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
  * Leverages the Spring Cloud AWS to resolve the {@link AwsCredentialsProvider}.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -46,16 +49,18 @@ public class BedrockAnthropicChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public AnthropicChatBedrockApi anthropicApi(AwsCredentialsProvider credentialsProvider,
-			BedrockAnthropicChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new AnthropicChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
+			AwsRegionProvider regionProvider, BedrockAnthropicChatProperties properties,
+			BedrockAwsConnectionProperties awsProperties) {
+		return new AnthropicChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
 				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
+	@ConditionalOnBean(AnthropicChatBedrockApi.class)
 	public BedrockAnthropicChatClient anthropicChatClient(AnthropicChatBedrockApi anthropicApi,
 			BedrockAnthropicChatProperties properties) {
-
 		return new BedrockAnthropicChatClient(anthropicApi, properties.getOptions());
 	}
 
