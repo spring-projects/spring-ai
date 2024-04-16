@@ -158,7 +158,12 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 		for (Document d : documents) {
 			futures[i++] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
-				var embedding = this.embeddingClient.embed(d).stream().map(Double::floatValue).toList();
+
+				var embedding = (null != d.getEmbedding() && !d.getEmbedding().isEmpty() ? d.getEmbedding()
+						: this.embeddingClient.embed(d))
+					.stream()
+					.map(Double::floatValue)
+					.toList();
 
 				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
 				for (int k = 0; k < primaryKeyValues.size(); ++k) {
