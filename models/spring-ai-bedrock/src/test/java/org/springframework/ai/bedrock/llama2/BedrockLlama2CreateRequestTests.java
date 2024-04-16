@@ -24,6 +24,8 @@ import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -32,7 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockLlama2CreateRequestTests {
 
 	private Llama2ChatBedrockApi api = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+			Duration.ofMinutes(2));
 
 	@Test
 	public void createRequestWithChatOptions() {

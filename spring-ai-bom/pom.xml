@@ -134,6 +134,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-cassandra</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-chroma-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -153,6 +159,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-pgvector-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-hanadb-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -214,6 +226,12 @@
             <!-- Spring Boot Starters -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-apache-cassandra-store-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -269,6 +287,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

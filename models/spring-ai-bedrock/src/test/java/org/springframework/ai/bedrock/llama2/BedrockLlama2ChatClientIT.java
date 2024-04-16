@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.llama2;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -205,7 +206,8 @@ class BedrockLlama2ChatClientIT {
 		@Bean
 		public Llama2ChatBedrockApi llama2Api() {
 			return new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+					Duration.ofMinutes(2));
 		}
 
 		@Bean

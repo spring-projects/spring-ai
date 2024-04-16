@@ -17,7 +17,7 @@ you'll need to develop a low-level client API class. This often involves utilizi
 `RestClient` class from the Spring Framework, similar to the `OpenAiApi` class.
 
 . *Create a ModelClient implementation*
-Ensure your client conforms to the link:https://docs.spring.io/spring-ai/reference/api/chat/generic-model.html[Generic Model API].
+Ensure your client conforms to the link:https://docs.spring.io/spring-ai/reference/api/generic-model.html[Generic Model API].
 Use existing request and response classes if your model's inputs and outputs are supported.
 If not, create new classes for the Generic Model API and establish a new Java package.
 

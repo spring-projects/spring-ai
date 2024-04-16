@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +42,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithResponseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithResponseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
+
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.util.Assert;
 
 /**
  * Abstract class for the Bedrock API. It provides the basic functionality to invoke the chat completion model and
@@ -67,7 +69,6 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 	private final String modelId;
 	private final ObjectMapper objectMapper;
-	private final AwsCredentialsProvider credentialsProvider;
 	private final String region;
 	private final BedrockRuntimeClient client;
 	private final BedrockRuntimeAsyncClient clientStreaming;
@@ -79,10 +80,20 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param region The AWS region to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, new ObjectMapper());
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.OBJECT_MAPPER, Duration.ofMinutes(5));
+	}
+	/**
+	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
+	 *
+	 * @param modelId The model id to use.
+	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
+	 */
+	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.OBJECT_MAPPER, timeout);
 	}
 
-	/**
+		/**
 	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
 	 * @param modelId The model id to use.
@@ -91,21 +102,44 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
+			 ObjectMapper objectMapper) {
+		this(modelId, credentialsProvider, region, objectMapper, Duration.ofMinutes(5));
+	}
+	/**
+	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout Configure the amount of time to allow the client to complete the execution of an API call.
+	 * This timeout covers the entire client execution except for marshalling. This includes request handler execution,
+	 * all HTTP requests including retries, unmarshalling, etc. This value should always be positive, if present.
+	 */
+	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+
+		Assert.hasText(modelId, "Model id must not be empty");
+		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
+		Assert.hasText(region, "Region must not be empty");
+		Assert.notNull(objectMapper, "Object mapper must not be null");
+		Assert.notNull(timeout, "Timeout must not be null");
 
 		this.modelId = modelId;
-		this.objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		this.credentialsProvider = credentialsProvider;
+		this.objectMapper = objectMapper;
 		this.region = region;
+
 
 		this.client = BedrockRuntimeClient.builder()
 				.region(Region.of(this.region))
-				.credentialsProvider(this.credentialsProvider)
+				.credentialsProvider(credentialsProvider)
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
 				.build();
 
 		this.clientStreaming = BedrockRuntimeAsyncClient.builder()
 				.region(Region.of(this.region))
-				.credentialsProvider(this.credentialsProvider)
+				.credentialsProvider(credentialsProvider)
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
 				.build();
 	}
 
@@ -113,14 +147,14 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @return The model id.
 	 */
 	public String getModelId() {
-		return modelId;
+		return this.modelId;
 	}
 
 	/**
 	 * @return The AWS region.
 	 */
 	public String getRegion() {
-		return region;
+		return this.region;
 	}
 
 	/**

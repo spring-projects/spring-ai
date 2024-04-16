@@ -47,7 +47,7 @@ public class BedrockCohereChatAutoConfiguration {
 	public CohereChatBedrockApi cohereChatApi(AwsCredentialsProvider credentialsProvider,
 			BedrockCohereChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new CohereChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean

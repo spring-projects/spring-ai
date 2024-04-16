@@ -15,7 +15,7 @@ Spring AI provides the following features:
 * Supported Model types are Chat and Text to Image with more on the way.
 * Portable API across AI providers for Chat and for Embedding models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
 * Mapping of AI Model output to POJOs.
-* Support for all major Vector Database providers such as Azure Vector Search, Chroma, Milvus, Neo4j, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate
+* Support for all major Vector Database providers such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, Neo4j, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate
 * Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
 * Function calling
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.

@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.cohere.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +39,7 @@ public class CohereEmbeddingBedrockApiIT {
 
 	CohereEmbeddingBedrockApi api = new CohereEmbeddingBedrockApi(
 			CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(), EnvironmentVariableCredentialsProvider.create(),
-			Region.US_EAST_1.id(), new ObjectMapper());
+			Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
 
 	@Test
 	public void embedText() {
