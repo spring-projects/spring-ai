@@ -1,0 +1,260 @@
+= Apache Cassandra
+
+This section walks you through setting up `CassandraVectorStore` to store document embeddings and perform similarity searches.
+
+== What is Apache Cassandra ?
+
+link:https://cassandra.apache.org[Apache Cassandra] is a true open source distributed database reknown for scalability and high availability without compromising performance.
+
+Linear scalability, proven fault-tolerance and low latency on commodity hardware makes it the perfect platform for mission-critical data.  Its Vector Similarity Search (VSS) is based on the JVector library that ensures best-in-class performance and relevancy.
+
+A vector search in Apache Cassandra is done as simply as:
+```
+SELECT content FROM table ORDER BY content_vector ANN OF query_embedding ;
+```
+
+More docs on this can be read https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
+
+The Spring AI Cassandra Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.  This vector store may also equally be used for non-RAG non_AI use-cases, e.g. semantic searcing in an existing database.  The Vector Store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
+
+== What is JVector Vector Search ?
+
+link:https://github.com/jbellis/jvector[JVector] is a pure Java embedded vector search engine.
+
+It stands out from other HNSW Vector Similarity Search implementations by being
+
+* Algorithmic-fast. JVector uses state of the art graph algorithms inspired by DiskANN and related research that offer high recall and low latency.
+* Implementation-fast. JVector uses the Panama SIMD API to accelerate index build and queries.
+* Memory efficient. JVector compresses vectors using product quantization so they can stay in memory during searches. (As part of our PQ implementation, our SIMD-accelerated kmeans class is 5x faster than the one in Apache Commons Math.)
+* Disk-aware. JVector’s disk layout is designed to do the minimum necessary iops at query time.
+* Concurrent. Index builds scale linearly to at least 32 threads. Double the threads, half the build time.
+* Incremental. Query your index as you build it. No delay between adding a vector and being able to find it in search results.
+* Easy to embed. API designed for easy embedding, by people using it in production.
+
+== Prerequisites
+
+1. A `EmbeddingClient` instance to compute the document embeddings. This is usually configured as a Spring Bean.  Several options are available:
+
+- `Transformers Embedding` - computes the embedding in your local environment. The default is via ONNX and the all-MiniLM-L6-v2 Sentence Transformers. This just works.
+- If you want to use OpenAI's Embeddings` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
+- There are many more choices, see `Embeddings API` docs.
+
+2. An Apache Cassandra instance, from version 5.0-beta1
+a. link:https://cassandra.apache.org/_/quickstart.html[DIY Quick Start]
+b. For a managed offering https://astra.datastax.com/[Astra DB] offers a healthy free tier offering.
+
+== Dependencies
+
+Add these dependencies to your project:
+
+* For just the Cassandra Vector Store
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-cassandra</artifactId>
+</dependency>
+----
+
+* Or, for everything you need in a RAG application (using the default ONNX Embedding Client)
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-cassandra-spring-boot-starter</artifactId>
+</dependency>
+----
+
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+* If for example you want to use the OpenAI modules, remember to provide your OpenAI API Key. Set it as an environment variable like so:
+
+[source,bash]
+----
+export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
+----
+
+
+== Usage
+
+Create a CassandraVectorStore instance connected to your Apache Cassandra database:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+
+  CassandraVectorStoreConfig config = CassandraVectorStoreConfig.builder().build();
+
+  return new CassandraVectorStore(config, embeddingClient);
+}
+----
+
+NOTE: It is more convenient and preferred to create the `CassandraVectorStore` as a Bean.
+But if you decide you can create it manually.
+
+[NOTE]
+====
+The default configuration connects to Cassandra at localhost:9042 and will automatically create the default schema at `springframework_ai_vector.springframework_ai_vector_store`.
+
+Please see `CassandraVectorStoreConfig.Builder` for all the configuration options.
+====
+
+[NOTE]
+====
+The Cassandra Java Driver is easiest configured via the `application.conf` file on the classpath.
+
+More info can be found link: https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration[here].
+====
+
+Then in your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+   new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "UK", "year", 2020)),
+   new Document("The World is Big and Salvation Lurks Around the Corner", Map.of()),
+   new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+Now add the documents to your vector store:
+
+
+[source,java]
+----
+vectorStore.add(documents);
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest.query("Spring").withTopK(5));
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+You can also limit results based on a similarity threshold:
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+   SearchRequest.query("Spring").withTopK(5)
+      .withSimilarityThreshold(0.5d));
+----
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the CassandraVectorStore as well.  Metadata fields must be configured in `CassandraVectorStoreConfig`.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest.query("The World").withTopK(TOP_K)
+      .withFilterExpression("country in ['UK', 'NL'] && year >= 2020"));
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+Filter.Expression f = new FilterExpressionBuilder()
+    .and(f.in("country", "UK", "NL"), f.gte("year", 2020)).build();
+
+vectorStore.similaritySearch(
+   SearchRequest.query("The World").withTopK(TOP_K)
+      .withFilterExpression(f));
+----
+
+The portable filter expressions get automatically converted into link:https://cassandra.apache.org/doc/latest/cassandra/developing/cql/index.html[CQL queries].
+
+Metadata fields to be searchable need to be either primary key columns or SAI indexed.  To do this configure the metadata field with the `SchemaColumnTags.INDEXED`.
+
+
+== Advanced Example: Vector Store ontop full Wikipedia dataset
+
+The following example demonstrates how to use the store on an existing schema.  Here we use the schema from the https://github.com/datastax-labs/colbert-wikipedia-data project which comes with the full wikipedia dataset ready vectorised for you.
+
+
+== Usage
+
+Create the schema in the Cassandra database first:
+
+[source,bash]
+----
+wget https://raw.githubusercontent.com/datastax-labs/colbert-wikipedia-data/main/schema.cql -O colbert-wikipedia-schema.cql
+cqlsh -f colbert-wikipedia-schema.cql
+----
+
+Then configure the store like:
+
+[source,java]
+----
+@Bean
+public CassandraVectorStore store(EmbeddingClient embeddingClient) {
+
+    List<SchemaColumn> partitionColumns = List.of(new SchemaColumn("wiki", DataTypes.TEXT),
+            new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT));
+
+    List<SchemaColumn> clusteringColumns = List.of(new SchemaColumn("chunk_no", DataTypes.INT),
+            new SchemaColumn("bert_embedding_no", DataTypes.INT));
+
+    List<SchemaColumn> extraColumns = List.of(new SchemaColumn("revision", DataTypes.INT),
+            new SchemaColumn("id", DataTypes.INT));
+
+    CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
+        .withKeyspaceName("wikidata")
+        .withTableName("articles")
+        .withPartitionKeys(partitionColumns)
+        .withClusteringKeys(clusteringColumns)
+        .withContentFieldName("body")
+        .withEmbeddingFieldName("all_minilm_l6_v2_embedding")
+        .withIndexName("all_minilm_l6_v2_ann")
+        .disallowSchemaChanges()
+        .addMetadataFields(extraColumns)
+        .withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
+            // the deliminator used to join fields together into the document's id
+            // is arbitary, here "§¶" is used
+            if (primaryKeys.isEmpty()) {
+                return "test§¶0";
+            }
+            return format("%s§¶%s", primaryKeys.get(2), primaryKeys.get(3));
+        })
+        .withDocumentIdTranslator((id) -> {
+            String[] parts = id.split("§¶");
+            String title = parts[0];
+            int chunk_no = 0 < parts.length ? Integer.parseInt(parts[1]) : 0;
+            return List.of("simplewiki", "en", title, chunk_no, 0);
+        })
+        .build();
+
+    return new CassandraVectorStore(conf, embeddingClient());
+}
+
+@Bean
+public EmbeddingClient embeddingClient() {
+    // default is ONNX all-MiniLM-L6-v2 which is what we want
+    return new TransformersEmbeddingClient();
+}
+----
+
+And, if you would like to load the full wikipedia dataset.
+First download the `simplewiki-sstable.tar` from this link https://drive.google.com/file/d/1CcMMsj8jTKRVGep4A7hmOSvaPepsaKYP/view?usp=share_link .  This will take a while, the file is tens of GBs.
+
+[source,bash]
+----
+tar -xf simplewiki-sstable.tar -C ${CASSANDRA_DATA}/data/wikidata/articles-*/
+
+nodetool import wikidata articles ${CASSANDRA_DATA}/data/wikidata/articles-*/
+----
+
+NOTE: If you have existing data in this table you'll want to check the tarball's files don't clobber existing sstables when doing the `tar`.
+
+NOTE: An alternative to the `nodetool import` is to just restart Cassandra.
+
+NOTE: If there are any failures in the indexes they will be rebuilt automatically.

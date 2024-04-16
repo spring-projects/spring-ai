@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorsore;
+package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,17 +21,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.Embedding;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;

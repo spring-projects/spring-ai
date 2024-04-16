@@ -43,7 +43,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 	 */
 	protected final FunctionCallbackContext functionCallbackContext;
 
-	public AbstractFunctionCallSupport(FunctionCallbackContext functionCallbackContext) {
+	protected AbstractFunctionCallSupport(FunctionCallbackContext functionCallbackContext) {
 		this.functionCallbackContext = functionCallbackContext;
 	}
 

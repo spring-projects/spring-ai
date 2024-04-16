@@ -32,6 +32,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
@@ -49,15 +50,26 @@ public class VertexAiGeminiAutoConfiguration {
 
 		Assert.hasText(connectionProperties.getProjectId(), "Vertex AI project-id must be set!");
 		Assert.hasText(connectionProperties.getLocation(), "Vertex AI location must be set!");
+		Assert.notNull(connectionProperties.getTransport(), "Vertex AI transport must be set!");
+
+		var vertexAIBuilder = new VertexAI.Builder().setProjectId(connectionProperties.getProjectId())
+			.setLocation(connectionProperties.getLocation())
+			.setTransport(com.google.cloud.vertexai.Transport.valueOf(connectionProperties.getTransport().name()));
+
+		if (StringUtils.hasText(connectionProperties.getApiEndpoint())) {
+			vertexAIBuilder.setApiEndpoint(connectionProperties.getApiEndpoint());
+		}
+		if (!CollectionUtils.isEmpty(connectionProperties.getScopes())) {
+			vertexAIBuilder.setScopes(connectionProperties.getScopes());
+		}
 
 		if (connectionProperties.getCredentialsUri() != null) {
 			GoogleCredentials credentials = GoogleCredentials
 				.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-			return new VertexAI(connectionProperties.getProjectId(), connectionProperties.getLocation(), credentials);
+
+			vertexAIBuilder.setCredentials(credentials);
 		}
-		else {
-			return new VertexAI(connectionProperties.getProjectId(), connectionProperties.getLocation());
-		}
+		return vertexAIBuilder.build();
 	}
 
 	@Bean

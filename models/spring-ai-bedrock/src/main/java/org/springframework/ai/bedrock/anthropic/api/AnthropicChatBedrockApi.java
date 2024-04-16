@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.anthropic.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -55,6 +56,16 @@ public class AnthropicChatBedrockApi extends
 	}
 
 	/**
+	 * Create a new AnthropicChatBedrockApi instance using the default credentials provider chain, the default object.
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
+	 */
+	public AnthropicChatBedrockApi(String modelId, String region, Duration timeout) {
+		super(modelId, region, timeout);
+	}
+
+	/**
 	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
 	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
@@ -65,6 +76,20 @@ public class AnthropicChatBedrockApi extends
 	public AnthropicChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper) {
 		super(modelId, credentialsProvider, region, objectMapper);
+	}
+
+	/**
+	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public AnthropicChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	// https://github.com/build-on-aws/amazon-bedrock-java-examples/blob/main/example_code/bedrock-runtime/src/main/java/aws/community/examples/InvokeBedrockStreamingAsync.java

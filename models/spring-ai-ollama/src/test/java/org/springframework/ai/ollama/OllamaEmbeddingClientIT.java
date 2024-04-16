@@ -45,7 +45,7 @@ class OllamaEmbeddingClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.23").withExposedPorts(11434);
+	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
 
 	static String baseUrl;
 

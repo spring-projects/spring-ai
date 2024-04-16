@@ -68,7 +68,8 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.region     | AWS region to use.  | us-east-1
+| spring.ai.bedrock.aws.timeout    | AWS timeout to use. | 5m
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
@@ -126,6 +127,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source]
 ----
 spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.timeout=1000ms
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 
@@ -197,7 +199,8 @@ AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
     AnthropicChatBedrockApi.AnthropicModel.CLAUDE_V2.id(),
     EnvironmentVariableCredentialsProvider.create(),
     Region.EU_CENTRAL_1.id(),
-    new ObjectMapper());
+    new ObjectMapper(),
+    Duration.ofMillis(1000L));
 
 BedrockAnthropicChatClient chatClient = new BedrockAnthropicChatClient(anthropicApi,
     AnthropicChatOptions.builder()
@@ -231,7 +234,7 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 AnthropicChatBedrockApi anthropicChatApi = new AnthropicChatBedrockApi(
-   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id());
+   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
 
 AnthropicChatRequest request = AnthropicChatRequest
   .builder(String.format(AnthropicChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))

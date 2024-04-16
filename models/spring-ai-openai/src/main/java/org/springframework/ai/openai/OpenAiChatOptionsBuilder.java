@@ -234,7 +234,7 @@ public class OpenAiChatOptionsBuilder {
 		return this;
 	}
 
-	private static class OpenAiChatOptionsImpl implements OpenAiChatOptions {
+	private static class OpenAiChatOptionsImpl extends OpenAiChatOptions {
 
 		private final ChatOptions chatOptions;
 

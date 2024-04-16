@@ -43,19 +43,19 @@ public abstract class AbstractIT {
 	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
 
 	@Autowired
-	protected ChatClient openAiChatClient;
+	protected ChatClient chatClient;
 
 	@Autowired
-	protected OpenAiAudioTranscriptionClient openAiTranscriptionClient;
+	protected StreamingChatClient streamingChatClient;
 
 	@Autowired
-	protected OpenAiAudioSpeechClient openAiAudioSpeechClient;
+	protected OpenAiAudioTranscriptionClient transcriptionClient;
 
 	@Autowired
-	protected ImageClient openaiImageClient;
+	protected OpenAiAudioSpeechClient speechClient;
 
 	@Autowired
-	protected StreamingChatClient openStreamingChatClient;
+	protected ImageClient imageClient;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
@@ -64,7 +64,7 @@ public abstract class AbstractIT {
 	protected Resource qaEvaluatorNotRelatedResource;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-fact-based-answer.st")
-	protected Resource qaEvalutaorFactBasedAnswerResource;
+	protected Resource qaEvaluatorFactBasedAnswerResource;
 
 	@Value("classpath:/prompts/eval/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
@@ -78,19 +78,19 @@ public abstract class AbstractIT {
 				Map.of("question", question, "answer", answer));
 		SystemMessage systemMessage;
 		if (factBased) {
-			systemMessage = new SystemMessage(qaEvalutaorFactBasedAnswerResource);
+			systemMessage = new SystemMessage(qaEvaluatorFactBasedAnswerResource);
 		}
 		else {
 			systemMessage = new SystemMessage(qaEvaluatorAccurateAnswerResource);
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = openAiChatClient.call(prompt).getResult().getOutput().getContent();
+		String yesOrNo = chatClient.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = openAiChatClient.call(prompt).getResult().getOutput().getContent();
+			String reasonForFailure = chatClient.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);
 		}
 		else {

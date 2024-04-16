@@ -10,7 +10,7 @@ You first need to have a SaaS instance of watsonx.ai (as well as an IBM Cloud ac
 
 Refer to https://eu-de.dataplatform.cloud.ibm.com/registration/stepone?context=wx&preselect_region=true[free-trial] to try watsonx.ai for free
 
-TIP: More info. can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
+TIP: More info can be found https://www.ibm.com/products/watsonx-ai/info/trial[here]
 
 == Auto-configuration
 
@@ -69,7 +69,7 @@ The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you conf
 | spring.ai.watsonx.ai.chat.options.stop-sequences | Sets when the LLM should stop. (e.g., ["\n\n\n"]) then when the LLM generates three consecutive line breaks it will terminate. Stop sequences are ignored until after the number of tokens that are specified in the Min tokens parameter are generated.  | -
 | spring.ai.watsonx.ai.chat.options.repetition-penalty | Sets how strongly to penalize repetitions. A higher value (e.g., 1.8) will penalize repetitions more strongly, while a lower value (e.g., 1.1) will be more lenient.  | 1.0
 | spring.ai.watsonx.ai.chat.options.random-seed | Produce repeatable results, set the same random seed value every time.  | randomly generated
-| spring.ai.watsonx.ai.chat.options.model |  Model is the identifier of the LLM Model to be used. | ????
+| spring.ai.watsonx.ai.chat.options.model |  Model is the identifier of the LLM Model to be used. | google/flan-ul2
 |====
 
 == Runtime Options [[chat-options]]

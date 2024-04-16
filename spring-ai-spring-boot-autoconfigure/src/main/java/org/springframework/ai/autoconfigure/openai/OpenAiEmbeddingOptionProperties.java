@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
-public class OpenAiEmbeddingOptionProperties implements OpenAiEmbeddingOptions {
+public class OpenAiEmbeddingOptionProperties extends OpenAiEmbeddingOptions {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 

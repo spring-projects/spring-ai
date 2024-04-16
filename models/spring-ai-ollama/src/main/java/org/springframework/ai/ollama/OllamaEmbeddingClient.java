@@ -135,7 +135,8 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 			throw new IllegalArgumentException("Model is not set!");
 		}
 		String model = mergedOptions.getModel();
-		return new EmbeddingRequest(model, inputContent, OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()));
+		return new EmbeddingRequest(model, inputContent, null,
+				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()));
 	}
 
 }

@@ -77,6 +77,15 @@ public class FunctionCallWithPromptFunctionIT {
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+
+				// Verify that no function call is made.
+				response = chatClient
+					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
+
+				logger.info("Response: {}", response);
+
+				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+
 			});
 	}
 

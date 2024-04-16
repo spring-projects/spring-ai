@@ -26,7 +26,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.Respons
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class OpenAiChatOptionsProperties implements OpenAiChatOptions {
+public class OpenAiChatOptionsProperties extends OpenAiChatOptions {
 
 	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
 

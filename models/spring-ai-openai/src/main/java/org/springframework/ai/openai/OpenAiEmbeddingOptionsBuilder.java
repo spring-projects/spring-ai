@@ -70,7 +70,7 @@ public class OpenAiEmbeddingOptionsBuilder {
 		return new OpenAiEmbeddingOptionsImpl(this);
 	}
 
-	private static class OpenAiEmbeddingOptionsImpl implements OpenAiEmbeddingOptions {
+	private static class OpenAiEmbeddingOptionsImpl extends OpenAiEmbeddingOptions {
 
 		private final String model;
 
