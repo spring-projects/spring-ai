@@ -6,36 +6,75 @@ link:https://www.elastic.co/elasticsearch[Elasticsearch] is an open source searc
 
 == Prerequisites
 
-First you need access to an Elasticsearch instance.
-
-On startup, the `ElasticsearchVectorStore` will attempt to create the index mapping.
-
-Optionally, you can do this manually like so:
-
-[source,text]
-----
-PUT spring-ai-document-index
-{
-    "mappings": {
-        "properties": {
-            "embedding": {
-                "type": "dense_vector",
-                "dims": 1536,
-                "index": true,
-                "similarity": cosine
-            }
-        }
-    }
-}
-----
-
-TIP: replace the `1536` with the actual embedding dimension if you are using a different dimension.
-
-Next if required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `ElasticsearchVectorStore`.
+* A running Elasticsearch instance. The following options are available:
+** link:https://hub.docker.com/_/elasticsearch/[Docker]
+** link:https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html#elasticsearch-install-packages[Self-Managed Elasticsearch]
+** link:https://www.elastic.co/cloud/elasticsearch-service/signup?page=docs&placement=docs-body[Elastic Cloud]
 
 == Dependencies
 
-Add the ElasticsearchVectorStore boot starter dependency to your project:
+Add the Elasticsearch Vector Store dependency to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-elasticsearch-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-elasticsearch-store'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Configuration
+
+To connect to Elasticsearch and use the `ElasticsearchVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's `application.yml`,
+
+[source,yaml]
+----
+spring:
+  elasticsearch:
+    uris: <elasticsearch instance URIs>
+    username: <elasticsearch username>
+    password: <elasticsearch password>
+# API key if needed, e.g. OpenAI
+  ai:
+    openai:
+      api:
+        key: <api-key>
+----
+
+environment variables,
+
+[source,bash]
+----
+export SPRING_ELASTICSEARCH_URIS=<elasticsearch instance URIs>
+export SPRING_ELASTICSEARCH_USERNAME=<elasticsearch username>
+export SPRING_ELASTICSEARCH_PASSWORD=<elasticsearch password>
+# API key if needed, e.g. OpenAI
+export SPRING_AI_OPENAI_API_KEY=<api-key>
+----
+
+or can be a mix of those.
+For example, if you want to store your password as an environment variable but keep the rest in the plain `application.yml` file.
+
+NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+
+Spring Boot's auto-configuration feature for the Elasticsearch RestClient will create a bean instance that will be used by the `ElasticsearchVectorStore`.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Elasticsearch Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
 ----
@@ -54,80 +93,88 @@ dependencies {
 }
 ----
 
-The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingClient] add the following dependency to your project:
+Please have a look at the list of <<elasticsearchvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
 
-[source,xml]
+Here is an example of the needed bean:
+
+[source,java]
 ----
-<dependency>
-	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+@Bean
+public EmbeddingClient embeddingCLient() {
+    // Can be any other EmbeddingClient implementation
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
-
-To connect to and configure Elasticsearch, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's `application.yml`
-
-[source,yaml]
-----
-spring:
-  elasticsearch:
-    uris: <elasticsearch instance URIs>
-    username: <elasticsearch username>
-    password: <elasticsearch password>
-  ai:
-    vectorstore:
-      elasticsearch:
-        index-name: spring-ai-index
-----
-
-TIP: Check the list of <<elasticsearchvector-properties, configuration parameters>> to learn about the default values and configuration options.
-
-In your main code, create some documents:
+In cases where the Spring Boot auto-configured Elasticsearch `RestClient` bean is not what you want or need, you can still define your own bean.
+Please read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation]
+for more in-depth information about the configuration of a custom RestClient.
 
 [source,java]
 ----
-List<Document> documents = List.of(
-	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
-	new Document("The World is Big and Salvation Lurks Around the Corner"),
-	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+@Bean
+public RestClient restClienbt() {
+    RestClientBuilder builder = RestClient.builder(new HttpHost("<host>", 9200, "http"));
+    Header[] defaultHeaders = new Header[] { new BasicHeader("Authorization", "Basic <encoded username and password>") };
+    builder.setDefaultHeaders(defaultHeaders);
+    return builder.build();
+}
 ----
 
-Add the documents to Elasticsearch:
+Now you can auto-wire the `ElasticsearchVectorStore` as a vector store in your application.
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Elasticsearcg as well.
+
+For example, you can use either the text expression language:
 
 [source,java]
 ----
-vectorStore.add(List.of(document));
+vectorStore.similaritySearch(SearchRequest.defaults()
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
 ----
 
-And finally, retrieve documents similar to a query:
+or programmatically using the `Filter.Expression` DSL:
 
 [source,java]
 ----
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+        .withQuery("The World")
+        .withTopK(TOP_K)
+        .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+        .withFilterExpression(b.and(
+                b.in("john", "jill"),
+                b.eq("article_type", "blog")).build()));
 ----
 
-If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary Elasticsearch `WHERE` link:https://www.elastic.co/guide/en/elasticsearch/reference/current/sql-syntax-select.html#sql-syntax-where[filter expressions].
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+author in ['john', 'jill'] && 'article_type' == 'blog'
+----
+
+is converted into the proprietary Elasticsearch filter format:
+
+[source,text]
+----
+(metadata.author:john OR jill) AND metadata.article_type:blog
+----
 
 [[elasticsearchvector-properties]]
 == ElasticsearchVectorStore Properties
 
-You can use the following properties in your Spring Boot configuration to customize the Elasticsearch Vector Store.
-
+You can use the following properties in your Spring Boot configuration to customize the Elasticsearch vector store.
 
 |===
 |Property |Default Value
