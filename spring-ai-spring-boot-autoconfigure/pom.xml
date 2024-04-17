@@ -318,6 +318,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Moonshot AI  -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-moonshot</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Typesense vector store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

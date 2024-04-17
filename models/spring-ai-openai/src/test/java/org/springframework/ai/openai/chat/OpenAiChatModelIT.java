@@ -133,7 +133,7 @@ class OpenAiChatModelIT extends AbstractIT {
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+				Map.of("subject", "numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 

@@ -1,0 +1,250 @@
+= Moonshot AI Chat
+
+Spring AI supports the various AI language models from Moonshot AI. You can interact with Moonshot AI language models and create a multilingual conversational assistant based on Moonshot models.
+
+== Prerequisites
+
+You will need to create an API with Moonshot to access Moonshot AI language models.
+Create an account at https://platform.moonshot.cn/console[Moonshot AI registration page] and generate the token on the https://platform.moonshot.cn/console/api-keys/[API Keys page].
+The Spring AI project defines a configuration property named `spring.ai.moonshot.api-key` that you should set to the value of the `API Key` obtained from https://platform.moonshot.cn/console/api-keys/[API Keys page].
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_MOONSHOT_API_KEY=<INSERT KEY HERE>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Moonshot Chat Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-moonshot-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-moonshot-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Moonshot AI Chat model.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.moonshot` is used as the property prefix that lets you connect to Moonshot.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.moonshot.base-url   | The URL to connect to |  https://api.moonshot.cn
+| spring.ai.moonshot.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+The prefix `spring.ai.moonshot.chat` is the property prefix that lets you configure the chat model implementation for Moonshot.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.moonshot.chat.enabled | Enable Moonshot chat model.  | true
+| spring.ai.moonshot.chat.base-url | Optional overrides the spring.ai.moonshot.base-url to provide chat specific url |  -
+| spring.ai.moonshot.chat.api-key | Optional overrides the spring.ai.moonshot.api-key to provide chat specific api-key |  -
+| spring.ai.moonshot.chat.options.model | This is the Moonshot Chat model to use | `moonshot-v1-8k` (the `moonshot-v1-8k`, `moonshot-v1-32k`, and `moonshot-v1-128k` point to the latest model versions)
+| spring.ai.moonshot.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.moonshot.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
+| spring.ai.moonshot.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 1.0
+| spring.ai.moonshot.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Default value is 1 and cannot be greater than 5. Specifically, when the temperature is very small and close to 0, we can only return 1 result. If n is already set and>1 at this time, service will return an illegal input parameter (invalid_request_error) | 1
+| spring.ai.moonshot.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. |  0.0f
+| spring.ai.moonshot.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
+| spring.ai.moonshot.chat.options.stop | Up to 5 sequences where the API will stop generating further tokens. Each string must not exceed 32 bytes | -
+|====
+
+NOTE: You can override the common `spring.ai.moonshot.base-url` and `spring.ai.moonshot.api-key` for the `ChatModel` implementations.
+The `spring.ai.moonshot.chat.base-url` and `spring.ai.moonshot.chat.api-key` properties if set take precedence over the common properties.
+This is useful if you want to use different Moonshot accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.moonshot.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/main/java/org/springframework/ai/moonshot/MoonshotChatOptions.java[MoonshotChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `MoonshotChatModel(api, options)` constructor or the `spring.ai.moonshot.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        MoonshotChatOptions.builder()
+            .withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+            .withTemperature(0.5f)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/main/java/org/springframework/ai/moonshot/MoonshotChatOptions.java[MoonshotChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-moonshot-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Moonshot Chat model:
+
+[source,application.properties]
+----
+spring.ai.moonshot.api-key=YOUR_API_KEY
+spring.ai.moonshot.chat.options.model=moonshot-v1-8k
+spring.ai.moonshot.chat.options.temperature=0.7
+----
+
+TIP: replace the `api-key` with your Moonshot credentials.
+
+This will create a `MoonshotChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final MoonshotChatModel chatModel;
+
+    @Autowired
+    public ChatController(MoonshotChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var prompt = new Prompt(new UserMessage(message));
+        return chatModel.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/main/java/org/springframework/ai/moonshot/MoonshotChatModel.java[MoonshotChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Moonshot service.
+
+Add the `spring-ai-moonshot` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-moonshot</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-moonshot'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `MoonshotChatModel` and use it for text generations:
+
+[source,java]
+----
+var moonshotApi = new MoonshotApi(System.getenv("MOONSHOT_API_KEY"));
+
+var chatModel = new MoonshotChatModel(moonshotApi, MoonshotChatOptions.builder()
+                .withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+                .withTemperature(0.4f)
+                .withMaxTokens(200)
+                .build());
+
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> streamResponse = chatModel.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `MoonshotChatOptions` provides the configuration information for the chat requests.
+The `MoonshotChatOptions.Builder` is fluent options builder.
+
+=== Low-level Moonshot Api Client [[low-level-api]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/main/java/org/springframework/ai/moonshot/api/MoonshotApi.java[MoonshotApi] provides is lightweight Java client for link:https://platform.moonshot.cn/docs/api-reference[Moonshot AI API].
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+MoonshotApi moonshotApi =
+    new MoonshotApi(System.getenv("MOONSHOT_API_KEY"));
+
+ChatCompletionMessage chatCompletionMessage =
+    new ChatCompletionMessage("Hello world", Role.USER);
+
+// Sync request
+ResponseEntity<ChatCompletion> response = moonshotApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.7f, false));
+
+// Streaming request
+Flux<ChatCompletionChunk> streamResponse = moonshotApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(chatCompletionMessage), MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), 0.7f, true));
+----
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/main/java/org/springframework/ai/moonshot/api/MoonshotApi.java[MoonshotApi.java]'s JavaDoc for further information.
+
+==== MoonshotApi Samples
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/test/java/org/springframework/ai/moonshot/api/MoonshotApiIT.java[MoonshotApiIT.java] test provides some general examples how to use the lightweight library.
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/test/java/org/springframework/ai/moonshot/api/MoonshotApiToolFunctionCallIT.java.java[MoonshotApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.

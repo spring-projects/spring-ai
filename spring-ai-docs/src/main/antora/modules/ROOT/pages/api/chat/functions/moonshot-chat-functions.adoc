@@ -1,0 +1,226 @@
+= Function Calling
+
+You can register custom Java functions with the `MoonshotChatModel` and have the Moonshot model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This allows you to connect the LLM capabilities with external tools and APIs.
+The Moonshot models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
+
+The Moonshot API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
+
+Spring AI provides flexible and user-friendly ways to register and call custom functions.
+In general, the custom functions need to provide a function `name`,  `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.  The `description` helps the model to understand when to call the function.
+
+As a developer, you need to implement a functions that takes the function call arguments sent from the AI model, and respond with the result back to the model.  Your function can in turn invoke other 3rd party services to provide the results.
+
+Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
+
+Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
+
+// Additionally, the Auto-Configuration provides a way to auto-register any Function<I, O> beans definition as function calling candidates in the `ChatModel`.
+
+
+== How it works
+
+Suppose we want the AI model to respond with information that it does not have, for example the current temperature at a given location.
+
+We can provide the AI model with metadata about our own functions that it can use to retrieve that information as it processes your prompt.
+
+For example, if during the processing of a prompt, the AI Model determines that it needs additional information about the temperature in a given location, it will start a server side generated request/response interaction.  The AI Model invokes a client side function.
+The AI Model provides method invocation details as JSON and it is the responsibility of the client to execute that function and return the response.
+
+The model-client interaction is illustrated in the <<spring-ai-function-calling-flow>> diagram.
+
+Spring AI greatly simplifies code you need to write to support function invocation.
+It brokers the function invocation conversation for you.
+You can simply provide your function definition as a `@Bean` and then provide the bean name of the function in your prompt options.
+You can also reference multiple function bean names in your prompt.
+
+== Quick Start
+
+Let's create a chatbot that answer questions by calling our own function.
+To support the response of the chatbot, we will register our own function that takes a location and returns the current weather in that location.
+
+When the response to the prompt to the model needs to answer a question such as `"What’s the weather like in Boston?"` the AI model will invoke the client providing the location value as an argument to be passed to the function.  This RPC-like data is passed as JSON.
+
+Our function calls some SaaS based weather service API and returns the weather response back to the model to complete the conversation.  In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
+
+The following `MockWeatherService.java` represents the weather service API:
+
+[source,java]
+----
+public class MockWeatherService implements Function<Request, Response> {
+
+	public enum Unit { C, F }
+	public record Request(String location, Unit unit) {}
+	public record Response(double temp, Unit unit) {}
+
+	public Response apply(Request request) {
+		return new Response(30.0, Unit.C);
+	}
+}
+----
+
+=== Registering Functions as Beans
+
+With the link:../minimax-chat.html#_auto_configuration[MoonshotChatModel Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
+
+We start with describing the most POJO friendly options.
+
+
+==== Plain Java Functions
+
+In this approach you define `@Beans` in your application context as you would any other Spring managed object.
+
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` wrapper that adds the logic for it being invoked via the AI model.
+The name of the `@Bean` is passed as a `ChatOption`.
+
+
+[source,java]
+----
+@Configuration
+static class Config {
+
+	@Bean
+	@Description("Get the weather in location") // function description
+	public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction1() {
+		return new MockWeatherService();
+	}
+	...
+}
+----
+
+The `@Description` annotation is optional and provides a function description (2) that helps the model to understand when to call the function.  It is an important property to set to help the AI model determine what client side function to invoke.
+
+Another option to provide the description of the function is to the `@JacksonDescription` annotation on the `MockWeatherService.Request` to provide the function description:
+
+[source,java]
+----
+
+@Configuration
+static class Config {
+
+	@Bean
+	public Function<Request, Response> currentWeather3() { // (1) bean name as function name.
+		return new MockWeatherService();
+	}
+	...
+}
+
+@JsonClassDescription("Get the weather in location") // (2) function description
+public record Request(String location, Unit unit) {}
+----
+
+It is a best practice to annotate the request object with information such that the generates JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/moonshot/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] demonstrates this approach.
+
+
+==== FunctionCallback Wrapper
+
+Another way register a function is to create `FunctionCallbackWrapper` wrapper like this:
+
+[source,java]
+----
+@Configuration
+static class Config {
+
+	@Bean
+	public FunctionCallback weatherFunctionInfo() {
+
+    return FunctionCallbackWrapper.builder(new MockWeatherService())
+        .withName("CurrentWeather") // (1) function name
+        .withDescription("Get the weather in location") // (2) function description
+        .build();
+	}
+	...
+}
+----
+
+It wraps the 3rd party, `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MoonshotChatModel`.
+It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
+
+NOTE: By default, the response converter does a JSON serialization of the Response object.
+
+NOTE: The `FunctionCallbackWrapper` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+
+=== Specifying functions in Chat Options
+
+To let the model know and call your `CurrentWeather` function you need to enable it in your prompt requests:
+
+[source,java]
+----
+MoonshotChatModel chatModel = ...
+
+UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+		MoonshotChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
+
+logger.info("Response: {}", response);
+----
+
+// NOTE: You can can have multiple functions registered in your `ChatModel` but only those enabled in the prompt request will be considered for the function calling.
+
+Above user question will trigger 3 calls to `CurrentWeather` function (one for each city) and the final response will be something like this:
+
+----
+Here is the current weather for the requested cities:
+- San Francisco, CA: 30.0°C
+- Tokyo, Japan: 10.0°C
+- Paris, France: 15.0°C
+----
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/moonshot/tool/FunctionCallbackWrapperIT.java[FunctionCallbackWrapperIT.java] test demo this approach.
+
+
+=== Register/Call Functions with Prompt Options
+
+In addition to the auto-configuration you can register callback functions, dynamically, with your Prompt requests:
+
+[source,java]
+----
+MoonshotChatModel chatModel = ...
+
+UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+var promptOptions = MoonshotChatOptions.builder()
+	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
+		"CurrentWeather", // name
+		"Get the weather in location", // function description
+		new MockWeatherService()))) // function code
+	.build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+----
+
+NOTE: The in-prompt registered functions are enabled by default for the duration of this request.
+
+This approach allows to dynamically chose different functions to be called based on the user input.
+
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/moonshot/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `MoonshotChatModel` and use it in a prompt request.
+//
+// === Register Functions with Default Options
+//
+// You can programmatically register functions with the `MoonshotChatModel` using the `MoonshotChatOptions#withFunctionCallbacks`:
+//
+// [source,java]
+// ----
+//
+// MoonshotApi moonshotApi = new MoonshotApi(apiKey);
+//
+// var defaultOptions = MoonshotChatOptions.builder()
+// 	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
+// 		"CurrentWeather", // name
+// 		"Get the weather in location", // function description
+// 		new MockWeatherService()))) // function code
+// 	.build();
+//
+// MoonshotChatModel chatModel = new MoonshotChatModel(moonshotApi, defaultOptions);
+//
+// UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+//
+// ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+// 		MoonshotChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
+// ----
+//
+// NOTE: Functions are registered when MoonshotChatModel is created, by you must enable in the Prompt the functions to be used in the request.
