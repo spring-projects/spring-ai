@@ -35,8 +35,8 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 
-		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ChatMessage.class, FunctionMessage.class,
-				Message.class, MessageType.class, UserMessage.class, SystemMessage.class, FunctionCallbackContext.class,
+		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, FunctionMessage.class, Message.class,
+				MessageType.class, UserMessage.class, SystemMessage.class, FunctionCallbackContext.class,
 				FunctionCallback.class, FunctionCallbackWrapper.class);
 		for (var c : chatTypes) {
 			hints.reflection().registerType(c);
