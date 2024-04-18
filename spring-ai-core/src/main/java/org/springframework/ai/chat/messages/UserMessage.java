@@ -45,7 +45,7 @@ public class UserMessage extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
+		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + metadata + ", messageType="
 				+ messageType + '}';
 	}
 

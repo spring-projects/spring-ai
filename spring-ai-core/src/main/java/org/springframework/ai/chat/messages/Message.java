@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.chat.messages;
 
+import org.springframework.ai.node.Node;
+
 import java.util.List;
 import java.util.Map;
 
@@ -26,13 +28,11 @@ import java.util.Map;
  * @see Media
  * @see MessageType
  */
-public interface Message {
+public interface Message extends Node<String> {
 
 	String getContent();
 
 	List<Media> getMedia();
-
-	Map<String, Object> getProperties();
 
 	MessageType getMessageType();
 
