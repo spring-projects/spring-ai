@@ -292,7 +292,7 @@ public class PineconeVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
+		public TransformersEmbeddingClient embeddingClient() {
 			return new TransformersEmbeddingClient();
 		}
 

@@ -37,3 +37,5 @@ package.json
 .antlr
 
 shell.log
+
+.profiler

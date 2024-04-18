@@ -21,20 +21,23 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
@@ -48,6 +51,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 0.8.1
  */
 @Testcontainers
+@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 public class QdrantVectorStoreIT {
 
 	private static final String COLLECTION_NAME = "test_collection";
@@ -250,8 +255,15 @@ public class QdrantVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public OpenAIClient openAIClient() {
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.buildClient();
+		}
+
+		@Bean
+		public AzureOpenAiEmbeddingClient azureEmbeddingClient(OpenAIClient openAIClient) {
+			return new AzureOpenAiEmbeddingClient(openAIClient);
 		}
 
 	}
