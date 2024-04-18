@@ -1,0 +1,21 @@
+version: '3.5'
+
+services:
+  gemfire:
+    image: gemfire/gemfire:9.15.11
+    ports:
+      - "7070:7070"
+    environment:
+      - ACCEPT_TERMS=y
+    volumes:
+      - ./extensions:/gemfire/extensions
+    command: gfsh start server --start-rest-api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7070/gemfire-api/v1/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    name: gemfire

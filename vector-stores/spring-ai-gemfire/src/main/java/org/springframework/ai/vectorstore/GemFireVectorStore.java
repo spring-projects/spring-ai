@@ -176,15 +176,15 @@ public class GemFireVectorStore implements VectorStore {
 
 	}
 
-	private static final int DEFAULT_PORT = 9090;
+	public static final int DEFAULT_PORT = 9090;
 
-	public static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
+	public static final int DEFAULT_TOP_K_PER_BUCKET = 10;
 
-	private static final int DEFAULT_TOP_K_PER_BUCKET = 10;
+	public static final int DEFAULT_TOP_K = 10;
 
-	private static final int DEFAULT_TOP_K = 10;
+	public static final String DEFAULT_DOCUMENT_FIELD = "document";
 
-	private static final String DEFAULT_DOCUMENT_FIELD = "document";
+	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
 
 	public String indexName;
 
