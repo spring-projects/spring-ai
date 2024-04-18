@@ -5,14 +5,14 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.agent.DefaultChatAgent;
 import org.springframework.ai.chat.agent.PromptContext;
-
 import org.springframework.ai.chat.agent.transformer.QAPromptContextTransformer;
-
 import org.springframework.ai.chat.agent.transformer.VectorStorePromptContextTransformer;
-
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.evaluation.EvaluationRequest;
+import org.springframework.ai.evaluation.EvaluationResponse;
+import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -61,16 +61,13 @@ public class OpenAiDefaultChatAgentIT {
 		var agentResponse = chatAgent.call(promptContext);
 		System.out.println(agentResponse.getChatResponse().getResult().getOutput().getContent());
 
-		// RelevancyEvaluator relevancyEvaluator = new
-		// RelevancyEvaluator(this.chatClient);
-		// EvaluationRequest evaluationRequest = new EvaluationRequest(
-		// agentResponse.getPromptContext().getOriginalPrompt(),
-		// agentResponse.getPromptContext().getDataList(),
-		// agentResponse.getChatResponse());
-		//
-		// EvaluationResponse evaluationResponse =
-		// relevancyEvaluator.evaluate(evaluationRequest);
-		// System.out.println(evaluationResponse);
+		RelevancyEvaluator relevancyEvaluator = new RelevancyEvaluator(this.chatClient);
+		EvaluationRequest evaluationRequest = new EvaluationRequest(
+				agentResponse.getPromptContext().getPromptHistory().get(0), agentResponse.getPromptContext().getNodes(),
+				agentResponse.getChatResponse());
+
+		EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
+		System.out.println(evaluationResponse);
 
 	}
 
