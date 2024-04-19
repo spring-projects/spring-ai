@@ -185,6 +185,11 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	@Override
+	public Message createMessage(Map<String, Object> model, List<Media> mediaList) {
+		return new UserMessage(render(model), mediaList);
+	}
+
+	@Override
 	public Prompt create() {
 		return new Prompt(render(new HashMap<>()));
 	}

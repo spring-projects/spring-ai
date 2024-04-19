@@ -29,4 +29,6 @@ public interface PromptTemplateMessageActions {
 
 	Message createMessage(Map<String, Object> model);
 
+	Message createMessage(Map<String, Object> model, List<Media> mediaList);
+
 }
