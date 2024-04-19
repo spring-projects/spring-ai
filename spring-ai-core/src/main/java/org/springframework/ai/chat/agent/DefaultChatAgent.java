@@ -2,7 +2,8 @@ package org.springframework.ai.chat.agent;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.agent.transformer.PromptContextTransformer;
+import org.springframework.ai.chat.transformer.PromptContext;
+import org.springframework.ai.chat.transformer.PromptTransformer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,16 +13,16 @@ public class DefaultChatAgent implements ChatAgent {
 
 	private ChatClient chatClient;
 
-	private List<PromptContextTransformer> retrievers;
+	private List<PromptTransformer> retrievers;
 
-	private List<PromptContextTransformer> documentPostProcessors;
+	private List<PromptTransformer> documentPostProcessors;
 
-	private List<PromptContextTransformer> augmentors;
+	private List<PromptTransformer> augmentors;
 
 	private List<ChatAgentListener> chatAgentListeners;
 
-	public DefaultChatAgent(ChatClient chatClient, List<PromptContextTransformer> retrievers,
-			List<PromptContextTransformer> documentPostProcessors, List<PromptContextTransformer> augmentors,
+	public DefaultChatAgent(ChatClient chatClient, List<PromptTransformer> retrievers,
+			List<PromptTransformer> documentPostProcessors, List<PromptTransformer> augmentors,
 			List<ChatAgentListener> chatAgentListeners) {
 		Objects.requireNonNull(chatClient, "chatClient must not be null");
 		this.chatClient = chatClient;
@@ -39,17 +40,17 @@ public class DefaultChatAgent implements ChatAgent {
 	public AgentResponse call(PromptContext promptContext) {
 
 		// Perform retrieval of documents and messages
-		for (PromptContextTransformer retriever : retrievers) {
+		for (PromptTransformer retriever : retrievers) {
 			promptContext = retriever.transform(promptContext);
 		}
 
 		// Perform post procesing of all retrieved documents and messages
-		for (PromptContextTransformer documentPostProcessor : documentPostProcessors) {
+		for (PromptTransformer documentPostProcessor : documentPostProcessors) {
 			promptContext = documentPostProcessor.transform(promptContext);
 		}
 
 		// Perform prompt augmentation
-		for (PromptContextTransformer augmentor : augmentors) {
+		for (PromptTransformer augmentor : augmentors) {
 			promptContext = augmentor.transform(promptContext);
 		}
 
@@ -68,11 +69,11 @@ public class DefaultChatAgent implements ChatAgent {
 
 		private ChatClient chatClient;
 
-		private List<PromptContextTransformer> retrievers = new ArrayList<>();
+		private List<PromptTransformer> retrievers = new ArrayList<>();
 
-		private List<PromptContextTransformer> documentPostProcessors = new ArrayList<>();
+		private List<PromptTransformer> documentPostProcessors = new ArrayList<>();
 
-		private List<PromptContextTransformer> augmentors = new ArrayList<>();
+		private List<PromptTransformer> augmentors = new ArrayList<>();
 
 		private List<ChatAgentListener> chatAgentListeners = new ArrayList<>();
 
@@ -81,18 +82,17 @@ public class DefaultChatAgent implements ChatAgent {
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withRetrievers(List<PromptContextTransformer> retrievers) {
+		public DefaultChatAgentBuilder withRetrievers(List<PromptTransformer> retrievers) {
 			this.retrievers = retrievers;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withDocumentPostProcessors(
-				List<PromptContextTransformer> documentPostProcessors) {
+		public DefaultChatAgentBuilder withDocumentPostProcessors(List<PromptTransformer> documentPostProcessors) {
 			this.documentPostProcessors = documentPostProcessors;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withAugmentors(List<PromptContextTransformer> augmentors) {
+		public DefaultChatAgentBuilder withAugmentors(List<PromptTransformer> augmentors) {
 			this.augmentors = augmentors;
 			return this;
 		}

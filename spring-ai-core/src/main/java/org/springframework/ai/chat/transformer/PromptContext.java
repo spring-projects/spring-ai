@@ -1,4 +1,4 @@
-package org.springframework.ai.chat.agent;
+package org.springframework.ai.chat.transformer;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.node.Node;

@@ -1,5 +1,7 @@
 package org.springframework.ai.chat.agent;
 
+import org.springframework.ai.chat.transformer.PromptContext;
+
 /**
  * A ChatAgent encapsulates common AI workflows such as Retrieval Augmented Generation.
  *

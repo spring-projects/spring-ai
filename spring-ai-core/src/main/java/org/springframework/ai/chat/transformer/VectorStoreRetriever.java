@@ -1,6 +1,5 @@
-package org.springframework.ai.chat.agent.transformer;
+package org.springframework.ai.chat.transformer;
 
-import org.springframework.ai.chat.agent.PromptContext;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.document.Document;
@@ -14,13 +13,13 @@ import java.util.stream.Collectors;
 /**
  * Transforms the PromptContext by retrieving documents from a VectorStore
  */
-public class VectorStorePromptContextTransformer implements PromptContextTransformer {
+public class VectorStoreRetriever implements PromptTransformer {
 
 	private final VectorStore vectorStore;
 
 	private final SearchRequest searchRequest;
 
-	public VectorStorePromptContextTransformer(VectorStore vectorStore, SearchRequest searchRequest) {
+	public VectorStoreRetriever(VectorStore vectorStore, SearchRequest searchRequest) {
 		this.vectorStore = vectorStore;
 		this.searchRequest = searchRequest;
 	}
@@ -49,15 +48,14 @@ public class VectorStorePromptContextTransformer implements PromptContextTransfo
 
 	@Override
 	public String toString() {
-		return "VectorStorePromptContextTransformer{" + "vectorStore=" + vectorStore + ", searchRequest="
-				+ searchRequest + '}';
+		return "VectorStoreRetriever{" + "vectorStore=" + vectorStore + ", searchRequest=" + searchRequest + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (!(o instanceof VectorStorePromptContextTransformer that))
+		if (!(o instanceof VectorStoreRetriever that))
 			return false;
 		return Objects.equals(vectorStore, that.vectorStore) && Objects.equals(searchRequest, that.searchRequest);
 	}

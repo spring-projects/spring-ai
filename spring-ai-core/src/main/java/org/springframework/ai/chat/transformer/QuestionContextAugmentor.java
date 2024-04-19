@@ -1,11 +1,12 @@
-package org.springframework.ai.chat.agent.transformer;
+package org.springframework.ai.chat.transformer;
 
-import org.springframework.ai.chat.agent.PromptContext;
+import org.springframework.ai.chat.transformer.PromptContext;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.transformer.PromptTransformer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.node.Node;
 
@@ -14,10 +15,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Transforms the PromptContext by adding to the prompt a Question and Answer text that
- * contains the placeholder names "context" and "question".
+ * Transforms the Prompt by taking to the current prompt in the Prompt Context and adding
+ * additional context to create a new prompt. The default user text contains the
+ * placeholder names "question" and "context". The "question" placeholder is filled using
+ * the value of the current UserMessage and the "context" placeholder is filled with
+ * Documents contained in the PromptContext's Nodes.
  */
-public class QAPromptContextTransformer implements PromptContextTransformer {
+public class QuestionContextAugmentor implements PromptTransformer {
 
 	private static final String DEFAULT_USER_PROMPT_TEXT = """
 			   "Context information is below.\\n"

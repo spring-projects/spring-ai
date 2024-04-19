@@ -3,12 +3,13 @@ package org.springframework.ai.openai.chat.agent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.agent.ChatAgent;
 import org.springframework.ai.chat.agent.DefaultChatAgent;
-import org.springframework.ai.chat.agent.PromptContext;
-import org.springframework.ai.chat.agent.transformer.QAPromptContextTransformer;
-import org.springframework.ai.chat.agent.transformer.VectorStorePromptContextTransformer;
+import org.springframework.ai.chat.transformer.QuestionContextAugmentor;
+import org.springframework.ai.chat.transformer.VectorStoreRetriever;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.transformer.PromptContext;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
@@ -41,32 +42,29 @@ public class OpenAiDefaultChatAgentIT {
 	@Value("classpath:/data/acme/bikes.json")
 	private Resource bikesResource;
 
+	private ChatAgent chatAgent;
+
 	@Autowired
-	public OpenAiDefaultChatAgentIT(ChatClient chatClient, VectorStore vectorStore) {
+	public OpenAiDefaultChatAgentIT(ChatClient chatClient, ChatAgent chatAgent, VectorStore vectorStore) {
 		this.chatClient = chatClient;
+		this.chatAgent = chatAgent;
 		this.vectorStore = vectorStore;
 	}
 
 	@Test
 	void simpleChat() {
 		loadData();
-		var chatAgent = DefaultChatAgent.builder(chatClient)
-			.withRetrievers(List.of(new VectorStorePromptContextTransformer(vectorStore, SearchRequest.defaults())))
-			.withAugmentors(List.of(new QAPromptContextTransformer()))
-			.build();
 
-		Prompt prompt = new Prompt(new UserMessage("What bike is good for city commuting?"));
+		var prompt = new Prompt(new UserMessage("What bike is good for city commuting?"));
 		PromptContext promptContext = new PromptContext(prompt);
 
-		var agentResponse = chatAgent.call(promptContext);
+		var agentResponse = this.chatAgent.call(promptContext);
 		System.out.println(agentResponse.getChatResponse().getResult().getOutput().getContent());
 
-		RelevancyEvaluator relevancyEvaluator = new RelevancyEvaluator(this.chatClient);
-		EvaluationRequest evaluationRequest = new EvaluationRequest(
-				agentResponse.getPromptContext().getPromptHistory().get(0), agentResponse.getPromptContext().getNodes(),
-				agentResponse.getChatResponse());
-
+		var relevancyEvaluator = new RelevancyEvaluator(this.chatClient);
+		EvaluationRequest evaluationRequest = new EvaluationRequest(agentResponse);
 		EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
+
 		System.out.println(evaluationResponse);
 
 	}
@@ -98,6 +96,15 @@ public class OpenAiDefaultChatAgentIT {
 		@Bean
 		public VectorStore vectorStore(EmbeddingClient embeddingClient) {
 			return new SimpleVectorStore(embeddingClient);
+		}
+
+		@Bean
+		public ChatAgent chatagent(ChatClient chatClient, VectorStore vectorStore) {
+			return DefaultChatAgent.builder(chatClient)
+				.withRetrievers(List.of(new VectorStoreRetriever(vectorStore, SearchRequest.defaults())))
+				.withAugmentors(List.of(new QuestionContextAugmentor()))
+				.build();
+
 		}
 
 	}
