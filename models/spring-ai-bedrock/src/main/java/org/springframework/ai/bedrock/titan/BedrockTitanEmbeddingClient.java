@@ -90,7 +90,7 @@ public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
 			var apiRequest = (this.inputType == InputType.IMAGE)
 					? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
 					: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
-			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);
+			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest).response();
 			embeddingList.add(response.embedding());
 		}
 		var indexCounter = new AtomicInteger(0);

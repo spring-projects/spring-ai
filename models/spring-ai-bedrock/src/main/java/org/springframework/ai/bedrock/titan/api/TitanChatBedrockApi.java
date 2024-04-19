@@ -38,6 +38,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
  * https://docs.aws.amazon.com/bedrock/latest/userguide/titan-text-models.html
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 // @formatter:off
@@ -276,7 +277,7 @@ public class TitanChatBedrockApi extends
 	}
 
 	@Override
-	public TitanChatResponse chatCompletion(TitanChatRequest request) {
+	public AmazonBedrockInvocationContext<TitanChatResponse> chatCompletion(TitanChatRequest request) {
 		return this.internalInvocation(request, TitanChatResponse.class);
 	}
 

@@ -154,7 +154,7 @@ public class TitanEmbeddingBedrockApi extends
 	}
 
 	@Override
-	public TitanEmbeddingResponse embedding(TitanEmbeddingRequest request) {
+	public AmazonBedrockInvocationContext<TitanEmbeddingResponse> embedding(TitanEmbeddingRequest request) {
 		return this.internalInvocation(request, TitanEmbeddingResponse.class);
 	}
 }

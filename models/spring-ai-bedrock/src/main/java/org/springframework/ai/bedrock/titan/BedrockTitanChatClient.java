@@ -20,10 +20,12 @@ import java.util.List;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.MessageToPromptConverter;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.bedrock.titan.metadata.BedrockTitanChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
@@ -37,6 +39,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
@@ -58,12 +61,20 @@ public class BedrockTitanChatClient implements ChatClient, StreamingChatClient {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
+		TitanChatRequest request = this.createRequest(prompt);
+
+		AmazonBedrockInvocationContext<TitanChatResponse> context = this.chatApi.chatCompletion(request);
+
+		TitanChatResponse response = context.response();
+
 		List<Generation> generations = response.results().stream().map(result -> {
 			return new Generation(result.outputText());
 		}).toList();
 
-		return new ChatResponse(generations);
+		BedrockTitanChatResponseMetadata chatResponseMetadata = BedrockTitanChatResponseMetadata.from(response,
+				context.metadata());
+
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	@Override

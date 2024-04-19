@@ -104,7 +104,7 @@ public class BedrockCohereEmbeddingClient extends AbstractEmbeddingClient {
 
 		var apiRequest = new CohereEmbeddingRequest(request.getInstructions(), optionsToUse.getInputType(),
 				optionsToUse.getTruncate());
-		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
+		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest).response();
 		var indexCounter = new AtomicInteger(0);
 		List<Embedding> embeddings = apiResponse.embeddings()
 			.stream()

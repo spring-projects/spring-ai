@@ -23,6 +23,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
@@ -31,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
@@ -48,7 +51,14 @@ public class Llama2ChatBedrockApiIT {
 			.withMaxGenLen(20)
 			.build();
 
-		Llama2ChatResponse response = llama2ChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<Llama2ChatResponse> context = llama2ChatApi.chatCompletion(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		Llama2ChatResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		System.out.println(response.generation());
 		assertThat(response).isNotNull();

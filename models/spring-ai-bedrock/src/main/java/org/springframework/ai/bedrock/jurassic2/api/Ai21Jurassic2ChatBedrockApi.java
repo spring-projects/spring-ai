@@ -382,7 +382,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	}
 
 	@Override
-	public Ai21Jurassic2ChatResponse chatCompletion(Ai21Jurassic2ChatRequest request) {
+	public AmazonBedrockInvocationContext<Ai21Jurassic2ChatResponse> chatCompletion(Ai21Jurassic2ChatRequest request) {
 		return this.internalInvocation(request, Ai21Jurassic2ChatResponse.class);
 	}
 

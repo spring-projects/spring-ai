@@ -21,9 +21,11 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.BedrockUsage;
 import org.springframework.ai.bedrock.MessageToPromptConverter;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
+import org.springframework.ai.bedrock.cohere.metadata.CohereChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
@@ -37,6 +39,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockCohereChatClient implements ChatClient, StreamingChatClient {
@@ -59,12 +62,19 @@ public class BedrockCohereChatClient implements ChatClient, StreamingChatClient 
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
+		CohereChatRequest request = this.createRequest(prompt, false);
+
+		AmazonBedrockInvocationContext<CohereChatResponse> context = chatApi.chatCompletion(request);
+
+		CohereChatResponse response = context.response();
+
 		List<Generation> generations = response.generations().stream().map(g -> {
 			return new Generation(g.text());
 		}).toList();
 
-		return new ChatResponse(generations);
+		CohereChatResponseMetadata chatResponseMetadata = CohereChatResponseMetadata.from(response, context.metadata());
+
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	@Override

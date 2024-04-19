@@ -23,6 +23,7 @@ import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
 import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
+import org.springframework.ai.bedrock.llama2.metadata.BedrockLlama2ChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.ChatResponse;
@@ -39,6 +40,7 @@ import org.springframework.util.Assert;
  * generative.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient {
@@ -65,10 +67,16 @@ public class BedrockLlama2ChatClient implements ChatClient, StreamingChatClient 
 
 		var request = createRequest(prompt);
 
-		Llama2ChatResponse response = this.chatApi.chatCompletion(request);
+		var context = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.generation()).withGenerationMetadata(
-				ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
+		Llama2ChatResponse response = context.response();
+
+		var generations = List.of(new Generation(response.generation())
+			.withGenerationMetadata(ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response))));
+
+		var chatResponseMetadata = BedrockLlama2ChatResponseMetadata.from(response, context.metadata());
+
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	@Override

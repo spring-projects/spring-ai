@@ -34,6 +34,7 @@ import reactor.core.publisher.Sinks.EmitResult;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
@@ -61,6 +62,7 @@ import org.springframework.util.Assert;
  * @see <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html">Model Parameters</a>
 
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public abstract class AbstractBedrockApi<I, O, SO> {
@@ -93,7 +95,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.OBJECT_MAPPER, timeout);
 	}
 
-		/**
+	/**
 	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
 	 * @param modelId The model id to use.
@@ -176,12 +178,47 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	}
 
 	/**
+	 * Amazon Bedrock Invocation context, includes the model invocation response and metadata.
+	 *
+	 * @param response The model invocation response.
+	 * @param metadata The model invocation response metadata.
+	 */
+	public record AmazonBedrockInvocationContext<T>(T response, AmazonBedrockInvocationMetadata metadata) {}
+
+	/**
+	 * Amazon Bedrock Invocation metadata.
+	 *
+	 * @param awsRequestId The AWS Bedrock invocation request id.
+	 * @param inputTokenCount The input token count during this invocation.
+	 * @param outputTokenCount The output token count during this invocation.
+	 * @param invocationLatency The invocation latency in millisecondes during this invocation.
+	 */
+	public record AmazonBedrockInvocationMetadata(String awsRequestId, Long inputTokenCount, Long outputTokenCount, Long invocationLatency) {
+		private static final String INPUT_TOKEN_COUNT = "X-Amzn-Bedrock-Input-Token-Count";
+		private static final String OUTPUT_TOKEN_COUNT = "X-Amzn-Bedrock-Output-Token-Count";
+		private static final String INVOCATION_LATENCY = "X-Amzn-Bedrock-Invocation-Latency";
+		private static final String AWS_REQUEST_ID = "x-amzn-RequestId";
+
+		public static AmazonBedrockInvocationMetadata from(InvokeModelResponse response) {
+			SdkHttpResponse sdkHttpResponse = response.sdkHttpResponse();
+
+			String awsRequestId = sdkHttpResponse.firstMatchingHeader(AWS_REQUEST_ID).orElse(null);
+			Long inputTokenCount = sdkHttpResponse.firstMatchingHeader(INPUT_TOKEN_COUNT).map(Long::valueOf).orElse(0L);
+			Long outputTokenCount = sdkHttpResponse.firstMatchingHeader(OUTPUT_TOKEN_COUNT).map(Long::valueOf).orElse(0L);
+			Long invocationLatency = sdkHttpResponse.firstMatchingHeader(INVOCATION_LATENCY).map(Long::valueOf).orElse(0L);
+
+			return new AmazonBedrockInvocationMetadata(awsRequestId, inputTokenCount, outputTokenCount, invocationLatency);
+		}
+
+	}
+
+	/**
 	 * Compute the embedding for the given text.
 	 *
 	 * @param request The embedding request.
-	 * @return Returns the embedding response.
+	 * @return Returns the embedding response context.
 	 */
-	protected O embedding(I request) {
+	protected AmazonBedrockInvocationContext<O> embedding(I request) {
 		throw new UnsupportedOperationException("Embedding is not supported for this model: " + this.modelId);
 	}
 
@@ -189,9 +226,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * Chat completion invocation.
 	 *
 	 * @param request The chat completion request.
-	 * @return The chat completion response.
+	 * @return The chat completion response context.
 	 */
-	protected O chatCompletion(I request) {
+	protected AmazonBedrockInvocationContext<O> chatCompletion(I request) {
 		throw new UnsupportedOperationException("Chat completion is not supported for this model: " + this.modelId);
 	}
 
@@ -215,13 +252,12 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param request Model invocation request.
 	 * @param clazz The response class type
 	 * @return The model invocation response.
-	 *
 	 */
-	protected O internalInvocation(I request, Class<O> clazz) {
+	protected AmazonBedrockInvocationContext<O> internalInvocation(I request, Class<O> clazz) {
 
 		SdkBytes body;
 		try {
-			body = SdkBytes.fromUtf8String(new ObjectMapper().writeValueAsString(request));
+			body = SdkBytes.fromUtf8String(objectMapper.writeValueAsString(request));
 		}
 		catch (JsonProcessingException e) {
 			throw new IllegalArgumentException("Invalid JSON format for the input request: " + request, e);
@@ -237,7 +273,11 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		String responseBody = response.body().asString(StandardCharsets.UTF_8);
 
 		try {
-			return this.objectMapper.readValue(responseBody, clazz);
+			O invokeResponse = this.objectMapper.readValue(responseBody, clazz);
+
+			AmazonBedrockInvocationMetadata metadata = AmazonBedrockInvocationMetadata.from(response);
+
+			return new AmazonBedrockInvocationContext<>(invokeResponse, metadata);
 		}
 		catch (JsonProcessingException | UncheckedIOException e) {
 

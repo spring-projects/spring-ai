@@ -24,6 +24,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
@@ -50,7 +53,15 @@ public class TitanChatBedrockApiIT {
 
 	@Test
 	public void chatCompletion() {
-		TitanChatResponse response = titanBedrockApi.chatCompletion(titanChatRequest);
+		AmazonBedrockInvocationContext<TitanChatResponse> context = titanBedrockApi.chatCompletion(titanChatRequest);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		TitanChatResponse response = context.response();
+		assertThat(response).isNotNull();
+
 		assertThat(response.results()).hasSize(1);
 		assertThat(response.results().get(0).outputText()).contains("Blackbeard");
 	}

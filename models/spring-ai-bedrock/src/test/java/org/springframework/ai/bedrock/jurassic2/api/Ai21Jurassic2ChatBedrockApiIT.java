@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
@@ -46,7 +48,14 @@ public class Ai21Jurassic2ChatBedrockApiIT {
 				new Ai21Jurassic2ChatRequest.FloatScalePenalty(0.5f, true, true, true, true, true),
 				new Ai21Jurassic2ChatRequest.IntegerScalePenalty(1, true, true, true, true, true));
 
-		Ai21Jurassic2ChatResponse response = api.chatCompletion(request);
+		AmazonBedrockInvocationContext<Ai21Jurassic2ChatResponse> context = api.chatCompletion(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		Ai21Jurassic2ChatResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		assertThat(response).isNotNull();
 		assertThat(response.completions()).isNotEmpty();

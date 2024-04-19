@@ -30,6 +30,8 @@ import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
 
 import static org.assertj.core.api.Assertions.assertThat;;
@@ -57,7 +59,14 @@ public class AnthropicChatBedrockApiIT {
 			.withTopK(10)
 			.build();
 
-		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<AnthropicChatResponse> context = anthropicChatApi.chatCompletion(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		AnthropicChatResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		System.out.println(response.completion());
 		assertThat(response).isNotNull();

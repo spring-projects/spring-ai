@@ -377,7 +377,7 @@ public class CohereChatBedrockApi extends
 	}
 
 	@Override
-	public CohereChatResponse chatCompletion(CohereChatRequest request) {
+	public AmazonBedrockInvocationContext<CohereChatResponse> chatCompletion(CohereChatRequest request) {
 		Assert.isTrue(!request.stream(), "The request must be configured to return the complete response!");
 		return this.internalInvocation(request, CohereChatResponse.class);
 	}

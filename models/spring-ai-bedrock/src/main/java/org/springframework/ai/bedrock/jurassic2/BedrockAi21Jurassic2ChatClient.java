@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.jurassic2;
 import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
+import org.springframework.ai.bedrock.jurassic2.metadata.BedrockAi21Jurassic2ChatResponseMetadata;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -32,6 +33,7 @@ import org.springframework.util.Assert;
  * Java {@link ChatClient} for the Bedrock Jurassic2 chat generative model.
  *
  * @author Ahmed Yousri
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAi21Jurassic2ChatClient implements ChatClient {
@@ -61,13 +63,20 @@ public class BedrockAi21Jurassic2ChatClient implements ChatClient {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		var request = createRequest(prompt);
-		var response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(response.completions()
+		var context = this.chatApi.chatCompletion(request);
+
+		var response = context.response();
+
+		var generations = response.completions()
 			.stream()
 			.map(completion -> new Generation(completion.data().text())
 				.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
-			.toList());
+			.toList();
+
+		var chatResponseMetadata = BedrockAi21Jurassic2ChatResponseMetadata.from(response, context.metadata());
+
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	private Ai21Jurassic2ChatRequest createRequest(Prompt prompt) {

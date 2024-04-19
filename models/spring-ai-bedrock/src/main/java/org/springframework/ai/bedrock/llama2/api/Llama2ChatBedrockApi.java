@@ -215,7 +215,7 @@ public class Llama2ChatBedrockApi extends
 	}
 
 	@Override
-	public Llama2ChatResponse chatCompletion(Llama2ChatRequest request) {
+	public AmazonBedrockInvocationContext<Llama2ChatResponse> chatCompletion(Llama2ChatRequest request) {
 		return this.internalInvocation(request, Llama2ChatResponse.class);
 	}
 

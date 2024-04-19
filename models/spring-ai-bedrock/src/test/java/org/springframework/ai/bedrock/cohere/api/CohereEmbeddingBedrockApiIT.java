@@ -24,6 +24,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingResponse;
@@ -48,7 +50,14 @@ public class CohereEmbeddingBedrockApiIT {
 				List.of("I like to eat apples", "I like to eat oranges"),
 				CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT, CohereEmbeddingRequest.Truncate.NONE);
 
-		CohereEmbeddingResponse response = api.embedding(request);
+		AmazonBedrockInvocationContext<CohereEmbeddingResponse> context = api.embedding(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		CohereEmbeddingResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		assertThat(response).isNotNull();
 		assertThat(response.texts()).isEqualTo(request.texts());

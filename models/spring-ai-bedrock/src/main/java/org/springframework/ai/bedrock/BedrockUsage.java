@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetrics;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
@@ -23,38 +24,45 @@ import org.springframework.util.Assert;
  * {@link Usage} implementation for Bedrock API.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockUsage implements Usage {
 
 	public static BedrockUsage from(AmazonBedrockInvocationMetrics usage) {
-		return new BedrockUsage(usage);
+		Assert.notNull(usage, "Amazon Bedrock Usage must not be null");
+
+		return new BedrockUsage(usage.inputTokenCount().longValue(), usage.outputTokenCount().longValue());
 	}
 
-	private final AmazonBedrockInvocationMetrics usage;
+	public static BedrockUsage from(AmazonBedrockInvocationMetadata metadata) {
+		Assert.notNull(metadata, "Amazon Bedrock Invocation Metadata must not be null");
 
-	protected BedrockUsage(AmazonBedrockInvocationMetrics usage) {
-		Assert.notNull(usage, "OpenAI Usage must not be null");
-		this.usage = usage;
+		return new BedrockUsage(metadata.inputTokenCount(), metadata.outputTokenCount());
 	}
 
-	protected AmazonBedrockInvocationMetrics getUsage() {
-		return this.usage;
+	private Long promptTokens;
+
+	private Long generationTokens;
+
+	protected BedrockUsage(Long promptTokens, Long generationTokens) {
+		this.promptTokens = promptTokens;
+		this.generationTokens = generationTokens;
 	}
 
 	@Override
 	public Long getPromptTokens() {
-		return getUsage().inputTokenCount().longValue();
+		return this.promptTokens;
 	}
 
 	@Override
 	public Long getGenerationTokens() {
-		return getUsage().outputTokenCount().longValue();
+		return this.generationTokens;
 	}
 
 	@Override
 	public String toString() {
-		return getUsage().toString();
+		return "BedrockUsage [promptTokens=" + promptTokens + ", generationTokens=" + generationTokens + "]";
 	}
 
 }

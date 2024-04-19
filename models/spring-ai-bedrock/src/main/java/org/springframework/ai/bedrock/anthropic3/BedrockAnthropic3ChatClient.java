@@ -20,6 +20,8 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse.StreamingType;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
+import org.springframework.ai.bedrock.anthropic3.metadata.BedrockAnthropic3ChatResponseMetadata;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
 import org.springframework.ai.chat.ChatClient;
@@ -48,6 +50,7 @@ import java.util.stream.Collectors;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAnthropic3ChatClient implements ChatClient, StreamingChatClient {
@@ -76,9 +79,16 @@ public class BedrockAnthropic3ChatClient implements ChatClient, StreamingChatCli
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<AnthropicChatResponse> context = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+		AnthropicChatResponse response = context.response();
+
+		List<Generation> generations = List.of(new Generation(response.content().get(0).text()));
+
+		BedrockAnthropic3ChatResponseMetadata chatResponseMetadata = BedrockAnthropic3ChatResponseMetadata
+			.from(response, context.metadata());
+
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	@Override

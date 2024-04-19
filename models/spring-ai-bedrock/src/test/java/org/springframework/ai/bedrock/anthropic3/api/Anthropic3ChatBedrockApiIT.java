@@ -25,6 +25,8 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse.StreamingType;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
 import reactor.core.publisher.Flux;
@@ -40,6 +42,7 @@ import static org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedroc
 
 /**
  * @author Ben Middleton
+ * @author Wei Jiang
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
@@ -63,11 +66,17 @@ public class Anthropic3ChatBedrockApiIT {
 			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
-		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<AnthropicChatResponse> context = anthropicChatApi.chatCompletion(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		AnthropicChatResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		logger.info("" + response.content());
 
-		assertThat(response).isNotNull();
 		assertThat(response.content().get(0).text()).isNotEmpty();
 		assertThat(response.content().get(0).text()).contains("Blackbeard");
 		assertThat(response.stopReason()).isEqualTo("end_turn");
@@ -103,7 +112,14 @@ public class Anthropic3ChatBedrockApiIT {
 			.withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION)
 			.build();
 
-		AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<AnthropicChatResponse> context = anthropicChatApi.chatCompletion(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		AnthropicChatResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		logger.info("" + response.content());
 		assertThat(response).isNotNull();

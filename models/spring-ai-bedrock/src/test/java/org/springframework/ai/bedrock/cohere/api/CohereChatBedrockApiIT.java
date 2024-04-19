@@ -23,6 +23,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
@@ -83,7 +85,14 @@ public class CohereChatBedrockApiIT {
 			.withTruncate(Truncate.NONE)
 			.build();
 
-		CohereChatResponse response = cohereChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<CohereChatResponse> context = cohereChatApi.chatCompletion(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		CohereChatResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		assertThat(response).isNotNull();
 		assertThat(response.prompt()).isEqualTo(request.prompt());

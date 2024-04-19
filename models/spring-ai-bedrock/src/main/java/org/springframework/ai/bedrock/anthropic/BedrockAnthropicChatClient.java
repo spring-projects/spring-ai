@@ -27,6 +27,8 @@ import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
+import org.springframework.ai.bedrock.anthropic.metadata.BedrockAnthropicChatResponseMetadata;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -37,6 +39,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
  * generative.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClient {
@@ -65,9 +68,16 @@ public class BedrockAnthropicChatClient implements ChatClient, StreamingChatClie
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		AmazonBedrockInvocationContext<AnthropicChatResponse> context = anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.completion())));
+		AnthropicChatResponse response = context.response();
+
+		List<Generation> generations = List.of(new Generation(response.completion()));
+
+		BedrockAnthropicChatResponseMetadata chatResponseMetadata = BedrockAnthropicChatResponseMetadata.from(response,
+				context.metadata());
+
+		return new ChatResponse(generations, chatResponseMetadata);
 	}
 
 	@Override

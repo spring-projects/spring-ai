@@ -202,7 +202,7 @@ public class CohereEmbeddingBedrockApi extends
 	}
 
 	@Override
-	public CohereEmbeddingResponse embedding(CohereEmbeddingRequest request) {
+	public AmazonBedrockInvocationContext<CohereEmbeddingResponse> embedding(CohereEmbeddingRequest request) {
 		return this.internalInvocation(request, CohereEmbeddingResponse.class);
 	}
 

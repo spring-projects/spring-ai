@@ -238,7 +238,7 @@ public class AnthropicChatBedrockApi extends
 	}
 
 	@Override
-	public AnthropicChatResponse chatCompletion(AnthropicChatRequest anthropicRequest) {
+	public AmazonBedrockInvocationContext<AnthropicChatResponse> chatCompletion(AnthropicChatRequest anthropicRequest) {
 		Assert.notNull(anthropicRequest, "'anthropicRequest' must not be null");
 		return this.internalInvocation(anthropicRequest, AnthropicChatResponse.class);
 	}

@@ -21,32 +21,46 @@ import java.util.Base64;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationContext;
+import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvocationMetadata;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class TitanEmbeddingBedrockApiIT {
 
+	@Autowired
+	private TitanEmbeddingBedrockApi api;
+
 	@Test
 	public void embedText() {
 
-		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
-				TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(), Region.US_EAST_1.id(), Duration.ofMinutes(2));
-
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputText("I like to eat apples.").build();
 
-		TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+		AmazonBedrockInvocationContext<TitanEmbeddingResponse> context = api.embedding(request);
+		assertThat(context).isNotNull();
 
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		TitanEmbeddingResponse response = context.response();
 		assertThat(response).isNotNull();
 		assertThat(response.inputTextTokenCount()).isEqualTo(6);
 		assertThat(response.embedding()).hasSize(1536);
@@ -54,9 +68,6 @@ public class TitanEmbeddingBedrockApiIT {
 
 	@Test
 	public void embedImage() throws IOException {
-
-		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
-				TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id(), Duration.ofMinutes(2));
 
 		byte[] image = new DefaultResourceLoader().getResource("classpath:/spring_framework.png")
 			.getContentAsByteArray();
@@ -66,11 +77,29 @@ public class TitanEmbeddingBedrockApiIT {
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputImage(imageBase64).build();
 
-		TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+		AmazonBedrockInvocationContext<TitanEmbeddingResponse> context = api.embedding(request);
+		assertThat(context).isNotNull();
+
+		AmazonBedrockInvocationMetadata metadata = context.metadata();
+		assertThat(metadata).isNotNull();
+
+		TitanEmbeddingResponse response = context.response();
+		assertThat(response).isNotNull();
 
 		assertThat(response).isNotNull();
 		assertThat(response.inputTextTokenCount()).isEqualTo(0); // e.g. image input
 		assertThat(response.embedding()).hasSize(1024);
+	}
+
+	@SpringBootConfiguration
+	public static class TestConfiguration {
+
+		@Bean
+		public TitanEmbeddingBedrockApi cohereEmbeddingApi() {
+			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(), Region.US_EAST_1.id(),
+					Duration.ofMinutes(2));
+		}
+
 	}
 
 }
