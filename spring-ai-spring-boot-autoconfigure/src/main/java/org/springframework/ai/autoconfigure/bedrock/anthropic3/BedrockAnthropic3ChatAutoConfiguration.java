@@ -35,6 +35,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
  * Leverages the Spring Cloud AWS to resolve the {@link AwsCredentialsProvider}.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -46,14 +47,14 @@ public class BedrockAnthropic3ChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public Anthropic3ChatBedrockApi anthropicApi(AwsCredentialsProvider credentialsProvider,
+	public Anthropic3ChatBedrockApi anthropic3Api(AwsCredentialsProvider credentialsProvider,
 			BedrockAnthropic3ChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new Anthropic3ChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
 				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
-	public BedrockAnthropic3ChatClient anthropicChatClient(Anthropic3ChatBedrockApi anthropicApi,
+	public BedrockAnthropic3ChatClient anthropic3ChatClient(Anthropic3ChatBedrockApi anthropicApi,
 			BedrockAnthropic3ChatProperties properties) {
 		return new BedrockAnthropic3ChatClient(anthropicApi, properties.getOptions());
 	}
