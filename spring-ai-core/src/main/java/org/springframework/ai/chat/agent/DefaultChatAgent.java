@@ -2,8 +2,8 @@ package org.springframework.ai.chat.agent;
 
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.transformer.PromptContext;
-import org.springframework.ai.chat.transformer.PromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 
 import java.util.ArrayList;
 import java.util.List;

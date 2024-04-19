@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.node.Node;
@@ -55,6 +56,8 @@ public class Document implements Node<String> {
 	 */
 	private String content;
 
+	private List<Media> media;
+
 	/**
 	 * Embedding of the document. Note: ephemeral field.
 	 */
@@ -81,12 +84,17 @@ public class Document implements Node<String> {
 	}
 
 	public Document(String id, String content, Map<String, Object> metadata) {
+		this(id, content, List.of(), metadata);
+	}
+
+	public Document(String id, String content, List<Media> media, Map<String, Object> metadata) {
 		Assert.hasText(id, "id must not be null");
 		Assert.hasText(content, "content must not be null");
 		Assert.notNull(metadata, "metadata must not be null");
 
 		this.id = id;
 		this.content = content;
+		this.media = media;
 		this.metadata = metadata;
 	}
 
@@ -97,6 +105,11 @@ public class Document implements Node<String> {
 	@Override
 	public String getContent() {
 		return this.content;
+	}
+
+	@Override
+	public List<Media> getMedia() {
+		return this.media;
 	}
 
 	@JsonIgnore

@@ -1,12 +1,9 @@
-package org.springframework.ai.chat.transformer;
+package org.springframework.ai.chat.prompt.transformer;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.node.Node;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * The shared, at the moment, mutable, data structure that can be used to implement
@@ -19,13 +16,13 @@ public class PromptContext {
 
 	private Prompt prompt; // The most up-to-date prompt to use
 
-	List<Node<?>> nodes; // The most up-to-date data to use
+	private List<Node<?>> nodes; // The most up-to-date data to use
 
 	private List<Prompt> promptHistory;
 
 	private String conversationId;
 
-	private Map<String, Object> metadata;
+	private Map<String, Object> metadata = new HashMap<>();
 
 	public PromptContext(Prompt prompt) {
 		this(prompt, new ArrayList<>());
