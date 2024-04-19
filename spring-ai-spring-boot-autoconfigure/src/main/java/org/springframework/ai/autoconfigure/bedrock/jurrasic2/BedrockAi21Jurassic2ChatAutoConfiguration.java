@@ -49,7 +49,7 @@ public class BedrockAi21Jurassic2ChatAutoConfiguration {
 	public Ai21Jurassic2ChatBedrockApi ai21Jurassic2ChatBedrockApi(AwsCredentialsProvider credentialsProvider,
 			BedrockAi21Jurassic2ChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
 		return new Ai21Jurassic2ChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
-				new ObjectMapper());
+				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean

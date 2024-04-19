@@ -1,1 +1,1 @@
-[Neo4j Vector Store Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/neo4j.html)
+[Neo4j Vector Store Documentation](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/vectordbs/neo4j.html)

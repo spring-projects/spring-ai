@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -37,7 +38,6 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions.TransportType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -224,7 +224,10 @@ class VertexAiGeminiChatClientIT {
 		public VertexAI vertexAiApi() {
 			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
 			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
-			return new VertexAI(projectId, location);
+			return new VertexAI.Builder().setProjectId(projectId)
+				.setLocation(location)
+				.setTransport(Transport.REST)
+				.build();
 		}
 
 		@Bean
@@ -232,7 +235,6 @@ class VertexAiGeminiChatClientIT {
 			return new VertexAiGeminiChatClient(vertexAi,
 					VertexAiGeminiChatOptions.builder()
 						.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_VISION.getValue())
-						.withTransportType(TransportType.REST)
 						.build());
 		}
 

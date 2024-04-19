@@ -20,6 +20,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.OpenAiChatClient;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.OpenAiImageClient;
@@ -377,7 +378,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.chat.options.topP=0.56",
 
 				// "spring.ai.openai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.openai.chat.options.toolChoice=" + ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName"),
+				"spring.ai.openai.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName")),
 
 				"spring.ai.openai.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.openai.chat.options.tools[0].function.description=function description",

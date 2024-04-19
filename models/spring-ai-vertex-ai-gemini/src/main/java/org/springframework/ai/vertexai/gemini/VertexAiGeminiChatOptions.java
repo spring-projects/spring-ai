@@ -99,10 +99,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
 
-	/**
-	 * The transport type to use for the Gemini Chat Client.
-	 */
-	private TransportType transportType = TransportType.GRPC;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -162,11 +158,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
-			return this;
-		}
-
-		public Builder withTransportType(TransportType transportType) {
-			this.options.setTransportType(transportType);
 			return this;
 		}
 
@@ -257,14 +248,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.functions = functions;
 	}
 
-	public TransportType getTransportType() {
-		return this.transportType;
-	}
-
-	public void setTransportType(TransportType transportType) {
-		this.transportType = transportType;
-	}
-
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -278,7 +261,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		result = prime * result + ((model == null) ? 0 : model.hashCode());
 		result = prime * result + ((functionCallbacks == null) ? 0 : functionCallbacks.hashCode());
 		result = prime * result + ((functions == null) ? 0 : functions.hashCode());
-		result = prime * result + ((transportType == null) ? 0 : transportType.hashCode());
 		return result;
 	}
 
@@ -344,8 +326,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 				return false;
 		}
 		else if (!functions.equals(other.functions))
-			return false;
-		if (transportType != other.transportType)
 			return false;
 		return true;
 	}

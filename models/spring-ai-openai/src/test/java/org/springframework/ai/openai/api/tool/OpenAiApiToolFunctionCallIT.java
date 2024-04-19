@@ -32,6 +32,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
@@ -89,19 +90,11 @@ public class OpenAiApiToolFunctionCallIT {
 								}
 								""")));
 
-		// Or you can use the
-		// ModelOptionsUtils.getJsonSchema(FakeWeatherService.Request.class))) to
-		// auto-generate the JSON schema like:
-		// var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION, new
-		// OpenAiApi.FunctionTool.Function(
-		// "Get the weather in location. Return temperature in 30°F or 30°C format.",
-		// "getCurrentWeather",
-		// ModelOptionsUtils.getJsonSchema(FakeWeatherService.Request.class)));
-
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview",
-				List.of(functionTool), null);
+				List.of(functionTool), ToolChoiceBuilder.AUTO);
+		// List.of(functionTool), ToolChoiceBuilder.FUNCTION("getCurrentWeather"));
 
 		ResponseEntity<ChatCompletion> chatCompletion = completionApi.chatCompletionEntity(chatCompletionRequest);
 

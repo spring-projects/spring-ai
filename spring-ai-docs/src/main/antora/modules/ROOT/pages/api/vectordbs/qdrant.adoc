@@ -171,7 +171,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
     .withTopK(TOP_K)
     .withSimilarityThreshold(SIMILARITY_THRESHOLD)
     .withFilterExpression(b.and(
-        b.in("john", "jill"),
+        b.in("author", "john", "jill"),
         b.eq("article_type", "blog")).build()));
 ----
 

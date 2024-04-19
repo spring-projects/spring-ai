@@ -2,17 +2,14 @@
 
 This section walks you through setting up the Pinecone `VectorStore` to store document embeddings and perform similarity searches.
 
-== What is Pinecone?
-
 link:https://www.pinecone.io/[Pinecone] is a popular cloud-based vector database, which allows you to store and search vectors efficiently.
 
 == Prerequisites
 
 1. Pinecone Account: Before you start, sign up for a link:https://app.pinecone.io/[Pinecone account].
 2. Pinecone Project: Once registered, create a new project, an index, and generate an API key. You'll need these details for configuration.
-3. OpenAI Account: Create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the token at link:https://platform.openai.com/account/api-keys[API Keys].
-
-== Configuration
+3. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `PineconeVectorStore`.
 
 To set up `PineconeVectorStore`, gather the following details from your Pinecone account:
 
@@ -27,32 +24,135 @@ To set up `PineconeVectorStore`, gather the following details from your Pinecone
 This information is available to you in the Pinecone UI portal.
 ====
 
-When setting up embeddings, select a vector dimension of `1536`. This matches the dimensionality of OpenAI's model `text-embedding-ada-002`, which we'll be using for this guide.
+== Auto-configuration
 
-Additionally, you'll need to provide your OpenAI API Key. Set it as an environment variable like so:
+Spring AI provides Spring Boot auto-configuration for the Pinecone Vector Sore.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
-[source,bash]
+[source, xml]
 ----
-export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
-----
-
-== Repository
-
-To acquire Spring AI artifacts, declare the Spring Snapshot repository:
-
-[source,xml]
-----
-<repository>
-	<id>spring-snapshots</id>
-	<name>Spring Snapshots</name>
-	<url>https://repo.spring.io/snapshot</url>
-	<releases>
-		<enabled>false</enabled>
-	</releases>
-</repository>
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-pinecone-store-spring-boot-starter</artifactId>
+</dependency>
 ----
 
-== Dependencies
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-pinecone-store-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+
+Here is an example of the needed bean:
+
+[source,java]
+----
+@Bean
+public EmbeddingClient embeddingClient() {
+    // Can be any other EmbeddingClient implementation.
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+}
+----
+
+To connect to Pinecone you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's _application.properties_,
+
+[source,properties]
+----
+spring.ai.vectorstore.pinecone.apiKey=<your api key>
+spring.ai.vectorstore.pinecone.environment=<your environment>
+spring.ai.vectorstore.pinecone.projectId=<your project id>
+spring.ai.vectorstore.pinecone.index-name=<your index name>
+
+# API key if needed, e.g. OpenAI
+spring.ai.openai.api.key=<api-key>
+----
+
+Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+Now you can Auto-wire the Pinecone Vector Store in your application and use it
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents
+vectorStore.add(List.of(document));
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+=== Configuration properties
+
+You can use the following properties in your Spring Boot configuration to customize the Pinecone vector store.
+
+|===
+|Property| Description | Default value
+
+|`spring.ai.vectorstore.pinecone.api-key`| Pinecone API Key | -
+|`spring.ai.vectorstore.pinecone.environment`| Pinecone environment | `gcp-starter`
+|`spring.ai.vectorstore.pinecone.project-id`| Pinecone project ID | -
+|`spring.ai.vectorstore.pinecone.index-name`| Pinecone index name | -
+|`spring.ai.vectorstore.pinecone.namespace`| Pinecone namespace | -
+|`spring.ai.vectorstore.pinecone.server-side-timeout`|  | 20 sec.
+
+|===
+
+== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Pinecone store.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+    .withQuery("The World")
+    .withTopK(TOP_K)
+    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
+    .withFilterExpression(b.and(
+        b.in("author","john", "jill"),
+        b.eq("article_type", "blog")).build()));
+----
+
+NOTE: These filter expressions are converted into the equivalent Pinecone filters.
+
+
+== Manual Configuration
+
+If you prefer to configure the `PineconeVectorStore` manually, you can do so by creating a `PineconeVectorStoreConfig` bean
+and passing it to the `PineconeVectorStore` constructor.
 
 Add these dependencies to your project:
 
@@ -78,7 +178,7 @@ Add these dependencies to your project:
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-== Sample Code
+=== Sample Code
 
 To configure Pinecone in your application, you can use the following setup:
 

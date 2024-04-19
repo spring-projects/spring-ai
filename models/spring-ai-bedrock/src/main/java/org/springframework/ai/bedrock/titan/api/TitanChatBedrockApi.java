@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.titan.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -43,6 +44,12 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
 public class TitanChatBedrockApi extends
 		AbstractBedrockApi<TitanChatRequest, TitanChatResponse, TitanChatResponseChunk> {
 
+	/**
+	 * Create a new TitanChatBedrockApi instance using the default credentials provider chain, the default object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link TitanChatModel} for the supported models.
+	 * @param region The AWS region to use.
+	 */
 	public TitanChatBedrockApi(String modelId, String region) {
 		super(modelId, region);
 	}
@@ -58,6 +65,31 @@ public class TitanChatBedrockApi extends
 	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper) {
 		super(modelId, credentialsProvider, region, objectMapper);
+	}
+
+	/**
+	 * Create a new TitanChatBedrockApi instance using the default credentials provider chain, the default object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link TitanChatModel} for the supported models.
+	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
+	 */
+	public TitanChatBedrockApi(String modelId, String region, Duration timeout) {
+		super(modelId, region, timeout);
+	}
+
+	/**
+	 * Create a new TitanChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link TitanChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**
