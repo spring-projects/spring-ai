@@ -1,20 +1,25 @@
 package org.springframework.ai.evaluation;
 
 import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.agent.AgentResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.node.Node;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class EvaluationRequest {
 
-	private Prompt prompt;
+	private final Prompt prompt;
 
-	private List<Node<?>> dataList;
+	private final List<Node<?>> dataList;
 
-	private ChatResponse chatResponse;
+	private final ChatResponse chatResponse;
+
+	public EvaluationRequest(AgentResponse agentResponse) {
+		this(agentResponse.getPromptContext().getPromptHistory().get(0), agentResponse.getPromptContext().getNodes(),
+				agentResponse.getChatResponse());
+	}
 
 	public EvaluationRequest(Prompt prompt, List<Node<?>> dataList, ChatResponse chatResponse) {
 		this.prompt = prompt;
