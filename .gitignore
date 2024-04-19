@@ -29,8 +29,6 @@ out
 vscode
 settings.json
 
-node
-node_modules
 package-lock.json
 package.json
 .vscode
