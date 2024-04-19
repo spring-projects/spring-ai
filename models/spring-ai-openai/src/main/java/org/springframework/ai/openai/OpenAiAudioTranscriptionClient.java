@@ -178,7 +178,7 @@ public class OpenAiAudioTranscriptionClient
 
 		if (request.getOptions() != null) {
 			if (request.getOptions() instanceof OpenAiAudioTranscriptionOptions runtimeOptions) {
-				options = this.merge(options, runtimeOptions);
+				options = this.merge(runtimeOptions, options);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type TranscriptionOptions: "
