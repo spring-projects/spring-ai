@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.node.Node;
+import org.springframework.ai.model.Content;
 import org.springframework.util.Assert;
 
 /**
@@ -36,7 +36,7 @@ import org.springframework.util.Assert;
  * the document's unique ID and an optional embedding.
  */
 @JsonIgnoreProperties({ "contentFormatter" })
-public class Document implements Node<String> {
+public class Document implements Content {
 
 	public final static ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
 

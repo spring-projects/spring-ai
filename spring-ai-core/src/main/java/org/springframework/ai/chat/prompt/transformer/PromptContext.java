@@ -1,7 +1,7 @@
 package org.springframework.ai.chat.prompt.transformer;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.node.Node;
+import org.springframework.ai.model.Content;
 
 import java.util.*;
 
@@ -16,7 +16,7 @@ public class PromptContext {
 
 	private Prompt prompt; // The most up-to-date prompt to use
 
-	private List<Node<?>> nodes; // The most up-to-date data to use
+	private List<Content> contents; // The most up-to-date data to use
 
 	private List<Prompt> promptHistory;
 
@@ -33,11 +33,11 @@ public class PromptContext {
 		this.conversationId = conversationId;
 	}
 
-	public PromptContext(Prompt prompt, List<Node<?>> nodes) {
+	public PromptContext(Prompt prompt, List<Content> contents) {
 		this.prompt = prompt;
 		this.promptHistory = new ArrayList<>();
 		this.promptHistory.add(prompt);
-		this.nodes = nodes;
+		this.contents = contents;
 	}
 
 	public Prompt getPrompt() {
@@ -48,16 +48,16 @@ public class PromptContext {
 		this.prompt = prompt;
 	}
 
-	public void addData(Node<?> datum) {
-		this.nodes.add(datum);
+	public void addData(Content datum) {
+		this.contents.add(datum);
 	}
 
-	public List<Node<?>> getNodes() {
-		return nodes;
+	public List<Content> getNodes() {
+		return contents;
 	}
 
-	public void setNodes(List<Node<?>> nodes) {
-		this.nodes = nodes;
+	public void setNodes(List<Content> contents) {
+		this.contents = contents;
 	}
 
 	public void addPromptHistory(Prompt prompt) {
@@ -78,7 +78,7 @@ public class PromptContext {
 
 	@Override
 	public String toString() {
-		return "PromptContext{" + "prompt=" + prompt + ", nodes=" + nodes + ", promptHistory=" + promptHistory
+		return "PromptContext{" + "prompt=" + prompt + ", contents=" + contents + ", promptHistory=" + promptHistory
 				+ ", conversationId='" + conversationId + '\'' + ", metadata=" + metadata + '}';
 	}
 
@@ -88,14 +88,14 @@ public class PromptContext {
 			return true;
 		if (!(o instanceof PromptContext that))
 			return false;
-		return Objects.equals(prompt, that.prompt) && Objects.equals(nodes, that.nodes)
+		return Objects.equals(prompt, that.prompt) && Objects.equals(contents, that.contents)
 				&& Objects.equals(promptHistory, that.promptHistory)
 				&& Objects.equals(conversationId, that.conversationId) && Objects.equals(metadata, that.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(prompt, nodes, promptHistory, conversationId, metadata);
+		return Objects.hash(prompt, contents, promptHistory, conversationId, metadata);
 	}
 
 }

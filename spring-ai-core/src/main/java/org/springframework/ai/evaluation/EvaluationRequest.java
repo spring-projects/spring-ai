@@ -3,7 +3,7 @@ package org.springframework.ai.evaluation;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.agent.AgentResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.node.Node;
+import org.springframework.ai.model.Content;
 
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +12,7 @@ public class EvaluationRequest {
 
 	private final Prompt prompt;
 
-	private final List<Node<?>> dataList;
+	private final List<Content> dataList;
 
 	private final ChatResponse chatResponse;
 
@@ -21,7 +21,7 @@ public class EvaluationRequest {
 				agentResponse.getChatResponse());
 	}
 
-	public EvaluationRequest(Prompt prompt, List<Node<?>> dataList, ChatResponse chatResponse) {
+	public EvaluationRequest(Prompt prompt, List<Content> dataList, ChatResponse chatResponse) {
 		this.prompt = prompt;
 		this.dataList = dataList;
 		this.chatResponse = chatResponse;
@@ -31,7 +31,7 @@ public class EvaluationRequest {
 		return prompt;
 	}
 
-	public List<Node<?>> getDataList() {
+	public List<Content> getDataList() {
 		return dataList;
 	}
 

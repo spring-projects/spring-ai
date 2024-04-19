@@ -6,7 +6,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.node.Node;
+import org.springframework.ai.node.Content;
 
 import java.util.List;
 import java.util.Map;
@@ -44,11 +44,11 @@ public class QuestionContextAugmentor implements PromptTransformer {
 		return promptContext;
 	}
 
-	protected String doCreateContext(List<Node<?>> data) {
+	protected String doCreateContext(List<Content> data) {
 		return data.stream()
 			.filter(node -> node instanceof Document)
 			.map(node -> (Document) node)
-			.map(Node::getContent)
+			.map(Content::getContent)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
