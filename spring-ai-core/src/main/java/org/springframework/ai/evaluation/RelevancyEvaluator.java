@@ -6,7 +6,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.node.Node;
+import org.springframework.ai.model.Content;
 
 import java.util.Collections;
 import java.util.List;
@@ -61,11 +61,11 @@ public class RelevancyEvaluator implements Evaluator {
 	}
 
 	protected String doGetSupportingData(EvaluationRequest evaluationRequest) {
-		List<Node<?>> data = evaluationRequest.getDataList();
+		List<Content> data = evaluationRequest.getDataList();
 		String supportingData = data.stream()
 			.filter(node -> node != null && node.getContent() instanceof String)
-			.map(node -> (Node<String>) node)
-			.map(Node::getContent)
+			.map(node -> (Content) node)
+			.map(Content::getContent)
 			.collect(Collectors.joining("\n"));
 		return supportingData;
 	}

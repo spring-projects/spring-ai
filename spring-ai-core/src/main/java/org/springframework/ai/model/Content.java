@@ -1,4 +1,4 @@
-package org.springframework.ai.node;
+package org.springframework.ai.model;
 
 import org.springframework.ai.chat.messages.Media;
 
@@ -12,9 +12,9 @@ import java.util.Map;
  * @author Mark Pollack
  * @since 1.0 M1
  */
-public interface Node<T> {
+public interface Content {
 
-	T getContent();
+	String getContent();
 
 	List<Media> getMedia();
 
