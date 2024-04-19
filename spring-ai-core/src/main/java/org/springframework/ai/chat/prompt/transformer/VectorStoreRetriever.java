@@ -1,4 +1,4 @@
-package org.springframework.ai.chat.transformer;
+package org.springframework.ai.chat.prompt.transformer;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;

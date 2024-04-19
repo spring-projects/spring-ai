@@ -1,4 +1,4 @@
-package org.springframework.ai.chat.transformer;
+package org.springframework.ai.chat.prompt.transformer;
 
 /**
  * Responsible for transforming a Prompt. The PromptContext contains the necessary data to

@@ -32,8 +32,6 @@ public interface Message extends Node<String> {
 
 	String getContent();
 
-	List<Media> getMedia();
-
 	MessageType getMessageType();
 
 }

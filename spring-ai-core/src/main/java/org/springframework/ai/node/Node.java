@@ -1,5 +1,8 @@
 package org.springframework.ai.node;
 
+import org.springframework.ai.chat.messages.Media;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,6 +15,8 @@ import java.util.Map;
 public interface Node<T> {
 
 	T getContent();
+
+	List<Media> getMedia();
 
 	Map<String, Object> getMetadata();
 
