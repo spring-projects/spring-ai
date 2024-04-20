@@ -33,7 +33,7 @@ public interface StreamingChatClient extends StreamingModelClient<Prompt, ChatRe
 						: response.getResult().getOutput().getContent());
 	}
 
-	default Flux<String> call(Message... messages) {
+	default Flux<String> stream(Message... messages) {
 		Prompt prompt = new Prompt(Arrays.asList(messages));
 		return stream(prompt).map(response -> (response.getResult() == null || response.getResult().getOutput() == null
 				|| response.getResult().getOutput().getContent() == null) ? ""
