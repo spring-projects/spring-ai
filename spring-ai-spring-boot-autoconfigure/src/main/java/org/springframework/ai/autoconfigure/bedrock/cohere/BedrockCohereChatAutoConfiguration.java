@@ -21,6 +21,7 @@ import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperti
 import org.springframework.ai.bedrock.cohere.BedrockCohereChatClient;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,11 +29,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Chat Client.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -44,13 +47,16 @@ public class BedrockCohereChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public CohereChatBedrockApi cohereChatApi(AwsCredentialsProvider credentialsProvider,
-			BedrockCohereChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new CohereChatBedrockApi(properties.getModel(), credentialsProvider, awsProperties.getRegion(),
+			AwsRegionProvider regionProvider, BedrockCohereChatProperties properties,
+			BedrockAwsConnectionProperties awsProperties) {
+		return new CohereChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
 				new ObjectMapper(), awsProperties.getTimeout());
 	}
 
 	@Bean
+	@ConditionalOnBean(CohereChatBedrockApi.class)
 	public BedrockCohereChatClient cohereChatClient(CohereChatBedrockApi cohereChatApi,
 			BedrockCohereChatProperties properties) {
 

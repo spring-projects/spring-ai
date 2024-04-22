@@ -48,6 +48,7 @@
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
+*** xref:api/vectordbs/elasticsearch.adoc[]
 *** xref:api/vectordbs/gemfire.adoc[GemFire]
 *** xref:api/vectordbs/milvus.adoc[]
 *** xref:api/vectordbs/mongodb.adoc[]
