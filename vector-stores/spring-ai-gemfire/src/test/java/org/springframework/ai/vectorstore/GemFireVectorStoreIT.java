@@ -114,12 +114,12 @@ public class GemFireVectorStoreIT {
 
 	@BeforeEach
 	public void createIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME));
+		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME));
 	}
 
 	@AfterEach
 	public void deleteIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).deleteIndex(INDEX_NAME));
+		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).deleteIndex(INDEX_NAME));
 	}
 
 	@Test
@@ -256,9 +256,7 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingClient embeddingClient) {
-			GemFireVectorStore gemFireVectorStore = new GemFireVectorStore(config, embeddingClient);
-			gemFireVectorStore.setIndexName(INDEX_NAME);
-			return gemFireVectorStore;
+			return new GemFireVectorStore(config, embeddingClient);
 		}
 
 		@Bean

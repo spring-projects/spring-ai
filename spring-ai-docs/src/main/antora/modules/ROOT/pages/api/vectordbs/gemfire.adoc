@@ -41,9 +41,22 @@ Add these dependencies to your project:
 </dependency>
 ----
 
+- Auto-configuration
+
+Spring Boot auto-configuration for the GemFire Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-gemfire-store-spring-boot-starter</artifactId>
+</dependency>
+----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
+Following are the xref:#_gemfirevectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
 == Sample Code
 
@@ -120,3 +133,36 @@ vectorStore.add(List.of(document));
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
 
+== Starting GemFireVector Store
+
+- Download link:https://network.tanzu.vmware.com/products/pivotal-gemfire[GemFire] 10.1.
+- Download the VMware link:https://network.tanzu.vmware.com/products/gemfire-vectordb[GemFire VectorDB] 1.1.gfm file.
+- Do one of the following:
+.. Copy the downloaded file to the extensions directory of your GemFire installation. By default, the extensions folder is the vmware-gemfire-10.1.0/extensions directory of your GemFire installation.
+.. Set the GEMFIRE_EXTENSIONS_REPOSITORY_PATH environment variable to the VMware GemFire Vector Database extension path. For example, if your vmware-gemfire-vectordb-VERSION.gfm file is located in /gemfire-extensions, run the following command:
+export GEMFIRE_EXTENSIONS_REPOSITORY_PATH=/gemfire-extensions
+- Start the locator using gfsh:
+----
+ vmware-gemfire-10.1.0/bin/gfsh>start locator --name=locator1
+----
+- Start the server using gfsh:
+----
+ vmware-gemfire-10.1.0/bin/gfshstart server --name server1 --http-service-port 8080
+----
+
+== GemFireVectorStore properties
+
+You can use the following properties in your Spring Boot configuration to customize the Neo4j vector store.
+
+|===
+|Property|Default value
+
+|`spring.ai.vectorstore.gemfire.host`|localhost
+|`spring.ai.vectorstore.gemfire.port`|8080
+|`spring.ai.vectorstore.gemfire.indexName`|spring-ai-gemfire
+|`spring.ai.vectorstore.gemfire.beamWidth`|100
+|`spring.ai.vectorstore.gemfire.maxConnections`|16
+|`spring.ai.vectorstore.gemfire.vectorSimilarityFunction`|COSINE
+|`spring.ai.vectorstore.gemfire.fields`|[]
+|`spring.ai.vectorstore.gemfire.buckets`|0
+|===

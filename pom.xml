@@ -46,6 +46,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
 		<module>spring-ai-docs</module>
 		<module>vector-stores/spring-ai-cassandra</module>
