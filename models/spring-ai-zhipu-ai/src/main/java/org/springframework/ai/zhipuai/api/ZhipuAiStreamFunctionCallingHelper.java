@@ -61,7 +61,7 @@ public class ZhipuAiStreamFunctionCallingHelper {
 					var toolCallsWithID = current.delta()
 						.toolCalls()
 						.stream()
-						.map(toolCall -> new ToolCall(newId, "function", toolCall.function()))
+						.map(toolCall -> new ToolCall(newId, 0, "function", toolCall.function()))
 						.toList();
 
 					var role = current.delta().role() != null ? current.delta().role() : Role.ASSISTANT;
@@ -126,7 +126,7 @@ public class ZhipuAiStreamFunctionCallingHelper {
 		String id = (current.id() != null ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
-		return new ToolCall(id, type, function);
+		return new ToolCall(id, 0, type, function);
 	}
 
 	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {

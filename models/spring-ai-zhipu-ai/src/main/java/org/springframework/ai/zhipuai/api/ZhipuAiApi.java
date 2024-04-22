@@ -305,8 +305,8 @@ public class ZhipuAiApi {
 		 * @param function The function definition.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
-				@JsonProperty("function") ChatCompletionFunction function) {
+		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("index") Integer index,
+				@JsonProperty("type") String type, @JsonProperty("function") ChatCompletionFunction function) {
 		}
 
 		/**
