@@ -133,7 +133,7 @@ public class OpenAiAudioSpeechClient implements SpeechClient, StreamingSpeechCli
 
 		if (request.getOptions() != null) {
 			if (request.getOptions() instanceof OpenAiAudioSpeechOptions runtimeOptions) {
-				options = this.merge(options, runtimeOptions);
+				options = this.merge(runtimeOptions, options);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type SpeechOptions: "

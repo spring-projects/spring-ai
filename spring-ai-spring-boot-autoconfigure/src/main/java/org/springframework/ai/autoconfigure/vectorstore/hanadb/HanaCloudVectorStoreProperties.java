@@ -13,30 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.chat.messages;
+package org.springframework.ai.autoconfigure.vectorstore.hanadb;
 
-import java.util.Map;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Represents a chat message in a chat application.
- *
+ * @author Rahul Mittal
+ * @since 1.0.0
  */
-public class ChatMessage extends AbstractMessage {
+@ConfigurationProperties(HanaCloudVectorStoreProperties.CONFIG_PREFIX)
+public class HanaCloudVectorStoreProperties {
 
-	public ChatMessage(String role, String content) {
-		super(MessageType.valueOf(role), content);
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.hanadb";
+
+	private String tableName;
+
+	private int topK;
+
+	public String getTableName() {
+		return tableName;
 	}
 
-	public ChatMessage(String role, String content, Map<String, Object> properties) {
-		super(MessageType.valueOf(role), content, properties);
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
 	}
 
-	public ChatMessage(MessageType messageType, String content) {
-		super(messageType, content);
+	public int getTopK() {
+		return topK;
 	}
 
-	public ChatMessage(MessageType messageType, String content, Map<String, Object> properties) {
-		super(messageType, content, properties);
+	public void setTopK(int topK) {
+		this.topK = topK;
 	}
 
 }

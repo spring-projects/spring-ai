@@ -26,7 +26,9 @@ import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -38,6 +40,7 @@ import java.util.List;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 // @formatter:off
@@ -59,6 +62,16 @@ public class Anthropic3ChatBedrockApi extends
 	}
 
 	/**
+	 * Create a new AnthropicChatBedrockApi instance using the default credentials provider chain, the default object.
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
+	 */
+	public Anthropic3ChatBedrockApi(String modelId, String region, Duration timeout) {
+		super(modelId, region, timeout);
+	}
+
+	/**
 	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
 	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
@@ -69,6 +82,34 @@ public class Anthropic3ChatBedrockApi extends
 	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper) {
 		super(modelId, credentialsProvider, region, objectMapper);
+	}
+
+	/**
+	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public Anthropic3ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	// https://github.com/build-on-aws/amazon-bedrock-java-examples/blob/main/example_code/bedrock-runtime/src/main/java/aws/community/examples/InvokeBedrockStreamingAsync.java
@@ -307,10 +348,12 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param usage Metrics about the model invocation.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record AnthropicChatResponse(@JsonProperty("id") String id, @JsonProperty("model") String model,
-			@JsonProperty("type") String type, @JsonProperty("role") String role,
-			@JsonProperty("content") List<MediaContent> content, @JsonProperty("stop_reason") String stopReason,
-			@JsonProperty("stop_sequence") String stopSequence, @JsonProperty("usage") AnthropicUsage usage) {
+	public record AnthropicChatResponse(// formatter:off
+			@JsonProperty("id") String id, @JsonProperty("model") String model, @JsonProperty("type") String type,
+			@JsonProperty("role") String role, @JsonProperty("content") List<MediaContent> content,
+			@JsonProperty("stop_reason") String stopReason, @JsonProperty("stop_sequence") String stopSequence,
+			@JsonProperty("usage") AnthropicUsage usage,
+			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) { // formatter:on
 	}
 
 	/**
@@ -326,10 +369,11 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param usage The usage data.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record AnthropicChatStreamingResponse(@JsonProperty("type") StreamingType type,
-			@JsonProperty("message") AnthropicChatResponse message, @JsonProperty("index") Integer index,
-			@JsonProperty("content_block") MediaContent contentBlock, @JsonProperty("delta") Delta delta,
-			@JsonProperty("usage") AnthropicUsage usage) {
+	public record AnthropicChatStreamingResponse(// formatter:off
+			@JsonProperty("type") StreamingType type, @JsonProperty("message") AnthropicChatResponse message,
+			@JsonProperty("index") Integer index, @JsonProperty("content_block") MediaContent contentBlock,
+			@JsonProperty("delta") Delta delta, @JsonProperty("usage") AnthropicUsage usage,
+			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) { // formatter:on
 
 		/**
 		 * The streaming type of this message.
@@ -413,7 +457,11 @@ public class Anthropic3ChatBedrockApi extends
 		/**
 		 * anthropic.claude-3-haiku-20240307-v1:0
 		 */
-		CLAUDE_V3_HAIKU("anthropic.claude-3-haiku-20240307-v1:0");
+		CLAUDE_V3_HAIKU("anthropic.claude-3-haiku-20240307-v1:0"),
+		/**
+		 * anthropic.claude-3-opus-20240229-v1:0
+		 */
+		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0");
 
 		private final String id;
 

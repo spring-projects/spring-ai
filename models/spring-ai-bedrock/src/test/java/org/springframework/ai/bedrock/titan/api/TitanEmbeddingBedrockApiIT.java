@@ -16,6 +16,7 @@
 package org.springframework.ai.bedrock.titan.api;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Base64;
 
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ public class TitanEmbeddingBedrockApiIT {
 	public void embedText() {
 
 		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
-				TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(), Region.US_EAST_1.id());
+				TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(), Region.US_EAST_1.id(), Duration.ofMinutes(2));
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputText("I like to eat apples.").build();
 
@@ -55,7 +56,7 @@ public class TitanEmbeddingBedrockApiIT {
 	public void embedImage() throws IOException {
 
 		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
-				TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id());
+				TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id(), Duration.ofMinutes(2));
 
 		byte[] image = new DefaultResourceLoader().getResource("classpath:/spring_framework.png")
 			.getContentAsByteArray();

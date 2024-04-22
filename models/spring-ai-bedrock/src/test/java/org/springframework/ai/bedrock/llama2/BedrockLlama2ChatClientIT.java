@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.llama2;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
@@ -60,6 +63,33 @@ class BedrockLlama2ChatClientIT {
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
+
+	@Test
+	void multipleStreamAttempts() {
+
+		Flux<ChatResponse> joke1Stream = client.stream(new Prompt(new UserMessage("Tell me a joke?")));
+		Flux<ChatResponse> joke2Stream = client.stream(new Prompt(new UserMessage("Tell me a toy joke?")));
+
+		String joke1 = joke1Stream.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+		String joke2 = joke2Stream.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+
+		assertThat(joke1).isNotBlank();
+		assertThat(joke2).isNotBlank();
+	}
 
 	@Test
 	void roleTest() {
@@ -176,7 +206,8 @@ class BedrockLlama2ChatClientIT {
 		@Bean
 		public Llama2ChatBedrockApi llama2Api() {
 			return new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+					Duration.ofMinutes(2));
 		}
 
 		@Bean

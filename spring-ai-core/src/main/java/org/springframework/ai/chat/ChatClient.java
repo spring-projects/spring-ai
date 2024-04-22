@@ -16,6 +16,10 @@
 package org.springframework.ai.chat;
 
 import org.springframework.ai.chat.prompt.Prompt;
+
+import java.util.Arrays;
+
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelClient;
 
@@ -24,6 +28,12 @@ public interface ChatClient extends ModelClient<Prompt, ChatResponse> {
 
 	default String call(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
+		Generation generation = call(prompt).getResult();
+		return (generation != null) ? generation.getOutput().getContent() : "";
+	}
+
+	default String call(Message... messages) {
+		Prompt prompt = new Prompt(Arrays.asList(messages));
 		Generation generation = call(prompt).getResult();
 		return (generation != null) ? generation.getOutput().getContent() : "";
 	}

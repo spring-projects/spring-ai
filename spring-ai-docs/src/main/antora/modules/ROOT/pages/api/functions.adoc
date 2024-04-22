@@ -1,7 +1,7 @@
 [[Function]]
 = Function Calling API
 
-The integration of function support in AI models, such as ChatGPT, permits the model to request the execution of client-side functions, thereby accessing necessary information or performing tasks dynamically as required.
+The integration of function support in AI models, permits the model to request the execution of client-side functions, thereby accessing necessary information or performing tasks dynamically as required.
 
 Spring AI currently supports Function invocation for the following AI Models
 
@@ -9,3 +9,4 @@ Spring AI currently supports Function invocation for the following AI Models
 * VertexAI Gemini: Refer to the xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini function invocation docs].
 * Azure OpenAI: Refer to the xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI function invocation docs].
 * Mistral AI: Refer to the xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI function invocation docs].
+* Anthropic Claude: Refer to the xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Claude function invocation docs].
