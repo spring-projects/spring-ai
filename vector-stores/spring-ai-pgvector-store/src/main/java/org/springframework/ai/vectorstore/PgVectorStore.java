@@ -352,7 +352,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
-					CREATE INDEX ON %s USING %s (embedding %s)
+					CREATE INDEX IF NOT EXISTS ON %s USING %s (embedding %s)
 					""", VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
 		}
 	}
