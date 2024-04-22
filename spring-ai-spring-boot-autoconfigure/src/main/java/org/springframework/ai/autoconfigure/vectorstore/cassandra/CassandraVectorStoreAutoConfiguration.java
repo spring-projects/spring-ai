@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Bean;
  * @since 1.0.0
  */
 @AutoConfiguration(after = CassandraAutoConfiguration.class)
-@ConditionalOnClass({ CassandraVectorStore.class, EmbeddingClient.class, CqlSession.class })
+@ConditionalOnClass({ CassandraVectorStore.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraVectorStoreProperties.class)
 public class CassandraVectorStoreAutoConfiguration {
 
