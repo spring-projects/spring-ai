@@ -22,8 +22,14 @@ import static org.hamcrest.Matchers.hasSize;
 import java.util.List;
 import java.util.Map;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
+import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ResourceUtils;
@@ -45,6 +51,17 @@ import org.springframework.context.annotation.Configuration;
 class GemFireVectorStoreAutoConfigurationIT {
 
 	public static final String INDEX_NAME = "spring-ai-index";
+	private static GemFireCluster gemFireCluster;
+
+	private static final int HTTP_SERVICE_PORT = 9090;
+	private static final int LOCATOR_COUNT = 1;
+	private static final int SERVER_COUNT = 1;
+
+	@AfterAll
+	public static void stopGemFireCluster() {
+		gemFireCluster.close();
+	}
+
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
@@ -57,6 +74,26 @@ class GemFireVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.gemfire.indexName=spring-ai-index")
 		.withPropertyValues("spring.ai.vectorstore.gemfire.host=localhost")
 		.withPropertyValues("spring.ai.vectorstore.gemfire.port=9090");
+
+	@BeforeAll
+	public static void startGemFireCluster() {
+		Ports.Binding hostPort = Ports.Binding.bindPort(HTTP_SERVICE_PORT);
+		ExposedPort exposedPort = new ExposedPort(HTTP_SERVICE_PORT);
+		PortBinding mappedPort = new PortBinding(hostPort, exposedPort);
+		gemFireCluster = new GemFireCluster("gemfire/gemfire-all:10.1-jdk17",
+				LOCATOR_COUNT, SERVER_COUNT);
+		gemFireCluster.withConfiguration(GemFireCluster.SERVER_GLOB, container -> container
+				.withExposedPorts(HTTP_SERVICE_PORT)
+				.withCreateContainerCmdModifier(cmd -> cmd
+						.getHostConfig()
+						.withPortBindings(mappedPort)));
+		gemFireCluster.withGemFireProperty(GemFireCluster.SERVER_GLOB,
+				"http-service-port", Integer.toString(HTTP_SERVICE_PORT));
+		gemFireCluster.acceptLicense().start();
+
+		System.setProperty("spring.data.gemfire.pool.locators",
+				String.format("localhost[%d]", gemFireCluster.getLocatorPort()));
+	}
 
 	@BeforeEach
 	public void createIndex() {

@@ -12,9 +12,23 @@ Capabilities:
 - Perform vector searches based on similarity
 
 == Prerequisites
+- Access to VMware’s commercial Maven repository in /.m2/settings.xml.
 
-Access to a GemFire cluster with the link:https://docs.vmware.com/en/VMware-GemFire-VectorDB/1.0/gemfire-vectordb/install.html[GemFire Vector Database] extension installed.
-You can download the GemFire VectorDB extension from the link:https://network.pivotal.io/products/gemfire-vectordb/[VMware Tanzu Network] after signing in.
+Add the following to the .m2/settings.xml file. Replace MY-USERNAME@example and MY-DECRYPTED-PASSWORD with your Pivotal Commercial Maven Repository credentials.
+(https://gemfire.dev/quickstart/java/).
+
+[source,java]
+----
+<settings>
+    <servers>
+        <server>
+            <id>gemfire-release-repo</id>
+            <username>MY-USERNAME@example.com</username>
+            <password>MY-DECRYPTED-PASSWORD</password>
+        </server>
+    </servers>
+</settings>
+----
 
 == Dependencies
 
@@ -132,23 +146,6 @@ vectorStore.add(List.of(document));
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
-
-== Starting GemFireVector Store
-
-- Download link:https://network.tanzu.vmware.com/products/pivotal-gemfire[GemFire] 10.1.
-- Download the VMware link:https://network.tanzu.vmware.com/products/gemfire-vectordb[GemFire VectorDB] 1.1.gfm file.
-- Do one of the following:
-.. Copy the downloaded file to the extensions directory of your GemFire installation. By default, the extensions folder is the vmware-gemfire-10.1.0/extensions directory of your GemFire installation.
-.. Set the GEMFIRE_EXTENSIONS_REPOSITORY_PATH environment variable to the VMware GemFire Vector Database extension path. For example, if your vmware-gemfire-vectordb-VERSION.gfm file is located in /gemfire-extensions, run the following command:
-export GEMFIRE_EXTENSIONS_REPOSITORY_PATH=/gemfire-extensions
-- Start the locator using gfsh:
-----
- vmware-gemfire-10.1.0/bin/gfsh>start locator --name=locator1
-----
-- Start the server using gfsh:
-----
- vmware-gemfire-10.1.0/bin/gfshstart server --name server1 --http-service-port 8080
-----
 
 == GemFireVectorStore properties
 
