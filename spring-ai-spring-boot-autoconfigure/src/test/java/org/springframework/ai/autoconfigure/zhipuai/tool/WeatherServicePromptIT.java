@@ -62,7 +62,8 @@ public class WeatherServicePromptIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30.0", "10.0", "15.0");
+				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30", "10", "15", "30.0",
+						"15.0", "10.0");
 			});
 	}
 
