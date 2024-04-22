@@ -52,7 +52,6 @@ import org.springframework.core.io.DefaultResourceLoader;
  * @author Geet Rawat
  * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "GEMFIRE_HOST", matches = ".+")
 public class GemFireVectorStoreIT {
 
 	public static final String INDEX_NAME = "spring-ai-index1";
