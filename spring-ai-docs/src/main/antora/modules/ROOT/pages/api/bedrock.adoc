@@ -85,7 +85,7 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 |====
 | Model      | Chat | Chat Streaming | Embedding
 
-| llama2     | Yes  | Yes            | No
+| llama     | Yes  | Yes            | No
 | jurassic2  | Yes  | No             | No
 | cohere     | Yes  | Yes            | Yes
 | anthropic 2 | Yes  | Yes            | No
@@ -94,7 +94,7 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 | titan      | Yes  | Yes            | Yes (however, no batch support)
 |====
 
-For example, to enable the Bedrock Llama2 Chat client, you need to set `spring.ai.bedrock.llama2.chat.enabled=true`.
+For example, to enable the Bedrock Llama Chat client, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
 
 Next, you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties to configure each model as provided.
 
@@ -102,7 +102,7 @@ For more information, refer to the documentation below for each supported model.
 
 * xref:api/chat/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic 2 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-anthropic3.adoc[Spring AI Bedrock Anthropic 3 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
-* xref:api/chat/bedrock/bedrock-llama2.adoc[Spring AI Bedrock Llama2 Chat]: `spring.ai.bedrock.llama2.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-llama.adoc[Spring AI Bedrock Llama Chat]: `spring.ai.bedrock.llama.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-cohere.adoc[Spring AI Bedrock Cohere Chat]: `spring.ai.bedrock.cohere.chat.enabled=true`
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-titan.adoc[Spring AI Bedrock Titan Chat]: `spring.ai.bedrock.titan.chat.enabled=true`
