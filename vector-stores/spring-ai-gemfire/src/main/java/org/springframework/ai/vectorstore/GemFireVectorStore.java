@@ -487,7 +487,7 @@ public class GemFireVectorStore implements VectorStore {
 			.block();
 	}
 
-	public void createIndex(String indexName) throws JsonProcessingException {
+	public void createIndex() throws JsonProcessingException {
 		CreateRequest createRequest = new CreateRequest(indexName);
 		createRequest.setBeamWidth(beamWidth);
 		createRequest.setMaxConnections(maxConnections);
@@ -507,7 +507,7 @@ public class GemFireVectorStore implements VectorStore {
 			.block();
 	}
 
-	public void deleteIndex(String indexName) {
+	public void deleteIndex() {
 		DeleteRequest deleteRequest = new DeleteRequest();
 		client.method(HttpMethod.DELETE)
 			.uri("/" + indexName)

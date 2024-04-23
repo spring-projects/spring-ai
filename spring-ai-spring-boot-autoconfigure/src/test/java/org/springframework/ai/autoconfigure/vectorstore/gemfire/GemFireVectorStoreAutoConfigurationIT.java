@@ -104,13 +104,13 @@ class GemFireVectorStoreAutoConfigurationIT {
 			properties.setBuckets(10);
 			properties.setVectorSimilarityFunction("COSINE");
 			properties.setIndexName(INDEX_NAME);
-			c.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME);
+			c.getBean(GemFireVectorStore.class).createIndex();
 		});
 	}
 
 	@AfterEach
 	public void deleteIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).deleteIndex(INDEX_NAME));
+		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).deleteIndex());
 	}
 
 	@Test

@@ -106,12 +106,12 @@ public class GemFireVectorStoreIT {
 
 	@BeforeEach
 	public void createIndex() {
-		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).createIndex(INDEX_NAME));
+		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).createIndex());
 	}
 
 	@AfterEach
 	public void deleteIndex() {
-		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).deleteIndex(INDEX_NAME));
+		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).deleteIndex());
 	}
 
 	@Test
