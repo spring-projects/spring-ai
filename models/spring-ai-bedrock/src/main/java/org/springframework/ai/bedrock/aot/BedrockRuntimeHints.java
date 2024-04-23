@@ -25,8 +25,8 @@ import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingOptions;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
-import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatOptions;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
+import org.springframework.ai.bedrock.llama.BedrockLlamaChatOptions;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
 import org.springframework.ai.bedrock.titan.BedrockTitanChatOptions;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
@@ -63,9 +63,9 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereEmbeddingOptions.class))
 			hints.reflection().registerType(tr, mcs);
 
-		for (var tr : findJsonAnnotatedClassesInPackage(Llama2ChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(LlamaChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockLlama2ChatOptions.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockLlamaChatOptions.class))
 			hints.reflection().registerType(tr, mcs);
 
 		for (var tr : findJsonAnnotatedClassesInPackage(TitanChatBedrockApi.class))

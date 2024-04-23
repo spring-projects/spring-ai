@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.bedrock.llama2;
+package org.springframework.ai.bedrock.llama;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -32,8 +32,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -56,10 +56,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
-class BedrockLlama2ChatClientIT {
+class BedrockLlamaChatClientIT {
 
 	@Autowired
-	private BedrockLlama2ChatClient client;
+	private BedrockLlamaChatClient client;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -204,16 +204,16 @@ class BedrockLlama2ChatClientIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public Llama2ChatBedrockApi llama2Api() {
-			return new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+		public LlamaChatBedrockApi llamaApi() {
+			return new LlamaChatBedrockApi(LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
 					Duration.ofMinutes(2));
 		}
 
 		@Bean
-		public BedrockLlama2ChatClient llama2ChatClient(Llama2ChatBedrockApi llama2Api) {
-			return new BedrockLlama2ChatClient(llama2Api,
-					BedrockLlama2ChatOptions.builder().withTemperature(0.5f).withMaxGenLen(100).withTopP(0.9f).build());
+		public BedrockLlamaChatClient llamaChatClient(LlamaChatBedrockApi llamaApi) {
+			return new BedrockLlamaChatClient(llamaApi,
+					BedrockLlamaChatOptions.builder().withTemperature(0.5f).withMaxGenLen(100).withTopP(0.9f).build());
 		}
 
 	}
