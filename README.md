@@ -107,6 +107,7 @@ Spring AI supports many AI models.  For an overview see here.  Specific models c
 * PostgresML
 * Transformers (ONNX)
 * Anthropic Claude3
+* MiniMax
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.
