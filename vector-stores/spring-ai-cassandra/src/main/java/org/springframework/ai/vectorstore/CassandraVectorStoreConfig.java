@@ -44,8 +44,11 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.lang.Nullable;
 
 /**
  * Configuration for the Cassandra vector store.
@@ -71,7 +74,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final String DEFAULT_ID_NAME = "id";
 
-	public static final String DEFAULT_INDEX_NAME = "embedding_index";
+	public static final String DEFAULT_INDEX_SUFFIX = "idx";
 
 	public static final String DEFAULT_CONTENT_COLUMN_NAME = "content";
 
@@ -186,7 +189,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 		private List<SchemaColumn> clusteringKeys = List.of();
 
-		private String indexName = DEFAULT_INDEX_NAME;
+		private String indexName = null;
 
 		private String contentColumnName = DEFAULT_CONTENT_COLUMN_NAME;
 
@@ -257,6 +260,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
+		/** defaults (if null) to '<table_name>_<embedding_column_name>_idx' **/
+		@Nullable
 		public Builder withIndexName(String name) {
 			this.indexName = name;
 			return this;
@@ -324,6 +329,9 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 
 		public CassandraVectorStoreConfig build() {
+			if (null == this.indexName) {
+				this.indexName = String.format("%s_%s_%s", this.table, this.embeddingColumnName, DEFAULT_INDEX_SUFFIX);
+			}
 			for (SchemaColumn metadata : this.metadataColumns) {
 
 				Preconditions.checkArgument(
@@ -530,7 +538,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				// special case for embedding column, bc JAVA-3118, as above
 				StringBuilder alterTableStmt = new StringBuilder(((BuildableQuery) alterTable).asCql());
 				if (newColumns.isEmpty() && !addContent) {
-					alterTableStmt.append(" ADD ");
+					alterTableStmt.append(" ADD (");
 				}
 				else {
 					alterTableStmt.setLength(alterTableStmt.length() - 1);
@@ -539,7 +547,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				alterTableStmt.append(this.schema.embedding)
 					.append(" vector<float,")
 					.append(vectorDimension)
-					.append(">");
+					.append(">)");
 
 				logger.debug("Executing {}", alterTableStmt.toString());
 				this.session.execute(alterTableStmt.toString());
