@@ -33,7 +33,7 @@ public class CassandraVectorStoreProperties {
 
 	private String table = CassandraVectorStoreConfig.DEFAULT_TABLE_NAME;
 
-	private String indexName = CassandraVectorStoreConfig.DEFAULT_INDEX_NAME;
+	private String indexName = null;
 
 	private String contentColumnName = CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME;
 

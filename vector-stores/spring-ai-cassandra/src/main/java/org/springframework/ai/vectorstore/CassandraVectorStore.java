@@ -206,7 +206,7 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 		Preconditions.checkArgument(request.getTopK() <= 1000);
-		var embedding = this.embeddingClient.embed(request.getQuery()).stream().map(Double::floatValue).toList();
+		var embedding = toFloatArray(this.embeddingClient.embed(request.getQuery()));
 		CqlVector<Float> cqlVector = CqlVector.newInstance(embedding);
 
 		String whereClause = "";
@@ -348,6 +348,15 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 			primaryKeyValues.add(row.get(m.name(), m.javaType()));
 		}
 		return this.conf.primaryKeyTranslator.apply(primaryKeyValues);
+	}
+
+	private static Float[] toFloatArray(List<Double> embeddingDouble) {
+		Float[] embeddingFloat = new Float[embeddingDouble.size()];
+		int i = 0;
+		for (Double d : embeddingDouble) {
+			embeddingFloat[i++] = d.floatValue();
+		}
+		return embeddingFloat;
 	}
 
 }

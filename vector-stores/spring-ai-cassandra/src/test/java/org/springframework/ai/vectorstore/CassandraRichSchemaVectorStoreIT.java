@@ -134,7 +134,8 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void ensureSchemaPartialCreation() {
 		this.contextRunner.run(context -> {
-			for (int i = 0; i < 4; ++i) {
+			int PARTIAL_FILES = 5;
+			for (int i = 0; i < PARTIAL_FILES; ++i) {
 				executeCqlFile(context, format("test_wiki_partial_%d_schema.cql", i));
 				var wrapper = createStore(context, List.of(), false, false);
 				try {
@@ -148,6 +149,10 @@ class CassandraRichSchemaVectorStoreIT {
 					wrapper.store().close();
 				}
 			}
+			// make sure there's not more files to test
+			Assertions.assertThrows(IOException.class, () -> {
+				executeCqlFile(context, format("test_wiki_partial_%d_schema.cql", PARTIAL_FILES));
+			});
 		});
 	}
 
