@@ -28,6 +28,7 @@
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-watsonx-ai</module>
+		<module>models/spring-ai-minimax</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -74,6 +75,7 @@
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
 	</modules>
 
 	<organization>
