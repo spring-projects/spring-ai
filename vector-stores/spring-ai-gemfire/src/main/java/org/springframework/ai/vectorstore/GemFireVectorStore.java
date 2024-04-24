@@ -32,7 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -40,6 +42,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 
 /**
@@ -48,7 +51,7 @@ import reactor.util.annotation.NonNull;
  *
  * @author Geet Rawat
  */
-public class GemFireVectorStore implements VectorStore {
+public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
 
@@ -100,6 +103,19 @@ public class GemFireVectorStore implements VectorStore {
 	private static final String QUERY = "/query";
 
 	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		if (indexExists()) {
+			deleteIndex();
+		}
+		createIndex();
+
+	}
+
+	public boolean indexExists() {
+		return !client.get().uri("/" + indexName).exchange().block().statusCode().is4xxClientError();
+	}
 
 	public static final class GemFireVectorStoreConfig {
 

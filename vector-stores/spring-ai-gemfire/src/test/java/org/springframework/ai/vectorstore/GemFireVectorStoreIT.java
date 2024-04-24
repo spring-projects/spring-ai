@@ -32,12 +32,8 @@ import com.github.dockerjava.api.model.Ports;
 import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
@@ -103,16 +99,6 @@ public class GemFireVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
-
-	@BeforeEach
-	public void createIndex() {
-		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).createIndex());
-	}
-
-	@AfterEach
-	public void deleteIndex() {
-		contextRunner.run(context -> context.getBean(GemFireVectorStore.class).deleteIndex());
-	}
 
 	@Test
 	public void addAndDeleteEmbeddingTest() {

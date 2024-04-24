@@ -28,15 +28,12 @@ import com.github.dockerjava.api.model.Ports;
 import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.transformers.TransformersEmbeddingClient;
-import org.springframework.ai.vectorstore.GemFireVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -92,25 +89,6 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 		System.setProperty("spring.data.gemfire.pool.locators",
 				String.format("localhost[%d]", gemFireCluster.getLocatorPort()));
-	}
-
-	@BeforeEach
-	public void createIndex() {
-		contextRunner.run(c -> {
-			GemFireVectorStoreProperties properties = c.getBean(GemFireVectorStoreProperties.class);
-			properties.setFields(new String[] {});
-			properties.setBeamWidth(100);
-			properties.setMaxConnections(16);
-			properties.setBuckets(10);
-			properties.setVectorSimilarityFunction("COSINE");
-			properties.setIndexName(INDEX_NAME);
-			c.getBean(GemFireVectorStore.class).createIndex();
-		});
-	}
-
-	@AfterEach
-	public void deleteIndex() {
-		contextRunner.run(c -> c.getBean(GemFireVectorStore.class).deleteIndex());
 	}
 
 	@Test
