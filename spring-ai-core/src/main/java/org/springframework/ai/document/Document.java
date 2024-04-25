@@ -79,6 +79,10 @@ public class Document implements Content {
 		this(content, metadata, new RandomIdGenerator());
 	}
 
+	public Document(String content, List<Media> media, Map<String, Object> metadata) {
+		this(new RandomIdGenerator().generateId(content, metadata), content, media, metadata);
+	}
+
 	public Document(String content, Map<String, Object> metadata, IdGenerator idGenerator) {
 		this(idGenerator.generateId(content, metadata), content, metadata);
 	}

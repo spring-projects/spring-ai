@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
-import org.springframework.ai.chat.prompt.transformer.InnerContent;
 import org.springframework.ai.chat.prompt.transformer.PromptContext;
 import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 
 /**
@@ -57,7 +57,7 @@ public class ChatMemoryRetriever implements PromptTransformer {
 
 		List<Content> historyContent = (messageHistory != null)
 				? messageHistory.stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).map(m -> {
-					Content content = new InnerContent(m.getContent(), new ArrayList<>(m.getMedia()),
+					Content content = new Document(m.getContent(), new ArrayList<>(m.getMedia()),
 							new HashMap<>(m.getMetadata()));
 					content.getMetadata().putAll(this.additionalMetadata);
 					content.getMetadata().put(TransformerContentType.MEMORY, true);

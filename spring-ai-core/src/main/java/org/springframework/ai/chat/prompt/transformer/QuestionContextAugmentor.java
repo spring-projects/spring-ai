@@ -62,7 +62,7 @@ public class QuestionContextAugmentor implements PromptTransformer {
 
 	protected String doCreateContext(List<Content> data) {
 		return data.stream()
-			.filter(content -> content.getMetadata().containsKey(TransformerContentType.QA))
+			.filter(content -> content.getMetadata().containsKey(TransformerContentType.EXTERNAL_KNOWLEDGE))
 			.map(Content::getContent)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}

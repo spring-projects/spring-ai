@@ -56,20 +56,13 @@ public class VectorStoreRetriever implements PromptTransformer {
 			.map(m -> m.getContent())
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(userMessage));
+		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(userMessage)
+			.withFilterExpression(TransformerContentType.EXTERNAL_KNOWLEDGE + "=='true'"));
 
 		for (Document document : documents) {
-			if (!document.getMetadata().containsKey(TransformerContentType.MEMORY)) { // TODO:
-																						// Bad
-																						// coupling
-																						// with
-																						// other
-																						// transformers
-																						// types.
-				var content = new InnerContent(document.getContent(), document.getMetadata());
-				content.getMetadata().put(TransformerContentType.QA, true);
-				promptContext.addData(content);
-			}
+			var content = new Document(document.getContent(), document.getMetadata());
+			// content.getMetadata().put(TransformerContentType.DOMAIN_DATA, true);
+			promptContext.addData(content);
 		}
 		return promptContext;
 	}

@@ -29,6 +29,6 @@ public class TransformerContentType {
 
 	public static final String CONVERSATION_ID = "conversationId";
 
-	public static final String QA = "QA";
+	public static final String EXTERNAL_KNOWLEDGE = "externalKnowledge";
 
 }

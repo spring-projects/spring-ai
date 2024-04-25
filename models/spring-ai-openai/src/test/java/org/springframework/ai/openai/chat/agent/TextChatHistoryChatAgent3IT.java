@@ -46,6 +46,8 @@ import org.springframework.ai.chat.prompt.transformer.PromptContext;
 import org.springframework.ai.chat.prompt.transformer.QuestionContextAugmentor;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
@@ -96,9 +98,24 @@ public class TextChatHistoryChatAgent3IT {
 	private Resource bikesResource;
 
 	void loadData() {
+
+		var metadataEnricher = new DocumentTransformer() {
+
+			@Override
+			public List<Document> apply(List<Document> documents) {
+				documents.forEach(d -> {
+					Map<String, Object> metadata = d.getMetadata();
+					metadata.put(TransformerContentType.EXTERNAL_KNOWLEDGE, "true");
+				});
+
+				return documents;
+			}
+
+		};
+
 		JsonReader jsonReader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
 		var textSplitter = new TokenTextSplitter();
-		vectorStore.accept(textSplitter.apply(jsonReader.get()));
+		vectorStore.accept(metadataEnricher.apply(textSplitter.apply(jsonReader.get())));
 	}
 
 	// @Autowired
@@ -116,8 +133,8 @@ public class TextChatHistoryChatAgent3IT {
 
 		logger.info("Response1: " + agentResponse1.getChatResponse().getResult().getOutput().getContent());
 
-		var agentResponse2 = this.chatAgent.call(
-				new PromptContext(new Prompt(new String("What is my name and what bike model would suggest for me?"))));
+		var agentResponse2 = this.chatAgent.call(new PromptContext(
+				new Prompt(new String("What is my name and what bike model would you suggest for me?"))));
 		logger.info("Response2: " + agentResponse2.getChatResponse().getResult().getOutput().getContent());
 
 		logger.info(agentResponse2.getPromptContext().getContents().toString());
@@ -173,13 +190,14 @@ public class TextChatHistoryChatAgent3IT {
 						new ChatMemoryRetriever(chatHistory, Map.of(TransformerContentType.SHORT_TERM_MEMORY, "")),
 						new VectorStoreChatMemoryRetriever(vectorStore, 10,
 								Map.of(TransformerContentType.LONG_TERM_MEMORY, ""))))
+
 				.withDocumentPostProcessors(List.of(
 						new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000,
 								Set.of(TransformerContentType.SHORT_TERM_MEMORY)),
 						new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000,
 								Set.of(TransformerContentType.LONG_TERM_MEMORY)),
 						new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 2000,
-								Set.of(TransformerContentType.QA))))
+								Set.of(TransformerContentType.EXTERNAL_KNOWLEDGE))))
 				.withAugmentors(List.of(new QuestionContextAugmentor(),
 						new SystemPromptChatMemoryAugmentor(
 								"""
@@ -190,6 +208,7 @@ public class TextChatHistoryChatAgent3IT {
 											""",
 								Set.of(TransformerContentType.LONG_TERM_MEMORY)),
 						new SystemPromptChatMemoryAugmentor(Set.of(TransformerContentType.SHORT_TERM_MEMORY))))
+
 				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory),
 						new VectorStoreChatMemoryAgentListener(vectorStore,
 								Map.of(TransformerContentType.LONG_TERM_MEMORY, ""))))

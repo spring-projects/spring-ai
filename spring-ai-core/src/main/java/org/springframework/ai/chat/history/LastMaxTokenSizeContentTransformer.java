@@ -56,10 +56,17 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 		this.filterTags = filterTags;
 	}
 
-	protected List<Content> doGetDatum(PromptContext promptContext) {
+	protected List<Content> doGetDatumToModify(PromptContext promptContext) {
 		return promptContext.getContents()
 			.stream()
 			.filter(content -> this.filterTags.stream().allMatch(tag -> content.getMetadata().containsKey(tag)))
+			.toList();
+	}
+
+	protected List<Content> doGetDatumNotToModify(PromptContext promptContext) {
+		return promptContext.getContents()
+			.stream()
+			.filter(content -> !this.filterTags.stream().allMatch(tag -> content.getMetadata().containsKey(tag)))
 			.toList();
 	}
 
@@ -74,7 +81,7 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 	@Override
 	public PromptContext transform(PromptContext promptContext) {
 
-		List<Content> datum = this.doGetDatum(promptContext);
+		List<Content> datum = this.doGetDatumToModify(promptContext);
 
 		// int totalSize = this.tokenCountEstimator.estimate(nonSystemChatMessages) -
 		// retrievalRequest.getTokenRunningTotal();
@@ -84,9 +91,12 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 			return promptContext;
 		}
 
-		List<Content> newSessionMessages = this.purgeExcess(datum, totalSize);
+		List<Content> purgedContent = this.purgeExcess(datum, totalSize);
 
-		return PromptContext.from(promptContext).withContents(newSessionMessages).build();
+		var updatedContent = new ArrayList<>(doGetDatumNotToModify(promptContext));
+		updatedContent.addAll(purgedContent);
+
+		return PromptContext.from(promptContext).withContents(updatedContent).build();
 	}
 
 	protected List<Content> purgeExcess(List<Content> datum, int totalSize) {

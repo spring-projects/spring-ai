@@ -22,6 +22,7 @@ import org.springframework.ai.chat.messages.Message;
 
 /**
  * @author Christian Tzolov
+ * 
  */
 public interface ChatMemory {
 
