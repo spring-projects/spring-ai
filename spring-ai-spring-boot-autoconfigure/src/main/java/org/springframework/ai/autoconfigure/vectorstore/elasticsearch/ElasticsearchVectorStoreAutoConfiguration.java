@@ -18,10 +18,10 @@ package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 import org.elasticsearch.client.RestClient;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.ElasticsearchVectorStoreOptions;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +29,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Eddú Meléndez
+ * @author Wei Jiang
  * @since 1.0.0
  */
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
@@ -40,10 +41,22 @@ class ElasticsearchVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	ElasticsearchVectorStore vectorStore(ElasticsearchVectorStoreProperties properties, RestClient restClient,
 			EmbeddingClient embeddingClient) {
+		ElasticsearchVectorStoreOptions elasticsearchVectorStoreOptions = new ElasticsearchVectorStoreOptions();
+
 		if (StringUtils.hasText(properties.getIndexName())) {
-			return new ElasticsearchVectorStore(properties.getIndexName(), restClient, embeddingClient);
+			elasticsearchVectorStoreOptions.setIndexName(properties.getIndexName());
 		}
-		return new ElasticsearchVectorStore(restClient, embeddingClient);
+		if (properties.getDimensions() != null) {
+			elasticsearchVectorStoreOptions.setDimensions(properties.getDimensions());
+		}
+		if (properties.isDenseVectorIndexing() != null) {
+			elasticsearchVectorStoreOptions.setDenseVectorIndexing(properties.isDenseVectorIndexing());
+		}
+		if (StringUtils.hasText(properties.getSimilarity())) {
+			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
+		}
+
+		return new ElasticsearchVectorStore(elasticsearchVectorStoreOptions, restClient, embeddingClient);
 	}
 
 }

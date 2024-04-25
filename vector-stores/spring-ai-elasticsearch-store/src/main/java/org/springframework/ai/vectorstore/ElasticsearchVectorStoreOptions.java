@@ -13,59 +13,58 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
+package org.springframework.ai.vectorstore;
 
 /**
- * @author Eddú Meléndez
+ * Provided Elasticsearch vector option configuration.
+ * https://www.elastic.co/guide/en/elasticsearch/reference/current/dense-vector.html
+ *
  * @author Wei Jiang
  * @since 1.0.0
  */
-@ConfigurationProperties(prefix = "spring.ai.vectorstore.elasticsearch")
-public class ElasticsearchVectorStoreProperties {
+public class ElasticsearchVectorStoreOptions {
 
 	/**
 	 * The name of the index to store the vectors.
 	 */
-	private String indexName;
+	private String indexName = "spring-ai-document-index";
 
 	/**
 	 * The number of dimensions in the vector.
 	 */
-	private Integer dimensions;
+	private int dimensions = 1536;
 
 	/**
 	 * Whether to use dense vector indexing.
 	 */
-	private Boolean denseVectorIndexing;
+	private boolean denseVectorIndexing = true;
 
 	/**
 	 * The similarity function to use.
 	 */
-	private String similarity;
+	private String similarity = "cosine";
 
 	public String getIndexName() {
-		return this.indexName;
+		return indexName;
 	}
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
 	}
 
-	public Integer getDimensions() {
+	public int getDimensions() {
 		return dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
-		this.dimensions = dimensions;
+	public void setDimensions(int dims) {
+		this.dimensions = dims;
 	}
 
-	public Boolean isDenseVectorIndexing() {
+	public boolean isDenseVectorIndexing() {
 		return denseVectorIndexing;
 	}
 
-	public void setDenseVectorIndexing(Boolean denseVectorIndexing) {
+	public void setDenseVectorIndexing(boolean denseVectorIndexing) {
 		this.denseVectorIndexing = denseVectorIndexing;
 	}
 

@@ -6,70 +6,12 @@ link:https://www.elastic.co/elasticsearch[Elasticsearch] is an open source searc
 
 == Prerequisites
 
-* A running Elasticsearch instance. The following options are available:
-** link:https://hub.docker.com/_/elasticsearch/[Docker]
-** link:https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html#elasticsearch-install-packages[Self-Managed Elasticsearch]
-** link:https://www.elastic.co/cloud/elasticsearch-service/signup?page=docs&placement=docs-body[Elastic Cloud]
+A running Elasticsearch instance. The following options are available:
 
-== Dependencies
+* link:https://hub.docker.com/_/elasticsearch/[Docker]
+* link:https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html#elasticsearch-install-packages[Self-Managed Elasticsearch]
+* link:https://www.elastic.co/cloud/elasticsearch-service/signup?page=docs&placement=docs-body[Elastic Cloud]
 
-Add the Elasticsearch Vector Store dependency to your project:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-elasticsearch-store</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-elasticsearch-store'
-}
-----
-
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-== Configuration
-
-To connect to Elasticsearch and use the `ElasticsearchVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's `application.yml`,
-
-[source,yaml]
-----
-spring:
-  elasticsearch:
-    uris: <elasticsearch instance URIs>
-    username: <elasticsearch username>
-    password: <elasticsearch password>
-# API key if needed, e.g. OpenAI
-  ai:
-    openai:
-      api:
-        key: <api-key>
-----
-
-environment variables,
-
-[source,bash]
-----
-export SPRING_ELASTICSEARCH_URIS=<elasticsearch instance URIs>
-export SPRING_ELASTICSEARCH_USERNAME=<elasticsearch username>
-export SPRING_ELASTICSEARCH_PASSWORD=<elasticsearch password>
-# API key if needed, e.g. OpenAI
-export SPRING_AI_OPENAI_API_KEY=<api-key>
-----
-
-or can be a mix of those.
-For example, if you want to store your password as an environment variable but keep the rest in the plain `application.yml` file.
-
-NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
-
-Spring Boot's auto-configuration feature for the Elasticsearch RestClient will create a bean instance that will be used by the `ElasticsearchVectorStore`.
 
 == Auto-configuration
 
@@ -125,6 +67,112 @@ public RestClient restClienbt() {
 
 Now you can auto-wire the `ElasticsearchVectorStore` as a vector store in your application.
 
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Qdrant
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+[[elasticsearchvector-properties]]
+=== Configuration Properties
+
+To connect to Elasticsearch and use the `ElasticsearchVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's `application.yml`,
+
+[source,yaml]
+----
+spring:
+  elasticsearch:
+    uris: <elasticsearch instance URIs>
+    username: <elasticsearch username>
+    password: <elasticsearch password>
+# API key if needed, e.g. OpenAI
+  ai:
+    openai:
+      api:
+        key: <api-key>
+----
+
+environment variables,
+
+[source,bash]
+----
+export SPRING_ELASTICSEARCH_URIS=<elasticsearch instance URIs>
+export SPRING_ELASTICSEARCH_USERNAME=<elasticsearch username>
+export SPRING_ELASTICSEARCH_PASSWORD=<elasticsearch password>
+# API key if needed, e.g. OpenAI
+export SPRING_AI_OPENAI_API_KEY=<api-key>
+----
+
+or can be a mix of those.
+For example, if you want to store your password as an environment variable but keep the rest in the plain `application.yml` file.
+
+NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+
+Spring Boot's auto-configuration feature for the Elasticsearch RestClient will create a bean instance that will be used by the `ElasticsearchVectorStore`.
+
+The Spring Boot properties starting with `spring.elasticsearch.*` are used to configure the Elasticsearch client:
+
+|===
+|Property | Description | Default Value
+
+| spring.elasticsearch.connection-timeout | Connection timeout used when communicating with Elasticsearch. | 1s
+| spring.elasticsearch.password | Password for authentication with Elasticsearch. | -
+| spring.elasticsearch.username | Username for authentication with Elasticsearch.| -
+| spring.elasticsearch.path-prefix | Prefix added to the path of every request sent to Elasticsearch. | -
+| spring.elasticsearch.restclient.sniffer.delay-after-failure | Delay of a sniff execution scheduled after a failure.| 1m
+| spring.elasticsearch.restclient.sniffer.interval | Interval between consecutive ordinary sniff executions. | 5m
+| spring.elasticsearch.restclient.ssl.bundle | SSL bundle name. | -
+| spring.elasticsearch.socket-keep-alive | Whether to enable socket keep alive between client and Elasticsearch. | false
+| spring.elasticsearch.socket-timeout | Socket timeout used when communicating with Elasticsearch. | 30s
+| spring.elasticsearch.uris | Comma-separated list of the Elasticsearch instances to use. | http://localhost:9200
+|===
+
+
+The properties with `spring.ai.vectorstore.elasticsearch.*` prefix help to configure Elasticsearch vector store.
+
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors. | spring-ai-document-index
+|`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector. | 1536
+|`spring.ai.vectorstore.elasticsearch.dense-vector-indexing` | Whether to use dense vector indexing. | true
+|`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`
+|===
+
+=== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. \For this you need to add the `spring-ai-elasticsearch-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-elasticsearch-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-elasticsearch-store'
+}
+----
+
 == Metadata Filtering
 
 You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Elasticsearcg as well.
@@ -170,16 +218,4 @@ is converted into the proprietary Elasticsearch filter format:
 ----
 (metadata.author:john OR jill) AND metadata.article_type:blog
 ----
-
-[[elasticsearchvector-properties]]
-== ElasticsearchVectorStore Properties
-
-You can use the following properties in your Spring Boot configuration to customize the Elasticsearch vector store.
-
-|===
-|Property |Default Value
-
-|`spring.ai.vectorstore.elasticsearch.index-name`
-|spring-ai-document-index
-|===
 
