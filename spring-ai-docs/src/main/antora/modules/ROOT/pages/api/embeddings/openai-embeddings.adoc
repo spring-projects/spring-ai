@@ -187,14 +187,17 @@ Next, create an `OpenAiEmbeddingClient` instance and use it to compute the simil
 ----
 var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
 
-var embeddingClient = new OpenAiEmbeddingClient(openAiApi)
-    .withDefaultOptions(OpenAiChatOptions.build()
-        .withModel("text-embedding-ada-002")
-        .withUser("user-6")
-        .build());
+var embeddingClient = new OpenAiEmbeddingClient(
+        openAiApi,
+        MetadataMode.EMBED,
+        OpenAiEmbeddingOptions.builder()
+                .withModel("text-embedding-ada-002")
+                .withUser("user-6")
+                .build(),
+        RetryUtils.DEFAULT_RETRY_TEMPLATE);
 
 EmbeddingResponse embeddingResponse = embeddingClient
-	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+        .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
