@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.agent;
-
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+package org.springframework.ai.chat.prompt.transformer;
 
 /**
- * The ChatAgentListener is a callback interface that can be implemented by classes that
- * want to be notified of the completion of a ChatAgent execution.
- *
- * @author Mark Pollack
  * @author Christian Tzolov
  */
-public interface ChatAgentListener {
+public class TransformerContentType {
 
-	default void onStart(PromptContext promptContext) {
+	public static final String MEMORY = "MEMORY_TYPE";
 
-	}
+	public static final String LONG_TERM_MEMORY = "LONG_TERM_MEMORY_TYPE";
 
-	void onComplete(AgentResponse agentResponse);
+	public static final String SHORT_TERM_MEMORY = "SHORT_TERM_MEMORY_TYPE";
+
+	public static final String CONVERSATION_ID = "conversationId";
+
+	public static final String QA = "QA";
 
 }

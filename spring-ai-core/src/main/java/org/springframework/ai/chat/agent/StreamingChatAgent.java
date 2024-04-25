@@ -13,24 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.chat.agent;
 
 import org.springframework.ai.chat.prompt.transformer.PromptContext;
 
 /**
- * The ChatAgentListener is a callback interface that can be implemented by classes that
- * want to be notified of the completion of a ChatAgent execution.
+ * A ChatAgent encapsulates common AI workflows such as Retrieval Augmented Generation.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @since 1.0 M1
  */
-public interface ChatAgentListener {
+public interface StreamingChatAgent {
 
-	default void onStart(PromptContext promptContext) {
-
-	}
-
-	void onComplete(AgentResponse agentResponse);
+	/**
+	 * Call the chat agent to execute a workflow
+	 * @param promptContext A shared data structure that can be used in components that
+	 * implement the workflow. Contains the initial Prompt and a conversation ID at the
+	 * start of the workflow.
+	 * @return the AgentResponse that contains the ChatResponse and the latest
+	 * PromptContext
+	 */
+	StreamingAgentResponse stream(PromptContext promptContext);
 
 }

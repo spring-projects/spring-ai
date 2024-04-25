@@ -1,16 +1,31 @@
+/*
+ * Copyright 2024-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.chat.prompt.transformer;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.node.Content;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import org.springframework.ai.model.Content;
 
 /**
  * Transforms the Prompt by taking to the current prompt in the Prompt Context and adding
@@ -26,28 +41,28 @@ public class QuestionContextAugmentor implements PromptTransformer {
 			   "---------------------\\n"
 			   "{context}\\n"
 			   "---------------------\\n"
-			   "Given the context information and not prior knowledge, "
-			   "answer the question. If the answer is not in the context, inform "
+			   "Given the context and provided history information and not prior knowledge, "
+			   "reply to the user comment. If the answer is not in the context, inform "
 			   "the user that you can't answer the question.\\n"
-			   "Question: {question}\\n"
+			   "User comment: {question}\\n"
 			   "Answer: "
 			""";
 
 	@Override
 	public PromptContext transform(PromptContext promptContext) {
-		String context = doCreateContext(promptContext.getNodes());
+		String context = doCreateContext(promptContext.getContents());
 		Map<String, Object> contextMap = doCreateContextMap(promptContext.getPrompt(), context);
 		Prompt prompt = doCreatePrompt(promptContext.getPrompt(), contextMap);
 		promptContext.setPrompt(prompt);
-		promptContext.addPromptHistory(prompt);
+		promptContext.addPromptHistory(prompt); // BUG? shouldn't this be original
+												// promptContext.getPrompt()?
 		// For now return the modified instance instead of a copy
 		return promptContext;
 	}
 
 	protected String doCreateContext(List<Content> data) {
 		return data.stream()
-			.filter(node -> node instanceof Document)
-			.map(node -> (Document) node)
+			.filter(content -> content.getMetadata().containsKey(TransformerContentType.QA))
 			.map(Content::getContent)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}

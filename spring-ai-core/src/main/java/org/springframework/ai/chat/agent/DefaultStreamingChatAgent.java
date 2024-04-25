@@ -15,22 +15,25 @@
  */
 package org.springframework.ai.chat.agent;
 
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
-import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.messages.MessageAggregator;
+import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 
 /**
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public class DefaultChatAgent implements ChatAgent {
+public class DefaultStreamingChatAgent implements StreamingChatAgent {
 
-	private ChatClient chatClient;
+	private StreamingChatClient streamingChatClient;
 
 	private List<PromptTransformer> retrievers;
 
@@ -40,23 +43,23 @@ public class DefaultChatAgent implements ChatAgent {
 
 	private List<ChatAgentListener> chatAgentListeners;
 
-	public DefaultChatAgent(ChatClient chatClient, List<PromptTransformer> retrievers,
+	public DefaultStreamingChatAgent(StreamingChatClient chatClient, List<PromptTransformer> retrievers,
 			List<PromptTransformer> documentPostProcessors, List<PromptTransformer> augmentors,
 			List<ChatAgentListener> chatAgentListeners) {
 		Objects.requireNonNull(chatClient, "chatClient must not be null");
-		this.chatClient = chatClient;
+		this.streamingChatClient = chatClient;
 		this.retrievers = retrievers;
 		this.documentPostProcessors = documentPostProcessors;
 		this.augmentors = augmentors;
 		this.chatAgentListeners = chatAgentListeners;
 	}
 
-	public static DefaultChatAgentBuilder builder(ChatClient chatClient) {
+	public static DefaultChatAgentBuilder builder(StreamingChatClient chatClient) {
 		return new DefaultChatAgentBuilder().withChatClient(chatClient);
 	}
 
 	@Override
-	public AgentResponse call(PromptContext promptContext) {
+	public StreamingAgentResponse stream(PromptContext promptContext) {
 
 		PromptContext promptContextOnStart = PromptContext.from(promptContext).build();
 
@@ -81,19 +84,24 @@ public class DefaultChatAgent implements ChatAgent {
 		}
 
 		// Perform generation
-		ChatResponse chatResponse = this.chatClient.call(promptContext.getPrompt());
+		final var promptContext2 = promptContext;
+
+		Flux<ChatResponse> fluxChatResponse = new MessageAggregator()
+			.aggregate(this.streamingChatClient.stream(promptContext.getPrompt()), chatResponse -> {
+				for (ChatAgentListener listener : this.chatAgentListeners) {
+					listener.onComplete(new AgentResponse(promptContext2, chatResponse));
+				}
+			});
 
 		// Invoke Listeners onComplete
-		AgentResponse agentResponse = new AgentResponse(promptContext, chatResponse);
-		for (ChatAgentListener listener : this.chatAgentListeners) {
-			listener.onComplete(agentResponse);
-		}
+		StreamingAgentResponse agentResponse = new StreamingAgentResponse(promptContext, fluxChatResponse);
+
 		return agentResponse;
 	}
 
 	public static class DefaultChatAgentBuilder {
 
-		private ChatClient chatClient;
+		private StreamingChatClient chatClient;
 
 		private List<PromptTransformer> retrievers = new ArrayList<>();
 
@@ -103,7 +111,7 @@ public class DefaultChatAgent implements ChatAgent {
 
 		private List<ChatAgentListener> chatAgentListeners = new ArrayList<>();
 
-		public DefaultChatAgentBuilder withChatClient(ChatClient chatClient) {
+		public DefaultChatAgentBuilder withChatClient(StreamingChatClient chatClient) {
 			this.chatClient = chatClient;
 			return this;
 		}
@@ -128,8 +136,9 @@ public class DefaultChatAgent implements ChatAgent {
 			return this;
 		}
 
-		public DefaultChatAgent build() {
-			return new DefaultChatAgent(chatClient, retrievers, documentPostProcessors, augmentors, chatAgentListeners);
+		public DefaultStreamingChatAgent build() {
+			return new DefaultStreamingChatAgent(chatClient, retrievers, documentPostProcessors, augmentors,
+					chatAgentListeners);
 		}
 
 	}

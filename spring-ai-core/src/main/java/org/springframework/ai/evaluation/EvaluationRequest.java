@@ -17,7 +17,7 @@ public class EvaluationRequest {
 	private final ChatResponse chatResponse;
 
 	public EvaluationRequest(AgentResponse agentResponse) {
-		this(agentResponse.getPromptContext().getPromptHistory().get(0), agentResponse.getPromptContext().getNodes(),
+		this(agentResponse.getPromptContext().getPromptHistory().get(0), agentResponse.getPromptContext().getContents(),
 				agentResponse.getChatResponse());
 	}
 

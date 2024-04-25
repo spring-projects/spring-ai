@@ -20,8 +20,10 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -36,6 +38,8 @@ import org.springframework.util.StreamUtils;
  */
 public abstract class AbstractMessage implements Message {
 
+	public static final String MESSAGE_TYPE = "messageType";
+
 	protected final MessageType messageType;
 
 	protected final String textContent;
@@ -48,7 +52,7 @@ public abstract class AbstractMessage implements Message {
 	protected final Map<String, Object> metadata;
 
 	protected AbstractMessage(MessageType messageType, String content) {
-		this(messageType, content, Map.of());
+		this(messageType, content, Map.of(MESSAGE_TYPE, messageType));
 	}
 
 	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> metadata) {
@@ -56,11 +60,12 @@ public abstract class AbstractMessage implements Message {
 		this.messageType = messageType;
 		this.textContent = content;
 		this.mediaData = new ArrayList<>();
-		this.metadata = metadata;
+		this.metadata = new HashMap<>(metadata);
+		this.metadata.put(MESSAGE_TYPE, messageType);
 	}
 
 	protected AbstractMessage(MessageType messageType, String textContent, List<Media> mediaData) {
-		this(messageType, textContent, mediaData, Map.of());
+		this(messageType, textContent, mediaData, Map.of(MESSAGE_TYPE, messageType));
 	}
 
 	protected AbstractMessage(MessageType messageType, String textContent, List<Media> mediaData,
@@ -73,7 +78,8 @@ public abstract class AbstractMessage implements Message {
 		this.messageType = messageType;
 		this.textContent = textContent;
 		this.mediaData = new ArrayList<>(mediaData);
-		this.metadata = metadata;
+		this.metadata = new HashMap<>(metadata);
+		this.metadata.put(MESSAGE_TYPE, messageType);
 	}
 
 	protected AbstractMessage(MessageType messageType, Resource resource) {
@@ -86,7 +92,8 @@ public abstract class AbstractMessage implements Message {
 		Assert.notNull(resource, "Resource must not be null");
 
 		this.messageType = messageType;
-		this.metadata = metadata;
+		this.metadata = new HashMap<>(metadata);
+		this.metadata.put(MESSAGE_TYPE, messageType);
 		this.mediaData = new ArrayList<>();
 
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -119,38 +126,21 @@ public abstract class AbstractMessage implements Message {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((mediaData == null) ? 0 : mediaData.hashCode());
-		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
-		result = prime * result + ((messageType == null) ? 0 : messageType.hashCode());
-		return result;
+		return Objects.hash(this.messageType, this.textContent, this.mediaData, this.metadata);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		}
 		AbstractMessage other = (AbstractMessage) obj;
-		if (mediaData == null) {
-			if (other.mediaData != null)
-				return false;
-		}
-		else if (!mediaData.equals(other.mediaData))
-			return false;
-		if (metadata == null) {
-			if (other.metadata != null)
-				return false;
-		}
-		else if (!metadata.equals(other.metadata))
-			return false;
-		if (messageType != other.messageType)
-			return false;
-		return true;
+		return Objects.equals(this.messageType, other.messageType)
+				&& Objects.equals(this.textContent, other.textContent)
+				&& Objects.equals(this.mediaData, other.mediaData) && Objects.equals(this.metadata, other.metadata);
 	}
 
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.agent;
+package org.springframework.ai.chat.history;
 
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import java.util.List;
+
+import org.springframework.ai.chat.messages.Message;
 
 /**
- * The ChatAgentListener is a callback interface that can be implemented by classes that
- * want to be notified of the completion of a ChatAgent execution.
- *
- * @author Mark Pollack
  * @author Christian Tzolov
  */
-public interface ChatAgentListener {
+public interface ChatMemory {
 
-	default void onStart(PromptContext promptContext) {
-
+	default void add(String conversationId, Message messages) {
+		this.add(conversationId, List.of(messages));
 	}
 
-	void onComplete(AgentResponse agentResponse);
+	void add(String conversationId, List<Message> messages);
+
+	List<Message> get(String conversationId);
+
+	void clear(String conversationId);
 
 }
