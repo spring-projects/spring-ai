@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -33,7 +34,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -58,7 +58,7 @@ public class FunctionCallbackInPromptIT {
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			var promptOptions = OpenAiChatOptions.builder()
+			var promptOptions = OpenAiChatOptionsBuilder.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 					.withName("CurrentWeatherService")
 					.withDescription("Get the weather in location")
@@ -83,7 +83,7 @@ public class FunctionCallbackInPromptIT {
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			var promptOptions = OpenAiChatOptions.builder()
+			var promptOptions = OpenAiChatOptionsBuilder.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 					.withName("CurrentWeatherService")
 					.withDescription("Get the weather in location")

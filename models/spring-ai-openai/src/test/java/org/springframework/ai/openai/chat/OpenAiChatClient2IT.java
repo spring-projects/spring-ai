@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +63,7 @@ public class OpenAiChatClient2IT {
 		// param=messages, code=null]]
 
 		Prompt prompt = new Prompt("List 8 planets. Use JSON response",
-				OpenAiChatOptions.builder()
+				OpenAiChatOptionsBuilder.builder()
 					.withResponseFormat(new ChatCompletionRequest.ResponseFormat("json_object"))
 					.build());
 

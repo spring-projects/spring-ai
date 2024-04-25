@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.openai.OpenAiChatOptionsBuilder;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
@@ -38,7 +39,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
@@ -192,7 +192,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		var promptOptions = OpenAiChatOptionsBuilder.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
@@ -217,7 +217,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		var promptOptions = OpenAiChatOptionsBuilder.builder()
 			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
@@ -252,7 +252,9 @@ class OpenAiChatClientIT extends AbstractIT {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+				OpenAiChatOptionsBuilder.builder()
+					.withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+					.build()));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "bowl");
@@ -266,7 +268,9 @@ class OpenAiChatClientIT extends AbstractIT {
 						"https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
 
 		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+				OpenAiChatOptionsBuilder.builder()
+					.withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+					.build()));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "bowl");
@@ -280,7 +284,9 @@ class OpenAiChatClientIT extends AbstractIT {
 						"https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
 
 		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+				OpenAiChatOptionsBuilder.builder()
+					.withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+					.build()));
 
 		String content = response.collectList()
 			.block()

@@ -18,187 +18,47 @@ package org.springframework.ai.openai;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
 
 /**
+ * @author youngmon
  * @author Michael Lavelle
  * @author Christian Tzolov
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
-public class OpenAiAudioTranscriptionOptions implements ModelOptions {
+public interface OpenAiAudioTranscriptionOptions extends ModelOptions {
 
-	// @formatter:off
 	/**
 	 * ID of the model to use.
 	 */
-	private @JsonProperty("model") String model;
+	@JsonProperty("model")
+	String getModel();
 
 	/**
-	 * The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt.
+	 * The format of the transcript output, in one of these options: json, text, srt,
+	 * verbose_json, or vtt.
 	 */
-	private @JsonProperty("response_format") TranscriptResponseFormat responseFormat;
+	@JsonProperty("response_format")
+	TranscriptResponseFormat getResponseFormat();
 
-	private @JsonProperty("prompt") String prompt;
+	@JsonProperty("prompt")
+	String getPrompt();
 
-	private @JsonProperty("language") String language;
+	@JsonProperty("language")
+	String getLanguage();
 
 	/**
-	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
-	 * more random, while lower values like 0.2 will make it more focused and deterministic.
+	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make
+	 * the output more random, while lower values like 0.2 will make it more focused and
+	 * deterministic.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	@JsonProperty("temperature")
+	Float getTemperature();
 
-	private @JsonProperty("timestamp_granularities") GranularityType granularityType;
+	@JsonProperty("timestamp_granularities")
+	GranularityType getGranularityType();
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		protected OpenAiAudioTranscriptionOptions options;
-
-		public Builder() {
-			this.options = new OpenAiAudioTranscriptionOptions();
-		}
-
-		public Builder(OpenAiAudioTranscriptionOptions options) {
-			this.options = options;
-		}
-
-		public Builder withModel(String model) {
-			this.options.model = model;
-			return this;
-		}
-
-		public Builder withLanguage(String language) {
-			this.options.language = language;
-			return this;
-		}
-
-		public Builder withPrompt(String prompt) {
-			this.options.prompt = prompt;
-			return this;
-		}
-
-		public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder withTemperature(Float temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder withGranularityType(GranularityType granularityType) {
-			this.options.granularityType = granularityType;
-			return this;
-		}
-
-		public OpenAiAudioTranscriptionOptions build() {
-			return this.options;
-		}
-
-	}
-
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public String getLanguage() {
-		return this.language;
-	}
-
-	public void setLanguage(String language) {
-		this.language = language;
-	}
-
-	public String getPrompt() {
-		return this.prompt;
-	}
-
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
-	}
-
-	public Float getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-
-	public TranscriptResponseFormat getResponseFormat() {
-		return this.responseFormat;
-	}
-
-	public void setResponseFormat(TranscriptResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	public GranularityType getGranularityType() {
-		return this.granularityType;
-	}
-
-	public void setGranularityType(GranularityType granularityType) {
-		this.granularityType = granularityType;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((prompt == null) ? 0 : prompt.hashCode());
-		result = prime * result + ((language == null) ? 0 : language.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		OpenAiAudioTranscriptionOptions other = (OpenAiAudioTranscriptionOptions) obj;
-		if (this.model == null) {
-			if (other.model != null)
-				return false;
-		}
-		else if (!model.equals(other.model))
-			return false;
-		if (this.prompt == null) {
-			if (other.prompt != null)
-				return false;
-		}
-		else if (!this.prompt.equals(other.prompt))
-			return false;
-		if (this.language == null) {
-			if (other.language != null)
-				return false;
-		}
-		else if (!this.language.equals(other.language))
-			return false;
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null)
-				return false;
-		}
-		else if (!this.responseFormat.equals(other.responseFormat))
-			return false;
-		return true;
-	}
 }

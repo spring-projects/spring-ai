@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.openai.OpenAiEmbeddingOptionsBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -53,7 +53,7 @@ class EmbeddingIT {
 	void embedding3Large() {
 
 		EmbeddingResponse embeddingResponse = embeddingClient.call(new EmbeddingRequest(List.of("Hello World"),
-				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-large").build()));
+				OpenAiEmbeddingOptionsBuilder.builder().withModel("text-embedding-3-large").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(3072);
@@ -68,7 +68,7 @@ class EmbeddingIT {
 	void textEmbeddingAda002() {
 
 		EmbeddingResponse embeddingResponse = embeddingClient.call(new EmbeddingRequest(List.of("Hello World"),
-				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-small").build()));
+				OpenAiEmbeddingOptionsBuilder.builder().withModel("text-embedding-3-small").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);

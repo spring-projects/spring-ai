@@ -35,7 +35,7 @@ public class ChatCompletionRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
-				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
+				OpenAiChatOptionsBuilder.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
 
@@ -45,8 +45,10 @@ public class ChatCompletionRequestTests {
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.temperature()).isEqualTo(66.6f);
 
-		request = client.createRequest(new Prompt("Test message content",
-				OpenAiChatOptions.builder().withModel("PROMPT_MODEL").withTemperature(99.9f).build()), true);
+		request = client.createRequest(
+				new Prompt("Test message content",
+						OpenAiChatOptionsBuilder.builder().withModel("PROMPT_MODEL").withTemperature(99.9f).build()),
+				true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -61,10 +63,10 @@ public class ChatCompletionRequestTests {
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
 		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
-				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").build());
+				OpenAiChatOptionsBuilder.builder().withModel("DEFAULT_MODEL").build());
 
 		var request = client.createRequest(new Prompt("Test message content",
-				OpenAiChatOptions.builder()
+				OpenAiChatOptionsBuilder.builder()
 					.withModel("PROMPT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
@@ -91,7 +93,7 @@ public class ChatCompletionRequestTests {
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
 		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
-				OpenAiChatOptions.builder()
+				OpenAiChatOptionsBuilder.builder()
 					.withModel("DEFAULT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
@@ -116,7 +118,7 @@ public class ChatCompletionRequestTests {
 
 		// Explicitly enable the function
 		request = client.createRequest(new Prompt("Test message content",
-				OpenAiChatOptions.builder().withFunction(TOOL_FUNCTION_NAME).build()), false);
+				OpenAiChatOptionsBuilder.builder().withFunction(TOOL_FUNCTION_NAME).build()), false);
 
 		assertThat(request.tools()).hasSize(1);
 		assertThat(request.tools().get(0).function().name()).as("Explicitly enabled function")
@@ -124,7 +126,7 @@ public class ChatCompletionRequestTests {
 
 		// Override the default options function with one from the prompt
 		request = client.createRequest(new Prompt("Test message content",
-				OpenAiChatOptions.builder()
+				OpenAiChatOptionsBuilder.builder()
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withName(TOOL_FUNCTION_NAME)
 						.withDescription("Overridden function description")

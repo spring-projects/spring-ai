@@ -206,7 +206,6 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		return this.functionCallbacks;
 	}
 
-	@Override
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
 		this.functionCallbacks = functionCallbacks;
@@ -217,7 +216,6 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		return this.functions;
 	}
 
-	@Override
 	public void setFunctions(Set<String> functions) {
 		Assert.notNull(functions, "Function must not be null");
 		this.functions = functions;
