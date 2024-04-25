@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.bedrock.llama2.api;
+package org.springframework.ai.bedrock.llama.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -24,89 +24,89 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatRequest;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatResponse;
 
 import java.time.Duration;
 
 // @formatter:off
 /**
- * Java client for the Bedrock Llama2 chat model.
+ * Java client for the Bedrock Llama chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
  *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
-public class Llama2ChatBedrockApi extends
-		AbstractBedrockApi<Llama2ChatRequest, Llama2ChatResponse, Llama2ChatResponse> {
+public class LlamaChatBedrockApi extends
+		AbstractBedrockApi<LlamaChatRequest, LlamaChatResponse, LlamaChatResponse> {
 
 	/**
-	 * Create a new Llama2ChatBedrockApi instance using the default credentials provider chain, the default object
+	 * Create a new LlamaChatBedrockApi instance using the default credentials provider chain, the default object
 	 * mapper, default temperature and topP values.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link LlamaChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 */
-	public Llama2ChatBedrockApi(String modelId, String region) {
+	public LlamaChatBedrockApi(String modelId, String region) {
 		super(modelId, region);
 	}
 
 	/**
-	 * Create a new Llama2ChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 * Create a new LlamaChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link LlamaChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
 	 */
-	public Llama2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+	public LlamaChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper) {
 		super(modelId, credentialsProvider, region, objectMapper);
 	}
 
 	/**
-	 * Create a new Llama2ChatBedrockApi instance using the default credentials provider chain, the default object
+	 * Create a new LlamaChatBedrockApi instance using the default credentials provider chain, the default object
 	 * mapper, default temperature and topP values.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link LlamaChatModel} for the supported models.
 	 * @param region The AWS region to use.
 	 * @param timeout The timeout to use.
 	 */
-	public Llama2ChatBedrockApi(String modelId, String region, Duration timeout) {
+	public LlamaChatBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
 	}
 
 	/**
-	 * Create a new Llama2ChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 * Create a new LlamaChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link LlamaChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
 	 * @param timeout The timeout to use.
 	 */
-	public Llama2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+	public LlamaChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**
-	 * Create a new Llama2ChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 * Create a new LlamaChatBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
-	 * @param modelId The model id to use. See the {@link Llama2ChatModel} for the supported models.
+	 * @param modelId The model id to use. See the {@link LlamaChatModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
 	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
 	 * @param timeout The timeout to use.
 	 */
-	public Llama2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+	public LlamaChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**
-	 * Llama2ChatRequest encapsulates the request parameters for the Meta Llama2 chat model.
+	 * LlamaChatRequest encapsulates the request parameters for the Meta Llama chat model.
 	 *
 	 * @param prompt The prompt to use for the chat.
 	 * @param temperature The temperature value controls the randomness of the generated text. Use a lower value to
@@ -116,16 +116,16 @@ public class Llama2ChatBedrockApi extends
 	 * @param maxGenLen The maximum length of the generated text.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record Llama2ChatRequest(
+	public record LlamaChatRequest(
 			@JsonProperty("prompt") String prompt,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("max_gen_len") Integer maxGenLen) {
 
 			/**
-			 * Create a new Llama2ChatRequest builder.
+			 * Create a new LlamaChatRequest builder.
 			 * @param prompt compulsory prompt parameter.
-			 * @return a new Llama2ChatRequest builder.
+			 * @return a new LlamaChatRequest builder.
 			 */
 			public static Builder builder(String prompt) {
 				return new Builder(prompt);
@@ -156,8 +156,8 @@ public class Llama2ChatBedrockApi extends
 					return this;
 				}
 
-				public Llama2ChatRequest build() {
-					return new Llama2ChatRequest(
+				public LlamaChatRequest build() {
+					return new LlamaChatRequest(
 							prompt,
 							temperature,
 							topP,
@@ -168,7 +168,7 @@ public class Llama2ChatBedrockApi extends
 	}
 
 	/**
-	 * Llama2ChatResponse encapsulates the response parameters for the Meta Llama2 chat model.
+	 * LlamaChatResponse encapsulates the response parameters for the Meta Llama chat model.
 	 *
 	 * @param generation The generated text.
 	 * @param promptTokenCount The number of tokens in the prompt.
@@ -179,7 +179,7 @@ public class Llama2ChatBedrockApi extends
 	 * increasing the value of max_gen_len and trying again.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record Llama2ChatResponse(
+	public record LlamaChatResponse(
 			@JsonProperty("generation") String generation,
 			@JsonProperty("prompt_token_count") Integer promptTokenCount,
 			@JsonProperty("generation_token_count") Integer generationTokenCount,
@@ -202,9 +202,9 @@ public class Llama2ChatBedrockApi extends
 	}
 
 	/**
-	 * Llama2 models version.
+	 * Llama models version.
 	 */
-	public enum Llama2ChatModel {
+	public enum LlamaChatModel {
 
 		/**
 		 * meta.llama2-13b-chat-v1
@@ -214,7 +214,17 @@ public class Llama2ChatBedrockApi extends
 		/**
 		 * meta.llama2-70b-chat-v1
 		 */
-		LLAMA2_70B_CHAT_V1("meta.llama2-70b-chat-v1");
+		LLAMA2_70B_CHAT_V1("meta.llama2-70b-chat-v1"),
+
+		/**
+		 * meta.llama3-8b-instruct-v1:0
+		 */
+		LLAMA3_8B_INSTRUCT_V1("meta.llama3-8b-instruct-v1:0"),
+
+		/**
+		 * meta.llama3-70b-instruct-v1:0
+		 */
+		LLAMA3_70B_INSTRUCT_V1("meta.llama3-70b-instruct-v1:0");
 
 		private final String id;
 
@@ -225,19 +235,19 @@ public class Llama2ChatBedrockApi extends
 			return id;
 		}
 
-		Llama2ChatModel(String value) {
+		LlamaChatModel(String value) {
 			this.id = value;
 		}
 	}
 
 	@Override
-	public Llama2ChatResponse chatCompletion(Llama2ChatRequest request) {
-		return this.internalInvocation(request, Llama2ChatResponse.class);
+	public LlamaChatResponse chatCompletion(LlamaChatRequest request) {
+		return this.internalInvocation(request, LlamaChatResponse.class);
 	}
 
 	@Override
-	public Flux<Llama2ChatResponse> chatCompletionStream(Llama2ChatRequest request) {
-		return this.internalInvocationStream(request, Llama2ChatResponse.class);
+	public Flux<LlamaChatResponse> chatCompletionStream(LlamaChatRequest request) {
+		return this.internalInvocationStream(request, LlamaChatResponse.class);
 	}
 }
 // @formatter:on

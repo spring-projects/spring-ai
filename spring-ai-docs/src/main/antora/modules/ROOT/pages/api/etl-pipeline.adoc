@@ -170,10 +170,10 @@ Example:
 public class MyTikaDocumentReader {
 
     @Value("classpath:/word-sample.docx") // This is the word document to load
-	private Resource resource;
+    private Resource resource;
 
-	List<Document> loadText() {
-        TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(resourceUri);
+    List<Document> loadText() {
+        TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(resource);
         return tikaDocumentReader.get();
     }
 }

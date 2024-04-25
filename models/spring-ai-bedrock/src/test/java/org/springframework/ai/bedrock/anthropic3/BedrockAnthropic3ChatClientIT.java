@@ -161,9 +161,9 @@ class BedrockAnthropic3ChatClientIT {
 		String format = outputParser.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
-				Remove non JSON tex blocks from the output.
 				{format}
 				Provide your answer in the JSON format with the feature names as the keys.
+				Remove Markdown code blocks from the output.
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());

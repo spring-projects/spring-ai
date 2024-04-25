@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.bedrock.llama2;
+package org.springframework.ai.bedrock.llama;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -26,7 +26,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @author Christian Tzolov
  */
 @JsonInclude(Include.NON_NULL)
-public class BedrockLlama2ChatOptions implements ChatOptions {
+public class BedrockLlamaChatOptions implements ChatOptions {
 
 	/**
 	 * The temperature value controls the randomness of the generated text. Use a lower
@@ -51,7 +51,7 @@ public class BedrockLlama2ChatOptions implements ChatOptions {
 
 	public static class Builder {
 
-		private BedrockLlama2ChatOptions options = new BedrockLlama2ChatOptions();
+		private BedrockLlamaChatOptions options = new BedrockLlamaChatOptions();
 
 		public Builder withTemperature(Float temperature) {
 			this.options.setTemperature(temperature);
@@ -68,7 +68,7 @@ public class BedrockLlama2ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public BedrockLlama2ChatOptions build() {
+		public BedrockLlamaChatOptions build() {
 			return this.options;
 		}
 

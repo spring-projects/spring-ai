@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.bedrock.llama2;
+package org.springframework.ai.autoconfigure.bedrock.llama;
 
 import java.util.List;
 import java.util.Map;
@@ -27,8 +27,8 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatClient;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
+import org.springframework.ai.bedrock.llama.BedrockLlamaChatClient;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -41,21 +41,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
-public class BedrockLlama2ChatAutoConfigurationIT {
+public class BedrockLlamaChatAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.bedrock.llama2.chat.enabled=true",
+		.withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true",
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
-				"spring.ai.bedrock.llama2.chat.model=" + Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-				"spring.ai.bedrock.llama2.chat.options.temperature=0.5",
-				"spring.ai.bedrock.llama2.chat.options.maxGenLen=500")
-		.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class));
+				"spring.ai.bedrock.llama.chat.model=" + LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
+				"spring.ai.bedrock.llama.chat.options.temperature=0.5",
+				"spring.ai.bedrock.llama.chat.options.maxGenLen=500")
+		.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
@@ -70,8 +71,8 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 	@Test
 	public void chatCompletion() {
 		contextRunner.run(context -> {
-			BedrockLlama2ChatClient llama2ChatClient = context.getBean(BedrockLlama2ChatClient.class);
-			ChatResponse response = llama2ChatClient.call(new Prompt(List.of(userMessage, systemMessage)));
+			BedrockLlamaChatClient llamaChatClient = context.getBean(BedrockLlamaChatClient.class);
+			ChatResponse response = llamaChatClient.call(new Prompt(List.of(userMessage, systemMessage)));
 			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
@@ -80,9 +81,9 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 	public void chatCompletionStreaming() {
 		contextRunner.run(context -> {
 
-			BedrockLlama2ChatClient llama2ChatClient = context.getBean(BedrockLlama2ChatClient.class);
+			BedrockLlamaChatClient llamaChatClient = context.getBean(BedrockLlamaChatClient.class);
 
-			Flux<ChatResponse> response = llama2ChatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = llamaChatClient.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
@@ -102,23 +103,23 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 	public void propertiesTest() {
 
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.bedrock.llama2.chat.enabled=true",
+			.withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
-					"spring.ai.bedrock.llama2.chat.model=MODEL_XYZ",
+					"spring.ai.bedrock.llama.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
-					"spring.ai.bedrock.llama2.chat.options.temperature=0.55",
-					"spring.ai.bedrock.llama2.chat.options.maxGenLen=123")
-			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))
+					"spring.ai.bedrock.llama.chat.options.temperature=0.55",
+					"spring.ai.bedrock.llama.chat.options.maxGenLen=123")
+			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
-				var llama2ChatProperties = context.getBean(BedrockLlama2ChatProperties.class);
+				var llamaChatProperties = context.getBean(BedrockLlamaChatProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
 
-				assertThat(llama2ChatProperties.isEnabled()).isTrue();
+				assertThat(llamaChatProperties.isEnabled()).isTrue();
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.EU_CENTRAL_1.id());
 
-				assertThat(llama2ChatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
-				assertThat(llama2ChatProperties.getOptions().getMaxGenLen()).isEqualTo(123);
-				assertThat(llama2ChatProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(llamaChatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
+				assertThat(llamaChatProperties.getOptions().getMaxGenLen()).isEqualTo(123);
+				assertThat(llamaChatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(awsProperties.getSecretKey()).isEqualTo("SECRET_KEY");
@@ -129,27 +130,26 @@ public class BedrockLlama2ChatAutoConfigurationIT {
 	public void chatCompletionDisabled() {
 
 		// It is disabled by default
-		new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockLlama2ChatProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(BedrockLlama2ChatClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockLlamaChatClient.class)).isEmpty();
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama2.chat.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))
+		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true")
+			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockLlama2ChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(BedrockLlama2ChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(BedrockLlamaChatClient.class)).isNotEmpty();
 			});
 
 		// Explicitly disable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama2.chat.enabled=false")
-			.withConfiguration(AutoConfigurations.of(BedrockLlama2ChatAutoConfiguration.class))
+		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama.chat.enabled=false")
+			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockLlama2ChatProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(BedrockLlama2ChatClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockLlamaChatClient.class)).isEmpty();
 			});
 	}
 
