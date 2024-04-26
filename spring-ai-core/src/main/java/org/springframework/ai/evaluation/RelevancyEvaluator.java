@@ -66,7 +66,7 @@ public class RelevancyEvaluator implements Evaluator {
 			.filter(node -> node != null && node.getContent() instanceof String)
 			.map(node -> (Content) node)
 			.map(Content::getContent)
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 		return supportingData;
 	}
 

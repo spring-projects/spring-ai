@@ -37,8 +37,9 @@ public class InMemoryChatMemory implements ChatMemory {
 	}
 
 	@Override
-	public List<Message> get(String conversationId) {
-		return this.conversationHistory.get(conversationId);
+	public List<Message> get(String conversationId, int lastN) {
+		List<Message> all = this.conversationHistory.get(conversationId);
+		return all != null ? all.stream().skip(Math.max(0, all.size() - lastN)).toList() : List.of();
 	}
 
 	@Override

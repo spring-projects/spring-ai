@@ -13,55 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.openai.chat.agent;
 
 import java.util.List;
 
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.qdrant.QdrantContainer;
 
 import org.springframework.ai.chat.agent.ChatAgent;
 import org.springframework.ai.chat.agent.DefaultChatAgent;
 import org.springframework.ai.chat.agent.DefaultStreamingChatAgent;
 import org.springframework.ai.chat.agent.StreamingChatAgent;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryAgentListener;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryRetriever;
+import org.springframework.ai.chat.history.ChatMemory;
+import org.springframework.ai.chat.history.ChatMemoryAgentListener;
+import org.springframework.ai.chat.history.ChatMemoryRetriever;
+import org.springframework.ai.chat.history.InMemoryChatMemory;
 import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
-import org.springframework.ai.chat.history.SystemPromptChatMemoryAugmentor;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.chat.history.MessageChatMemoryAugmentor;
 import org.springframework.ai.evaluation.BaseMemoryTest;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-@Testcontainers
-@SpringBootTest(classes = TextChatHistoryChatAgentIT.Config.class)
+@SpringBootTest(classes = ChatMemoryShortTermMessageListIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class TextChatHistoryChatAgentIT extends BaseMemoryTest {
-
-	private static final String COLLECTION_NAME = "test_collection";
-
-	private static final int QDRANT_GRPC_PORT = 6334;
-
-	@Container
-	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.7.4");
+public class ChatMemoryShortTermMessageListIT extends BaseMemoryTest {
 
 	@Autowired
-	public TextChatHistoryChatAgentIT(RelevancyEvaluator relevancyEvaluator, ChatAgent chatAgent,
+	public ChatMemoryShortTermMessageListIT(RelevancyEvaluator relevancyEvaluator, ChatAgent chatAgent,
 			StreamingChatAgent streamingChatAgent) {
 		super(relevancyEvaluator, chatAgent, streamingChatAgent);
 	}
@@ -80,16 +64,8 @@ public class TextChatHistoryChatAgentIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient(OpenAiApi openAiApi) {
-			return new OpenAiEmbeddingClient(openAiApi);
-		}
-
-		@Bean
-		public VectorStore qdrantVectorStore(EmbeddingClient embeddingClient) {
-			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
-				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
-				.build());
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingClient);
+		public ChatMemory chatHistory() {
+			return new InMemoryChatMemory();
 		}
 
 		@Bean
@@ -98,26 +74,26 @@ public class TextChatHistoryChatAgentIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatAgent memoryChatAgent(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatAgent memoryChatAgent(OpenAiChatClient chatClient, ChatMemory chatHistory,
 				TokenCountEstimator tokenCountEstimator) {
 
 			return DefaultChatAgent.builder(chatClient)
-				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
-				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
-				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatAgentListeners(List.of(new VectorStoreChatMemoryAgentListener(vectorStore)))
+				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
+				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
+				.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
+				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
 				.build();
 		}
 
 		@Bean
-		public StreamingChatAgent memoryStreamingChatAgent(OpenAiChatClient streamingChatClient,
-				VectorStore vectorStore, TokenCountEstimator tokenCountEstimator) {
+		public StreamingChatAgent memoryStreamingChatAgent(OpenAiChatClient streamingChatClient, ChatMemory chatHistory,
+				TokenCountEstimator tokenCountEstimator) {
 
 			return DefaultStreamingChatAgent.builder(streamingChatClient)
-				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
+				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
-				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatAgentListeners(List.of(new VectorStoreChatMemoryAgentListener(vectorStore)))
+				.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
+				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
 				.build();
 		}
 

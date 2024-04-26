@@ -113,7 +113,7 @@ public class DefaultChatAgent implements ChatAgent {
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withDocumentPostProcessors(List<PromptTransformer> documentPostProcessors) {
+		public DefaultChatAgentBuilder withContentPostProcessors(List<PromptTransformer> documentPostProcessors) {
 			this.documentPostProcessors = documentPostProcessors;
 			return this;
 		}

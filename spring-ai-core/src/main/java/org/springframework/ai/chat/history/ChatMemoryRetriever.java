@@ -41,19 +41,26 @@ public class ChatMemoryRetriever implements PromptTransformer {
 	 */
 	private final Map<String, Object> additionalMetadata;
 
+	private final int maxHistorySize;
+
 	public ChatMemoryRetriever(ChatMemory chatHistory) {
 		this(chatHistory, Map.of());
 	}
 
 	public ChatMemoryRetriever(ChatMemory chatHistory, Map<String, Object> additionalMetadata) {
+		this(chatHistory, 1000, additionalMetadata);
+	}
+
+	public ChatMemoryRetriever(ChatMemory chatHistory, int maxHistorySize, Map<String, Object> additionalMetadata) {
 		this.chatHistory = chatHistory;
 		this.additionalMetadata = additionalMetadata;
+		this.maxHistorySize = maxHistorySize;
 	}
 
 	@Override
 	public PromptContext transform(PromptContext promptContext) {
 
-		List<Message> messageHistory = this.chatHistory.get(promptContext.getConversationId());
+		List<Message> messageHistory = this.chatHistory.get(promptContext.getConversationId(), maxHistorySize);
 
 		List<Content> historyContent = (messageHistory != null)
 				? messageHistory.stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).map(m -> {

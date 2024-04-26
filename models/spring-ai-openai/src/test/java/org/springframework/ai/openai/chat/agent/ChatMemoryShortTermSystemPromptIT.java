@@ -41,12 +41,12 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-@SpringBootTest(classes = OpenAiMemoryChatAgentIT.Config.class)
+@SpringBootTest(classes = ChatMemoryShortTermSystemPromptIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class OpenAiMemoryChatAgentIT extends BaseMemoryTest {
+public class ChatMemoryShortTermSystemPromptIT extends BaseMemoryTest {
 
 	@Autowired
-	public OpenAiMemoryChatAgentIT(RelevancyEvaluator relevancyEvaluator, ChatAgent chatAgent,
+	public ChatMemoryShortTermSystemPromptIT(RelevancyEvaluator relevancyEvaluator, ChatAgent chatAgent,
 			StreamingChatAgent streamingChatAgent) {
 		super(relevancyEvaluator, chatAgent, streamingChatAgent);
 	}
@@ -80,7 +80,7 @@ public class OpenAiMemoryChatAgentIT extends BaseMemoryTest {
 
 			return DefaultChatAgent.builder(chatClient)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
-				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
+				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
 				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
 				.build();

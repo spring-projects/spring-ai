@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  */
 @ExtendWith(MockitoExtension.class)
-public class ChatHistoryTests {
+public class ChatMemoryTests {
 
 	@Mock
 	ChatClient chatClient;
@@ -57,13 +57,13 @@ public class ChatHistoryTests {
 	ArgumentCaptor<Prompt> promptCaptor;
 
 	@Test
-	public void chatAgentMessageHistory() {
+	public void chatMemoryMessageListAugmentor() {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
 		DefaultChatAgent chatAgent = DefaultChatAgent.builder(chatClient)
 			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
-			.withDocumentPostProcessors(
+			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
 			.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
 			.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
@@ -73,13 +73,13 @@ public class ChatHistoryTests {
 	}
 
 	@Test
-	public void chatAgentTextHistory() {
+	public void chatMemorySystemPromptAugmentor() {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
 		DefaultChatAgent chatAgent = DefaultChatAgent.builder(chatClient)
 			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
-			.withDocumentPostProcessors(
+			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
 			.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
 			.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
@@ -106,15 +106,10 @@ public class ChatHistoryTests {
 
 		assertThat(response1.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:1");
 
-		// List<Message> messages2 = promptCaptor.getValue().getInstructions();
-		// assertThat(messages2)
-		// 		.isEqualTo(List.of(new UserMessage("user:1"), new UserMessage("user:2"), new UserMessage("user:3"),
-		// 				new UserMessage("user:4"), new UserMessage("user:5")));
-
 		List<Content> contents = response1.getPromptContext().getContents();
 		assertThat(contents).hasSize(0);
 
-		List<Message> history = chatHistory.get("test-session-id");
+		List<Message> history = chatHistory.get("test-session-id", 1000);
 		assertThat(history).hasSize(6);
 
 		AgentResponse response2 = chatAgent.call(PromptContext.builder()
@@ -125,7 +120,7 @@ public class ChatHistoryTests {
 
 		assertThat(response2.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:2");
 
-		history = chatHistory.get("test-session-id");
+		history = chatHistory.get("test-session-id", 1000);
 		assertThat(history).hasSize(10);
 
 		contents = response2.getPromptContext().getContents();
@@ -139,7 +134,7 @@ public class ChatHistoryTests {
 				.withPrompt(new Prompt(List.of(new UserMessage("user:9")))).build());
 		assertThat(response3.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:3");
 
-		history = chatHistory.get("test-session-id");
+		history = chatHistory.get("test-session-id", 1000);
 		assertThat(history).hasSize(12);
 
 		contents = response3.getPromptContext().getContents();

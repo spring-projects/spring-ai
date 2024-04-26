@@ -16,16 +16,24 @@
 
 package org.springframework.ai.openai.chat.agent;
 
+import java.util.List;
+
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.qdrant.QdrantContainer;
+
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.agent.ChatAgent;
 import org.springframework.ai.chat.agent.DefaultChatAgent;
-import org.springframework.ai.chat.prompt.transformer.QuestionContextAugmentor;
-import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import org.springframework.ai.chat.prompt.transformer.QuestionContextAugmentor;
+import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
@@ -36,8 +44,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -45,11 +53,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
 
-import java.util.List;
-
+@Testcontainers
 @SpringBootTest(classes = OpenAiDefaultChatAgentIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiDefaultChatAgentIT {
+
+	private static final String COLLECTION_NAME = "test_collection";
+
+	private static final int QDRANT_GRPC_PORT = 6334;
+
+	@Container
+	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.7.4");
 
 	private final ChatClient chatClient;
 
@@ -110,8 +124,11 @@ public class OpenAiDefaultChatAgentIT {
 		}
 
 		@Bean
-		public VectorStore vectorStore(EmbeddingClient embeddingClient) {
-			return new SimpleVectorStore(embeddingClient);
+		public VectorStore qdrantVectorStore(EmbeddingClient embeddingClient) {
+			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
+				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
+				.build());
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingClient);
 		}
 
 		@Bean

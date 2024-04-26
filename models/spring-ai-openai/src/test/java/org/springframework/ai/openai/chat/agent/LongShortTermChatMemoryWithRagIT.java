@@ -72,9 +72,9 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
-@SpringBootTest(classes = TextChatHistoryChatAgent3IT.Config.class)
+@SpringBootTest(classes = LongShortTermChatMemoryWithRagIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class TextChatHistoryChatAgent3IT {
+public class LongShortTermChatMemoryWithRagIT {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -191,7 +191,7 @@ public class TextChatHistoryChatAgent3IT {
 						new VectorStoreChatMemoryRetriever(vectorStore, 10,
 								Map.of(TransformerContentType.LONG_TERM_MEMORY, ""))))
 
-				.withDocumentPostProcessors(List.of(
+				.withContentPostProcessors(List.of(
 						new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000,
 								Set.of(TransformerContentType.SHORT_TERM_MEMORY)),
 						new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000,

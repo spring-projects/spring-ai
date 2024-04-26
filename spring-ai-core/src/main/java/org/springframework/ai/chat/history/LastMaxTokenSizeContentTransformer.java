@@ -83,8 +83,6 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 
 		List<Content> datum = this.doGetDatumToModify(promptContext);
 
-		// int totalSize = this.tokenCountEstimator.estimate(nonSystemChatMessages) -
-		// retrievalRequest.getTokenRunningTotal();
 		int totalSize = this.doEstimateTokenCount(datum);
 
 		if (totalSize <= this.maxTokenSize) {
@@ -106,7 +104,6 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 
 		while (index < datum.size() && totalSize > this.maxTokenSize) {
 			Content oldDatum = datum.get(index++);
-			// int oldMessageTokenSize = this.tokenCountEstimator.estimate(oldDatum);
 			int oldMessageTokenSize = this.doEstimateTokenCount(oldDatum);
 			totalSize = totalSize - oldMessageTokenSize;
 		}

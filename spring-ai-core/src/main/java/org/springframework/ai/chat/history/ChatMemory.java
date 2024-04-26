@@ -22,17 +22,17 @@ import org.springframework.ai.chat.messages.Message;
 
 /**
  * @author Christian Tzolov
- * 
+ *
  */
 public interface ChatMemory {
 
-	default void add(String conversationId, Message messages) {
-		this.add(conversationId, List.of(messages));
+	default void add(String conversationId, Message message) {
+		this.add(conversationId, List.of(message));
 	}
 
 	void add(String conversationId, List<Message> messages);
 
-	List<Message> get(String conversationId);
+	List<Message> get(String conversationId, int lastN);
 
 	void clear(String conversationId);
 
