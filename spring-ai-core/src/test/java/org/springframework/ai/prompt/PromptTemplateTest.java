@@ -17,6 +17,7 @@ package org.springframework.ai.prompt;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -24,13 +25,27 @@ import org.springframework.core.io.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PromptTemplateTest {
+
+	@Test
+	public void testRenderWithList() {
+		String templateString = "The items are:\n{items:{item | - {item}\n}}";
+		List<String> itemList = Arrays.asList("apple", "banana", "cherry");
+		PromptTemplate promptTemplate = new PromptTemplate(templateString);
+		Message message = promptTemplate.createMessage(Map.of("items", itemList));
+
+		String expected = "The items are:\n" + "- apple\n" + "- banana\n" + "- cherry\n";
+
+		assertEquals(expected, message.getContent());
+	}
 
 	@Test
 	public void testRender() {
