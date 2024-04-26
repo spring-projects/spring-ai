@@ -190,8 +190,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		}
 
 		var choice = choices.get(0);
-		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALL
-				|| choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
+		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
 }

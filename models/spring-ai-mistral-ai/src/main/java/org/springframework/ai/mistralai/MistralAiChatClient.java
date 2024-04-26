@@ -285,7 +285,13 @@ public class MistralAiChatClient extends
 	@SuppressWarnings("null")
 	@Override
 	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
-		return chatCompletion.getBody().choices().iterator().next().message();
+		ChatCompletionMessage msg = chatCompletion.getBody().choices().iterator().next().message();
+		if (msg.role() == null) {
+			// add missing role
+			msg = new ChatCompletionMessage(msg.content(), ChatCompletionMessage.Role.ASSISTANT, msg.name(),
+					msg.toolCalls());
+		}
+		return msg;
 	}
 
 	@Override
