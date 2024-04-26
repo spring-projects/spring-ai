@@ -17,6 +17,7 @@ package org.springframework.ai.prompt;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -24,21 +25,36 @@ import org.springframework.core.io.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PromptTemplateTest {
 
 	@Test
+	public void testRenderWithList() {
+		String templateString = "The items are:\n{items:{item | - {item}\n}}";
+		List<String> itemList = Arrays.asList("apple", "banana", "cherry");
+		PromptTemplate promptTemplate = new PromptTemplate(templateString);
+		Message message = promptTemplate.createMessage(Map.of("items", itemList));
+
+		String expected = "The items are:\n" + "- apple\n" + "- banana\n" + "- cherry\n";
+
+		assertEquals(expected, message.getContent());
+
+		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
+		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
+			.withMessage("All template variables were not replaced. Missing variable names are [items]");
+	}
+
+	@Test
 	public void testRender() {
-		// Create a map with string keys and object values to serve as a generative for
-		// testing
-		Map<String, Object> model = new HashMap<>();
-		model.put("key1", "value1");
-		model.put("key2", true);
+		Map<String, Object> model = createTestMap();
 		model.put("key3", 100);
 
 		// Create a simple template with placeholders for keys in the generative
@@ -58,14 +74,29 @@ public class PromptTemplateTest {
 		assertEquals(expected, result);
 	}
 
-	@Disabled("Need to improve PromptTemplate to better handle Resource toString and tracking with 'dynamicModel' for underlying StringTemplate")
 	@Test
-	public void testRenderResource() throws Exception {
-		// Create a map with string keys and object values to serve as a generative for
-		// testing
+	public void testRenderResource() {
+		Map<String, Object> model = createTestMap();
+		InputStream inputStream = new ByteArrayInputStream(
+				"key1's value is {key1} and key2's value is {key2}".getBytes(Charset.defaultCharset()));
+		Resource resource = new InputStreamResource(inputStream);
+		PromptTemplate promptTemplate = new PromptTemplate(resource, model);
+		String expected = "key1's value is value1 and key2's value is true";
+		String result = promptTemplate.render();
+		assertEquals(expected, result);
+	}
+
+	private static Map<String, Object> createTestMap() {
 		Map<String, Object> model = new HashMap<>();
 		model.put("key1", "value1");
 		model.put("key2", true);
+		return model;
+	}
+
+	@Disabled("Need to improve PromptTemplate to better handle Resource toString and tracking with 'dynamicModel' for underlying StringTemplate")
+	@Test
+	public void testRenderResourceAsValue() throws Exception {
+		Map<String, Object> model = createTestMap();
 
 		// Create an input stream for the resource
 		InputStream inputStream = new ByteArrayInputStream("it costs 100".getBytes(Charset.defaultCharset()));
