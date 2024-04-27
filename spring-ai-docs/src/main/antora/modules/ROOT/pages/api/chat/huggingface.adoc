@@ -6,6 +6,8 @@ HuggingFace Inference Endpoints allow you to deploy and serve machine learning m
 
 Further details on HuggingFace Inference Endpoints can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
 
+TIP: Please select the LLMs link:https://huggingface.co/docs/text-generation-inference/index[text-generation-inference] support.
+
 == Prerequisites
 
 Add the `spring-ai-huggingface` dependency:
