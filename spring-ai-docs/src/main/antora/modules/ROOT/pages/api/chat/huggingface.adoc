@@ -1,6 +1,10 @@
 = Hugging Face Chat
 
-Hugging Face Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
+Hugging Face Text Generation Inference (TGI) is a specialized deployment solution for serving Large Language Models (LLMs) in the cloud, making them accessible via an API. TGI provides optimized performance for text generation tasks through features like continuous batching, token streaming, and efficient memory management.
+
+IMPORTANT: Text Generation Inference requires models to be compatible with its architecture-specific optimizations. While many popular LLMs are supported, not all models on Hugging Face Hub can be deployed using TGI. If you need to deploy other types of models, consider using standard Hugging Face Inference Endpoints instead.
+
+TIP: For a complete and up-to-date list of supported models and architectures, see the link:https://huggingface.co/docs/text-generation-inference/en/supported_models[Text Generation Inference supported models documentation].
 
 == Prerequisites
 
