@@ -155,12 +155,12 @@ public class EmbeddingController {
 == Manual Configuration
 
 If you are not using Spring Boot, you can manually configure the OpenAI Embedding Client.
-For this add the `spring-ai-mistralai` dependency to your project's Maven `pom.xml` file:
+For this add the `spring-ai-mistral-ai` dependency to your project's Maven `pom.xml` file:
 [source, xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mistralai</artifactId>
+    <artifactId>spring-ai-mistral-ai</artifactId>
 </dependency>
 ----
 
@@ -169,13 +169,13 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-mistralai'
+    implementation 'org.springframework.ai:spring-ai-mistral-ai'
 }
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-NOTE: The `spring-ai-mistralai` dependency provides access also to the `MistralAiChatClient`.
+NOTE: The `spring-ai-mistral-ai` dependency provides access also to the `MistralAiChatClient`.
 For more information about the `MistralAiChatClient` refer to the link:../chat/mistralai-chat.html[MistralAI Chat Client] section.
 
 Next, create an `MistralAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
