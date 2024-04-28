@@ -260,7 +260,9 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
-		/** defaults (if null) to '<table_name>_<embedding_column_name>_idx' **/
+		/**
+		 * defaults (if null) to '&lt;table_name&gt;_&lt;embedding_column_name&gt;_idx'
+		 **/
 		@Nullable
 		public Builder withIndexName(String name) {
 			this.indexName = name;
