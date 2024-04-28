@@ -2,17 +2,17 @@
 
 You can register custom Java functions with the `MistralAiChatClient` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
-The `mistral_small_latest` and `mistral_large_latest` models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
+The `open-mixtral-8x22b`, `mistral_small_latest`, and `mistral_large_latest` models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
 
 The MistralAI API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
 
-NOTE: As of March 13, 2024, Mistral AI has integrated support for parallel function calling into their `mistral_large_latest`` model, a feature that was absent at the time of the first Spring AI Mistral AI.
+NOTE: As of March 13, 2024, Mistral AI has integrated support for parallel function calling into their `mistral_large_latest` model, a feature that was absent at the time of the first Spring AI Mistral AI.
 
 Spring AI provides flexible and user-friendly ways to register and call custom functions.
 In general, the custom functions need to provide a function `name`,  `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.
 The `description` helps the model to understand when to call the function.
 
-As a developer, you need to implement a functions that takes the function call arguments sent from the AI model, and respond with the result back to the model.
+As a developer, you need to implement a function that takes the function call arguments sent from the AI model, and respond with the result back to the model.
 Your function can in turn invoke other 3rd party services to provide the results.
 
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient`.
@@ -29,7 +29,7 @@ We can provide the AI model with metadata about our own functions that it can us
 For example, if during the processing of a prompt, the AI Model determines that it needs additional information about the temperature in a given location, it will start a server side generated request/response interaction.  The AI Model invokes a client side function.
 The AI Model provides method invocation details as JSON and it is the responsibility of the client to execute that function and return the response.
 
-Spring AI greatly simplifies code you need to write to support function invocation.
+Spring AI greatly simplifies the code you need to write to support function invocation.
 It brokers the function invocation conversation for you.
 You can simply provide your function definition as a `@Bean` and then provide the bean name of the function in your prompt options.
 You can also reference multiple function bean names in your prompt.
@@ -41,7 +41,7 @@ To support the response of the chatbot, we will register our own function that t
 
 When the response to the prompt to the model needs to answer a question such as `"What’s the weather like in Boston?"` the AI model will invoke the client providing the location value as an argument to be passed to the function.  This RPC-like data is passed as JSON.
 
-Our function can some SaaS based weather service API and returns the weather response back to the model to complete the conversation.
+Our function calls some SaaS based weather service API and returns the weather response back to the model to complete the conversation.
 In this example we will use a simple implementation named `MockWeatherService` that hard codes the temperature for various locations.
 
 The following `MockWeatherService.java` represents the weather service API:
@@ -88,10 +88,10 @@ static class Config {
 }
 ----
 
-The `@Description` annotation is optional and provides a function description (2) that helps the model to understand when to call the function.
+The `@Description` annotation is optional and provides a function description (2) that helps the model understand when to call the function.
 It is an important property to set to help the AI model determine what client side function to invoke.
 
-Another option to provide the description of the function is to the `@JacksonDescription` annotation on the `MockWeatherService.Request` to provide the function description:
+Another option to provide the description of the function is the `@JsonClassDescription` annotation on the `MockWeatherService.Request` to provide the function description:
 
 [source,java]
 ----
@@ -110,7 +110,7 @@ static class Config {
 public record Request(String location, Unit unit) {}
 ----
 
-It is a best practice to annotate the request object with information such that the generates JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
+It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusBeanIT.java[PaymentStatusBeanIT.java] demonstrates this approach.
 
@@ -120,7 +120,7 @@ MistralAI is almost identical to OpenAI in this regard.
 
 ==== FunctionCallback Wrapper
 
-Another way register a function is to create `FunctionCallbackWrapper` wrapper like this:
+Another way to register a function is to create `FunctionCallbackWrapper` wrapper like this:
 
 [source,java]
 ----
@@ -139,7 +139,7 @@ static class Config {
 }
 ----
 
-It wraps the 3rd party, `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MistralAiChatClient`.
+It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MistralAiChatClient`.
 It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
 
 NOTE: By default, the response converter does a JSON serialization of the Response object.
