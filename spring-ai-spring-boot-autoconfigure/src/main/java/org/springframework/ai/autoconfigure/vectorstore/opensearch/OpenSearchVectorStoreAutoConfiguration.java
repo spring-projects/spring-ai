@@ -15,6 +15,9 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
@@ -47,11 +50,27 @@ class OpenSearchVectorStoreAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties) {
-        return new OpenSearchClient(ApacheHttpClient5TransportBuilder.builder(
-                properties.getUris().stream().map(s -> creatHttpHost(s)).toArray(HttpHost[]::new)).build());
+        HttpHost[] httpHosts = properties.getUris().stream().map(s -> createHttpHost(s)).toArray(HttpHost[]::new);
+        ApacheHttpClient5TransportBuilder transportBuilder = ApacheHttpClient5TransportBuilder.builder(httpHosts);
+
+        Optional.ofNullable(properties.getUsername())
+                .map(username -> createBasicCredentialsProvider(httpHosts[0], username, properties.getPassword()))
+                .ifPresent(basicCredentialsProvider -> transportBuilder.setHttpClientConfigCallback(
+                        httpAsyncClientBuilder -> httpAsyncClientBuilder.setDefaultCredentialsProvider(
+                                basicCredentialsProvider)));
+
+        return new OpenSearchClient(transportBuilder.build());
     }
 
-    private HttpHost creatHttpHost(String s) {
+    private BasicCredentialsProvider createBasicCredentialsProvider(HttpHost httpHost, String username,
+            String password) {
+        BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
+        basicCredentialsProvider.setCredentials(new AuthScope(httpHost),
+                new UsernamePasswordCredentials(username, password.toCharArray()));
+        return basicCredentialsProvider;
+    }
+
+    private HttpHost createHttpHost(String s) {
         try {
             return HttpHost.create(s);
         } catch (URISyntaxException e) {
