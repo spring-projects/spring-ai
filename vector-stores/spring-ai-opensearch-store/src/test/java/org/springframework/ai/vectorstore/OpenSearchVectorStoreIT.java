@@ -23,8 +23,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.transport.OpenSearchTransport;
-import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.ai.document.Document;
@@ -41,7 +39,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -63,7 +60,7 @@ class OpenSearchVectorStoreIT {
 
     @Container
     private static final OpensearchContainer<?> opensearchContainer =
-            new OpensearchContainer<>(DockerImageName.parse("opensearchproject/opensearch:2.12.0"));
+            new OpensearchContainer<>(DockerImageName.parse("opensearchproject/opensearch:2.13.0"));
 
     private static final String DEFAULT = "cosinesimil";
 
