@@ -40,6 +40,8 @@ public class PostgresMlEmbeddingProperties {
 	 */
 	private boolean enabled = true;
 
+	private boolean skipCreateExtension = false;
+
 	@NestedConfigurationProperty
 	private PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
 		.withTransformer(PostgresMlEmbeddingClient.DEFAULT_TRANSFORMER_MODEL)
@@ -68,6 +70,14 @@ public class PostgresMlEmbeddingProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public boolean isSkipCreateExtension() {
+		return skipCreateExtension;
+	}
+
+	public void setSkipCreateExtension(boolean skipCreateExtension) {
+		this.skipCreateExtension = skipCreateExtension;
 	}
 
 }

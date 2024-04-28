@@ -52,6 +52,8 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 	private final JdbcTemplate jdbcTemplate;
 
+	private final boolean skipCreateExtension;
+
 	public enum VectorType {
 
 		PG_ARRAY("", null, (rs, i) -> {
@@ -84,7 +86,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 * @param jdbcTemplate JdbcTemplate
 	 */
 	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate) {
-		this(jdbcTemplate, PostgresMlEmbeddingOptions.builder().build());
+		this(jdbcTemplate, PostgresMlEmbeddingOptions.builder().build(), false);
 	}
 
 	/**
@@ -92,7 +94,8 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 * @param jdbcTemplate JdbcTemplate to use to interact with the database.
 	 * @param options PostgresMlEmbeddingOptions to configure the client.
 	 */
-	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate, PostgresMlEmbeddingOptions options) {
+	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate, PostgresMlEmbeddingOptions options,
+			boolean skipCreateExtension) {
 		Assert.notNull(jdbcTemplate, "jdbc template must not be null.");
 		Assert.notNull(options, "options must not be null.");
 		Assert.notNull(options.getTransformer(), "transformer must not be null.");
@@ -102,6 +105,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 		this.jdbcTemplate = jdbcTemplate;
 		this.defaultOptions = options;
+		this.skipCreateExtension = skipCreateExtension;
 	}
 
 	/**
@@ -123,7 +127,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 */
 	@Deprecated(since = "0.8.0", forRemoval = true)
 	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate, String transformer, VectorType vectorType) {
-		this(jdbcTemplate, transformer, vectorType, Map.of(), MetadataMode.EMBED);
+		this(jdbcTemplate, transformer, vectorType, Map.of(), MetadataMode.EMBED, false);
 	}
 
 	/**
@@ -136,7 +140,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 	 */
 	@Deprecated(since = "0.8.0", forRemoval = true)
 	public PostgresMlEmbeddingClient(JdbcTemplate jdbcTemplate, String transformer, VectorType vectorType,
-			Map<String, Object> kwargs, MetadataMode metadataMode) {
+			Map<String, Object> kwargs, MetadataMode metadataMode, boolean skipCreateExtension) {
 		Assert.notNull(jdbcTemplate, "jdbc template must not be null.");
 		Assert.notNull(transformer, "transformer must not be null.");
 		Assert.notNull(vectorType, "vectorType must not be null.");
@@ -151,6 +155,7 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 			.withMetadataMode(metadataMode)
 			.withKwargs(ModelOptionsUtils.toJsonString(kwargs))
 			.build();
+		this.skipCreateExtension = skipCreateExtension;
 	}
 
 	@SuppressWarnings("null")
@@ -226,6 +231,10 @@ public class PostgresMlEmbeddingClient extends AbstractEmbeddingClient implement
 
 	@Override
 	public void afterPropertiesSet() {
+		if (this.skipCreateExtension) {
+			return;
+		}
+
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgml");
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
 		if (StringUtils.hasText(this.defaultOptions.getVectorType().extensionName)) {
