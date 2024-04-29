@@ -441,7 +441,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		{
 			SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
 				.ifNotExists()
-				.custom("SAI")
+				.custom("StorageAttachedIndex")
 				.onTable(this.schema.keyspace, this.schema.table)
 				.andColumn(this.schema.embedding)
 				.build();
@@ -457,7 +457,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 				SimpleStatement indexStmt = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
 					.ifNotExists()
-					.custom("SAI")
+					.custom("StorageAttachedIndex")
 					.onTable(this.schema.keyspace, this.schema.table)
 					.andColumn(metadata.name())
 					.build();
@@ -468,39 +468,41 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	private void ensureTableExists(int vectorDimension) {
+		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).get().getTable(this.schema.table).isEmpty()) {
 
-		CreateTable createTable = null;
+			CreateTable createTable = null;
 
-		CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
-			.ifNotExists();
+			CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
+				.ifNotExists();
 
-		for (SchemaColumn partitionKey : this.schema.partitionKeys) {
-			createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
-					partitionKey.type);
+			for (SchemaColumn partitionKey : this.schema.partitionKeys) {
+				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
+						partitionKey.type);
+			}
+			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
+				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
+			}
+
+			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
+
+			for (SchemaColumn metadata : this.schema.metadataColumns) {
+				createTable = createTable.withColumn(metadata.name(), metadata.type());
+			}
+
+			// https://datastax-oss.atlassian.net/browse/JAVA-3118
+			// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
+			// vectorDimension));
+
+			StringBuilder tableStmt = new StringBuilder(createTable.asCql());
+			tableStmt.setLength(tableStmt.length() - 1);
+			tableStmt.append(',')
+				.append(this.schema.embedding)
+				.append(" vector<float,")
+				.append(vectorDimension)
+				.append(">)");
+			logger.debug("Executing {}", tableStmt.toString());
+			this.session.execute(tableStmt.toString());
 		}
-		for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
-			createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
-		}
-
-		createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
-
-		for (SchemaColumn metadata : this.schema.metadataColumns) {
-			createTable = createTable.withColumn(metadata.name(), metadata.type());
-		}
-
-		// https://datastax-oss.atlassian.net/browse/JAVA-3118
-		// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
-		// vectorDimension));
-
-		StringBuilder tableStmt = new StringBuilder(createTable.asCql());
-		tableStmt.setLength(tableStmt.length() - 1);
-		tableStmt.append(',')
-			.append(this.schema.embedding)
-			.append(" vector<float,")
-			.append(vectorDimension)
-			.append(">)");
-		logger.debug("Executing {}", tableStmt.toString());
-		this.session.execute(tableStmt.toString());
 	}
 
 	private void ensureTableColumnsExist(int vectorDimension) {
@@ -563,14 +565,15 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	private void ensureKeyspaceExists() {
+		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).isEmpty()) {
+			SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(this.schema.keyspace)
+				.ifNotExists()
+				.withSimpleStrategy(1)
+				.build();
 
-		SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(this.schema.keyspace)
-			.ifNotExists()
-			.withSimpleStrategy(1)
-			.build();
-
-		logger.debug("Executing {}", keyspaceStmt.getQuery());
-		this.session.execute(keyspaceStmt);
+			logger.debug("Executing {}", keyspaceStmt.getQuery());
+			this.session.execute(keyspaceStmt);
+		}
 	}
 
 }
