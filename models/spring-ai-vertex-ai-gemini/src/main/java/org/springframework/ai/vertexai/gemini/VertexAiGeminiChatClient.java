@@ -349,16 +349,19 @@ public class VertexAiGeminiChatClient
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {
 
-		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
-			FunctionDeclaration functionDeclaration = FunctionDeclaration.newBuilder()
+		final var tool = Tool.newBuilder();
+
+		final var functionDeclarations = this.resolveFunctionCallbacks(functionNames)
+			.stream()
+			.map(functionCallback -> FunctionDeclaration.newBuilder()
 				.setName(functionCallback.getName())
 				.setDescription(functionCallback.getDescription())
 				.setParameters(jsonToSchema(functionCallback.getInputTypeSchema()))
 				// .setParameters(toOpenApiSchema(functionCallback.getInputTypeSchema()))
-				.build();
-
-			return Tool.newBuilder().addFunctionDeclarations(functionDeclaration).build();
-		}).toList();
+				.build())
+			.toList();
+		tool.addAllFunctionDeclarations(functionDeclarations);
+		return List.of(tool.build());
 	}
 
 	private static String structToJson(Struct struct) {
