@@ -193,6 +193,7 @@ public class OpenAiAudioTranscriptionClient
 			.withTemperature(options.getTemperature())
 			.withLanguage(options.getLanguage())
 			.withModel(options.getModel())
+			.withGranularityType(options.getGranularityType())
 			.build();
 
 		return audioTranscriptionRequest;
@@ -221,6 +222,8 @@ public class OpenAiAudioTranscriptionClient
 		merged.setResponseFormat(
 				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
 		merged.setTemperature(source.getTemperature() != null ? source.getTemperature() : target.getTemperature());
+		merged.setGranularityType(
+				source.getGranularityType() != null ? source.getGranularityType() : target.getGranularityType());
 		return merged;
 	}
 
