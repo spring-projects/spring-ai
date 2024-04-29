@@ -15,10 +15,6 @@
  */
 package org.springframework.ai.vertexai.gemini.function;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.AfterEach;
@@ -26,8 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -42,8 +36,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
@@ -175,6 +176,48 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		assertThat(responseString).containsAnyOf("15.0", "15");
 		assertThat(responseString).containsAnyOf("30.0", "30");
 		assertThat(responseString).containsAnyOf("10.0", "10");
+
+	}
+
+	//Gemini wants single tool with multiple function, instead multiple tools with single function
+	@Test
+	public void canDeclareMultipleFunctions() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		final var weatherFunction = FunctionCallbackWrapper.builder(new MockWeatherService())
+			.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+			.withName("getCurrentWeather")
+			.withDescription("Get the current weather in a given location")
+			.build();
+		final var theAnswer = FunctionCallbackWrapper.builder(new TheAnswerMock())
+			.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+			.withName("theAnswerToTheUniverse")
+			.withDescription("the answer to the ultimate question of life, the universe, and everything")
+			.build();
+		var promptOptions = VertexAiGeminiChatOptions.builder()
+			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.withFunctionCallbacks(List.of(weatherFunction, theAnswer))
+			.build();
+
+		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
+
+		String responseString = response.getResult().getOutput().getContent();
+
+		logger.info("Response: {}", responseString);
+		assertNotNull(responseString);
+
+	}
+
+	public static class TheAnswerMock implements Function<String, Integer> {
+
+		@Override
+		public Integer apply(String s) {
+			return 42;
+		}
 
 	}
 
