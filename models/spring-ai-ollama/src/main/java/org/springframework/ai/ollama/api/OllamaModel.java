@@ -29,6 +29,11 @@ public enum OllamaModel {
 	LLAMA2("llama2"),
 
 	/**
+	 * Llama 3 is a collection of language models ranging from 8B and 70B parameters.
+	 */
+	LLAMA3("llama3"),
+
+	/**
 	 * The 7B parameters model
 	 */
 	MISTRAL("mistral"),
@@ -42,6 +47,11 @@ public enum OllamaModel {
 	 * The Phi-2 2.7B language model
 	 */
 	PHI("phi"),
+
+	/**
+	 * The Phi-3 3.8B language model
+	 */
+	PHI3("phi3"),
 
 	/**
 	 * A fine-tuned Mistral model

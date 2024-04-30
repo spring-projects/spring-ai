@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -50,6 +49,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.testcontainers.ollama.OllamaContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,7 +63,7 @@ class OllamaChatClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
 
 	static String baseUrl;
 
