@@ -35,10 +35,9 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Christian Tzolov
  * @since 0.8.0
  * @see <a href=
- * "https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
+ * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
- * @see <a href="https://github.com/jmorganca/ollama/blob/main/api/types.go">Ollama
- * Types</a>
+ * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
 public class OllamaOptions implements ChatOptions, EmbeddingOptions {
@@ -46,6 +45,8 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive");
+
+	// Following fields are ptions which must be set when the model is loaded into memory.
 
 	// @formatter:off
 	/**
@@ -111,22 +112,14 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("use_mlock") private Boolean useMLock;
 
 	/**
-	 * ???
-	 */
-	@JsonProperty("rope_frequency_base") private Float ropeFrequencyBase;
-
-	/**
-	 * ???
-	 */
-	@JsonProperty("rope_frequency_scale") private Float ropeFrequencyScale;
-
-	/**
 	 * Sets the number of threads to use during computation. By default,
 	 * Ollama will detect this for optimal performance. It is recommended to set this
 	 * value to the number of physical CPU cores your system has (as opposed to the
 	 * logical number of cores).
 	 */
 	@JsonProperty("num_thread") private Integer numThread;
+
+	// Following fields are predict options used at runtime.
 
 	/**
 	 * ???
@@ -156,8 +149,8 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	/**
 	 * Works together with top-k. A higher value (e.g., 0.95) will lead to
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
-		* conservative text. (Default: 0.9)
-		*/
+	 * conservative text. (Default: 0.9)
+	 */
 	@JsonProperty("top_p") private Float topP;
 
 	/**
@@ -208,16 +201,15 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("mirostat") private Integer mirostat;
 
 	/**
-	 * Influences how quickly the algorithm responds to feedback from
-	 * the generated text. A lower learning rate will result in slower adjustments, while
-	 * a higher learning rate will make the algorithm more responsive. (Default: 0.1).
+	 * Controls the balance between coherence and diversity of the output.
+	 * A lower value will result in more focused and coherent text. (Default: 5.0)
 	 */
 	@JsonProperty("mirostat_tau") private Float mirostatTau;
 
 	/**
-	 * Controls the balance between coherence and diversity of the
-	 * output. A lower value will result in more focused and coherent text. (Default:
-	 * 5.0).
+	 * Influences how quickly the algorithm responds to feedback from the generated text.
+	 * A lower learning rate will result in slower adjustments, while a higher learning rate
+	 * will make the algorithm more responsive. (Default: 0.1)
 	 */
 	@JsonProperty("mirostat_eta") private Float mirostatEta;
 
@@ -235,6 +227,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 
 	// Following fields are not part of the Ollama Options API but part of the Request.
+
 	/**
 	 * NOTE: Synthetic field not part of the official Ollama API.
 	 * Used to allow overriding the model name with prompt options.
@@ -338,16 +331,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public OllamaOptions withUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
-		return this;
-	}
-
-	public OllamaOptions withRopeFrequencyBase(Float ropeFrequencyBase) {
-		this.ropeFrequencyBase = ropeFrequencyBase;
-		return this;
-	}
-
-	public OllamaOptions withRopeFrequencyScale(Float ropeFrequencyScale) {
-		this.ropeFrequencyScale = ropeFrequencyScale;
 		return this;
 	}
 
@@ -551,22 +534,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public void setUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
-	}
-
-	public Float getRopeFrequencyBase() {
-		return this.ropeFrequencyBase;
-	}
-
-	public void setRopeFrequencyBase(Float ropeFrequencyBase) {
-		this.ropeFrequencyBase = ropeFrequencyBase;
-	}
-
-	public Float getRopeFrequencyScale() {
-		return this.ropeFrequencyScale;
-	}
-
-	public void setRopeFrequencyScale(Float ropeFrequencyScale) {
-		this.ropeFrequencyScale = ropeFrequencyScale;
 	}
 
 	public Integer getNumThread() {

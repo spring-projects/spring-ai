@@ -6,9 +6,9 @@ Spring AI supports the Ollama text generation with `OllamaChatClient`.
 == Prerequisites
 
 You first need to run Ollama on your local machine.
-Refer to the official Ollama project link:https://github.com/jmorganca/ollama[README] to get started running models on your local machine.
+Refer to the official Ollama project link:https://github.com/ollama/ollama[README] to get started running models on your local machine.
 
-NOTE: installing `ollama run llama2` will download a 4GB docker image.
+NOTE: installing `ollama run llama3` will download a 4.7GB model artifact.
 
 === Add Repositories and BOM
 
@@ -53,7 +53,7 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 |====
 
 The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat client .
-It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, `format` and `template` as well as the Ollama model `options` properties.
+It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `format` as well as the Ollama model `options` properties.
 
 Here are the advanced request parameter for the Ollama chat client:
 
@@ -62,12 +62,12 @@ Here are the advanced request parameter for the Ollama chat client:
 | Property | Description | Default
 
 | spring.ai.ollama.chat.enabled      | Enable Ollama chat client. | true
-| spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported models] to use. | mistral
+| spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
 | spring.ai.ollama.chat.options.format  | The format to return a response in. Currently the only accepted value is `json` | -
 | spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 |====
 
-The `options` properties are based on the link:https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/jmorganca/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
+The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
 
 [cols="3,6,1"]
 |====
@@ -84,8 +84,6 @@ The `options` properties are based on the link:https://github.com/jmorganca/olla
 | spring.ai.ollama.chat.options.vocab-only        | ???                                                             | -
 | spring.ai.ollama.chat.options.use-mmap          | ???                                                             | true
 | spring.ai.ollama.chat.options.use-mlock         | ???                                                             | false
-| spring.ai.ollama.chat.options.rope-frequency-base | ???                                                           | 10000.0
-| spring.ai.ollama.chat.options.rope-frequency-scale | ???                                                          | 1.0
 | spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). 0 = let the runtime decide | 0
 | spring.ai.ollama.chat.options.num-keep          | ???                                                             | 0
 | spring.ai.ollama.chat.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | -1
@@ -100,13 +98,11 @@ The `options` properties are based on the link:https://github.com/jmorganca/olla
 | spring.ai.ollama.chat.options.presence-penalty  | ???                                                             | 0.0
 | spring.ai.ollama.chat.options.frequency-penalty | ???                                                             | 0.0
 | spring.ai.ollama.chat.options.mirostat          | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0) | 0
-| spring.ai.ollama.chat.options.mirostat-tau      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 5.0
-| spring.ai.ollama.chat.options.mirostat-eta      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 0.1
+| spring.ai.ollama.chat.options.mirostat-tau      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 5.0
+| spring.ai.ollama.chat.options.mirostat-eta      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
 | spring.ai.ollama.chat.options.penalize-newline  | ???                                                             | true
 | spring.ai.ollama.chat.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
 |====
-
-NOTE: The list of options for chat is to be reviewed. This https://github.com/spring-projects/spring-ai/issues/230[issue] will track progress.
 
 TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
@@ -270,13 +266,13 @@ The `OllamaOptions` provides the configuration information for all chat requests
 
 == Low-level OllamaApi Client [[low-level-api]]
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaApi.java[OllamaApi] provides is lightweight Java client for Ollama Chat API link:https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion[Ollama Chat Completion API].
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaApi.java[OllamaApi] provides a lightweight Java client for the Ollama Chat Completion API link:https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion[Ollama Chat Completion API].
 
-Following class diagram illustrates the `OllamaApi` chat interfaces and building blocks:
+The following class diagram illustrates the `OllamaApi` chat interfaces and building blocks:
 
 image::ollama-chat-completion-api.jpg[OllamaApi Chat Completion API Diagram, 800, 600]
 
-Here is a simple snippet how to use the api programmatically:
+Here is a simple snippet showing how to use the API programmatically:
 
 [source,java]
 ----
@@ -288,7 +284,7 @@ var request = ChatRequest.builder("orca-mini")
     .withStream(false) // not streaming
     .withMessages(List.of(
             Message.builder(Role.SYSTEM)
-                .withContent("You are geography teacher. You are talking to a student.")
+                .withContent("You are a geography teacher. You are talking to a student.")
                 .build(),
             Message.builder(Role.USER)
                 .withContent("What is the capital of Bulgaria and what is the size? "

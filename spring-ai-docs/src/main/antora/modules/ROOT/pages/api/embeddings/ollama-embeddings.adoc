@@ -11,9 +11,9 @@ Small distances suggest high relatedness and large distances suggest low related
 
 You first need to run Ollama on your local machine.
 
-Refer to the official Ollama project link:https://github.com/jmorganca/ollama[README] to get started running models on your local machine.
+Refer to the official Ollama project link:https://github.com/ollama/ollama[README] to get started running models on your local machine.
 
-Note, installing `ollama run llama2` will download a 4GB docker image.
+NOTE: installing `ollama run llama3` will download a 4.7GB model artifact.
 
 === Add Repositories and BOM
 
@@ -67,8 +67,14 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 | Property | Description | Default
 
 | spring.ai.ollama.embedding.enabled      | Enable Ollama embedding client. | true
-| spring.ai.ollama.embedding.model   (DEPRECATED)      | The name of the model to use. Deprecated use the `spring.ai.ollama.embedding.options.model` instead | mistral
-| spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported models] to use. | mistral
+| spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
+|====
+
+The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on: link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama type defaults].
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
 | spring.ai.ollama.embedding.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.embedding.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
 | spring.ai.ollama.embedding.options.num-batch         | ???                                                             | -
@@ -81,8 +87,6 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 | spring.ai.ollama.embedding.options.vocab-only        | ???                                                             | -
 | spring.ai.ollama.embedding.options.use-mmap          | ???                                                             | -
 | spring.ai.ollama.embedding.options.use-mlock         | ???                                                             | -
-| spring.ai.ollama.embedding.options.rope-frequency-base | ???                                                           | -
-| spring.ai.ollama.embedding.options.rope-frequency-scale | ???                                                          | -
 | spring.ai.ollama.embedding.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). | -
 | spring.ai.ollama.embedding.options.num-keep          | ???                                                             | -
 | spring.ai.ollama.embedding.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | 0
@@ -97,13 +101,11 @@ The prefix `spring.ai.ollama.embedding.options` is the property prefix that conf
 | spring.ai.ollama.embedding.options.presence-penalty  | ???                                                             | -
 | spring.ai.ollama.embedding.options.frequency-penalty | ???                                                             | -
 | spring.ai.ollama.embedding.options.mirostat          | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0) | 0
-| spring.ai.ollama.embedding.options.mirostat-tau      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
-| spring.ai.ollama.embedding.options.mirostat-eta      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 5.0
+| spring.ai.ollama.embedding.options.mirostat-tau      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 5.0
+| spring.ai.ollama.embedding.options.mirostat-eta      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
 | spring.ai.ollama.embedding.options.penalize-newline  | ???                                                             | -
 | spring.ai.ollama.embedding.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
 |====
-
-NOTE: The `spring.ai.ollama.embedding.options.*` properties are based on the https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and https://github.com/jmorganca/ollama/blob/main/api/types.go[Ollama Types]
 
 TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
