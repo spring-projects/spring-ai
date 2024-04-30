@@ -16,6 +16,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 
 import org.elasticsearch.client.RestClient;
+
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.ElasticsearchVectorStore;
 import org.springframework.ai.vectorstore.ElasticsearchVectorStoreOptions;
@@ -32,6 +33,7 @@ import org.springframework.util.StringUtils;
  * @author Wei Jiang
  * @since 1.0.0
  */
+
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
 @ConditionalOnClass({ ElasticsearchVectorStore.class, EmbeddingClient.class, RestClient.class })
 @EnableConfigurationProperties(ElasticsearchVectorStoreProperties.class)

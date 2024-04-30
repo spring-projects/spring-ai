@@ -37,33 +37,12 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
 Please have a look at the list of <<elasticsearchvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
 
-Here is an example of the needed bean:
+Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
 
-[source,java]
-----
-@Bean
-public EmbeddingClient embeddingCLient() {
-    // Can be any other EmbeddingClient implementation
-    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
-}
-----
-
-In cases where the Spring Boot auto-configured Elasticsearch `RestClient` bean is not what you want or need, you can still define your own bean.
-Please read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation]
-for more in-depth information about the configuration of a custom RestClient.
-
-[source,java]
-----
-@Bean
-public RestClient restClienbt() {
-    RestClientBuilder builder = RestClient.builder(new HttpHost("<host>", 9200, "http"));
-    Header[] defaultHeaders = new Header[] { new BasicHeader("Authorization", "Basic <encoded username and password>") };
-    builder.setDefaultHeaders(defaultHeaders);
-    return builder.build();
-}
-----
 
 Now you can auto-wire the `ElasticsearchVectorStore` as a vector store in your application.
 
@@ -128,20 +107,19 @@ The Spring Boot properties starting with `spring.elasticsearch.*` are used to co
 |===
 |Property | Description | Default Value
 
-| spring.elasticsearch.connection-timeout | Connection timeout used when communicating with Elasticsearch. | 1s
-| spring.elasticsearch.password | Password for authentication with Elasticsearch. | -
-| spring.elasticsearch.username | Username for authentication with Elasticsearch.| -
-| spring.elasticsearch.path-prefix | Prefix added to the path of every request sent to Elasticsearch. | -
-| spring.elasticsearch.restclient.sniffer.delay-after-failure | Delay of a sniff execution scheduled after a failure.| 1m
-| spring.elasticsearch.restclient.sniffer.interval | Interval between consecutive ordinary sniff executions. | 5m
-| spring.elasticsearch.restclient.ssl.bundle | SSL bundle name. | -
-| spring.elasticsearch.socket-keep-alive | Whether to enable socket keep alive between client and Elasticsearch. | false
-| spring.elasticsearch.socket-timeout | Socket timeout used when communicating with Elasticsearch. | 30s
-| spring.elasticsearch.uris | Comma-separated list of the Elasticsearch instances to use. | http://localhost:9200
+| `spring.elasticsearch.connection-timeout` | Connection timeout used when communicating with Elasticsearch. | `1s`
+| `spring.elasticsearch.password` | Password for authentication with Elasticsearch. | -
+| `spring.elasticsearch.username` | Username for authentication with Elasticsearch.| -
+| `spring.elasticsearch.uris` | Comma-separated list of the Elasticsearch instances to use. | `http://localhost:9200`
+| `spring.elasticsearch.path-prefix` | Prefix added to the path of every request sent to Elasticsearch. | -
+| `spring.elasticsearch.restclient.sniffer.delay-after-failure` | Delay of a sniff execution scheduled after a failure.| `1m`
+| `spring.elasticsearch.restclient.sniffer.interval` | Interval between consecutive ordinary sniff executions. | `5m`
+| `spring.elasticsearch.restclient.ssl.bundle` | SSL bundle name. | -
+| `spring.elasticsearch.socket-keep-alive` | Whether to enable socket keep alive between client and Elasticsearch. | `false`
+| `spring.elasticsearch.socket-timeout` | Socket timeout used when communicating with Elasticsearch. | `30s`
 |===
 
-
-The properties with `spring.ai.vectorstore.elasticsearch.*` prefix help to configure Elasticsearch vector store.
+Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are used to configure `ElasticsearchVectorStore`.
 
 |===
 |Property | Description | Default Value
@@ -152,30 +130,9 @@ The properties with `spring.ai.vectorstore.elasticsearch.*` prefix help to confi
 |`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`
 |===
 
-=== Manual Configuration
-
-Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. \For this you need to add the `spring-ai-elasticsearch-store` to your project:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-elasticsearch-store</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-elasticsearch-store'
-}
-----
-
 == Metadata Filtering
 
-You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Elasticsearcg as well.
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Elasticsearch as well.
 
 For example, you can use either the text expression language:
 
@@ -217,5 +174,57 @@ is converted into the proprietary Elasticsearch filter format:
 [source,text]
 ----
 (metadata.author:john OR jill) AND metadata.article_type:blog
+----
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. \For this you need to add the `spring-ai-elasticsearch-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-elasticsearch-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-elasticsearch-store'
+}
+----
+
+
+Create an Elasticsearch `RestClient` bean.
+Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation] for more in-depth information about the configuration of a custom RestClient.
+
+[source,java]
+----
+@Bean
+public RestClient restClient() {
+    RestClientBuilder builder = RestClient.builder(new HttpHost("<host>", 9200, "http"));
+    Header[] defaultHeaders = new Header[] { new BasicHeader("Authorization", "Basic <encoded username and password>") };
+    builder.setDefaultHeaders(defaultHeaders);
+    return builder.build();
+}
+----
+
+and then create the `ElasticsearchVectorStore` bean:
+
+[source,java]
+----
+@Bean
+public ElasticsearchVectorStore vectorStore(EmbeddingClient embeddingClient, RestClient restClient) {
+    return new ElasticsearchVectorStore( restClient, embeddingClient);
+}
+
+// This can be any EmbeddingClient implementation.
+@Bean
+public EmbeddingClient embeddingClient() {
+    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
 ----
 
