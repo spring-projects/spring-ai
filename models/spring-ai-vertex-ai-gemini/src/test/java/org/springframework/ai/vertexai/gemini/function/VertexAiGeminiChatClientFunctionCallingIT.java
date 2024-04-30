@@ -15,13 +15,21 @@
  */
 package org.springframework.ai.vertexai.gemini.function;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -36,15 +44,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import reactor.core.publisher.Flux;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
@@ -67,10 +68,14 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	}
 
 	@Test
+	@Disabled("Google Vertex AI degraded support for parallel function calls")
 	public void functionCallExplicitOpenApiSchema() {
 
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
+				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan?"
+						+ " Use Celsius units. Answer for all requested locations.");
+		// " Use Celsius units. Use Multi-turn function calling. Provide answer for all
+		// requested locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -95,7 +100,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
+				.withName("get_current_weather")
 				.withDescription("Get the current weather in a given location")
 				.withInputTypeSchema(openApiSchema)
 				.build()))
@@ -115,39 +120,48 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	@Test
 	public void functionCallTestInferredOpenApiSchema() {
 
-		// UserMessage userMessage = new UserMessage("What's the weather like in San
-		// Francisco, Paris and Tokyo?");
-		UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius units.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.build()))
+			.withFunctionCallbacks(List.of(
+					FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+						.withName("get_current_weather")
+						.withDescription("Get the current weather in a given location.")
+						.build(),
+					FunctionCallbackWrapper.builder(new PaymentStatus())
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+						.withName("get_payment_status")
+						.withDescription(
+								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.build()))
 			.build();
 
 		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
-		// System.out.println(response.getResult().getOutput().getContent());
-		// assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0",
-		// "30");
-		// assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0",
-		// "10");
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+
+		ChatResponse response2 = vertexGeminiClient
+			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
+
+		logger.info("Response: {}", response2);
+
+		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
 
 	}
 
 	@Test
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco in Celsius units?");
+		// UserMessage userMessage = new UserMessage(
+		// "What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use
+		// Multi-turn function calling. Provide answer for all requested locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -173,63 +187,23 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 
 		logger.info("Response: {}", responseString);
 
-		assertThat(responseString).containsAnyOf("15.0", "15");
+		// assertThat(responseString).containsAnyOf("15.0", "15");
 		assertThat(responseString).containsAnyOf("30.0", "30");
-		assertThat(responseString).containsAnyOf("10.0", "10");
+		// assertThat(responseString).containsAnyOf("10.0", "10");
 
 	}
 
-	// Gemini wants single tool with multiple function, instead multiple tools with single
-	// function
-	@Test
-	public void canDeclareMultipleFunctions() {
-
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		final var weatherFunction = FunctionCallbackWrapper.builder(new MockWeatherService())
-			.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-			.withName("getCurrentWeather")
-			.withDescription("Get the current weather in a given location")
-			.build();
-		final var theAnswer = FunctionCallbackWrapper.builder(new TheAnswerMock())
-			.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-			.withName("theAnswerToTheUniverse")
-			.withDescription("the answer to the ultimate question of life, the universe, and everything")
-			.build();
-		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
-			.withFunctionCallbacks(List.of(weatherFunction))
-			.build();
-		// var promptOptions = VertexAiGeminiChatOptions.builder()
-		// .withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
-		// .withFunctionCallbacks(List.of(weatherFunction, theAnswer))
-		// .build();
-
-		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
-
-		String responseString = response.getResult().getOutput().getContent();
-
-		logger.info("Response: {}", responseString);
-		assertNotNull(responseString);
-
-		response = vertexGeminiClient
-			.call(new Prompt("What is the answer of the ultimate question in life?", promptOptions));
-
-		responseString = response.getResult().getOutput().getContent();
-
-		logger.info("Response: {}", responseString);
-		assertNotNull(responseString);
-
+	public record PaymentInfoRequest(String id) {
 	}
 
-	public static class TheAnswerMock implements Function<String, Integer> {
+	public record TransactionStatus(String status) {
+	}
+
+	public static class PaymentStatus implements Function<PaymentInfoRequest, TransactionStatus> {
 
 		@Override
-		public Integer apply(String s) {
-			return 42;
+		public TransactionStatus apply(PaymentInfoRequest paymentInfoRequest) {
+			return new TransactionStatus("Transaction " + paymentInfoRequest.id() + " is PAYED");
 		}
 
 	}
