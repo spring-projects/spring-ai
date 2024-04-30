@@ -351,13 +351,12 @@ public class VertexAiGeminiChatClient
 
 		final var tool = Tool.newBuilder();
 
-		final var functionDeclarations = this.resolveFunctionCallbacks(functionNames)
+		final List<FunctionDeclaration> functionDeclarations = this.resolveFunctionCallbacks(functionNames)
 			.stream()
 			.map(functionCallback -> FunctionDeclaration.newBuilder()
 				.setName(functionCallback.getName())
 				.setDescription(functionCallback.getDescription())
 				.setParameters(jsonToSchema(functionCallback.getInputTypeSchema()))
-				// .setParameters(toOpenApiSchema(functionCallback.getInputTypeSchema()))
 				.build())
 			.toList();
 		tool.addAllFunctionDeclarations(functionDeclarations);

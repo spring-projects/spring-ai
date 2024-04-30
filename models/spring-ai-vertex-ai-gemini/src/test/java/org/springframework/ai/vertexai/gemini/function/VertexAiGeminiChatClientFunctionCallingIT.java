@@ -179,7 +179,8 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 
 	}
 
-	//Gemini wants single tool with multiple function, instead multiple tools with single function
+	// Gemini wants single tool with multiple function, instead multiple tools with single
+	// function
 	@Test
 	public void canDeclareMultipleFunctions() {
 
@@ -200,12 +201,24 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 			.build();
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
-			.withFunctionCallbacks(List.of(weatherFunction, theAnswer))
+			.withFunctionCallbacks(List.of(weatherFunction))
 			.build();
+		// var promptOptions = VertexAiGeminiChatOptions.builder()
+		// .withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+		// .withFunctionCallbacks(List.of(weatherFunction, theAnswer))
+		// .build();
 
 		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
 
 		String responseString = response.getResult().getOutput().getContent();
+
+		logger.info("Response: {}", responseString);
+		assertNotNull(responseString);
+
+		response = vertexGeminiClient
+			.call(new Prompt("What is the answer of the ultimate question in life?", promptOptions));
+
+		responseString = response.getResult().getOutput().getContent();
 
 		logger.info("Response: {}", responseString);
 		assertNotNull(responseString);
