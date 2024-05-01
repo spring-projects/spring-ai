@@ -78,7 +78,7 @@ The prefix `spring.ai.bedrock.titan.embedding` (defined in `BedrockTitanEmbeddin
 | spring.ai.bedrock.titan.embedding.model                | The model id to use. See the `TitanEmbeddingModel` for the supported models.  | amazon.titan-embed-image-v1
 |====
 
-Supported values are: `amazon.titan-embed-image-v1` and `amazon.titan-embed-text-v1`.
+Supported values are: `amazon.titan-embed-image-v1`, `amazon.titan-embed-text-v1` and `amazon.titan-embed-text-v2:0`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 == Runtime Options [[embedding-options]]
