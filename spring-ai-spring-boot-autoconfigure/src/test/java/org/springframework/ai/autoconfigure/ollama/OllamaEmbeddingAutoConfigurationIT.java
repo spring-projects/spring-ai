@@ -48,7 +48,7 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	private static String MODEL_NAME = "orca-mini";
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.IMAGE).withExposedPorts(11434);
+	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.IMAGE);
 
 	static String baseUrl;
 

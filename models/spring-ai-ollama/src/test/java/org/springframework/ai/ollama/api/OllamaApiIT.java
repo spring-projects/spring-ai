@@ -50,7 +50,7 @@ public class OllamaApiIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32").withExposedPorts(11434);
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
 
 	static OllamaApi ollamaApi;
 
