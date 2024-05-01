@@ -26,7 +26,9 @@ spring boot new --from ai --name myai
 ```
 . Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI application.
 
-To add the same simple AI application to an *existing* project, execute:
+NOTE: Currently, the Spring CLI only supports Maven projects.
+
+To add the same simple AI application to an *existing* Maven project, execute:
 
 ```shell
 spring boot add ai
