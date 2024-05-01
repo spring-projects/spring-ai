@@ -15,6 +15,8 @@
 **** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic2]
 **** xref:api/chat/bedrock/bedrock-llama.adoc[Llama]
 **** xref:api/chat/bedrock/bedrock-cohere.adoc[Cohere]
+**** xref:api/chat/bedrock/bedrock-coherecommandr.adoc[CohereCommandR]
+***** xref:api/chat/functions/bedrock/bedrock-coherecommandr-chat-functions.adoc[Function Calling]
 **** xref:api/chat/bedrock/bedrock-titan.adoc[Titan]
 **** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2]
 **** xref:api/chat/bedrock/bedrock-mistral.adoc[Mistral]

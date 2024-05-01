@@ -16,3 +16,4 @@ Spring AI currently supports Function invocation for the following AI Models
 * ZhiPu AI : Refer to the xref:api/chat/functions/zhipuai-chat-functions.adoc[ZhiPu AI function invocation docs].
 * Amazon Bedrock Anthropic 3 : Refer to the xref:api/chat/functions/bedrock/bedrock-anthropic3-chat-functions.adoc[Amazon Bedrock Anthropic3 function invocation docs].
 * Amazon Bedrock Mistral : Refer to the xref:api/chat/functions/bedrock/bedrock-mistral-chat-functions.adoc[Amazon Bedrock Mistral function invocation docs].
+* Amazon Bedrock Cohere Command R : Refer to the xref:api/chat/functions/bedrock/bedrock-coherecommandr-chat-functions.adoc[Amazon Bedrock Cohere Command R function invocation docs].
