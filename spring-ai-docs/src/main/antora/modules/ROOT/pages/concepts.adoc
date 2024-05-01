@@ -36,12 +36,20 @@ The following table categorizes several models based on their input and output t
 |Image
 |Midjourney, Stable Diffusion, RunwayML
 
+|Language
+|Audio
+|OpenAI, Azure OpenAI
+
+|Audio
+|Language
+|OpenAI, Azure OpenAI
+
 |Text
 |Numbers
 |Many (AKA embeddings)
 |===
 
-The initial focus of Spring AI is on models that process language input and provide language output, initially OpenAI + Azure OpenAI.
+Spring AI currently supports models that process input and output as language, image, and audio.
 The last row in the previous table, which accepts text as input and outputs numbers, is more commonly known as embedding text and represents the internal data structures used in an AI model.
 Spring AI has support for embeddings to support more advanced use cases.
 
@@ -115,7 +123,7 @@ On input, models convert words to tokens. On output, they convert tokens back to
 
 In English, one token roughly corresponds to 75% of a word. For reference, Shakespeare's complete works, totaling around 900,000 words, translates to approximately 1.2 million tokens.
 
-Perhaps more important is that Tokens = *`$`*.
+Perhaps more important is that Tokens = Money.
 
 In the context of hosted AI models, your charges are determined by the number of tokens used. Both input and output contribute to the overall token count.
 
@@ -195,7 +203,7 @@ The concepts map onto classes in Spring AI:
 Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
 
 The `Function Calling` mechanism addresses these shortcomings.
-It allows you register custom, user, functions that connect the large language models to the APIs of external systems.
+It allows you to register your own functions to connect the large language models to the APIs of external systems.
 These systems can provide LLMs with real-time data and perform data processing actions on their behalf.
 
 Spring AI greatly simplifies code you need to write to support function invocation.

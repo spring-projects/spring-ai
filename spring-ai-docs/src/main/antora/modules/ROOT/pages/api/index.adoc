@@ -6,9 +6,9 @@ The Spring AI API covers a wide range of functionalities.
 Each major feature is detailed in its own dedicated section.
 To provide an overview, the following key functionalities are available:
 
-* Portable API across AI providers for Chat, Text to Image, and Embedding models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.  We support AI Models from OpenAI, Microsoft, Amazon, Google, Huggingface and more.
-* Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.  Support for 8 vector databases are available.
-* Function calling.  Spring AI makes it easy to have the AI model invoke your POJO java.util.Function object.
+* Portable API across AI providers for Chat, Text to Image, Audio Transcription, Text to Speech, and Embedding models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.  We support AI Models from OpenAI, Microsoft, Amazon, Google, Huggingface and more.
+* Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable. Support for 14 vector databases are available.
+* Function calling. Spring AI makes it easy to have the AI model invoke your POJO `java.util.Function` object.
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
 * ETL framework for Data Engineering.  This provides the basis of loading data into a vector database, helping implement the Retrieval Augmented Generation pattern that enables you to bring your data to the AI model to incorporate into its response.
 
