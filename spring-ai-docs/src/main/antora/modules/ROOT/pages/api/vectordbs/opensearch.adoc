@@ -55,7 +55,7 @@ spring:
       api:
         key: <api-key>
 ----
-TIP: Check the list of xref:#opensearchvector-properties[configuration parameters] to learn about the default values and configuration options.
+TIP: Check the list of xref:#_configuration_properties[configuration parameters] to learn about the default values and configuration options.
 
 == Auto-configuration
 
@@ -210,7 +210,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
                 b.eq("article_type", "blog")).build()));
 ----
 
-NOTE: Those (portable) filter expressions get automatically converted into the proprietary OpenSearch `WHERE` link:https://opensearch.org/docs/latest/opensearch/sql/[filter expressions].
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary OpenSearch link:https://opensearch.org/docs/latest/query-dsl/full-text/query-string/[Query string query].
 
 For example, this portable filter expression:
 
