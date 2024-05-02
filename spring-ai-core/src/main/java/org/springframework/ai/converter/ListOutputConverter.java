@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.parser;
+package org.springframework.ai.converter;
 
 import java.util.List;
 
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.lang.NonNull;
 
 /**
- * @deprecated Use the {@link org.springframework.ai.converter.ListOutputConverter}
- * instead.
+ * {@link StructuredOutputConverter} implementation that uses a
+ * {@link DefaultConversionService} to convert the LLM output into a
+ * {@link java.util.List} instance.
  *
- * {@link OutputParser} implementation that uses a {@link DefaultConversionService} to
- * convert the LLM output into a {@link java.util.List} instance.
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public class ListOutputParser extends AbstractConversionServiceOutputParser<List<String>> {
+public class ListOutputConverter extends AbstractConversionServiceOutputConverter<List<String>> {
 
-	public ListOutputParser(DefaultConversionService defaultConversionService) {
+	public ListOutputConverter(DefaultConversionService defaultConversionService) {
 		super(defaultConversionService);
 	}
 
@@ -43,8 +43,8 @@ public class ListOutputParser extends AbstractConversionServiceOutputParser<List
 	}
 
 	@Override
-	public List<String> parse(String text) {
-		return getConversionService().convert(text, List.class);
+	public List<String> convert(@NonNull String text) {
+		return this.getConversionService().convert(text, List.class);
 	}
 
 }

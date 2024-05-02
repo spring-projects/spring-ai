@@ -13,19 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.parser;
+package org.springframework.ai.converter;
+
+import org.springframework.messaging.converter.MessageConverter;
 
 /**
- * Converts the (raw) LLM output into a structured responses of type. The
- * {@link FormatProvider#getFormat()} method should provide the LLM prompt description of
- * the desired format.
+ * Abstract {@link StructuredOutputConverter} implementation that uses a pre-configured
+ * {@link MessageConverter} to convert the LLM output into the desired type format.
  *
  * @param <T> Specifies the desired response type.
  * @author Mark Pollack
  * @author Christian Tzolov
- * @deprecated Use the {@link org.springframework.ai.converter.StructuredOutputConverter}
- * instead.
  */
-public interface OutputParser<T> extends Parser<T>, FormatProvider {
+public abstract class AbstractMessageOutputConverter<T> implements StructuredOutputConverter<T> {
+
+	private MessageConverter messageConverter;
+
+	public AbstractMessageOutputConverter(MessageConverter messageConverter) {
+		this.messageConverter = messageConverter;
+	}
+
+	public MessageConverter getMessageConverter() {
+		return this.messageConverter;
+	}
 
 }

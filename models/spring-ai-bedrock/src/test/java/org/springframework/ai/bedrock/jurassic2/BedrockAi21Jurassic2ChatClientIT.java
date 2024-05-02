@@ -14,14 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.bedrock.jurassic2.api;
+package org.springframework.ai.bedrock.jurassic2;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatClient;
-import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatOptions;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+
+import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.Message;
@@ -29,20 +36,13 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.parser.MapOutputParser;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -109,10 +109,10 @@ class BedrockAi21Jurassic2ChatClientIT {
 	}
 
 	@Test
-	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+	void mapOutputConverter() {
+		MapOutputConverter outputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Provide me a List of {subject}
 				{format}
@@ -122,7 +122,7 @@ class BedrockAi21Jurassic2ChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = client.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
