@@ -24,15 +24,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.Content;
-import com.google.cloud.vertexai.api.FunctionCall;
-import com.google.cloud.vertexai.api.FunctionDeclaration;
-import com.google.cloud.vertexai.api.FunctionResponse;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.api.GenerationConfig;
-import com.google.cloud.vertexai.api.Part;
-import com.google.cloud.vertexai.api.Schema;
-import com.google.cloud.vertexai.api.Tool;
+import com.google.cloud.vertexai.api.*;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
@@ -243,8 +235,19 @@ public class VertexAiGeminiChatClient
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
+
+		List<Tool> tools = new ArrayList<>();
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
-			List<Tool> tools = this.getFunctionTools(functionsForThisRequest);
+			tools.addAll(this.getFunctionTools(functionsForThisRequest));
+		}
+		if (((VertexAiGeminiChatOptions) prompt.getOptions()).getGoogleSearchRetrieval()) {
+			final var googleSearchRetrieval = GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType();
+			final var googleSearchRetrievalTool = Tool.newBuilder()
+				.setGoogleSearchRetrieval(googleSearchRetrieval)
+				.build();
+			tools.add(googleSearchRetrievalTool);
+		}
+		if (!CollectionUtils.isEmpty(tools)) {
 			generativeModelBuilder.setTools(tools);
 		}
 
@@ -350,6 +353,8 @@ public class VertexAiGeminiChatClient
 	private List<Tool> getFunctionTools(Set<String> functionNames) {
 
 		final var tool = Tool.newBuilder();
+
+		tool.setGoogleSearchRetrieval(GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType());
 
 		final List<FunctionDeclaration> functionDeclarations = this.resolveFunctionCallbacks(functionNames)
 			.stream()
