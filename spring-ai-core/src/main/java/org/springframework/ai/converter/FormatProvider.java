@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.parser;
+package org.springframework.ai.converter;
 
 /**
  * Implementations of this interface provides instructions for how the output of a
  * language generative should be formatted.
  *
  * @author Mark Pollack
- * @deprecated Use the {@link org.springframework.ai.converter.FormatProvider} instead.
  */
 public interface FormatProvider {
 

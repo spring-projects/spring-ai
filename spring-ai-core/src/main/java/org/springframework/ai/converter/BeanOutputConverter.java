@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.parser;
+package org.springframework.ai.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
@@ -27,6 +27,8 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 
+import org.springframework.lang.NonNull;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -34,20 +36,18 @@ import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
 import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
 
 /**
- * @deprecated Use the {@link org.springframework.ai.converter.BeanOutputConverter}
- * instead.
+ * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
+ * to a specific object type using JSON schema. This parser works by generating a JSON
+ * schema based on a given Java class, which is then used to validate and transform the
+ * LLM output into the desired type.
  *
- * An implementation of {@link OutputParser} that transforms the LLM output to a specific
- * object type using JSON schema. This parser works by generating a JSON schema based on a
- * given Java class, which is then used to validate and transform the LLM output into the
- * desired type.
  * @param <T> The target type to which the output will be converted.
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Sebastian Ullrich
  * @author Kirk Lund
  */
-public class BeanOutputParser<T> implements OutputParser<T> {
+public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	/** Holds the generated JSON schema for the target type. */
 	private String jsonSchema;
@@ -64,7 +64,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 * Constructor to initialize with the target type's class.
 	 * @param clazz The target type's class.
 	 */
-	public BeanOutputParser(Class<T> clazz) {
+	public BeanOutputConverter(Class<T> clazz) {
 		this(clazz, null);
 	}
 
@@ -74,7 +74,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 * @param clazz The target type's class.
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
-	public BeanOutputParser(Class<T> clazz, ObjectMapper objectMapper) {
+	public BeanOutputConverter(Class<T> clazz, ObjectMapper objectMapper) {
 		Objects.requireNonNull(clazz, "Java Class cannot be null;");
 		this.clazz = clazz;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
@@ -107,7 +107,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 	 * @param text The LLM output in string format.
 	 * @return The parsed output in the desired target type.
 	 */
-	public T parse(String text) {
+	public T convert(@NonNull String text) {
 		try {
 			// If the response is a JSON Schema, extract the properties and use them as
 			// the response.
@@ -158,6 +158,7 @@ public class BeanOutputParser<T> implements OutputParser<T> {
 				Your response should be in JSON format.
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
 				Do not include markdown code blocks in your response.
+				Remove the ```json markdown from the output.
 				Here is the JSON Schema instance your output must adhere to:
 				```%s```
 				""";

@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.prompt.parsers;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.core.convert.support.DefaultConversionService;
+package org.springframework.ai.converter;
 
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
+
+import org.springframework.core.convert.support.DefaultConversionService;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ListOutputParserTest {
+class ListOutputConverterTest {
 
 	@Test
 	void csv() {
 		String csvAsString = "foo, bar, baz";
-		ListOutputParser listOutputParser = new ListOutputParser(new DefaultConversionService());
-		List<String> list = listOutputParser.parse(csvAsString);
+		ListOutputConverter listOutputConverter = new ListOutputConverter(new DefaultConversionService());
+		List<String> list = listOutputConverter.convert(csvAsString);
 		assertThat(list).containsExactlyElementsOf(List.of("foo", "bar", "baz"));
 	}
 

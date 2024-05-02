@@ -1,0 +1,207 @@
+[[StructuredOutputConverter]]
+
+= Structured Output Converter
+
+NOTE: As of 02.05.2024 the old `OutputParser`, `BeanOutputParser`, `ListOutputParser` and `MapOutputParser` classes are deprecated in favor of the new `StructuredOutputConverter`, `BeanOutputConverter`, `ListOutputConverter` and `MapOutputConverter` implementations.
+Later are drop-in replacements for the former ones and provide the same functionality.   The reason for the change was primarily naming, as there isn't any parsing being done, but also have aligned with the Spring `org.springframework.core.convert.converter` package brining in some improved functionality.
+
+The ability of LLMs to produce structured outputs is important for downstream applications that rely on reliably parsing output values.
+Developers want to quickly turn results from an AI model into data types, such as JSON, XML or Java Classes, that can be passed to other application functions and methods.
+
+The Spring AI `Structured Output Converters` help to convert the LLM output into a structured format.
+As shown in the following diagram, this approach operates around the LLM text completion endpoint:
+
+image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=900, align="center"]
+
+Generating structured outputs from Large Language Models (LLMs) using generic completion APIs requires careful handling of inputs and outputs. The structured output converter plays a crucial role before and after the LLM call, ensuring the desired output structure is achieved.
+
+Before the LLM call, the converter appends format instructions to the prompt, providing explicit guidance to the models on generating the desired output structure. These instructions act as a blueprint, shaping the model's response to conform to the specified format.
+
+After the LLM call, the converter takes the model's output text and transforms it into instances of the structured type. This conversion process involves parsing the raw text output and mapping it to the corresponding structured data representation, such as JSON, XML, or domain-specific data structures.
+
+TIP: The `StructuredOutputConverter` is a best effort to convert the model output into a structured output.
+The AI Model is not guaranteed to return the structured output as requested.
+The model may not understand the prompt or be unable to generate the structured output as requested.
+Consider implementing a validation mechanism to ensure the model output is as expected.
+
+TIP: The `StructuredOutputConverter` is not used for LLM xref:api/functions.adoc[Function Calling], as this feature inherently provides structured outputs by default.
+
+== Structured Output API
+
+The `StructuredOutputConverter` interface allows you to obtain structured output, such as mapping the output to a Java class or an array of values from the text-based AI Model output.
+The interface definition is:
+
+[source,java]
+----
+public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
+
+}
+----
+
+It combines the Spring https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/convert/converter/Converter.html[Converter<String, T>] interface and the `FormatProvider` interface
+
+[source,java]
+----
+public interface FormatProvider {
+	String getFormat();
+}
+----
+
+The following diagram shows the data flow when using the structured output API.
+
+image::structured-output-api.jpg[Structured Output API, width=900, align="center"]
+
+
+The `FormatProvider` supplies specific formatting guidelines to the AI Model, enabling it to produce text outputs that can be converted into the designated target type `T` using the `Converter`. Here is an example of such formatting instructions:
+
+----
+  Your response should be in JSON format.
+  The data structure for the JSON should match this Java class: java.util.HashMap
+  Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+----
+
+The format instructions are most often appended to the end of the user input using the xref:api/prompt.adoc#_prompttemplate[PromptTemplate] like this:
+
+[source,java]
+----
+    StructuredOutputConverter outputConverter = ...
+    String userInputTemplate = """
+        ... user text input ....
+        {format}
+        """; // user input with a "format" placeholder.
+    Prompt prompt = new Prompt(
+       new PromptTemplate(
+          userInputTemplate,
+          Map.of(..., "format", outputConverter.getFormat()) // replace the "format" placeholder with the converter's format.
+       ).createMessage());
+----
+
+The Converter<String, T> is responsible to transform output text from the model into instances of the specified type `T`.
+
+
+=== Available Converters
+
+Currently, Spring AI provides `AbstractConversionServiceOutputConverter`, `AbstractMessageOutputConverter`, `BeanOutputConverter`, `MapOutputConverter` and `ListOutputConverter` implementations:
+
+image::structured-output-hierarchy4.jpg[Structured Output Class Hierarchy, width=900, align="center"]
+
+* `AbstractConversionServiceOutputConverter<T>` - Offers a pre-configured link:https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/convert/support/GenericConversionService.html[GenericConversionService] for transforming LLM output into the desired format. No default `FormatProvider` implementation is provided.
+* `AbstractMessageOutputConverter` - Supplies a pre-configured https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/jms/support/converter/MessageConverter.html[MessageConverter] for converting LLM output into the desired format. No default `FormatProvider` implementation is provided.
+* `BeanOutputConverter` - Configured with a designated Java class (e.g., Bean), this converter employs a `FormatProvider` implementation that directs the AI Model to produce a JSON response compliant with a `DRAFT_2020_12`, `JSON Schema` derived from the specified Java class. Subsequently, it utilizes an `ObjectMapper` to deserialize the JSON output into a Java object instance of the target class.
+* `MapOutputConverter` - Extends the functionality of `AbstractMessageOutputConverter` with a `FormatProvider` implementation that guides the AI Model to generate an RFC8259 compliant JSON response. Additionally, it incorporates a converter implementation that utilizes the provided `MessageConverter` to translate the JSON payload into a `java.util.Map<String, Object>` instance.
+* `ListOutputConverter` - Extends the  `AbstractConversionServiceOutputConverter` and includes a `FormatProvider` implementation tailored for comma-delimited list output. The converter implementation employs the provided `ConversionService` to transform the model text output into a `java.util.List`.
+
+
+== Using Converters
+
+The following sections provide guides how to use the available converters to generate structured outputs.
+
+=== Bean Output Converter
+
+
+The following example shows how to use `BeanOutputConverter` to generate the filmography for an actor.
+
+The target record representing actor's filmography:
+
+[source,java]
+----
+record ActorsFilms(String actor, List<String> movies) {
+}
+----
+
+Here is how to apply the BeanOutputConverter:
+
+[source,java]
+----
+BeanConverter<ActorsFilms> beanOutputConverter =
+    new BeanOutputConverter<>(ActorsFilms.class);
+
+String format = beanOutputConverter.getFormat();
+
+String actor = "Tom Hanks";
+
+String template = """
+        Generate the filmography of 5 movies for {actor}.
+        {format}
+        """;
+
+Generation generation = chatClient.call(
+    new Prompt(new PromptTemplate(template, Map.of("actor", actor, "format", format)).createMessage())).getResult();
+
+ActorsFilms actorsFilms = beanOutputConverter.convert(generation.getOutput().getContent());
+----
+
+=== Map Output Converter
+
+Following sniped shows how to use `MapOutputConverter` to generate a list of numbers.
+
+[source,java]
+----
+MapOutputConverter mapOutputConverter = new MapOutputConverter();
+
+String format = mapOutputConverter.getFormat();
+String template = """
+        Provide me a List of {subject}
+        {format}
+        """;
+PromptTemplate promptTemplate = new PromptTemplate(template,
+        Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+Prompt prompt = new Prompt(promptTemplate.createMessage());
+Generation generation = chatClient.call(prompt).getResult();
+
+Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getContent());
+----
+
+=== List Output Converter
+
+Following snippet shows how to use `ListOutputConverter` to generate a list of ice cream flavors.
+
+[source,java]
+----
+ListOutputConverter listOutputConverter = new ListOutputConverter(new DefaultConversionService());
+
+String format = listOutputConverter.getFormat();
+String template = """
+        List five {subject}
+        {format}
+        """;
+PromptTemplate promptTemplate = new PromptTemplate(template,
+        Map.of("subject", "ice cream flavors", "format", format));
+Prompt prompt = new Prompt(promptTemplate.createMessage());
+Generation generation = this.chatClient.call(prompt).getResult();
+
+List<String> list = listOutputConverter.convert(generation.getOutput().getContent());
+----
+
+== Supported AI Models
+
+The following AI Models have been tested to support List, Map and Bean structured outputs.
+
+[cols="2,5"]
+|====
+| Model | Integration Tests / Samples
+| xref:api/chat/openai-chat.adoc[OpenAI]  | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatClientIT.java[OpenAiChatClientIT]
+| xref:api/chat/anthropic-chat.adoc[Anthropic Claude 3] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/test/java/org/springframework/ai/anthropic/AnthropicChatClientIT.java[AnthropicChatClientIT.java]
+| xref:api/chat/azure-openai-chat.adoc[Azure OpenAI] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/test/java/org/springframework/ai/azure/openai/AzureOpenAiChatClientIT.java[AzureOpenAiChatClientIT.java]
+| xref:api/chat/mistralai-chat.adoc[Mistral AI] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/MistralAiChatClientIT.java[MistralAiChatClientIT.java]
+| xref:api/chat/ollama-chat.adoc[Ollama] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatClientIT.java[OllamaChatClientIT.java]
+| xref:api/chat/vertexai-gemini-chat.adoc[Vertex AI Gemini] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java]
+| xref:api/chat/bedrock/bedrock-anthropic.adoc[Bedrock Anthropic 2] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClientIT.java[BedrockAnthropicChatClientIT.java]
+| xref:api/chat/bedrock/bedrock-anthropic3.adoc[Bedrock Anthropic 3] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatClientIT.java[BedrockAnthropic3ChatClientIT.java]
+| xref:api/chat/bedrock/bedrock-cohere.adoc[Bedrock Cohere] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatClientIT.java[BedrockCohereChatClientIT.java]
+| xref:api/chat/bedrock/bedrock-llama.adoc[Bedrock Llama] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/llama/BedrockLlamaChatClientIT.java[BedrockLlamaChatClientIT.java.java]
+|====
+
+== Build-in JSON mode
+
+Some AI Models provide dedicated configuration options to generate structured (usually JSON) output.
+
+* xref:api/chat/openai-chat.adoc[OpenAI] - provides a `spring.ai.openai.chat.options.responseFormat` options specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
+* xref:api/chat/ollama-chat.adoc[Ollama] - provides a `spring.ai.ollama.chat.options.format` option to specify the format to return a response in. Currently the only accepted value is `json`.
+* xref:api/chat/mistralai-chat.adoc[Mistral AI] - provides a `spring.ai.mistralai.chat.options.responseFormat` option to specify the format to return a response in. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
+
+
+
+
+
+

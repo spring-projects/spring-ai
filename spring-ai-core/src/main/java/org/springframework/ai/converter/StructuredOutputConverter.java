@@ -13,21 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.parser;
+package org.springframework.ai.converter;
+
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.lang.NonNull;
 
 /**
- * Implementations of this interface provides instructions for how the output of a
- * language generative should be formatted.
+ * Converts the (raw) LLM output into a structured responses of type. The
+ * {@link FormatProvider#getFormat()} method should provide the LLM prompt description of
+ * the desired format.
  *
+ * @param <T> Specifies the desired response type.
  * @author Mark Pollack
- * @deprecated Use the {@link org.springframework.ai.converter.FormatProvider} instead.
+ * @author Christian Tzolov
  */
-public interface FormatProvider {
+public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
 
 	/**
-	 * @return Returns a string containing instructions for how the output of a language
-	 * generative should be formatted.
+	 * @deprecated Use the {@link #convert(Object)} instead.
 	 */
-	String getFormat();
+	default T parse(@NonNull String source) {
+		return this.convert(source);
+	}
 
 }

@@ -15,17 +15,6 @@
  */
 package org.springframework.ai.chat.prompt;
 
-import org.antlr.runtime.Token;
-import org.antlr.runtime.TokenStream;
-import org.springframework.ai.chat.messages.Media;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.parser.OutputParser;
-import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.compiler.STLexer;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -36,6 +25,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+
+import org.antlr.runtime.Token;
+import org.antlr.runtime.TokenStream;
+import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.compiler.STLexer;
+
+import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.parser.OutputParser;
+import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
@@ -48,6 +50,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	protected TemplateFormat templateFormat = TemplateFormat.ST;
 
 	private OutputParser outputParser;
+
+	private StructuredOutputConverter structuredOutputConverter;
 
 	public PromptTemplate(Resource resource) {
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -110,13 +114,29 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 	}
 
+	/**
+	 * @deprecated Use {@link #getOutputConverter()} instead.
+	 */
 	public OutputParser getOutputParser() {
-		return outputParser;
+		return this.outputParser;
 	}
 
+	/**
+	 * @deprecated Use {@link #setOutputConverter(StructuredOutputConverter)}
+	 * instead.
+	 */
 	public void setOutputParser(OutputParser outputParser) {
 		Objects.requireNonNull(outputParser, "Output Parser can not be null");
 		this.outputParser = outputParser;
+	}
+
+	public StructuredOutputConverter getOutputConverter() {
+		return this.structuredOutputConverter;
+	}
+
+	public void setOutputConverter(StructuredOutputConverter structuredOutputConverter) {
+		Objects.requireNonNull(structuredOutputConverter, "Structured Output Converter can not be null");
+		this.structuredOutputConverter = structuredOutputConverter;
 	}
 
 	public void add(String name, Object value) {
