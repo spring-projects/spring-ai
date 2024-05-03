@@ -71,7 +71,7 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken) {
-		this(baseUrl, openAiToken, RestClient.builder());
+		this(baseUrl, openAiToken, RestClient.builder(), WebClient.builder());
 	}
 
 	/**
@@ -81,8 +81,8 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
 	 */
-	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -93,7 +93,7 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
@@ -101,7 +101,7 @@ public class OpenAiApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder()
+		this.webClient = webClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
 				.build();
