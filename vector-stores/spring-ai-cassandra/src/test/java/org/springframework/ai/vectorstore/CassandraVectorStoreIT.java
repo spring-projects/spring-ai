@@ -68,13 +68,14 @@ class CassandraVectorStoreIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
 
-	List<Document> documents = List.of(
-			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
-			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
-			new Document("3", getText("classpath:/test/data/great.depression.txt"),
-					Map.of("meta2", "meta2", "something_extra", "blue")));
+	private static List<Document> documents() {
+		return List.of(new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+				new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+				new Document("3", getText("classpath:/test/data/great.depression.txt"),
+						Map.of("meta2", "meta2", "something_extra", "blue")));
+	}
 
-	public static String getText(String uri) {
+	private static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
 		try {
 			return resource.getContentAsString(StandardCharsets.UTF_8);
@@ -99,13 +100,21 @@ class CassandraVectorStoreIT {
 		contextRunner.run(context -> {
 			try (CassandraVectorStore store = createTestStore(context, new SchemaColumn("meta1", DataTypes.TEXT),
 					new SchemaColumn("meta2", DataTypes.TEXT))) {
+
+				List<Document> documents = documents();
 				store.add(documents);
+				for (Document d : documents) {
+					assertThat(d.getEmbedding()).satisfiesAnyOf(e -> assertThat(e).isNotNull(),
+							e -> assertThat(e).isNotEmpty());
+				}
 
 				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
+				assertThat(resultDoc.getEmbedding()).satisfiesAnyOf(e -> assertThat(e).isNull(),
+						e -> assertThat(e).isEmpty());
 
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
@@ -114,7 +123,43 @@ class CassandraVectorStoreIT {
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", CassandraVectorStore.SIMILARITY_FIELD_NAME);
 
 				// Remove all documents from the store
-				store.delete(documents.stream().map(doc -> doc.getId()).toList());
+				store.delete(documents().stream().map(doc -> doc.getId()).toList());
+
+				results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				assertThat(results).isEmpty();
+			}
+		});
+	}
+
+	@Test
+	void addAndSearchReturnEmbeddings() {
+		contextRunner.run(context -> {
+			CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
+				.returnEmbeddings();
+
+			try (CassandraVectorStore store = createTestStore(context, builder)) {
+				List<Document> documents = documents();
+				store.add(documents);
+				for (Document d : documents) {
+					assertThat(d.getEmbedding()).satisfiesAnyOf(e -> assertThat(e).isNotNull(),
+							e -> assertThat(e).isNotEmpty());
+				}
+
+				List<Document> results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+
+				assertThat(results).hasSize(1);
+				Document resultDoc = results.get(0);
+				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
+				assertThat(resultDoc.getEmbedding()).isNotEmpty();
+
+				assertThat(resultDoc.getContent()).contains(
+						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+
+				assertThat(resultDoc.getMetadata()).hasSize(1);
+				assertThat(resultDoc.getMetadata()).containsKey(CassandraVectorStore.SIMILARITY_FIELD_NAME);
+
+				// Remove all documents from the store
+				store.delete(documents().stream().map(doc -> doc.getId()).toList());
 
 				results = store.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 				assertThat(results).isEmpty();
@@ -309,7 +354,7 @@ class CassandraVectorStoreIT {
 	void searchWithThreshold() {
 		contextRunner.run(context -> {
 			try (CassandraVectorStore store = context.getBean(CassandraVectorStore.class)) {
-				store.add(documents);
+				store.add(documents());
 
 				List<Document> fullResult = store
 					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
@@ -327,7 +372,7 @@ class CassandraVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
 
 				assertThat(resultDoc.getContent()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
@@ -370,17 +415,21 @@ class CassandraVectorStoreIT {
 
 	}
 
-	static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
+	private static CassandraVectorStoreConfig.Builder storeBuilder(CqlSession cqlSession) {
 		return CassandraVectorStoreConfig.builder()
 			.withCqlSession(cqlSession)
 			.withKeyspaceName("test_" + CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME);
 	}
 
-	private CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
-
+	private static CassandraVectorStore createTestStore(ApplicationContext context, SchemaColumn... metadataFields) {
 		CassandraVectorStoreConfig.Builder builder = storeBuilder(context.getBean(CqlSession.class))
 			.addMetadataColumns(metadataFields);
 
+		return createTestStore(context, builder);
+	}
+
+	private static CassandraVectorStore createTestStore(ApplicationContext context,
+			CassandraVectorStoreConfig.Builder builder) {
 		CassandraVectorStoreConfig conf = builder.build();
 		conf.dropKeyspace();
 		return new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class));
