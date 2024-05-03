@@ -24,6 +24,11 @@ package org.springframework.ai.ollama.api;
 public enum OllamaModel {
 
 	/**
+	 * Llama 3 is a collection of language models ranging from 8B to 70B parameters.
+	 */
+	LLAMA3("llama3"),
+
+	/**
 	 * Llama 2 is a collection of language models ranging from 7B to 70B parameters.
 	 */
 	LLAMA2("llama2"),
