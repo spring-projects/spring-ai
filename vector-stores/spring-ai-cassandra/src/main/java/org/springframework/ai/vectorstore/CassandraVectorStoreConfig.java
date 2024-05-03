@@ -132,6 +132,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	final boolean disallowSchemaChanges;
 
+	final boolean returnEmbeddings;
+
 	final DocumentIdTranslator documentIdTranslator;
 
 	final PrimaryKeyTranslator primaryKeyTranslator;
@@ -148,6 +150,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				builder.contentColumnName, builder.embeddingColumnName, builder.indexName, builder.metadataColumns);
 
 		this.disallowSchemaChanges = builder.disallowSchemaCreation;
+		this.returnEmbeddings = builder.returnEmbeddings;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
 		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
@@ -198,6 +201,8 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private boolean disallowSchemaCreation = false;
+
+		private boolean returnEmbeddings = false;
 
 		private int fixedThreadPoolExecutorSize = DEFAULT_ADD_CONCURRENCY;
 
@@ -305,6 +310,11 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 		public Builder disallowSchemaChanges() {
 			this.disallowSchemaCreation = true;
+			return this;
+		}
+
+		public Builder returnEmbeddings() {
+			this.returnEmbeddings = true;
 			return this;
 		}
 

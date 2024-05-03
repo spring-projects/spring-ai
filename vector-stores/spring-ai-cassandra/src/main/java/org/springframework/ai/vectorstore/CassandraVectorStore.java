@@ -160,11 +160,9 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 			futures[i++] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
 
-				var embedding = (null != d.getEmbedding() && !d.getEmbedding().isEmpty() ? d.getEmbedding()
-						: this.embeddingClient.embed(d))
-					.stream()
-					.map(Double::floatValue)
-					.toList();
+				if (null == d.getEmbedding() || d.getEmbedding().isEmpty()) {
+					d.setEmbedding(this.embeddingClient.embed(d));
+				}
 
 				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
 				for (int k = 0; k < primaryKeyValues.size(); ++k) {
@@ -173,7 +171,9 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 				}
 
 				builder = builder.setString(this.conf.schema.content(), d.getContent())
-					.setVector(this.conf.schema.embedding(), CqlVector.newInstance(embedding), Float.class);
+					.setVector(this.conf.schema.embedding(),
+							CqlVector.newInstance(d.getEmbedding().stream().map(Double::floatValue).toList()),
+							Float.class);
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
@@ -235,8 +235,15 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 					docFields.put(metadata.name(), value);
 				}
 			}
+			Document doc = new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields);
 
-			documents.add(new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields));
+			if (this.conf.returnEmbeddings) {
+				doc.setEmbedding(row.getVector(this.conf.schema.embedding(), Float.class)
+					.stream()
+					.map(Float::doubleValue)
+					.toList());
+			}
+			documents.add(doc);
 		}
 		return documents;
 	}
@@ -327,6 +334,9 @@ public final class CassandraVectorStore implements VectorStore, InitializingBean
 		StringBuilder extraSelectFields = new StringBuilder();
 		for (var m : this.conf.schema.metadataColumns()) {
 			extraSelectFields.append(',').append(m.name());
+		}
+		if (this.conf.returnEmbeddings) {
+			extraSelectFields.append(',').append(this.conf.schema.embedding());
 		}
 
 		// java-driver-query-builder doesn't support orderByAnnOf yet
