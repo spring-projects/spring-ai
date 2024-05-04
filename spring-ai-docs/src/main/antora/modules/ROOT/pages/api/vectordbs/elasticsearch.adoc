@@ -160,7 +160,7 @@ vectorStore.similaritySearch(SearchRequest.defaults()
                 b.eq("article_type", "blog")).build()));
 ----
 
-NOTE: Those (portable) filter expressions get automatically converted into the proprietary Elasticsearch `WHERE` link:https://www.elastic.co/guide/en/elasticsearch/reference/current/sql-syntax-select.html#sql-syntax-where[filter expressions].
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary Elasticsearch link:https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html[Query string query].
 
 For example, this portable filter expression:
 
