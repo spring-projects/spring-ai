@@ -18,7 +18,12 @@ package org.springframework.ai.openai.image;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.image.*;
+
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.testutils.AbstractIT;

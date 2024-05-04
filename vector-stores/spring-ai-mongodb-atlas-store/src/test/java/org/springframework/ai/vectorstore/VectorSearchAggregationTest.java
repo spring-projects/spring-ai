@@ -21,7 +21,7 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class VectorSearchAggregationTest {
 
