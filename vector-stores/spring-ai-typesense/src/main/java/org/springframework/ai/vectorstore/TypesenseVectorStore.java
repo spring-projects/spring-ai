@@ -1,5 +1,6 @@
 package org.springframework.ai.vectorstore;
 
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -10,9 +11,8 @@ import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
 import org.typesense.model.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -155,7 +155,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
-		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":[" + String.join(",", idList) + "]");
+		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
 
 		try {
 			int deletedDocs = (Integer) this.client.collections(this.config.collectionName)
@@ -181,19 +181,34 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
 
-		HashMap<String, String> search = new HashMap<>();
-		search.put("collection", this.config.collectionName);
-		search.put("q", "*");
-		search.put("vector_query", String.join(",", embedding.stream().map(String::valueOf).toList()));
+		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
+		multiSearchCollectionParameters.collection(this.config.collectionName);
+		multiSearchCollectionParameters.q("*");
+		multiSearchCollectionParameters.vectorQuery(EMBEDDING_FIELD_NAME + ":([" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "], k: 100)");
 
-		SearchParameters searchParameters = new SearchParameters().q("*")
-			.vectorQuery("vec:([" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "])");
+		MultiSearchSearchesParameter multiSearchesParameter = new MultiSearchSearchesParameter().addSearchesItem(multiSearchCollectionParameters);
 
 		try {
-			SearchResult searchResult = client.collections(this.config.collectionName)
-				.documents()
-				.search(searchParameters);
-			return List.of();
+			MultiSearchResult result = this.client.multiSearch.perform(multiSearchesParameter, Map.of("query_by", EMBEDDING_FIELD_NAME));
+
+			List<Document> documents = result.getResults()
+					.stream()
+					.flatMap(searchResult ->
+							searchResult.getHits()
+									.stream()
+									.filter(hit -> hit.getVectorDistance() >= request.getSimilarityThreshold())
+									.map(hit -> {
+										Map<String, Object> rawDocument = hit.getDocument();
+										String docId = rawDocument.get(DOC_ID_FIELD_NAME).toString();
+										String content = rawDocument.get(CONTENT_FIELD_NAME).toString();
+										Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map ? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
+										return new Document(docId, content, metadata);
+									})
+					)
+					.toList();
+
+			logger.info("Found {} documents", documents.size());
+			return documents;
 		}
 		catch (Exception e) {
 			logger.error("Failed to search documents", e);
@@ -204,6 +219,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	// ---------------------------------------------------------------------------------
 	// Initialization
 	// ---------------------------------------------------------------------------------
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		this.createCollection();
@@ -259,6 +275,18 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		catch (Exception e) {
 			logger.error("Failed to drop collection {}", this.config.collectionName, e);
 		}
+	}
+
+	Map<String, Object> getCollectionInfo() {
+		try {
+			CollectionResponse retrievedCollection = this.client.collections(this.config.collectionName).retrieve();
+			return Map.of("name", retrievedCollection.getName(), "num_documents", retrievedCollection.getNumDocuments());
+		}
+		catch (Exception e) {
+			logger.error("Failed to retrieve collection info", e);
+			return null;
+		}
+
 	}
 
 }
