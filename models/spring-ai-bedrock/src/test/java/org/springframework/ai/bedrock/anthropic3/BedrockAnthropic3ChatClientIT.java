@@ -49,6 +49,7 @@ import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsPro
 import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -160,9 +161,9 @@ class BedrockAnthropic3ChatClientIT {
 		String format = outputParser.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
-				Remove non JSON tex blocks from the output.
 				{format}
 				Provide your answer in the JSON format with the feature names as the keys.
+				Remove Markdown code blocks from the output.
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
@@ -223,7 +224,8 @@ class BedrockAnthropic3ChatClientIT {
 		@Bean
 		public Anthropic3ChatBedrockApi anthropicApi() {
 			return new Anthropic3ChatBedrockApi(Anthropic3ChatBedrockApi.AnthropicChatModel.CLAUDE_V3_SONNET.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+					Duration.ofMinutes(5));
 		}
 
 		@Bean

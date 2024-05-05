@@ -16,6 +16,7 @@
 // @formatter:off
 package org.springframework.ai.bedrock.jurassic2.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -28,12 +29,14 @@ import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * Java client for the Bedrock Jurassic2 chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class Ai21Jurassic2ChatBedrockApi extends
@@ -64,6 +67,46 @@ public class Ai21Jurassic2ChatBedrockApi extends
 		super(modelId, credentialsProvider, region, objectMapper);
 	}
 
+	/**
+	 * Create a new Ai21Jurassic2ChatBedrockApi instance using the default credentials provider chain, the default
+	 * object mapper, default temperature and topP values.
+	 *
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatModel} for the supported models.
+	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
+	 */
+	public Ai21Jurassic2ChatBedrockApi(String modelId, String region, Duration timeout) {
+		super(modelId, region, timeout);
+	}
+
+
+	/**
+	 * Create a new Ai21Jurassic2ChatBedrockApi instance.
+	 *
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+									ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new Ai21Jurassic2ChatBedrockApi instance.
+	 *
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+									ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
 
 	/**
 	 * AI21 Jurassic2 chat request parameters.

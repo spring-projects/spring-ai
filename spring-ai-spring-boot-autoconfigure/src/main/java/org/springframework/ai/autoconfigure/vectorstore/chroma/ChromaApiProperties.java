@@ -44,7 +44,7 @@ public class ChromaApiProperties {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -52,7 +52,7 @@ public class ChromaApiProperties {
 	}
 
 	public String getKeyToken() {
-		return keyToken;
+		return this.keyToken;
 	}
 
 	public void setKeyToken(String keyToken) {
@@ -60,7 +60,7 @@ public class ChromaApiProperties {
 	}
 
 	public String getUsername() {
-		return username;
+		return this.username;
 	}
 
 	public void setUsername(String username) {
@@ -68,7 +68,7 @@ public class ChromaApiProperties {
 	}
 
 	public String getPassword() {
-		return password;
+		return this.password;
 	}
 
 	public void setPassword(String password) {

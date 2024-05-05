@@ -16,6 +16,7 @@
 // @formatter:off
 package org.springframework.ai.bedrock.cohere.api;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
@@ -35,6 +37,7 @@ import org.springframework.util.Assert;
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere.html
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class CohereChatBedrockApi extends
@@ -62,6 +65,46 @@ public class CohereChatBedrockApi extends
 	public CohereChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper) {
 		super(modelId, credentialsProvider, region, objectMapper);
+	}
+
+	/**
+	 * Create a new CohereChatBedrockApi instance using the default credentials provider chain, the default object
+	 * mapper, default temperature and topP values.
+	 *
+	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
+	 * @param region The AWS region to use.
+	 * @param timeout The timeout to use.
+	 */
+	public CohereChatBedrockApi(String modelId, String region, Duration timeout) {
+		super(modelId, region, timeout);
+	}
+
+	/**
+	 * Create a new CohereChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public CohereChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new CohereChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link CohereChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public CohereChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
 
 	/**

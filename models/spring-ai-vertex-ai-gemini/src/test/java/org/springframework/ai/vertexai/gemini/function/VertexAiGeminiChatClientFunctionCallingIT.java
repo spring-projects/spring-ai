@@ -17,10 +17,13 @@ package org.springframework.ai.vertexai.gemini.function;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -37,7 +40,6 @@ import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions.TransportType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -66,10 +68,14 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	}
 
 	@Test
+	@Disabled("Google Vertex AI degraded support for parallel function calls")
 	public void functionCallExplicitOpenApiSchema() {
 
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use Multi-turn function calling. Provide answer for all requested locations.");
+				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan?"
+						+ " Use Celsius units. Answer for all requested locations.");
+		// " Use Celsius units. Use Multi-turn function calling. Provide answer for all
+		// requested locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -94,7 +100,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
+				.withName("get_current_weather")
 				.withDescription("Get the current weather in a given location")
 				.withInputTypeSchema(openApiSchema)
 				.build()))
@@ -114,39 +120,48 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	@Test
 	public void functionCallTestInferredOpenApiSchema() {
 
-		// UserMessage userMessage = new UserMessage("What's the weather like in San
-		// Francisco, Paris and Tokyo?");
-		UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius units.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.build()))
+			.withFunctionCallbacks(List.of(
+					FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+						.withName("get_current_weather")
+						.withDescription("Get the current weather in a given location.")
+						.build(),
+					FunctionCallbackWrapper.builder(new PaymentStatus())
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+						.withName("get_payment_status")
+						.withDescription(
+								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.build()))
 			.build();
 
 		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
-		// System.out.println(response.getResult().getOutput().getContent());
-		// assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0",
-		// "30");
-		// assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0",
-		// "10");
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+
+		ChatResponse response2 = vertexGeminiClient
+			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
+
+		logger.info("Response: {}", response2);
+
+		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
 
 	}
 
 	@Test
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco in Celsius units?");
+		// UserMessage userMessage = new UserMessage(
+		// "What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use
+		// Multi-turn function calling. Provide answer for all requested locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -172,9 +187,24 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 
 		logger.info("Response: {}", responseString);
 
-		assertThat(responseString).containsAnyOf("15.0", "15");
+		// assertThat(responseString).containsAnyOf("15.0", "15");
 		assertThat(responseString).containsAnyOf("30.0", "30");
-		assertThat(responseString).containsAnyOf("10.0", "10");
+		// assertThat(responseString).containsAnyOf("10.0", "10");
+
+	}
+
+	public record PaymentInfoRequest(String id) {
+	}
+
+	public record TransactionStatus(String status) {
+	}
+
+	public static class PaymentStatus implements Function<PaymentInfoRequest, TransactionStatus> {
+
+		@Override
+		public TransactionStatus apply(PaymentInfoRequest paymentInfoRequest) {
+			return new TransactionStatus("Transaction " + paymentInfoRequest.id() + " is PAYED");
+		}
 
 	}
 
@@ -185,7 +215,10 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		public VertexAI vertexAiApi() {
 			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
 			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
-			return new VertexAI(projectId, location);
+			return new VertexAI.Builder().setLocation(location)
+				.setProjectId(projectId)
+				.setTransport(Transport.REST)
+				.build();
 		}
 
 		@Bean
@@ -194,7 +227,6 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 					VertexAiGeminiChatOptions.builder()
 						.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
 						.withTemperature(0.9f)
-						.withTransportType(TransportType.REST)
 						.build());
 		}
 

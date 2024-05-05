@@ -16,6 +16,7 @@
 package org.springframework.ai.anthropic;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.api.tool.MockWeatherService;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -37,6 +40,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
 import org.springframework.ai.parser.MapOutputParser;
@@ -187,6 +191,32 @@ class AnthropicChatClientIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
+	}
+
+	@Test
+	void functionCallTest() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription("Get the weather in location")
+				.build()))
+			.build();
+
+		ChatResponse response = chatClient.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		Generation generation = response.getResults().get(0);
+		assertThat(generation.getOutput().getContent()).containsAnyOf("30.0", "30");
+		assertThat(generation.getOutput().getContent()).containsAnyOf("10.0", "10");
+		assertThat(generation.getOutput().getContent()).containsAnyOf("15.0", "15");
 	}
 
 }

@@ -19,7 +19,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
-import org.springframework.ai.openai.api.OpenAiImageApi;
 
 import java.util.Objects;
 
@@ -44,7 +43,7 @@ public class OpenAiImageOptions implements ImageOptions {
 	 * The model to use for image generation.
 	 */
 	@JsonProperty("model")
-	private String model = OpenAiImageApi.DEFAULT_IMAGE_MODEL;
+	private String model;
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.

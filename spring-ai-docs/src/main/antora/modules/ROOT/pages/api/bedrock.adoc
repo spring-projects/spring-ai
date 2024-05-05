@@ -47,6 +47,8 @@ spring.ai.bedrock.aws.region=us-east-1
 
 spring.ai.bedrock.aws.access-key=YOUR_ACCESS_KEY
 spring.ai.bedrock.aws.secret-key=YOUR_SECRET_KEY
+
+spring.ai.bedrock.aws.timeout=10m
 ----
 
 The `region` property is compulsory.
@@ -61,6 +63,18 @@ AWS credentials are resolved in the following order:
 6. Credentials delivered through the Amazon EC2 container service if the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and the security manager has permission to access the variable.
 7. Instance profile credentials delivered through the Amazon EC2 metadata service or set the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables.
 
+AWS region is resolved in the following order:
+
+1. Spring-AI Bedrock `spring.ai.bedrock.aws.region` property.
+2. Java System Properties - `aws.region`.
+3. Environment Variables - `AWS_REGION`.
+4. Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI.
+5. Instance profile region delivered through the Amazon EC2 metadata service.
+
+In addition to the standard Spring-AI Bedrock credentials and region properties configuration, Spring-AI provides support for custom `AwsCredentialsProvider` and `AwsRegionProvider` beans.
+
+NOTE: For example, using Spring-AI and https://spring.io/projects/spring-cloud-aws[Spring Cloud for Amazon Web Services] at the same time. Spring-AI is compatible with Spring Cloud for Amazon Web Services credential configuration.
+
 === Enable selected Bedrock model
 
 NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.bedrock.<model>.<chat|embedding>.enabled=true` property.
@@ -71,27 +85,26 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 |====
 | Model      | Chat | Chat Streaming | Embedding
 
-| llama2     | Yes  | Yes            | No
+| llama     | Yes  | Yes            | No
 | jurassic2  | Yes  | No             | No
 | cohere     | Yes  | Yes            | Yes
-| anthropic  | Yes  | Yes            | No
+| anthropic 2 | Yes  | Yes            | No
+| anthropic 3  | Yes  | Yes            | No
 | jurassic2 (WIP)  | Yes  | No             | No
 | titan      | Yes  | Yes            | Yes (however, no batch support)
 |====
 
-For example, to enable the Bedrock Llama2 Chat client, you need to set `spring.ai.bedrock.llama2.chat.enabled=true`.
+For example, to enable the Bedrock Llama Chat client, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
 
 Next, you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties to configure each model as provided.
 
 For more information, refer to the documentation below for each supported model.
 
-* xref:api/chat/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
-* xref:api/chat/bedrock/bedrock-llama2.adoc[Spring AI Bedrock Llama2 Chat]: `spring.ai.bedrock.llama2.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic 2 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-anthropic3.adoc[Spring AI Bedrock Anthropic 3 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-llama.adoc[Spring AI Bedrock Llama Chat]: `spring.ai.bedrock.llama.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-cohere.adoc[Spring AI Bedrock Cohere Chat]: `spring.ai.bedrock.cohere.chat.enabled=true`
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-titan.adoc[Spring AI Bedrock Titan Chat]: `spring.ai.bedrock.titan.chat.enabled=true`
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-jurassic2.adoc[Spring AI Bedrock Ai21 Jurassic2 Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`
-
-
-// * xref:api/chat/bedrock/bedrock-jurassic2-chat.adoc[(WIP)Spring AI Bedrock Jurassic Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`

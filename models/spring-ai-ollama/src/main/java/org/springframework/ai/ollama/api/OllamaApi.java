@@ -139,6 +139,8 @@ public class OllamaApi {
 	 * context will be returned. You may choose to use the raw parameter if you are
 	 * specifying a full templated prompt in your request to the API, and are managing
 	 * history yourself.
+	 * @param images (optional) a list of base64-encoded images (for multimodal models such as llava).
+	 * @param keepAlive (optional) controls how long the model will stay loaded into memory following the request (default: 5m).
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateRequest(
@@ -150,7 +152,9 @@ public class OllamaApi {
 			@JsonProperty("template") String template,
 			@JsonProperty("context") List<Integer> context,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("raw") Boolean raw) {
+			@JsonProperty("raw") Boolean raw,
+			@JsonProperty("images") List<String> images,
+			@JsonProperty("keep_alive") String keepAlive) {
 
 		/**
 		 * Short cut constructor to create a CompletionRequest without options.
@@ -159,7 +163,7 @@ public class OllamaApi {
 		 * @param stream Whether to stream the response.
 		 */
 		public GenerateRequest(String model, String prompt, Boolean stream) {
-			this(model, prompt, null, null, null, null, null, stream, null);
+			this(model, prompt, null, null, null, null, null, stream, null, null, null);
 		}
 
 		/**
@@ -170,7 +174,7 @@ public class OllamaApi {
 		 * @param stream Whether to stream the response.
 		 */
 		public GenerateRequest(String model, String prompt, boolean enableJsonFormat, Boolean stream) {
-			this(model, prompt, (enableJsonFormat) ? "json" : null, null, null, null, null, stream, null);
+			this(model, prompt, (enableJsonFormat) ? "json" : null, null, null, null, null, stream, null, null, null);
 		}
 
 		/**
@@ -192,6 +196,8 @@ public class OllamaApi {
 			private List<Integer> context;
 			private Boolean stream;
 			private Boolean raw;
+			private List<String> images;
+			private String keepAlive;
 
 			public Builder(String prompt) {
 				this.prompt = prompt;
@@ -242,8 +248,18 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withImages(List<String> images) {
+				this.images = images;
+				return this;
+			}
+
+			public Builder withKeepAlive(String keepAlive) {
+				this.keepAlive = keepAlive;
+				return this;
+			}
+
 			public GenerateRequest build() {
-				return new GenerateRequest(model, prompt, format, options, system, template, context, stream, raw);
+				return new GenerateRequest(model, prompt, format, options, system, template, context, stream, raw, images, keepAlive);
 			}
 
 		}
@@ -399,8 +415,9 @@ public class OllamaApi {
 	 * @param model The model to use for completion.
 	 * @param messages The list of messages to chat with.
 	 * @param stream Whether to stream the response.
-	 * @param format The format to return the response in. Currently the only accepted
+	 * @param format The format to return the response in. Currently, the only accepted
 	 * value is "json".
+	 * @param keepAlive The duration to keep the model loaded in ollama while idle. https://pkg.go.dev/time#ParseDuration
 	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
 	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
 	 * map.
@@ -411,6 +428,7 @@ public class OllamaApi {
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options) {
 
 		public static Builder builder(String model) {
@@ -423,6 +441,7 @@ public class OllamaApi {
 			private List<Message> messages = List.of();
 			private boolean stream = false;
 			private String format;
+			private String keepAlive;
 			private Map<String, Object> options = Map.of();
 
 			public Builder(String model) {
@@ -445,21 +464,26 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withKeepAlive(String keepAlive) {
+				this.keepAlive = keepAlive;
+				return this;
+			}
+
 			public Builder withOptions(Map<String, Object> options) {
-				Objects.requireNonNullElse(options, "The options can not be null.");
+				Objects.requireNonNull(options, "The options can not be null.");
 
 				this.options = OllamaOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
 			public Builder withOptions(OllamaOptions options) {
-				Objects.requireNonNullElse(options, "The options can not be null.");
+				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 
 			public ChatRequest build() {
-				return new ChatRequest(model, messages, stream, format, options);
+				return new ChatRequest(model, messages, stream, format, keepAlive, options);
 			}
 		}
 	}
@@ -481,9 +505,9 @@ public class OllamaApi {
 	 * @param evalCount number of tokens in the response.
 	 * @param evalDuration time spent generating the response.
 	 * @see <a href=
-	 * "https://github.com/jmorganca/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
+	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
 	 * Completion API</a>
-	 * @see <a href="https://github.com/jmorganca/ollama/blob/main/api/types.go">Ollama
+	 * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama
 	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
@@ -551,6 +575,7 @@ public class OllamaApi {
 	 *
 	 * @param model The name of model to generate embeddings from.
 	 * @param prompt The text to generate embeddings for.
+	 * @param keepAlive Controls how long the model will stay loaded into memory following the request (default: 5m).
 	 * @param options Additional model parameters listed in the documentation for the
 	 * Modelfile such as temperature.
 	 */
@@ -558,6 +583,7 @@ public class OllamaApi {
 	public record EmbeddingRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("prompt") String prompt,
+			@JsonProperty("keep_alive") Duration keepAlive,
 			@JsonProperty("options") Map<String, Object> options) {
 
 		/**
@@ -566,7 +592,7 @@ public class OllamaApi {
 		 * @param prompt The text to generate embeddings for.
 		 */
 		public EmbeddingRequest(String model, String prompt) {
-			this(model, prompt, null);
+			this(model, prompt, null, null);
 		}
 	}
 

@@ -59,7 +59,8 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
+| spring.ai.bedrock.aws.region     | AWS region to use.  | us-east-1
+| spring.ai.bedrock.aws.timeout    | AWS timeout to use. | 5m
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
@@ -115,6 +116,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source]
 ----
 spring.ai.bedrock.aws.region=eu-central-1
+spring.ai.bedrock.aws.timeout=1000ms
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 
@@ -184,7 +186,9 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 TitanChatBedrockApi titanApi = new TitanChatBedrockApi(
     TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
 	EnvironmentVariableCredentialsProvider.create(),
-    Region.US_EAST_1.id(), new ObjectMapper());
+    Region.US_EAST_1.id(),
+    new ObjectMapper(),
+    Duration.ofMillis(1000L));
 
 BedrockTitanChatClient chatClient = new BedrockTitanChatClient(titanApi,
     BedrockTitanChatOptions.builder()
@@ -216,7 +220,7 @@ Here is a simple snippet how to use the api programmatically:
 [source,java]
 ----
 TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatCompletionModel.TITAN_TEXT_EXPRESS_V1.id(),
-		Region.EU_CENTRAL_1.id());
+		Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
 
 TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
 	.withTemperature(0.5f)

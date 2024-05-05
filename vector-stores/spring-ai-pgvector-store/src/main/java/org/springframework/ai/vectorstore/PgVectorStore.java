@@ -60,6 +60,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	public static final String VECTOR_TABLE_NAME = "vector_store";
 
+	public static final String VECTOR_INDEX_NAME = "spring_ai_vector_index";
+
 	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final JdbcTemplate jdbcTemplate;
@@ -352,8 +354,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
-					CREATE INDEX ON %s USING %s (embedding %s)
-					""", VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
+					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
+					""", VECTOR_INDEX_NAME, VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
 		}
 	}
 

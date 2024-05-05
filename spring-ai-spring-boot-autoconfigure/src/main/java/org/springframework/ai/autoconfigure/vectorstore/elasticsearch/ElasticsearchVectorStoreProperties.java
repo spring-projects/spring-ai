@@ -19,12 +19,31 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Eddú Meléndez
+ * @author Wei Jiang
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = "spring.ai.vectorstore.elasticsearch")
 public class ElasticsearchVectorStoreProperties {
 
+	/**
+	 * The name of the index to store the vectors.
+	 */
 	private String indexName;
+
+	/**
+	 * The number of dimensions in the vector.
+	 */
+	private Integer dimensions;
+
+	/**
+	 * Whether to use dense vector indexing.
+	 */
+	private Boolean denseVectorIndexing;
+
+	/**
+	 * The similarity function to use.
+	 */
+	private String similarity;
 
 	public String getIndexName() {
 		return this.indexName;
@@ -32,6 +51,30 @@ public class ElasticsearchVectorStoreProperties {
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
+	}
+
+	public Integer getDimensions() {
+		return dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
+	}
+
+	public Boolean isDenseVectorIndexing() {
+		return denseVectorIndexing;
+	}
+
+	public void setDenseVectorIndexing(Boolean denseVectorIndexing) {
+		this.denseVectorIndexing = denseVectorIndexing;
+	}
+
+	public String getSimilarity() {
+		return similarity;
+	}
+
+	public void setSimilarity(String similarity) {
+		this.similarity = similarity;
 	}
 
 }

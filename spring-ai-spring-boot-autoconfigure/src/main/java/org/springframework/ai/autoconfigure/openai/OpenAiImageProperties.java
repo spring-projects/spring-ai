@@ -16,6 +16,7 @@
 package org.springframework.ai.autoconfigure.openai;
 
 import org.springframework.ai.openai.OpenAiImageOptions;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -30,6 +31,8 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
+	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.DALL_E_3.getValue();
+
 	/**
 	 * Enable OpenAI Image client.
 	 */
@@ -39,7 +42,7 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 	 * Options for OpenAI Image API.
 	 */
 	@NestedConfigurationProperty
-	private OpenAiImageOptions options = OpenAiImageOptions.builder().build();
+	private OpenAiImageOptions options = OpenAiImageOptions.builder().withModel(DEFAULT_IMAGE_MODEL).build();
 
 	public OpenAiImageOptions getOptions() {
 		return options;

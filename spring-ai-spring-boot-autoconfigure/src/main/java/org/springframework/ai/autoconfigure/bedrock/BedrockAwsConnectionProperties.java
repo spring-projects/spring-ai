@@ -17,6 +17,8 @@ package org.springframework.ai.autoconfigure.bedrock;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
+
 /**
  * Configuration properties for Bedrock AWS connection.
  *
@@ -43,6 +45,11 @@ public class BedrockAwsConnectionProperties {
 	 */
 	private String secretKey;
 
+	/**
+	 * Set model timeout, Defaults 5 min.
+	 */
+	private Duration timeout = Duration.ofMinutes(5L);
+
 	public String getRegion() {
 		return region;
 	}
@@ -65,6 +72,14 @@ public class BedrockAwsConnectionProperties {
 
 	public void setSecretKey(String secretKey) {
 		this.secretKey = secretKey;
+	}
+
+	public Duration getTimeout() {
+		return timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
 	}
 
 }

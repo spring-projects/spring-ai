@@ -59,7 +59,7 @@ import org.springframework.util.CollectionUtils;
  */
 public final class ModelOptionsUtils {
 
-	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+	public final static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.registerModule(new JavaTimeModule());
