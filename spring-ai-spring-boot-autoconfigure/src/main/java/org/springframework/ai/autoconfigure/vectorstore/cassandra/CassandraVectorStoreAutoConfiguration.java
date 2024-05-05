@@ -57,6 +57,9 @@ public class CassandraVectorStoreAutoConfiguration {
 		if (properties.getDisallowSchemaCreation()) {
 			builder = builder.disallowSchemaChanges();
 		}
+		if (properties.getReturnEmbeddings()) {
+			builder = builder.returnEmbeddings();
+		}
 
 		return new CassandraVectorStore(builder.build(), embeddingClient);
 	}
