@@ -38,19 +38,20 @@ public class TypesenseVectorStoreIT {
 
 	private static Path tempDirectory;
 
-    static {
-        try {
-            tempDirectory = Files.createTempDirectory("typesense-test");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	static {
+		try {
+			tempDirectory = Files.createTempDirectory("typesense-test");
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-    @Container
+	@Container
 	private static GenericContainer<?> typesenseContainer = new GenericContainer<>("typesense/typesense:26.0")
-			.withExposedPorts(8108)
-			.withCommand("--data-dir", "/data", "--api-key=xyz", "--enable-cors")
-			.withFileSystemBind(tempDirectory.toString(), "/data", BindMode.READ_WRITE);
+		.withExposedPorts(8108)
+		.withCommand("--data-dir", "/data", "--api-key=xyz", "--enable-cors")
+		.withFileSystemBind(tempDirectory.toString(), "/data", BindMode.READ_WRITE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -85,9 +86,13 @@ public class TypesenseVectorStoreIT {
 
 			vectorStore.add(documents);
 
+			Map<String, Object> info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
+
+			assertThat(info.get("num_documents")).isEqualTo(3L);
+
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring"));
 
-			assertThat(results).hasSize(1);
+			assertThat(results).hasSize(3);
 		});
 	}
 
@@ -124,12 +129,12 @@ public class TypesenseVectorStoreIT {
 	}
 
 	@AfterAll
-    static void deleteContainer() {
-		if(typesenseContainer != null) {
+	static void deleteContainer() {
+		if (typesenseContainer != null) {
 			typesenseContainer.stop();
 		}
 
-		if(tempDirectory != null) {
+		if (tempDirectory != null) {
 			tempDirectory.toFile().delete();
 		}
 	}
