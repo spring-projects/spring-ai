@@ -26,13 +26,9 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.ollama.OllamaContainer;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -54,7 +50,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.testcontainers.ollama.OllamaContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
