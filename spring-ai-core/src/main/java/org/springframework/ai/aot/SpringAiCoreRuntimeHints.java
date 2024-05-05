@@ -15,7 +15,13 @@
  */
 package org.springframework.ai.aot;
 
-import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.FunctionMessage;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;

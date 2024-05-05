@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.bedrock.llama2;
+package org.springframework.ai.bedrock.llama;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import java.time.Duration;
@@ -30,18 +32,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
-public class BedrockLlama2CreateRequestTests {
+@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+public class BedrockLlamaCreateRequestTests {
 
-	private Llama2ChatBedrockApi api = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
+	private LlamaChatBedrockApi api = new LlamaChatBedrockApi(LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
 			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
 			Duration.ofMinutes(2));
 
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new BedrockLlama2ChatClient(api,
-				BedrockLlama2ChatOptions.builder().withTemperature(66.6f).withMaxGenLen(666).withTopP(0.66f).build());
+		var client = new BedrockLlamaChatClient(api,
+				BedrockLlamaChatOptions.builder().withTemperature(66.6f).withMaxGenLen(666).withTopP(0.66f).build());
 
 		var request = client.createRequest(new Prompt("Test message content"));
 
@@ -51,7 +56,7 @@ public class BedrockLlama2CreateRequestTests {
 		assertThat(request.maxGenLen()).isEqualTo(666);
 
 		request = client.createRequest(new Prompt("Test message content",
-				BedrockLlama2ChatOptions.builder().withTemperature(99.9f).withMaxGenLen(999).withTopP(0.99f).build()));
+				BedrockLlamaChatOptions.builder().withTemperature(99.9f).withMaxGenLen(999).withTopP(0.99f).build()));
 
 		assertThat(request.prompt()).isNotEmpty();
 		assertThat(request.temperature()).isEqualTo(99.9f);

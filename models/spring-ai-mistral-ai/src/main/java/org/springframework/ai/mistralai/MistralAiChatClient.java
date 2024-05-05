@@ -177,7 +177,7 @@ public class MistralAiChatClient extends
 	private ChatCompletion toChatCompletion(ChatCompletionChunk chunk) {
 		List<Choice> choices = chunk.choices()
 			.stream()
-			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason()))
+			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason(), cc.logprobs()))
 			.toList();
 
 		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, null);
@@ -285,7 +285,13 @@ public class MistralAiChatClient extends
 	@SuppressWarnings("null")
 	@Override
 	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
-		return chatCompletion.getBody().choices().iterator().next().message();
+		ChatCompletionMessage msg = chatCompletion.getBody().choices().iterator().next().message();
+		if (msg.role() == null) {
+			// add missing role
+			msg = new ChatCompletionMessage(msg.content(), ChatCompletionMessage.Role.ASSISTANT, msg.name(),
+					msg.toolCalls());
+		}
+		return msg;
 	}
 
 	@Override

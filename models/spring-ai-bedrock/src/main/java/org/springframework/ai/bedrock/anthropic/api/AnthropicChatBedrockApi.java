@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
@@ -32,6 +33,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 // @formatter:off
@@ -88,6 +90,20 @@ public class AnthropicChatBedrockApi extends
 	 * @param timeout The timeout to use.
 	 */
 	public AnthropicChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public AnthropicChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}

@@ -1,9 +1,32 @@
 [[testcontainers]]
 = Testcontainers
 
+Spring AI provides Spring Boot auto-configuration for establishing a connection to a model service
+or vector store running via Testcontainers. To enable it, add the following dependency
+to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-spring-boot-testcontainers</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-spring-boot-testcontainers'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
 == Service Connections
 
-The following service connection factories are provided in the spring-ai-spring-boot-testcontainers jar:
+The following service connection factories are provided in the `spring-ai-spring-boot-testcontainers` module:
 
 [cols="|,|"]
 |====

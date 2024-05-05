@@ -112,9 +112,10 @@ public class AzureOpenAiEmbeddingClient extends AbstractEmbeddingClient {
 	private List<Embedding> generateEmbeddingList(List<EmbeddingItem> nativeData) {
 		List<Embedding> data = new ArrayList<>();
 		for (EmbeddingItem nativeDatum : nativeData) {
-			List<Double> nativeDatumEmbedding = nativeDatum.getEmbedding();
+			List<Float> nativeDatumEmbedding = nativeDatum.getEmbedding();
 			int nativeIndex = nativeDatum.getPromptIndex();
-			Embedding embedding = new Embedding(nativeDatumEmbedding, nativeIndex);
+			Embedding embedding = new Embedding(nativeDatumEmbedding.stream().map(f -> f.doubleValue()).toList(),
+					nativeIndex);
 			data.add(embedding);
 		}
 		return data;

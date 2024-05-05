@@ -4,9 +4,9 @@ This section walks you through setting up `CassandraVectorStore` to store docume
 
 == What is Apache Cassandra ?
 
-link:https://cassandra.apache.org[Apache Cassandra] is a true open source distributed database reknown for scalability and high availability without compromising performance.
+link:https://cassandra.apache.org[Apache Cassandra®] is a true open source distributed database reknown for linear scalability, proven fault-tolerance and low latency, making it the perfect platform for mission-critical transactional data.
 
-Linear scalability, proven fault-tolerance and low latency on commodity hardware makes it the perfect platform for mission-critical data.  Its Vector Similarity Search (VSS) is based on the JVector library that ensures best-in-class performance and relevancy.
+Its Vector Similarity Search (VSS) is based on the JVector library that ensures best-in-class performance and relevancy.
 
 A vector search in Apache Cassandra is done as simply as:
 ```
@@ -15,9 +15,13 @@ SELECT content FROM table ORDER BY content_vector ANN OF query_embedding ;
 
 More docs on this can be read https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
 
-The Spring AI Cassandra Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.  This vector store may also equally be used for non-RAG non_AI use-cases, e.g. semantic searcing in an existing database.  The Vector Store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
+This Spring AI Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.
 
-== What is JVector Vector Search ?
+The store can also be used for non-RAG use-cases in an existing database, e.g. semantic searches, geo-proximity searches, etc.
+
+The store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
+
+== What is JVector ?
 
 link:https://github.com/jbellis/jvector[JVector] is a pure Java embedded vector search engine.
 
@@ -70,13 +74,6 @@ Add these dependencies to your project:
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-* If for example you want to use the OpenAI modules, remember to provide your OpenAI API Key. Set it as an environment variable like so:
-
-[source,bash]
-----
-export SPRING_AI_OPENAI_API_KEY='Your_OpenAI_API_Key'
-----
-
 
 == Usage
 
@@ -93,21 +90,14 @@ public VectorStore vectorStore(EmbeddingClient embeddingClient) {
 }
 ----
 
-NOTE: It is more convenient and preferred to create the `CassandraVectorStore` as a Bean.
-But if you decide you can create it manually.
-
 [NOTE]
 ====
-The default configuration connects to Cassandra at localhost:9042 and will automatically create the default schema at `springframework_ai_vector.springframework_ai_vector_store`.
-
-Please see `CassandraVectorStoreConfig.Builder` for all the configuration options.
+The default configuration connects to Cassandra at `localhost:9042` and will automatically create a default schema in keyspace `springframework`, table `ai_vector_store`.
 ====
 
 [NOTE]
 ====
-The Cassandra Java Driver is easiest configured via the `application.conf` file on the classpath.
-
-More info can be found link: https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration[here].
+The Cassandra Java Driver is easiest configured via an `application.conf` file on the classpath.  More info https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration[here].
 ====
 
 Then in your main code, create some documents:
@@ -148,7 +138,7 @@ List<Document> results = vectorStore.similaritySearch(
 
 === Metadata filtering
 
-You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the CassandraVectorStore as well.  Metadata fields must be configured in `CassandraVectorStoreConfig`.
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the CassandraVectorStore as well.  Metadata columns must be configured in `CassandraVectorStoreConfig`.
 
 For example, you can use either the text expression language:
 
@@ -173,7 +163,9 @@ vectorStore.similaritySearch(
 
 The portable filter expressions get automatically converted into link:https://cassandra.apache.org/doc/latest/cassandra/developing/cql/index.html[CQL queries].
 
-Metadata fields to be searchable need to be either primary key columns or SAI indexed.  To do this configure the metadata field with the `SchemaColumnTags.INDEXED`.
+For metadata columns to be searchable they must be either primary keys or SAI indexed.  To make non-primary-key columns indexed configure the metadata column with the `SchemaColumnTags.INDEXED`.
+
+
 
 
 == Advanced Example: Vector Store ontop full Wikipedia dataset
@@ -187,7 +179,8 @@ Create the schema in the Cassandra database first:
 
 [source,bash]
 ----
-wget https://raw.githubusercontent.com/datastax-labs/colbert-wikipedia-data/main/schema.cql -O colbert-wikipedia-schema.cql
+wget https://s.apache.org/colbert-wikipedia-schema-cql -O colbert-wikipedia-schema.cql
+
 cqlsh -f colbert-wikipedia-schema.cql
 ----
 
@@ -212,14 +205,14 @@ public CassandraVectorStore store(EmbeddingClient embeddingClient) {
         .withTableName("articles")
         .withPartitionKeys(partitionColumns)
         .withClusteringKeys(clusteringColumns)
-        .withContentFieldName("body")
-        .withEmbeddingFieldName("all_minilm_l6_v2_embedding")
+        .withContentColumnName("body")
+        .withEmbeddingColumndName("all_minilm_l6_v2_embedding")
         .withIndexName("all_minilm_l6_v2_ann")
         .disallowSchemaChanges()
-        .addMetadataFields(extraColumns)
+        .addMetadataColumns(extraColumns)
         .withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
-            // the deliminator used to join fields together into the document's id
-            // is arbitary, here "§¶" is used
+            // the deliminator used to join fields together into the document's id is arbitary
+            // here "§¶" is used
             if (primaryKeys.isEmpty()) {
                 return "test§¶0";
             }
@@ -243,8 +236,11 @@ public EmbeddingClient embeddingClient() {
 }
 ----
 
+
+== Complete wikipedia dataset
+
 And, if you would like to load the full wikipedia dataset.
-First download the `simplewiki-sstable.tar` from this link https://drive.google.com/file/d/1CcMMsj8jTKRVGep4A7hmOSvaPepsaKYP/view?usp=share_link .  This will take a while, the file is tens of GBs.
+First download the `simplewiki-sstable.tar` from this link https://s.apache.org/simplewiki-sstable-tar .  This will take a while, the file is tens of GBs.
 
 [source,bash]
 ----

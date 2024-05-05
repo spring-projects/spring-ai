@@ -25,9 +25,10 @@ import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingOptions;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
-import org.springframework.ai.bedrock.llama2.BedrockLlama2ChatOptions;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi;
+import org.springframework.ai.bedrock.llama.BedrockLlamaChatOptions;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
 import org.springframework.ai.bedrock.titan.BedrockTitanChatOptions;
+import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingOptions;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.aot.hint.MemberCategory;
@@ -43,6 +44,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
  * @author Josh Long
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Wei Jiang
  */
 public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -63,14 +65,16 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereEmbeddingOptions.class))
 			hints.reflection().registerType(tr, mcs);
 
-		for (var tr : findJsonAnnotatedClassesInPackage(Llama2ChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(LlamaChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockLlama2ChatOptions.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockLlamaChatOptions.class))
 			hints.reflection().registerType(tr, mcs);
 
 		for (var tr : findJsonAnnotatedClassesInPackage(TitanChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
 		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanChatOptions.class))
+			hints.reflection().registerType(tr, mcs);
+		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanEmbeddingOptions.class))
 			hints.reflection().registerType(tr, mcs);
 		for (var tr : findJsonAnnotatedClassesInPackage(TitanEmbeddingBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);

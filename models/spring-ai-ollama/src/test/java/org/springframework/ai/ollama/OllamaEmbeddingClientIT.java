@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.testcontainers.ollama.OllamaContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +46,7 @@ class OllamaEmbeddingClientIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
 
 	static String baseUrl;
 

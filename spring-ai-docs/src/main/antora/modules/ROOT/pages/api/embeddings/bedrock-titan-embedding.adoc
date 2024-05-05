@@ -81,6 +81,22 @@ The prefix `spring.ai.bedrock.titan.embedding` (defined in `BedrockTitanEmbeddin
 Supported values are: `amazon.titan-embed-image-v1` and `amazon.titan-embed-text-v1`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
+== Runtime Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanEmbeddingOptions.java[BedrockTitanEmbeddingOptions.java] provides model configurations, such as `input-type`.
+On start-up, the default options can be configured with the `BedrockTitanEmbeddingClient(api).withInputType(type)` method or the `spring.ai.bedrock.titan.embedding.input-type` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `EmbeddingRequest` call.
+For example to override the default temperature for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingClient.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        BedrockTitanEmbeddingOptions.builder()
+        	.withInputType(InputType.TEXT)
+        .build()));
+----
 
 == Sample Controller
 
@@ -154,7 +170,7 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 var titanEmbeddingApi = new TitanEmbeddingBedrockApi(
 	TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id());
 
-var embeddingClient  new BedrockTitanEmbeddingClient(titanEmbeddingApi);
+var embeddingClient = new BedrockTitanEmbeddingClient(titanEmbeddingApi);
 
 EmbeddingResponse embeddingResponse = embeddingClient
 	.embedForResponse(List.of("Hello World")); // NOTE titan does not support batch embedding.

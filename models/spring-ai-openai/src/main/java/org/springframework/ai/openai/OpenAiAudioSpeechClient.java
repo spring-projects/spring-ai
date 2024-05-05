@@ -23,7 +23,11 @@ import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
 import org.springframework.ai.openai.api.common.OpenAiApiException;
-import org.springframework.ai.openai.audio.speech.*;
+import org.springframework.ai.openai.audio.speech.Speech;
+import org.springframework.ai.openai.audio.speech.SpeechClient;
+import org.springframework.ai.openai.audio.speech.SpeechPrompt;
+import org.springframework.ai.openai.audio.speech.SpeechResponse;
+import org.springframework.ai.openai.audio.speech.StreamingSpeechClient;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.http.ResponseEntity;
@@ -133,7 +137,7 @@ public class OpenAiAudioSpeechClient implements SpeechClient, StreamingSpeechCli
 
 		if (request.getOptions() != null) {
 			if (request.getOptions() instanceof OpenAiAudioSpeechOptions runtimeOptions) {
-				options = this.merge(options, runtimeOptions);
+				options = this.merge(runtimeOptions, options);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type SpeechOptions: "

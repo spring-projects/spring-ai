@@ -22,16 +22,22 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingClient.InputType;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,7 +52,8 @@ class BedrockTitanEmbeddingClientIT {
 	@Test
 	void singleEmbedding() {
 		assertThat(embeddingClient).isNotNull();
-		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
+		EmbeddingResponse embeddingResponse = embeddingClient.call(new EmbeddingRequest(List.of("Hello World"),
+				BedrockTitanEmbeddingOptions.builder().withInputType(InputType.TEXT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingClient.dimensions()).isEqualTo(1024);
@@ -59,7 +66,8 @@ class BedrockTitanEmbeddingClientIT {
 			.getContentAsByteArray();
 
 		EmbeddingResponse embeddingResponse = embeddingClient
-			.embedForResponse(List.of(Base64.getEncoder().encodeToString(image)));
+			.call(new EmbeddingRequest(List.of(Base64.getEncoder().encodeToString(image)),
+					BedrockTitanEmbeddingOptions.builder().withInputType(InputType.IMAGE).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingClient.dimensions()).isEqualTo(1024);
@@ -70,7 +78,8 @@ class BedrockTitanEmbeddingClientIT {
 
 		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
-			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), Region.US_EAST_1.id(),
+			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
 					Duration.ofMinutes(2));
 		}
 

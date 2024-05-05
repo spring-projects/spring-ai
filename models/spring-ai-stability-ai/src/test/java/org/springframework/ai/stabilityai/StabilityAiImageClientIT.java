@@ -17,7 +17,12 @@ package org.springframework.ai.stabilityai;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.image.*;
+
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageClient;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

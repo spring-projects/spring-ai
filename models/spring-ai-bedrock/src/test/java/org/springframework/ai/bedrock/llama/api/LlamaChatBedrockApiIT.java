@@ -13,47 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.bedrock.llama2.api;
+package org.springframework.ai.bedrock.llama.api;
 
 import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import reactor.core.publisher.Flux;
-import software.amazon.awssdk.regions.Region;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatRequest;
+import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatResponse;
 
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatModel;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatRequest;
-import org.springframework.ai.bedrock.llama2.api.Llama2ChatBedrockApi.Llama2ChatResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import reactor.core.publisher.Flux;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
-public class Llama2ChatBedrockApiIT {
+public class LlamaChatBedrockApiIT {
 
-	private Llama2ChatBedrockApi llama2ChatApi = new Llama2ChatBedrockApi(Llama2ChatModel.LLAMA2_70B_CHAT_V1.id(),
-			Region.US_EAST_1.id(), Duration.ofMinutes(2));
+	private LlamaChatBedrockApi llamaChatApi = new LlamaChatBedrockApi(LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
+			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+			Duration.ofMinutes(2));
 
 	@Test
 	public void chatCompletion() {
 
-		Llama2ChatRequest request = Llama2ChatRequest.builder("Hello, my name is")
+		LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
 			.withTemperature(0.9f)
 			.withTopP(0.9f)
 			.withMaxGenLen(20)
 			.build();
 
-		Llama2ChatResponse response = llama2ChatApi.chatCompletion(request);
+		LlamaChatResponse response = llamaChatApi.chatCompletion(request);
 
 		System.out.println(response.generation());
 		assertThat(response).isNotNull();
 		assertThat(response.generation()).isNotEmpty();
-		assertThat(response.promptTokenCount()).isEqualTo(6);
 		assertThat(response.generationTokenCount()).isGreaterThan(10);
 		assertThat(response.generationTokenCount()).isLessThanOrEqualTo(20);
 		assertThat(response.stopReason()).isNotNull();
@@ -63,15 +67,15 @@ public class Llama2ChatBedrockApiIT {
 	@Test
 	public void chatCompletionStream() {
 
-		Llama2ChatRequest request = new Llama2ChatRequest("Hello, my name is", 0.9f, 0.9f, 20);
-		Flux<Llama2ChatResponse> responseStream = llama2ChatApi.chatCompletionStream(request);
-		List<Llama2ChatResponse> responses = responseStream.collectList().block();
+		LlamaChatRequest request = new LlamaChatRequest("Hello, my name is", 0.9f, 0.9f, 20);
+		Flux<LlamaChatResponse> responseStream = llamaChatApi.chatCompletionStream(request);
+		List<LlamaChatResponse> responses = responseStream.collectList().block();
 
 		assertThat(responses).isNotNull();
 		assertThat(responses).hasSizeGreaterThan(10);
 		assertThat(responses.get(0).generation()).isNotEmpty();
 
-		Llama2ChatResponse lastResponse = responses.get(responses.size() - 1);
+		LlamaChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.stopReason()).isNotNull();
 		assertThat(lastResponse.amazonBedrockInvocationMetrics()).isNotNull();
 	}

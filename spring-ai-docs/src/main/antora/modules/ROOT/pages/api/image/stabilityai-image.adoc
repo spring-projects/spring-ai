@@ -7,7 +7,7 @@ Spring AI supports Stability AI's https://platform.stability.ai/docs/api-referen
 You will need to create an API key with Stability AI to access their AI models, follow their https://platform.stability.ai/docs/getting-started/authentication[Getting Started documentation].
 
 The Spring AI project defines a configuration property named `spring.ai.stabilityai.api-key` that you should set to the value of the `API Key` obtained from Stability AI.
-Exporting an environment variable in one way to set that configuration property.
+Exporting an environment variable is one way to set that configuration property.
 
 [source,shell]
 ----

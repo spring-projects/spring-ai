@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -42,21 +44,26 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.lang.Nullable;
 
 /**
  * Configuration for the Cassandra vector store.
  *
- * All metadata fields configured to the store will be fetched and added to all queried
+ * All metadata columns configured to the store will be fetched and added to all queried
  * documents.
  *
- * If you wish to metadata search against a field its 'searchable' argument must be true.
+ * To filter expression search against a metadata column configure it with
+ * SchemaColumnTags.INDEXED
  *
  * The Cassandra Java Driver is configured via the application.conf resource found in the
  * classpath. See
  * https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration
  *
+ * @author Mick Semb Wever
  * @since 1.0.0
  */
 public final class CassandraVectorStoreConfig implements AutoCloseable {
@@ -67,13 +74,15 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final String DEFAULT_ID_NAME = "id";
 
-	public static final String DEFAULT_INDEX_NAME = "embedding_index";
+	public static final String DEFAULT_INDEX_SUFFIX = "idx";
 
 	public static final String DEFAULT_CONTENT_COLUMN_NAME = "content";
 
 	public static final String DEFAULT_EMBEDDING_COLUMN_NAME = "embedding";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
+	public static final int DEFAULT_ADD_CONCURRENCY = 16;
+
+	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreConfig.class);
 
 	record Schema(String keyspace, String table, List<SchemaColumn> partitionKeys, List<SchemaColumn> clusteringKeys,
 			String content, String embedding, String index, Set<SchemaColumn> metadataColumns) {
@@ -123,9 +132,13 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 	final boolean disallowSchemaChanges;
 
+	final boolean returnEmbeddings;
+
 	final DocumentIdTranslator documentIdTranslator;
 
 	final PrimaryKeyTranslator primaryKeyTranslator;
+
+	final Executor executor;
 
 	private final boolean closeSessionOnClose;
 
@@ -137,8 +150,10 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				builder.contentColumnName, builder.embeddingColumnName, builder.indexName, builder.metadataColumns);
 
 		this.disallowSchemaChanges = builder.disallowSchemaCreation;
+		this.returnEmbeddings = builder.returnEmbeddings;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
+		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
 	}
 
 	public static Builder builder() {
@@ -177,7 +192,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 		private List<SchemaColumn> clusteringKeys = List.of();
 
-		private String indexName = DEFAULT_INDEX_NAME;
+		private String indexName = null;
 
 		private String contentColumnName = DEFAULT_CONTENT_COLUMN_NAME;
 
@@ -186,6 +201,10 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private boolean disallowSchemaCreation = false;
+
+		private boolean returnEmbeddings = false;
+
+		private int fixedThreadPoolExecutorSize = DEFAULT_ADD_CONCURRENCY;
 
 		private DocumentIdTranslator documentIdTranslator = (String id) -> List.of(id);
 
@@ -246,6 +265,10 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
+		/**
+		 * defaults (if null) to '&lt;table_name&gt;_&lt;embedding_column_name&gt;_idx'
+		 **/
+		@Nullable
 		public Builder withIndexName(String name) {
 			this.indexName = name;
 			return this;
@@ -261,25 +284,49 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			return this;
 		}
 
-		public Builder addMetadataColumn(SchemaColumn... fields) {
+		public Builder addMetadataColumns(SchemaColumn... columns) {
 			Builder builder = this;
-			for (SchemaColumn f : fields) {
+			for (SchemaColumn f : columns) {
 				builder = builder.addMetadataColumn(f);
 			}
 			return builder;
 		}
 
-		public Builder addMetadataColumn(SchemaColumn field) {
+		public Builder addMetadataColumns(List<SchemaColumn> columns) {
+			Builder builder = this;
+			this.metadataColumns.addAll(columns);
+			return builder;
+		}
 
-			Preconditions.checkArgument(this.metadataColumns.stream().noneMatch((sc) -> sc.name().equals(field.name())),
-					"A metadata field with name %s has already been added", field.name());
+		public Builder addMetadataColumn(SchemaColumn column) {
 
-			this.metadataColumns.add(field);
+			Preconditions.checkArgument(
+					this.metadataColumns.stream().noneMatch((sc) -> sc.name().equals(column.name())),
+					"A metadata column with name %s has already been added", column.name());
+
+			this.metadataColumns.add(column);
 			return this;
 		}
 
 		public Builder disallowSchemaChanges() {
 			this.disallowSchemaCreation = true;
+			return this;
+		}
+
+		public Builder returnEmbeddings() {
+			this.returnEmbeddings = true;
+			return this;
+		}
+
+		/**
+		 * Executor to use when adding documents. The hotspot is the call to the
+		 * embeddingClient. For remote transformers you probably want a higher value to
+		 * utilize network. For local transformers you probably want a lower value to
+		 * avoid saturation.
+		 **/
+		public Builder withFixedThreadPoolExecutorSize(int threads) {
+			Preconditions.checkArgument(0 < threads);
+			this.fixedThreadPoolExecutorSize = threads;
 			return this;
 		}
 
@@ -294,6 +341,9 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 
 		public CassandraVectorStoreConfig build() {
+			if (null == this.indexName) {
+				this.indexName = String.format("%s_%s_%s", this.table, this.embeddingColumnName, DEFAULT_INDEX_SUFFIX);
+			}
 			for (SchemaColumn metadata : this.metadataColumns) {
 
 				Preconditions.checkArgument(
@@ -401,7 +451,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 		{
 			SimpleStatement indexStmt = SchemaBuilder.createIndex(this.schema.index)
 				.ifNotExists()
-				.custom("SAI")
+				.custom("StorageAttachedIndex")
 				.onTable(this.schema.keyspace, this.schema.table)
 				.andColumn(this.schema.embedding)
 				.build();
@@ -417,7 +467,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 
 				SimpleStatement indexStmt = SchemaBuilder.createIndex(String.format("%s_idx", metadata.name()))
 					.ifNotExists()
-					.custom("SAI")
+					.custom("StorageAttachedIndex")
 					.onTable(this.schema.keyspace, this.schema.table)
 					.andColumn(metadata.name())
 					.build();
@@ -428,39 +478,41 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	private void ensureTableExists(int vectorDimension) {
+		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).get().getTable(this.schema.table).isEmpty()) {
 
-		CreateTable createTable = null;
+			CreateTable createTable = null;
 
-		CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
-			.ifNotExists();
+			CreateTableStart createTableStart = SchemaBuilder.createTable(this.schema.keyspace, this.schema.table)
+				.ifNotExists();
 
-		for (SchemaColumn partitionKey : this.schema.partitionKeys) {
-			createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
-					partitionKey.type);
+			for (SchemaColumn partitionKey : this.schema.partitionKeys) {
+				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
+						partitionKey.type);
+			}
+			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
+				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
+			}
+
+			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
+
+			for (SchemaColumn metadata : this.schema.metadataColumns) {
+				createTable = createTable.withColumn(metadata.name(), metadata.type());
+			}
+
+			// https://datastax-oss.atlassian.net/browse/JAVA-3118
+			// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
+			// vectorDimension));
+
+			StringBuilder tableStmt = new StringBuilder(createTable.asCql());
+			tableStmt.setLength(tableStmt.length() - 1);
+			tableStmt.append(',')
+				.append(this.schema.embedding)
+				.append(" vector<float,")
+				.append(vectorDimension)
+				.append(">)");
+			logger.debug("Executing {}", tableStmt.toString());
+			this.session.execute(tableStmt.toString());
 		}
-		for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
-			createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
-		}
-
-		createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
-
-		for (SchemaColumn metadata : this.schema.metadataColumns) {
-			createTable = createTable.withColumn(metadata.name(), metadata.type());
-		}
-
-		// https://datastax-oss.atlassian.net/browse/JAVA-3118
-		// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
-		// vectorDimension));
-
-		StringBuilder tableStmt = new StringBuilder(createTable.asCql());
-		tableStmt.setLength(tableStmt.length() - 1);
-		tableStmt.append(',')
-			.append(this.schema.embedding)
-			.append(" vector<float,")
-			.append(vectorDimension)
-			.append(">)");
-		logger.debug("Executing {}", tableStmt.toString());
-		this.session.execute(tableStmt.toString());
 	}
 
 	private void ensureTableColumnsExist(int vectorDimension) {
@@ -480,7 +532,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 			if (column.isPresent()) {
 
 				Preconditions.checkArgument(column.get().getType().equals(metadata.type()),
-						"Cannot change type on metadata field %s from %s to %s", metadata.name(),
+						"Cannot change type on metadata column %s from %s to %s", metadata.name(),
 						column.get().getType(), metadata.type());
 			}
 			else {
@@ -500,7 +552,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				// special case for embedding column, bc JAVA-3118, as above
 				StringBuilder alterTableStmt = new StringBuilder(((BuildableQuery) alterTable).asCql());
 				if (newColumns.isEmpty() && !addContent) {
-					alterTableStmt.append(" ADD ");
+					alterTableStmt.append(" ADD (");
 				}
 				else {
 					alterTableStmt.setLength(alterTableStmt.length() - 1);
@@ -509,7 +561,7 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				alterTableStmt.append(this.schema.embedding)
 					.append(" vector<float,")
 					.append(vectorDimension)
-					.append(">");
+					.append(">)");
 
 				logger.debug("Executing {}", alterTableStmt.toString());
 				this.session.execute(alterTableStmt.toString());
@@ -523,14 +575,15 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	private void ensureKeyspaceExists() {
+		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).isEmpty()) {
+			SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(this.schema.keyspace)
+				.ifNotExists()
+				.withSimpleStrategy(1)
+				.build();
 
-		SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(this.schema.keyspace)
-			.ifNotExists()
-			.withSimpleStrategy(1)
-			.build();
-
-		logger.debug("Executing {}", keyspaceStmt.getQuery());
-		this.session.execute(keyspaceStmt);
+			logger.debug("Executing {}", keyspaceStmt.getQuery());
+			this.session.execute(keyspaceStmt);
+		}
 	}
 
 }

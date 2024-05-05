@@ -109,7 +109,7 @@ public class MistralAiRetryTests {
 	public void mistralAiChatTransientError() {
 
 		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
-				ChatCompletionFinishReason.STOP);
+				ChatCompletionFinishReason.STOP, null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", "chat.completion", 789l, "model",
 				List.of(choice), new MistralAiApi.Usage(10, 10, 10));
 
@@ -137,7 +137,7 @@ public class MistralAiRetryTests {
 	public void mistralAiChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
-				ChatCompletionFinishReason.STOP);
+				ChatCompletionFinishReason.STOP, null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", "chat.completion.chunk", 789l,
 				"model", List.of(choice));
 
