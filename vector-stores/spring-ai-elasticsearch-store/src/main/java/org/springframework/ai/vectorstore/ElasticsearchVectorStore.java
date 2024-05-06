@@ -37,7 +37,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
@@ -49,9 +50,10 @@ import java.util.stream.Collectors;
 /**
  * @author Jemin Huh
  * @author Wei Jiang
+ * @author Josh Long
  * @since 1.0.0
  */
-public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
+public class ElasticsearchVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	// divided by 2 to get score in the range [0, 1]
 	public static final String COSINE_SIMILARITY_FUNCTION = "(cosineSimilarity(params.query_vector, 'embedding') + 1.0) / 2";
@@ -219,10 +221,9 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void afterPropertiesSet() {
+	public void onApplicationEvent(ApplicationReadyEvent event) {
 		if (!indexExists()) {
 			createIndexMapping();
 		}
 	}
-
 }

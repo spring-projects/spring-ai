@@ -15,30 +15,29 @@
  */
 package org.springframework.ai.vectorstore;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 /**
- * Converts {@link Expression} into CQL where clauses.
+ * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into CQL where clauses.
  *
  * @author Mick Semb Wever
  * @since 1.0.0
  */
-final class CassandraFilterExpressionConverter extends AbstractFilterExpressionConverter {
+class CassandraFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	private final Map<String, ColumnMetadata> columnsByName;
 

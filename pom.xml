@@ -56,8 +56,8 @@
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
 		<module>vector-stores/spring-ai-pinecone</module>
-		<module>vector-stores/spring-ai-chroma</module>
-		<module>vector-stores/spring-ai-azure</module>
+		<module>vector-stores/spring-ai-chroma-store</module>
+		<module>vector-stores/spring-ai-azure-vector-store</module>
 		<module>vector-stores/spring-ai-weaviate</module>
 		<module>vector-stores/spring-ai-redis</module>
 		<module>vector-stores/spring-ai-gemfire</module>
