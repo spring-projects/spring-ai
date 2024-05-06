@@ -58,6 +58,7 @@ import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 public class QdrantVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	private static final String CONTENT_FIELD_NAME = "doc_content";
+
 	private static final String DISTANCE_FIELD_NAME = "distance";
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
@@ -89,6 +90,7 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 		private QdrantVectorStoreConfig(Builder builder) {
 			this.collectionName = builder.collectionName;
 		}
+
 		/**
 		 * Start building a new configuration.
 		 * @return The entry point for creating a new configuration.
@@ -127,10 +129,10 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 				return new QdrantVectorStoreConfig(this);
 			}
 
-
 		}
 
 	}
+
 	/**
 	 * Constructs a new QdrantVectorStore.
 	 * @param config The configuration for the store.
@@ -165,16 +167,16 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 		// Create the collection if it does not exist.
 		if (!isCollectionExists()) {
 			var vectorParams = VectorParams.newBuilder()
-					.setDistance(Distance.Cosine)
-					.setSize(this.embeddingClient.dimensions())
-					.build();
-            try {
-                this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
-            } //
-			catch (Exception  e) {
-                throw new RuntimeException(e);
-            }
-        }
+				.setDistance(Distance.Cosine)
+				.setSize(this.embeddingClient.dimensions())
+				.build();
+			try {
+				this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
+			} //
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
 	}
 
 	/**
@@ -302,7 +304,6 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 	private List<Float> toFloatList(List<Double> doubleList) {
 		return doubleList.stream().map(d -> d.floatValue()).toList();
 	}
-
 
 	private boolean isCollectionExists() {
 		try {

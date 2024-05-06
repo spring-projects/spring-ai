@@ -153,4 +153,5 @@ public class ChromaVectorStore implements VectorStore, ApplicationListener<Appli
 		}
 		this.collectionId = collection.id();
 	}
+
 }

@@ -52,8 +52,8 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 			this.name = name;
 		}
 
-
 	}
+
 	/**
 	 * Configuration for the Neo4j vector store.
 	 */
@@ -74,6 +74,7 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 		// needed for similarity search call
 
 		private final String indexNameNotSanitized;
+
 		private final String idProperty;
 
 		private final String constraintName;
@@ -251,7 +252,6 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 				return new Neo4jVectorStoreConfig(this);
 			}
 
-
 		}
 
 	}
@@ -262,9 +262,9 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
 			session
-					.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
-							.formatted(this.config.constraintName, this.config.label, this.config.idProperty))
-					.consume();
+				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
+					.formatted(this.config.constraintName, this.config.label, this.config.idProperty))
+				.consume();
 
 			var statement = """
 					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)

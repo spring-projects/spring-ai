@@ -64,7 +64,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Josh Long
  */
-public class MilvusVectorStore implements VectorStore, ApplicationListener <ApplicationReadyEvent> {
+public class MilvusVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
