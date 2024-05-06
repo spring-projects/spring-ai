@@ -52,7 +52,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Josh Long
  */
-public class PgVectorStore implements VectorStore, ApplicationListener <ApplicationReadyEvent> {
+public class PgVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
 
@@ -82,7 +82,7 @@ public class PgVectorStore implements VectorStore, ApplicationListener <Applicat
 
 	@Override
 	public void onApplicationEvent(ApplicationReadyEvent event) {
-        try {
+		try {
 			// Enable the PGVector, JSONB and UUID support.
 			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
@@ -105,12 +105,14 @@ public class PgVectorStore implements VectorStore, ApplicationListener <Applicat
 			if (this.createIndexMethod != PgIndexType.NONE) {
 				this.jdbcTemplate.execute(String.format("""
 						CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
-						""", VECTOR_INDEX_NAME, VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
+						""", VECTOR_INDEX_NAME, VECTOR_TABLE_NAME, this.createIndexMethod,
+						this.getDistanceType().index));
 			}
-		} catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect

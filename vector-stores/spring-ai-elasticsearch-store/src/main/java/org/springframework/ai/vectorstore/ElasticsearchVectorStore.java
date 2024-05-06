@@ -226,4 +226,5 @@ public class ElasticsearchVectorStore implements VectorStore, ApplicationListene
 			createIndexMapping();
 		}
 	}
+
 }

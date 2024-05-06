@@ -109,37 +109,37 @@ public class AzureVectorStore implements VectorStore, ApplicationListener<Applic
 		List<SearchField> fields = new ArrayList<>();
 
 		fields.add(new SearchField(ID_FIELD_NAME, SearchFieldDataType.STRING).setKey(true)
-				.setFilterable(true)
-				.setSortable(true));
+			.setFilterable(true)
+			.setSortable(true));
 		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
-				.setSearchable(true)
-				.setVectorSearchDimensions(dimensions)
-				// This must match a vector search configuration name.
-				.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
+			.setSearchable(true)
+			.setVectorSearchDimensions(dimensions)
+			// This must match a vector search configuration name.
+			.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
 		fields.add(new SearchField(CONTENT_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
-				.setFilterable(true));
+			.setFilterable(true));
 		fields.add(new SearchField(METADATA_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
-				.setFilterable(true));
+			.setFilterable(true));
 
 		for (MetadataField filterableMetadataField : this.filterMetadataFields) {
 			fields.add(new SearchField(METADATA_FIELD_PREFIX + filterableMetadataField.name(),
 					filterableMetadataField.fieldType())
-					.setSearchable(false)
-					.setFacetable(true));
+				.setSearchable(false)
+				.setFacetable(true));
 		}
 
 		SearchIndex searchIndex = new SearchIndex(this.indexName).setFields(fields)
-				// VectorSearch configuration is required for a vector field. The name used
-				// for the vector search algorithm configuration must match the configuration
-				// used by the search field used for vector search.
-				.setVectorSearch(new VectorSearch()
-						.setProfiles(Collections
-								.singletonList(new VectorSearchProfile(SPRING_AI_VECTOR_PROFILE, SPRING_AI_VECTOR_CONFIG)))
-						.setAlgorithms(Collections.singletonList(new HnswAlgorithmConfiguration(SPRING_AI_VECTOR_CONFIG)
-								.setParameters(new HnswParameters().setM(4)
-										.setEfConstruction(400)
-										.setEfSearch(1000)
-										.setMetric(VectorSearchAlgorithmMetric.COSINE)))));
+			// VectorSearch configuration is required for a vector field. The name used
+			// for the vector search algorithm configuration must match the configuration
+			// used by the search field used for vector search.
+			.setVectorSearch(new VectorSearch()
+				.setProfiles(Collections
+					.singletonList(new VectorSearchProfile(SPRING_AI_VECTOR_PROFILE, SPRING_AI_VECTOR_CONFIG)))
+				.setAlgorithms(Collections.singletonList(new HnswAlgorithmConfiguration(SPRING_AI_VECTOR_CONFIG)
+					.setParameters(new HnswParameters().setM(4)
+						.setEfConstruction(400)
+						.setEfSearch(1000)
+						.setMetric(VectorSearchAlgorithmMetric.COSINE)))));
 
 		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
 

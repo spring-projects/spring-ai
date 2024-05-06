@@ -32,7 +32,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into CQL where clauses.
+ * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into CQL
+ * where clauses.
  *
  * @author Mick Semb Wever
  * @since 1.0.0
