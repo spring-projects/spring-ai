@@ -23,6 +23,10 @@ import java.util.Map;
  */
 public class FunctionMessage extends AbstractMessage {
 
+	public FunctionMessage() {
+		super(MessageType.FUNCTION);
+	}
+
 	public FunctionMessage(String content) {
 		super(MessageType.FUNCTION, content);
 	}

@@ -38,14 +38,18 @@ public abstract class AbstractMessage implements Message {
 
 	protected final MessageType messageType;
 
-	protected final String textContent;
+	protected final String content;
 
-	protected final List<Media> mediaData;
+	protected final List<Media> media;
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
 	 */
 	protected final Map<String, Object> properties;
+
+	protected AbstractMessage(MessageType messageType) {
+		this(messageType, "");
+	}
 
 	protected AbstractMessage(MessageType messageType, String content) {
 		this(messageType, content, Map.of());
@@ -54,25 +58,25 @@ public abstract class AbstractMessage implements Message {
 	protected AbstractMessage(MessageType messageType, String content, Map<String, Object> messageProperties) {
 		Assert.notNull(messageType, "Message type must not be null");
 		this.messageType = messageType;
-		this.textContent = content;
-		this.mediaData = new ArrayList<>();
+		this.content = content;
+		this.media = new ArrayList<>();
 		this.properties = messageProperties;
 	}
 
-	protected AbstractMessage(MessageType messageType, String textContent, List<Media> mediaData) {
-		this(messageType, textContent, mediaData, Map.of());
+	protected AbstractMessage(MessageType messageType, String content, List<Media> media) {
+		this(messageType, content, media, Map.of());
 	}
 
-	protected AbstractMessage(MessageType messageType, String textContent, List<Media> mediaData,
-			Map<String, Object> messageProperties) {
+	protected AbstractMessage(MessageType messageType, String content, List<Media> media,
+							  Map<String, Object> messageProperties) {
 
 		Assert.notNull(messageType, "Message type must not be null");
-		Assert.notNull(textContent, "Content must not be null");
-		Assert.notNull(mediaData, "media data must not be null");
+		Assert.notNull(content, "Content must not be null");
+		Assert.notNull(media, "media data must not be null");
 
 		this.messageType = messageType;
-		this.textContent = textContent;
-		this.mediaData = new ArrayList<>(mediaData);
+		this.content = content;
+		this.media = new ArrayList<>(media);
 		this.properties = messageProperties;
 	}
 
@@ -87,10 +91,10 @@ public abstract class AbstractMessage implements Message {
 
 		this.messageType = messageType;
 		this.properties = messageProperties;
-		this.mediaData = new ArrayList<>();
+		this.media = new ArrayList<>();
 
 		try (InputStream inputStream = resource.getInputStream()) {
-			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+			this.content = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
@@ -99,12 +103,12 @@ public abstract class AbstractMessage implements Message {
 
 	@Override
 	public String getContent() {
-		return this.textContent;
+		return this.content;
 	}
 
 	@Override
 	public List<Media> getMedia() {
-		return this.mediaData;
+		return this.media;
 	}
 
 	@Override
@@ -121,7 +125,7 @@ public abstract class AbstractMessage implements Message {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((mediaData == null) ? 0 : mediaData.hashCode());
+		result = prime * result + ((media == null) ? 0 : media.hashCode());
 		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
 		result = prime * result + ((messageType == null) ? 0 : messageType.hashCode());
 		return result;
@@ -136,11 +140,11 @@ public abstract class AbstractMessage implements Message {
 		if (getClass() != obj.getClass())
 			return false;
 		AbstractMessage other = (AbstractMessage) obj;
-		if (mediaData == null) {
-			if (other.mediaData != null)
+		if (media == null) {
+			if (other.media != null)
 				return false;
 		}
-		else if (!mediaData.equals(other.mediaData))
+		else if (!media.equals(other.media))
 			return false;
 		if (properties == null) {
 			if (other.properties != null)

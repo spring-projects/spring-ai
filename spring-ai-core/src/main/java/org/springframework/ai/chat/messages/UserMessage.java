@@ -27,6 +27,10 @@ import org.springframework.core.io.Resource;
  */
 public class UserMessage extends AbstractMessage {
 
+	public UserMessage() {
+		super(MessageType.USER);
+	}
+
 	public UserMessage(String message) {
 		super(MessageType.USER, message);
 	}

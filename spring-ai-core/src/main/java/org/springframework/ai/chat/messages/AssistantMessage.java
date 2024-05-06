@@ -25,6 +25,10 @@ import java.util.Map;
  */
 public class AssistantMessage extends AbstractMessage {
 
+	public AssistantMessage() {
+        super(MessageType.ASSISTANT);
+    }
+
 	public AssistantMessage(String content) {
 		super(MessageType.ASSISTANT, content);
 	}

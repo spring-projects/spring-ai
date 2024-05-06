@@ -26,6 +26,10 @@ import org.springframework.core.io.Resource;
  */
 public class SystemMessage extends AbstractMessage {
 
+	public SystemMessage() {
+		super(MessageType.SYSTEM);
+	}
+
 	public SystemMessage(String content) {
 		super(MessageType.SYSTEM, content);
 	}
