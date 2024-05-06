@@ -15,44 +15,29 @@
  */
 package org.springframework.ai.vectorstore.azure;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
 import com.azure.core.util.Context;
 import com.azure.search.documents.SearchClient;
 import com.azure.search.documents.SearchDocument;
 import com.azure.search.documents.indexes.SearchIndexClient;
-import com.azure.search.documents.indexes.models.HnswAlgorithmConfiguration;
-import com.azure.search.documents.indexes.models.HnswParameters;
-import com.azure.search.documents.indexes.models.SearchField;
-import com.azure.search.documents.indexes.models.SearchFieldDataType;
-import com.azure.search.documents.indexes.models.SearchIndex;
-import com.azure.search.documents.indexes.models.VectorSearch;
-import com.azure.search.documents.indexes.models.VectorSearchAlgorithmMetric;
-import com.azure.search.documents.indexes.models.VectorSearchProfile;
-import com.azure.search.documents.models.IndexDocumentsResult;
-import com.azure.search.documents.models.IndexingResult;
-import com.azure.search.documents.models.SearchOptions;
-import com.azure.search.documents.models.VectorSearchOptions;
-import com.azure.search.documents.models.VectorizedQuery;
+import com.azure.search.documents.indexes.models.*;
+import com.azure.search.documents.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Uses Azure Cognitive Search as a backing vector store. Documents can be preloaded into
@@ -63,8 +48,9 @@ import org.springframework.util.StringUtils;
  * @author Greg Meyer
  * @author Xiangyang Yu
  * @author Christian Tzolov
+ * @author Josh Long
  */
-public class AzureVectorStore implements VectorStore, InitializingBean {
+public class AzureVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureVectorStore.class);
 
@@ -114,6 +100,53 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	 * (re)updated.
 	 */
 	private final List<MetadataField> filterMetadataFields;
+
+	@Override
+	public void onApplicationEvent(ApplicationReadyEvent event) {
+
+		int dimensions = this.embeddingClient.dimensions();
+
+		List<SearchField> fields = new ArrayList<>();
+
+		fields.add(new SearchField(ID_FIELD_NAME, SearchFieldDataType.STRING).setKey(true)
+				.setFilterable(true)
+				.setSortable(true));
+		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
+				.setSearchable(true)
+				.setVectorSearchDimensions(dimensions)
+				// This must match a vector search configuration name.
+				.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
+		fields.add(new SearchField(CONTENT_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
+				.setFilterable(true));
+		fields.add(new SearchField(METADATA_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
+				.setFilterable(true));
+
+		for (MetadataField filterableMetadataField : this.filterMetadataFields) {
+			fields.add(new SearchField(METADATA_FIELD_PREFIX + filterableMetadataField.name(),
+					filterableMetadataField.fieldType())
+					.setSearchable(false)
+					.setFacetable(true));
+		}
+
+		SearchIndex searchIndex = new SearchIndex(this.indexName).setFields(fields)
+				// VectorSearch configuration is required for a vector field. The name used
+				// for the vector search algorithm configuration must match the configuration
+				// used by the search field used for vector search.
+				.setVectorSearch(new VectorSearch()
+						.setProfiles(Collections
+								.singletonList(new VectorSearchProfile(SPRING_AI_VECTOR_PROFILE, SPRING_AI_VECTOR_CONFIG)))
+						.setAlgorithms(Collections.singletonList(new HnswAlgorithmConfiguration(SPRING_AI_VECTOR_CONFIG)
+								.setParameters(new HnswParameters().setM(4)
+										.setEfConstruction(400)
+										.setEfSearch(1000)
+										.setMetric(VectorSearchAlgorithmMetric.COSINE)))));
+
+		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
+
+		logger.info("Created search index: " + index.getName());
+
+		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
+	}
 
 	public record MetadataField(String name, SearchFieldDataType fieldType) {
 
@@ -323,53 +356,6 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	 * Internal data structure for retrieving and storing documents.
 	 */
 	private record AzureSearchDocument(String id, String content, List<Double> embedding, String metadata) {
-	}
-
-	@Override
-	public void afterPropertiesSet() throws Exception {
-
-		int dimensions = this.embeddingClient.dimensions();
-
-		List<SearchField> fields = new ArrayList<>();
-
-		fields.add(new SearchField(ID_FIELD_NAME, SearchFieldDataType.STRING).setKey(true)
-			.setFilterable(true)
-			.setSortable(true));
-		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
-			.setSearchable(true)
-			.setVectorSearchDimensions(dimensions)
-			// This must match a vector search configuration name.
-			.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
-		fields.add(new SearchField(CONTENT_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
-			.setFilterable(true));
-		fields.add(new SearchField(METADATA_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
-			.setFilterable(true));
-
-		for (MetadataField filterableMetadataField : this.filterMetadataFields) {
-			fields.add(new SearchField(METADATA_FIELD_PREFIX + filterableMetadataField.name(),
-					filterableMetadataField.fieldType())
-				.setSearchable(false)
-				.setFacetable(true));
-		}
-
-		SearchIndex searchIndex = new SearchIndex(this.indexName).setFields(fields)
-			// VectorSearch configuration is required for a vector field. The name used
-			// for the vector search algorithm configuration must match the configuration
-			// used by the search field used for vector search.
-			.setVectorSearch(new VectorSearch()
-				.setProfiles(Collections
-					.singletonList(new VectorSearchProfile(SPRING_AI_VECTOR_PROFILE, SPRING_AI_VECTOR_CONFIG)))
-				.setAlgorithms(Collections.singletonList(new HnswAlgorithmConfiguration(SPRING_AI_VECTOR_CONFIG)
-					.setParameters(new HnswParameters().setM(4)
-						.setEfConstruction(400)
-						.setEfSearch(1000)
-						.setMetric(VectorSearchAlgorithmMetric.COSINE)))));
-
-		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
-
-		logger.info("Created search index: " + index.getName());
-
-		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 	}
 
 }

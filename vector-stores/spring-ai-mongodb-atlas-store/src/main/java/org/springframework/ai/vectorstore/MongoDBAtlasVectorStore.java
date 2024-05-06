@@ -25,7 +25,8 @@ import com.mongodb.BasicDBObject;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -36,9 +37,10 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 /**
  * @author Chris Smith
+ * @author Josh Long
  * @since 1.0.0
  */
-public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
+public class MongoDBAtlasVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -74,16 +76,6 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		this.embeddingClient = embeddingClient;
 		this.config = config;
 
-	}
-
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		// Create the collection if it does not exist
-		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
-			mongoTemplate.createCollection(this.config.collectionName);
-		}
-		// Create search index, command doesn't do anything if already existing
-		mongoTemplate.executeCommand(createSearchIndex());
 	}
 
 	/**
@@ -172,6 +164,16 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 			.stream()
 			.map(this::mapBasicDbObject)
 			.toList();
+	}
+
+	@Override
+	public void onApplicationEvent(ApplicationReadyEvent event) {
+		// Create the collection if it does not exist
+		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
+			mongoTemplate.createCollection(this.config.collectionName);
+		}
+		// Create search index, command doesn't do anything if already existing
+		mongoTemplate.executeCommand(createSearchIndex());
 	}
 
 	public static class MongoDBVectorStoreConfig {

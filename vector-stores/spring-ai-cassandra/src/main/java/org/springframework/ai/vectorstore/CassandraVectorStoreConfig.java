@@ -15,18 +15,6 @@
  */
 package org.springframework.ai.vectorstore;
 
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -44,11 +32,17 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.lang.Nullable;
+
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Configuration for the Cassandra vector store.
@@ -66,7 +60,7 @@ import org.springframework.lang.Nullable;
  * @author Mick Semb Wever
  * @since 1.0.0
  */
-public final class CassandraVectorStoreConfig implements AutoCloseable {
+public class CassandraVectorStoreConfig implements AutoCloseable {
 
 	public static final String DEFAULT_KEYSPACE_NAME = "springframework";
 

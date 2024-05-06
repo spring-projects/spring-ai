@@ -15,22 +15,7 @@
  */
 package org.springframework.ai.vectorstore;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
@@ -41,13 +26,16 @@ import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * The CassandraVectorStore is for managing and querying vector data in an Apache
@@ -91,7 +79,7 @@ import org.springframework.beans.factory.InitializingBean;
  * @see EmbeddingClient
  * @since 1.0.0
  */
-public final class CassandraVectorStore implements VectorStore, InitializingBean, AutoCloseable {
+public class CassandraVectorStore implements VectorStore, InitializingBean, AutoCloseable {
 
 	/**
 	 * Indexes are automatically created with COSINE. This can be changed manually via

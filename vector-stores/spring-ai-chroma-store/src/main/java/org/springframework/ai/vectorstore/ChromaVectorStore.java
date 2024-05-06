@@ -15,12 +15,6 @@
  */
 package org.springframework.ai.vectorstore;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
@@ -29,10 +23,13 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.*;
 
 /**
  * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
@@ -40,8 +37,10 @@ import org.springframework.util.StringUtils;
  * their similarity to a query, using the {@link ChromaApi} and {@link EmbeddingClient}
  * for embedding calculations. For more information about how it does this, see the
  * official <a href="https://www.trychroma.com/">Chroma website</a>.
+ *
+ * @author Josh Long
  */
-public class ChromaVectorStore implements VectorStore, InitializingBean {
+public class ChromaVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
 	public static final String DISTANCE_FIELD_NAME = "distance";
 
@@ -147,12 +146,11 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void afterPropertiesSet() throws Exception {
+	public void onApplicationEvent(ApplicationReadyEvent event) {
 		var collection = this.chromaApi.getCollection(this.collectionName);
 		if (collection == null) {
 			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
 		}
 		this.collectionId = collection.id();
 	}
-
 }
