@@ -162,11 +162,11 @@ public class CohereEmbeddingBedrockApi extends
 			/**
 			 * Discard the start of the input.
 			 */
-			LEFT,
+			START,
 			/**
 			 * Discards the end of the input.
 			 */
-			RIGHT
+			END
 		}
 	}
 
