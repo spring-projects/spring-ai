@@ -8,10 +8,10 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-azure-vector-store</artifactId>
+	<artifactId>spring-ai-azure-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI - Azure AI Search Vector Store</name>
-	<description>Spring AI - Azure AI Search Vector Store</description>
+	<name>Spring AI Vector Store - Azure AI Search </name>
+	<description> Spring AI Vector Store - Azure AI Search  </description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

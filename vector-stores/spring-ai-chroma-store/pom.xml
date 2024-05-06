@@ -10,7 +10,7 @@
 	</parent>
 	<artifactId>spring-ai-chroma-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Chroma Vector Store</name>
+	<name>Spring AI Vector Store - Chroma</name>
 	<description>Spring AI Chroma Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 

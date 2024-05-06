@@ -261,7 +261,6 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 
 	/**
 	 * Extracts metadata from a Protobuf Struct.
-	 * @param metadataStruct The Protobuf Struct containing metadata.
 	 * @return The metadata as a map.
 	 */
 	private Document toDocument(ScoredPoint point) {
