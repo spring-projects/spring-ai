@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
@@ -49,6 +50,31 @@ public class CohereEmbeddingBedrockApiIT {
 				CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT, CohereEmbeddingRequest.Truncate.NONE);
 
 		CohereEmbeddingResponse response = api.embedding(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.texts()).isEqualTo(request.texts());
+		assertThat(response.embeddings()).hasSize(2);
+		assertThat(response.embeddings().get(0)).hasSize(1024);
+	}
+
+	@Test
+	public void embedTextWithTruncate() {
+
+		CohereEmbeddingRequest request = new CohereEmbeddingRequest(
+				List.of("I like to eat apples", "I like to eat oranges"),
+				CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT, CohereEmbeddingRequest.Truncate.START);
+
+		CohereEmbeddingResponse response = api.embedding(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.texts()).isEqualTo(request.texts());
+		assertThat(response.embeddings()).hasSize(2);
+		assertThat(response.embeddings().get(0)).hasSize(1024);
+
+		request = new CohereEmbeddingRequest(List.of("I like to eat apples", "I like to eat oranges"),
+				CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT, CohereEmbeddingRequest.Truncate.END);
+
+		response = api.embedding(request);
 
 		assertThat(response).isNotNull();
 		assertThat(response.texts()).isEqualTo(request.texts());
