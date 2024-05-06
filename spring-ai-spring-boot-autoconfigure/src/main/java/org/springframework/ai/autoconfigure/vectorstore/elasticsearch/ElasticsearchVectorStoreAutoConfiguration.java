@@ -28,8 +28,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
-import java.util.Objects;
-
 /**
  * @author Eddú Meléndez
  * @author Wei Jiang

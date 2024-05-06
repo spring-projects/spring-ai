@@ -157,6 +157,7 @@
 		<pgvector.version>0.1.4</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<postgresql.version>42.7.2</postgresql.version>
+		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
 		<milvus.version>2.3.4</milvus.version>
 		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>

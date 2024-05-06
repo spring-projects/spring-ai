@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>co.elastic.clients</groupId>
 			<artifactId>elasticsearch-java</artifactId>
-			<version>8.13.2</version>
+			<version>${elasticsearch-java.version}</version>
 		</dependency>
 
 		<!-- TESTING -->

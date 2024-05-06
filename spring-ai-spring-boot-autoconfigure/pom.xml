@@ -260,6 +260,7 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Elasticsearch Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-elasticsearch-store</artifactId>
@@ -279,6 +280,12 @@
 			<artifactId>spring-ai-zhipuai</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>co.elastic.clients</groupId>
+			<artifactId>elasticsearch-java</artifactId>
+			<version>${elasticsearch-java.version}</version>
 		</dependency>
 
 		<!-- test dependencies -->

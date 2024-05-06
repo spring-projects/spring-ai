@@ -16,8 +16,6 @@
 package org.springframework.ai.vectorstore;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.mapping.DenseVectorProperty;
-import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -145,7 +143,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 					sr -> sr.index(options.getIndexName())
 						.knn(knn -> knn.queryVector(vectors)
 							.similarity(finalThreshold)
-							.k(searchRequest.getTopK())
+							.k((long) searchRequest.getTopK())
 							.field("embedding")
 							.numCandidates((long) (1.5 * searchRequest.getTopK()))
 							.filter(fl -> fl.queryString(

@@ -134,10 +134,17 @@ Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are 
 
 |`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors. | spring-ai-document-index
 |`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector. | 1536
-|`spring.ai.vectorstore.elasticsearch.dense-vector-indexing` | Whether to use dense vector indexing. | true
 |`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`
 |`spring.ai.vectorstore.elasticsearch.initialize-schema`| whether to initialize the required schema  | `false`
 |===
+
+The following similarity functions are available:
+
+* cosine
+* l2_norm
+* dot_product
+
+More details about each in the https://www.elastic.co/guide/en/elasticsearch/reference/master/dense-vector.html#dense-vector-params[Elasticsearch Documentation] on dense vectors.
 
 == Metadata Filtering
 
@@ -214,10 +221,11 @@ Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-clie
 ----
 @Bean
 public RestClient restClient() {
-    RestClientBuilder builder = RestClient.builder(new HttpHost("<host>", 9200, "http"));
-    Header[] defaultHeaders = new Header[] { new BasicHeader("Authorization", "Basic <encoded username and password>") };
-    builder.setDefaultHeaders(defaultHeaders);
-    return builder.build();
+    RestClient.builder(new HttpHost("<host>", 9200, "http"))
+        .setDefaultHeaders(new Header[]{
+            new BasicHeader("Authorization", "Basic <encoded username and password>")
+        })
+        .build();
 }
 ----
 
