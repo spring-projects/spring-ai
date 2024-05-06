@@ -10,8 +10,8 @@
     </parent>
     <artifactId>spring-ai-mongodb-atlas-store</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI MongoDB Atlas Vector Store</name>
-    <description>Spring AI MongoDB Atlas Vector Store</description>
+    <name>Spring AI Vector Store - MongoDB Atlas  </name>
+    <description>Spring AI Vector Store - MongoDB Atlas</description>
     <url>https://github.com/spring-projects-experimental/spring-ai</url>
 
     <scm>

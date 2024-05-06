@@ -10,8 +10,7 @@
     </parent>
     <artifactId>spring-ai-pinecone</artifactId>
     <packaging>jar</packaging>
-    <name>spring-ai-pinecone</name>
-    <description>spring-ai-pinecone</description>
+    <name>Spring AI Vector Store - Pinecone </name>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>

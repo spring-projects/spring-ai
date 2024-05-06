@@ -10,8 +10,7 @@
     </parent>
     <artifactId>spring-ai-weaviate-store</artifactId>
     <packaging>jar</packaging>
-    <name>spring-ai-weaviate-store</name>
-    <description>spring-ai-weaviate</description>
+    <name>Spring AI Vector Store - Weaviate </name>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>

@@ -57,8 +57,8 @@
 		<module>document-readers/tika-reader</module>
 		<module>vector-stores/spring-ai-pinecone</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
-		<module>vector-stores/spring-ai-azure-vector-store</module>
-		<module>vector-stores/spring-ai-weaviate</module>
+		<module>vector-stores/spring-ai-azure-store</module>
+		<module>vector-stores/spring-ai-weaviate-store</module>
 		<module>vector-stores/spring-ai-redis</module>
 		<module>vector-stores/spring-ai-gemfire</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>

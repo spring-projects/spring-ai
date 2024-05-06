@@ -38,7 +38,7 @@ import java.util.*;
  * for embedding calculations. For more information about how it does this, see the
  * official <a href="https://www.trychroma.com/">Chroma website</a>.
  *
- * @author Josh Long
+ *
  */
 public class ChromaVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 
