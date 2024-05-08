@@ -151,7 +151,13 @@ public class OpenAiChatModel extends
 
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
-			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+			List<Choice> choices = chatCompletion.choices();
+			if (choices == null) {
+				logger.warn("No choices returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
+
+			List<Generation> generations = choices.stream().map(choice -> {
 				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();
