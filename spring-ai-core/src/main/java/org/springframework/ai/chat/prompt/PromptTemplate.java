@@ -122,8 +122,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	/**
-	 * @deprecated Use {@link #setOutputConverter(StructuredOutputConverter)}
-	 * instead.
+	 * @deprecated Use {@link #setOutputConverter(StructuredOutputConverter)} instead.
 	 */
 	public void setOutputParser(OutputParser outputParser) {
 		Objects.requireNonNull(outputParser, "Output Parser can not be null");
