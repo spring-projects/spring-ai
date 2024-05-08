@@ -205,7 +205,7 @@ class BedrockTitanChatClientIT {
 
 		@Bean
 		public TitanChatBedrockApi titanApi() {
-			return new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
+			return new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_PREMIER_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
 					Duration.ofMinutes(2));
 		}
