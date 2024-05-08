@@ -34,12 +34,12 @@ import org.testcontainers.qdrant.QdrantContainer;
 
 import org.springframework.ai.chat.chatbot.DefaultChatBot;
 import org.springframework.ai.chat.history.ChatMemory;
-import org.springframework.ai.chat.history.ChatMemoryAgentListener;
+import org.springframework.ai.chat.history.ChatMemoryChatBotListener;
 import org.springframework.ai.chat.history.ChatMemoryRetriever;
 import org.springframework.ai.chat.history.InMemoryChatMemory;
 import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
 import org.springframework.ai.chat.history.SystemPromptChatMemoryAugmentor;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryAgentListener;
+import org.springframework.ai.chat.history.VectorStoreChatMemoryChatBotListener;
 import org.springframework.ai.chat.history.VectorStoreChatMemoryRetriever;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -187,7 +187,7 @@ public class LongShortTermChatMemoryWithRagIT {
 		}
 
 		@Bean
-		public ChatBot memoryChatAgent(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatBot memoryChatBot(OpenAiChatClient chatClient, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator, ChatMemory chatHistory) {
 
 			return DefaultChatBot.builder(chatClient)
@@ -214,8 +214,8 @@ public class LongShortTermChatMemoryWithRagIT {
 								Set.of(TransformerContentType.LONG_TERM_MEMORY)),
 						new SystemPromptChatMemoryAugmentor(Set.of(TransformerContentType.SHORT_TERM_MEMORY))))
 
-				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory),
-						new VectorStoreChatMemoryAgentListener(vectorStore,
+				.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory),
+						new VectorStoreChatMemoryChatBotListener(vectorStore,
 								Map.of(TransformerContentType.LONG_TERM_MEMORY, ""))))
 				.build();
 		}

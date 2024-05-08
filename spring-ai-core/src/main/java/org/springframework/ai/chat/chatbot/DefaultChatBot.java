@@ -38,21 +38,21 @@ public class DefaultChatBot implements ChatBot {
 
 	private List<PromptTransformer> augmentors;
 
-	private List<ChatAgentListener> chatAgentListeners;
+	private List<ChatBotListener> chatBotListeners;
 
 	public DefaultChatBot(ChatClient chatClient, List<PromptTransformer> retrievers,
 			List<PromptTransformer> documentPostProcessors, List<PromptTransformer> augmentors,
-			List<ChatAgentListener> chatAgentListeners) {
+			List<ChatBotListener> chatBotListeners) {
 		Objects.requireNonNull(chatClient, "chatClient must not be null");
 		this.chatClient = chatClient;
 		this.retrievers = retrievers;
 		this.documentPostProcessors = documentPostProcessors;
 		this.augmentors = augmentors;
-		this.chatAgentListeners = chatAgentListeners;
+		this.chatBotListeners = chatBotListeners;
 	}
 
-	public static DefaultChatAgentBuilder builder(ChatClient chatClient) {
-		return new DefaultChatAgentBuilder().withChatClient(chatClient);
+	public static DefaultChatBotBuilder builder(ChatClient chatClient) {
+		return new DefaultChatBotBuilder().withChatClient(chatClient);
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public class DefaultChatBot implements ChatBot {
 		}
 
 		// Invoke Listeners onStart
-		for (ChatAgentListener listener : this.chatAgentListeners) {
+		for (ChatBotListener listener : this.chatBotListeners) {
 			listener.onStart(promptContextOnStart);
 		}
 
@@ -85,13 +85,13 @@ public class DefaultChatBot implements ChatBot {
 
 		// Invoke Listeners onComplete
 		ChatBotResponse chatBotResponse = new ChatBotResponse(promptContext, chatResponse);
-		for (ChatAgentListener listener : this.chatAgentListeners) {
+		for (ChatBotListener listener : this.chatBotListeners) {
 			listener.onComplete(chatBotResponse);
 		}
 		return chatBotResponse;
 	}
 
-	public static class DefaultChatAgentBuilder {
+	public static class DefaultChatBotBuilder {
 
 		private ChatClient chatClient;
 
@@ -101,35 +101,35 @@ public class DefaultChatBot implements ChatBot {
 
 		private List<PromptTransformer> augmentors = new ArrayList<>();
 
-		private List<ChatAgentListener> chatAgentListeners = new ArrayList<>();
+		private List<ChatBotListener> chatBotListeners = new ArrayList<>();
 
-		public DefaultChatAgentBuilder withChatClient(ChatClient chatClient) {
+		public DefaultChatBotBuilder withChatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withRetrievers(List<PromptTransformer> retrievers) {
+		public DefaultChatBotBuilder withRetrievers(List<PromptTransformer> retrievers) {
 			this.retrievers = retrievers;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withContentPostProcessors(List<PromptTransformer> documentPostProcessors) {
+		public DefaultChatBotBuilder withContentPostProcessors(List<PromptTransformer> documentPostProcessors) {
 			this.documentPostProcessors = documentPostProcessors;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withAugmentors(List<PromptTransformer> augmentors) {
+		public DefaultChatBotBuilder withAugmentors(List<PromptTransformer> augmentors) {
 			this.augmentors = augmentors;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withChatAgentListeners(List<ChatAgentListener> chatAgentListeners) {
-			this.chatAgentListeners = chatAgentListeners;
+		public DefaultChatBotBuilder withChatBotListeners(List<ChatBotListener> chatBotListeners) {
+			this.chatBotListeners = chatBotListeners;
 			return this;
 		}
 
 		public DefaultChatBot build() {
-			return new DefaultChatBot(chatClient, retrievers, documentPostProcessors, augmentors, chatAgentListeners);
+			return new DefaultChatBot(chatClient, retrievers, documentPostProcessors, augmentors, chatBotListeners);
 		}
 
 	}

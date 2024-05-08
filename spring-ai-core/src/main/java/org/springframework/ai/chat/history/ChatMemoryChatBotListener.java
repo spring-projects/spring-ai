@@ -19,7 +19,7 @@ package org.springframework.ai.chat.history;
 import java.util.List;
 
 import org.springframework.ai.chat.chatbot.ChatBotResponse;
-import org.springframework.ai.chat.chatbot.ChatAgentListener;
+import org.springframework.ai.chat.chatbot.ChatBotListener;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.transformer.PromptContext;
@@ -28,11 +28,11 @@ import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 /**
  * @author Christian Tzolov
  */
-public class ChatMemoryAgentListener implements ChatAgentListener {
+public class ChatMemoryChatBotListener implements ChatBotListener {
 
 	private final ChatMemory chatHistory;
 
-	public ChatMemoryAgentListener(ChatMemory chatHistory) {
+	public ChatMemoryChatBotListener(ChatMemory chatHistory) {
 		this.chatHistory = chatHistory;
 	}
 

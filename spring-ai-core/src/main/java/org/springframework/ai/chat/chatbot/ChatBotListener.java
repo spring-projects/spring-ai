@@ -19,13 +19,13 @@ package org.springframework.ai.chat.chatbot;
 import org.springframework.ai.chat.prompt.transformer.PromptContext;
 
 /**
- * The ChatAgentListener is a callback interface that can be implemented by classes that
+ * The ChatBotListener is a callback interface that can be implemented by classes that
  * want to be notified of the completion of a ChatBot execution.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public interface ChatAgentListener {
+public interface ChatBotListener {
 
 	default void onStart(PromptContext promptContext) {
 

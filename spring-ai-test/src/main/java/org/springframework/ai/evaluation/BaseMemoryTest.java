@@ -51,7 +51,7 @@ public class BaseMemoryTest {
 	}
 
 	@Test
-	void memoryChatAgent() {
+	void memoryChatBot() {
 
 		var prompt = new Prompt(new UserMessage("my name John Vincent Atanasoff"));
 		PromptContext promptContext = new PromptContext(prompt);

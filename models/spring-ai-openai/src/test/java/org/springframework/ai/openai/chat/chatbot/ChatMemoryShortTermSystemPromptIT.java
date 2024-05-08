@@ -25,7 +25,7 @@ import org.springframework.ai.chat.chatbot.DefaultChatBot;
 import org.springframework.ai.chat.chatbot.DefaultStreamingChatBot;
 import org.springframework.ai.chat.chatbot.StreamingChatBot;
 import org.springframework.ai.chat.history.ChatMemory;
-import org.springframework.ai.chat.history.ChatMemoryAgentListener;
+import org.springframework.ai.chat.history.ChatMemoryChatBotListener;
 import org.springframework.ai.chat.history.ChatMemoryRetriever;
 import org.springframework.ai.chat.history.InMemoryChatMemory;
 import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
@@ -75,26 +75,26 @@ public class ChatMemoryShortTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatBot memoryChatAgent(OpenAiChatClient chatClient, ChatMemory chatHistory,
+		public ChatBot memoryChatBot(OpenAiChatClient chatClient, ChatMemory chatHistory,
 				TokenCountEstimator tokenCountEstimator) {
 
 			return DefaultChatBot.builder(chatClient)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
+				.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
 				.build();
 		}
 
 		@Bean
-		public StreamingChatBot memoryStreamingChatAgent(OpenAiChatClient streamingChatClient, ChatMemory chatHistory,
+		public StreamingChatBot memoryStreamingChatBot(OpenAiChatClient streamingChatClient, ChatMemory chatHistory,
 				TokenCountEstimator tokenCountEstimator) {
 
 			return DefaultStreamingChatBot.builder(streamingChatClient)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
+				.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
 				.build();
 		}
 

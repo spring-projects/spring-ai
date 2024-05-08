@@ -61,15 +61,15 @@ public class ChatMemoryTests {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
-		DefaultChatBot chatAgent = DefaultChatBot.builder(chatClient)
+		DefaultChatBot chatBot = DefaultChatBot.builder(chatClient)
 			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
 			.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
-			.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
+			.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
 			.build();
 
-		chatClientUserMessages(chatAgent, chatHistory);
+		chatClientUserMessages(chatBot, chatHistory);
 	}
 
 	@Test
@@ -77,18 +77,18 @@ public class ChatMemoryTests {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
-		DefaultChatBot chatAgent = DefaultChatBot.builder(chatClient)
+		DefaultChatBot chatBot = DefaultChatBot.builder(chatClient)
 			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
 			.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-			.withChatAgentListeners(List.of(new ChatMemoryAgentListener(chatHistory)))
+			.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
 			.build();
 
-		chatClientUserMessages(chatAgent, chatHistory);
+		chatClientUserMessages(chatBot, chatHistory);
 	}
 
-	public void chatClientUserMessages(DefaultChatBot chatAgent, ChatMemory chatHistory) {
+	public void chatClientUserMessages(DefaultChatBot chatBot, ChatMemory chatHistory) {
 
 		when(chatClient.call(promptCaptor.capture()))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:1"))))
@@ -102,7 +102,7 @@ public class ChatMemoryTests {
 								new UserMessage("user:4"), new UserMessage("user:5"))))
 				.build();
 
-		ChatBotResponse response1 = chatAgent.call(promptContext);
+		ChatBotResponse response1 = chatBot.call(promptContext);
 
 		assertThat(response1.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:1");
 
@@ -112,7 +112,7 @@ public class ChatMemoryTests {
 		List<Message> history = chatHistory.get("test-session-id", 1000);
 		assertThat(history).hasSize(6);
 
-		ChatBotResponse response2 = chatAgent.call(PromptContext.builder()
+		ChatBotResponse response2 = chatBot.call(PromptContext.builder()
 				.withConversationId("test-session-id")
 				.withPrompt(new Prompt(
 						List.of(new UserMessage("user:6"), new UserMessage("user:7"), new UserMessage("user:8"))))
@@ -129,7 +129,7 @@ public class ChatMemoryTests {
 		assertThat(contents.get(1).getContent()).isEqualTo("user:5");
 		assertThat(contents.get(2).getContent()).isEqualTo("assistant:1");
 
-		ChatBotResponse response3 = chatAgent.call(PromptContext.builder()
+		ChatBotResponse response3 = chatBot.call(PromptContext.builder()
 				.withConversationId("test-session-id")
 				.withPrompt(new Prompt(List.of(new UserMessage("user:9")))).build());
 		assertThat(response3.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:3");

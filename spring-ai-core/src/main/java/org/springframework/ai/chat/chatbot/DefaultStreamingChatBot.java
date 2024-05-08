@@ -41,21 +41,21 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 
 	private List<PromptTransformer> augmentors;
 
-	private List<ChatAgentListener> chatAgentListeners;
+	private List<ChatBotListener> chatBotListeners;
 
 	public DefaultStreamingChatBot(StreamingChatClient chatClient, List<PromptTransformer> retrievers,
 			List<PromptTransformer> documentPostProcessors, List<PromptTransformer> augmentors,
-			List<ChatAgentListener> chatAgentListeners) {
+			List<ChatBotListener> chatBotListeners) {
 		Objects.requireNonNull(chatClient, "chatClient must not be null");
 		this.streamingChatClient = chatClient;
 		this.retrievers = retrievers;
 		this.documentPostProcessors = documentPostProcessors;
 		this.augmentors = augmentors;
-		this.chatAgentListeners = chatAgentListeners;
+		this.chatBotListeners = chatBotListeners;
 	}
 
-	public static DefaultChatAgentBuilder builder(StreamingChatClient chatClient) {
-		return new DefaultChatAgentBuilder().withChatClient(chatClient);
+	public static DefaultChatBotBuilder builder(StreamingChatClient chatClient) {
+		return new DefaultChatBotBuilder().withChatClient(chatClient);
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 		}
 
 		// Invoke Listeners onStart
-		for (ChatAgentListener listener : this.chatAgentListeners) {
+		for (ChatBotListener listener : this.chatBotListeners) {
 			listener.onStart(promptContextOnStart);
 		}
 
@@ -88,7 +88,7 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 
 		Flux<ChatResponse> fluxChatResponse = new MessageAggregator()
 			.aggregate(this.streamingChatClient.stream(promptContext.getPrompt()), chatResponse -> {
-				for (ChatAgentListener listener : this.chatAgentListeners) {
+				for (ChatBotListener listener : this.chatBotListeners) {
 					listener.onComplete(new ChatBotResponse(promptContext2, chatResponse));
 				}
 			});
@@ -97,7 +97,7 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 		return new StreamingChatBotResponse(promptContext, fluxChatResponse);
 	}
 
-	public static class DefaultChatAgentBuilder {
+	public static class DefaultChatBotBuilder {
 
 		private StreamingChatClient chatClient;
 
@@ -107,36 +107,36 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 
 		private List<PromptTransformer> augmentors = new ArrayList<>();
 
-		private List<ChatAgentListener> chatAgentListeners = new ArrayList<>();
+		private List<ChatBotListener> chatBotListeners = new ArrayList<>();
 
-		public DefaultChatAgentBuilder withChatClient(StreamingChatClient chatClient) {
+		public DefaultChatBotBuilder withChatClient(StreamingChatClient chatClient) {
 			this.chatClient = chatClient;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withRetrievers(List<PromptTransformer> retrievers) {
+		public DefaultChatBotBuilder withRetrievers(List<PromptTransformer> retrievers) {
 			this.retrievers = retrievers;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withDocumentPostProcessors(List<PromptTransformer> documentPostProcessors) {
+		public DefaultChatBotBuilder withDocumentPostProcessors(List<PromptTransformer> documentPostProcessors) {
 			this.documentPostProcessors = documentPostProcessors;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withAugmentors(List<PromptTransformer> augmentors) {
+		public DefaultChatBotBuilder withAugmentors(List<PromptTransformer> augmentors) {
 			this.augmentors = augmentors;
 			return this;
 		}
 
-		public DefaultChatAgentBuilder withChatAgentListeners(List<ChatAgentListener> chatAgentListeners) {
-			this.chatAgentListeners = chatAgentListeners;
+		public DefaultChatBotBuilder withChatBotListeners(List<ChatBotListener> chatBotListeners) {
+			this.chatBotListeners = chatBotListeners;
 			return this;
 		}
 
 		public DefaultStreamingChatBot build() {
 			return new DefaultStreamingChatBot(chatClient, retrievers, documentPostProcessors, augmentors,
-					chatAgentListeners);
+					chatBotListeners);
 		}
 
 	}

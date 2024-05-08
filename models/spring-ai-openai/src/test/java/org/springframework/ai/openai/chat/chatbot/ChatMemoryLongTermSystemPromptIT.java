@@ -29,7 +29,7 @@ import org.testcontainers.qdrant.QdrantContainer;
 import org.springframework.ai.chat.chatbot.DefaultChatBot;
 import org.springframework.ai.chat.chatbot.DefaultStreamingChatBot;
 import org.springframework.ai.chat.chatbot.StreamingChatBot;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryAgentListener;
+import org.springframework.ai.chat.history.VectorStoreChatMemoryChatBotListener;
 import org.springframework.ai.chat.history.VectorStoreChatMemoryRetriever;
 import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
 import org.springframework.ai.chat.history.SystemPromptChatMemoryAugmentor;
@@ -98,26 +98,26 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatBot memoryChatAgent(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatBot memoryChatBot(OpenAiChatClient chatClient, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator) {
 
 			return DefaultChatBot.builder(chatClient)
 				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
 				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatAgentListeners(List.of(new VectorStoreChatMemoryAgentListener(vectorStore)))
+				.withChatBotListeners(List.of(new VectorStoreChatMemoryChatBotListener(vectorStore)))
 				.build();
 		}
 
 		@Bean
-		public StreamingChatBot memoryStreamingChatAgent(OpenAiChatClient streamingChatClient, VectorStore vectorStore,
+		public StreamingChatBot memoryStreamingChatBot(OpenAiChatClient streamingChatClient, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator) {
 
 			return DefaultStreamingChatBot.builder(streamingChatClient)
 				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatAgentListeners(List.of(new VectorStoreChatMemoryAgentListener(vectorStore)))
+				.withChatBotListeners(List.of(new VectorStoreChatMemoryChatBotListener(vectorStore)))
 				.build();
 		}
 

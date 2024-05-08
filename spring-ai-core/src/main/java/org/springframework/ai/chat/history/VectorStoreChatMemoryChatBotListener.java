@@ -20,8 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.chatbot.ChatBotListener;
 import org.springframework.ai.chat.chatbot.ChatBotResponse;
-import org.springframework.ai.chat.chatbot.ChatAgentListener;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
@@ -33,17 +33,17 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Christian Tzolov
  */
-public class VectorStoreChatMemoryAgentListener implements ChatAgentListener {
+public class VectorStoreChatMemoryChatBotListener implements ChatBotListener {
 
 	private final VectorStore vectorStore;
 
 	private final Map<String, Object> additionalMetadata;
 
-	public VectorStoreChatMemoryAgentListener(VectorStore vectorStore) {
+	public VectorStoreChatMemoryChatBotListener(VectorStore vectorStore) {
 		this(vectorStore, new HashMap<>());
 	}
 
-	public VectorStoreChatMemoryAgentListener(VectorStore vectorStore, Map<String, Object> additionalMetadata) {
+	public VectorStoreChatMemoryChatBotListener(VectorStore vectorStore, Map<String, Object> additionalMetadata) {
 		this.vectorStore = vectorStore;
 		this.additionalMetadata = additionalMetadata;
 	}
