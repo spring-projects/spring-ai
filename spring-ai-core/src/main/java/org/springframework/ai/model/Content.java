@@ -6,18 +6,29 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A simple data structure that contains content and metadata.
+ * Data structure that contains content and metadata. Common parent for the
+ * {@link org.springframework.ai.document.Document} and the
+ * {@link org.springframework.ai.chat.messages.Message} classes.
  *
- * @param <T> the type of content in the node
  * @author Mark Pollack
- * @since 1.0 M1
+ * @author Christian Tzolov
+ * @since 1.0.0
  */
 public interface Content {
 
+	/**
+	 * Get the content of the message.
+	 */
 	String getContent();
 
+	/**
+	 * Get the media associated with the content.
+	 */
 	List<Media> getMedia();
 
+	/**
+	 * return Get the metadata associated with the content.
+	 */
 	Map<String, Object> getMetadata();
 
 }

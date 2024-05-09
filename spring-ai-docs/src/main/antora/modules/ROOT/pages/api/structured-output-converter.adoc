@@ -91,13 +91,11 @@ image::structured-output-hierarchy4.jpg[Structured Output Class Hierarchy, width
 * `MapOutputConverter` - Extends the functionality of `AbstractMessageOutputConverter` with a `FormatProvider` implementation that guides the AI Model to generate an RFC8259 compliant JSON response. Additionally, it incorporates a converter implementation that utilizes the provided `MessageConverter` to translate the JSON payload into a `java.util.Map<String, Object>` instance.
 * `ListOutputConverter` - Extends the  `AbstractConversionServiceOutputConverter` and includes a `FormatProvider` implementation tailored for comma-delimited list output. The converter implementation employs the provided `ConversionService` to transform the model text output into a `java.util.List`.
 
-
 == Using Converters
 
 The following sections provide guides how to use the available converters to generate structured outputs.
 
 === Bean Output Converter
-
 
 The following example shows how to use `BeanOutputConverter` to generate the filmography for an actor.
 
@@ -113,7 +111,7 @@ Here is how to apply the BeanOutputConverter:
 
 [source,java]
 ----
-BeanConverter<ActorsFilms> beanOutputConverter =
+BeanOutputConverter<ActorsFilms> beanOutputConverter =
     new BeanOutputConverter<>(ActorsFilms.class);
 
 String format = beanOutputConverter.getFormat();

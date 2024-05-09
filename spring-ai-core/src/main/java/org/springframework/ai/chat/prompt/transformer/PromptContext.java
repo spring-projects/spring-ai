@@ -16,10 +16,14 @@
 
 package org.springframework.ai.chat.prompt.transformer;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Content;
-
-import java.util.*;
 
 /**
  * The shared, at the moment, mutable, data structure that can be used to implement
@@ -27,7 +31,7 @@ import java.util.*;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
- * @since 1.0 M1
+ * @since 1.0.0
  */
 public class PromptContext {
 
