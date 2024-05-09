@@ -15,16 +15,35 @@
  */
 package org.springframework.ai.vectorstore.azure;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
 import com.azure.core.util.Context;
 import com.azure.search.documents.SearchClient;
 import com.azure.search.documents.SearchDocument;
 import com.azure.search.documents.indexes.SearchIndexClient;
-import com.azure.search.documents.indexes.models.*;
-import com.azure.search.documents.models.*;
+import com.azure.search.documents.indexes.models.HnswAlgorithmConfiguration;
+import com.azure.search.documents.indexes.models.HnswParameters;
+import com.azure.search.documents.indexes.models.SearchField;
+import com.azure.search.documents.indexes.models.SearchFieldDataType;
+import com.azure.search.documents.indexes.models.SearchIndex;
+import com.azure.search.documents.indexes.models.VectorSearch;
+import com.azure.search.documents.indexes.models.VectorSearchAlgorithmMetric;
+import com.azure.search.documents.indexes.models.VectorSearchProfile;
+import com.azure.search.documents.models.IndexDocumentsResult;
+import com.azure.search.documents.models.IndexingResult;
+import com.azure.search.documents.models.SearchOptions;
+import com.azure.search.documents.models.VectorSearchOptions;
+import com.azure.search.documents.models.VectorizedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -35,9 +54,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Uses Azure Cognitive Search as a backing vector store. Documents can be preloaded into

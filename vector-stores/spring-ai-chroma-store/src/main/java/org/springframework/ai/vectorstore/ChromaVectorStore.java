@@ -15,6 +15,12 @@
  */
 package org.springframework.ai.vectorstore;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
@@ -29,8 +35,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
-
 /**
  * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
  * interface. It is responsible for adding, deleting, and searching documents based on
@@ -38,7 +42,7 @@ import java.util.*;
  * for embedding calculations. For more information about how it does this, see the
  * official <a href="https://www.trychroma.com/">Chroma website</a>.
  *
- *
+ * @author Christian Tzolov
  */
 public class ChromaVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
 

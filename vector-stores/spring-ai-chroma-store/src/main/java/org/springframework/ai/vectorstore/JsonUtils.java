@@ -22,10 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * @author Christian Tzolov
- */
-
-/**
  * Utility class for JSON processing. Provides methods for converting JSON strings to maps
  * and lists, and for converting between lists of different numeric types.
  *

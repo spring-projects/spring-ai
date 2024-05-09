@@ -141,7 +141,7 @@
 		<!-- Azure Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-azure-vector-store</artifactId>
+			<artifactId>spring-ai-azure-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -328,7 +328,7 @@
 			<artifactId>cassandra</artifactId>
 			<scope>test</scope>
 		</dependency>
-        
+
 		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>

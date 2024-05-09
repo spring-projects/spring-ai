@@ -34,7 +34,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-azure-vector-store</artifactId>
+            <artifactId>spring-ai-azure-store</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

@@ -38,11 +38,15 @@ import org.springframework.lang.Nullable;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Configuration for the Cassandra vector store.
