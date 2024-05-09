@@ -31,6 +31,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -150,7 +151,7 @@ public class ChromaVectorStore implements VectorStore, ApplicationListener<Appli
 	}
 
 	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
+	public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
 		var collection = this.chromaApi.getCollection(this.collectionName);
 		if (collection == null) {
 			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));

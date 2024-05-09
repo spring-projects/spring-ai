@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ChromaApiIT {
 
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22.dev44");
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22");
 
 	@Autowired
 	ChromaApi chroma;

@@ -51,6 +51,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -118,7 +119,7 @@ public class AzureVectorStore implements VectorStore, ApplicationListener<Applic
 	private final List<MetadataField> filterMetadataFields;
 
 	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
+	public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
 
 		int dimensions = this.embeddingClient.dimensions();
 
