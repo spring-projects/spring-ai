@@ -350,19 +350,19 @@ public class AzureOpenAiChatClient
 			mergedAzureOptions.setStop(springAiOptions.getStop());
 		}
 
-		if (springAiOptions.getTemperature() != null && springAiOptions.getTemperature() != null) {
+		if (mergedAzureOptions.getTemperature() == null && springAiOptions.getTemperature() != null) {
 			mergedAzureOptions.setTemperature(springAiOptions.getTemperature().doubleValue());
 		}
 
-		if (springAiOptions.getTopP() != null && springAiOptions.getTopP() != null) {
+		if (mergedAzureOptions.getTopP() == null && springAiOptions.getTopP() != null) {
 			mergedAzureOptions.setTopP(springAiOptions.getTopP().doubleValue());
 		}
 
-		if (springAiOptions.getFrequencyPenalty() != null && springAiOptions.getFrequencyPenalty() != null) {
+		if (mergedAzureOptions.getFrequencyPenalty() == null && springAiOptions.getFrequencyPenalty() != null) {
 			mergedAzureOptions.setFrequencyPenalty(springAiOptions.getFrequencyPenalty().doubleValue());
 		}
 
-		if (springAiOptions.getPresencePenalty() != null && springAiOptions.getPresencePenalty() != null) {
+		if (mergedAzureOptions.getPresencePenalty() == null && springAiOptions.getPresencePenalty() != null) {
 			mergedAzureOptions.setPresencePenalty(springAiOptions.getPresencePenalty().doubleValue());
 		}
 
