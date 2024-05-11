@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -31,7 +33,6 @@ import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.client.RestTemplate;
 import org.testcontainers.utility.MountableFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,8 +102,8 @@ public class BasicAuthChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate).withBasicAuthCredentials("admin",
-					"password");
+			return new ChromaApi(chromaContainer.getEndpoint(), RestClient.builder(restTemplate))
+				.withBasicAuthCredentials("admin", "password");
 		}
 
 		@Bean

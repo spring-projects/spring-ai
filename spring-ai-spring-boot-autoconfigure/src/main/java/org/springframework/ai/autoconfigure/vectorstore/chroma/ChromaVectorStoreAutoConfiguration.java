@@ -26,6 +26,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -56,7 +57,7 @@ public class ChromaVectorStoreAutoConfiguration {
 
 		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
-		var chromaApi = new ChromaApi(chromaUrl, restTemplate, new ObjectMapper());
+		var chromaApi = new ChromaApi(chromaUrl, RestClient.builder(restTemplate), new ObjectMapper());
 
 		if (StringUtils.hasText(apiProperties.getKeyToken())) {
 			chromaApi.withKeyToken(apiProperties.getKeyToken());
@@ -75,7 +76,7 @@ public class ChromaVectorStoreAutoConfiguration {
 		return new ChromaVectorStore(embeddingClient, chromaApi, storeProperties.getCollectionName());
 	}
 
-	private static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {
+	static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {
 
 		private final ChromaApiProperties properties;
 

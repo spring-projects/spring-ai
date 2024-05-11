@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -185,7 +186,7 @@ public class ChromaApiIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate);
+			return new ChromaApi(chromaContainer.getEndpoint(), RestClient.builder(restTemplate));
 		}
 
 	}

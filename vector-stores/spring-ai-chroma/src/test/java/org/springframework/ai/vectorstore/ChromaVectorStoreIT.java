@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -29,7 +30,6 @@ import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -209,7 +209,7 @@ public class ChromaVectorStoreIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate);
+			return new ChromaApi(chromaContainer.getEndpoint(), RestClient.builder(restTemplate));
 		}
 
 		@Bean
