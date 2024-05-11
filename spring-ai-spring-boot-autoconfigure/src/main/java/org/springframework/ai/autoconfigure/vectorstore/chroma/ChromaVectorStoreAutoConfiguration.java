@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.chroma;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
@@ -25,15 +23,18 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingModel.class, RestTemplate.class, ChromaVectorStore.class, ObjectMapper.class })
+@ConditionalOnClass({ EmbeddingModel.class, RestClient.class, ChromaVectorStore.class, ObjectMapper.class })
 @EnableConfigurationProperties({ ChromaApiProperties.class, ChromaVectorStoreProperties.class })
 public class ChromaVectorStoreAutoConfiguration {
 
@@ -45,18 +46,18 @@ public class ChromaVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RestTemplate restTemplate() {
-		return new RestTemplate();
+	public RestClient.Builder builder() {
+		return RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ChromaApi chromaApi(ChromaApiProperties apiProperties, RestTemplate restTemplate,
+	public ChromaApi chromaApi(ChromaApiProperties apiProperties, RestClient.Builder restClientBuilder,
 			ChromaConnectionDetails connectionDetails) {
 
 		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
-		var chromaApi = new ChromaApi(chromaUrl, restTemplate, new ObjectMapper());
+		var chromaApi = new ChromaApi(chromaUrl, restClientBuilder, new ObjectMapper());
 
 		if (StringUtils.hasText(apiProperties.getKeyToken())) {
 			chromaApi.withKeyToken(apiProperties.getKeyToken());
