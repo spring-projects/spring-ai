@@ -1,7 +1,6 @@
 package org.springframework.ai.vectorstore;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
@@ -95,6 +94,69 @@ public class TypesenseVectorStoreIT {
 			assertThat(results).hasSize(3);
 		});
 	}
+
+	@Test
+	void searchWithFilters() {
+
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5));
+			assertThat(results).hasSize(3);
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'NL'"));
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'BG'"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("country == 'BG' && year == 2020"));
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.query("The World")
+					.withTopK(5)
+					.withSimilarityThresholdAll()
+					.withFilterExpression("NOT(country == 'BG' && year == 2020)"));
+
+			assertThat(results).hasSize(2);
+			assertThat(results.get(0).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
+			assertThat(results.get(1).getId()).isIn(nlDocument.getId(), bgDocument2.getId());
+
+		});
+	}
+
+//	@Test
+//	void addAndSearchWithThreshold() {
+//		contextRunner.run(context -> {
+//
+//		})
+//	}
 
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
