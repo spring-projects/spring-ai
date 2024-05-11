@@ -40,12 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  * @since 0.8.1
  */
 @Testcontainers
 public class QdrantVectorStoreAutoConfigurationIT {
-
-	private static final String COLLECTION_NAME = "test_collection";
 
 	private static final int QDRANT_GRPC_PORT = 6334;
 
@@ -61,8 +60,7 @@ public class QdrantVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(QdrantVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.qdrant.port=" + qdrantContainer.getMappedPort(QDRANT_GRPC_PORT),
-				"spring.ai.vectorstore.qdrant.host=" + qdrantContainer.getHost(),
-				"spring.ai.vectorstore.qdrant.collectionName=" + COLLECTION_NAME);
+				"spring.ai.vectorstore.qdrant.host=" + qdrantContainer.getHost());
 
 	@Test
 	public void addAndSearch() {
