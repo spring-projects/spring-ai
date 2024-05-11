@@ -17,6 +17,7 @@ package org.springframework.ai.vectorstore;
 
 import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Smith
  */
 @Testcontainers
+@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container

@@ -25,12 +25,9 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.weaviate.client.Config;
-import io.weaviate.client.WeaviateAuthClient;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.base.WeaviateErrorMessage;
-import io.weaviate.client.v1.auth.exception.AuthException;
 import io.weaviate.client.v1.batch.model.BatchDeleteResponse;
 import io.weaviate.client.v1.batch.model.ObjectGetResponse;
 import io.weaviate.client.v1.data.model.WeaviateObject;
@@ -63,6 +60,7 @@ import org.springframework.util.StringUtils;
  * expression filters.
  *
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 public class WeaviateVectorStore implements VectorStore, InitializingBean {
 
@@ -169,18 +167,6 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 
 		}
 
-		/**
-		 * The server api key.
-		 */
-		private final String apiKey;
-
-		/**
-		 * The URL scheme, such as 'http' or 'https'.
-		 */
-		private final String scheme;
-
-		private final String host;
-
 		private final String weaviateObjectClass;
 
 		private final ConsistentLevel consistencyLevel;
@@ -199,9 +185,6 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 		 * @param builder The configuration builder.
 		 */
 		public WeaviateVectorStoreConfig(Builder builder) {
-			this.apiKey = builder.apiKey;
-			this.scheme = builder.scheme;
-			this.host = builder.host;
 			this.weaviateObjectClass = builder.objectClass;
 			this.consistencyLevel = builder.consistencyLevel;
 			this.filterMetadataFields = builder.filterMetadataFields;
@@ -225,12 +208,6 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 
 		public static class Builder {
 
-			private String apiKey = "";
-
-			private String scheme = "http";
-
-			private String host = "localhost:8080";
-
 			private String objectClass = "SpringAiWeaviate";
 
 			private ConsistentLevel consistencyLevel = WeaviateVectorStoreConfig.ConsistentLevel.ONE;
@@ -240,39 +217,6 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 			private Map<String, String> headers = Map.of();
 
 			private Builder() {
-			}
-
-			/**
-			 * Weaviate api key.
-			 * @param apiKey key to use.
-			 * @return this builder.
-			 */
-			public Builder withApiKey(String apiKey) {
-				Assert.notNull(apiKey, "The apiKey can not be null.");
-				this.apiKey = apiKey;
-				return this;
-			}
-
-			/**
-			 * Weaviate scheme.
-			 * @param scheme scheme to use.
-			 * @return this builder.
-			 */
-			public Builder withScheme(String scheme) {
-				Assert.hasText(scheme, "The scheme can not be empty.");
-				this.scheme = scheme;
-				return this;
-			}
-
-			/**
-			 * Weaviate host.
-			 * @param host host to use.
-			 * @return this builder.
-			 */
-			public Builder withHost(String host) {
-				Assert.hasText(host, "The host can not be empty.");
-				this.host = host;
-				return this;
 			}
 
 			/**
@@ -335,7 +279,8 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	 * @param vectorStoreConfig The configuration for the store.
 	 * @param embeddingClient The client for embedding operations.
 	 */
-	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingClient embeddingClient) {
+	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingClient embeddingClient,
+			WeaviateClient weaviateClient) {
 		Assert.notNull(vectorStoreConfig, "WeaviateVectorStoreConfig must not be null");
 		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
 
@@ -345,16 +290,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 		this.filterMetadataFields = vectorStoreConfig.filterMetadataFields;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
 				this.filterMetadataFields.stream().map(MetadataField::name).toList());
-
-		try {
-			this.weaviateClient = WeaviateAuthClient.apiKey(
-					new Config(vectorStoreConfig.scheme, vectorStoreConfig.host, vectorStoreConfig.headers),
-					vectorStoreConfig.apiKey);
-		}
-		catch (AuthException e) {
-			throw new IllegalArgumentException(e);
-		}
-
+		this.weaviateClient = weaviateClient;
 		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
 	}
 

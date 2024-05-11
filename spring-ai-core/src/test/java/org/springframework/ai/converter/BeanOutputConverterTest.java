@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.parser;
+package org.springframework.ai.converter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -34,17 +34,18 @@ import static org.mockito.Mockito.when;
 /**
  * @author Sebastian Ullrich
  * @author Kirk Lund
+ * @author Christian Tzolov
  */
 @ExtendWith(MockitoExtension.class)
-class BeanOutputParserTest {
+class BeanOutputConverterTest {
 
 	@Mock
 	private ObjectMapper objectMapperMock;
 
 	@Test
-	public void shouldHavePreconfiguredDefaultObjectMapper() {
-		var parser = new BeanOutputParser<>(TestClass.class);
-		var objectMapper = parser.getObjectMapper();
+	public void shouldHavePreConfiguredDefaultObjectMapper() {
+		var converter = new BeanOutputConverter<>(TestClass.class);
+		var objectMapper = converter.getObjectMapper();
 		assertThat(objectMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
 	}
 
@@ -52,8 +53,8 @@ class BeanOutputParserTest {
 	public void shouldUseProvidedObjectMapperForParsing() throws JsonProcessingException {
 		var testClass = new TestClass("some string");
 		when(objectMapperMock.readValue(anyString(), eq(TestClass.class))).thenReturn(testClass);
-		var parser = new BeanOutputParser<>(TestClass.class, objectMapperMock);
-		assertThat(parser.parse("{}")).isEqualTo(testClass);
+		var converter = new BeanOutputConverter<>(TestClass.class, objectMapperMock);
+		assertThat(converter.convert("{}")).isEqualTo(testClass);
 	}
 
 	@Nested
@@ -61,15 +62,15 @@ class BeanOutputParserTest {
 
 		@Test
 		public void shouldParseFieldNamesFromString() {
-			var parser = new BeanOutputParser<>(TestClass.class);
-			var testClass = parser.parse("{ \"someString\": \"some value\" }");
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			var testClass = converter.convert("{ \"someString\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
 		}
 
 		@Test
 		public void shouldParseJsonPropertiesFromString() {
-			var parser = new BeanOutputParser<>(TestClassWithJsonAnnotations.class);
-			var testClass = parser.parse("{ \"string_property\": \"some value\" }");
+			var converter = new BeanOutputConverter<>(TestClassWithJsonAnnotations.class);
+			var testClass = converter.convert("{ \"string_property\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
 		}
 
@@ -80,12 +81,13 @@ class BeanOutputParserTest {
 
 		@Test
 		public void shouldReturnFormatContainingResponseInstructionsAndJsonSchema() {
-			var parser = new BeanOutputParser<>(TestClass.class);
-			assertThat(parser.getFormat()).isEqualTo(
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			assertThat(converter.getFormat()).isEqualTo(
 					"""
 							Your response should be in JSON format.
 							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
 							Do not include markdown code blocks in your response.
+							Remove the ```json markdown from the output.
 							Here is the JSON Schema instance your output must adhere to:
 							```{
 							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
@@ -101,8 +103,8 @@ class BeanOutputParserTest {
 
 		@Test
 		public void shouldReturnFormatContainingJsonSchemaIncludingPropertyAndPropertyDescription() {
-			var parser = new BeanOutputParser<>(TestClassWithJsonAnnotations.class);
-			assertThat(parser.getFormat()).contains("""
+			var converter = new BeanOutputConverter<>(TestClassWithJsonAnnotations.class);
+			assertThat(converter.getFormat()).contains("""
 					```{
 					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
 					  "type" : "object",
@@ -118,9 +120,9 @@ class BeanOutputParserTest {
 
 		@Test
 		void normalizesLineEndings() {
-			BeanOutputParser<TestClass> parser = new BeanOutputParser<>(TestClass.class);
+			var converter = new BeanOutputConverter<>(TestClass.class);
 
-			String formatOutput = parser.getFormat();
+			String formatOutput = converter.getFormat();
 
 			// validate that output contains \n line endings
 			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");

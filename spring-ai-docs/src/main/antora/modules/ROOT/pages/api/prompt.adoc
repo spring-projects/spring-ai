@@ -49,16 +49,26 @@ The `Message` interface encapsulates a textual message, a collection of attribut
 The interface is defined as follows:
 
 ```java
-public interface Message {
+public interface Message extends Node<String> {
 
 	String getContent();
 
 	List<Media> getMedia();
 
-	Map<String, Object> getProperties();
-
 	MessageType getMessageType();
 
+}
+```
+
+and the Node interface is
+
+```java
+
+public interface Node<T> {
+
+    T getContent();
+
+    Map<String, Object> getMetadata();
 }
 ```
 

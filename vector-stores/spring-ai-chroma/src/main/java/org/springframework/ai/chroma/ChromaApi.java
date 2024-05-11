@@ -82,7 +82,7 @@ public class ChromaApi {
 	 * @param password Credentials password.
 	 */
 	public ChromaApi withBasicAuthCredentials(String username, String password) {
-		this.restTemplate.getInterceptors().add(new BasicAuthenticationInterceptor(username, username));
+		this.restTemplate.getInterceptors().add(new BasicAuthenticationInterceptor(username, password));
 		return this;
 	}
 
