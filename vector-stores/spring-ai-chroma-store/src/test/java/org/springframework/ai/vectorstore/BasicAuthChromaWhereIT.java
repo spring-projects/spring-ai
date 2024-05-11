@@ -15,27 +15,26 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.chromadb.ChromaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+import org.testcontainers.chromadb.ChromaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * ChromaDB with Basic Authentication:
@@ -55,7 +54,7 @@ public class BasicAuthChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#basic-authentication
 	 */
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22")
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "/chroma/server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")
@@ -96,14 +95,13 @@ public class BasicAuthChromaWhereIT {
 	public static class TestApplication {
 
 		@Bean
-		public RestTemplate restTemplate() {
-			return new RestTemplate();
+		public RestClient.Builder builder() {
+			return RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory());
 		}
 
 		@Bean
-		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate).withBasicAuthCredentials("admin",
-					"password");
+		public ChromaApi chromaApi(RestClient.Builder builder) {
+			return new ChromaApi(chromaContainer.getEndpoint(), builder).withBasicAuthCredentials("admin", "password");
 		}
 
 		@Bean
