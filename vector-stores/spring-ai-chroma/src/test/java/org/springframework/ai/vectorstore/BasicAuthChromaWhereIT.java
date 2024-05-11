@@ -20,7 +20,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.chromadb.ChromaDBContainer;
-import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -28,12 +27,12 @@ import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.openai.OpenAiEmbeddingClient;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
+import org.testcontainers.utility.MountableFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,11 +55,11 @@ public class BasicAuthChromaWhereIT {
 	 */
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22")
-		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "server.htpasswd")
+		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "/chroma/server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")
 		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.basic.BasicAuthServerProvider")
-		.withCopyToContainer(Transferable.of("src/test/resources/server.htpasswd"), "server.htpasswd");
+		.withCopyToContainer(MountableFile.forClasspathResource("server.htpasswd"), "/chroma/server.htpasswd");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -103,7 +102,7 @@ public class BasicAuthChromaWhereIT {
 		@Bean
 		public ChromaApi chromaApi(RestTemplate restTemplate) {
 			return new ChromaApi(chromaContainer.getEndpoint(), restTemplate).withBasicAuthCredentials("admin",
-					"admin");
+					"password");
 		}
 
 		@Bean
