@@ -40,10 +40,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -90,11 +90,11 @@ class AnthropicChatClientIT {
 	}
 
 	@Test
-	void outputParser() {
+	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter listOutputConverter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = listOutputConverter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -104,15 +104,15 @@ class AnthropicChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatClient.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getOutput().getContent());
+		List<String> list = listOutputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 
 	@Test
-	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+	void mapOutputConverter() {
+		MapOutputConverter mapOutputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = mapOutputConverter.getFormat();
 		String template = """
 				Provide me a List of {subject}
 				{format}
@@ -122,7 +122,7 @@ class AnthropicChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatClient.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
+		Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -131,11 +131,11 @@ class AnthropicChatClientIT {
 	}
 
 	@Test
-	void beanOutputParserRecords() {
+	void beanOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> beanOutputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = beanOutputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -144,18 +144,18 @@ class AnthropicChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatClient.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
-	void beanStreamOutputParserRecords() {
+	void beanStreamOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> beanOutputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = beanOutputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -173,7 +173,7 @@ class AnthropicChatClientIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);

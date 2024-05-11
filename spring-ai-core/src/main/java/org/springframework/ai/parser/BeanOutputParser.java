@@ -34,11 +34,13 @@ import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
 import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
 
 /**
+ * @deprecated Use the {@link org.springframework.ai.converter.BeanOutputConverter}
+ * instead.
+ *
  * An implementation of {@link OutputParser} that transforms the LLM output to a specific
  * object type using JSON schema. This parser works by generating a JSON schema based on a
  * given Java class, which is then used to validate and transform the LLM output into the
  * desired type.
- *
  * @param <T> The target type to which the output will be converted.
  * @author Mark Pollack
  * @author Christian Tzolov

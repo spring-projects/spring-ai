@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.messages.AssistantMessage;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -34,14 +32,15 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -104,11 +103,11 @@ class BedrockCohereChatClientIT {
 	}
 
 	@Test
-	void outputParser() {
+	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -118,15 +117,15 @@ class BedrockCohereChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.client.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 
 	@Test
-	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+	void mapOutputConverter() {
+		MapOutputConverter outputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Remove Markdown code blocks from the output.
 				Provide me a List of {subject}
@@ -137,7 +136,7 @@ class BedrockCohereChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = client.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -146,11 +145,11 @@ class BedrockCohereChatClientIT {
 	}
 
 	@Test
-	void beanOutputParserRecords() {
+	void beanOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -160,17 +159,17 @@ class BedrockCohereChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = client.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
-	void beanStreamOutputParserRecords() {
+	void beanStreamOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -189,7 +188,7 @@ class BedrockCohereChatClientIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
 		System.out.println(actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);

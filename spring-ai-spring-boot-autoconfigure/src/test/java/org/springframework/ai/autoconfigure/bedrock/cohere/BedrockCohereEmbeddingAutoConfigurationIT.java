@@ -90,7 +90,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.cohere.embedding.model=MODEL_XYZ",
 					"spring.ai.bedrock.cohere.embedding.options.inputType=CLASSIFICATION",
-					"spring.ai.bedrock.cohere.embedding.options.truncate=RIGHT")
+					"spring.ai.bedrock.cohere.embedding.options.truncate=START")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var properties = context.getBean(BedrockCohereEmbeddingProperties.class);
@@ -101,7 +101,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 
 				assertThat(properties.getOptions().getInputType()).isEqualTo(InputType.CLASSIFICATION);
-				assertThat(properties.getOptions().getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.RIGHT);
+				assertThat(properties.getOptions().getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.START);
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(awsProperties.getSecretKey()).isEqualTo("SECRET_KEY");

@@ -78,15 +78,28 @@ The `Message` interface encapsulates a textual message, a collection of attribut
 
 [source,java]
 ----
-public interface Message {
+public interface Message extends Node<String> {
 
    String getContent();
 
-   Map<String, Object> getProperties();
+   List<Media> getMedia();
 
    MessageType getMessageType();
 }
 ----
+
+
+and the Node interface is
+
+```java
+
+public interface Node<T> {
+
+    T getContent();
+
+    Map<String, Object> getMetadata();
+}
+```
 
 The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process.
 Some models, like OpenAI's chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.

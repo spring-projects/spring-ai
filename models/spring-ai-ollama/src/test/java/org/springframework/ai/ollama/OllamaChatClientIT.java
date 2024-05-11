@@ -26,30 +26,30 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.ollama.OllamaContainer;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.testcontainers.ollama.OllamaContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -119,11 +119,11 @@ class OllamaChatClientIT {
 	}
 
 	@Test
-	void outputParser() {
+	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -133,15 +133,15 @@ class OllamaChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.client.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 	}
 
 	@Test
-	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+	void mapOutputConvert() {
+		MapOutputConverter outputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Remove Markdown code blocks from the output.
 				Provide me a List of {subject}
@@ -153,7 +153,7 @@ class OllamaChatClientIT {
 
 		Generation generation = client.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -162,11 +162,11 @@ class OllamaChatClientIT {
 	}
 
 	@Test
-	void beanOutputParserRecords() {
+	void beanOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -175,17 +175,17 @@ class OllamaChatClientIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = client.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
-	void beanStreamOutputParserRecords() {
+	void beanStreamOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -204,7 +204,7 @@ class OllamaChatClientIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
 
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -220,8 +220,7 @@ class OllamaChatClientIT {
 
 		@Bean
 		public OllamaChatClient ollamaChat(OllamaApi ollamaApi) {
-			return new OllamaChatClient(ollamaApi).withModel(MODEL)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
+			return new OllamaChatClient(ollamaApi, OllamaOptions.create().withModel(MODEL).withTemperature(0.9f));
 		}
 
 	}

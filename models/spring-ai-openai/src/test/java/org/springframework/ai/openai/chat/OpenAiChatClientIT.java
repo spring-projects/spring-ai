@@ -37,15 +37,15 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -67,7 +67,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
@@ -78,11 +78,11 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@Test
-	void outputParser() {
+	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -92,16 +92,16 @@ class OpenAiChatClientIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatClient.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 
 	}
 
 	@Test
-	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+	void mapOutputConverter() {
+		MapOutputConverter outputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Provide me a List of {subject}
 				{format}
@@ -111,17 +111,17 @@ class OpenAiChatClientIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatClient.call(prompt).getResult();
 
-		Map<String, Object> result = outputParser.parse(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
 
 	@Test
-	void beanOutputParser() {
+	void beanOutputConverter() {
 
-		BeanOutputParser<ActorsFilms> outputParser = new BeanOutputParser<>(ActorsFilms.class);
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography for a random actor.
 				{format}
@@ -130,18 +130,18 @@ class OpenAiChatClientIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatClient.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputParser.parse(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
-	void beanOutputParserRecords() {
+	void beanOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -150,18 +150,18 @@ class OpenAiChatClientIT extends AbstractIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatClient.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
-	void beanStreamOutputParserRecords() {
+	void beanStreamOutputConverterRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
@@ -179,7 +179,7 @@ class OpenAiChatClientIT extends AbstractIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);

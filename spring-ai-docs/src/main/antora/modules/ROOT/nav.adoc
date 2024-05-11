@@ -64,7 +64,7 @@
 ** xref:api/functions.adoc[Function Calling]
 ** xref:api/multimodality.adoc[Multimodality]
 ** xref:api/prompt.adoc[]
-** xref:api/output-parser.adoc[]
+** xref:api/structured-output-converter.adoc[Structured Output]
 ** xref:api/etl-pipeline.adoc[]
 ** xref:api/testing.adoc[]
 ** xref:api/generic-model.adoc[]

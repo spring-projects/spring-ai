@@ -15,14 +15,18 @@
  */
 package org.springframework.ai.chat.prompt;
 
-import org.springframework.ai.model.ModelOptions;
-import org.springframework.ai.model.ModelRequest;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.FunctionMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.model.ModelRequest;
 
 public class Prompt implements ModelRequest<List<Message>> {
 
@@ -90,6 +94,33 @@ public class Prompt implements ModelRequest<List<Message>> {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.messages, this.modelOptions);
+	}
+
+	public Prompt copy() {
+		return new Prompt(instructionsCopy(), this.modelOptions);
+	}
+
+	private List<Message> instructionsCopy() {
+		List<Message> messagesCopy = new ArrayList<>();
+		this.messages.forEach(message -> {
+			if (message instanceof UserMessage) {
+				messagesCopy.add(new UserMessage(message.getContent(), message.getMedia(), message.getMetadata()));
+			}
+			else if (message instanceof SystemMessage) {
+				messagesCopy.add(new SystemMessage(message.getContent()));
+			}
+			else if (message instanceof AssistantMessage) {
+				messagesCopy.add(new AssistantMessage(message.getContent(), message.getMetadata()));
+			}
+			else if (message instanceof FunctionMessage) {
+				messagesCopy.add(new FunctionMessage(message.getContent(), message.getMetadata()));
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported message type: " + message.getClass().getName());
+			}
+		});
+
+		return messagesCopy;
 	}
 
 }

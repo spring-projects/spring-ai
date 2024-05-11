@@ -24,10 +24,12 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.support.MessageBuilder;
 
 /**
+ * @deprecated Use the {@link org.springframework.ai.converter.MapOutputConverter}
+ * instead.
+ *
  * {@link OutputParser} implementation that uses a pre-configured
  * {@link MappingJackson2MessageConverter} to convert the LLM output into a
  * java.util.Map&lt;String, Object&gt; instance.
- *
  * @author Mark Pollack
  * @author Christian Tzolov
  */

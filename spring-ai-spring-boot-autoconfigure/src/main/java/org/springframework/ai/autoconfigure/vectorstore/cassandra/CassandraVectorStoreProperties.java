@@ -41,6 +41,8 @@ public class CassandraVectorStoreProperties {
 
 	private boolean disallowSchemaChanges = false;
 
+	private boolean returnEmbeddings = false;
+
 	private int fixedThreadPoolExecutorSize = CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY;
 
 	public String getKeyspace() {
@@ -83,12 +85,20 @@ public class CassandraVectorStoreProperties {
 		this.embeddingColumnName = embeddingColumnName;
 	}
 
-	public Boolean getDisallowSchemaCreation() {
+	public boolean getDisallowSchemaCreation() {
 		return this.disallowSchemaChanges;
 	}
 
 	public void setDisallowSchemaCreation(boolean disallowSchemaCreation) {
 		this.disallowSchemaChanges = disallowSchemaCreation;
+	}
+
+	public boolean getReturnEmbeddings() {
+		return this.returnEmbeddings;
+	}
+
+	public void setReturnEmbeddings(boolean returnEmbeddings) {
+		this.returnEmbeddings = returnEmbeddings;
 	}
 
 	public int getFixedThreadPoolExecutorSize() {

@@ -275,7 +275,12 @@ public class TitanChatBedrockApi extends
 		/**
 		 * amazon.titan-text-express-v1
 		 */
-		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1");
+		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1"),
+
+		/**
+		 * amazon.titan-text-premier-v1:0
+		 */
+		TITAN_TEXT_PREMIER_V1("amazon.titan-text-premier-v1:0");
 
 		private final String id;
 
