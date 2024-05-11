@@ -22,9 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
 import org.typesense.api.Configuration;
@@ -73,6 +71,55 @@ public class TypesenseVectorStoreIT {
 	private void resetCollection(VectorStore vectorStore) {
 		((TypesenseVectorStore) vectorStore).dropCollection();
 		((TypesenseVectorStore) vectorStore).createCollection();
+	}
+
+	@Test
+	void documentUpdate() {
+		contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
+
+			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
+					Collections.singletonMap("meta1", "meta1"));
+
+			vectorStore.add(List.of(document));
+
+			Map<String, Object> info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(1L);
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(document.getId());
+			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getMetadata()).containsKey("meta1");
+
+			Document sameIdDocument = new Document(document.getId(),
+					"The World is Big and Salvation Lurks Around the Corner",
+					Collections.singletonMap("meta2", "meta2"));
+
+			vectorStore.add(List.of(sameIdDocument));
+
+			info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(1L);
+
+			results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+
+			assertThat(results).hasSize(1);
+			resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(document.getId());
+			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+
+			vectorStore.delete(List.of(document.getId()));
+
+			info = ((TypesenseVectorStore) vectorStore).getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(0L);
+
+		});
 	}
 
 	@Test
@@ -151,12 +198,38 @@ public class TypesenseVectorStoreIT {
 		});
 	}
 
-//	@Test
-//	void addAndSearchWithThreshold() {
-//		contextRunner.run(context -> {
-//
-//		})
-//	}
+	@Test
+	void searchWithThreshold() {
+
+		contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
+
+			vectorStore.add(documents);
+
+			List<Document> fullResult = vectorStore
+					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThresholdAll());
+
+			List<Float> distances = fullResult.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+
+			assertThat(distances).hasSize(3);
+
+			float threshold = (distances.get(0) + distances.get(1)) / 2;
+
+			List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.query("Spring").withTopK(5).withSimilarityThreshold(1 - threshold));
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+			assertThat(resultDoc.getContent()).contains(
+					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+			assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+
+		});
+	}
 
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
