@@ -38,8 +38,8 @@ import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
  * to a specific object type using JSON schema. This parser works by generating a JSON
- * schema based on a given Java class, which is then used to validate and transform the
- * LLM output into the desired type.
+ * schema based on a given Java class type reference, which is then used to validate and
+ * transform the LLM output into the desired type.
  *
  * @param <T> The target type to which the output will be converted.
  * @author Mark Pollack
@@ -52,7 +52,9 @@ public class TypeReferenceOutputConverter<T> implements StructuredOutputConverte
 	/** Holds the generated JSON schema for the target type. */
 	private String jsonSchema;
 
-	/** The Java class representing the target type. */
+	/**
+	 * The target class type reference to which the output will be converted.
+	 */
 	@SuppressWarnings({ "FieldMayBeFinal", "rawtypes" })
 	private TypeReference<T> typeRef;
 
@@ -61,22 +63,23 @@ public class TypeReferenceOutputConverter<T> implements StructuredOutputConverte
 	private ObjectMapper objectMapper;
 
 	/**
-	 * Constructor to initialize with the target type's class.
-	 * @param clazz The target type's class.
+	 * Constructor to initialize with the target class type reference.
+	 * @param typeRef The target type's class.
 	 */
-	public TypeReferenceOutputConverter(TypeReference<T> clazz) {
-		this(clazz, null);
+	public TypeReferenceOutputConverter(TypeReference<T> typeRef) {
+		this(typeRef, null);
 	}
 
 	/**
-	 * Constructor to initialize with the target type's class, a custom object mapper, and
-	 * a line endings normalizer to ensure consistent line endings on any platform.
-	 * @param clazz The target type's class.
+	 * Constructor to initialize with the target class type reference, a custom object
+	 * mapper, and a line endings normalizer to ensure consistent line endings on any
+	 * platform.
+	 * @param typeRef The target class type reference.
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
-	public TypeReferenceOutputConverter(TypeReference<T> clazz, ObjectMapper objectMapper) {
-		Objects.requireNonNull(clazz, "Java Class cannot be null;");
-		this.typeRef = clazz;
+	public TypeReferenceOutputConverter(TypeReference<T> typeRef, ObjectMapper objectMapper) {
+		Objects.requireNonNull(typeRef, "Type reference cannot be null;");
+		this.typeRef = typeRef;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
 		generateSchema();
 	}
