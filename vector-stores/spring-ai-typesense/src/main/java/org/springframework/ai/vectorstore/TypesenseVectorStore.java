@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.TypesenseFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.typesense.api.Client;
@@ -38,6 +40,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	private final EmbeddingClient embeddingClient;
 
 	private final TypesenseVectorStoreConfig config;
+	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
 
 	public static class TypesenseVectorStoreConfig {
 
@@ -179,12 +182,25 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	public List<Document> similaritySearch(SearchRequest request) {
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 
+		String nativeFilterExpressions = (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+
+		logger.info("Filter expression: {}", nativeFilterExpressions);
+
 		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
 
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
 		multiSearchCollectionParameters.collection(this.config.collectionName);
 		multiSearchCollectionParameters.q("*");
-		multiSearchCollectionParameters.vectorQuery(EMBEDDING_FIELD_NAME + ":([" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "], k: 100)");
+
+		// typesnese usues only cosine similarity and shifted by 1 [-1, 1] -> [0, 2]
+        String vectorQuery = EMBEDDING_FIELD_NAME + ":(" +
+				"[" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "], " +
+				"k: " + request.getTopK() + ", " +
+				"distance_threshold: " + (1 + request.getSimilarityThreshold()) + ")";
+
+        multiSearchCollectionParameters.vectorQuery(vectorQuery);
+		multiSearchCollectionParameters.filterBy(nativeFilterExpressions);
 
 		MultiSearchSearchesParameter multiSearchesParameter = new MultiSearchSearchesParameter().addSearchesItem(multiSearchCollectionParameters);
 
@@ -196,7 +212,6 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 					.flatMap(searchResult ->
 							searchResult.getHits()
 									.stream()
-									.filter(hit -> hit.getVectorDistance() >= request.getSimilarityThreshold())
 									.map(hit -> {
 										Map<String, Object> rawDocument = hit.getDocument();
 										String docId = rawDocument.get(DOC_ID_FIELD_NAME).toString();
@@ -208,6 +223,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 					.toList();
 
 			logger.info("Found {} documents", documents.size());
+			logger.info("Docs: \n {}", result);
 			return documents;
 		}
 		catch (Exception e) {
