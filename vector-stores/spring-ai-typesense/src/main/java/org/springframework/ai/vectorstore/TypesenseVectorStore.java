@@ -40,6 +40,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	private final EmbeddingClient embeddingClient;
 
 	private final TypesenseVectorStoreConfig config;
+
 	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
 
 	public static class TypesenseVectorStoreConfig {
@@ -193,37 +194,35 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		multiSearchCollectionParameters.collection(this.config.collectionName);
 		multiSearchCollectionParameters.q("*");
 
-		// typesnese usues only cosine similarity and shifted by 1 [-1, 1] -> [0, 2]
-        String vectorQuery = EMBEDDING_FIELD_NAME + ":(" +
-				"[" + String.join(",", embedding.stream().map(String::valueOf).toList()) + "], " +
-				"k: " + request.getTopK() + ", " +
-				"distance_threshold: " + (1 + request.getSimilarityThreshold()) + ")";
+		// typesnese uses only cosine similarity
+		String vectorQuery = EMBEDDING_FIELD_NAME + ":(" + "["
+				+ String.join(",", embedding.stream().map(String::valueOf).toList()) + "], " + "k: " + request.getTopK()
+				+ ", " + "distance_threshold: " + (1 - request.getSimilarityThreshold()) + ")";
 
-        multiSearchCollectionParameters.vectorQuery(vectorQuery);
+		multiSearchCollectionParameters.vectorQuery(vectorQuery);
 		multiSearchCollectionParameters.filterBy(nativeFilterExpressions);
 
-		MultiSearchSearchesParameter multiSearchesParameter = new MultiSearchSearchesParameter().addSearchesItem(multiSearchCollectionParameters);
+		MultiSearchSearchesParameter multiSearchesParameter = new MultiSearchSearchesParameter()
+			.addSearchesItem(multiSearchCollectionParameters);
 
 		try {
-			MultiSearchResult result = this.client.multiSearch.perform(multiSearchesParameter, Map.of("query_by", EMBEDDING_FIELD_NAME));
+			MultiSearchResult result = this.client.multiSearch.perform(multiSearchesParameter,
+					Map.of("query_by", EMBEDDING_FIELD_NAME));
 
 			List<Document> documents = result.getResults()
-					.stream()
-					.flatMap(searchResult ->
-							searchResult.getHits()
-									.stream()
-									.map(hit -> {
-										Map<String, Object> rawDocument = hit.getDocument();
-										String docId = rawDocument.get(DOC_ID_FIELD_NAME).toString();
-										String content = rawDocument.get(CONTENT_FIELD_NAME).toString();
-										Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map ? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
-										return new Document(docId, content, metadata);
-									})
-					)
-					.toList();
+				.stream()
+				.flatMap(searchResult -> searchResult.getHits().stream().map(hit -> {
+					Map<String, Object> rawDocument = hit.getDocument();
+					String docId = rawDocument.get(DOC_ID_FIELD_NAME).toString();
+					String content = rawDocument.get(CONTENT_FIELD_NAME).toString();
+					Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map
+							? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
+					metadata.put("distance", hit.getVectorDistance());
+					return new Document(docId, content, metadata);
+				}))
+				.toList();
 
 			logger.info("Found {} documents", documents.size());
-			logger.info("Docs: \n {}", result);
 			return documents;
 		}
 		catch (Exception e) {
@@ -296,7 +295,8 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	Map<String, Object> getCollectionInfo() {
 		try {
 			CollectionResponse retrievedCollection = this.client.collections(this.config.collectionName).retrieve();
-			return Map.of("name", retrievedCollection.getName(), "num_documents", retrievedCollection.getNumDocuments());
+			return Map.of("name", retrievedCollection.getName(), "num_documents",
+					retrievedCollection.getNumDocuments());
 		}
 		catch (Exception e) {
 			logger.error("Failed to retrieve collection info", e);
