@@ -30,6 +30,9 @@ import org.typesense.resources.Node;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @author Pablo Sanchidrian Herrera
+ */
 @Testcontainers
 public class TypesenseVectorStoreIT {
 

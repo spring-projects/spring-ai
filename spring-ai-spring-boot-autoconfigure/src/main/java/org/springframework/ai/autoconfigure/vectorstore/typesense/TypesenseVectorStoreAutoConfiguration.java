@@ -7,6 +7,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * @author Pablo Sanchidrian Herrera
+ */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingClient.class })
 @EnableConfigurationProperties({ TypesenseVectorStoreProperties.class })

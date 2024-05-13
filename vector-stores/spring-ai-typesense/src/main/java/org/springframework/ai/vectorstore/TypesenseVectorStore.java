@@ -24,8 +24,8 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
 
 	/**
-	 * The name of the field that contains the document ID. It is mandatory to "id" as the
-	 * field name because that is the name that typesense is going to look for.
+	 * The name of the field that contains the document ID. It is mandatory to set "id" as
+	 * the field name because that is the name that typesense is going to look for.
 	 */
 	public static final String DOC_ID_FIELD_NAME = "id";
 
