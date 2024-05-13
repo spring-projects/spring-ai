@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -137,9 +138,10 @@ public class HanaCloudVectorStore implements VectorStore {
 	}
 
 	private String getEmbedding(Document document) {
-		return "["
-				+ this.embeddingClient.embed(document).stream().map(String::valueOf).collect(Collectors.joining(", "))
-				+ "]";
+		if (CollectionUtils.isEmpty(document.getEmbedding())) {
+			document.setEmbedding(this.embeddingClient.embed(document));
+		}
+		return "[" + document.getEmbedding().stream().map(String::valueOf).collect(Collectors.joining(", ")) + "]";
 	}
 
 }

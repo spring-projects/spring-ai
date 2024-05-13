@@ -24,6 +24,7 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -372,8 +373,9 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 	}
 
 	private Map<String, Object> documentToRecord(Document document) {
-		var embedding = this.embeddingClient.embed(document);
-		document.setEmbedding(embedding);
+		if (CollectionUtils.isEmpty(document.getEmbedding())) {
+			document.setEmbedding(this.embeddingClient.embed(document));
+		}
 
 		var row = new HashMap<String, Object>();
 
@@ -385,7 +387,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
 
-		row.put(this.config.embeddingProperty, Values.value(toFloatArray(embedding)));
+		row.put(this.config.embeddingProperty, Values.value(toFloatArray(document.getEmbedding())));
 		return row;
 	}
 

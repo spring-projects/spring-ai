@@ -39,6 +39,7 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -232,7 +233,9 @@ public class PineconeVectorStore implements VectorStore {
 
 		List<Vector> upsertVectors = documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
-			document.setEmbedding(this.embeddingClient.embed(document));
+			if (CollectionUtils.isEmpty(document.getEmbedding())) {
+				document.setEmbedding(this.embeddingClient.embed(document));
+			}
 
 			return Vector.newBuilder()
 				.setId(document.getId())

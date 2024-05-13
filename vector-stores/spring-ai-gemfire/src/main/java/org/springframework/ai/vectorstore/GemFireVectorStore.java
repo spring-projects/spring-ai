@@ -35,6 +35,7 @@ import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
@@ -417,7 +418,9 @@ public class GemFireVectorStore implements VectorStore {
 	public void add(List<Document> documents) {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
-			document.setEmbedding(this.embeddingClient.embed(document));
+			if (CollectionUtils.isEmpty(document.getEmbedding())) {
+				document.setEmbedding(this.embeddingClient.embed(document));
+			}
 			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
 			return new UploadRequest.Embedding(document.getId(), floatVector, documentField, document.getContent(),
 					document.getMetadata());

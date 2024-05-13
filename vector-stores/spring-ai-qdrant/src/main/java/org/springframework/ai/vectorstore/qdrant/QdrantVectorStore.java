@@ -43,6 +43,7 @@ import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Qdrant vectorStore implementation. This store supports creating, updating, deleting,
@@ -165,7 +166,9 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		try {
 			List<PointStruct> points = documents.stream().map(document -> {
 				// Compute and assign an embedding to the document.
-				document.setEmbedding(this.embeddingClient.embed(document));
+				if (CollectionUtils.isEmpty(document.getEmbedding())) {
+					document.setEmbedding(this.embeddingClient.embed(document));
+				}
 
 				return PointStruct.newBuilder()
 					.setId(id(UUID.fromString(document.getId())))
