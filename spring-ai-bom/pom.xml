@@ -304,6 +304,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-typesense</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-pinecone-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -367,9 +373,16 @@
                 <artifactId>spring-ai-mongodb-atlas-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-typesense-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
