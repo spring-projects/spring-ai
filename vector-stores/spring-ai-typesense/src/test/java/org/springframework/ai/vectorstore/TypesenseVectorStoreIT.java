@@ -177,7 +177,7 @@ public class TypesenseVectorStoreIT {
 			results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
 				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG'"));
+				.withFilterExpression("country in ['BG']"));
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
