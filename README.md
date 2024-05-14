@@ -84,7 +84,7 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 Spring AI supports many AI models.  For an overview see here.  Specific models currently supported are
 * OpenAI
 * Azure OpenAI
-* Amazon Bedrock (Anthropic, Llama2, Cohere, Titan, Jurassic2)
+* Amazon Bedrock (Anthropic, Llama, Cohere, Titan, Jurassic2)
 * HuggingFace
 * Google VertexAI (PaLM2, Gemini)
 * Mistral AI
@@ -110,7 +110,7 @@ For a hands-on guide to PromptTemplate, see the [PromptTemplate API guide](https
 **Output Parsers:**  AI model outputs often come as raw `java.lang.String` values. Output Parsers restructure these raw strings into more programmer-friendly formats, such as CSV or JSON.
 
 Get insights on Output Parsers in our [concept guide](https://docs.spring.io/spring-ai/reference/concepts.html#_output_parsing)..
-For implementation details, visit the [OutputParser API guide](https://docs.spring.io/spring-ai/reference/api/output-parser.html).
+For implementation details, visit the [StructuredOutputConverter API guide](https://docs.spring.io/spring-ai/reference/api/output-parser.html).
 
 ### Incorporating your data
 

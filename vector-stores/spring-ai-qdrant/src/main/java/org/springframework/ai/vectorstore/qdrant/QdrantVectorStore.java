@@ -34,7 +34,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import io.qdrant.client.grpc.JsonWithInt.Value;
@@ -51,6 +50,7 @@ import io.qdrant.client.grpc.Points.UpdateStatus;
  *
  * @author Anush Shetty
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  * @since 0.8.1
  */
 public class QdrantVectorStore implements VectorStore, InitializingBean {
@@ -69,12 +69,13 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 	/**
 	 * Configuration class for the QdrantVectorStore.
+	 *
+	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
 	 */
+	@Deprecated(since = "1.0.0", forRemoval = true)
 	public static final class QdrantVectorStoreConfig {
 
 		private final String collectionName;
-
-		private QdrantClient qdrantClient;
 
 		/*
 		 * Constructor using the builder.
@@ -83,15 +84,6 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		 */
 		private QdrantVectorStoreConfig(Builder builder) {
 			this.collectionName = builder.collectionName;
-
-			QdrantGrpcClient.Builder grpcClientBuilder = QdrantGrpcClient.newBuilder(builder.host, builder.port,
-					builder.useTls);
-
-			if (builder.apiKey != null) {
-				grpcClientBuilder.withApiKey(builder.apiKey);
-			}
-
-			this.qdrantClient = new QdrantClient(grpcClientBuilder.build());
 		}
 
 		/**
@@ -113,24 +105,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 			private String collectionName;
 
-			private String host = "localhost";
-
-			private int port = 6334;
-
-			private boolean useTls = false;
-
-			private String apiKey = null;
-
 			private Builder() {
-			}
-
-			/**
-			 * @param host The host of the Qdrant instance. Defaults to "localhost".
-			 */
-			public Builder withHost(String host) {
-				Assert.notNull(host, "host cannot be null");
-				this.host = host;
-				return this;
 			}
 
 			/**
@@ -138,32 +113,6 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 			 */
 			public Builder withCollectionName(String collectionName) {
 				this.collectionName = collectionName;
-				return this;
-			}
-
-			/**
-			 * @param port The GRPC port of the Qdrant instance. Defaults to 6334.
-			 * @return
-			 */
-			public Builder withPort(int port) {
-				this.port = port;
-				return this;
-			}
-
-			/**
-			 * @param useTls Whether to use TLS(HTTPS). Defaults to false.
-			 * @return
-			 */
-			public Builder withTls(boolean useTls) {
-				this.useTls = useTls;
-				return this;
-			}
-
-			/**
-			 * @param apiKey The Qdrant API key to authenticate with. Defaults to null.
-			 */
-			public Builder withApiKey(String apiKey) {
-				this.apiKey = apiKey;
 				return this;
 			}
 
@@ -183,9 +132,12 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 	 * Constructs a new QdrantVectorStore.
 	 * @param config The configuration for the store.
 	 * @param embeddingClient The client for embedding operations.
+	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
 	 */
-	public QdrantVectorStore(QdrantVectorStoreConfig config, EmbeddingClient embeddingClient) {
-		this(config.qdrantClient, config.collectionName, embeddingClient);
+	@Deprecated(since = "1.0.0", forRemoval = true)
+	public QdrantVectorStore(QdrantClient qdrantClient, QdrantVectorStoreConfig config,
+			EmbeddingClient embeddingClient) {
+		this(qdrantClient, config.collectionName, embeddingClient);
 	}
 
 	/**

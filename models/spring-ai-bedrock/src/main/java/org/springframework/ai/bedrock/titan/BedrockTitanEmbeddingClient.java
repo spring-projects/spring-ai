@@ -28,6 +28,7 @@ import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEm
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingClient;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.util.Assert;
@@ -40,6 +41,7 @@ import org.springframework.util.Assert;
  * Note: Titan Embedding does not support batch embedding.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
@@ -87,9 +89,7 @@ public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
 
 		List<List<Double>> embeddingList = new ArrayList<>();
 		for (String inputContent : request.getInstructions()) {
-			var apiRequest = (this.inputType == InputType.IMAGE)
-					? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
-					: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
+			var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
 			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);
 			embeddingList.add(response.embedding());
 		}
@@ -98,6 +98,18 @@ public class BedrockTitanEmbeddingClient extends AbstractEmbeddingClient {
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 			.toList();
 		return new EmbeddingResponse(embeddings);
+	}
+
+	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent, EmbeddingOptions requestOptions) {
+		InputType inputType = this.inputType;
+
+		if (requestOptions != null
+				&& requestOptions instanceof BedrockTitanEmbeddingOptions bedrockTitanEmbeddingOptions) {
+			inputType = bedrockTitanEmbeddingOptions.getInputType();
+		}
+
+		return (inputType == InputType.IMAGE) ? new TitanEmbeddingRequest.Builder().withInputImage(inputContent).build()
+				: new TitanEmbeddingRequest.Builder().withInputText(inputContent).build();
 	}
 
 	@Override

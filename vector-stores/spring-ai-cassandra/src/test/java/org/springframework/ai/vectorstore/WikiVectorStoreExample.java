@@ -81,25 +81,30 @@ class WikiVectorStoreExample {
 		@Bean
 		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingClient embeddingClient) {
 
+			List<SchemaColumn> partitionColumns = List.of(new SchemaColumn("wiki", DataTypes.TEXT),
+					new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT));
+
+			List<SchemaColumn> clusteringColumns = List.of(new SchemaColumn("chunk_no", DataTypes.INT),
+					new SchemaColumn("bert_embedding_no", DataTypes.INT));
+
+			List<SchemaColumn> extraColumns = List.of(new SchemaColumn("revision", DataTypes.INT),
+					new SchemaColumn("id", DataTypes.INT));
+
 			CassandraVectorStoreConfig conf = CassandraVectorStoreConfig.builder()
 				.withCqlSession(cqlSession)
 				.withKeyspaceName("wikidata")
 				.withTableName("articles")
-
-				.withPartitionKeys(List.of(new SchemaColumn("wiki", DataTypes.TEXT),
-						new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT)))
-
-				.withClusteringKeys(List.of(new SchemaColumn("chunk_no", DataTypes.INT),
-						new SchemaColumn("bert_embedding_no", DataTypes.INT)))
-
+				.withPartitionKeys(partitionColumns)
+				.withClusteringKeys(clusteringColumns)
 				.withContentColumnName("body")
 				.withEmbeddingColumnName("all_minilm_l6_v2_embedding")
 				.withIndexName("all_minilm_l6_v2_ann")
 				.disallowSchemaChanges()
-
-				.addMetadataColumn(new SchemaColumn("revision", DataTypes.INT), new SchemaColumn("id", DataTypes.INT))
+				.addMetadataColumns(extraColumns)
 
 				.withPrimaryKeyTranslator((List<Object> primaryKeys) -> {
+					// the deliminator used to join fields together into the document's id
+					// is arbitary, here "§¶" is used
 					if (primaryKeys.isEmpty()) {
 						return "test§¶0";
 					}

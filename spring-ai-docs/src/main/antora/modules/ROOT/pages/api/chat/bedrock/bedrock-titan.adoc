@@ -80,7 +80,7 @@ The prefix `spring.ai.bedrock.titan.chat` is the property prefix that configures
 |====
 
 Look at the https://github.com/spring-projects/spring-ai/blob/4839a6175cd1ec89498b97d3efb6647022c3c7cb/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/api/TitanChatBedrockApi.java#L220[TitanChatBedrockApi#TitanChatModel] for other model IDs.
-Supported values are: `amazon.titan-text-lite-v1` and `amazon.titan-text-express-v1`.
+Supported values are: `amazon.titan-text-lite-v1`, `amazon.titan-text-express-v1` and `amazon.titan-text-premier-v1:0`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 TIP: All properties prefixed with `spring.ai.bedrock.titan.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.

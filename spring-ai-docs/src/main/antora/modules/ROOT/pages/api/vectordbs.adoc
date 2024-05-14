@@ -87,9 +87,10 @@ Find more information on the `Filter.Expression` in the <<metadata-filters>> sec
 
 These are the available implementations of the `VectorStore` interface:
 
-* xref:api/vectordbs/azure.adoc[ Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
-* xref:api/vectordbs/apache-cassandra.adoc[Apache Cassandra] - The https://cassandra.apache.org/doc/latest/cassandra/vector-search/overview.html[Apache Cassandra]
+* xref:api/vectordbs/azure.adoc[Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
+* xref:api/vectordbs/apache-cassandra.adoc[Apache Cassandra] - The https://cassandra.apache.org/doc/latest/cassandra/vector-search/overview.html[Apache Cassandra] vector store.
 * xref:api/vectordbs/chroma.adoc[Chroma Vector Store] - The https://www.trychroma.com/[Chroma] vector store.
+* xref:api/vectordbs/elasticsearch.adoc[Elasticsearch Vector Store] - The https://www.elastic.co/[Elasticsearch] vector store.
 * xref:api/vectordbs/gemfire.adoc[GemFire Vector Store] - The https://tanzu.vmware.com/content/blog/vmware-gemfire-vector-database-extension[GemFire] vector store.
 * xref:api/vectordbs/milvus.adoc[Milvus Vector Store] - The https://milvus.io/[Milvus] vector store.
 * xref:api/vectordbs/mongodb.adoc[MongoDB Atlas Vector Store] - The https://www.mongodb.com/atlas/database[MongoDB Atlas] vector store.
@@ -100,7 +101,6 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/redis.adoc[Redis Vector Store] - The https://redis.io/[Redis] vector store.
 * xref:api/vectordbs/hana.adoc[SAP Hana Vector Store] - The https://news.sap.com/2024/04/sap-hana-cloud-vector-engine-ai-with-business-context/[SAP HANA] vector store.
 * xref:api/vectordbs/weaviate.adoc[Weaviate Vector Store] - The https://weaviate.io/[Weaviate] vector store.
-vector store.
 * link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.
 
 More implementations may be supported in future releases.
@@ -113,7 +113,7 @@ Information on each of the `VectorStore` implementations can be found in the sub
 
 To compute the embeddings for a vector database, you need to pick an embedding model that matches the higher-level AI model being used.
 
-For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and a model name of `text-embedding-ada-002`.
+For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and a model named `text-embedding-ada-002`.
 
 The Spring Boot starter's auto-configuration for OpenAI makes an implementation of `EmbeddingClient` available in the Spring application context for dependency injection.
 

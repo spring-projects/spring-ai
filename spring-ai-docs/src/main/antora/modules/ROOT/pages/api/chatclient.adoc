@@ -78,15 +78,28 @@ The `Message` interface encapsulates a textual message, a collection of attribut
 
 [source,java]
 ----
-public interface Message {
+public interface Message extends Node<String> {
 
    String getContent();
 
-   Map<String, Object> getProperties();
+   List<Media> getMedia();
 
    MessageType getMessageType();
 }
 ----
+
+
+and the Node interface is
+
+```java
+
+public interface Node<T> {
+
+    T getContent();
+
+    Map<String, Object> getMetadata();
+}
+```
 
 The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process.
 Some models, like OpenAI's chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.
@@ -183,7 +196,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 * xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/bedrock.adoc[Amazon Bedrock]
 ** xref:api/chat/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
-** xref:api/chat/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
+** xref:api/chat/bedrock/bedrock-llama.adoc[Llama Chat Completion]
 ** xref:api/chat/bedrock/bedrock-titan.adoc[Titan Chat Completion]
 ** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
 ** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]

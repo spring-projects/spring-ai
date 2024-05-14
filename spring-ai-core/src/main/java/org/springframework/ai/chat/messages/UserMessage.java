@@ -15,7 +15,9 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.core.io.Resource;
 
@@ -38,9 +40,17 @@ public class UserMessage extends AbstractMessage {
 		super(MessageType.USER, textContent, mediaList);
 	}
 
+	public UserMessage(String textContent, Media... media) {
+		this(textContent, Arrays.asList(media));
+	}
+
+	public UserMessage(String textContent, List<Media> mediaList, Map<String, Object> metadata) {
+		super(MessageType.USER, textContent, mediaList, metadata);
+	}
+
 	@Override
 	public String toString() {
-		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
+		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + metadata + ", messageType="
 				+ messageType + '}';
 	}
 

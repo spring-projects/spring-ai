@@ -20,6 +20,7 @@ package org.springframework.ai.parser;
  * language generative should be formatted.
  *
  * @author Mark Pollack
+ * @deprecated Use the {@link org.springframework.ai.converter.FormatProvider} instead.
  */
 public interface FormatProvider {
 

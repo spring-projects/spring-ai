@@ -33,7 +33,7 @@ public class FunctionMessage extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "FunctionMessage{" + "content='" + getContent() + '\'' + ", properties=" + properties + ", messageType="
+		return "FunctionMessage{" + "content='" + getContent() + '\'' + ", properties=" + metadata + ", messageType="
 				+ messageType + '}';
 	}
 

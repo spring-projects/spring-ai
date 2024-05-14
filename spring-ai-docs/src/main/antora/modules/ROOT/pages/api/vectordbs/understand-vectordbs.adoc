@@ -91,5 +91,5 @@ It expands the two-dimensional definitions of Magnitude and Dot Product given pr
 stem:[similarity(vec{A},vec{B}) = \cos(\theta) = \frac{ \sum_{i=1}^{n} {A_i  B_i} }{ \sqrt{\sum_{i=1}^{n}{A_i^2} \cdot \sum_{i=1}^{n}{B_i^2}}]
 ****
 
-This is the key formula used in the simple implementation of a vector store and can be found in the `InMemoryVectorStore` implementation.
+This is the key formula used in the simple implementation of a vector store and can be found in the `SimpleVectorStore` implementation.
 

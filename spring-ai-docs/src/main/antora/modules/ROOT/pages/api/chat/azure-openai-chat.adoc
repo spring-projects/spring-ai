@@ -216,24 +216,25 @@ Next, create an `AzureOpenAiChatClient` instance and use it to generate text res
 
 [source,java]
 ----
-var openAIClient = OpenAIClientBuilder()
-        .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-		.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-		.buildClient();
+var openAIClient = new OpenAIClientBuilder()
+  .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+  .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+  .buildClient();
 
-var chatClient = new AzureOpenAiChatClient(openAIClient).withDefaultOptions(
-		AzureOpenAiChatOptions.builder()
-            .withModel("gpt-35-turbo")
-            .withTemperature(0.4)
-            .withMaxTokens(200)
-        .build());
+var openAIChatOptions = AzureOpenAiChatOptions.builder()
+  .withDeploymentName("gpt-35-turbo")
+  .withTemperature(0.4f)
+  .withMaxTokens(200)
+  .build();
+
+var chatClient = new AzureOpenAiChatClient(openAIClient, openAIChatOptions);
 
 ChatResponse response = chatClient.call(
-    new Prompt("Generate the names of 5 famous pirates."));
+  new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
 Flux<ChatResponse> response = chatClient.stream(
-    new Prompt("Generate the names of 5 famous pirates."));
+  new Prompt("Generate the names of 5 famous pirates."));
 
 ----
 

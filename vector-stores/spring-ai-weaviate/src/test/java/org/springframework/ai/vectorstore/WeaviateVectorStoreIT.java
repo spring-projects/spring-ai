@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import io.weaviate.client.Config;
+import io.weaviate.client.WeaviateClient;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -242,14 +244,15 @@ public class WeaviateVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+			WeaviateClient weaviateClient = new WeaviateClient(
+					new Config("http", weaviateContainer.getHttpHostAddress()));
+
 			WeaviateVectorStoreConfig config = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-				.withScheme("http")
-				.withHost(weaviateContainer.getHttpHostAddress())
 				.withFilterableMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
 				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
 				.build();
 
-			WeaviateVectorStore vectorStore = new WeaviateVectorStore(config, embeddingClient);
+			WeaviateVectorStore vectorStore = new WeaviateVectorStore(config, embeddingClient, weaviateClient);
 
 			return vectorStore;
 		}

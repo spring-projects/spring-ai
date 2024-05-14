@@ -27,12 +27,12 @@ public class RedisVectorStoreProperties {
 
 	private String uri = "redis://localhost:6379";
 
-	private String index;
+	private String index = "default-index";
 
-	private String prefix;
+	private String prefix = "default:";
 
 	public String getUri() {
-		return uri;
+		return this.uri;
 	}
 
 	public void setUri(String uri) {
@@ -40,7 +40,7 @@ public class RedisVectorStoreProperties {
 	}
 
 	public String getIndex() {
-		return index;
+		return this.index;
 	}
 
 	public void setIndex(String name) {
@@ -48,7 +48,7 @@ public class RedisVectorStoreProperties {
 	}
 
 	public String getPrefix() {
-		return prefix;
+		return this.prefix;
 	}
 
 	public void setPrefix(String prefix) {

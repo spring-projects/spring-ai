@@ -57,8 +57,8 @@ public class ClientIT {
 				}
 				```""";
 		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo(expectedResponse);
-		assertThat(chatResponse.getResult().getOutput().getProperties()).containsKey("generated_tokens");
-		assertThat(chatResponse.getResult().getOutput().getProperties()).containsEntry("generated_tokens", 39);
+		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsKey("generated_tokens");
+		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsEntry("generated_tokens", 39);
 
 	}
 

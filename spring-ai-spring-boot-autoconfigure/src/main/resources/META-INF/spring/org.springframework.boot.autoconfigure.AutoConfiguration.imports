@@ -6,7 +6,7 @@ org.springframework.ai.autoconfigure.huggingface.HuggingfaceChatAutoConfiguratio
 org.springframework.ai.autoconfigure.vertexai.palm2.VertexAiPalm2AutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassic2ChatAutoConfiguration
-org.springframework.ai.autoconfigure.bedrock.llama2.BedrockLlama2ChatAutoConfiguration
+org.springframework.ai.autoconfigure.bedrock.llama.BedrockLlamaChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereChatAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.cohere.BedrockCohereEmbeddingAutoConfiguration
 org.springframework.ai.autoconfigure.bedrock.anthropic.BedrockAnthropicChatAutoConfiguration
