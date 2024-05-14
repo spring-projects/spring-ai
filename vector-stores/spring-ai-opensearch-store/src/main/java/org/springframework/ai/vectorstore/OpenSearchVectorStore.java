@@ -16,10 +16,10 @@
 package org.springframework.ai.vectorstore;
 
 
-import jakarta.json.stream.JsonParser;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -39,7 +39,9 @@ import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -106,24 +108,24 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
     @Override
     public void add(List<Document> documents) {
-        BulkRequest.Builder builkRequestBuilder = new BulkRequest.Builder();
+        BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
         for (Document document : documents) {
             if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
                 logger.debug("Calling EmbeddingClient for document id = " + document.getId());
                 document.setEmbedding(this.embeddingClient.embed(document));
             }
-            builkRequestBuilder
+            bulkRequestBuilder
                     .operations(op -> op.index(idx -> idx.index(this.index).id(document.getId()).document(document)));
         }
-        bulkRequest(builkRequestBuilder.build());
+        bulkRequest(bulkRequestBuilder.build());
     }
 
     @Override
     public Optional<Boolean> delete(List<String> idList) {
-        BulkRequest.Builder builkRequestBuilder = new BulkRequest.Builder();
+        BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
         for (String id : idList)
-            builkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
-        return Optional.of(bulkRequest(builkRequestBuilder.build()).errors());
+            bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
+        return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
     }
 
     private BulkResponse bulkRequest(BulkRequest bulkRequest) {
@@ -145,6 +147,8 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
             Filter.Expression filterExpression) {
         return similaritySearch(new org.opensearch.client.opensearch.core.SearchRequest.Builder()
                 .query(getOpenSearchSimilarityQuery(embedding, filterExpression))
+                .sort(sortOptionsBuilder -> sortOptionsBuilder.score(
+                        scoreSortBuilder -> scoreSortBuilder.order(SortOrder.Desc)))
                 .size(topK)
                 .minScore(similarityThreshold)
                 .build());
@@ -205,12 +209,13 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
     }
 
     private CreateIndexResponse createIndexMapping(String index, String mappingJson) {
-        JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
-        JsonParser parser = mapper.jsonProvider().createParser(new StringReader(mappingJson));
+        JsonpMapper jsonpMapper = openSearchClient._transport().jsonpMapper();
         try {
             return this.openSearchClient.indices().create(new CreateIndexRequest.Builder().index(index)
                     .settings(settingsBuilder -> settingsBuilder.knn(true))
-                    .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper)).build());
+                    .mappings(TypeMapping._DESERIALIZER.deserialize(
+                            jsonpMapper.jsonProvider().createParser(new StringReader(mappingJson)),
+                            jsonpMapper)).build());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
