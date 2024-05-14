@@ -145,13 +145,14 @@ Read more about xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Functi
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
-Presently, the OpenAI `gpt-4-visual-preview` model offers multimodal support. Refer to the link:https://platform.openai.com/docs/guides/vision[Vision] guide for more information.
+Presently, the OpenAI `gpt-4-visual-preview` and `gpt-4o` models offers multimodal support.
+Refer to the link:https://platform.openai.com/docs/guides/vision[Vision] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[User Message API] can incorporate a list of base64-encoded images or image urls with the message.
 Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/OpenAiChatClientIT.java[OpenAiChatClientIT.java], illustrating the fusion of user text with an image.
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/b3cfa2b900ea785e055e4ff71086eeb52f6578a3/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatClientIT.java[OpenAiChatClientIT.java], illustrating the fusion of user text with an image using the the `GPT_4_VISION_PREVIEW` model.
 
 [source,java]
 ----
@@ -164,7 +165,7 @@ ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
 ----
 
-or the image URL equivalent:
+or the image URL equivalent using the `GPT_4_O` model :
 
 [source,java]
 ----
@@ -173,7 +174,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
                 "https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
 
 ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
-        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+        OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
 TIP: you can pass multiple images as well.
