@@ -44,82 +44,87 @@ import static org.hamcrest.Matchers.hasSize;
 @Testcontainers
 class OpenSearchVectorStoreAutoConfigurationIT {
 
-    @Container
-    private static final OpensearchContainer<?> opensearchContainer =
-            new OpensearchContainer<>(DockerImageName.parse("opensearchproject/opensearch:2.12.0"));
+	@Container
+	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
+			DockerImageName.parse("opensearchproject/opensearch:2.12.0"));
 
-    private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
+	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
-    private List<Document> documents = List.of(
-            new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
-            new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
-            new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+	private List<Document> documents = List.of(
+			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-                    AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
-            .withUserConfiguration(Config.class)
-            .withPropertyValues(
-                    OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".uris=" + opensearchContainer.getHttpHostAddress(),
-                    OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=" + DOCUMENT_INDEX,
-                    OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
-                            {
-                               "properties":{
-                                  "embedding":{
-                                     "type":"knn_vector",
-                                     "dimension":384
-                                  }
-                               }
-                            }                            
-                            """);
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class))
+		.withUserConfiguration(Config.class)
+		.withPropertyValues(
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".uris=" + opensearchContainer.getHttpHostAddress(),
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=" + DOCUMENT_INDEX,
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
+						{
+						   "properties":{
+						      "embedding":{
+						         "type":"knn_vector",
+						         "dimension":384
+						      }
+						   }
+						}
+						""");
 
-    @Test
-    public void addAndSearchTest() {
+	@Test
+	public void addAndSearchTest() {
 
-        this.contextRunner.run(context -> {
-            OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
+		this.contextRunner.run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
 
-            vectorStore.add(documents);
+			vectorStore.add(documents);
 
-            Awaitility.await().until(() -> vectorStore.similaritySearch(
-                            SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
-                    hasSize(1));
+			Awaitility.await()
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+						hasSize(1));
 
-            List<Document> results = vectorStore.similaritySearch(
-                    SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
 
-            assertThat(results).hasSize(1);
-            Document resultDoc = results.get(0);
-            assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-            assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
-            assertThat(resultDoc.getMetadata()).hasSize(2);
-            assertThat(resultDoc.getMetadata()).containsKey("meta2");
-            assertThat(resultDoc.getMetadata()).containsKey("distance");
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
 
-            // Remove all documents from the store
-            vectorStore.delete(documents.stream().map(Document::getId).toList());
+			// Remove all documents from the store
+			vectorStore.delete(documents.stream().map(Document::getId).toList());
 
-            Awaitility.await().until(() -> vectorStore.similaritySearch(
-                    SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)), hasSize(0));
-        });
-    }
+			Awaitility.await()
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+						hasSize(0));
+		});
+	}
 
-    private String getText(String uri) {
-        var resource = new DefaultResourceLoader().getResource(uri);
-        try {
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	private String getText(String uri) {
+		var resource = new DefaultResourceLoader().getResource(uri);
+		try {
+			return resource.getContentAsString(StandardCharsets.UTF_8);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-    @Configuration(proxyBeanMethods = false)
-    static class Config {
+	@Configuration(proxyBeanMethods = false)
+	static class Config {
 
-        @Bean
-        public EmbeddingClient embeddingClient() {
-            return new TransformersEmbeddingClient();
-        }
+		@Bean
+		public EmbeddingClient embeddingClient() {
+			return new TransformersEmbeddingClient();
+		}
 
-    }
+	}
 
 }

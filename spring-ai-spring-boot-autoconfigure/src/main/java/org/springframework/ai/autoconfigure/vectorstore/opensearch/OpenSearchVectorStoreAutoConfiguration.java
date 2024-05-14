@@ -33,49 +33,50 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 
 @AutoConfiguration
-@ConditionalOnClass({OpenSearchVectorStore.class, EmbeddingClient.class, OpenSearchClient.class})
+@ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingClient.class, OpenSearchClient.class })
 @EnableConfigurationProperties(OpenSearchVectorStoreProperties.class)
 class OpenSearchVectorStoreAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, OpenSearchClient openSearchClient,
-            EmbeddingClient embeddingClient) {
-        return new OpenSearchVectorStore(
-                Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME),
-                openSearchClient, embeddingClient, Optional.ofNullable(properties.getMappingJson())
-                .orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536));
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, OpenSearchClient openSearchClient,
+			EmbeddingClient embeddingClient) {
+		return new OpenSearchVectorStore(
+				Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME),
+				openSearchClient, embeddingClient, Optional.ofNullable(properties.getMappingJson())
+					.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536));
+	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties) {
-        HttpHost[] httpHosts = properties.getUris().stream().map(s -> createHttpHost(s)).toArray(HttpHost[]::new);
-        ApacheHttpClient5TransportBuilder transportBuilder = ApacheHttpClient5TransportBuilder.builder(httpHosts);
+	@Bean
+	@ConditionalOnMissingBean
+	OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties) {
+		HttpHost[] httpHosts = properties.getUris().stream().map(s -> createHttpHost(s)).toArray(HttpHost[]::new);
+		ApacheHttpClient5TransportBuilder transportBuilder = ApacheHttpClient5TransportBuilder.builder(httpHosts);
 
-        Optional.ofNullable(properties.getUsername())
-                .map(username -> createBasicCredentialsProvider(httpHosts[0], username, properties.getPassword()))
-                .ifPresent(basicCredentialsProvider -> transportBuilder.setHttpClientConfigCallback(
-                        httpAsyncClientBuilder -> httpAsyncClientBuilder.setDefaultCredentialsProvider(
-                                basicCredentialsProvider)));
+		Optional.ofNullable(properties.getUsername())
+			.map(username -> createBasicCredentialsProvider(httpHosts[0], username, properties.getPassword()))
+			.ifPresent(basicCredentialsProvider -> transportBuilder
+				.setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder
+					.setDefaultCredentialsProvider(basicCredentialsProvider)));
 
-        return new OpenSearchClient(transportBuilder.build());
-    }
+		return new OpenSearchClient(transportBuilder.build());
+	}
 
-    private BasicCredentialsProvider createBasicCredentialsProvider(HttpHost httpHost, String username,
-            String password) {
-        BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
-        basicCredentialsProvider.setCredentials(new AuthScope(httpHost),
-                new UsernamePasswordCredentials(username, password.toCharArray()));
-        return basicCredentialsProvider;
-    }
+	private BasicCredentialsProvider createBasicCredentialsProvider(HttpHost httpHost, String username,
+			String password) {
+		BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
+		basicCredentialsProvider.setCredentials(new AuthScope(httpHost),
+				new UsernamePasswordCredentials(username, password.toCharArray()));
+		return basicCredentialsProvider;
+	}
 
-    private HttpHost createHttpHost(String s) {
-        try {
-            return HttpHost.create(s);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	private HttpHost createHttpHost(String s) {
+		try {
+			return HttpHost.create(s);
+		}
+		catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 }

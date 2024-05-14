@@ -22,59 +22,59 @@ import java.util.List;
 @ConfigurationProperties(prefix = OpenSearchVectorStoreProperties.CONFIG_PREFIX)
 public class OpenSearchVectorStoreProperties {
 
-    public static final String CONFIG_PREFIX = "spring.ai.vectorstore.opensearch";
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.opensearch";
 
-    /**
-     * Comma-separated list of the OpenSearch instances to use.
-     */
-    private List<String> uris;
+	/**
+	 * Comma-separated list of the OpenSearch instances to use.
+	 */
+	private List<String> uris;
 
-    private String indexName;
+	private String indexName;
 
-    private String username;
+	private String username;
 
-    private String password;
+	private String password;
 
-    private String mappingJson;
+	private String mappingJson;
 
-    public List<String> getUris() {
-        return uris;
-    }
+	public List<String> getUris() {
+		return uris;
+	}
 
-    public void setUris(List<String> uris) {
-        this.uris = uris;
-    }
+	public void setUris(List<String> uris) {
+		this.uris = uris;
+	}
 
-    public String getIndexName() {
-        return this.indexName;
-    }
+	public String getIndexName() {
+		return this.indexName;
+	}
 
-    public void setIndexName(String indexName) {
-        this.indexName = indexName;
-    }
+	public void setIndexName(String indexName) {
+		this.indexName = indexName;
+	}
 
-    public String getUsername() {
-        return username;
-    }
+	public String getUsername() {
+		return username;
+	}
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+	public void setUsername(String username) {
+		this.username = username;
+	}
 
-    public String getPassword() {
-        return password;
-    }
+	public String getPassword() {
+		return password;
+	}
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+	public void setPassword(String password) {
+		this.password = password;
+	}
 
-    public String getMappingJson() {
-        return mappingJson;
-    }
+	public String getMappingJson() {
+		return mappingJson;
+	}
 
-    public void setMappingJson(String mappingJson) {
-        this.mappingJson = mappingJson;
-    }
+	public void setMappingJson(String mappingJson) {
+		this.mappingJson = mappingJson;
+	}
 
 }
