@@ -23,6 +23,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 
 import java.util.List;
 import java.util.Objects;
@@ -60,8 +61,7 @@ public class VectorStoreRetriever implements PromptTransformer {
 			.map(m -> m.getContent())
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(userMessage)
-			.withFilterExpression(TransformerContentType.EXTERNAL_KNOWLEDGE + "=='true'"));
+		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(userMessage));
 
 		logger.info("Retrieved {} documents for user message {}", documents.size(), userMessage);
 		for (Document document : documents) {

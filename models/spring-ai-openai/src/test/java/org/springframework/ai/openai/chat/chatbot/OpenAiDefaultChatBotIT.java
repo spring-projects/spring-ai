@@ -26,6 +26,7 @@ import org.springframework.ai.chat.chatbot.ChatBot;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -91,7 +92,7 @@ public class OpenAiDefaultChatBotIT {
 	void simpleChat() {
 		loadData();
 
-		var prompt = new Prompt(new UserMessage("What bike is good for city commuting?"));
+		var prompt = new Prompt(new UserMessage("What reliable road bike?"));
 		var chatBotResponse = this.chatBot.call(new PromptContext(prompt));
 		String answer = chatBotResponse.getChatResponse().getResult().getOutput().getContent();
 		assertTrue(answer.contains("Celerity"), "Response does not include 'Celerity'");
