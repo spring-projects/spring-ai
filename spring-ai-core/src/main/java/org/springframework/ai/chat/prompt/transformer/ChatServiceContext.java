@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.prompt.transformer;
 
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.service.ChatService;
 import org.springframework.ai.model.Content;
 
 import java.util.*;
