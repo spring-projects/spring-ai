@@ -69,7 +69,7 @@ public class OpenAiDefaultChatBotIT {
 	private static final int QDRANT_GRPC_PORT = 6334;
 
 	@Container
-	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.7.4");
+	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
 
 	private final ChatClient chatClient;
 
