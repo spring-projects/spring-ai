@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.chatbot;
+package org.springframework.ai.chat.service;
 
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 
 import java.util.Objects;
 
 /**
- * Encapsulates the response from the ChatBot. Contains the most up-to-date PromptContext
- * and the final ChatResponse
+ * Encapsulates the response from the ChatService. Contains the most up-to-date
+ * ChatServiceContext and the final ChatResponse
  *
  * @author Mark Pollack
  * @since 1.0 M1
  */
-public class ChatBotResponse {
+public class ChatServiceResponse {
 
-	private final PromptContext promptContext;
+	private final ChatServiceContext chatServiceContext;
 
 	private final ChatResponse chatResponse;
 
-	public ChatBotResponse(PromptContext promptContext, ChatResponse chatResponse) {
-		this.promptContext = promptContext;
+	public ChatServiceResponse(ChatServiceContext chatServiceContext, ChatResponse chatResponse) {
+		this.chatServiceContext = chatServiceContext;
 		this.chatResponse = chatResponse;
 	}
 
-	public PromptContext getPromptContext() {
-		return promptContext;
+	public ChatServiceContext getPromptContext() {
+		return chatServiceContext;
 	}
 
 	public ChatResponse getChatResponse() {
@@ -49,21 +49,23 @@ public class ChatBotResponse {
 
 	@Override
 	public String toString() {
-		return "ChatBotResponse{" + "promptContext=" + promptContext + ", chatResponse=" + chatResponse + '}';
+		return "ChatServiceResponse{" + "chatServiceContext=" + chatServiceContext + ", chatResponse=" + chatResponse
+				+ '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (!(o instanceof ChatBotResponse that))
+		if (!(o instanceof ChatServiceResponse that))
 			return false;
-		return Objects.equals(promptContext, that.promptContext) && Objects.equals(chatResponse, that.chatResponse);
+		return Objects.equals(chatServiceContext, that.chatServiceContext)
+				&& Objects.equals(chatResponse, that.chatResponse);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(promptContext, chatResponse);
+		return Objects.hash(chatServiceContext, chatResponse);
 	}
 
 }

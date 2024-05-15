@@ -22,11 +22,11 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.chatbot.ChatBot;
-import org.springframework.ai.chat.chatbot.StreamingChatBot;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
+import org.springframework.ai.chat.service.ChatService;
+import org.springframework.ai.chat.service.StreamingChatService;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,48 +39,49 @@ public class BaseMemoryTest {
 
 	protected RelevancyEvaluator relevancyEvaluator;
 
-	protected ChatBot chatBot;
+	protected ChatService chatService;
 
-	protected StreamingChatBot streamingChatBot;
+	protected StreamingChatService streamingChatService;
 
-	public BaseMemoryTest(RelevancyEvaluator relevancyEvaluator, ChatBot chatBot,
-			StreamingChatBot streamingChatClient) {
+	public BaseMemoryTest(RelevancyEvaluator relevancyEvaluator, ChatService chatService,
+			StreamingChatService streamingChatClient) {
 		this.relevancyEvaluator = relevancyEvaluator;
-		this.chatBot = chatBot;
-		this.streamingChatBot = streamingChatClient;
+		this.chatService = chatService;
+		this.streamingChatService = streamingChatClient;
 	}
 
 	@Test
-	void memoryChatBot() {
+	void memoryChatService() {
 
 		var prompt = new Prompt(new UserMessage("my name John Vincent Atanasoff"));
-		PromptContext promptContext = new PromptContext(prompt);
+		ChatServiceContext chatServiceContext = new ChatServiceContext(prompt);
 
-		var chatBotResponse1 = this.chatBot.call(promptContext);
+		var chatServiceResponse1 = this.chatService.call(chatServiceContext);
 
-		logger.info("Response1: " + chatBotResponse1.getChatResponse().getResult().getOutput().getContent());
+		logger.info("Response1: " + chatServiceResponse1.getChatResponse().getResult().getOutput().getContent());
 		// response varies too much.
-		// assertThat(chatBotResponse1.getChatResponse().getResult().getOutput().getContent()).contains("John");
+		// assertThat(chatServiceResponse1.getChatResponse().getResult().getOutput().getContent()).contains("John");
 
-		var chatBotResponse2 = this.chatBot.call(new PromptContext(new Prompt(new String("What is my name?"))));
-		logger.info("Response2: " + chatBotResponse2.getChatResponse().getResult().getOutput().getContent());
-		assertThat(chatBotResponse2.getChatResponse().getResult().getOutput().getContent())
+		var chatServiceResponse2 = this.chatService
+			.call(new ChatServiceContext(new Prompt(new String("What is my name?"))));
+		logger.info("Response2: " + chatServiceResponse2.getChatResponse().getResult().getOutput().getContent());
+		assertThat(chatServiceResponse2.getChatResponse().getResult().getOutput().getContent())
 			.contains("John Vincent Atanasoff");
 
 		EvaluationResponse evaluationResponse = this.relevancyEvaluator
-			.evaluate(new EvaluationRequest(chatBotResponse2));
+			.evaluate(new EvaluationRequest(chatServiceResponse2));
 		logger.info("" + evaluationResponse);
 	}
 
 	@Test
-	void memoryStreamingChatBot() {
+	void memoryStreamingChatService() {
 
 		var prompt = new Prompt(new UserMessage("my name John Vincent Atanasoff"));
-		PromptContext promptContext = new PromptContext(prompt);
+		ChatServiceContext chatServiceContext = new ChatServiceContext(prompt);
 
-		var fluxChatBotResponse1 = this.streamingChatBot.stream(promptContext);
+		var fluxChatServiceResponse1 = this.streamingChatService.stream(chatServiceContext);
 
-		String chatBotResponse1 = fluxChatBotResponse1.getChatResponse()
+		String chatServiceResponse1 = fluxChatServiceResponse1.getChatResponse()
 			.collectList()
 			.block()
 			.stream()
@@ -88,13 +89,13 @@ public class BaseMemoryTest {
 			.map(response -> response.getResult().getOutput().getContent())
 			.collect(Collectors.joining());
 
-		logger.info("Response1: " + chatBotResponse1);
-		// response varies too much assertThat(chatBotResponse1).contains("John");
+		logger.info("Response1: " + chatServiceResponse1);
+		// response varies too much assertThat(chatServiceResponse1).contains("John");
 
-		var fluxChatBotResponse2 = this.streamingChatBot
-			.stream(new PromptContext(new Prompt(new String("What is my name?"))));
+		var fluxChatServiceResponse2 = this.streamingChatService
+			.stream(new ChatServiceContext(new Prompt(new String("What is my name?"))));
 
-		String chatBotResponse2 = fluxChatBotResponse2.getChatResponse()
+		String chatServiceResponse2 = fluxChatServiceResponse2.getChatResponse()
 			.collectList()
 			.block()
 			.stream()
@@ -102,8 +103,8 @@ public class BaseMemoryTest {
 			.map(response -> response.getResult().getOutput().getContent())
 			.collect(Collectors.joining());
 
-		logger.info("Response2: " + chatBotResponse2);
-		assertThat(chatBotResponse2).contains("John Vincent Atanasoff");
+		logger.info("Response2: " + chatServiceResponse2);
+		assertThat(chatServiceResponse2).contains("John Vincent Atanasoff");
 	}
 
 }

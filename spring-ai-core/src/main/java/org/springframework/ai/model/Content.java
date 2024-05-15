@@ -19,7 +19,7 @@ public interface Content {
 	/**
 	 * Get the content of the message.
 	 */
-	String getContent();
+	String getContent(); // TODO consider getText
 
 	/**
 	 * Get the media associated with the content.

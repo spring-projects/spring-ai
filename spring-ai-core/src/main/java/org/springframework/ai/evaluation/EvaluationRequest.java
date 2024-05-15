@@ -1,7 +1,7 @@
 package org.springframework.ai.evaluation;
 
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.chatbot.ChatBotResponse;
+import org.springframework.ai.chat.service.ChatServiceResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Content;
 
@@ -16,9 +16,9 @@ public class EvaluationRequest {
 
 	private final ChatResponse chatResponse;
 
-	public EvaluationRequest(ChatBotResponse chatBotResponse) {
-		this(chatBotResponse.getPromptContext().getPromptHistory().get(0),
-				chatBotResponse.getPromptContext().getContents(), chatBotResponse.getChatResponse());
+	public EvaluationRequest(ChatServiceResponse chatServiceResponse) {
+		this(chatServiceResponse.getPromptContext().getPromptChanges().get(0).revised(),
+				chatServiceResponse.getPromptContext().getContents(), chatServiceResponse.getChatResponse());
 	}
 
 	public EvaluationRequest(Prompt prompt, List<Content> dataList, ChatResponse chatResponse) {

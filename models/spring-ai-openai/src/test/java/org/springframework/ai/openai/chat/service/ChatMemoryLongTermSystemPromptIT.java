@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.chat.chatbot;
+package org.springframework.ai.openai.chat.service;
 
 import java.util.List;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.chatbot.ChatBot;
+import org.springframework.ai.chat.service.ChatService;
+import org.springframework.ai.chat.service.StreamingChatService;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.chat.chatbot.DefaultChatBot;
-import org.springframework.ai.chat.chatbot.DefaultStreamingChatBot;
-import org.springframework.ai.chat.chatbot.StreamingChatBot;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryChatBotListener;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryRetriever;
-import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
-import org.springframework.ai.chat.history.SystemPromptChatMemoryAugmentor;
+import org.springframework.ai.chat.service.PromptTransformingChatService;
+import org.springframework.ai.chat.service.StreamingPromptTransformingChatService;
+import org.springframework.ai.chat.memory.VectorStoreChatMemoryChatServiceListener;
+import org.springframework.ai.chat.memory.VectorStoreChatMemoryRetriever;
+import org.springframework.ai.chat.memory.LastMaxTokenSizeContentTransformer;
+import org.springframework.ai.chat.memory.SystemPromptChatMemoryAugmentor;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.evaluation.BaseMemoryTest;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
@@ -61,9 +61,9 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
 
 	@Autowired
-	public ChatMemoryLongTermSystemPromptIT(RelevancyEvaluator relevancyEvaluator, ChatBot chatBot,
-			StreamingChatBot streamingChatBot) {
-		super(relevancyEvaluator, chatBot, streamingChatBot);
+	public ChatMemoryLongTermSystemPromptIT(RelevancyEvaluator relevancyEvaluator, ChatService chatService,
+			StreamingChatService streamingChatService) {
+		super(relevancyEvaluator, chatService, streamingChatService);
 	}
 
 	@SpringBootConfiguration
@@ -98,26 +98,26 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatBot memoryChatBot(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatService memoryChatService(OpenAiChatClient chatClient, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator) {
 
-			return DefaultChatBot.builder(chatClient)
+			return PromptTransformingChatService.builder(chatClient)
 				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
 				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatBotListeners(List.of(new VectorStoreChatMemoryChatBotListener(vectorStore)))
+				.withChatServiceListeners(List.of(new VectorStoreChatMemoryChatServiceListener(vectorStore)))
 				.build();
 		}
 
 		@Bean
-		public StreamingChatBot memoryStreamingChatBot(OpenAiChatClient streamingChatClient, VectorStore vectorStore,
-				TokenCountEstimator tokenCountEstimator) {
+		public StreamingChatService memoryStreamingChatService(OpenAiChatClient streamingChatClient,
+				VectorStore vectorStore, TokenCountEstimator tokenCountEstimator) {
 
-			return DefaultStreamingChatBot.builder(streamingChatClient)
+			return StreamingPromptTransformingChatService.builder(streamingChatClient)
 				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatBotListeners(List.of(new VectorStoreChatMemoryChatBotListener(vectorStore)))
+				.withChatServiceListeners(List.of(new VectorStoreChatMemoryChatServiceListener(vectorStore)))
 				.build();
 		}
 

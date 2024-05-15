@@ -13,28 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.chat.chatbot;
 
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+package org.springframework.ai.chat.service;
+
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 
 /**
- * A ChatBot encapsulates the logic to perform common AI use cases such as Retrieval
- * Augmented Generation.
+ * A ChatService encapsulates the logic to implement AI use cases.
  *
  * @author Mark Pollack
- * @author Christian Tzolov
  * @since 1.0 M1
  */
-public interface StreamingChatBot {
+public interface ChatService {
 
 	/**
-	 * Call the chatbot to execute AI actions
-	 * @param promptContext A shared data structure used by the ChatBot to perform
-	 * processing of the Prompt. It includes the intial Prompt and a conversation ID at
+	 * Call the service to execute AI actions
+	 * @param chatServiceContext A data structure used by the ChatService to perform
+	 * processing of the Prompt. It includes the initial Prompt and a conversation ID at
 	 * the start of execution.
-	 * @return the StreamingChatBotResponse that contains the ChatResponse and the latest
-	 * PromptContext
+	 * @return the ChatServiceResponse that contains the ChatResponse and the latest
+	 * ChatServiceContext
 	 */
-	StreamingChatBotResponse stream(PromptContext promptContext);
+	ChatServiceResponse call(ChatServiceContext chatServiceContext);
 
 }

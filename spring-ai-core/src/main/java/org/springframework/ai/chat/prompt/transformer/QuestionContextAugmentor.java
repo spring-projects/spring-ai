@@ -32,11 +32,15 @@ import org.springframework.ai.model.Content;
  * additional context to create a new prompt. The default user text contains the
  * placeholder names "question" and "context". The "question" placeholder is filled using
  * the value of the current UserMessage and the "context" placeholder is filled with
- * Documents contained in the PromptContext's Nodes.
+ * Documents contained in the ChatServiceContext's Nodes.
+ *
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
-public class QuestionContextAugmentor implements PromptTransformer {
+public class QuestionContextAugmentor extends AbstractPromptTransformer {
 
-	private static final String DEFAULT_USER_PROMPT_TEXT = """
+	private static final String DEFAULT_USER_TEXT = """
 			   "Context information is below.\\n"
 			   "---------------------\\n"
 			   "{context}\\n"
@@ -48,16 +52,26 @@ public class QuestionContextAugmentor implements PromptTransformer {
 			   "Answer: "
 			""";
 
+	private String userText;
+
+	public QuestionContextAugmentor() {
+		this.userText = DEFAULT_USER_TEXT;
+		this.setName("QuestionContextAugmentor");
+	}
+
+	public String getUserText() {
+		return userText;
+	}
+
 	@Override
-	public PromptContext transform(PromptContext promptContext) {
-		String context = doCreateContext(promptContext.getContents());
-		Map<String, Object> contextMap = doCreateContextMap(promptContext.getPrompt(), context);
-		Prompt prompt = doCreatePrompt(promptContext.getPrompt(), contextMap);
-		promptContext.setPrompt(prompt);
-		promptContext.addPromptHistory(prompt); // BUG? shouldn't this be original
-												// promptContext.getPrompt()?
+	public ChatServiceContext transform(ChatServiceContext chatServiceContext) {
+		String context = doCreateContext(chatServiceContext.getContents());
+		Map<String, Object> contextMap = doCreateContextMap(chatServiceContext.getPrompt(), context);
+		Prompt prompt = doCreatePrompt(chatServiceContext.getPrompt(), contextMap);
+		chatServiceContext.updatePrompt(prompt, this.getName(), "Updated prompt with Q/A user text");
+
 		// For now return the modified instance instead of a copy
-		return promptContext;
+		return chatServiceContext;
 	}
 
 	protected String doCreateContext(List<Content> data) {
@@ -75,7 +89,7 @@ public class QuestionContextAugmentor implements PromptTransformer {
 	}
 
 	protected Prompt doCreatePrompt(Prompt originalPrompt, Map<String, Object> contextMap) {
-		PromptTemplate promptTemplate = new PromptTemplate(DEFAULT_USER_PROMPT_TEXT);
+		PromptTemplate promptTemplate = new PromptTemplate(getUserText());
 		Message userMessageToAppend = promptTemplate.createMessage(contextMap);
 		List<Message> messageList = originalPrompt.getInstructions()
 			.stream()
@@ -83,6 +97,35 @@ public class QuestionContextAugmentor implements PromptTransformer {
 			.collect(Collectors.toList());
 		messageList.add(userMessageToAppend);
 		return new Prompt(messageList, (ChatOptions) originalPrompt.getOptions());
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String name;
+
+		private String userText;
+
+		public Builder withName(String name) {
+			this.name = name;
+			return this;
+		}
+
+		public Builder withUserText(String userText) {
+			this.userText = userText;
+			return this;
+		}
+
+		public QuestionContextAugmentor build() {
+			QuestionContextAugmentor instance = new QuestionContextAugmentor();
+			instance.userText = this.userText != null ? this.userText : instance.userText;
+			instance.setName(this.name != null ? this.name : instance.getName());
+			return instance;
+		}
+
 	}
 
 }

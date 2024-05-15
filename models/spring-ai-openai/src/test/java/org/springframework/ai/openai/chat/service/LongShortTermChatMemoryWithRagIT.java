@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.chat.chatbot;
+package org.springframework.ai.openai.chat.service;
 
 import java.util.List;
 import java.util.Map;
@@ -26,24 +26,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.chatbot.ChatBot;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
+import org.springframework.ai.chat.service.ChatService;
+import org.springframework.ai.chat.service.PromptTransformingChatService;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.chat.chatbot.DefaultChatBot;
-import org.springframework.ai.chat.history.ChatMemory;
-import org.springframework.ai.chat.history.ChatMemoryChatBotListener;
-import org.springframework.ai.chat.history.ChatMemoryRetriever;
-import org.springframework.ai.chat.history.InMemoryChatMemory;
-import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
-import org.springframework.ai.chat.history.SystemPromptChatMemoryAugmentor;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryChatBotListener;
-import org.springframework.ai.chat.history.VectorStoreChatMemoryRetriever;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryChatServiceListener;
+import org.springframework.ai.chat.memory.ChatMemoryRetriever;
+import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.memory.LastMaxTokenSizeContentTransformer;
+import org.springframework.ai.chat.memory.SystemPromptChatMemoryAugmentor;
+import org.springframework.ai.chat.memory.VectorStoreChatMemoryChatServiceListener;
+import org.springframework.ai.chat.memory.VectorStoreChatMemoryRetriever;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
 import org.springframework.ai.chat.prompt.transformer.QuestionContextAugmentor;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
@@ -89,7 +89,7 @@ public class LongShortTermChatMemoryWithRagIT {
 	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
 
 	@Autowired
-	ChatBot chatBot;
+	ChatService chatService;
 
 	@Autowired
 	RelevancyEvaluator relevancyEvaluator;
@@ -122,29 +122,29 @@ public class LongShortTermChatMemoryWithRagIT {
 	}
 
 	// @Autowired
-	// StreamingChatBot streamingChatBot;
+	// StreamingChatService streamingChatService;
 
 	@Test
-	void memoryChatBot() {
+	void memoryChatService() {
 
 		loadData();
 
 		var prompt = new Prompt(new UserMessage("My name is Christian and I like mountain bikes."));
-		PromptContext promptContext = new PromptContext(prompt);
+		ChatServiceContext chatServiceContext = new ChatServiceContext(prompt);
 
-		var chatBotResponse1 = this.chatBot.call(promptContext);
+		var chatServiceResponse1 = this.chatService.call(chatServiceContext);
 
-		logger.info("Response1: " + chatBotResponse1.getChatResponse().getResult().getOutput().getContent());
+		logger.info("Response1: " + chatServiceResponse1.getChatResponse().getResult().getOutput().getContent());
 
-		var chatBotResponse2 = this.chatBot.call(new PromptContext(
+		var chatServiceResponse2 = this.chatService.call(new ChatServiceContext(
 				new Prompt(new String("What is my name and what bike model would you suggest for me?"))));
-		logger.info("Response2: " + chatBotResponse2.getChatResponse().getResult().getOutput().getContent());
+		logger.info("Response2: " + chatServiceResponse2.getChatResponse().getResult().getOutput().getContent());
 
-		// logger.info(chatBotResponse2.getPromptContext().getContents().toString());
-		assertThat(chatBotResponse2.getChatResponse().getResult().getOutput().getContent()).contains("Christian");
+		// logger.info(chatServiceResponse2.getPromptContext().getContents().toString());
+		assertThat(chatServiceResponse2.getChatResponse().getResult().getOutput().getContent()).contains("Christian");
 
 		EvaluationResponse evaluationResponse = this.relevancyEvaluator
-			.evaluate(new EvaluationRequest(chatBotResponse2));
+			.evaluate(new EvaluationRequest(chatServiceResponse2));
 
 		assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
 
@@ -187,12 +187,15 @@ public class LongShortTermChatMemoryWithRagIT {
 		}
 
 		@Bean
-		public ChatBot memoryChatBot(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatService memoryChatService(OpenAiChatClient chatClient, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator, ChatMemory chatHistory) {
 
-			return DefaultChatBot.builder(chatClient)
+			return PromptTransformingChatService.builder(chatClient)
 				.withRetrievers(List.of(new VectorStoreRetriever(vectorStore, SearchRequest.defaults()),
-						new ChatMemoryRetriever(chatHistory, Map.of(TransformerContentType.SHORT_TERM_MEMORY, "")),
+						ChatMemoryRetriever.builder()
+							.withChatHistory(chatHistory)
+							.withMetadata(Map.of(TransformerContentType.SHORT_TERM_MEMORY, ""))
+							.build(),
 						new VectorStoreChatMemoryRetriever(vectorStore, 10,
 								Map.of(TransformerContentType.LONG_TERM_MEMORY, ""))))
 
@@ -214,19 +217,19 @@ public class LongShortTermChatMemoryWithRagIT {
 								Set.of(TransformerContentType.LONG_TERM_MEMORY)),
 						new SystemPromptChatMemoryAugmentor(Set.of(TransformerContentType.SHORT_TERM_MEMORY))))
 
-				.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory),
-						new VectorStoreChatMemoryChatBotListener(vectorStore,
+				.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory),
+						new VectorStoreChatMemoryChatServiceListener(vectorStore,
 								Map.of(TransformerContentType.LONG_TERM_MEMORY, ""))))
 				.build();
 		}
 
 		// @Bean
-		// public StreamingChatBot memoryStreamingChatAgent(OpenAiChatClient
+		// public StreamingChatService memoryStreamingChatAgent(OpenAiChatClient
 		// streamingChatClient,
 		// VectorStore vectorStore, TokenCountEstimator tokenCountEstimator, ChatHistory
 		// chatHistory) {
 
-		// return DefaultStreamingChatBot.builder(streamingChatClient)
+		// return StreamingPromptTransformingChatService.builder(streamingChatClient)
 		// .withRetrievers(List.of(new ChatHistoryRetriever(chatHistory), new
 		// DocumentChatHistoryRetriever(vectorStore, 10)))
 		// .withDocumentPostProcessors(List.of(new

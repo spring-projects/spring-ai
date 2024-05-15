@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.List;
