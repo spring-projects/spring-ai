@@ -57,9 +57,7 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OllamaChatClient ollamaChatClient(OllamaApi ollamaApi, OllamaChatProperties properties) {
-
-		return new OllamaChatClient(ollamaApi).withModel(properties.getModel())
-			.withDefaultOptions(properties.getOptions());
+		return new OllamaChatClient(ollamaApi, properties.getOptions());
 	}
 
 	@Bean
@@ -68,8 +66,7 @@ public class OllamaAutoConfiguration {
 			matchIfMissing = true)
 	public OllamaEmbeddingClient ollamaEmbeddingClient(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
 
-		return new OllamaEmbeddingClient(ollamaApi).withModel(properties.getModel())
-			.withDefaultOptions(properties.getOptions());
+		return new OllamaEmbeddingClient(ollamaApi, properties.getOptions());
 	}
 
 	private static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {

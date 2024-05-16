@@ -249,8 +249,8 @@ Next, create an `OllamaChatClient` instance and use it to text generations reque
 ----
 var ollamaApi = new OllamaApi();
 
-var chatClient = new OllamaChatClient(ollamaApi).withModel(MODEL)
-        .withDefaultOptions(OllamaOptions.create()
+var chatClient = new OllamaChatClient(ollamaApi,
+            OllamaOptions.create()
                 .withModel(OllamaOptions.DEFAULT_MODEL)
                 .withTemperature(0.9f));
 
@@ -273,6 +273,8 @@ The following class diagram illustrates the `OllamaApi` chat interfaces and buil
 image::ollama-chat-completion-api.jpg[OllamaApi Chat Completion API Diagram, 800, 600]
 
 Here is a simple snippet showing how to use the API programmatically:
+
+NOTE: The `OllamaApi` is low level api and is not recommended for direct use. Use the `OllamaChatClient` instead.
 
 [source,java]
 ----

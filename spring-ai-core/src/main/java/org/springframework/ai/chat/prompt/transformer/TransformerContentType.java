@@ -17,7 +17,10 @@
 package org.springframework.ai.chat.prompt.transformer;
 
 /**
+ * This class provides constants for different content types used by transformers.
+ *
  * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
 public class TransformerContentType {
 

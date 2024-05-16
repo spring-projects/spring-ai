@@ -66,6 +66,11 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 		this.ollamaApi = ollamaApi;
 	}
 
+	public OllamaEmbeddingClient(OllamaApi ollamaApi, OllamaOptions defaultOptions) {
+		this.ollamaApi = ollamaApi;
+		this.defaultOptions = defaultOptions;
+	}
+
 	/**
 	 * @deprecated Use {@link OllamaOptions#setModel} instead.
 	 */
@@ -75,6 +80,10 @@ public class OllamaEmbeddingClient extends AbstractEmbeddingClient {
 		return this;
 	}
 
+	/**
+	 * @deprecated Use {@link OllamaOptions} constructor instead.
+	 */
+	@Deprecated
 	public OllamaEmbeddingClient withDefaultOptions(OllamaOptions options) {
 		this.defaultOptions = options;
 		return this;

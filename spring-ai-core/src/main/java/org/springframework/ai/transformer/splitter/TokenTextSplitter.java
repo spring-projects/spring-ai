@@ -68,10 +68,10 @@ public class TokenTextSplitter extends TextSplitter {
 
 	@Override
 	protected List<String> splitText(String text) {
-		return split(text, this.defaultChunkSize);
+		return doSplit(text, this.defaultChunkSize);
 	}
 
-	public List<String> split(String text, int chunkSize) {
+	protected List<String> doSplit(String text, int chunkSize) {
 		if (text == null || text.trim().isEmpty()) {
 			return new ArrayList<>();
 		}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,22 +26,23 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.transformer.AbstractPromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
+import org.springframework.ai.chat.prompt.transformer.PromptChange;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
-import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 
 /**
  * @author Christian Tzolov
  */
-public class MessageChatMemoryAugmentor implements PromptTransformer {
+public class MessageChatMemoryAugmentor extends AbstractPromptTransformer {
 
 	@Override
-	public PromptContext transform(PromptContext promptContext) {
+	public ChatServiceContext transform(ChatServiceContext chatServiceContext) {
 
-		var originalPrompt = promptContext.getPrompt();
+		var originalPrompt = chatServiceContext.getPrompt();
 
 		// Convert the retrieved contents into a list of messages.
-		List<Message> historyMessages = promptContext.getContents()
+		List<Message> historyMessages = chatServiceContext.getContents()
 			.stream()
 			.filter(content -> content.getMetadata().containsKey(TransformerContentType.MEMORY))
 			.map(content -> {
@@ -63,8 +64,10 @@ public class MessageChatMemoryAugmentor implements PromptTransformer {
 		promptMessages.addAll(originalPrompt.getInstructions());
 
 		Prompt newPrompt = new Prompt(promptMessages, (ChatOptions) originalPrompt.getOptions());
+		PromptChange promptChange = new PromptChange(originalPrompt, newPrompt, this.getName(),
+				"Added chat memory as individual messages in the prompt");
 
-		return PromptContext.from(promptContext).withPrompt(newPrompt).addPromptHistory(originalPrompt).build();
+		return ChatServiceContext.from(chatServiceContext).withPrompt(newPrompt).withPromptChange(promptChange).build();
 	}
 
 }

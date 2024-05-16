@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2024 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.document;
 
-import java.util.List;
-import java.util.function.Consumer;
+package org.springframework.ai.chat.service;
+
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 
 /**
+ * The ChatServiceListener is a callback interface that can be implemented by classes that
+ * want to be notified of the completion of a ChatService execution.
+ *
+ * @author Mark Pollack
  * @author Christian Tzolov
  */
-public interface DocumentWriter extends Consumer<List<Document>> {
+public interface ChatServiceListener {
 
-	default void write(List<Document> documents) {
-		accept(documents);
+	default void onStart(ChatServiceContext chatServiceContext) {
+
 	}
+
+	void onComplete(ChatServiceResponse chatServiceResponse);
 
 }

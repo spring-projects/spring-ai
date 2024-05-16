@@ -186,12 +186,12 @@ class VertexAiGeminiChatClientIT {
 	@Test
 	void multiModalityTest() throws IOException {
 
-		byte[] data = new ClassPathResource("/vertex.test.png").getContentAsByteArray();
+		var data = new ClassPathResource("/vertex.test.png");
 
 		var userMessage = new UserMessage("Explain what do you see o this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
 
-		ChatResponse response = client.call(new Prompt(List.of(userMessage)));
+		var response = client.call(new Prompt(List.of(userMessage)));
 
 		// Response should contain something like:
 		// I see a bunch of bananas in a golden basket. The bananas are ripe and yellow.

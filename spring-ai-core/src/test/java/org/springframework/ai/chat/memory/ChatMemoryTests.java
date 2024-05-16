@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.List;
 
@@ -29,12 +29,12 @@ import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.chat.chatbot.ChatBotResponse;
-import org.springframework.ai.chat.chatbot.DefaultChatBot;
+import org.springframework.ai.chat.service.ChatServiceResponse;
+import org.springframework.ai.chat.service.PromptTransformingChatService;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
 
@@ -61,15 +61,15 @@ public class ChatMemoryTests {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
-		DefaultChatBot chatBot = DefaultChatBot.builder(chatClient)
-			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
+		PromptTransformingChatService chatService = PromptTransformingChatService.builder(chatClient)
+			.withRetrievers(List.of(ChatMemoryRetriever.builder().withChatHistory(chatHistory).build()))
 			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
 			.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
-			.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
+			.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory)))
 			.build();
 
-		chatClientUserMessages(chatBot, chatHistory);
+		chatClientUserMessages(chatService, chatHistory);
 	}
 
 	@Test
@@ -77,32 +77,32 @@ public class ChatMemoryTests {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
-		DefaultChatBot chatBot = DefaultChatBot.builder(chatClient)
+		PromptTransformingChatService chatService = PromptTransformingChatService.builder(chatClient)
 			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
 			.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-			.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
+			.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory)))
 			.build();
 
-		chatClientUserMessages(chatBot, chatHistory);
+		chatClientUserMessages(chatService, chatHistory);
 	}
 
-	public void chatClientUserMessages(DefaultChatBot chatBot, ChatMemory chatHistory) {
+	public void chatClientUserMessages(PromptTransformingChatService chatService, ChatMemory chatHistory) {
 
 		when(chatClient.call(promptCaptor.capture()))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:1"))))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:2"))))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:3"))));
 
-		var promptContext = PromptContext.builder()
+		var promptContext = ChatServiceContext.builder()
 				.withConversationId("test-session-id")
 				.withPrompt(new Prompt(
 						List.of(new UserMessage("user:1"), new UserMessage("user:2"), new UserMessage("user:3"),
 								new UserMessage("user:4"), new UserMessage("user:5"))))
 				.build();
 
-		ChatBotResponse response1 = chatBot.call(promptContext);
+		ChatServiceResponse response1 = chatService.call(promptContext);
 
 		assertThat(response1.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:1");
 
@@ -112,7 +112,7 @@ public class ChatMemoryTests {
 		List<Message> history = chatHistory.get("test-session-id", 1000);
 		assertThat(history).hasSize(6);
 
-		ChatBotResponse response2 = chatBot.call(PromptContext.builder()
+		ChatServiceResponse response2 = chatService.call(ChatServiceContext.builder()
 				.withConversationId("test-session-id")
 				.withPrompt(new Prompt(
 						List.of(new UserMessage("user:6"), new UserMessage("user:7"), new UserMessage("user:8"))))
@@ -129,7 +129,7 @@ public class ChatMemoryTests {
 		assertThat(contents.get(1).getContent()).isEqualTo("user:5");
 		assertThat(contents.get(2).getContent()).isEqualTo("assistant:1");
 
-		ChatBotResponse response3 = chatBot.call(PromptContext.builder()
+		ChatServiceResponse response3 = chatService.call(ChatServiceContext.builder()
 				.withConversationId("test-session-id")
 				.withPrompt(new Prompt(List.of(new UserMessage("user:9")))).build());
 		assertThat(response3.getChatResponse().getResult().getOutput().getContent()).isEqualTo("assistant:3");
