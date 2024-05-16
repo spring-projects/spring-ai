@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.chat.service;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
@@ -112,13 +113,28 @@ public class OpenAiPromptTransformingChatServiceIT {
 	void loadData() {
 		JsonReader jsonReader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
 		var textSplitter = new TokenTextSplitter();
-		List<Document> splitDocuments = textSplitter.apply(jsonReader.get());
+		List<Document> splitDocuments = textSplitter.split(jsonReader.get());
 
 		for (Document splitDocument : splitDocuments) {
 			splitDocument.getMetadata().put(TransformerContentType.EXTERNAL_KNOWLEDGE, "true");
 		}
 
 		vectorStore.accept(splitDocuments);
+	}
+
+	void loadData2() {
+		JsonReader jsonReader = null;
+		TokenTextSplitter tokenTextSplitter = null;
+		VectorStore vectorStore = null;
+
+		List<Document> documents = jsonReader.read();
+		List<Document> splitDocuments = tokenTextSplitter.split(documents);
+		vectorStore.write(splitDocuments);
+
+		// Now in java.util.Function style.
+
+		Supplier<List<Document>> docs = jsonReader::read;
+
 	}
 
 	@SpringBootConfiguration

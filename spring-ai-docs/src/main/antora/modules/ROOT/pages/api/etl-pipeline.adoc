@@ -26,11 +26,21 @@ Let's say we have the following instances of those three ETL types
 * `TokenTextSplitter` an implementation of `DocumentTransformer`
 * `VectorStore` an implementation of `DocumentWriter`
 
-To perform the basic loading of data into a Vector Database for use with the Retrieval Augmented Generation pattern, use the following code.
+To perform the basic loading of data into a Vector Database for use with the Retrieval Augmented Generation pattern, use the following code in Java function style syntax.
+
 [source,java]
 ----
 vectorStore.accept(tokenTextSplitter.apply(pdfReader.get()));
 ----
+
+Alternatively, you can use method names that are more naturally expressive for the domain
+
+[source,java]
+----
+vectorStore.write(tokenTextSplitter.split(pdfReader.read()));
+----
+
+
 
 == Getting Started
 
@@ -57,6 +67,9 @@ Provides a source of documents from diverse origins.
 ----
 public interface DocumentReader extends Supplier<List<Document>> {
 
+    default List<Document> read() {
+		return get();
+	}
 }
 ----
 
@@ -68,14 +81,17 @@ Example:
 [source,java]
 ----
 @Component
-public class MyAiApp {
+class MyAiAppComponent {
 
-	@Value("classpath:bikes.json") // This is the json document to load
-	private Resource resource;
+	private final Resource resource;
+
+    MyAiAppComponent(@Value("classpath:bikes.json") Resource resource) {
+        this.resource = resource;
+    }
 
 	List<Document> loadJsonAsDocuments() {
 		JsonReader jsonReader = new JsonReader(resource, "description");
-		return jsonReader.get();
+		return jsonReader.read();
 	}
 }
 ----
@@ -88,16 +104,18 @@ Example:
 [source,java]
 ----
 @Component
-public class MyTextReader {
+class MyTextReader {
 
-    @Value("classpath:text-source.txt") // This is the text document to load
-	private Resource resource;
+    private final Resource resource;
 
+    MyTextReader(@Value("classpath:text-source.txt") Resource resource) {
+        this.resource = resource;
+    }
 	List<Document> loadText() {
 		TextReader textReader = new TextReader(resource);
 		textReader.getCustomMetadata().put("filename", "text-source.txt");
 
-		return textReader.get();
+		return textReader.read();
     }
 }
 ----
@@ -123,7 +141,7 @@ public class MyPagePdfDocumentReader {
 					.withPagesPerDocument(1)
 					.build());
 
-		return pdfReader.get();
+		return pdfReader.read();
     }
 
 }
@@ -153,7 +171,7 @@ public class MyPagePdfDocumentReader {
                     .withPagesPerDocument(1)
                     .build());
 
-		return pdfReader.get();
+		return pdfReader.read();
     }
 }
 ----
@@ -167,14 +185,18 @@ Example:
 [source,java]
 ----
 @Component
-public class MyTikaDocumentReader {
+class MyTikaDocumentReader {
 
-    @Value("classpath:/word-sample.docx") // This is the word document to load
-    private Resource resource;
+    private final Resource resource;
+
+    MyTikaDocumentReader(@Value("classpath:/word-sample.docx")
+                            Resource resource) {
+        this.resource = resource;
+    }
 
     List<Document> loadText() {
         TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(resource);
-        return tikaDocumentReader.get();
+        return tikaDocumentReader.read();
     }
 }
 ----
@@ -187,6 +209,9 @@ Transforms a batch of documents as part of the processing workflow.
 ----
 public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
 
+    default List<Document> transform(List<Document> transform) {
+		return apply(transform);
+	}
 }
 ----
 
@@ -213,6 +238,9 @@ Manages the final stage of the ETL process, preparing documents for storage.
 ```java
 public interface DocumentWriter extends Consumer<List<Document>> {
 
+    default void write(List<Document> documents) {
+		accept(documents);
+	}
 }
 ```
 ==== FileDocumentWriter

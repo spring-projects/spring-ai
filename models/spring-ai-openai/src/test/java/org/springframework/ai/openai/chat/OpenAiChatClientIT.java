@@ -16,6 +16,7 @@
 package org.springframework.ai.openai.chat;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -249,12 +250,12 @@ class OpenAiChatClientIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
-		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
+		var imageData = new ClassPathResource("/test.png");
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		ChatResponse response = chatClient
+		var response = chatClient
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getContent());
@@ -266,9 +267,9 @@ class OpenAiChatClientIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						"https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
+		var userMessage = new UserMessage("Explain what do you see on this picture?", List
+			.of(new Media(MimeTypeUtils.IMAGE_PNG,
+					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
 
 		ChatResponse response = chatClient
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
@@ -281,9 +282,9 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						"https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
+		var userMessage = new UserMessage("Explain what do you see on this picture?", List
+			.of(new Media(MimeTypeUtils.IMAGE_PNG,
+					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
 
 		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(List.of(userMessage),
 				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));

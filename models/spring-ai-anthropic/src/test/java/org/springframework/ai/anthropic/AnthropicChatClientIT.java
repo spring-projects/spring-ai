@@ -182,12 +182,12 @@ class AnthropicChatClientIT {
 	@Test
 	void multiModalityTest() throws IOException {
 
-		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
+		var imageData = new ClassPathResource("/test.png");
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+		var response = chatClient.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");

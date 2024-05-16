@@ -15,10 +15,7 @@
  */
 package org.springframework.ai.document;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -112,7 +109,7 @@ public class Document implements Content {
 	}
 
 	@Override
-	public List<Media> getMedia() {
+	public List<Media> getMedia(String... dummy) {
 		return this.media;
 	}
 
