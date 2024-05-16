@@ -69,7 +69,7 @@ public class BaseMemoryTest {
 			.contains("John Vincent Atanasoff");
 
 		EvaluationResponse evaluationResponse = this.relevancyEvaluator
-			.evaluate(new EvaluationRequest(chatServiceResponse2));
+			.evaluate(chatServiceResponse2.toEvaluationRequest());
 		logger.info("" + evaluationResponse);
 	}
 

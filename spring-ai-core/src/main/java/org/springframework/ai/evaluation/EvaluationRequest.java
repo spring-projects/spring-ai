@@ -16,11 +16,6 @@ public class EvaluationRequest {
 
 	private final ChatResponse chatResponse;
 
-	public EvaluationRequest(ChatServiceResponse chatServiceResponse) {
-		this(chatServiceResponse.getPromptContext().getPromptChanges().get(0).revised(),
-				chatServiceResponse.getPromptContext().getContents(), chatServiceResponse.getChatResponse());
-	}
-
 	public EvaluationRequest(Prompt prompt, List<Content> dataList, ChatResponse chatResponse) {
 		this.prompt = prompt;
 		this.dataList = dataList;

@@ -18,6 +18,7 @@ package org.springframework.ai.chat.service;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
+import org.springframework.ai.evaluation.EvaluationRequest;
 
 import java.util.Objects;
 
@@ -45,6 +46,11 @@ public class ChatServiceResponse {
 
 	public ChatResponse getChatResponse() {
 		return chatResponse;
+	}
+
+	public EvaluationRequest toEvaluationRequest() {
+		return new EvaluationRequest(getPromptContext().getPromptChanges().get(0).revised(),
+				getPromptContext().getContents(), getChatResponse());
 	}
 
 	@Override

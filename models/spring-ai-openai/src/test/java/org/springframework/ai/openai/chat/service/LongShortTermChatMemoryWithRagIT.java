@@ -144,7 +144,7 @@ public class LongShortTermChatMemoryWithRagIT {
 		assertThat(chatServiceResponse2.getChatResponse().getResult().getOutput().getContent()).contains("Christian");
 
 		EvaluationResponse evaluationResponse = this.relevancyEvaluator
-			.evaluate(new EvaluationRequest(chatServiceResponse2));
+			.evaluate(chatServiceResponse2.toEvaluationRequest());
 
 		assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
 

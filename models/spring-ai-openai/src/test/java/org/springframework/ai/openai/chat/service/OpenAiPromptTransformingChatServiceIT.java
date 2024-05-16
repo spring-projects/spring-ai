@@ -104,8 +104,8 @@ public class OpenAiPromptTransformingChatServiceIT {
 			.withModel(GPT_4_TURBO_PREVIEW.getValue())
 			.build();
 		var relevancyEvaluator = new RelevancyEvaluator(this.chatClient, openAiChatOptions);
-		EvaluationRequest evaluationRequest = new EvaluationRequest(chatServiceResponse);
-		EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
+
+		EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(chatServiceResponse.toEvaluationRequest());
 		assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
 
 	}
@@ -113,13 +113,13 @@ public class OpenAiPromptTransformingChatServiceIT {
 	void loadData() {
 		JsonReader jsonReader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
 		var textSplitter = new TokenTextSplitter();
-		List<Document> splitDocuments = textSplitter.split(jsonReader.get());
+		List<Document> splitDocuments = textSplitter.split(jsonReader.read());
 
 		for (Document splitDocument : splitDocuments) {
 			splitDocument.getMetadata().put(TransformerContentType.EXTERNAL_KNOWLEDGE, "true");
 		}
 
-		vectorStore.accept(splitDocuments);
+		vectorStore.write(splitDocuments);
 	}
 
 	void loadData2() {

@@ -55,7 +55,11 @@ public class QuestionContextAugmentor extends AbstractPromptTransformer {
 	private String userText;
 
 	public QuestionContextAugmentor() {
-		this.userText = DEFAULT_USER_TEXT;
+		this(DEFAULT_USER_TEXT);
+	}
+
+	public QuestionContextAugmentor(String userText) {
+		this.userText = userText;
 		this.setName("QuestionContextAugmentor");
 	}
 
