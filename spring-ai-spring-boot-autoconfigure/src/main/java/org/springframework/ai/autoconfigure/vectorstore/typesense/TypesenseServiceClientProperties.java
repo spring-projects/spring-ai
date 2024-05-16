@@ -1,5 +1,11 @@
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+/**
+ * @author Pablo Sanchidrian Herrera
+ */
+@ConfigurationProperties(TypesenseServiceClientProperties.CONFIG_PREFIX)
 public class TypesenseServiceClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.typesense.client";

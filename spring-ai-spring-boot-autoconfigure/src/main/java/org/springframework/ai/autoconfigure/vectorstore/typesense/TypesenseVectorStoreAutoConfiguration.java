@@ -21,8 +21,8 @@ import java.util.List;
  * @author Pablo Sanchidrian Herrera
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class })
-@EnableConfigurationProperties({ TypesenseVectorStoreProperties.class })
+@ConditionalOnClass({ TypesenseVectorStore.class, EmbeddingClient.class })
+@EnableConfigurationProperties({ TypesenseServiceClientProperties.class, TypesenseVectorStoreProperties.class })
 public class TypesenseVectorStoreAutoConfiguration {
 
 	@Bean
@@ -33,6 +33,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	public VectorStore vectorStore(Client typesenseClient, EmbeddingClient embeddingClient,
 			TypesenseVectorStoreProperties properties) {
 
