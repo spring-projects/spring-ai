@@ -35,6 +35,12 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	public static final String EMBEDDING_FIELD_NAME = "embedding";
 
+	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
+
+	public static final String DEFAULT_COLLECTION_NAME = "default_collection";
+
+	public static final int INVALID_EMBEDDING_DIMENSION = -1;
+
 	private final Client client;
 
 	private final EmbeddingClient embeddingClient;
@@ -231,10 +237,26 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 		}
 	}
 
+	int embeddingDimensions() {
+		if (this.config.embeddingDimension != INVALID_EMBEDDING_DIMENSION) {
+			return this.config.embeddingDimension;
+		}
+		try {
+			int embeddingDimensions = this.embeddingClient.dimensions();
+			if (embeddingDimensions > 0) {
+				return embeddingDimensions;
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to obtain the embedding dimensions from the embedding client and fall backs to default:"
+					+ this.config.embeddingDimension, e);
+		}
+		return OPENAI_EMBEDDING_DIMENSION_SIZE;
+	}
+
 	// ---------------------------------------------------------------------------------
 	// Initialization
 	// ---------------------------------------------------------------------------------
-
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		this.createCollection();
@@ -264,7 +286,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			.addFieldsItem(new Field().name(METADATA_FIELD_NAME).type(FieldTypes.OBJECT).optional(true))
 			.addFieldsItem(new Field().name(EMBEDDING_FIELD_NAME)
 				.type(FieldTypes.FLOAT_ARRAY)
-				.numDim(this.embeddingClient.dimensions())
+				.numDim(this.embeddingDimensions())
 				.optional(false))
 			.enableNestedFields(true);
 
