@@ -13,7 +13,6 @@ import org.typesense.api.FieldTypes;
 import org.typesense.model.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author Pablo Sanchidrian Herrera
@@ -36,7 +35,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
 
-	public static final String DEFAULT_COLLECTION_NAME = "default_collection";
+	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
