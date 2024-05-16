@@ -1,5 +1,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
+import org.springframework.ai.vectorstore.TypesenseVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -10,48 +11,30 @@ public class TypesenseVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.typesense";
 
-	private String protocol = "http";
-
-	private String host = "localhost";
-
-	private String port = "8108";
+	/**
+	 * Typesense collection name to store the vectors.
+	 */
+	private String collectionName = TypesenseVectorStore.DEFAULT_COLLECTION_NAME;
 
 	/**
-	 * Typesense API key. This is the default api key when the user follows the Typesense
-	 * quick start guide.
+	 * The dimension of the vectors to be stored in the Typesense collection.
 	 */
-	private String apiKey = "xyz";
+	private int embeddingDimension = TypesenseVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
 
-	public String getProtocol() {
-		return protocol;
+	public String getCollectionName() {
+		return collectionName;
 	}
 
-	public void setProtocol(String protocol) {
-		this.protocol = protocol;
+	public void setCollectionName(String collectionName) {
+		this.collectionName = collectionName;
 	}
 
-	public String getHost() {
-		return host;
+	public int getEmbeddingDimension() {
+		return embeddingDimension;
 	}
 
-	public void setHost(String host) {
-		this.host = host;
-	}
-
-	public String getPort() {
-		return port;
-	}
-
-	public void setPort(String port) {
-		this.port = port;
-	}
-
-	public String getApiKey() {
-		return apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	public void setEmbeddingDimension(int embeddingDimension) {
+		this.embeddingDimension = embeddingDimension;
 	}
 
 }
