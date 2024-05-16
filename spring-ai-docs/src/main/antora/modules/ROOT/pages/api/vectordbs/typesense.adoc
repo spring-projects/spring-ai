@@ -61,11 +61,13 @@ spring:
   ai:
     vectorstore:
       typesense:
-        protocl: http
-        host: localhost
-        port: 8108
-        apiKey: xyz
-
+          collectionName: "vector_store"
+          embeddingDimension: 1536
+          client:
+              protocl: http
+              host: localhost
+              port: 8108
+              apiKey: xyz
 ----
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
@@ -97,10 +99,12 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.typesense.protocol`| HTTP Protocol | `http`
-|`spring.ai.vectorstore.typesense.host`| Hostname | `localhost`
-|`spring.ai.vectorstore.typesense.port`| Port | `8108`
-|`spring.ai.vectorstore.typesense.apiKey`| ApiKey | `xyz`
+|`spring.ai.vectorstore.typesense.client.protocol`| HTTP Protocol | `http`
+|`spring.ai.vectorstore.typesense.client.host`| Hostname | `localhost`
+|`spring.ai.vectorstore.typesense.client.port`| Port | `8108`
+|`spring.ai.vectorstore.typesense.client.apiKey`| ApiKey | `xyz`
+|`spring.ai.vectorstore.typesense.collectionName`| Collection Name | `vector_store`
+|`spring.ai.vectorstore.typesense.embeddingDimension`| Embedding Dimension | `1536`
 
 |===
 
