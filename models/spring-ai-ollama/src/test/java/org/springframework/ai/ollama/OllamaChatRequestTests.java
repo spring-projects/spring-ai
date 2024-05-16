@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaChatRequestTests {
 
-	OllamaChatClient client = new OllamaChatClient(new OllamaApi()).withDefaultOptions(
+	OllamaChatClient client = new OllamaChatClient(new OllamaApi(),
 			new OllamaOptions().withModel("MODEL_NAME").withTopK(99).withTemperature(66.6f).withNumGPU(1));
 
 	@Test
@@ -105,8 +105,8 @@ public class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptionsModelOverride() {
 
-		OllamaChatClient client2 = new OllamaChatClient(new OllamaApi())
-			.withDefaultOptions(new OllamaOptions().withModel("DEFAULT_OPTIONS_MODEL"));
+		OllamaChatClient client2 = new OllamaChatClient(new OllamaApi(),
+				new OllamaOptions().withModel("DEFAULT_OPTIONS_MODEL"));
 
 		var request = client2.ollamaChatRequest(new Prompt("Test message content"), true);
 

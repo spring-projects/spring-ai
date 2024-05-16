@@ -54,9 +54,10 @@ class FunctionCallWithFunctionBeanIT {
 	@Test
 	void functionCallTest() {
 
-		contextRunner
-			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
+				// + VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+				+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
+			// + VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
@@ -67,14 +68,21 @@ class FunctionCallWithFunctionBeanIT {
 						If the information was not fetched call the function again. Repeat at most 3 times.
 						""");
 				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Paris and in Tokyo (Japan)?");
+						// "What's the weather like in San Francisco, Paris and in Tokyo?
+						// Please let me know how many function calls you've preformed.");
+						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
 				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
+				// ChatResponse response = chatClient.call(new
+				// Prompt(List.of(userMessage),
+				// VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+
+				Thread.sleep(10000);
 
 				response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));

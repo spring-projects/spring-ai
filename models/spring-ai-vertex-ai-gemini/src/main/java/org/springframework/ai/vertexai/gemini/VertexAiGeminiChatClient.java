@@ -99,7 +99,11 @@ public class VertexAiGeminiChatClient
 
 		GEMINI_PRO_VISION("gemini-pro-vision"),
 
-		GEMINI_PRO("gemini-pro");
+		GEMINI_PRO("gemini-pro"),
+
+		GEMINI_PRO_1_5_PRO("gemini-1.5-pro-preview-0514"),
+
+		GEMINI_PRO_1_5_FLASH("gemini-1.5-flash-preview-0514");
 
 		ChatModel(String value) {
 			this.value = value;
