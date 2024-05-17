@@ -1,0 +1,5 @@
+services:
+  weaviate:
+    image: '{imageName}'
+    ports:
+      - '8080'
