@@ -1,4 +1,5 @@
 org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
 org.springframework.ai.docker.compose.service.connection.chroma.ChromaDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.ollama.OllamaDockerComposeConnectionDetailsFactory,\
-org.springframework.ai.docker.compose.service.connection.qdrant.QdrantDockerComposeConnectionDetailsFactory
+org.springframework.ai.docker.compose.service.connection.qdrant.QdrantDockerComposeConnectionDetailsFactory,\
+org.springframework.ai.docker.compose.service.connection.redis.RedisDockerComposeConnectionDetailsFactory
