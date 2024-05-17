@@ -44,6 +44,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiChatResponseMetadata;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
@@ -57,6 +58,7 @@ import reactor.core.publisher.Flux;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -407,6 +409,14 @@ public class VertexAiGeminiChatClient
 	}
 
 	@Override
+	protected boolean hasReturningFunction(Content responseMessage) {
+		final var functionName = responseMessage.getPartsList().get(0).getFunctionCall().getName();
+		return Optional.ofNullable(this.functionCallbackRegister.get(functionName))
+			.map(FunctionCallback::returningFunction)
+			.orElse(false);
+	}
+
+	@Override
 	protected GeminiRequest doCreateToolResponseRequest(GeminiRequest previousRequest, Content responseMessage,
 			List<Content> conversationHistory) {
 
@@ -420,17 +430,18 @@ public class VertexAiGeminiChatClient
 		}
 
 		String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-		Content contentFnResp = Content.newBuilder()
-			.addParts(Part.newBuilder()
-				.setFunctionResponse(FunctionResponse.newBuilder()
-					.setName(functionCall.getName())
-					.setResponse(jsonToStruct(functionResponse))
+		if (functionResponse != null) {
+			Content contentFnResp = Content.newBuilder()
+				.addParts(Part.newBuilder()
+					.setFunctionResponse(FunctionResponse.newBuilder()
+						.setName(functionCall.getName())
+						.setResponse(jsonToStruct(functionResponse))
+						.build())
 					.build())
-				.build())
-			.build();
+				.build();
 
-		conversationHistory.add(contentFnResp);
+			conversationHistory.add(contentFnResp);
+		}
 
 		return new GeminiRequest(conversationHistory, previousRequest.model());
 	}

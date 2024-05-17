@@ -60,19 +60,16 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 		if (options != null) {
 			if (!CollectionUtils.isEmpty(options.getFunctionCallbacks())) {
-				options.getFunctionCallbacks().stream().forEach(functionCallback -> {
-
+				options.getFunctionCallbacks().forEach(functionCallback -> {
 					// Register the tool callback.
 					if (isRuntimeCall) {
 						this.functionCallbackRegister.put(functionCallback.getName(), functionCallback);
+						// Automatically enable the function, usually from prompt
+						// callback.
+						functionToCall.add(functionCallback.getName());
 					}
 					else {
 						this.functionCallbackRegister.putIfAbsent(functionCallback.getName(), functionCallback);
-					}
-
-					// Automatically enable the function, usually from prompt callback.
-					if (isRuntimeCall) {
-						functionToCall.add(functionCallback.getName());
 					}
 				});
 			}
@@ -147,6 +144,9 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 		Req newRequest = this.doCreateToolResponseRequest(request, responseMessage, conversationHistory);
 
+		if (!this.hasReturningFunction(responseMessage)) {
+			return response;
+		}
 		return this.callWithFunctionSupport(newRequest);
 	}
 
@@ -179,6 +179,8 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 		});
 
 	}
+
+	abstract protected boolean hasReturningFunction(Msg responseMessage);
 
 	abstract protected Req doCreateToolResponseRequest(Req previousRequest, Msg responseMessage,
 			List<Msg> conversationHistory);

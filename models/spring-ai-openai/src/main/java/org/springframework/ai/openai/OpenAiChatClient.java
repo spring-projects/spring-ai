@@ -27,6 +27,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -325,6 +326,15 @@ public class OpenAiChatClient extends
 	}
 
 	@Override
+	protected boolean hasReturningFunction(ChatCompletionMessage responseMessage) {
+		return responseMessage.toolCalls()
+			.stream()
+			.map(toolCall -> toolCall.function().name())
+			.map(functionName -> Optional.ofNullable(this.functionCallbackRegister.get(functionName)))
+			.anyMatch(functionCallback -> functionCallback.map(FunctionCallback::returningFunction).orElse(false));
+	}
+
+	@Override
 	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
 			ChatCompletionMessage responseMessage, List<ChatCompletionMessage> conversationHistory) {
 
@@ -340,10 +350,11 @@ public class OpenAiChatClient extends
 			}
 
 			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-			// Add the function response to the conversation.
-			conversationHistory
-				.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
+			if (functionResponse != null) {
+				// Add the function response to the conversation.
+				conversationHistory
+					.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
+			}
 		}
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a

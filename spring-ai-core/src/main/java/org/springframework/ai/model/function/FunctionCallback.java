@@ -49,4 +49,9 @@ public interface FunctionCallback {
 	 */
 	public String call(String functionInput);
 
+	/**
+	 * @return This function return a value or not
+	 */
+	boolean returningFunction();
+
 }
