@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient.ChatModel;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
@@ -141,6 +142,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 		public Builder withModel(String modelName) {
 			this.options.setModel(modelName);
+			return this;
+		}
+
+		public Builder withModel(ChatModel model) {
+			this.options.setModel(model.getValue());
 			return this;
 		}
 

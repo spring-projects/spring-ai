@@ -120,7 +120,7 @@ public class VertexAiGeminiChatClient
 	public VertexAiGeminiChatClient(VertexAI vertexAI) {
 		this(vertexAI,
 				VertexAiGeminiChatOptions.builder()
-					.withModel(ChatModel.GEMINI_PRO_VISION.getValue())
+					.withModel(ChatModel.GEMINI_PRO_VISION)
 					.withTemperature(0.8f)
 					.build());
 	}

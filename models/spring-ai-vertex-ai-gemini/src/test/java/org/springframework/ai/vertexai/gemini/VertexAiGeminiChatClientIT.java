@@ -234,7 +234,7 @@ class VertexAiGeminiChatClientIT {
 		public VertexAiGeminiChatClient vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatClient(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_VISION.getValue())
+						.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_VISION)
 						.build());
 		}
 
