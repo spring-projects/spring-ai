@@ -211,7 +211,8 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 		}
 
 		final var searchDocuments = documents.stream().map(document -> {
-			final var embeddings = this.embeddingClient.embed(document);
+			final var embeddings = CollectionUtils.isEmpty(document.getEmbedding())
+					? this.embeddingClient.embed(document) : document.getEmbedding();
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
 			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings);

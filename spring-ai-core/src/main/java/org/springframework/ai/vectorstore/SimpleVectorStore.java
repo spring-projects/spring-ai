@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.core.io.Resource;
+import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -71,9 +72,10 @@ public class SimpleVectorStore implements VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
-			logger.info("Calling EmbeddingClient for document id = {}", document.getId());
-			List<Double> embedding = this.embeddingClient.embed(document);
-			document.setEmbedding(embedding);
+			if (CollectionUtils.isEmpty(document.getEmbedding())) {
+				logger.info("Calling EmbeddingClient for document id = {}", document.getId());
+				document.setEmbedding(this.embeddingClient.embed(document));
+			}
 			this.store.put(document.getId(), document);
 		}
 	}

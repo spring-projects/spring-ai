@@ -129,8 +129,9 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingClient.embed(document);
-			document.setEmbedding(embedding);
+			if (document.getEmbedding().isEmpty()) {
+				document.setEmbedding(this.embeddingClient.embed(document));
+			}
 			this.mongoTemplate.save(document, this.config.collectionName);
 		}
 	}
