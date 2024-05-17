@@ -79,4 +79,5 @@
 * xref:contribution-guidelines.adoc[Contribution Guidelines]
 * Appendices
 ** xref:upgrade-notes.adoc[]
+** xref:api/docker-compose.adoc[Docker Compose]
 ** xref:api/testcontainers.adoc[Testcontainers]

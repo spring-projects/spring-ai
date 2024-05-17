@@ -19,6 +19,7 @@
 		<module>spring-ai-test</module>
 		<module>spring-ai-spring-boot-autoconfigure</module>
 		<module>spring-ai-retry</module>
+		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-cloud-bindings</module>
 
