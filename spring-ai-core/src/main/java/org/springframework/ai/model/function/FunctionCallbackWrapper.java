@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.model.function;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -37,8 +38,9 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 	private final Function<I, O> function;
 
 	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, ObjectMapper objectMapper, Function<I, O> function) {
-		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
+			Class<O> outputType, Function<O, String> responseConverter, ObjectMapper objectMapper,
+			Function<I, O> function) {
+		super(name, description, inputTypeSchema, inputType, outputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
 		this.function = function;
 	}
@@ -48,6 +50,11 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		return (Class<I>) TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
 	}
 
+	@SuppressWarnings("unchecked")
+	private static <I, O> Class<O> resolveOutputType(Function<I, O> function) {
+		return (Class<O>) TypeResolverHelper.getFunctionOutputClass((Class<Function<I, O>>) function.getClass());
+	}
+
 	@Override
 	public O apply(I input) {
 		return this.function.apply(input);
@@ -55,6 +62,14 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 	public static <I, O> Builder<I, O> builder(Function<I, O> function) {
 		return new Builder<>(function);
+	}
+
+	public static <I> Builder<I, Void> builder(Consumer<I> consumer) {
+		final Function<I, Void> adapter = i -> {
+			consumer.accept(i);
+			return null;
+		};
+		return new Builder<>(adapter);
 	}
 
 	public static class Builder<I, O> {
@@ -70,6 +85,8 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		private String description;
 
 		private Class<I> inputType;
+
+		private Class<O> outputType;
 
 		private final Function<I, O> function;
 
@@ -108,6 +125,12 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			return this;
 		}
 
+		@SuppressWarnings("unchecked")
+		public Builder<I, O> withOutputType(Class<?> outputType) {
+			this.outputType = (Class<O>) outputType;
+			return this;
+		}
+
 		public Builder<I, O> withResponseConverter(Function<O, String> responseConverter) {
 			Assert.notNull(responseConverter, "ResponseConverter must not be null");
 			this.responseConverter = responseConverter;
@@ -143,6 +166,9 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			if (this.inputType == null) {
 				this.inputType = resolveInputType(this.function);
 			}
+			if (this.outputType == null) {
+				this.outputType = resolveOutputType(this.function);
+			}
 
 			if (this.inputTypeSchema == null) {
 				boolean upperCaseTypeValues = this.schemaType == SchemaType.OPEN_API_SCHEMA;
@@ -150,7 +176,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			}
 
 			return new FunctionCallbackWrapper<>(this.name, this.description, this.inputTypeSchema, this.inputType,
-					this.responseConverter, this.objectMapper, this.function);
+					this.outputType, this.responseConverter, this.objectMapper, this.function);
 		}
 
 	}

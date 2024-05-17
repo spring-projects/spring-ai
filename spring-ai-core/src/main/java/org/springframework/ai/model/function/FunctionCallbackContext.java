@@ -16,6 +16,7 @@
 package org.springframework.ai.model.function;
 
 import java.lang.reflect.Type;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
@@ -73,9 +74,10 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 					"Functional bean with name: " + beanName + " does not exist in the context.");
 		}
 
-		if (!Function.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))) {
+		if (!Function.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))
+				|| !Consumer.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))) {
 			throw new IllegalArgumentException(
-					"Function call Bean must be of type Function. Found: " + beanType.getTypeName());
+					"Function call Bean must be of type Function or Consumer. Found: " + beanType.getTypeName());
 		}
 
 		Type functionInputType = TypeResolverHelper.getFunctionArgumentType(beanType, 0);
@@ -112,6 +114,14 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 
 		if (bean instanceof Function<?, ?> function) {
 			return FunctionCallbackWrapper.builder(function)
+				.withName(functionName)
+				.withSchemaType(this.schemaType)
+				.withDescription(functionDescription)
+				.withInputType(functionInputClass)
+				.build();
+		}
+		if (bean instanceof Consumer<?> consumer) {
+			return FunctionCallbackWrapper.builder(consumer)
 				.withName(functionName)
 				.withSchemaType(this.schemaType)
 				.withDescription(functionDescription)

@@ -45,6 +45,8 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 
 	private final Class<I> inputType;
 
+	private final Class<O> outputType;
+
 	private final String inputTypeSchema;
 
 	private final ObjectMapper objectMapper;
@@ -62,12 +64,13 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	 * or OpenAPI Schema)required by the Model's function calling protocol.
 	 * @param inputType Used to compute, the argument's JSON schema required by the
 	 * Model's function calling protocol.
+	 * @param outputType Used to identify the scope of that function.
 	 * @param responseConverter Used to convert the function's output type to a string.
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
 	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, ObjectMapper objectMapper) {
+			Class<O> outputType, Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(inputType, "InputType must not be null");
@@ -77,6 +80,7 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 		this.name = name;
 		this.description = description;
 		this.inputType = inputType;
+		this.outputType = outputType;
 		this.inputTypeSchema = inputTypeSchema;
 		this.responseConverter = responseConverter;
 		this.objectMapper = objectMapper;
@@ -98,12 +102,21 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	}
 
 	@Override
+	public boolean returningFunction() {
+		return !outputType.isAssignableFrom(Void.class);
+	}
+
+	@Override
 	public String call(String functionArguments) {
 
 		// Convert the tool calls JSON arguments into a Java function request object.
 		I request = fromJson(functionArguments, inputType);
 
 		// extend conversation with function response.
+		if (outputType.isAssignableFrom(Void.class)) {
+			this.apply(request);
+			return null;
+		}
 		return this.andThen(this.responseConverter).apply(request);
 	}
 
@@ -123,6 +136,7 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((description == null) ? 0 : description.hashCode());
 		result = prime * result + ((inputType == null) ? 0 : inputType.hashCode());
+		result = prime * result + ((outputType == null) ? 0 : outputType.hashCode());
 		return result;
 	}
 
@@ -152,6 +166,13 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 				return false;
 		}
 		else if (!inputType.equals(other.inputType))
+			return false;
+
+		if (outputType == null) {
+			if (other.outputType != null)
+				return false;
+		}
+		else if (!outputType.equals(other.outputType))
 			return false;
 		return true;
 	}

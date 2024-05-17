@@ -118,6 +118,29 @@ class AzureOpenAiChatClientFunctionCallIT {
 		assertThat(content).containsAnyOf("15.0", "15");
 	}
 
+	@Test
+	void functionCallWithoutCompleteRoundTrip() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		final var spyingMockWeatherService = new SpyingMockWeatherService();
+		var promptOptions = AzureOpenAiChatOptions.builder()
+			.withDeploymentName(selectedModel)
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(spyingMockWeatherService)
+				.withName("getCurrentWeather")
+				.withDescription("Get the current weather in a given location")
+				.build()))
+			.build();
+
+		ChatResponse response = chatClient.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		final var interceptedRequest = spyingMockWeatherService.getInterceptedRequest();
+		assertThat(interceptedRequest.location()).containsIgnoringCase("San Francisco");
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 

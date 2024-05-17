@@ -20,6 +20,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -48,6 +49,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -392,6 +394,16 @@ public class AnthropicChatClient extends
 	}
 
 	@Override
+	protected boolean hasReturningFunction(RequestMessage responseMessage) {
+		return responseMessage.content()
+			.stream()
+			.filter(c -> c.type() == MediaContent.Type.TOOL_USE)
+			.map(MediaContent::name)
+			.map(functionName -> Optional.ofNullable(this.functionCallbackRegister.get(functionName)))
+			.anyMatch(functionCallback -> functionCallback.map(FunctionCallback::returningFunction).orElse(false));
+	}
+
+	@Override
 	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
 			RequestMessage responseMessage, List<RequestMessage> conversationHistory) {
 
@@ -414,8 +426,9 @@ public class AnthropicChatClient extends
 
 			String functionResponse = this.functionCallbackRegister.get(functionName)
 				.call(ModelOptionsUtils.toJsonString(functionArguments));
-
-			toolResults.add(new MediaContent(Type.TOOL_RESULT, functionCallId, functionResponse));
+			if (functionResponse != null) {
+				toolResults.add(new MediaContent(Type.TOOL_RESULT, functionCallId, functionResponse));
+			}
 		}
 
 		// Add the function response to the conversation.
