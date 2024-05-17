@@ -13,24 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.springframework.ai.chat.chatbot;
-
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+package org.springframework.ai.chat.prompt.transformer;
 
 /**
- * The ChatBotListener is a callback interface that can be implemented by classes that
- * want to be notified of the completion of a ChatBot execution.
+ * AbstractPromptTransformer is an abstract class that provides a base implementation of
+ * the PromptTransformer interface. It includes a name field and corresponding accessor
+ * methods, as well as a default implementation for the transform method.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
-public interface ChatBotListener {
+public abstract class AbstractPromptTransformer implements PromptTransformer {
 
-	default void onStart(PromptContext promptContext) {
+	private String name = getClass().getSimpleName();
 
+	public String getName() {
+		return name;
 	}
 
-	void onComplete(ChatBotResponse chatBotResponse);
+	public void setName(String name) {
+		this.name = name;
+	}
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.prompt.transformer.AbstractPromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
-import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -34,7 +34,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Christian Tzolov
  */
-public class VectorStoreChatMemoryRetriever implements PromptTransformer {
+public class VectorStoreChatMemoryRetriever extends AbstractPromptTransformer {
 
 	private final VectorStore vectorStore;
 
@@ -56,11 +56,11 @@ public class VectorStoreChatMemoryRetriever implements PromptTransformer {
 	}
 
 	@Override
-	public PromptContext transform(PromptContext promptContext) {
+	public ChatServiceContext transform(ChatServiceContext chatServiceContext) {
 		List<Content> updatedContents = new ArrayList<>(
-				promptContext.getContents() != null ? promptContext.getContents() : List.of());
+				chatServiceContext.getContents() != null ? chatServiceContext.getContents() : List.of());
 
-		String query = promptContext.getPrompt()
+		String query = chatServiceContext.getPrompt()
 			.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER)
@@ -70,7 +70,7 @@ public class VectorStoreChatMemoryRetriever implements PromptTransformer {
 		var searchRequest = SearchRequest.query(query)
 			.withTopK(this.topK)
 			.withFilterExpression(
-					TransformerContentType.CONVERSATION_ID + "=='" + promptContext.getConversationId() + "'");
+					TransformerContentType.CONVERSATION_ID + "=='" + chatServiceContext.getConversationId() + "'");
 
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequest);
 
@@ -82,7 +82,7 @@ public class VectorStoreChatMemoryRetriever implements PromptTransformer {
 			updatedContents.addAll(documents);
 		}
 
-		return PromptContext.from(promptContext).withContents(updatedContents).build();
+		return ChatServiceContext.from(chatServiceContext).withContents(updatedContents).build();
 	}
 
 }

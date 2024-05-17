@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,15 +28,16 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.transformer.AbstractPromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
+import org.springframework.ai.chat.prompt.transformer.PromptChange;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
-import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
  */
-public class SystemPromptChatMemoryAugmentor implements PromptTransformer {
+public class SystemPromptChatMemoryAugmentor extends AbstractPromptTransformer {
 
 	public static final String DEFAULT_HISTORY_PROMPT = """
 			Use the conversation history from the HISTORY section to provide accurate answers.
@@ -72,9 +73,9 @@ public class SystemPromptChatMemoryAugmentor implements PromptTransformer {
 	}
 
 	@Override
-	public PromptContext transform(PromptContext promptContext) {
+	public ChatServiceContext transform(ChatServiceContext chatServiceContext) {
 
-		var originalPrompt = promptContext.getPrompt();
+		var originalPrompt = chatServiceContext.getPrompt();
 
 		List<Message> systemMessages = (originalPrompt.getInstructions() != null) ? originalPrompt.getInstructions()
 			.stream()
@@ -89,7 +90,7 @@ public class SystemPromptChatMemoryAugmentor implements PromptTransformer {
 		SystemMessage originalSystemMessage = (!systemMessages.isEmpty()) ? (SystemMessage) systemMessages.get(0)
 				: new SystemMessage("");
 
-		String historyContext = promptContext.getContents()
+		String historyContext = chatServiceContext.getContents()
 			.stream()
 			.filter(content -> this.filterTags.stream().allMatch(tag -> content.getMetadata().containsKey(tag)))
 			.map(content -> content.getMetadata().get(AbstractMessage.MESSAGE_TYPE) + ": " + content.getContent())
@@ -103,8 +104,9 @@ public class SystemPromptChatMemoryAugmentor implements PromptTransformer {
 		newPromptMessages.addAll(nonSystemMessages);
 
 		Prompt newPrompt = new Prompt(newPromptMessages, (ChatOptions) originalPrompt.getOptions());
-
-		return PromptContext.from(promptContext).withPrompt(newPrompt).addPromptHistory(originalPrompt).build();
+		PromptChange promptChange = new PromptChange(originalPrompt, newPrompt, this.getName(),
+				"Added chat memory into the system prompt");
+		return ChatServiceContext.from(chatServiceContext).withPrompt(newPrompt).withPromptChange(promptChange).build();
 	}
 
 }

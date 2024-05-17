@@ -29,9 +29,23 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Transforms the PromptContext by retrieving documents from a VectorStore
+ * A transformer class that retrieves documents from a {@link VectorStore}
+ *
+ * <p>
+ * The {@code VectorStoreRetriever} leverages a {@link SearchRequest} to query the
+ * {@link VectorStore} and retrieve documents that are semantically similar to the user's
+ * input. These documents are then added to the {@link ChatServiceContext} for further
+ * processing.
+ * </p>
+ *
+ * @see VectorStore
+ * @see SearchRequest
+ * @see ChatServiceContext
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
-public class VectorStoreRetriever implements PromptTransformer {
+public class VectorStoreRetriever extends AbstractPromptTransformer {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,8 +54,13 @@ public class VectorStoreRetriever implements PromptTransformer {
 	private final SearchRequest searchRequest;
 
 	public VectorStoreRetriever(VectorStore vectorStore, SearchRequest searchRequest) {
+		this(vectorStore, searchRequest, "VectorStoreRetriever");
+	}
+
+	public VectorStoreRetriever(VectorStore vectorStore, SearchRequest searchRequest, String name) {
 		this.vectorStore = vectorStore;
 		this.searchRequest = searchRequest;
+		this.setName(name);
 	}
 
 	public VectorStore getVectorStore() {
@@ -53,23 +72,22 @@ public class VectorStoreRetriever implements PromptTransformer {
 	}
 
 	@Override
-	public PromptContext transform(PromptContext promptContext) {
-		List<Message> instructions = promptContext.getPrompt().getInstructions();
+	public ChatServiceContext transform(ChatServiceContext chatServiceContext) {
+		List<Message> instructions = chatServiceContext.getPrompt().getInstructions();
 		String userMessage = instructions.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER)
 			.map(m -> m.getContent())
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(userMessage)
-			.withFilterExpression(TransformerContentType.EXTERNAL_KNOWLEDGE + "=='true'"));
+		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(userMessage));
 
 		logger.info("Retrieved {} documents for user message {}", documents.size(), userMessage);
 		for (Document document : documents) {
 			var content = new Document(document.getContent(), document.getMetadata());
 			// content.getMetadata().put(TransformerContentType.DOMAIN_DATA, true);
-			promptContext.addData(content);
+			chatServiceContext.addData(content);
 		}
-		return promptContext;
+		return chatServiceContext;
 	}
 
 	@Override

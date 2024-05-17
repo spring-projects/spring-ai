@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.springframework.ai.openai.chat.chatbot;
+package org.springframework.ai.openai.chat.service;
 
 import java.util.List;
 
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.chat.chatbot.ChatBot;
-import org.springframework.ai.chat.chatbot.DefaultChatBot;
-import org.springframework.ai.chat.chatbot.DefaultStreamingChatBot;
-import org.springframework.ai.chat.chatbot.StreamingChatBot;
-import org.springframework.ai.chat.history.ChatMemory;
-import org.springframework.ai.chat.history.ChatMemoryChatBotListener;
-import org.springframework.ai.chat.history.ChatMemoryRetriever;
-import org.springframework.ai.chat.history.InMemoryChatMemory;
-import org.springframework.ai.chat.history.LastMaxTokenSizeContentTransformer;
-import org.springframework.ai.chat.history.SystemPromptChatMemoryAugmentor;
+import org.springframework.ai.chat.service.ChatService;
+import org.springframework.ai.chat.service.PromptTransformingChatService;
+import org.springframework.ai.chat.service.StreamingPromptTransformingChatService;
+import org.springframework.ai.chat.service.StreamingChatService;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryChatServiceListener;
+import org.springframework.ai.chat.memory.ChatMemoryRetriever;
+import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.memory.LastMaxTokenSizeContentTransformer;
+import org.springframework.ai.chat.memory.MessageChatMemoryAugmentor;
 import org.springframework.ai.evaluation.BaseMemoryTest;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.openai.OpenAiChatClient;
@@ -41,14 +40,14 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-@SpringBootTest(classes = ChatMemoryShortTermSystemPromptIT.Config.class)
+@SpringBootTest(classes = ChatMemoryShortTermMessageListIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class ChatMemoryShortTermSystemPromptIT extends BaseMemoryTest {
+public class ChatMemoryShortTermMessageListIT extends BaseMemoryTest {
 
 	@Autowired
-	public ChatMemoryShortTermSystemPromptIT(RelevancyEvaluator relevancyEvaluator, ChatBot chatBot,
-			StreamingChatBot streamingChatBot) {
-		super(relevancyEvaluator, chatBot, streamingChatBot);
+	public ChatMemoryShortTermMessageListIT(RelevancyEvaluator relevancyEvaluator, ChatService chatService,
+			StreamingChatService streamingChatService) {
+		super(relevancyEvaluator, chatService, streamingChatService);
 	}
 
 	@SpringBootConfiguration
@@ -75,26 +74,26 @@ public class ChatMemoryShortTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatBot memoryChatBot(OpenAiChatClient chatClient, ChatMemory chatHistory,
+		public ChatService memoryChatService(OpenAiChatClient chatClient, ChatMemory chatHistory,
 				TokenCountEstimator tokenCountEstimator) {
 
-			return DefaultChatBot.builder(chatClient)
+			return PromptTransformingChatService.builder(chatClient)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
-				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
+				.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
+				.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory)))
 				.build();
 		}
 
 		@Bean
-		public StreamingChatBot memoryStreamingChatBot(OpenAiChatClient streamingChatClient, ChatMemory chatHistory,
-				TokenCountEstimator tokenCountEstimator) {
+		public StreamingChatService memoryStreamingChatService(OpenAiChatClient streamingChatClient,
+				ChatMemory chatHistory, TokenCountEstimator tokenCountEstimator) {
 
-			return DefaultStreamingChatBot.builder(streamingChatClient)
+			return StreamingPromptTransformingChatService.builder(streamingChatClient)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
-				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
-				.withChatBotListeners(List.of(new ChatMemoryChatBotListener(chatHistory)))
+				.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
+				.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory)))
 				.build();
 		}
 

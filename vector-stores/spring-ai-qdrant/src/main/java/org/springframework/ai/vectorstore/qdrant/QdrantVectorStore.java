@@ -59,6 +59,8 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 	private static final String DISTANCE_FIELD_NAME = "distance";
 
+	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
+
 	private final EmbeddingClient embeddingClient;
 
 	private final QdrantClient qdrantClient;

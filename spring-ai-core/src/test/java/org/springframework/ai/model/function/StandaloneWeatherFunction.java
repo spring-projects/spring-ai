@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.prompt.transformer;
+package org.springframework.ai.model.function;
+
+import java.util.function.Function;
+
+import org.springframework.ai.model.function.TypeResolverHelperIT.WeatherRequest;
+import org.springframework.ai.model.function.TypeResolverHelperIT.WeatherResponse;
 
 /**
- * Responsible for transforming a Prompt. The ChatServiceContext contains the necessary
- * data to make the transformation
- *
- * Implementations may retrieve data and modify the Prompt object in the
- * ChatServiceContext as needed.
- *
- * @author Mark Pollack
  * @author Christian Tzolov
- * @since 1.0.0 M1
  */
-@FunctionalInterface
-public interface PromptTransformer {
+public class StandaloneWeatherFunction implements Function<WeatherRequest, WeatherResponse> {
 
-	/**
-	 * Transforms the given ChatServiceContext.
-	 * @param context the ChatServiceContext to transform
-	 * @return the transformed ChatServiceContext
-	 */
-	ChatServiceContext transform(ChatServiceContext context);
+	@Override
+	public WeatherResponse apply(WeatherRequest weatherRequest) {
+		return new WeatherResponse(42.0f);
+	}
 
 }

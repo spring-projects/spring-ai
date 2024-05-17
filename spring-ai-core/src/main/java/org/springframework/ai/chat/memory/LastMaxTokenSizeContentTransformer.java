@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
-import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.AbstractPromptTransformer;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
 
@@ -33,7 +33,7 @@ import org.springframework.ai.tokenizer.TokenCountEstimator;
  *
  * @author Christian Tzolov
  */
-public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
+public class LastMaxTokenSizeContentTransformer extends AbstractPromptTransformer {
 
 	protected final TokenCountEstimator tokenCountEstimator;
 
@@ -56,15 +56,15 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 		this.filterTags = filterTags;
 	}
 
-	protected List<Content> doGetDatumToModify(PromptContext promptContext) {
-		return promptContext.getContents()
+	protected List<Content> doGetDatumToModify(ChatServiceContext chatServiceContext) {
+		return chatServiceContext.getContents()
 			.stream()
 			.filter(content -> this.filterTags.stream().allMatch(tag -> content.getMetadata().containsKey(tag)))
 			.toList();
 	}
 
-	protected List<Content> doGetDatumNotToModify(PromptContext promptContext) {
-		return promptContext.getContents()
+	protected List<Content> doGetDatumNotToModify(ChatServiceContext chatServiceContext) {
+		return chatServiceContext.getContents()
 			.stream()
 			.filter(content -> !this.filterTags.stream().allMatch(tag -> content.getMetadata().containsKey(tag)))
 			.toList();
@@ -79,22 +79,22 @@ public class LastMaxTokenSizeContentTransformer implements PromptTransformer {
 	}
 
 	@Override
-	public PromptContext transform(PromptContext promptContext) {
+	public ChatServiceContext transform(ChatServiceContext chatServiceContext) {
 
-		List<Content> datum = this.doGetDatumToModify(promptContext);
+		List<Content> datum = this.doGetDatumToModify(chatServiceContext);
 
 		int totalSize = this.doEstimateTokenCount(datum);
 
 		if (totalSize <= this.maxTokenSize) {
-			return promptContext;
+			return chatServiceContext;
 		}
 
 		List<Content> purgedContent = this.purgeExcess(datum, totalSize);
 
-		var updatedContent = new ArrayList<>(doGetDatumNotToModify(promptContext));
+		var updatedContent = new ArrayList<>(doGetDatumNotToModify(chatServiceContext));
 		updatedContent.addAll(purgedContent);
 
-		return PromptContext.from(promptContext).withContents(updatedContent).build();
+		return ChatServiceContext.from(chatServiceContext).withContents(updatedContent).build();
 	}
 
 	protected List<Content> purgeExcess(List<Content> datum, int totalSize) {

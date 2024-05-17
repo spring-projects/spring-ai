@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2024 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.document;
+package org.springframework.ai.chat.prompt.transformer;
 
-import java.util.List;
-import java.util.function.Consumer;
+import org.springframework.ai.chat.prompt.Prompt;
 
 /**
+ * The PromptChange class represents a change made to a Prompt object. It contains
+ * information about the original prompt, the revised prompt, the name of the transformer
+ * that made the change, and a description of the change.
+ *
+ * @author Mark Pollack
  * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
-public interface DocumentWriter extends Consumer<List<Document>> {
-
-	default void write(List<Document> documents) {
-		accept(documents);
-	}
+public record PromptChange(Prompt original, Prompt revised, String transformerName, String description) {
 
 }

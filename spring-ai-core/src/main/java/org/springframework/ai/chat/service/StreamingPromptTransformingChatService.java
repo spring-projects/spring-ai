@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.chat.chatbot;
+package org.springframework.ai.chat.service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.StreamingChatClient;
 import org.springframework.ai.chat.messages.MessageAggregator;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
 import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 
 /**
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public class DefaultStreamingChatBot implements StreamingChatBot {
+public class StreamingPromptTransformingChatService implements StreamingChatService {
 
 	private StreamingChatClient streamingChatClient;
 
@@ -41,63 +41,63 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 
 	private List<PromptTransformer> augmentors;
 
-	private List<ChatBotListener> chatBotListeners;
+	private List<ChatServiceListener> chatServiceListeners;
 
-	public DefaultStreamingChatBot(StreamingChatClient chatClient, List<PromptTransformer> retrievers,
+	public StreamingPromptTransformingChatService(StreamingChatClient chatClient, List<PromptTransformer> retrievers,
 			List<PromptTransformer> documentPostProcessors, List<PromptTransformer> augmentors,
-			List<ChatBotListener> chatBotListeners) {
+			List<ChatServiceListener> chatServiceListeners) {
 		Objects.requireNonNull(chatClient, "chatClient must not be null");
 		this.streamingChatClient = chatClient;
 		this.retrievers = retrievers;
 		this.documentPostProcessors = documentPostProcessors;
 		this.augmentors = augmentors;
-		this.chatBotListeners = chatBotListeners;
+		this.chatServiceListeners = chatServiceListeners;
 	}
 
-	public static DefaultChatBotBuilder builder(StreamingChatClient chatClient) {
-		return new DefaultChatBotBuilder().withChatClient(chatClient);
+	public static Builder builder(StreamingChatClient chatClient) {
+		return new Builder().withChatClient(chatClient);
 	}
 
 	@Override
-	public StreamingChatBotResponse stream(PromptContext promptContext) {
+	public StreamingChatServiceResponse stream(ChatServiceContext chatServiceContext) {
 
-		PromptContext promptContextOnStart = PromptContext.from(promptContext).build();
+		ChatServiceContext chatServiceContextOnStart = ChatServiceContext.from(chatServiceContext).build();
 
 		// Perform retrieval of documents and messages
 		for (PromptTransformer retriever : this.retrievers) {
-			promptContext = retriever.transform(promptContext);
+			chatServiceContext = retriever.transform(chatServiceContext);
 		}
 
 		// Perform post processing of all retrieved documents and messages
 		for (PromptTransformer documentPostProcessor : this.documentPostProcessors) {
-			promptContext = documentPostProcessor.transform(promptContext);
+			chatServiceContext = documentPostProcessor.transform(chatServiceContext);
 		}
 
 		// Perform prompt augmentation
 		for (PromptTransformer augmentor : this.augmentors) {
-			promptContext = augmentor.transform(promptContext);
+			chatServiceContext = augmentor.transform(chatServiceContext);
 		}
 
 		// Invoke Listeners onStart
-		for (ChatBotListener listener : this.chatBotListeners) {
-			listener.onStart(promptContextOnStart);
+		for (ChatServiceListener listener : this.chatServiceListeners) {
+			listener.onStart(chatServiceContextOnStart);
 		}
 
 		// Perform generation
-		final var promptContext2 = promptContext;
+		final var promptContext2 = chatServiceContext;
 
 		Flux<ChatResponse> fluxChatResponse = new MessageAggregator()
-			.aggregate(this.streamingChatClient.stream(promptContext.getPrompt()), chatResponse -> {
-				for (ChatBotListener listener : this.chatBotListeners) {
-					listener.onComplete(new ChatBotResponse(promptContext2, chatResponse));
+			.aggregate(this.streamingChatClient.stream(chatServiceContext.getPrompt()), chatResponse -> {
+				for (ChatServiceListener listener : this.chatServiceListeners) {
+					listener.onComplete(new ChatServiceResponse(promptContext2, chatResponse));
 				}
 			});
 
 		// Invoke Listeners onComplete
-		return new StreamingChatBotResponse(promptContext, fluxChatResponse);
+		return new StreamingChatServiceResponse(chatServiceContext, fluxChatResponse);
 	}
 
-	public static class DefaultChatBotBuilder {
+	public static class Builder {
 
 		private StreamingChatClient chatClient;
 
@@ -107,36 +107,36 @@ public class DefaultStreamingChatBot implements StreamingChatBot {
 
 		private List<PromptTransformer> augmentors = new ArrayList<>();
 
-		private List<ChatBotListener> chatBotListeners = new ArrayList<>();
+		private List<ChatServiceListener> chatServiceListeners = new ArrayList<>();
 
-		public DefaultChatBotBuilder withChatClient(StreamingChatClient chatClient) {
+		public Builder withChatClient(StreamingChatClient chatClient) {
 			this.chatClient = chatClient;
 			return this;
 		}
 
-		public DefaultChatBotBuilder withRetrievers(List<PromptTransformer> retrievers) {
+		public Builder withRetrievers(List<PromptTransformer> retrievers) {
 			this.retrievers = retrievers;
 			return this;
 		}
 
-		public DefaultChatBotBuilder withDocumentPostProcessors(List<PromptTransformer> documentPostProcessors) {
+		public Builder withDocumentPostProcessors(List<PromptTransformer> documentPostProcessors) {
 			this.documentPostProcessors = documentPostProcessors;
 			return this;
 		}
 
-		public DefaultChatBotBuilder withAugmentors(List<PromptTransformer> augmentors) {
+		public Builder withAugmentors(List<PromptTransformer> augmentors) {
 			this.augmentors = augmentors;
 			return this;
 		}
 
-		public DefaultChatBotBuilder withChatBotListeners(List<ChatBotListener> chatBotListeners) {
-			this.chatBotListeners = chatBotListeners;
+		public Builder withChatServiceListeners(List<ChatServiceListener> chatServiceListeners) {
+			this.chatServiceListeners = chatServiceListeners;
 			return this;
 		}
 
-		public DefaultStreamingChatBot build() {
-			return new DefaultStreamingChatBot(chatClient, retrievers, documentPostProcessors, augmentors,
-					chatBotListeners);
+		public StreamingPromptTransformingChatService build() {
+			return new StreamingPromptTransformingChatService(chatClient, retrievers, documentPostProcessors,
+					augmentors, chatServiceListeners);
 		}
 
 	}

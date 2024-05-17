@@ -68,7 +68,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 	}
 
 	@Test
-	@Disabled("Google Vertex AI degraded support for parallel function calls")
+	// @Disabled("Google Vertex AI degraded support for parallel function calls")
 	public void functionCallExplicitOpenApiSchema() {
 
 		UserMessage userMessage = new UserMessage(
@@ -98,7 +98,8 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			// .withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO)
+			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_1_5_PRO)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("get_current_weather")
 				.withDescription("Get the current weather in a given location")
@@ -125,7 +126,8 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_1_5_PRO)
+			// .withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
 			.withFunctionCallbacks(List.of(
 					FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
@@ -166,7 +168,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+			.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
 				.withName("getCurrentWeather")
@@ -225,7 +227,7 @@ public class VertexAiGeminiChatClientFunctionCallingIT {
 		public VertexAiGeminiChatClient vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatClient(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+						.withModel(VertexAiGeminiChatClient.ChatModel.GEMINI_PRO)
 						.withTemperature(0.9f)
 						.build());
 		}

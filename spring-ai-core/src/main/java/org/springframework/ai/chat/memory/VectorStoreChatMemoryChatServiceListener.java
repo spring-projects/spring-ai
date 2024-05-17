@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.history;
+package org.springframework.ai.chat.memory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.chatbot.ChatBotListener;
-import org.springframework.ai.chat.chatbot.ChatBotResponse;
+import org.springframework.ai.chat.service.ChatServiceListener;
+import org.springframework.ai.chat.service.ChatServiceResponse;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
-import org.springframework.ai.chat.prompt.transformer.PromptContext;
+import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.CollectionUtils;
@@ -33,43 +33,43 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Christian Tzolov
  */
-public class VectorStoreChatMemoryChatBotListener implements ChatBotListener {
+public class VectorStoreChatMemoryChatServiceListener implements ChatServiceListener {
 
 	private final VectorStore vectorStore;
 
 	private final Map<String, Object> additionalMetadata;
 
-	public VectorStoreChatMemoryChatBotListener(VectorStore vectorStore) {
+	public VectorStoreChatMemoryChatServiceListener(VectorStore vectorStore) {
 		this(vectorStore, new HashMap<>());
 	}
 
-	public VectorStoreChatMemoryChatBotListener(VectorStore vectorStore, Map<String, Object> additionalMetadata) {
+	public VectorStoreChatMemoryChatServiceListener(VectorStore vectorStore, Map<String, Object> additionalMetadata) {
 		this.vectorStore = vectorStore;
 		this.additionalMetadata = additionalMetadata;
 	}
 
 	@Override
-	public void onStart(PromptContext promptContext) {
+	public void onStart(ChatServiceContext chatServiceContext) {
 
-		if (!CollectionUtils.isEmpty(promptContext.getPrompt().getInstructions())) {
-			List<Document> docs = toDocuments(promptContext.getPrompt().getInstructions(),
-					promptContext.getConversationId());
+		if (!CollectionUtils.isEmpty(chatServiceContext.getPrompt().getInstructions())) {
+			List<Document> docs = toDocuments(chatServiceContext.getPrompt().getInstructions(),
+					chatServiceContext.getConversationId());
 
 			this.vectorStore.add(docs);
 		}
 	}
 
 	@Override
-	public void onComplete(ChatBotResponse chatBotResponse) {
-		if (!CollectionUtils.isEmpty(chatBotResponse.getChatResponse().getResults())) {
-			List<Message> assistantMessages = chatBotResponse.getChatResponse()
+	public void onComplete(ChatServiceResponse chatServiceResponse) {
+		if (!CollectionUtils.isEmpty(chatServiceResponse.getChatResponse().getResults())) {
+			List<Message> assistantMessages = chatServiceResponse.getChatResponse()
 				.getResults()
 				.stream()
 				.map(g -> (org.springframework.ai.chat.messages.Message) g.getOutput())
 				.toList();
 
 			List<Document> docs = toDocuments(assistantMessages,
-					chatBotResponse.getPromptContext().getConversationId());
+					chatServiceResponse.getPromptContext().getConversationId());
 
 			this.vectorStore.add(docs);
 		}
