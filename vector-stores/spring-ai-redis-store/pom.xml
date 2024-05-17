@@ -8,7 +8,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-redis</artifactId>
+	<artifactId>spring-ai-redis-store</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Vector Store - Redis  </name>
 	<description>Spring AI Vector Store - Redis </description>

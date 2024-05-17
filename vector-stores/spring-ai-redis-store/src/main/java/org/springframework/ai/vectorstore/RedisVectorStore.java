@@ -28,6 +28,13 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -43,14 +50,6 @@ import redis.clients.jedis.search.schemafields.TagField;
 import redis.clients.jedis.search.schemafields.TextField;
 import redis.clients.jedis.search.schemafields.VectorField;
 import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
-
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
 /**
  * The RedisVectorStore is for managing and querying vector data in a Redis database. It
@@ -69,27 +68,11 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Julien Ruaux
  * @author Christian Tzolov
- * @author Josh Long
  * @see VectorStore
  * @see RedisVectorStoreConfig
  * @see EmbeddingClient
  */
-public class RedisVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
-
-	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
-		// If index already exists don't do anything
-		if (this.jedis.ftList().contains(this.config.indexName)) {
-			return;
-		}
-
-		String response = this.jedis.ftCreate(this.config.indexName,
-				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.config.prefix), schemaFields());
-		if (!RESPONSE_OK.test(response)) {
-			String message = MessageFormat.format("Could not create index: {0}", response);
-			throw new RuntimeException(message);
-		}
-	}
+public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	public enum Algorithm {
 
@@ -417,6 +400,22 @@ public class RedisVectorStore implements VectorStore, ApplicationListener<Applic
 			return "*";
 		}
 		return "(" + this.filterExpressionConverter.convertExpression(request.getFilterExpression()) + ")";
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+
+		// If index already exists don't do anything
+		if (this.jedis.ftList().contains(this.config.indexName)) {
+			return;
+		}
+
+		String response = this.jedis.ftCreate(this.config.indexName,
+				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.config.prefix), schemaFields());
+		if (!RESPONSE_OK.test(response)) {
+			String message = MessageFormat.format("Could not create index: {0}", response);
+			throw new RuntimeException(message);
+		}
 	}
 
 	private Iterable<SchemaField> schemaFields() {

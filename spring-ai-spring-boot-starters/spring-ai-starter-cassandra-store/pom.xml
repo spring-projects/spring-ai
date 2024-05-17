@@ -7,10 +7,10 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-redis-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Starter - Redis Vector Store</name>
-    <description>Spring AI Redis Vector Store Auto Configuration</description>
+    <name>Spring AI Starter - Apache Cassandra Vector Store</name>
+    <description>Spring AI Apache Cassandra Vector Store Auto Configuration</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
@@ -34,7 +34,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-redis</artifactId>
+            <artifactId>spring-ai-cassandra-store</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

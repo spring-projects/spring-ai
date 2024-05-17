@@ -55,16 +55,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
- * @author Josh Long
  */
-public class MilvusVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
+public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
@@ -97,11 +95,6 @@ public class MilvusVectorStore implements VectorStore, ApplicationListener<Appli
 	private final EmbeddingClient embeddingClient;
 
 	private final MilvusVectorStoreConfig config;
-
-	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
-		this.createCollection();
-	}
 
 	/**
 	 * Configuration for the Milvus vector store.
@@ -385,6 +378,10 @@ public class MilvusVectorStore implements VectorStore, ApplicationListener<Appli
 	// ---------------------------------------------------------------------------------
 	// Initialization
 	// ---------------------------------------------------------------------------------
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		this.createCollection();
+	}
 
 	void releaseCollection() {
 		if (isDatabaseCollectionExists()) {

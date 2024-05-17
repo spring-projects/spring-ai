@@ -15,11 +15,23 @@
  */
 package org.springframework.ai.vectorstore.qdrant;
 
+import static io.qdrant.client.PointIdFactory.id;
+import static io.qdrant.client.ValueFactory.value;
+import static io.qdrant.client.VectorsFactory.vectors;
+import static io.qdrant.client.WithPayloadSelectorFactory.enable;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.grpc.Collections.Distance;
@@ -32,19 +44,6 @@ import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.util.Assert;
-
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.ValueFactory.value;
-import static io.qdrant.client.VectorsFactory.vectors;
-import static io.qdrant.client.WithPayloadSelectorFactory.enable;
-
 /**
  * Qdrant vectorStore implementation. This store supports creating, updating, deleting,
  * and similarity searching of documents in a Qdrant collection.
@@ -52,10 +51,9 @@ import static io.qdrant.client.WithPayloadSelectorFactory.enable;
  * @author Anush Shetty
  * @author Christian Tzolov
  * @author Eddú Meléndez
- * @author Josh Long
  * @since 0.8.1
  */
-public class QdrantVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
+public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 	private static final String CONTENT_FIELD_NAME = "doc_content";
 
@@ -86,7 +84,6 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 		 *
 		 * @param builder The configuration builder.
 		 */
-
 		private QdrantVectorStoreConfig(Builder builder) {
 			this.collectionName = builder.collectionName;
 		}
@@ -159,24 +156,6 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 		this.embeddingClient = embeddingClient;
 		this.collectionName = collectionName;
 		this.qdrantClient = qdrantClient;
-	}
-
-	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
-
-		// Create the collection if it does not exist.
-		if (!isCollectionExists()) {
-			var vectorParams = VectorParams.newBuilder()
-				.setDistance(Distance.Cosine)
-				.setSize(this.embeddingClient.dimensions())
-				.build();
-			try {
-				this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
-			} //
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		}
 	}
 
 	/**
@@ -261,6 +240,7 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 
 	/**
 	 * Extracts metadata from a Protobuf Struct.
+	 * @param metadataStruct The Protobuf Struct containing metadata.
 	 * @return The metadata as a map.
 	 */
 	private Document toDocument(ScoredPoint point) {
@@ -302,6 +282,18 @@ public class QdrantVectorStore implements VectorStore, ApplicationListener<Appli
 	 */
 	private List<Float> toFloatList(List<Double> doubleList) {
 		return doubleList.stream().map(d -> d.floatValue()).toList();
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		// Create the collection if it does not exist.
+		if (!isCollectionExists()) {
+			var vectorParams = VectorParams.newBuilder()
+				.setDistance(Distance.Cosine)
+				.setSize(this.embeddingClient.dimensions())
+				.build();
+			this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
+		}
 	}
 
 	private boolean isCollectionExists() {

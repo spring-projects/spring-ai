@@ -8,7 +8,7 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-pinecone</artifactId>
+    <artifactId>spring-ai-pinecone-store</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Vector Store - Pinecone </name>
     <url>https://github.com/spring-projects/spring-ai</url>

@@ -7,7 +7,7 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-azure-vector-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-azure-store-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - Azure Vector Store</name>
     <description>Spring AI Azure Vector Store Auto Configuration</description>

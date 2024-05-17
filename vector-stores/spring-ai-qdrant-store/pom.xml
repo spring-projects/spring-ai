@@ -8,10 +8,10 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-gemfire</artifactId>
+    <artifactId>spring-ai-qdrant-store</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Vector Store - GemFire</name>
-    <description>Spring AI GemFire Vector Store</description>
+    <name>Spring AI Vector Store - QDrant</name>
+
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
@@ -34,29 +34,28 @@
 
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-webflux</artifactId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.qdrant</groupId>
+            <artifactId>client</artifactId>
+            <version>${qdrant.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>${protobuf-java.version}</version>
         </dependency>
 
         <!-- TESTING -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai</artifactId>
-            <version>${parent.version}</version>
+            <artifactId>spring-ai-azure-openai</artifactId>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-test</artifactId>
-            <version>${parent.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-transformers</artifactId>
-            <version>${parent.version}</version>
-            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -66,16 +65,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>3.0.0</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>qdrant</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
-
     </dependencies>
-
 </project>

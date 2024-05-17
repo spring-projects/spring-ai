@@ -22,8 +22,7 @@ import org.neo4j.driver.Values;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -35,9 +34,8 @@ import java.util.function.Predicate;
 /**
  * @author Gerrit Meier
  * @author Michael Simons
- * @author Josh Long
  */
-public class Neo4jVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
+public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	/**
 	 * An enum to configure the distance function used in the Neo4j vector index.
@@ -72,7 +70,6 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 		private final String indexName;
 
 		// needed for similarity search call
-
 		private final String indexNameNotSanitized;
 
 		private final String idProperty;
@@ -256,29 +253,6 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 
 	}
 
-	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
-
-		try (var session = this.driver.session(this.config.sessionConfig)) {
-
-			session
-				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
-					.formatted(this.config.constraintName, this.config.label, this.config.idProperty))
-				.consume();
-
-			var statement = """
-					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
-							OPTIONS {indexConfig: {
-							 `vector.dimensions`: %d,
-							 `vector.similarity_function`: '%s'
-							}}
-					""".formatted(this.config.indexName, this.config.label, this.config.embeddingProperty,
-					this.config.embeddingDimension, this.config.distanceType.name);
-			session.run(statement).consume();
-			session.run("CALL db.awaitIndexes()").consume();
-		}
-	}
-
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
 	public static final String DEFAULT_LABEL = "Document";
@@ -371,6 +345,29 @@ public class Neo4jVectorStore implements VectorStore, ApplicationListener<Applic
 				.run(query, Map.of("indexName", this.config.indexNameNotSanitized, "numberOfNearestNeighbours",
 						request.getTopK(), "embeddingValue", embedding, "threshold", request.getSimilarityThreshold()))
 				.list(this::recordToDocument);
+		}
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+
+		try (var session = this.driver.session(this.config.sessionConfig)) {
+
+			session
+				.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
+					.formatted(this.config.constraintName, this.config.label, this.config.idProperty))
+				.consume();
+
+			var statement = """
+					CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
+							OPTIONS {indexConfig: {
+							 `vector.dimensions`: %d,
+							 `vector.similarity_function`: '%s'
+							}}
+					""".formatted(this.config.indexName, this.config.label, this.config.embeddingProperty,
+					this.config.embeddingDimension, this.config.distanceType.name);
+			session.run(statement).consume();
+			session.run("CALL db.awaitIndexes()").consume();
 		}
 	}
 

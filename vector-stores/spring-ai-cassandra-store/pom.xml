@@ -8,7 +8,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-cassandra</artifactId>
+	<artifactId>spring-ai-cassandra-store</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Vector Store – Apache Cassandra</name>
 	<description>Spring AI Vector Store for Apache Cassandra</description>

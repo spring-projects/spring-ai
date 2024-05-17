@@ -134,7 +134,7 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-cassandra</artifactId>
+                <artifactId>spring-ai-cassandra-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -170,13 +170,13 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-pinecone</artifactId>
+                <artifactId>spring-ai-pinecone-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-redis</artifactId>
+                <artifactId>spring-ai-redis-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -188,7 +188,7 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-qdrant</artifactId>
+                <artifactId>spring-ai-qdrant-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -206,7 +206,7 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-gemfire</artifactId>
+				<artifactId>spring-ai-gemfire-store</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -238,7 +238,7 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-azure-vector-store-spring-boot-starter</artifactId>
+                <artifactId>spring-ai-azure-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -316,7 +316,7 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-redis-spring-boot-starter</artifactId>
+                <artifactId>spring-ai-redis-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

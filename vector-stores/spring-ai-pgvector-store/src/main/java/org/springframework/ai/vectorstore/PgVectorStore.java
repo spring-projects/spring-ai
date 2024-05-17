@@ -35,8 +35,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -50,9 +49,8 @@ import org.springframework.util.StringUtils;
  * vector index will be auto-created if not available.
  *
  * @author Christian Tzolov
- * @author Josh Long
  */
-public class PgVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
+public class PgVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
 
@@ -79,40 +77,6 @@ public class PgVectorStore implements VectorStore, ApplicationListener<Applicati
 	private boolean removeExistingVectorStoreTable;
 
 	private PgIndexType createIndexMethod;
-
-	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
-		try {
-			// Enable the PGVector, JSONB and UUID support.
-			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
-			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
-			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
-
-			// Remove existing VectorStoreTable
-			if (this.removeExistingVectorStoreTable) {
-				this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
-			}
-
-			this.jdbcTemplate.execute(String.format("""
-					CREATE TABLE IF NOT EXISTS %s (
-						id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-						content text,
-						metadata json,
-						embedding vector(%d)
-					)
-					""", VECTOR_TABLE_NAME, this.embeddingDimensions()));
-
-			if (this.createIndexMethod != PgIndexType.NONE) {
-				this.jdbcTemplate.execute(String.format("""
-						CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
-						""", VECTOR_INDEX_NAME, VECTOR_TABLE_NAME, this.createIndexMethod,
-						this.getDistanceType().index));
-			}
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
@@ -367,6 +331,33 @@ public class PgVectorStore implements VectorStore, ApplicationListener<Applicati
 	// ---------------------------------------------------------------------------------
 	// Initialize
 	// ---------------------------------------------------------------------------------
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		// Enable the PGVector, JSONB and UUID support.
+		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
+		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
+		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+
+		// Remove existing VectorStoreTable
+		if (this.removeExistingVectorStoreTable) {
+			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
+		}
+
+		this.jdbcTemplate.execute(String.format("""
+				CREATE TABLE IF NOT EXISTS %s (
+					id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+					content text,
+					metadata json,
+					embedding vector(%d)
+				)
+				""", VECTOR_TABLE_NAME, this.embeddingDimensions()));
+
+		if (this.createIndexMethod != PgIndexType.NONE) {
+			this.jdbcTemplate.execute(String.format("""
+					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
+					""", VECTOR_INDEX_NAME, VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
+		}
+	}
 
 	int embeddingDimensions() {
 		// The manually set dimensions have precedence over the computed one.

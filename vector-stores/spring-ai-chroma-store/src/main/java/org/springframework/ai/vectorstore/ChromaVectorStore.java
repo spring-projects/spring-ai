@@ -29,9 +29,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.lang.NonNull;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -42,10 +40,8 @@ import org.springframework.util.StringUtils;
  * their similarity to a query, using the {@link ChromaApi} and {@link EmbeddingClient}
  * for embedding calculations. For more information about how it does this, see the
  * official <a href="https://www.trychroma.com/">Chroma website</a>.
- *
- * @author Christian Tzolov
  */
-public class ChromaVectorStore implements VectorStore, ApplicationListener<ApplicationReadyEvent> {
+public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 	public static final String DISTANCE_FIELD_NAME = "distance";
 
@@ -151,7 +147,7 @@ public class ChromaVectorStore implements VectorStore, ApplicationListener<Appli
 	}
 
 	@Override
-	public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
+	public void afterPropertiesSet() throws Exception {
 		var collection = this.chromaApi.getCollection(this.collectionName);
 		if (collection == null) {
 			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
