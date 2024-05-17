@@ -8,6 +8,20 @@ Let's make your `@Beans` intelligent!
 
 For further information go to our [Spring AI reference documentation](https://docs.spring.io/spring-ai/reference/).
 
+### Breadking changes
+(15.05.2024)
+On our march to release 1.0 M1 we have made several breaking changes.  Apologies, it is for the best!
+
+Renamed POM artifact names:
+ - spring-ai-qdrant -> spring-ai-qdrant-store
+ - spring-ai-cassandra -> spring-ai-cassandra-store
+ - spring-ai-pinecone -> spring-ai-pinecone-store
+ - spring-ai-redis -> spring-ai-redis-store
+ - spring-ai-qdrant -> spring-ai-qdrant-store
+ - spring-ai-gemfire -> spring-ai-gemfire-store
+ - spring-ai-azure-vector-store-spring-boot-starter -> spring-ai-azure-store-spring-boot-starter
+ - spring-ai-redis-spring-boot-starter -> spring-ai-redis-store-spring-boot-starter
+
 ## Project Links
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
