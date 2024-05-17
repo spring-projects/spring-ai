@@ -1,0 +1,5 @@
+services:
+  ollama:
+    image: '{imageName}'
+    ports:
+      - '11434'
