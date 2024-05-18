@@ -69,8 +69,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Constructor to initialize with the target type's class.
 	 * @param clazz The target type's class.
 	 */
-	public BeanOutputConverter(Class<T> typeClass) {
-		this(ParameterizedTypeReference.forType(typeClass));
+	public BeanOutputConverter(Class<T> clazz) {
+		this(ParameterizedTypeReference.forType(clazz));
 	}
 
 	/**
