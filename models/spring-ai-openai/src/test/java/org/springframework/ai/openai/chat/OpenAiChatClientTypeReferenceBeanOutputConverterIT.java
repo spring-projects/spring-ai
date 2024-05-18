@@ -29,7 +29,7 @@ import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.converter.ParameterizedTypeReferenceOutputConverter;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,10 +39,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class OpenAiChatClientParametrizedTypeReferencefOutputConverterIT extends AbstractIT {
+class OpenAiChatClientTypeReferenceBeanOutputConverterIT extends AbstractIT {
 
 	private static final Logger logger = LoggerFactory
-		.getLogger(OpenAiChatClientParametrizedTypeReferencefOutputConverterIT.class);
+		.getLogger(OpenAiChatClientTypeReferenceBeanOutputConverterIT.class);
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
@@ -50,7 +50,7 @@ class OpenAiChatClientParametrizedTypeReferencefOutputConverterIT extends Abstra
 	@Test
 	void typeRefOutputConverterRecords() {
 
-		ParameterizedTypeReferenceOutputConverter<List<ActorsFilmsRecord>> outputConverter = new ParameterizedTypeReferenceOutputConverter<>(
+		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
 				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
 				});
 
@@ -75,7 +75,7 @@ class OpenAiChatClientParametrizedTypeReferencefOutputConverterIT extends Abstra
 	@Test
 	void typeRefStreamOutputConverterRecords() {
 
-		ParameterizedTypeReferenceOutputConverter<List<ActorsFilmsRecord>> outputConverter = new ParameterizedTypeReferenceOutputConverter<>(
+		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
 				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
 				});
 
