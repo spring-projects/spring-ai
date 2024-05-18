@@ -73,7 +73,7 @@ class OllamaChatClientIT {
 		ollamaContainer.execInContainer("ollama", "pull", MODEL);
 		logger.info(MODEL + " pulling competed!");
 
-		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
+		baseUrl = ollamaContainer.getEndpoint();
 	}
 
 	@Autowired
