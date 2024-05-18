@@ -250,7 +250,8 @@ public class MistralAiChatClient extends
 		// message.
 		for (ToolCall toolCall : responseMessage.toolCalls()) {
 
-			var functionName = toolCall.function().name();
+			String id = toolCall.id();
+			String functionName = toolCall.function().name();
 			String functionArguments = toolCall.function().arguments();
 
 			if (!this.functionCallbackRegister.containsKey(functionName)) {
@@ -260,8 +261,8 @@ public class MistralAiChatClient extends
 			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
 
 			// Add the function response to the conversation.
-			conversationHistory
-				.add(new ChatCompletionMessage(functionResponse, ChatCompletionMessage.Role.TOOL, functionName, null));
+			conversationHistory.add(new ChatCompletionMessage(functionResponse, ChatCompletionMessage.Role.TOOL,
+					functionName, null, id));
 		}
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
