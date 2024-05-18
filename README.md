@@ -8,7 +8,7 @@ Let's make your `@Beans` intelligent!
 
 For further information go to our [Spring AI reference documentation](https://docs.spring.io/spring-ai/reference/).
 
-### Breadking changes
+### Breaking changes
 (15.05.2024)
 On our march to release 1.0 M1 we have made several breaking changes.  Apologies, it is for the best!
 
