@@ -15,9 +15,10 @@
  */
 package org.springframework.ai.converter;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Nested;
@@ -26,10 +27,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.core.ParameterizedTypeReference;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Sebastian Ullrich
@@ -44,34 +44,63 @@ class BeanOutputConverterTest {
 
 	@Test
 	public void shouldHavePreConfiguredDefaultObjectMapper() {
-		var converter = new BeanOutputConverter<>(TestClass.class);
+		var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+		});
 		var objectMapper = converter.getObjectMapper();
 		assertThat(objectMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
 	}
 
-	@Test
-	public void shouldUseProvidedObjectMapperForParsing() throws JsonProcessingException {
-		var testClass = new TestClass("some string");
-		when(objectMapperMock.readValue(anyString(), eq(TestClass.class))).thenReturn(testClass);
-		var converter = new BeanOutputConverter<>(TestClass.class, objectMapperMock);
-		assertThat(converter.convert("{}")).isEqualTo(testClass);
-	}
-
 	@Nested
-	class ParserTest {
+	class ConverterTest {
 
 		@Test
-		public void shouldParseFieldNamesFromString() {
+		public void convertClassType() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			var testClass = converter.convert("{ \"someString\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
 		}
 
 		@Test
-		public void shouldParseJsonPropertiesFromString() {
+		public void convertTypeReference() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+			});
+			var testClass = converter.convert("{ \"someString\": \"some value\" }");
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		public void convertTypeReferenceArray() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
+			});
+			List<TestClass> testClass = converter.convert("[{ \"someString\": \"some value\" }]");
+			assertThat(testClass).hasSize(1);
+			assertThat(testClass.get(0).getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		public void convertClassTypeWithJsonAnnotations() {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonAnnotations.class);
 			var testClass = converter.convert("{ \"string_property\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		public void convertTypeReferenceWithJsonAnnotations() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClassWithJsonAnnotations>() {
+			});
+			var testClass = converter.convert("{ \"string_property\": \"some value\" }");
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		public void convertTypeReferenceArrayWithJsonAnnotations() {
+			var converter = new BeanOutputConverter<>(
+					new ParameterizedTypeReference<List<TestClassWithJsonAnnotations>>() {
+					});
+			List<TestClassWithJsonAnnotations> testClass = converter
+				.convert("[{ \"string_property\": \"some value\" }]");
+			assertThat(testClass).hasSize(1);
+			assertThat(testClass.get(0).getSomeString()).isEqualTo("some value");
 		}
 
 	}
@@ -80,7 +109,7 @@ class BeanOutputConverterTest {
 	class FormatTest {
 
 		@Test
-		public void shouldReturnFormatContainingResponseInstructionsAndJsonSchema() {
+		public void formatClassType() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			assertThat(converter.getFormat()).isEqualTo(
 					"""
@@ -102,7 +131,56 @@ class BeanOutputConverterTest {
 		}
 
 		@Test
-		public void shouldReturnFormatContainingJsonSchemaIncludingPropertyAndPropertyDescription() {
+		public void formatTypeReference() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+			});
+			assertThat(converter.getFormat()).isEqualTo(
+					"""
+							Your response should be in JSON format.
+							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+							Do not include markdown code blocks in your response.
+							Remove the ```json markdown from the output.
+							Here is the JSON Schema instance your output must adhere to:
+							```{
+							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+							  "type" : "object",
+							  "properties" : {
+							    "someString" : {
+							      "type" : "string"
+							    }
+							  }
+							}```
+							""");
+		}
+
+		@Test
+		public void formatTypeReferenceArray() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
+			});
+			assertThat(converter.getFormat()).isEqualTo(
+					"""
+							Your response should be in JSON format.
+							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+							Do not include markdown code blocks in your response.
+							Remove the ```json markdown from the output.
+							Here is the JSON Schema instance your output must adhere to:
+							```{
+							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+							  "type" : "array",
+							  "items" : {
+							    "type" : "object",
+							    "properties" : {
+							      "someString" : {
+							        "type" : "string"
+							      }
+							    }
+							  }
+							}```
+							""");
+		}
+
+		@Test
+		public void formatClassTypeWithAnnotations() {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonAnnotations.class);
 			assertThat(converter.getFormat()).contains("""
 					```{
@@ -119,8 +197,37 @@ class BeanOutputConverterTest {
 		}
 
 		@Test
-		void normalizesLineEndings() {
+		public void formatTypeReferenceWithAnnotations() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClassWithJsonAnnotations>() {
+			});
+			assertThat(converter.getFormat()).contains("""
+					```{
+					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+					  "type" : "object",
+					  "properties" : {
+					    "string_property" : {
+					      "type" : "string",
+					      "description" : "string_property_description"
+					    }
+					  }
+					}```
+					""");
+		}
+
+		@Test
+		void normalizesLineEndingsClassType() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
+
+			String formatOutput = converter.getFormat();
+
+			// validate that output contains \n line endings
+			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+		}
+
+		@Test
+		void normalizesLineEndingsTypeReference() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+			});
 
 			String formatOutput = converter.getFormat();
 

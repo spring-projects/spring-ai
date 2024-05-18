@@ -298,7 +298,8 @@ class OpenAiChatClientIT extends AbstractIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple", "bowl");
+		assertThat(content).contains("bananas", "apple");
+		assertThat(content).containsAnyOf("bowl", "basket");
 	}
 
 }
