@@ -23,7 +23,6 @@ import com.ibm.cloud.sdk.core.security.IamAuthenticator;
 import com.ibm.cloud.sdk.core.security.IamToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import reactor.core.publisher.Flux;
