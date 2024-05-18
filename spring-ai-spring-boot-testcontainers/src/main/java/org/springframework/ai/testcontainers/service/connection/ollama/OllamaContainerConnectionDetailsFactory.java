@@ -23,7 +23,7 @@ import org.testcontainers.ollama.OllamaContainer;
 /**
  * @author Eddú Meléndez
  */
-class OllamaContainerConnectionDetailsFactory
+public class OllamaContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<OllamaContainer, OllamaConnectionDetails> {
 
 	@Override

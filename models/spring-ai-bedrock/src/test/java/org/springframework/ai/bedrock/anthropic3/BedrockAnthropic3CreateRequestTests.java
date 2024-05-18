@@ -37,7 +37,7 @@ public class BedrockAnthropic3CreateRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new BedrockAnthropic3ChatClient(anthropicChatApi,
+		var client = new BedrockAnthropic3ChatModel(anthropicChatApi,
 				Anthropic3ChatOptions.builder()
 					.withTemperature(66.6f)
 					.withTopK(66)

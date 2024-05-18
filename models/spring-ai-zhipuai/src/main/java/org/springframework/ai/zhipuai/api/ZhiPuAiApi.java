@@ -18,6 +18,8 @@ package org.springframework.ai.zhipuai.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -110,7 +112,7 @@ public class ZhiPuAiApi {
 	 * ZhiPuAI Chat Completion Models:
 	 * <a href="https://open.bigmodel.cn/dev/howuse/model">ZhiPuAI Model</a>.
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
 		GLM_4("GLM-4"),
 		GLM_3_Turbo("GLM-3-Turbo");
 
@@ -122,6 +124,11 @@ public class ZhiPuAiApi {
 
 		public String getValue() {
 			return value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.value;
 		}
 	}
 

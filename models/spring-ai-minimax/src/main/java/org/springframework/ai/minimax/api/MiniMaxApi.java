@@ -19,6 +19,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -111,7 +113,7 @@ public class MiniMaxApi {
 	 * MiniMax Chat Completion Models:
 	 * <a href="https://www.minimaxi.com/document/algorithm-concept">MiniMax Model</a>.
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
 		ABAB_6_Chat("abab6-chat"),
 		ABAB_5_5_Chat("abab5.5-chat"),
 		ABAB_5_5_S_Chat("abab5.5s-chat");
@@ -124,6 +126,11 @@ public class MiniMaxApi {
 
 		public String getValue() {
 			return value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.value;
 		}
 	}
 

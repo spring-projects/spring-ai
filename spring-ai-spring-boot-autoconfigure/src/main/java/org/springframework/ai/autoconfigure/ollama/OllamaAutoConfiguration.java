@@ -15,8 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.ollama;
 
-import org.springframework.ai.ollama.OllamaChatClient;
-import org.springframework.ai.ollama.OllamaEmbeddingClient;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -56,17 +56,17 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OllamaChatClient ollamaChatClient(OllamaApi ollamaApi, OllamaChatProperties properties) {
-		return new OllamaChatClient(ollamaApi, properties.getOptions());
+	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties) {
+		return new OllamaChatModel(ollamaApi, properties.getOptions());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OllamaEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OllamaEmbeddingClient ollamaEmbeddingClient(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
+	public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
 
-		return new OllamaEmbeddingClient(ollamaApi, properties.getOptions());
+		return new OllamaEmbeddingModel(ollamaApi, properties.getOptions());
 	}
 
 	private static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {

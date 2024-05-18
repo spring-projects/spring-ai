@@ -20,9 +20,9 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.zhipuai.ZhiPuAiChatClient;
-import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingClient;
-import org.springframework.ai.zhipuai.ZhiPuAiImageClient;
+import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
+import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
+import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -346,7 +346,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -355,7 +355,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -365,7 +365,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingModel.class)).isNotEmpty();
 			});
 	}
 
@@ -378,7 +378,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiChatClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiChatModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -387,7 +387,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiChatModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -397,7 +397,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiChatModel.class)).isNotEmpty();
 			});
 
 	}
@@ -411,7 +411,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiImageClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiImageModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -420,7 +420,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiImageClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiImageModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -430,7 +430,7 @@ public class ZhiPuAiPropertiesTests {
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(ZhiPuAiImageClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(ZhiPuAiImageModel.class)).isNotEmpty();
 			});
 
 	}

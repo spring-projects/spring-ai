@@ -20,7 +20,7 @@ import java.time.Duration;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStore;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -42,7 +42,7 @@ public class CassandraVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CassandraVectorStore vectorStore(EmbeddingClient embeddingClient, CassandraVectorStoreProperties properties,
+	public CassandraVectorStore vectorStore(EmbeddingModel embeddingModel, CassandraVectorStoreProperties properties,
 			CqlSession cqlSession) {
 
 		var builder = CassandraVectorStoreConfig.builder().withCqlSession(cqlSession);
@@ -61,7 +61,7 @@ public class CassandraVectorStoreAutoConfiguration {
 			builder = builder.returnEmbeddings();
 		}
 
-		return new CassandraVectorStore(builder.build(), embeddingClient);
+		return new CassandraVectorStore(builder.build(), embeddingModel);
 	}
 
 	@Bean

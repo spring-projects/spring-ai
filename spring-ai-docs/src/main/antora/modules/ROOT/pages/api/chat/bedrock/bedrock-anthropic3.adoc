@@ -71,13 +71,13 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
-The prefix `spring.ai.bedrock.anthropic3.chat` is the property prefix that configures the chat client implementation for Claude.
+The prefix `spring.ai.bedrock.anthropic3.chat` is the property prefix that configures the chat model implementation for Claude.
 
 [cols="2,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.anthropic3.chat.enable | Enable Bedrock Anthropic chat client. Disabled by default | false
+| spring.ai.bedrock.anthropic3.chat.enable | Enable Bedrock Anthropic chat model. Disabled by default | false
 | spring.ai.bedrock.anthropic3.chat.model  | The model id to use. Supports the `anthropic.claude-3-sonnet-20240229-v1:0`,`anthropic.claude-3-haiku-20240307-v1:0` and the legacy `anthropic.claude-v2`, `anthropic.claude-v2:1` and `anthropic.claude-instant-v1` models for both synchronous and streaming responses. | `anthropic.claude-3-sonnet-20240229-v1:0`
 | spring.ai.bedrock.anthropic3.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8
 | spring.ai.bedrock.anthropic3.chat.options.top-p  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
@@ -97,14 +97,14 @@ TIP: All properties prefixed with `spring.ai.bedrock.anthropic3.chat.options` ca
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/Anthropic3ChatOptions.java[Anthropic3ChatOptions.java] provides model configurations, such as temperature, topK, topP, etc.
 
-On start-up, the default options can be configured with the `BedrockAnthropicChatClient(api, options)` constructor or the `spring.ai.bedrock.anthropic3.chat.options.*` properties.
+On start-up, the default options can be configured with the `BedrockAnthropicChatModel(api, options)` constructor or the `spring.ai.bedrock.anthropic3.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         Anthropic3ChatOptions.builder()
@@ -126,7 +126,7 @@ Check the link:https://docs.anthropic.com/claude/docs/vision[Vision guide] for m
 Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
 This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/test/java/org/springframework/ai/anthropic3/Anthropic3ChatClientIT.java[Anthropic3ChatClientIT.java], demonstrating the combination of user text with an image.
+Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/test/java/org/springframework/ai/anthropic3/Anthropic3ChatModelIT.java[Anthropic3ChatModelIT.java], demonstrating the combination of user text with an image.
 
 [source,java]
 ----
@@ -135,7 +135,7 @@ Below is a simple code example extracted from https://github.com/spring-projects
     var userMessage = new UserMessage("Explain what do you see o this picture?",
             List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-    ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+    ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 
     assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
 ----
@@ -163,7 +163,7 @@ The composition and lighting give the image a clean, minimalist aesthetic that h
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic chat model:
 
 [source]
 ----
@@ -179,37 +179,37 @@ spring.ai.bedrock.anthropic3.chat.options.top-k=15
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
 
-This will create a `BedrockAnthropicChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `BedrockAnthropicChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final BedrockAnthropic3ChatClient chatClient;
+    private final BedrockAnthropic3ChatModel chatModel;
 
     @Autowired
-    public ChatController(BedrockAnthropic3ChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(BedrockAnthropic3ChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatClient.java[BedrockAnthropic3ChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatModel.java[BedrockAnthropic3ChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -232,7 +232,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatClient.java[BedrockAnthropic3ChatClient] and use it for text generations:
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatModel.java[BedrockAnthropic3ChatModel] and use it for text generations:
 
 [source,java]
 ----
@@ -243,7 +243,7 @@ Anthropic3ChatBedrockApi anthropicApi =  new Anthropic3ChatBedrockApi(
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockAnthropic3ChatClient chatClient = new BedrockAnthropic3ChatClient(anthropicApi,
+BedrockAnthropic3ChatModel chatModel = new BedrockAnthropic3ChatModel(anthropicApi,
     AnthropicChatOptions.builder()
         .withTemperature(0.6f)
         .withTopK(10)
@@ -252,11 +252,11 @@ BedrockAnthropic3ChatClient chatClient = new BedrockAnthropic3ChatClient(anthrop
         .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

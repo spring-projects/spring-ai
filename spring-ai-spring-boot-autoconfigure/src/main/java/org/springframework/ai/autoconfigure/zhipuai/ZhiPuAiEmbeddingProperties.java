@@ -32,7 +32,7 @@ public class ZhiPuAiEmbeddingProperties extends ZhiPuAiParentProperties {
 	public static final String DEFAULT_EMBEDDING_MODEL = ZhiPuAiApi.EmbeddingModel.Embedding_2.value;
 
 	/**
-	 * Enable ZhiPuAI embedding client.
+	 * Enable ZhiPuAI embedding model.
 	 */
 	private boolean enabled = true;
 

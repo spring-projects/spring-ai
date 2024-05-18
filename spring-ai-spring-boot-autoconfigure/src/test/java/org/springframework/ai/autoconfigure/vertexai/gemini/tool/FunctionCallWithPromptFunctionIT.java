@@ -29,7 +29,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -51,10 +51,10 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
 			.run(context -> {
 
-				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
 
 				var systemMessage = new SystemMessage("""
 						Use Multi-turn function calling.
@@ -72,14 +72,14 @@ public class FunctionCallWithPromptFunctionIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage), promptOptions));
+				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage), promptOptions));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 				// Verify that no function call is made.
-				response = chatClient
+				response = chatModel
 					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);

@@ -33,7 +33,7 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
-	 * Enable MiniMax chat client.
+	 * Enable MiniMax chat model.
 	 */
 	private boolean enabled = true;
 

@@ -34,7 +34,7 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -58,7 +58,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final ElasticsearchClient elasticsearchClient;
 
@@ -68,17 +68,17 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	private String similarityFunction;
 
-	public ElasticsearchVectorStore(RestClient restClient, EmbeddingClient embeddingClient) {
-		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingClient);
+	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
+		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel);
 	}
 
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
-			EmbeddingClient embeddingClient) {
-		Objects.requireNonNull(embeddingClient, "RestClient must not be null");
-		Objects.requireNonNull(embeddingClient, "EmbeddingClient must not be null");
+			EmbeddingModel embeddingModel) {
+		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
+		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
 				new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.options = options;
 		this.filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
 		// the potential functions for vector fields at
@@ -97,8 +97,8 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 		for (Document document : documents) {
 			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
-				logger.debug("Calling EmbeddingClient for document id = " + document.getId());
-				document.setEmbedding(this.embeddingClient.embed(document));
+				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
+				document.setEmbedding(this.embeddingModel.embed(document));
 			}
 			builkRequestBuilder.operations(op -> op
 				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
@@ -136,7 +136,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
-		return similaritySearch(this.embeddingClient.embed(searchRequest.getQuery()), searchRequest.getTopK(),
+		return similaritySearch(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest.getTopK(),
 				Double.valueOf(searchRequest.getSimilarityThreshold()).floatValue(),
 				searchRequest.getFilterExpression());
 	}

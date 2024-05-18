@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.vectorstore.chroma;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chroma.ChromaApi;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -33,7 +33,7 @@ import org.springframework.web.client.RestTemplate;
  * @author Eddú Meléndez
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class, RestTemplate.class, ChromaVectorStore.class, ObjectMapper.class })
+@ConditionalOnClass({ EmbeddingModel.class, RestTemplate.class, ChromaVectorStore.class, ObjectMapper.class })
 @EnableConfigurationProperties({ ChromaApiProperties.class, ChromaVectorStoreProperties.class })
 public class ChromaVectorStoreAutoConfiguration {
 
@@ -70,9 +70,9 @@ public class ChromaVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ChromaVectorStore vectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi,
+	public ChromaVectorStore vectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi,
 			ChromaVectorStoreProperties storeProperties) {
-		return new ChromaVectorStore(embeddingClient, chromaApi, storeProperties.getCollectionName());
+		return new ChromaVectorStore(embeddingModel, chromaApi, storeProperties.getCollectionName());
 	}
 
 	private static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {

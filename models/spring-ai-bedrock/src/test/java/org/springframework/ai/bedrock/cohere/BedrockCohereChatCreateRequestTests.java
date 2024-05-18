@@ -45,7 +45,7 @@ public class BedrockCohereChatCreateRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new BedrockCohereChatClient(chatApi,
+		var client = new BedrockCohereChatModel(chatApi,
 				BedrockCohereChatOptions.builder()
 					.withTemperature(66.6f)
 					.withTopK(66)

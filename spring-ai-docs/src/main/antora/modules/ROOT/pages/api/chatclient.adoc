@@ -1,27 +1,27 @@
-[[ChatClient]]
-= Chat Completion API
+[[ChatModel]]
+= Chat Model API
 
-The Chat Completion API offers developers the ability to integrate AI-powered chat completion capabilities into their applications. It leverages pre-trained language models, such as GPT (Generative Pre-trained Transformer), to generate human-like responses to user inputs in natural language.
+The Chat Model API offers developers the ability to integrate AI-powered chat completion capabilities into their applications. It leverages pre-trained language models, such as GPT (Generative Pre-trained Transformer), to generate human-like responses to user inputs in natural language.
 
 The API typically works by sending a prompt or partial conversation to the AI model, which then generates a completion or continuation of the conversation based on its training data and understanding of natural language patterns. The completed response is then returned to the application, which can present it to the user or use it for further processing.
 
-The `Spring AI Chat Completion API` is designed to be a simple and portable interface for interacting with various xref:concepts.adoc#_models[AI Models], allowing developers to switch between different models with minimal code changes.
+The `Spring AI Chat Model API` is designed to be a simple and portable interface for interacting with various xref:concepts.adoc#_models[AI Models], allowing developers to switch between different models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability.
 
-Also with the help of companion classes like `Prompt` for input encapsulation and `ChatResponse` for output handling, the Chat Completion API unifies the communication with AI Models.
+Also with the help of companion classes like `Prompt` for input encapsulation and `ChatResponse` for output handling, the Chat Model API unifies the communication with AI Models.
 It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction.
 
 == API Overview
 
-This section provides a guide to the Spring AI Chat Completion API interface and associated classes.
+This section provides a guide to the Spring AI Chat Model API interface and associated classes.
 
-=== ChatClient
+=== ChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatClient.java[ChatClient] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatModel.java[ChatModel] interface definition:
 
 [source,java]
 ----
-public interface ChatClient extends ModelClient<Prompt, ChatResponse> {
+public interface ChatModel extends Model<Prompt, ChatResponse> {
 
 	default String call(String message) {// implementation omitted
 	}
@@ -35,19 +35,19 @@ public interface ChatClient extends ModelClient<Prompt, ChatResponse> {
 The `call` method with a `String` parameter simplifies initial use, avoiding the complexities of the more sophisticated `Prompt` and `ChatResponse` classes.
 In real-world applications, it is more common to use the `call` method that takes a `Prompt` instance and returns an `ChatResponse`.
 
-=== StreamingChatClient
+=== StreamingChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/StreamingChatClient.java[StreamingChatClient] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/StreamingChatModel.java[StreamingChatModel] interface definition:
 
 [source,java]
 ----
-public interface StreamingChatClient extends StreamingModelClient<Prompt, ChatResponse> {
+public interface StreamingChatModel extends StreamingModel<Prompt, ChatResponse> {
     @Override
 	Flux<ChatResponse> stream(Prompt prompt);
 }
 ----
 
-The `stream` method takes a `Prompt` request similar to `ChatClient` but it streams the responses using the reactive Flux API.
+The `stream` method takes a `Prompt` request similar to `ChatModel` but it streams the responses using the reactive Flux API.
 
 === Prompt
 
@@ -130,7 +130,7 @@ public interface ChatOptions extends ModelOptions {
 }
 ----
 
-Additionally, every model specific ChatClient/StreamingChatClient implementation can have its own options that can be passed to the AI model. For example, the OpenAI Chat Completion model has its own options like `presencePenalty`, `frequencyPenalty`, `bestOf` etc.
+Additionally, every model specific ChatModel/StreamingChatModel implementation can have its own options that can be passed to the AI model. For example, the OpenAI Chat Completion model has its own options like `presencePenalty`, `frequencyPenalty`, `bestOf` etc.
 
 This is a powerful feature that allows developers to use model specific options when starting the application and then override them with at runtime using the Prompt request:
 
@@ -184,7 +184,7 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 == Available Implementations
 
-The `ChatClient` and `StreamingChatClient` implementations are provided for the following Model providers:
+The `ChatModel` and `StreamingChatModel` implementations are provided for the following Model providers:
 
 image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 
@@ -205,7 +205,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 
 == Chat Model API
 
-The Spring AI Chat Completion API is build on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. Following class diagram illustrates the main classes and interfaces of the Spring AI Chat Completion API.
+The Spring AI Chat Model API is build on top of the Spring AI `Generic Model API` providing Chat specific abstractions and implementations. Following class diagram illustrates the main classes and interfaces of the Spring AI Chat Model API.
 
 image::spring-ai-chat-api.jpg[align="center", width="900px"]
 

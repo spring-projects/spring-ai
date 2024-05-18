@@ -32,7 +32,7 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 	public static final String DEFAULT_EMBEDDING_MODEL = MiniMaxApi.EmbeddingModel.Embo_01.value;
 
 	/**
-	 * Enable MiniMax embedding client.
+	 * Enable MiniMax embedding model.
 	 */
 	private boolean enabled = true;
 

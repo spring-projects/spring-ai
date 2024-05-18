@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -87,8 +87,8 @@ public class HanaCloudVectorStoreIT {
 
 		@Bean
 		public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
-				EmbeddingClient embeddingClient) {
-			return new HanaCloudVectorStore(cricketWorldCupRepository, embeddingClient,
+				EmbeddingModel embeddingModel) {
+			return new HanaCloudVectorStore(cricketWorldCupRepository, embeddingModel,
 					HanaCloudVectorStoreConfig.builder().tableName("CRICKET_WORLD_CUP").topK(1).build());
 		}
 
@@ -122,8 +122,8 @@ public class HanaCloudVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

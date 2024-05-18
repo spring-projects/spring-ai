@@ -17,8 +17,8 @@ package org.springframework.ai.openai.chat;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,19 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -51,7 +41,7 @@ import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
@@ -65,75 +55,81 @@ class OpenAiChatClientIT extends AbstractIT {
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
-	private Resource systemResource;
+	private Resource systemTextResource;
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		ChatResponse response = chatClient.call(prompt);
+
+		// @formatter:off
+		ChatResponse response = ChatClient.builder(chatModel).build().prompt()
+				.system(s -> s.text(systemTextResource)
+						.param("name", "Bob")
+						.param("voice", "pirate"))
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
-		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
 	}
 
 	@Test
 	void listOutputConverter() {
-		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
+		// @formatter:off
+		Collection<String> collection = ChatClient.builder(chatModel).build().prompt()
+				.user(u -> u.text("List five {subject}")
+						.param("subject", "ice cream flavors"))
+				.call()
+				.entity(new ParameterizedTypeReference<List<String>>() {});
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				List five {subject}
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.chatClient.call(prompt).getResult();
+		assertThat(collection).hasSize(5);
+	}
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
-		assertThat(list).hasSize(5);
+	@Test
+	void listOutputConverter2() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.builder(chatModel).build().prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
+				});
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).hasSize(2);
 
 	}
 
 	@Test
 	void mapOutputConverter() {
-		MapOutputConverter outputConverter = new MapOutputConverter();
+		// @formatter:off
+		Map<String, Object> result = ChatClient.builder(chatModel).build().prompt()
+				.user(u -> u.text("Provide me a List of {subject}")
+						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
+				.call()
+				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				});
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Provide me a List of {subject}
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.call(prompt).getResult();
-
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
-
 	}
 
 	@Test
 	void beanOutputConverter() {
 
-		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
+		// @formatter:off
+		ActorsFilms actorsFilms = ChatClient.builder(chatModel).build().prompt()
+				.user("Generate the filmography for a random actor.")
+				.call()
+				.entity(ActorsFilms.class);
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography for a random actor.
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.call(prompt).getResult();
-
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.getActor()).isNotBlank();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
@@ -142,18 +138,13 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void beanOutputConverterRecords() {
 
-		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+		// @formatter:off
+		ActorsFilmsRecord actorsFilms = ChatClient.builder(chatModel).build().prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks.")
+				.call()
+				.entity(ActorsFilmsRecord.class);
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.call(prompt).getResult();
-
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -164,25 +155,25 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		// @formatter:off
+		Flux<String> chatResponse = ChatClient.builder(chatModel)
+				.build()
+				.prompt()
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "{format}")
+						.param("format", outputConverter.getFormat()))
+				.stream()
+				.content();
 
-		String generationTextFromStream = streamingChatClient.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+		String generationTextFromStream = chatResponse.collectList()
+				.block()
+				.stream()
+				.collect(Collectors.joining());
+		// @formatter:on
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
+
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -191,54 +182,33 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
-
-		ChatResponse response = chatClient.call(new Prompt(messages, promptOptions));
+		// @formatter:off
+		String response = ChatClient.builder(chatModel).build().prompt()
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.call()
+				.content();
+		// @formatter:on
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response).containsAnyOf("30.0", "30");
+		assertThat(response).containsAnyOf("10.0", "10");
+		assertThat(response).containsAnyOf("15.0", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		// @formatter:off
+		Flux<String> response = ChatClient.builder(chatModel).build().prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.stream()
+				.content();
+		// @formatter:on
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
-
-		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(messages, promptOptions));
-
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+		String content = response.collectList().block().stream().collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -250,53 +220,62 @@ class OpenAiChatClientIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
-		var imageData = new ClassPathResource("/test.png");
+		// @formatter:off
+		String response = ChatClient.builder(chatModel).build().prompt()
+				// TODO consider adding model(...) method to ChatClient as a shortcut to
+				// OpenAiChatOptions.builder().withModel(modelName).build()
+				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.user(u -> u.text("Explain what do you see on this picture?")
+						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
+				.call()
+				.content();
+		// @formatter:on
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
-
-		var response = chatClient
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
-
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response);
+		assertThat(response).contains("bananas", "apple");
+		assertThat(response).containsAnyOf("bowl", "basket");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?", List
-			.of(new Media(MimeTypeUtils.IMAGE_PNG,
-					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
+		// TODO: add url method that wrapps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
 
-		ChatResponse response = chatClient
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+		// @formatter:off
+		String response = ChatClient.builder(chatModel).build().prompt()
+				// TODO consider adding model(...) method to ChatClient as a shortcut to
+				// OpenAiChatOptions.builder().withModel(modelName).build()
+				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+				.call()
+				.content();
+		// @formatter:on
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response);
+		assertThat(response).contains("bananas", "apple");
+		assertThat(response).containsAnyOf("bowl", "basket");
 	}
 
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?", List
-			.of(new Media(MimeTypeUtils.IMAGE_PNG,
-					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
+		// TODO: add url method that wrapps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
 
-		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+		// @formatter:off
+		Flux<String> response = ChatClient.builder(chatModel).build().prompt()
+				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+						.build())
+				.user(u -> u.text("Explain what do you see on this picture?")
+						.media(MimeTypeUtils.IMAGE_PNG, url))
+				.stream()
+				.content();
+		// @formatter:on
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+		String content = response.collectList().block().stream().collect(Collectors.joining());
+
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");

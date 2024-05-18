@@ -25,7 +25,7 @@ import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.minimax.MiniMaxChatClient;
+import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -55,7 +55,7 @@ public class FunctionCallbackInPromptIT {
 	void functionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
@@ -67,7 +67,7 @@ public class FunctionCallbackInPromptIT {
 					.build()))
 				.build();
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
 			logger.info("Response: {}", response);
 
@@ -80,7 +80,7 @@ public class FunctionCallbackInPromptIT {
 
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
@@ -92,7 +92,7 @@ public class FunctionCallbackInPromptIT {
 					.build()))
 				.build();
 
-			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage), promptOptions));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
 
 			String content = response.collectList()
 				.block()

@@ -18,9 +18,9 @@ package org.springframework.ai.autoconfigure.zhipuai;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.zhipuai.ZhiPuAiChatClient;
-import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingClient;
-import org.springframework.ai.zhipuai.ZhiPuAiImageClient;
+import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
+import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
+import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -53,7 +53,7 @@ public class ZhiPuAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = ZhiPuAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public ZhiPuAiChatClient zhiPuAiChatClient(ZhiPuAiConnectionProperties commonProperties,
+	public ZhiPuAiChatModel zhiPuAiChatModel(ZhiPuAiConnectionProperties commonProperties,
 			ZhiPuAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
@@ -65,21 +65,21 @@ public class ZhiPuAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new ZhiPuAiChatClient(zhiPuAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+		return new ZhiPuAiChatModel(zhiPuAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = ZhiPuAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public ZhiPuAiEmbeddingClient zhiPuAiEmbeddingClient(ZhiPuAiConnectionProperties commonProperties,
+	public ZhiPuAiEmbeddingModel zhiPuAiEmbeddingModel(ZhiPuAiConnectionProperties commonProperties,
 			ZhiPuAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var zhiPuAiApi = zhiPuAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
-		return new ZhiPuAiEmbeddingClient(zhiPuAiApi, embeddingProperties.getMetadataMode(),
+		return new ZhiPuAiEmbeddingModel(zhiPuAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
 	}
 
@@ -99,7 +99,7 @@ public class ZhiPuAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = ZhiPuAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public ZhiPuAiImageClient zhiPuAiImageClient(ZhiPuAiConnectionProperties commonProperties,
+	public ZhiPuAiImageModel zhiPuAiImageModel(ZhiPuAiConnectionProperties commonProperties,
 			ZhiPuAiImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -114,7 +114,7 @@ public class ZhiPuAiAutoConfiguration {
 
 		var zhiPuAiImageApi = new ZhiPuAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 
-		return new ZhiPuAiImageClient(zhiPuAiImageApi, imageProperties.getOptions(), retryTemplate);
+		return new ZhiPuAiImageModel(zhiPuAiImageApi, imageProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean

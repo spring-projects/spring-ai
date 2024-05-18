@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.stabilityai;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.stabilityai.StabilityAiImageClient;
+import org.springframework.ai.stabilityai.StabilityAiImageModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -80,7 +80,7 @@ public class StabilityAiImagePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(StabilityAiImageClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageModel.class)).isEmpty();
 
 			});
 
@@ -90,7 +90,7 @@ public class StabilityAiImagePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(StabilityAiImageClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageModel.class)).isNotEmpty();
 
 			});
 
@@ -100,7 +100,7 @@ public class StabilityAiImagePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(StabilityAiImageClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageModel.class)).isNotEmpty();
 
 			});
 

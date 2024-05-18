@@ -26,11 +26,11 @@ import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
-import org.springframework.ai.zhipuai.ZhiPuAiChatClient;
+import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
-import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingClient;
+import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingOptions;
-import org.springframework.ai.zhipuai.ZhiPuAiImageClient;
+import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.ai.zhipuai.ZhiPuAiImageOptions;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionChunk;
@@ -93,11 +93,11 @@ public class ZhiPuAiRetryTests {
 
 	private @Mock ZhiPuAiImageApi zhiPuAiImageApi;
 
-	private ZhiPuAiChatClient chatClient;
+	private ZhiPuAiChatModel chatModel;
 
-	private ZhiPuAiEmbeddingClient embeddingClient;
+	private ZhiPuAiEmbeddingModel embeddingModel;
 
-	private ZhiPuAiImageClient imageClient;
+	private ZhiPuAiImageModel imageModel;
 
 	@BeforeEach
 	public void beforeEach() {
@@ -105,10 +105,10 @@ public class ZhiPuAiRetryTests {
 		retryListener = new TestRetryListener();
 		retryTemplate.registerListener(retryListener);
 
-		chatClient = new ZhiPuAiChatClient(zhiPuAiApi, ZhiPuAiChatOptions.builder().build(), null, retryTemplate);
-		embeddingClient = new ZhiPuAiEmbeddingClient(zhiPuAiApi, MetadataMode.EMBED,
+		chatModel = new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder().build(), null, retryTemplate);
+		embeddingModel = new ZhiPuAiEmbeddingModel(zhiPuAiApi, MetadataMode.EMBED,
 				ZhiPuAiEmbeddingOptions.builder().build(), retryTemplate);
-		imageClient = new ZhiPuAiImageClient(zhiPuAiImageApi, ZhiPuAiImageOptions.builder().build(), retryTemplate);
+		imageModel = new ZhiPuAiImageModel(zhiPuAiImageApi, ZhiPuAiImageOptions.builder().build(), retryTemplate);
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class ZhiPuAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
-		var result = chatClient.call(new Prompt("text"));
+		var result = chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response");
@@ -136,7 +136,7 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiChatNonTransientError() {
 		when(zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatClient.call(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
 	}
 
 	@Test
@@ -152,7 +152,7 @@ public class ZhiPuAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(Flux.just(expectedChatCompletion));
 
-		var result = chatClient.stream(new Prompt("text"));
+		var result = chatModel.stream(new Prompt("text"));
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getContent()).isSameAs("Response");
@@ -164,7 +164,7 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiChatStreamNonTransientError() {
 		when(zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatClient.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
 	}
 
 	@Test
@@ -178,7 +178,7 @@ public class ZhiPuAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
 
-		var result = embeddingClient
+		var result = embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
@@ -191,7 +191,7 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiEmbeddingNonTransientError() {
 		when(zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> embeddingClient
+		assertThrows(RuntimeException.class, () -> embeddingModel
 				.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
 
@@ -205,7 +205,7 @@ public class ZhiPuAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedResponse)));
 
-		var result = imageClient.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
+		var result = imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getUrl()).isEqualTo("url678");
@@ -218,7 +218,7 @@ public class ZhiPuAiRetryTests {
 		when(zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
 				.thenThrow(new RuntimeException("Transient Error 1"));
 		assertThrows(RuntimeException.class,
-				() -> imageClient.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
+				() -> imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
 	}
 
 }

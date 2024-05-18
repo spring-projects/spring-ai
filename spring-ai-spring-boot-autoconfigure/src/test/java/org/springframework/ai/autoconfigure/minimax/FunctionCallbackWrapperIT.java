@@ -25,7 +25,7 @@ import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.minimax.MiniMaxChatClient;
+import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -59,11 +59,11 @@ public class FunctionCallbackWrapperIT {
 	void functionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatClient.call(
+			ChatResponse response = chatModel.call(
 					new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().withFunction("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
@@ -77,11 +77,11 @@ public class FunctionCallbackWrapperIT {
 	void streamFunctionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			Flux<ChatResponse> response = chatClient.stream(
+			Flux<ChatResponse> response = chatModel.stream(
 					new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().withFunction("WeatherInfo").build()));
 
 			String content = response.collectList()

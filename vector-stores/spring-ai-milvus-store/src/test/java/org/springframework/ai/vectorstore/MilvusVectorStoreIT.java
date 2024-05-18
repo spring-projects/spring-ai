@@ -33,8 +33,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -258,14 +258,14 @@ public class MilvusVectorStoreIT {
 		private MetricType metricType;
 
 		@Bean
-		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient) {
+		public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
 			MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
 				.withCollectionName("test_vector_store")
 				.withDatabaseName("default")
 				.withIndexType(IndexType.IVF_FLAT)
 				.withMetricType(metricType)
 				.build();
-			return new MilvusVectorStore(milvusClient, embeddingClient, config);
+			return new MilvusVectorStore(milvusClient, embeddingModel, config);
 		}
 
 		@Bean
@@ -277,9 +277,9 @@ public class MilvusVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
-			// return new OpenAiEmbeddingClient(new
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			// return new OpenAiEmbeddingModel(new
 			// OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
 			// OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
 		}

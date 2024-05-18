@@ -28,7 +28,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
-import org.springframework.ai.zhipuai.ZhiPuAiChatClient;
+import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -62,12 +62,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	void functionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.zhipuai.chat.options.model=glm-4").run(context -> {
 
-			ZhiPuAiChatClient chatClient = context.getBean(ZhiPuAiChatClient.class);
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunction").build()));
 
 			logger.info("Response: {}", response);
@@ -75,7 +75,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
-			response = chatClient.call(new Prompt(List.of(userMessage),
+			response = chatModel.call(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
 			logger.info("Response: {}", response);
@@ -89,7 +89,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	void functionCallWithPortableFunctionCallingOptions() {
 		contextRunner.withPropertyValues("spring.ai.zhipuai.chat.options.model=glm-4").run(context -> {
 
-			ZhiPuAiChatClient chatClient = context.getBean(ZhiPuAiChatClient.class);
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
@@ -98,7 +98,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.withFunction("weatherFunction")
 				.build();
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), functionOptions));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
 			logger.info("Response: {}", response);
 		});
@@ -108,12 +108,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	void streamFunctionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.zhipuai.chat.options.model=glm-4").run(context -> {
 
-			ZhiPuAiChatClient chatClient = context.getBean(ZhiPuAiChatClient.class);
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage),
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunction").build()));
 
 			String content = response.collectList()
@@ -131,7 +131,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(content).containsAnyOf("15.0", "15");
 
 			// Test weatherFunctionTwo
-			response = chatClient.stream(new Prompt(List.of(userMessage),
+			response = chatModel.stream(new Prompt(List.of(userMessage),
 					ZhiPuAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
 			content = response.collectList()

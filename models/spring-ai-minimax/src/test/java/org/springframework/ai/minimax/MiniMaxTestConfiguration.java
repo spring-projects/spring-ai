@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.minimax;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -42,13 +42,13 @@ public class MiniMaxTestConfiguration {
 	}
 
 	@Bean
-	public MiniMaxChatClient miniMaxChatClient(MiniMaxApi api) {
-		return new MiniMaxChatClient(api);
+	public MiniMaxChatModel miniMaxChatModel(MiniMaxApi api) {
+		return new MiniMaxChatModel(api);
 	}
 
 	@Bean
-	public EmbeddingClient miniMaxEmbeddingClient(MiniMaxApi api) {
-		return new MiniMaxEmbeddingClient(api);
+	public EmbeddingModel miniMaxEmbeddingModel(MiniMaxApi api) {
+		return new MiniMaxEmbeddingModel(api);
 	}
 
 }

@@ -81,19 +81,19 @@ The prefix `spring.ai.zhipuai` is used as the property prefix that lets you conn
 
 ==== Configuration Properties
 
-The prefix `spring.ai.zhipuai.embedding` is property prefix that configures the `EmbeddingClient` implementation for ZhiPuAI.
+The prefix `spring.ai.zhipuai.embedding` is property prefix that configures the `EmbeddingModel` implementation for ZhiPuAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.zhipuai.embedding.enabled | Enable ZhiPuAI embedding client.  | true
+| spring.ai.zhipuai.embedding.enabled | Enable ZhiPuAI embedding model.  | true
 | spring.ai.zhipuai.embedding.base-url   | Optional overrides the spring.ai.zhipuai.base-url to provide embedding specific url | -
 | spring.ai.zhipuai.embedding.api-key    | Optional overrides the spring.ai.zhipuai.api-key to provide embedding specific api-key  | -
 | spring.ai.zhipuai.embedding.options.model      | The model to use      | embedding-2
 |====
 
-NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.zhipuai.embedding.base-url` and `spring.ai.zhipuai.embedding.api-key` properties if set take precedence over the common properties.
 Similarly, the `spring.ai.zhipuai.embedding.base-url` and `spring.ai.zhipuai.embedding.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different ZhiPuAI accounts for different models and different model endpoints.
@@ -106,14 +106,14 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhip
 
 The default options can be configured using the `spring.ai.zhipuai.embedding.options` properties as well.
 
-At start-time use the `ZhiPuAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
+At start-time use the `ZhiPuAiEmbeddingModel` constructor to set the  default options used for all embedding requests.
 At run-time you can override the default options, using a `ZhiPuAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
+EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         ZhiPuAiEmbeddingOptions.builder()
             .withModel("Different-Embedding-Model-Deployment-Name")
@@ -122,8 +122,8 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
 
 == Sample Controller
 
-This will create a `EmbeddingClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
 
 [source,application.properties]
 ----
@@ -136,16 +136,16 @@ spring.ai.zhipuai.embedding.options.model=embedding-2
 @RestController
 public class EmbeddingController {
 
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingModel;
 
     @Autowired
-    public EmbeddingController(EmbeddingClient embeddingClient) {
-        this.embeddingClient = embeddingClient;
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     @GetMapping("/ai/embedding")
     public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
         return Map.of("embedding", embeddingResponse);
     }
 }
@@ -174,21 +174,21 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-NOTE: The `spring-ai-zhipuai` dependency provides access also to the `ZhiPuAiChatClient`.
-For more information about the `ZhiPuAiChatClient` refer to the link:../chat/zhipuai-chat.html[ZhiPuAI Chat Client] section.
+NOTE: The `spring-ai-zhipuai` dependency provides access also to the `ZhiPuAiChatModel`.
+For more information about the `ZhiPuAiChatModel` refer to the link:../chat/zhipuai-chat.html[ZhiPuAI Chat Client] section.
 
-Next, create an `ZhiPuAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
+Next, create an `ZhiPuAiEmbeddingModel` instance and use it to compute the similarity between two input texts:
 
 [source,java]
 ----
 var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
-var embeddingClient = new ZhiPuAiEmbeddingClient(zhiPuAiApi)
+var embeddingModel = new ZhiPuAiEmbeddingModel(zhiPuAiApi)
     .withDefaultOptions(ZhiPuAiChatOptions.build()
         .withModel("embedding-2")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

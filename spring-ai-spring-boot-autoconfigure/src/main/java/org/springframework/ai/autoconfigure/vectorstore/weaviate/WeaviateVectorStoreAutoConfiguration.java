@@ -19,7 +19,7 @@ import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateAuthClient;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.v1.auth.exception.AuthException;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
@@ -34,7 +34,7 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingClient.class, WeaviateVectorStore.class })
+@ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
 @EnableConfigurationProperties({ WeaviateVectorStoreProperties.class })
 public class WeaviateVectorStoreAutoConfiguration {
 
@@ -60,7 +60,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateClient weaviateClient,
+	public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient,
 			WeaviateVectorStoreProperties properties) {
 
 		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
@@ -72,7 +72,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
-		return new WeaviateVectorStore(configBuilder.build(), embeddingClient, weaviateClient);
+		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient);
 	}
 
 	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {

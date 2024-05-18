@@ -43,7 +43,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 	}
 
 	/**
-	 * Enable OpenAI chat client.
+	 * Enable OpenAI chat model.
 	 */
 	private boolean enabled = true;
 

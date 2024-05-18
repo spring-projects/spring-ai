@@ -26,9 +26,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.zhipuai.ZhiPuAiChatClient;
-import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingClient;
-import org.springframework.ai.zhipuai.ZhiPuAiImageClient;
+import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
+import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
+import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -55,8 +55,8 @@ public class ZhiPuAiAutoConfigurationIT {
 	@Test
 	void generate() {
 		contextRunner.run(context -> {
-			ZhiPuAiChatClient client = context.getBean(ZhiPuAiChatClient.class);
-			String response = client.call("Hello");
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
+			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
@@ -65,8 +65,8 @@ public class ZhiPuAiAutoConfigurationIT {
 	@Test
 	void generateStreaming() {
 		contextRunner.run(context -> {
-			ZhiPuAiChatClient client = context.getBean(ZhiPuAiChatClient.class);
-			Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
+			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				return chatResponse.getResults().get(0).getOutput().getContent();
 			}).collect(Collectors.joining());
@@ -79,9 +79,9 @@ public class ZhiPuAiAutoConfigurationIT {
 	@Test
 	void embedding() {
 		contextRunner.run(context -> {
-			ZhiPuAiEmbeddingClient embeddingClient = context.getBean(ZhiPuAiEmbeddingClient.class);
+			ZhiPuAiEmbeddingModel embeddingModel = context.getBean(ZhiPuAiEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingClient
+			EmbeddingResponse embeddingResponse = embeddingModel
 				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 			assertThat(embeddingResponse.getResults()).hasSize(2);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
@@ -89,15 +89,15 @@ public class ZhiPuAiAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingClient.dimensions()).isEqualTo(1536);
+			assertThat(embeddingModel.dimensions()).isEqualTo(1536);
 		});
 	}
 
 	@Test
 	void generateImage() {
 		contextRunner.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024").run(context -> {
-			ZhiPuAiImageClient client = context.getBean(ZhiPuAiImageClient.class);
-			ImageResponse imageResponse = client.call(new ImagePrompt("forest"));
+			ZhiPuAiImageModel ImageModel = context.getBean(ZhiPuAiImageModel.class);
+			ImageResponse imageResponse = ImageModel.call(new ImagePrompt("forest"));
 			assertThat(imageResponse.getResults()).hasSize(1);
 			assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
 			logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());

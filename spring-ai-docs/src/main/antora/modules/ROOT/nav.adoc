@@ -46,7 +46,7 @@
 *** xref:api/image/openai-image.adoc[OpenAI]
 *** xref:api/image/stabilityai-image.adoc[Stability]
 *** xref:api/image/zhipuai-image.adoc[ZhiPuAI]
-** xref:api/audio[Audio API]
+** xref:api/audio[Audio Model API]
 *** xref:api/audio/transcriptions.adoc[]
 **** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 *** xref:api/audio/speech.adoc[]

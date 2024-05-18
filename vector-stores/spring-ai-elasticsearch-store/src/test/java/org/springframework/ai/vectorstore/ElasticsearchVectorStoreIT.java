@@ -39,8 +39,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -360,15 +360,15 @@ class ElasticsearchVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public ElasticsearchVectorStore vectorStore(EmbeddingClient embeddingClient) {
+		public ElasticsearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			return new ElasticsearchVectorStore(
 					RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build(),
-					embeddingClient);
+					embeddingModel);
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

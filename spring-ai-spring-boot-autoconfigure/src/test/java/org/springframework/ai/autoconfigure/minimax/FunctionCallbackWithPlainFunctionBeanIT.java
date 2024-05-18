@@ -25,7 +25,7 @@ import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.minimax.MiniMaxChatClient;
+import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
@@ -61,12 +61,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	void functionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					MiniMaxChatOptions.builder().withFunction("weatherFunction").build()));
 
 			logger.info("Response: {}", response);
@@ -74,7 +74,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
-			response = chatClient.call(new Prompt(List.of(userMessage),
+			response = chatModel.call(new Prompt(List.of(userMessage),
 					MiniMaxChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
 			logger.info("Response: {}", response);
@@ -88,7 +88,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	void functionCallWithPortableFunctionCallingOptions() {
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
@@ -97,7 +97,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.withFunction("weatherFunction")
 				.build();
 
-			ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), functionOptions));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
 			logger.info("Response: {}", response);
 		});
@@ -107,12 +107,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	void streamFunctionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6-chat").run(context -> {
 
-			MiniMaxChatClient chatClient = context.getBean(MiniMaxChatClient.class);
+			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			Flux<ChatResponse> response = chatClient.stream(new Prompt(List.of(userMessage),
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
 					MiniMaxChatOptions.builder().withFunction("weatherFunction").build()));
 
 			String content = response.collectList()
@@ -130,7 +130,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(content).containsAnyOf("15.0", "15");
 
 			// Test weatherFunctionTwo
-			response = chatClient.stream(new Prompt(List.of(userMessage),
+			response = chatModel.stream(new Prompt(List.of(userMessage),
 					MiniMaxChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
 			content = response.collectList()

@@ -24,7 +24,7 @@ import java.util.Optional;
 import com.mongodb.BasicDBObject;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -58,20 +58,20 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 	private final MongoTemplate mongoTemplate;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final MongoDBVectorStoreConfig config;
 
 	private final MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
-	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
-		this(mongoTemplate, embeddingClient, MongoDBVectorStoreConfig.defaultConfig());
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+		this(mongoTemplate, embeddingModel, MongoDBVectorStoreConfig.defaultConfig());
 	}
 
-	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBVectorStoreConfig config) {
 		this.mongoTemplate = mongoTemplate;
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.config = config;
 
 	}
@@ -94,7 +94,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 		vectorFields.add(new org.bson.Document().append("type", "vector")
 			.append("path", this.config.pathName)
-			.append("numDimensions", this.embeddingClient.dimensions())
+			.append("numDimensions", this.embeddingModel.dimensions())
 			.append("similarity", "cosine"));
 
 		vectorFields.addAll(this.config.metadataFieldsToFilter.stream()
@@ -129,7 +129,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingClient.embed(document);
+			List<Double> embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.mongoTemplate.save(document, this.config.collectionName);
 		}
@@ -156,7 +156,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
+		List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
 		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
 				this.config.vectorIndexName, request.getTopK(), nativeFilterExpressions);
 

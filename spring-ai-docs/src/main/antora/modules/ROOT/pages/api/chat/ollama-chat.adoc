@@ -1,7 +1,7 @@
 = Ollama Chat
 
 With https://ollama.ai/[Ollama] you can run various Large Language Models (LLMs) locally and generate text from them.
-Spring AI supports the Ollama text generation with `OllamaChatClient`.
+Spring AI supports the Ollama text generation with `OllamaChatModel`.
 
 == Prerequisites
 
@@ -52,16 +52,16 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 | spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
 |====
 
-The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat client .
+The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat model .
 It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `format` as well as the Ollama model `options` properties.
 
-Here are the advanced request parameter for the Ollama chat client:
+Here are the advanced request parameter for the Ollama chat model:
 
 [cols="3,6,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.ollama.chat.enabled      | Enable Ollama chat client. | true
+| spring.ai.ollama.chat.enabled      | Enable Ollama chat model. | true
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
 | spring.ai.ollama.chat.options.format  | The format to return a response in. Currently the only accepted value is `json` | -
 | spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
@@ -110,14 +110,14 @@ TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overrid
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides model configurations, such as the model to use, the temperature,  etc.
 
-On start-up, the default options can be configured with the `OllamaChatClient(api, options)` constructor or the `spring.ai.ollama.chat.options.*` properties.
+On start-up, the default options can be configured with the `OllamaChatModel(api, options)` constructor or the `spring.ai.ollama.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OllamaOptions.create()
@@ -141,7 +141,7 @@ The Ollama link:https://github.com/ollama/ollama/blob/main/docs/api.md#parameter
 Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a straightforward code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatClientMultimodalIT.java[OllamaChatClientMultimodalIT.java], illustrating the fusion of user text with an image.
+Below is a straightforward code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelMultimodalIT.java[OllamaChatModelMultimodalIT.java], illustrating the fusion of user text with an image.
 
 [source,java]
 ----
@@ -150,7 +150,7 @@ byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByt
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(List.of(userMessage), OllamaOptions.create().withModel("llava")));
 
 logger.info(response.getResult().getOutput().getContent());
@@ -174,7 +174,7 @@ where fruits are being displayed, possibly for convenience or aesthetic purposes
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-ollama-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Ollama Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Ollama chat model:
 
 [source,application.properties]
 ----
@@ -185,30 +185,30 @@ spring.ai.ollama.chat.options.temperature=0.7
 
 TIP: replace the `base-url` with your Ollama server URL.
 
-This will create a `OllamaChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `OllamaChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final OllamaChatClient chatClient;
+    private final OllamaChatModel chatModel;
 
     @Autowired
-    public ChatController(OllamaChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(OllamaChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 
 }
@@ -216,8 +216,8 @@ public class ChatController {
 
 == Manual Configuration
 
-If you don't want to use the Spring Boot auto-configuration, you can manually configure the `OllamaChatClient` in your application.
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatClient.java[OllamaChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Ollama service.
+If you don't want to use the Spring Boot auto-configuration, you can manually configure the `OllamaChatModel` in your application.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/OllamaChatModel.java[OllamaChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Ollama service.
 
 To use it add the `spring-ai-ollama` dependency to your project's Maven `pom.xml` file:
 
@@ -240,25 +240,25 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: The `spring-ai-ollama` dependency provides access also to the `OllamaEmbeddingClient`.
-For more information about the `OllamaEmbeddingClient` refer to the link:../embeddings/ollama-embeddings.html[Ollama Embedding Client] section.
+TIP: The `spring-ai-ollama` dependency provides access also to the `OllamaEmbeddingModel`.
+For more information about the `OllamaEmbeddingModel` refer to the link:../embeddings/ollama-embeddings.html[Ollama Embedding Client] section.
 
-Next, create an `OllamaChatClient` instance and use it to text generations requests:
+Next, create an `OllamaChatModel` instance and use it to text generations requests:
 
 [source,java]
 ----
 var ollamaApi = new OllamaApi();
 
-var chatClient = new OllamaChatClient(ollamaApi,
+var chatModel = new OllamaChatModel(ollamaApi,
             OllamaOptions.create()
                 .withModel(OllamaOptions.DEFAULT_MODEL)
                 .withTemperature(0.9f));
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
@@ -274,7 +274,7 @@ image::ollama-chat-completion-api.jpg[OllamaApi Chat Completion API Diagram, 800
 
 Here is a simple snippet showing how to use the API programmatically:
 
-NOTE: The `OllamaApi` is low level api and is not recommended for direct use. Use the `OllamaChatClient` instead.
+NOTE: The `OllamaApi` is low level api and is not recommended for direct use. Use the `OllamaChatModel` instead.
 
 [source,java]
 ----

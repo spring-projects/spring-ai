@@ -8,8 +8,8 @@ link:https://docs.trychroma.com/[Chroma] is the open-source embedding database. 
 
 1. Access to ChromeDB. The <<Run Chroma Locally, setup local ChromaDB>> appendix shows how to set up a DB locally with a Docker container.
 
-2. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
-- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `ChromaVectorStore`.
+2. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `ChromaVectorStore`.
 
 On startup, the `ChromaVectorStore` creates the required collection if one is not provisioned already.
 
@@ -39,16 +39,16 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 Here is an example of the needed bean:
 
 [source,java]
 ----
 @Bean
-public EmbeddingClient embeddingClient() {
-    // Can be any other EmbeddingClient implementation.
-    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+public EmbeddingModel embeddingModel() {
+    // Can be any other EmbeddingModel implementation.
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
 }
 ----
 
@@ -181,7 +181,7 @@ Add these dependencies to your project:
 </dependency>
 ----
 
-* OpenAI: Required for calculating embeddings. You can use any other embedding client implementation.
+* OpenAI: Required for calculating embeddings. You can use any other embedding model implementation.
 
 [source,xml]
 ----
@@ -218,8 +218,8 @@ Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to y
 [source,java]
 ----
 @Bean
-public VectorStore chromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi) {
- return new ChromaVectorStore(embeddingClient, chromaApi, "TestCollection");
+public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+ return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection");
 }
 ----
 

@@ -66,13 +66,13 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 |====
 
 
-The prefix `spring.ai.azure.openai.embedding` is the property prefix that configures the `EmbeddingClient` implementation for Azure OpenAI
+The prefix `spring.ai.azure.openai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for Azure OpenAI
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.azure.openai.embedding.enabled | Enable Azure OpenAI embedding client.  | true
+| spring.ai.azure.openai.embedding.enabled | Enable Azure OpenAI embedding model.  | true
 | spring.ai.azure.openai.embedding.metadata-mode | Document content extraction mode    | EMBED
 | spring.ai.azure.openai.embedding.options.deployment-name | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | text-embedding-ada-002
 | spring.ai.azure.openai.embedding.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -
@@ -85,14 +85,14 @@ TIP: All properties prefixed with `spring.ai.azure.openai.embedding.options` can
 The `AzureOpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
 The `AzureOpenAiEmbeddingOptions` offers a builder to create the options.
 
-At start time use the `AzureOpenAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
+At start time use the `AzureOpenAiEmbeddingModel` constructor to set the  default options used for all embedding requests.
 At run-time you can override the default options, by passing a `AzureOpenAiEmbeddingOptions` instance with your to the  `EmbeddingRequest` request.
 
 For example to override the default model name for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
+EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         AzureOpenAiEmbeddingOptions.builder()
         .withModel("Different-Embedding-Model-Deployment-Name")
@@ -102,8 +102,8 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
 
 == Sample Code
 
-This will create a `EmbeddingClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
 
 [source,application.properties]
 ----
@@ -117,16 +117,16 @@ spring.ai.azure.openai.embedding.options.model=text-embedding-ada-002
 @RestController
 public class EmbeddingController {
 
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingModel;
 
     @Autowired
-    public EmbeddingController(EmbeddingClient embeddingClient) {
-        this.embeddingClient = embeddingClient;
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     @GetMapping("/ai/embedding")
     public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
         return Map.of("embedding", embeddingResponse);
     }
 }
@@ -134,7 +134,7 @@ public class EmbeddingController {
 
 == Manual Configuration
 
-If you prefer not to use the Spring Boot auto-configuration, you can manually configure the `AzureOpenAiEmbeddingClient` in your application.
+If you prefer not to use the Spring Boot auto-configuration, you can manually configure the `AzureOpenAiEmbeddingModel` in your application.
 For this add the `spring-ai-azure-openai` dependency to your project's Maven `pom.xml` file:
 [source, xml]
 ----
@@ -155,9 +155,9 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-NOTE: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiEmbeddingClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../embeddings/azure-openai-embeddings.html[Azure OpenAI Embeddings] section.
+NOTE: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiEmbeddingModel`. For more information about the `AzureOpenAiChatModel` refer to the link:../embeddings/azure-openai-embeddings.html[Azure OpenAI Embeddings] section.
 
-Next, create an `AzureOpenAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
+Next, create an `AzureOpenAiEmbeddingModel` instance and use it to compute the similarity between two input texts:
 
 [source,java]
 ----
@@ -166,13 +166,13 @@ var openAIClient = OpenAIClientBuilder()
 		.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 		.buildClient();
 
-var embeddingClient = new AzureOpenAiEmbeddingClient(openAIClient)
+var embeddingModel = new AzureOpenAiEmbeddingModel(openAIClient)
     .withDefaultOptions(AzureOpenAiEmbeddingOptions.builder()
         .withModel("text-embedding-ada-002")
         .withUser("user-6")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

@@ -51,7 +51,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 ==== Retry Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Chat client.
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI chat model.
 
 [cols="3,5,1"]
 |====
@@ -81,13 +81,13 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 
 ==== Configuration Properties
 
-The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat client implementation for OpenAI.
+The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat model implementation for OpenAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.openai.chat.enabled | Enable OpenAI chat client.  | true
+| spring.ai.openai.chat.enabled | Enable OpenAI chat model.  | true
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | This is the OpenAI Chat model to use | `gpt-3.5-turbo` (the `gpt-3.5-turbo`, `gpt-4`, and `gpt-4-32k` point to the latest model versions)
@@ -107,7 +107,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
 |====
 
-NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
@@ -117,14 +117,14 @@ TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overrid
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `OpenAiChatClient(api, options)` constructor or the `spring.ai.openai.chat.options.*` properties.
+On start-up, the default options can be configured with the `OpenAiChatModel(api, options)` constructor or the `spring.ai.openai.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OpenAiChatOptions.builder()
@@ -138,7 +138,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 == Function Calling
 
-You can register custom Java functions with the OpenAiChatClient and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the OpenAiChatModel and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Function Calling].
 
@@ -152,7 +152,7 @@ The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-
 Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/b3cfa2b900ea785e055e4ff71086eeb52f6578a3/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatClientIT.java[OpenAiChatClientIT.java], illustrating the fusion of user text with an image using the the `GPT_4_VISION_PREVIEW` model.
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/b3cfa2b900ea785e055e4ff71086eeb52f6578a3/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java[OpenAiChatModelIT.java], illustrating the fusion of user text with an image using the the `GPT_4_VISION_PREVIEW` model.
 
 [source,java]
 ----
@@ -161,7 +161,7 @@ byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByt
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
 ----
 
@@ -173,7 +173,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG,
                 "https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png")));
 
-ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
@@ -198,7 +198,7 @@ view of the fruit inside.
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi chat model:
 
 [source,application.properties]
 ----
@@ -209,37 +209,37 @@ spring.ai.openai.chat.options.temperature=0.7
 
 TIP: replace the `api-key` with your OpenAI credentials.
 
-This will create a `OpenAiChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `OpenAiChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final OpenAiChatClient chatClient;
+    private final OpenAiChatModel chatModel;
 
     @Autowired
-    public ChatController(OpenAiChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(OpenAiChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatClient.java[OpenAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the OpenAI service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatModel.java[OpenAiChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the OpenAI service.
 
 Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
 
@@ -262,7 +262,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `OpenAiChatClient` and use it for text generations:
+Next, create a `OpenAiChatModel` and use it for text generations:
 
 [source,java]
 ----
@@ -272,14 +272,14 @@ var openAiChatOptions = OpenAiChatOptions.builder()
             .withTemperature(0.4)
             .withMaxTokens(200)
         .build();
-var chatClient = new OpenAiChatClient(openAiApi, openAiChatOptions)
+var chatModel = new OpenAiChatModel(openAiApi, openAiChatOptions)
 
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

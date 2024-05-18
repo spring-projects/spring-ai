@@ -51,13 +51,13 @@ The prefix `spring.ai.stabilityai` is used as the property prefix that lets you 
 | spring.ai.stabilityai.api-key    | The API Key           |  -
 |====
 
-The prefix `spring.ai.stabilityai.image` is the property prefix that lets you configure the `ImageClient` implementation for Stability AI.
+The prefix `spring.ai.stabilityai.image` is the property prefix that lets you configure the `ImageModel` implementation for Stability AI.
 
 [cols="2,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.stabilityai.image.enabled | Enable Stability AI image client.  | true
+| spring.ai.stabilityai.image.enabled | Enable Stability AI image model.  | true
 | spring.ai.stabilityai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide a specific url |  `https://api.stability.ai/v1`
 | spring.ai.stabilityai.image.api-key              | Optional overrides the spring.ai.openai.api-key to provide a specific api-key |  -
 | spring.ai.stabilityai.image.option.n               | The number of images to be generated. Must be between 1 and 10.                                                            | 1
@@ -78,14 +78,14 @@ The prefix `spring.ai.stabilityai.image` is the property prefix that lets you co
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-stabilityai/src/main/java/org/springframework/ai/stabilityai/api/StabilityAiImageOptions.java[StabilityAiImageOptions.java] provides model configurations, such as the model to use, the style, the size, etc.
 
-On start-up, the default options can be configured with the `StabilityAiImageClient(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options)` constructor. Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
+On start-up, the default options can be configured with the `StabilityAiImageModel(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options)` constructor. Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
 
 At runtime, you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
 For example to override the Stability AI specific options such as quality and the number of images to create, use the following code example:
 
 [source,java]
 ----
-ImageResponse response = openaiImageClient.call(
+ImageResponse response = openaiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         StabilityAiImageOptions.builder()
                 .withStylePreset("cinematic")

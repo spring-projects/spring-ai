@@ -80,13 +80,13 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 
 ==== Configuration Properties
 
-The prefix `spring.ai.mistralai.embedding` is property prefix that configures the `EmbeddingClient` implementation for MistralAI.
+The prefix `spring.ai.mistralai.embedding` is property prefix that configures the `EmbeddingModel` implementation for MistralAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.mistralai.embedding.enabled | Enable OpenAI embedding client.  | true
+| spring.ai.mistralai.embedding.enabled | Enable OpenAI embedding model.  | true
 | spring.ai.mistralai.embedding.base-url   | Optional overrides the spring.ai.mistralai.base-url to provide embedding specific url | -
 | spring.ai.mistralai.embedding.api-key    | Optional overrides the spring.ai.mistralai.api-key to provide embedding specific api-key  | -
 | spring.ai.mistralai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
@@ -94,7 +94,7 @@ The prefix `spring.ai.mistralai.embedding` is property prefix that configures th
 | spring.ai.mistralai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
 |====
 
-NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.mistralai.embedding.base-url` and `spring.ai.mistralai.embedding.api-key` properties if set take precedence over the common properties.
 Similarly, the `spring.ai.mistralai.embedding.base-url` and `spring.ai.mistralai.embedding.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different MistralAI accounts for different models and different model endpoints.
@@ -107,14 +107,14 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mist
 
 The default options can be configured using the `spring.ai.mistralai.embedding.options` properties as well.
 
-At start-time use the `MistralAiEmbeddingClient` constructor to set the  default options used for all embedding requests.
+At start-time use the `MistralAiEmbeddingModel` constructor to set the  default options used for all embedding requests.
 At run-time you can override the default options, using a `MistralAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
+EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         MistralAiEmbeddingOptions.builder()
             .withModel("Different-Embedding-Model-Deployment-Name")
@@ -123,8 +123,8 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
 
 == Sample Controller
 
-This will create a `EmbeddingClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
 
 [source,application.properties]
 ----
@@ -137,16 +137,16 @@ spring.ai.mistralai.embedding.options.model=mistral-embed
 @RestController
 public class EmbeddingController {
 
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingModel;
 
     @Autowired
-    public EmbeddingController(EmbeddingClient embeddingClient) {
-        this.embeddingClient = embeddingClient;
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     @GetMapping("/ai/embedding")
     public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        var embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        var embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
         return Map.of("embedding", embeddingResponse);
     }
 }
@@ -175,22 +175,22 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-NOTE: The `spring-ai-mistral-ai` dependency provides access also to the `MistralAiChatClient`.
-For more information about the `MistralAiChatClient` refer to the link:../chat/mistralai-chat.html[MistralAI Chat Client] section.
+NOTE: The `spring-ai-mistral-ai` dependency provides access also to the `MistralAiChatModel`.
+For more information about the `MistralAiChatModel` refer to the link:../chat/mistralai-chat.html[MistralAI Chat Client] section.
 
-Next, create an `MistralAiEmbeddingClient` instance and use it to compute the similarity between two input texts:
+Next, create an `MistralAiEmbeddingModel` instance and use it to compute the similarity between two input texts:
 
 [source,java]
 ----
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
-var embeddingClient = new MistralAiEmbeddingClient(mistralAiApi,
+var embeddingModel = new MistralAiEmbeddingModel(mistralAiApi,
         MistralAiEmbeddingOptions.builder()
                 .withModel("mistral-embed")
                 .withEncodingFormat("float")
                 .build());
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = embeddingModel
         .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

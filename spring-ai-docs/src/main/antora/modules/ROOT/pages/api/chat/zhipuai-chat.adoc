@@ -52,7 +52,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 ==== Retry Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the ZhiPu AI Chat client.
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the ZhiPu AI chat model.
 
 [cols="3,5,1"]
 |====
@@ -81,13 +81,13 @@ The prefix `spring.ai.zhiPu` is used as the property prefix that lets you connec
 
 ==== Configuration Properties
 
-The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configure the chat client implementation for ZhiPuAI.
+The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configure the chat model implementation for ZhiPuAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.zhipuai.chat.enabled | Enable ZhiPuAI chat client.  | true
+| spring.ai.zhipuai.chat.enabled | Enable ZhiPuAI chat model.  | true
 | spring.ai.zhipuai.chat.base-url | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url |  https://open.bigmodel.cn/api/paas
 | spring.ai.zhipuai.chat.api-key | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key |  -
 | spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use | `GLM-3-Turbo` (the `GLM-3-Turbo`, `GLM-4`, and `GLM-4V` point to the latest model versions)
@@ -101,7 +101,7 @@ The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configu
 | spring.ai.zhipuai.chat.options.user | A unique identifier representing your end-user, which can help ZhiPuAI to monitor and detect abuse. | -
 |====
 
-NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatClient` implementations.
+NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatModel` implementations.
 The `spring.ai.zhipuai.chat.base-url` and `spring.ai.zhipuai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different ZhiPuAI accounts for different models and different model endpoints.
 
@@ -111,14 +111,14 @@ TIP: All properties prefixed with `spring.ai.zhipuai.chat.options` can be overri
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiChatOptions.java[ZhiPuAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `ZhiPuAiChatClient(api, options)` constructor or the `spring.ai.zhipuai.chat.options.*` properties.
+On start-up, the default options can be configured with the `ZhiPuAiChatModel(api, options)` constructor or the `spring.ai.zhipuai.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         ZhiPuAiChatOptions.builder()
@@ -134,7 +134,7 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-zhipuai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the ZhiPuAi Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the ZhiPuAi chat model:
 
 [source,application.properties]
 ----
@@ -145,37 +145,37 @@ spring.ai.zhipuai.chat.options.temperature=0.7
 
 TIP: replace the `api-key` with your ZhiPuAI credentials.
 
-This will create a `ZhiPuAiChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `ZhiPuAiChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final ZhiPuAiChatClient chatClient;
+    private final ZhiPuAiChatModel chatModel;
 
     @Autowired
-    public ChatController(ZhiPuAiChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(ZhiPuAiChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiChatClient.java[ZhiPuAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the ZhiPuAI service.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiChatModel.java[ZhiPuAiChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the ZhiPuAI service.
 
 Add the `spring-ai-zhipuai` dependency to your project's Maven `pom.xml` file:
 
@@ -198,23 +198,23 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `ZhiPuAiChatClient` and use it for text generations:
+Next, create a `ZhiPuAiChatModel` and use it for text generations:
 
 [source,java]
 ----
 var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
-var chatClient = new ZhiPuAiChatClient(zhiPuAiApi, ZhiPuAiChatOptions.builder()
+var chatModel = new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder()
                 .withModel(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
                 .withTemperature(0.4f)
                 .withMaxTokens(200)
                 .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> streamResponse = chatClient.stream(
+Flux<ChatResponse> streamResponse = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

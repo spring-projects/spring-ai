@@ -33,7 +33,7 @@ public class ZhiPuAiChatProperties extends ZhiPuAiParentProperties {
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
-	 * Enable ZhiPuAI chat client.
+	 * Enable ZhiPuAI chat model.
 	 */
 	private boolean enabled = true;
 

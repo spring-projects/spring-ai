@@ -28,7 +28,7 @@ public class ZhiPuAiImageProperties extends ZhiPuAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.zhipuai.image";
 
 	/**
-	 * Enable ZhiPuAI Image client.
+	 * Enable ZhiPuAI image model.
 	 */
 	private boolean enabled = true;
 

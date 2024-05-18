@@ -16,8 +16,8 @@
 package org.springframework.ai.autoconfigure.minimax;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.minimax.MiniMaxChatClient;
-import org.springframework.ai.minimax.MiniMaxEmbeddingClient;
+import org.springframework.ai.minimax.MiniMaxChatModel;
+import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -51,7 +51,7 @@ public class MiniMaxAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = MiniMaxChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public MiniMaxChatClient miniMaxChatClient(MiniMaxConnectionProperties commonProperties,
+	public MiniMaxChatModel miniMaxChatModel(MiniMaxConnectionProperties commonProperties,
 			MiniMaxChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
@@ -63,21 +63,21 @@ public class MiniMaxAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new MiniMaxChatClient(miniMaxApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+		return new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = MiniMaxEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public MiniMaxEmbeddingClient miniMaxEmbeddingClient(MiniMaxConnectionProperties commonProperties,
+	public MiniMaxEmbeddingModel miniMaxEmbeddingModel(MiniMaxConnectionProperties commonProperties,
 			MiniMaxEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var miniMaxApi = miniMaxApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
-		return new MiniMaxEmbeddingClient(miniMaxApi, embeddingProperties.getMetadataMode(),
+		return new MiniMaxEmbeddingModel(miniMaxApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
 	}
 

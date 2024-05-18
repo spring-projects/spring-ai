@@ -23,6 +23,7 @@ import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.ChatModel;
 import org.springframework.ai.chat.service.ChatService;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.document.Document;
@@ -31,19 +32,17 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.service.PromptTransformingChatService;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.chat.prompt.transformer.QuestionContextAugmentor;
 import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.evaluation.EvaluationRequest;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -72,7 +71,7 @@ public class OpenAiPromptTransformingChatServiceIT {
 	@Container
 	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
 
-	private final ChatClient chatClient;
+	private final ChatModel chatModel;
 
 	private final VectorStore vectorStore;
 
@@ -82,9 +81,9 @@ public class OpenAiPromptTransformingChatServiceIT {
 	private ChatService chatService;
 
 	@Autowired
-	public OpenAiPromptTransformingChatServiceIT(ChatClient chatClient, ChatService chatService,
+	public OpenAiPromptTransformingChatServiceIT(ChatModel chatModel, ChatService chatService,
 			VectorStore vectorStore) {
-		this.chatClient = chatClient;
+		this.chatModel = chatModel;
 		this.chatService = chatService;
 		this.vectorStore = vectorStore;
 	}
@@ -103,7 +102,7 @@ public class OpenAiPromptTransformingChatServiceIT {
 		OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
 			.withModel(GPT_4_TURBO_PREVIEW.getValue())
 			.build();
-		var relevancyEvaluator = new RelevancyEvaluator(this.chatClient, openAiChatOptions);
+		var relevancyEvaluator = new RelevancyEvaluator(this.chatModel, openAiChatOptions);
 
 		EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(chatServiceResponse.toEvaluationRequest());
 		assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
@@ -146,26 +145,26 @@ public class OpenAiPromptTransformingChatServiceIT {
 		}
 
 		@Bean
-		public ChatClient openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatClient(openAiApi);
+		public ChatModel openAiClient(OpenAiApi openAiApi) {
+			return new OpenAiChatModel(openAiApi);
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient(OpenAiApi openAiApi) {
-			return new OpenAiEmbeddingClient(openAiApi);
+		public EmbeddingModel embeddingModel(OpenAiApi openAiApi) {
+			return new OpenAiEmbeddingModel(openAiApi);
 		}
 
 		@Bean
-		public VectorStore qdrantVectorStore(EmbeddingClient embeddingClient) {
+		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel) {
 			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
 				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
 				.build());
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingClient);
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
 		}
 
 		@Bean
-		public ChatService chatService(ChatClient chatClient, VectorStore vectorStore) {
-			return PromptTransformingChatService.builder(chatClient)
+		public ChatService chatService(ChatModel chatModel, VectorStore vectorStore) {
+			return PromptTransformingChatService.builder(chatModel)
 				.withRetrievers(List.of(new VectorStoreRetriever(vectorStore, SearchRequest.defaults())))
 				.withAugmentors(List.of(new QuestionContextAugmentor()))
 				.build();

@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.zhipuai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
 import org.springframework.boot.SpringBootConfiguration;
@@ -48,18 +48,18 @@ public class ZhiPuAiTestConfiguration {
 	}
 
 	@Bean
-	public ZhiPuAiChatClient zhiPuAiChatClient(ZhiPuAiApi api) {
-		return new ZhiPuAiChatClient(api);
+	public ZhiPuAiChatModel zhiPuAiChatModel(ZhiPuAiApi api) {
+		return new ZhiPuAiChatModel(api);
 	}
 
 	@Bean
-	public ZhiPuAiImageClient zhiPuAiImageClient(ZhiPuAiImageApi imageApi) {
-		return new ZhiPuAiImageClient(imageApi);
+	public ZhiPuAiImageModel zhiPuAiImageModel(ZhiPuAiImageApi imageApi) {
+		return new ZhiPuAiImageModel(imageApi);
 	}
 
 	@Bean
-	public EmbeddingClient zhiPuAiEmbeddingClient(ZhiPuAiApi api) {
-		return new ZhiPuAiEmbeddingClient(api);
+	public EmbeddingModel zhiPuAiEmbeddingModel(ZhiPuAiApi api) {
+		return new ZhiPuAiEmbeddingModel(api);
 	}
 
 }

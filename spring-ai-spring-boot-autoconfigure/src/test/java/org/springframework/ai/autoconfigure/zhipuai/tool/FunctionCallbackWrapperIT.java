@@ -28,7 +28,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.zhipuai.ZhiPuAiChatClient;
+import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -60,11 +60,11 @@ public class FunctionCallbackWrapperIT {
 	void functionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.zhipuai.chat.options.model=glm-4").run(context -> {
 
-			ZhiPuAiChatClient chatClient = context.getBean(ZhiPuAiChatClient.class);
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatClient.call(
+			ChatResponse response = chatModel.call(
 					new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withFunction("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
@@ -78,11 +78,11 @@ public class FunctionCallbackWrapperIT {
 	void streamFunctionCallTest() {
 		contextRunner.withPropertyValues("spring.ai.zhipuai.chat.options.model=glm-4").run(context -> {
 
-			ZhiPuAiChatClient chatClient = context.getBean(ZhiPuAiChatClient.class);
+			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			Flux<ChatResponse> response = chatClient.stream(
+			Flux<ChatResponse> response = chatModel.stream(
 					new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().withFunction("WeatherInfo").build()));
 
 			String content = response.collectList()
