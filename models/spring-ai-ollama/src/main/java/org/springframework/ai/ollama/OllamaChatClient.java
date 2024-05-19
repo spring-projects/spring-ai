@@ -87,6 +87,7 @@ public class OllamaChatClient implements ChatClient, StreamingChatClient {
 	/**
 	 * @deprecated Use {@link OllamaOptions} constructor instead.
 	 */
+	@Deprecated
 	public OllamaChatClient withDefaultOptions(OllamaOptions options) {
 		this.defaultOptions = options;
 		return this;

@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -100,7 +101,13 @@ public class AnthropicApi {
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = WebClient.builder()
+			.baseUrl(baseUrl)
+			.defaultHeaders(jsonContentHeaders)
+			.defaultStatusHandler(HttpStatusCode::isError,
+					resp -> Mono.just(new RuntimeException("Response exception, Status: [" + resp.statusCode()
+							+ "], Body:[" + resp.bodyToMono(java.lang.String.class) + "]")))
+			.build();
 	}
 
 	/**

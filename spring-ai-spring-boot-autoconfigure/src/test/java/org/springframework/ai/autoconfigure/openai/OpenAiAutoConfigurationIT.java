@@ -144,4 +144,19 @@ public class OpenAiAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void generateImageWithModel() {
+		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
+		contextRunner
+			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
+					"spring.ai.openai.image.options.size=256x256")
+			.run(context -> {
+				OpenAiImageClient client = context.getBean(OpenAiImageClient.class);
+				ImageResponse imageResponse = client.call(new ImagePrompt("forest"));
+				assertThat(imageResponse.getResults()).hasSize(1);
+				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			});
+	}
+
 }

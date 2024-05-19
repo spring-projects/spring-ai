@@ -172,7 +172,7 @@ Add these dependencies to your project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-pinecone</artifactId>
+    <artifactId>spring-ai-pinecone-store</artifactId>
 </dependency>
 ----
 

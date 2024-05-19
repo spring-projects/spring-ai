@@ -49,7 +49,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.model=gpt-4-0125-preview")
+		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=gpt-4-0125-preview")
 			.run(context -> {
 
 				AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);

@@ -16,8 +16,11 @@
 package org.springframework.ai.anthropic.metadata;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.chat.metadata.*;
-
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 

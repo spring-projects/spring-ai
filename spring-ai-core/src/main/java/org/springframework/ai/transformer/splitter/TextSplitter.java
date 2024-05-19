@@ -43,6 +43,14 @@ public abstract class TextSplitter implements DocumentTransformer {
 		return doSplitDocuments(documents);
 	}
 
+	public List<Document> split(List<Document> documents) {
+		return this.apply(documents);
+	}
+
+	public List<Document> split(Document document) {
+		return this.apply(List.of(document));
+	}
+
 	public void setCopyContentFormatter(boolean copyContentFormatter) {
 		this.copyContentFormatter = copyContentFormatter;
 	}

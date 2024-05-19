@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.qdrant;
 
+import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -29,7 +30,7 @@ public class QdrantVectorStoreProperties {
 	/**
 	 * The name of the collection to use in Qdrant.
 	 */
-	private String collectionName;
+	private String collectionName = QdrantVectorStore.DEFAULT_COLLECTION_NAME;
 
 	/**
 	 * The host of the Qdrant server.

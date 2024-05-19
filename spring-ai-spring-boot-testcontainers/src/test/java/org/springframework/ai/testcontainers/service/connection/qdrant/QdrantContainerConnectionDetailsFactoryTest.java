@@ -48,7 +48,7 @@ public class QdrantContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.7.4");
+	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

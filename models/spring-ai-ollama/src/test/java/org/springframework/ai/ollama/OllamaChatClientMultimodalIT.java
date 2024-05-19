@@ -23,11 +23,10 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.ollama.OllamaContainer;
 
-import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -52,7 +51,7 @@ class OllamaChatClientMultimodalIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatClientIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
 
 	static String baseUrl;
 
@@ -71,12 +70,12 @@ class OllamaChatClientMultimodalIT {
 	@Test
 	void multiModalityTest() throws IOException {
 
-		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
+		var imageData = new ClassPathResource("/test.png");
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		ChatResponse response = client.call(new Prompt(List.of(userMessage)));
+		var response = client.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");

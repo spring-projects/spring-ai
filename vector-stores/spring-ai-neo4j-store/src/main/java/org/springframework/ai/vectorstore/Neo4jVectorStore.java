@@ -149,8 +149,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			 */
 			public Builder withEmbeddingDimension(int newEmbeddingDimension) {
 
-				Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 2048,
-						"Dimension has to be withing the boundaries 1 and 2048 (inclusively)");
+				Assert.isTrue(newEmbeddingDimension >= 1, "Dimension has to be positive.");
 
 				this.embeddingDimension = newEmbeddingDimension;
 				return this;
@@ -177,7 +176,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 			 */
 			public Builder withLabel(String newLabel) {
 
-				Assert.hasText(newLabel, "Node label may not be null or blank");
+				Assert.hasText(newLabel, "Content label may not be null or blank");
 
 				this.label = newLabel;
 				return this;

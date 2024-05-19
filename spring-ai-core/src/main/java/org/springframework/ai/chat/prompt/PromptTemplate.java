@@ -15,24 +15,29 @@
  */
 package org.springframework.ai.chat.prompt;
 
-import org.antlr.runtime.Token;
-import org.antlr.runtime.TokenStream;
-import org.springframework.ai.parser.OutputParser;
-import org.springframework.ai.chat.messages.Media;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.compiler.STLexer;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Objects;
+import java.util.Set;
+
+import org.antlr.runtime.Token;
+import org.antlr.runtime.TokenStream;
+import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.compiler.STLexer;
+
+import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.parser.OutputParser;
+import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
 
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
@@ -45,6 +50,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	protected TemplateFormat templateFormat = TemplateFormat.ST;
 
 	private OutputParser outputParser;
+
+	private StructuredOutputConverter structuredOutputConverter;
 
 	public PromptTemplate(Resource resource) {
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -107,13 +114,28 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 	}
 
+	/**
+	 * @deprecated Use {@link #getOutputConverter()} instead.
+	 */
 	public OutputParser getOutputParser() {
-		return outputParser;
+		return this.outputParser;
 	}
 
+	/**
+	 * @deprecated Use {@link #setOutputConverter(StructuredOutputConverter)} instead.
+	 */
 	public void setOutputParser(OutputParser outputParser) {
 		Objects.requireNonNull(outputParser, "Output Parser can not be null");
 		this.outputParser = outputParser;
+	}
+
+	public StructuredOutputConverter getOutputConverter() {
+		return this.structuredOutputConverter;
+	}
+
+	public void setOutputConverter(StructuredOutputConverter structuredOutputConverter) {
+		Objects.requireNonNull(structuredOutputConverter, "Structured Output Converter can not be null");
+		this.structuredOutputConverter = structuredOutputConverter;
 	}
 
 	public void add(String name, Object value) {
@@ -161,12 +183,6 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		// try (InputStream inputStream = resource.getInputStream()) {
-		// return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		// }
-		// catch (IOException ex) {
-		// throw new RuntimeException(ex);
-		// }
 	}
 
 	@Override
@@ -196,22 +212,54 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	public Set<String> getInputVariables() {
 		TokenStream tokens = this.st.impl.tokens;
-		return IntStream.range(0, tokens.range())
-			.mapToObj(tokens::get)
-			.filter(token -> token.getType() == STLexer.ID)
-			.map(Token::getText)
-			.collect(Collectors.toSet());
+		Set<String> inputVariables = new HashSet<>();
+		boolean isInsideList = false;
+
+		for (int i = 0; i < tokens.size(); i++) {
+			Token token = tokens.get(i);
+
+			if (token.getType() == STLexer.LDELIM && i + 1 < tokens.size()
+					&& tokens.get(i + 1).getType() == STLexer.ID) {
+				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
+					inputVariables.add(tokens.get(i + 1).getText());
+					isInsideList = true;
+				}
+			}
+			else if (token.getType() == STLexer.RDELIM) {
+				isInsideList = false;
+			}
+			else if (!isInsideList && token.getType() == STLexer.ID) {
+				inputVariables.add(token.getText());
+			}
+		}
+
+		return inputVariables;
 	}
 
-	protected void validate(Map<String, Object> model) {
+	private Set<String> getModelKeys(Map<String, Object> model) {
 		Set<String> dynamicVariableNames = new HashSet<>(this.dynamicModel.keySet());
 		Set<String> modelVariables = new HashSet<>(model.keySet());
 		modelVariables.addAll(dynamicVariableNames);
-		Set<String> missingEntries = new HashSet<>(getInputVariables());
-		missingEntries.removeAll(modelVariables);
-		if (!missingEntries.isEmpty()) {
+		return modelVariables;
+	}
+
+	protected void validate(Map<String, Object> model) {
+
+		Set<String> templateTokens = getInputVariables();
+		Set<String> modelKeys = getModelKeys(model);
+
+		// Check if model provides all keys required by the template
+		if (!modelKeys.containsAll(templateTokens)) {
+			templateTokens.removeAll(modelKeys);
 			throw new IllegalStateException(
-					"All template variables were not replaced. Missing variable names are " + missingEntries);
+					"All template variables were not replaced. Missing variable names are " + templateTokens);
+		}
+
+		// Check if the template references any keys not provided by the model
+		if (!templateTokens.containsAll(modelKeys)) {
+			modelKeys.removeAll(templateTokens);
+			throw new IllegalStateException(
+					"All model variables were not replaced. Missing variable names are " + modelKeys);
 		}
 	}
 

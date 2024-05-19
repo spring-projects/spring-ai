@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-milvus-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Milvus Vector Store</name>
-	<description>Spring AI Milvus Vector Store</description>
+	<name>Spring AI Vector Store - Milvus</name>
+	<description>Spring AI Vector Store - Milvus </description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

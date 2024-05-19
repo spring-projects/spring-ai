@@ -139,6 +139,8 @@ public class OllamaApi {
 	 * context will be returned. You may choose to use the raw parameter if you are
 	 * specifying a full templated prompt in your request to the API, and are managing
 	 * history yourself.
+	 * @param images (optional) a list of base64-encoded images (for multimodal models such as llava).
+	 * @param keepAlive (optional) controls how long the model will stay loaded into memory following the request (default: 5m).
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateRequest(
@@ -503,9 +505,9 @@ public class OllamaApi {
 	 * @param evalCount number of tokens in the response.
 	 * @param evalDuration time spent generating the response.
 	 * @see <a href=
-	 * "https://github.com/jmorganca/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
+	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
 	 * Completion API</a>
-	 * @see <a href="https://github.com/jmorganca/ollama/blob/main/api/types.go">Ollama
+	 * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama
 	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
@@ -573,6 +575,7 @@ public class OllamaApi {
 	 *
 	 * @param model The name of model to generate embeddings from.
 	 * @param prompt The text to generate embeddings for.
+	 * @param keepAlive Controls how long the model will stay loaded into memory following the request (default: 5m).
 	 * @param options Additional model parameters listed in the documentation for the
 	 * Modelfile such as temperature.
 	 */

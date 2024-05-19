@@ -450,4 +450,11 @@ public class AnthropicChatClient extends
 		return response.getBody().content().stream().anyMatch(content -> content.type() == MediaContent.Type.TOOL_USE);
 	}
 
+	@Override
+	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
+		// https://docs.anthropic.com/en/docs/tool-use
+		throw new UnsupportedOperationException(
+				"Streaming (stream=true) is not yet supported. We plan to add streaming support in a future beta version.");
+	}
+
 }

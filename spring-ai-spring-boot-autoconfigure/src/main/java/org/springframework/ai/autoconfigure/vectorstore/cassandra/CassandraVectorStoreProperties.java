@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
+import com.google.api.client.util.Preconditions;
+
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -27,17 +29,11 @@ public class CassandraVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.cassandra";
 
-	private String cassandraContactPointHosts = null;
-
-	private int cassandraContactPointPort = 9042;
-
-	private String cassandraLocalDatacenter = null;
-
 	private String keyspace = CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME;
 
 	private String table = CassandraVectorStoreConfig.DEFAULT_TABLE_NAME;
 
-	private String indexName = CassandraVectorStoreConfig.DEFAULT_INDEX_NAME;
+	private String indexName = null;
 
 	private String contentColumnName = CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME;
 
@@ -45,30 +41,9 @@ public class CassandraVectorStoreProperties {
 
 	private boolean disallowSchemaChanges = false;
 
-	public String getCassandraContactPointHosts() {
-		return this.cassandraContactPointHosts;
-	}
+	private boolean returnEmbeddings = false;
 
-	/** comma or space separated */
-	public void setCassandraContactPointHosts(String cassandraContactPointHosts) {
-		this.cassandraContactPointHosts = cassandraContactPointHosts;
-	}
-
-	public int getCassandraContactPointPort() {
-		return this.cassandraContactPointPort;
-	}
-
-	public void setCassandraContactPointPort(int cassandraContactPointPort) {
-		this.cassandraContactPointPort = cassandraContactPointPort;
-	}
-
-	public String getCassandraLocalDatacenter() {
-		return this.cassandraLocalDatacenter;
-	}
-
-	public void setCassandraLocalDatacenter(String cassandraLocalDatacenter) {
-		this.cassandraLocalDatacenter = cassandraLocalDatacenter;
-	}
+	private int fixedThreadPoolExecutorSize = CassandraVectorStoreConfig.DEFAULT_ADD_CONCURRENCY;
 
 	public String getKeyspace() {
 		return this.keyspace;
@@ -94,28 +69,45 @@ public class CassandraVectorStoreProperties {
 		this.indexName = indexName;
 	}
 
-	public String getContentFieldName() {
+	public String getContentColumnName() {
 		return this.contentColumnName;
 	}
 
-	public void setContentFieldName(String contentFieldName) {
-		this.contentColumnName = contentFieldName;
+	public void setContentColumnName(String contentColumnName) {
+		this.contentColumnName = contentColumnName;
 	}
 
-	public String getEmbeddingFieldName() {
+	public String getEmbeddingColumnName() {
 		return this.embeddingColumnName;
 	}
 
-	public void setEmbeddingFieldName(String embeddingFieldName) {
-		this.embeddingColumnName = embeddingFieldName;
+	public void setEmbeddingColumnName(String embeddingColumnName) {
+		this.embeddingColumnName = embeddingColumnName;
 	}
 
-	public Boolean getDisallowSchemaCreation() {
+	public boolean getDisallowSchemaCreation() {
 		return this.disallowSchemaChanges;
 	}
 
 	public void setDisallowSchemaCreation(boolean disallowSchemaCreation) {
 		this.disallowSchemaChanges = disallowSchemaCreation;
+	}
+
+	public boolean getReturnEmbeddings() {
+		return this.returnEmbeddings;
+	}
+
+	public void setReturnEmbeddings(boolean returnEmbeddings) {
+		this.returnEmbeddings = returnEmbeddings;
+	}
+
+	public int getFixedThreadPoolExecutorSize() {
+		return this.fixedThreadPoolExecutorSize;
+	}
+
+	public void setFixedThreadPoolExecutorSize(int fixedThreadPoolExecutorSize) {
+		Preconditions.checkArgument(0 < fixedThreadPoolExecutorSize);
+		this.fixedThreadPoolExecutorSize = fixedThreadPoolExecutorSize;
 	}
 
 }
