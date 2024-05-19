@@ -79,6 +79,15 @@ public class ChatResponse implements ModelResponse<Generation> {
 	}
 
 	/**
+	 * Convenience method equivalent to {@code getResult().getOutput().getContent()}.
+	 * @return The content from the output of the first {@link Generation} in the
+	 * generations list.
+	 */
+	public String getContent() {
+		return getResult().getOutput().getContent();
+	}
+
+	/**
 	 * @return Returns {@link ChatResponseMetadata} containing information about the use
 	 * of the AI provider's API.
 	 */
