@@ -17,23 +17,24 @@
 package org.springframework.ai.chat.prompt.transformer;
 
 /**
- * Responsible for transforming a Prompt. The PromptContext contains the necessary data to
- * make the transformation
+ * Responsible for transforming a Prompt. The ChatServiceContext contains the necessary
+ * data to make the transformation
  *
- * Implementations may retrieve data and modify the Prompt object in the PromptContext as
- * needed.
+ * Implementations may retrieve data and modify the Prompt object in the
+ * ChatServiceContext as needed.
  *
  * @author Mark Pollack
- * @since 1.0 M1
+ * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
 @FunctionalInterface
 public interface PromptTransformer {
 
 	/**
-	 * Transforms the given PromptContext.
-	 * @param context the PromptContext to transform
-	 * @return the transformed PromptContext
+	 * Transforms the given ChatServiceContext.
+	 * @param context the ChatServiceContext to transform
+	 * @return the transformed ChatServiceContext
 	 */
-	PromptContext transform(PromptContext context);
+	ChatServiceContext transform(ChatServiceContext context);
 
 }

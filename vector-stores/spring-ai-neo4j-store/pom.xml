@@ -10,7 +10,7 @@
 	</parent>
 	<artifactId>spring-ai-neo4j-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vector Store - neo4j</name>
+	<name>Spring AI Vector Store - Neo4J</name>
 	<description>Spring AI Neo4j Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 

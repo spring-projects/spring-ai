@@ -182,12 +182,12 @@ class AnthropicChatClientIT {
 	@Test
 	void multiModalityTest() throws IOException {
 
-		byte[] imageData = new ClassPathResource("/test.png").getContentAsByteArray();
+		var imageData = new ClassPathResource("/test.png");
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
-		ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+		var response = chatClient.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
@@ -205,7 +205,7 @@ class AnthropicChatClientIT {
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
+				.withDescription("Get the weather in location. Return temperature in 36°F or 36°C format.")
 				.build()))
 			.build();
 
@@ -213,7 +213,7 @@ class AnthropicChatClientIT {
 
 		logger.info("Response: {}", response);
 
-		Generation generation = response.getResults().get(0);
+		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getContent()).containsAnyOf("30.0", "30");
 		assertThat(generation.getOutput().getContent()).containsAnyOf("10.0", "10");
 		assertThat(generation.getOutput().getContent()).containsAnyOf("15.0", "15");

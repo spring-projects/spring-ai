@@ -86,8 +86,8 @@ Currently, Spring AI provides `AbstractConversionServiceOutputConverter`, `Abstr
 image::structured-output-hierarchy4.jpg[Structured Output Class Hierarchy, width=900, align="center"]
 
 * `AbstractConversionServiceOutputConverter<T>` - Offers a pre-configured link:https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/convert/support/GenericConversionService.html[GenericConversionService] for transforming LLM output into the desired format. No default `FormatProvider` implementation is provided.
-* `AbstractMessageOutputConverter` - Supplies a pre-configured https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/jms/support/converter/MessageConverter.html[MessageConverter] for converting LLM output into the desired format. No default `FormatProvider` implementation is provided.
-* `BeanOutputConverter` - Configured with a designated Java class (e.g., Bean), this converter employs a `FormatProvider` implementation that directs the AI Model to produce a JSON response compliant with a `DRAFT_2020_12`, `JSON Schema` derived from the specified Java class. Subsequently, it utilizes an `ObjectMapper` to deserialize the JSON output into a Java object instance of the target class.
+* `AbstractMessageOutputConverter<T>` - Supplies a pre-configured https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/jms/support/converter/MessageConverter.html[MessageConverter] for converting LLM output into the desired format. No default `FormatProvider` implementation is provided.
+* `BeanOutputConverter<T>` - Configured with a designated Java class (e.g., Bean) or a link:https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/ParameterizedTypeReference.html[ParameterizedTypeReference], this converter employs a `FormatProvider` implementation that directs the AI Model to produce a JSON response compliant with a `DRAFT_2020_12`, `JSON Schema` derived from the specified Java class. Subsequently, it utilizes an `ObjectMapper` to deserialize the JSON output into a Java object instance of the target class.
 * `MapOutputConverter` - Extends the functionality of `AbstractMessageOutputConverter` with a `FormatProvider` implementation that guides the AI Model to generate an RFC8259 compliant JSON response. Additionally, it incorporates a converter implementation that utilizes the provided `MessageConverter` to translate the JSON payload into a `java.util.Map<String, Object>` instance.
 * `ListOutputConverter` - Extends the  `AbstractConversionServiceOutputConverter` and includes a `FormatProvider` implementation tailored for comma-delimited list output. The converter implementation employs the provided `ConversionService` to transform the model text output into a `java.util.List`.
 
@@ -127,6 +127,29 @@ Generation generation = chatClient.call(
     new Prompt(new PromptTemplate(template, Map.of("actor", actor, "format", format)).createMessage())).getResult();
 
 ActorsFilms actorsFilms = beanOutputConverter.convert(generation.getOutput().getContent());
+----
+
+==== Generic Bean Types
+
+Use the `ParameterizedTypeReference` constructor to specify a more complex target class structure.
+For example, to represent a list of actors and their filmographies:
+
+[source,java]
+----
+BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
+        new ParameterizedTypeReference<List<ActorsFilmsRecord>>() { });
+
+String format = outputConverter.getFormat();
+String template = """
+        Generate the filmography of 5 movies for Tom Hanks and Bill Murray.
+        {format}
+        """;
+
+Prompt prompt = new Prompt(new PromptTemplate(template, Map.of("format", format)).createMessage());
+
+Generation generation = chatClient.call(prompt).getResult();
+
+List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 ----
 
 === Map Output Converter

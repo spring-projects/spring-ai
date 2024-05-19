@@ -22,6 +22,8 @@ import java.util.function.Function;
 
 import net.jodah.typetools.TypeResolver;
 
+import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
+
 /**
  * @author Christian Tzolov
  */
@@ -58,6 +60,12 @@ public class TypeResolverHelper {
 	}
 
 	public static Type getFunctionArgumentType(Type functionType, int argumentIndex) {
+
+		// Resolves: https://github.com/spring-projects/spring-ai/issues/726
+		if (!(functionType instanceof ParameterizedType)) {
+			functionType = FunctionTypeUtils.discoverFunctionTypeFromClass(FunctionTypeUtils.getRawType(functionType));
+		}
+
 		var argumentType = functionType instanceof ParameterizedType
 				? ((ParameterizedType) functionType).getActualTypeArguments()[argumentIndex] : Object.class;
 
@@ -76,11 +84,5 @@ public class TypeResolverHelper {
 				? TypeResolver.resolveRawClass(type instanceof GenericArrayType ? type : TypeResolver.reify(type), null)
 				: null;
 	}
-
-	// public static void main(String[] args) {
-	// Class<? extends Function<?, ?>> clazz = MockWeatherService.class;
-	// System.out.println(getFunctionInputType(clazz));
-
-	// }
 
 }
