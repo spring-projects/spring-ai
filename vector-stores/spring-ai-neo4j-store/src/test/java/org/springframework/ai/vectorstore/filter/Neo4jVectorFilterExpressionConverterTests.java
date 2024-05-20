@@ -76,13 +76,13 @@ public class Neo4jVectorFilterExpressionConverterTests {
 
 	@Test
 	public void testNe() {
-		// year >= 2020 OR country = "BG" AND city != "Sofia"
+		// year >= 2020 OR country = "BG" AND city <> "Sofia"
 		String vectorExpr = converter
 			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 					new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 							new Expression(NE, new Key("city"), new Value("Sofia")))));
 		assertThat(vectorExpr).isEqualTo(
-				"node.`metadata.year` >= 2020 OR node.`metadata.country` = \"BG\" AND node.`metadata.city` != \"Sofia\"");
+				"node.`metadata.year` >= 2020 OR node.`metadata.country` = \"BG\" AND node.`metadata.city` <> \"Sofia\"");
 	}
 
 	@Test

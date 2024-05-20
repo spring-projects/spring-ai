@@ -46,7 +46,7 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 			case AND -> " AND ";
 			case OR -> " OR ";
 			case EQ -> " = ";
-			case NE -> " != ";
+			case NE -> " <> ";
 			case LT -> " < ";
 			case LTE -> " <= ";
 			case GT -> " > ";
