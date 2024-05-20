@@ -46,6 +46,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -61,11 +62,10 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 	private static final Log logger = LogFactory.getLog(TransformersEmbeddingClient.class);
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
-	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
-
+	public final static String DEFAULT_ONNX_TOKENIZER_URI = "classpath:onnx/all-MiniLM-L6-v2/tokenizer.json";
 	// ONNX generative for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects/spring-ai/raw/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+	public final static String DEFAULT_ONNX_MODEL_URI = "classpath:onnx/all-MiniLM-L6-v2/model.onnx";
 
 	public final static String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
@@ -352,6 +352,9 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 	}
 
 	private static Resource toResource(String uri) {
+		if (uri.startsWith("classpath:")) {
+			return new ClassPathResource(uri.substring("classpath:".length()));
+		}
 		return new DefaultResourceLoader().getResource(uri);
 	}
 

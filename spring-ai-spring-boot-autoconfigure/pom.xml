@@ -248,14 +248,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.azure.spring</groupId>
-			<artifactId>spring-cloud-azure-starter-active-directory</artifactId>
-			<version>5.8.0</version>
-		</dependency>
-
-		<!-- test dependencies -->
-
-		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-mongodb-atlas-store</artifactId>
 			<version>${project.parent.version}</version>
@@ -273,6 +265,12 @@
 			<artifactId>spring-ai-elasticsearch-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>com.azure.spring</groupId>
+			<artifactId>spring-cloud-azure-starter-active-directory</artifactId>
+			<version>5.8.0</version>
 		</dependency>
 
 		<!-- test dependencies -->
