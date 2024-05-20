@@ -63,6 +63,7 @@ public class TransformersEmbeddingClient extends AbstractEmbeddingClient impleme
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
 	public final static String DEFAULT_ONNX_TOKENIZER_URI = "classpath:onnx/all-MiniLM-L6-v2/tokenizer.json";
+
 	// ONNX generative for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
 	public final static String DEFAULT_ONNX_MODEL_URI = "classpath:onnx/all-MiniLM-L6-v2/model.onnx";
