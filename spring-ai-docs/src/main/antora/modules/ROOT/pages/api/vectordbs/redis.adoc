@@ -162,7 +162,7 @@ Add the Redis Vector Store and Jedis dependencies
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-redis</artifactId>
+  <artifactId>spring-ai-redis-store</artifactId>
 </dependency>
 
 <dependency>

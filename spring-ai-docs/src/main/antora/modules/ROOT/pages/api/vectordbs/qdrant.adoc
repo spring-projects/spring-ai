@@ -147,13 +147,13 @@ NOTE: These filter expressions are converted into the equivalent Qdrant link:htt
 
 == Manual Configuration
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the `QdrantVectorStore`. For this you need to add the `spring-ai-qdrant` dependency to your project:
+Instead of using the Spring Boot auto-configuration, you can manually configure the `QdrantVectorStore`. For this you need to add the `spring-ai-qdrant-store` dependency to your project:
 
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-qdrant</artifactId>
+    <artifactId>spring-ai-qdrant-store</artifactId>
 </dependency>
 ----
 
