@@ -57,6 +57,7 @@
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-huggingface</module>
+		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -70,6 +71,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
@@ -79,6 +81,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
+
 
 	</modules>
 
