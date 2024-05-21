@@ -863,9 +863,6 @@ public class MiniMaxApi {
 	 *
 	 * @param embeddingRequest The embedding request.
 	 * @return Returns {@link EmbeddingList}.
-	 * @param <T> Type of the entity in the data list. Can be a {@link String} or {@link List} of tokens (e.g.
-	 * Integers). For embedding multiple inputs in a single request, You can pass a {@link List} of {@link String} or
-	 * {@link List} of {@link List} of tokens. For example:
 	 *
 	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
 	 */

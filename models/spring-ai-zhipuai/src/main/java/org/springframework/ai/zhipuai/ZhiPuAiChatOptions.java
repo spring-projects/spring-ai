@@ -15,6 +15,11 @@
  */
 package org.springframework.ai.zhipuai;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -27,8 +32,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest.Respo
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-
-import java.util.*;
 
 /**
  * ZhiPuAiChatOptions represents the options for the ZhiPuAiChat model.

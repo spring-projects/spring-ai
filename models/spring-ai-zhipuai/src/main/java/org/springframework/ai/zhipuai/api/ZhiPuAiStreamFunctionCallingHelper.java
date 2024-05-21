@@ -15,12 +15,16 @@
  */
 package org.springframework.ai.zhipuai.api;
 
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.*;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion.Choice;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionChunk;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionChunk.ChunkChoice;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionFinishReason;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.LogProbs;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;

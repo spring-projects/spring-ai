@@ -15,6 +15,11 @@
  */
 package org.springframework.ai.minimax;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -25,8 +30,6 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
-
-import java.util.*;
 
 /**
  * MiniMaxChatOptions represents the options for performing chat completion using the

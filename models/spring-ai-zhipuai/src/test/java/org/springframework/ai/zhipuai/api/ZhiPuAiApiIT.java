@@ -17,8 +17,14 @@ package org.springframework.ai.zhipuai.api;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.*;
+
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionChunk;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.Embedding;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.EmbeddingList;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 
