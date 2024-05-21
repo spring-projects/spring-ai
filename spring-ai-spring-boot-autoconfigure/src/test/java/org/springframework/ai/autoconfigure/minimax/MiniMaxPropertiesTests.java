@@ -168,7 +168,7 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.options.topP=0.56",
 
 				// "spring.ai.minimax.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.minimax.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName")),
+				"spring.ai.minimax.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
 				"spring.ai.minimax.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.minimax.chat.options.tools[0].function.description=function description",

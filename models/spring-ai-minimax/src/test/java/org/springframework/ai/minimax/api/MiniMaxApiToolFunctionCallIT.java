@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
@@ -37,7 +36,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.*;
+import static org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_Chat;
 
 /**
  * @author Geng Rong
