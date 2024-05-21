@@ -17,7 +17,13 @@ package org.springframework.ai.zhipuai;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.image.*;
+
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageClient;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;

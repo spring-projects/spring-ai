@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_Chat;
 
 /**
  * @author Geng Rong
@@ -85,8 +84,9 @@ public class MiniMaxApiToolFunctionCallIT {
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, ABAB_6_Chat.value,
-				List.of(functionTool), ToolChoiceBuilder.AUTO);
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages,
+				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_Chat.getValue(), List.of(functionTool),
+				ToolChoiceBuilder.AUTO);
 
 		ResponseEntity<ChatCompletion> chatCompletion = miniMaxApi.chatCompletionEntity(chatCompletionRequest);
 
@@ -115,7 +115,8 @@ public class MiniMaxApiToolFunctionCallIT {
 			}
 		}
 
-		var functionResponseRequest = new ChatCompletionRequest(messages, ABAB_6_Chat.value, 0.5F);
+		var functionResponseRequest = new ChatCompletionRequest(messages,
+				org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_Chat.getValue(), 0.5F);
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = miniMaxApi.chatCompletionEntity(functionResponseRequest);
 
