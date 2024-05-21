@@ -270,7 +270,7 @@
 		<!-- Typesense vector store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-typesense</artifactId>
+			<artifactId>spring-ai-typesense-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
