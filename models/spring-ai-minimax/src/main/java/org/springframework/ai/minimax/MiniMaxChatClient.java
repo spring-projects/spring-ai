@@ -25,7 +25,9 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.minimax.api.common.MiniMaxApiException;
+import org.springframework.ai.minimax.api.MiniMaxApi.*;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -34,7 +36,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 
 import java.util.Base64;
@@ -57,7 +58,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0.0 M1
  */
 public class MiniMaxChatClient extends
-		AbstractFunctionCallSupport<MiniMaxApi.ChatCompletionMessage, MiniMaxApi.ChatCompletionRequest, ResponseEntity<MiniMaxApi.ChatCompletion>>
+		AbstractFunctionCallSupport<ChatCompletionMessage, ChatCompletionRequest, ResponseEntity<ChatCompletion>>
 		implements ChatClient, StreamingChatClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(MiniMaxChatClient.class);
@@ -65,7 +66,7 @@ public class MiniMaxChatClient extends
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private MiniMaxChatOptions defaultOptions;
+	private final MiniMaxChatOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the MiniMax API calls.
@@ -120,11 +121,11 @@ public class MiniMaxChatClient extends
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
-		MiniMaxApi.ChatCompletionRequest request = createRequest(prompt, false);
+		ChatCompletionRequest request = createRequest(prompt, false);
 
 		return this.retryTemplate.execute(ctx -> {
 
-			ResponseEntity<MiniMaxApi.ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 
 			var chatCompletion = completionEntity.getBody();
 			if (chatCompletion == null) {
@@ -133,7 +134,7 @@ public class MiniMaxChatClient extends
 			}
 
 			if (chatCompletion.baseResponse() != null && chatCompletion.baseResponse().statusCode() != 0) {
-				throw new MiniMaxApiException(chatCompletion.baseResponse().message());
+				throw new RuntimeException(chatCompletion.baseResponse().message());
 			}
 
 			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
@@ -145,7 +146,7 @@ public class MiniMaxChatClient extends
 		});
 	}
 
-	private Map<String, Object> toMap(String id, MiniMaxApi.ChatCompletion.Choice choice) {
+	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
 		Map<String, Object> map = new HashMap<>();
 
 		var message = choice.message();
@@ -162,11 +163,11 @@ public class MiniMaxChatClient extends
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		MiniMaxApi.ChatCompletionRequest request = createRequest(prompt, true);
+		ChatCompletionRequest request = createRequest(prompt, true);
 
 		return this.retryTemplate.execute(ctx -> {
 
-			Flux<MiniMaxApi.ChatCompletionChunk> completionChunks = this.miniMaxApi.chatCompletionStream(request);
+			Flux<ChatCompletionChunk> completionChunks = this.miniMaxApi.chatCompletionStream(request);
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
@@ -174,7 +175,7 @@ public class MiniMaxChatClient extends
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
-			return completionChunks.map(chunk -> chunkToChatCompletion(chunk)).map(chatCompletion -> {
+			return completionChunks.map(this::chunkToChatCompletion).map(chatCompletion -> {
 				try {
 					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
 						.getBody();
@@ -212,23 +213,23 @@ public class MiniMaxChatClient extends
 	 * @param chunk the ChatCompletionChunk to convert
 	 * @return the ChatCompletion
 	 */
-	private MiniMaxApi.ChatCompletion chunkToChatCompletion(MiniMaxApi.ChatCompletionChunk chunk) {
-		List<MiniMaxApi.ChatCompletion.Choice> choices = chunk.choices().stream().map(cc -> {
-			MiniMaxApi.ChatCompletionMessage delta = cc.delta();
+	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
+		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cc -> {
+			ChatCompletionMessage delta = cc.delta();
 			if (delta == null) {
-				delta = new MiniMaxApi.ChatCompletionMessage("", MiniMaxApi.ChatCompletionMessage.Role.ASSISTANT);
+				delta = new ChatCompletionMessage("", Role.ASSISTANT);
 			}
-			return new MiniMaxApi.ChatCompletion.Choice(cc.finishReason(), cc.index(), delta, cc.logprobs());
+			return new ChatCompletion.Choice(cc.finishReason(), cc.index(), delta, cc.logprobs());
 		}).toList();
 
-		return new MiniMaxApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
-				chunk.systemFingerprint(), "chat.completion", null, null);
+		return new ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.systemFingerprint(),
+				"chat.completion", null, null);
 	}
 
 	/**
 	 * Accessible for testing.
 	 */
-	MiniMaxApi.ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
+	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
@@ -238,7 +239,7 @@ public class MiniMaxChatClient extends
 					MiniMaxApi.ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
 			.toList();
 
-		MiniMaxApi.ChatCompletionRequest request = new MiniMaxApi.ChatCompletionRequest(chatCompletionMessages, stream);
+		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
@@ -249,8 +250,7 @@ public class MiniMaxChatClient extends
 						IS_RUNTIME_CALL);
 				functionsForThisRequest.addAll(promptEnabledFunctions);
 
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request,
-						MiniMaxApi.ChatCompletionRequest.class);
+				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
@@ -265,7 +265,7 @@ public class MiniMaxChatClient extends
 
 			functionsForThisRequest.addAll(defaultEnabledFunctions);
 
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, MiniMaxApi.ChatCompletionRequest.class);
+			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
@@ -273,44 +273,27 @@ public class MiniMaxChatClient extends
 
 			request = ModelOptionsUtils.merge(
 					MiniMaxChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
-					request, MiniMaxApi.ChatCompletionRequest.class);
+					request, ChatCompletionRequest.class);
 		}
 
 		return request;
 	}
 
-	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
-		if (mediaContentData instanceof byte[] bytes) {
-			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
-			// following the prefix pattern.
-			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
-		}
-		else if (mediaContentData instanceof String text) {
-			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
-			return text;
-		}
-		else {
-			throw new IllegalArgumentException(
-					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
-		}
-	}
-
-	private List<MiniMaxApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
+	private List<FunctionTool> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
-			var function = new MiniMaxApi.FunctionTool.Function(functionCallback.getDescription(),
-					functionCallback.getName(), functionCallback.getInputTypeSchema());
-			return new MiniMaxApi.FunctionTool(function);
+			var function = new FunctionTool.Function(functionCallback.getDescription(), functionCallback.getName(),
+					functionCallback.getInputTypeSchema());
+			return new FunctionTool(function);
 		}).toList();
 	}
 
 	@Override
-	protected MiniMaxApi.ChatCompletionRequest doCreateToolResponseRequest(
-			MiniMaxApi.ChatCompletionRequest previousRequest, MiniMaxApi.ChatCompletionMessage responseMessage,
-			List<MiniMaxApi.ChatCompletionMessage> conversationHistory) {
+	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
+			ChatCompletionMessage responseMessage, List<ChatCompletionMessage> conversationHistory) {
 
 		// Every tool-call item requires a separate function call and a response (TOOL)
 		// message.
-		for (MiniMaxApi.ChatCompletionMessage.ToolCall toolCall : responseMessage.toolCalls()) {
+		for (ToolCall toolCall : responseMessage.toolCalls()) {
 
 			var functionName = toolCall.function().name();
 			String functionArguments = toolCall.function().arguments();
@@ -322,42 +305,43 @@ public class MiniMaxChatClient extends
 			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
 
 			// Add the function response to the conversation.
-			conversationHistory.add(new MiniMaxApi.ChatCompletionMessage(functionResponse,
-					MiniMaxApi.ChatCompletionMessage.Role.TOOL, functionName, toolCall.id(), null));
+			conversationHistory
+				.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
 		}
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
 		// functions anymore.
-		MiniMaxApi.ChatCompletionRequest newRequest = new MiniMaxApi.ChatCompletionRequest(conversationHistory, false);
-		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, MiniMaxApi.ChatCompletionRequest.class);
+		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, false);
+		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
 
 		return newRequest;
 	}
 
 	@Override
-	protected List<MiniMaxApi.ChatCompletionMessage> doGetUserMessages(MiniMaxApi.ChatCompletionRequest request) {
+	protected List<ChatCompletionMessage> doGetUserMessages(ChatCompletionRequest request) {
 		return request.messages();
 	}
 
 	@Override
-	protected MiniMaxApi.ChatCompletionMessage doGetToolResponseMessage(
-			ResponseEntity<MiniMaxApi.ChatCompletion> chatCompletion) {
+	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
 		return chatCompletion.getBody().choices().iterator().next().message();
 	}
 
 	@Override
-	protected ResponseEntity<MiniMaxApi.ChatCompletion> doChatCompletion(MiniMaxApi.ChatCompletionRequest request) {
+	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
 		return this.miniMaxApi.chatCompletionEntity(request);
 	}
 
 	@Override
-	protected Flux<ResponseEntity<MiniMaxApi.ChatCompletion>> doChatCompletionStream(
-			MiniMaxApi.ChatCompletionRequest request) {
-		throw new RuntimeException("Streaming Function calling is not supported");
+	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
+		return this.miniMaxApi.chatCompletionStream(request)
+			.map(this::chunkToChatCompletion)
+			.map(Optional::ofNullable)
+			.map(ResponseEntity::of);
 	}
 
 	@Override
-	protected boolean isToolFunctionCall(ResponseEntity<MiniMaxApi.ChatCompletion> chatCompletion) {
+	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletion> chatCompletion) {
 		var body = chatCompletion.getBody();
 		if (body == null) {
 			return false;
@@ -371,7 +355,7 @@ public class MiniMaxChatClient extends
 		var choice = choices.get(0);
 		var message = choice.message();
 		return message != null && !CollectionUtils.isEmpty(choice.message().toolCalls())
-				&& choice.finishReason() == MiniMaxApi.ChatCompletionFinishReason.TOOL_CALLS;
+				&& choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
 }

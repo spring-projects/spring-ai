@@ -313,7 +313,7 @@ public class MiniMaxApi {
 			/**
 			 * Specifying a particular function forces the model to call that function.
 			 */
-			public static Object FUNCTION(String functionName) {
+			public static Object function(String functionName) {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 		}
@@ -864,7 +864,6 @@ public class MiniMaxApi {
 	 * @param embeddingRequest The embedding request.
 	 * @return Returns {@link EmbeddingList}.
 	 *
-	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
 	 */
 	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
 
