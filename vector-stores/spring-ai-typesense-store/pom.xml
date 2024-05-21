@@ -10,7 +10,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-typesense</artifactId>
+    <artifactId>spring-ai-typesense-store</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Typesense Vector Store</name>
     <description>Spring AI Typesense Vector Store</description>
