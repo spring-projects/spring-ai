@@ -1,6 +1,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.TypesenseVectorStore;
 import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -21,7 +21,7 @@ import java.util.List;
  * @author Pablo Sanchidrian Herrera
  */
 @AutoConfiguration
-@ConditionalOnClass({ TypesenseVectorStore.class, EmbeddingClient.class })
+@ConditionalOnClass({ TypesenseVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties({ TypesenseServiceClientProperties.class, TypesenseVectorStoreProperties.class })
 public class TypesenseVectorStoreAutoConfiguration {
 
@@ -34,7 +34,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(Client typesenseClient, EmbeddingClient embeddingClient,
+	public VectorStore vectorStore(Client typesenseClient, EmbeddingModel embeddingClient,
 			TypesenseVectorStoreProperties properties) {
 
 		TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()

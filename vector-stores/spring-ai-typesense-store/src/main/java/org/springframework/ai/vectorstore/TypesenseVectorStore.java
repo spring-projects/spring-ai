@@ -3,7 +3,7 @@ package org.springframework.ai.vectorstore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.TypesenseFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -41,7 +41,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	private final Client client;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingClient;
 
 	private final TypesenseVectorStoreConfig config;
 
@@ -117,11 +117,11 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient) {
+	public TypesenseVectorStore(Client client, EmbeddingModel embeddingClient) {
 		this(client, embeddingClient, TypesenseVectorStoreConfig.defaultConfig());
 	}
 
-	public TypesenseVectorStore(Client client, EmbeddingClient embeddingClient, TypesenseVectorStoreConfig config) {
+	public TypesenseVectorStore(Client client, EmbeddingModel embeddingClient, TypesenseVectorStoreConfig config) {
 		Assert.notNull(client, "Typesense must not be null");
 		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
 
