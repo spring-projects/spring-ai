@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.chat.service.ChatService;
 import org.springframework.ai.chat.service.PromptTransformingChatService;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -49,12 +50,10 @@ import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.evaluation.EvaluationRequest;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
@@ -164,21 +163,21 @@ public class LongShortTermChatMemoryWithRagIT {
 		}
 
 		@Bean
-		public OpenAiChatClient openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatClient(openAiApi);
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+			return new OpenAiChatModel(openAiApi);
 		}
 
 		@Bean
-		public OpenAiEmbeddingClient embeddingClient(OpenAiApi openAiApi) {
-			return new OpenAiEmbeddingClient(openAiApi);
+		public OpenAiEmbeddingModel embeddingModel(OpenAiApi openAiApi) {
+			return new OpenAiEmbeddingModel(openAiApi);
 		}
 
 		@Bean
-		public VectorStore qdrantVectorStore(EmbeddingClient embeddingClient) {
+		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel) {
 			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
 				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
 				.build());
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingClient);
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
 		}
 
 		@Bean
@@ -187,10 +186,10 @@ public class LongShortTermChatMemoryWithRagIT {
 		}
 
 		@Bean
-		public ChatService memoryChatService(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatService memoryChatService(OpenAiChatModel chatModel, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator, ChatMemory chatHistory) {
 
-			return PromptTransformingChatService.builder(chatClient)
+			return PromptTransformingChatService.builder(chatModel)
 				.withRetrievers(List.of(new VectorStoreRetriever(vectorStore, SearchRequest.defaults()),
 						ChatMemoryRetriever.builder()
 							.withChatHistory(chatHistory)
@@ -224,12 +223,12 @@ public class LongShortTermChatMemoryWithRagIT {
 		}
 
 		// @Bean
-		// public StreamingChatService memoryStreamingChatAgent(OpenAiChatClient
-		// streamingChatClient,
+		// public StreamingChatService memoryStreamingChatAgent(OpenAiChatModel
+		// streamingChatModel,
 		// VectorStore vectorStore, TokenCountEstimator tokenCountEstimator, ChatHistory
 		// chatHistory) {
 
-		// return StreamingPromptTransformingChatService.builder(streamingChatClient)
+		// return StreamingPromptTransformingChatService.builder(streamingChatModel)
 		// .withRetrievers(List.of(new ChatHistoryRetriever(chatHistory), new
 		// DocumentChatHistoryRetriever(vectorStore, 10)))
 		// .withDocumentPostProcessors(List.of(new
@@ -241,13 +240,13 @@ public class LongShortTermChatMemoryWithRagIT {
 		// }
 
 		@Bean
-		public RelevancyEvaluator relevancyEvaluator(OpenAiChatClient chatClient) {
+		public RelevancyEvaluator relevancyEvaluator(OpenAiChatModel chatModel) {
 			// Use GPT 4 as a better model for determining relevancy. gpt 3.5 makes basic
 			// mistakes
 			OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
 				.withModel(GPT_4_TURBO_PREVIEW.getValue())
 				.build();
-			return new RelevancyEvaluator(chatClient, openAiChatOptions);
+			return new RelevancyEvaluator(chatModel, openAiChatOptions);
 		}
 
 	}

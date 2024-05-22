@@ -23,7 +23,7 @@ import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.StreamingChatModel;
 import org.springframework.ai.chat.messages.MessageAggregator;
 import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 
@@ -33,7 +33,7 @@ import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
  */
 public class StreamingPromptTransformingChatService implements StreamingChatService {
 
-	private StreamingChatClient streamingChatClient;
+	private StreamingChatModel streamingChatModel;
 
 	private List<PromptTransformer> retrievers;
 
@@ -43,19 +43,19 @@ public class StreamingPromptTransformingChatService implements StreamingChatServ
 
 	private List<ChatServiceListener> chatServiceListeners;
 
-	public StreamingPromptTransformingChatService(StreamingChatClient chatClient, List<PromptTransformer> retrievers,
+	public StreamingPromptTransformingChatService(StreamingChatModel chatModel, List<PromptTransformer> retrievers,
 			List<PromptTransformer> documentPostProcessors, List<PromptTransformer> augmentors,
 			List<ChatServiceListener> chatServiceListeners) {
-		Objects.requireNonNull(chatClient, "chatClient must not be null");
-		this.streamingChatClient = chatClient;
+		Objects.requireNonNull(chatModel, "chatModel must not be null");
+		this.streamingChatModel = chatModel;
 		this.retrievers = retrievers;
 		this.documentPostProcessors = documentPostProcessors;
 		this.augmentors = augmentors;
 		this.chatServiceListeners = chatServiceListeners;
 	}
 
-	public static Builder builder(StreamingChatClient chatClient) {
-		return new Builder().withChatClient(chatClient);
+	public static Builder builder(StreamingChatModel chatModel) {
+		return new Builder().withChatModel(chatModel);
 	}
 
 	@Override
@@ -87,7 +87,7 @@ public class StreamingPromptTransformingChatService implements StreamingChatServ
 		final var promptContext2 = chatServiceContext;
 
 		Flux<ChatResponse> fluxChatResponse = new MessageAggregator()
-			.aggregate(this.streamingChatClient.stream(chatServiceContext.getPrompt()), chatResponse -> {
+			.aggregate(this.streamingChatModel.stream(chatServiceContext.getPrompt()), chatResponse -> {
 				for (ChatServiceListener listener : this.chatServiceListeners) {
 					listener.onComplete(new ChatServiceResponse(promptContext2, chatResponse));
 				}
@@ -99,7 +99,7 @@ public class StreamingPromptTransformingChatService implements StreamingChatServ
 
 	public static class Builder {
 
-		private StreamingChatClient chatClient;
+		private StreamingChatModel chatModel;
 
 		private List<PromptTransformer> retrievers = new ArrayList<>();
 
@@ -109,8 +109,8 @@ public class StreamingPromptTransformingChatService implements StreamingChatServ
 
 		private List<ChatServiceListener> chatServiceListeners = new ArrayList<>();
 
-		public Builder withChatClient(StreamingChatClient chatClient) {
-			this.chatClient = chatClient;
+		public Builder withChatModel(StreamingChatModel chatModel) {
+			this.chatModel = chatModel;
 			return this;
 		}
 
@@ -135,8 +135,8 @@ public class StreamingPromptTransformingChatService implements StreamingChatServ
 		}
 
 		public StreamingPromptTransformingChatService build() {
-			return new StreamingPromptTransformingChatService(chatClient, retrievers, documentPostProcessors,
-					augmentors, chatServiceListeners);
+			return new StreamingPromptTransformingChatService(chatModel, retrievers, documentPostProcessors, augmentors,
+					chatServiceListeners);
 		}
 
 	}

@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.anthropic;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.anthropic.AnthropicChatClient;
+import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -102,7 +102,7 @@ public class AnthropicPropertiesTests {
 					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(AnthropicChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
 			});
 
 		// Explicitly enable the chat auto-configuration.
@@ -111,7 +111,7 @@ public class AnthropicPropertiesTests {
 					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(AnthropicChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
 			});
 
 		// Explicitly disable the chat auto-configuration.
@@ -120,7 +120,7 @@ public class AnthropicPropertiesTests {
 					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(AnthropicChatClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty();
 			});
 	}
 

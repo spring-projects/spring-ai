@@ -21,9 +21,9 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
@@ -561,7 +561,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiEmbeddingClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -570,7 +570,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -580,7 +580,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
 			});
 	}
 
@@ -593,7 +593,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiChatClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -602,7 +602,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -612,7 +612,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
 			});
 
 	}
@@ -626,7 +626,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -635,7 +635,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -645,7 +645,7 @@ public class OpenAiPropertiesTests {
 					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OpenAiImageClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
 			});
 
 	}

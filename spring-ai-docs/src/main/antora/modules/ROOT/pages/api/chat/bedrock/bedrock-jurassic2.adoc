@@ -64,7 +64,7 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 
 
-The prefix `spring.ai.bedrock.jurassic2.chat` is the property prefix that configures the chat client implementation for Jurassic-2.
+The prefix `spring.ai.bedrock.jurassic2.chat` is the property prefix that configures the chat model implementation for Jurassic-2.
 
 [cols="2,5,1"]
 |====
@@ -86,14 +86,14 @@ TIP: All properties prefixed with `spring.ai.bedrock.jurassic2.chat.options` can
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatOptions.java[BedrockAi21Jurassic2ChatOptions.java] provides model configurations, such as temperature, topP, maxTokens, etc.
 
-On start-up, the default options can be configured with the `BedrockAi21Jurassic2ChatClient(api, options)` constructor or the `spring.ai.bedrock.jurassic2.chat.options.*` properties.
+On start-up, the default options can be configured with the `BedrockAi21Jurassic2ChatModel(api, options)` constructor or the `spring.ai.bedrock.jurassic2.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         BedrockAi21Jurassic2ChatOptions.builder()
@@ -108,7 +108,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Jurassic-2 Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Jurassic-2 chat model:
 
 [source]
 ----
@@ -123,24 +123,24 @@ spring.ai.bedrock.jurassic2.chat.options.temperature=0.8
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
 
-This will create a `BedrockAi21Jurassic2ChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `BedrockAi21Jurassic2ChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final BedrockAi21Jurassic2ChatClient chatClient;
+    private final BedrockAi21Jurassic2ChatModel chatModel;
 
     @Autowired
-    public ChatController(BedrockAi21Jurassic2ChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(BedrockAi21Jurassic2ChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
 }
@@ -148,7 +148,7 @@ public class ChatController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatClient.java[BedrockAi21Jurassic2ChatClient] implements the `ChatClient`  uses the <<low-level-api>> to connect to the Bedrock Jurassic-2 service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatModel.java[BedrockAi21Jurassic2ChatModel] implements the `ChatModel`  uses the <<low-level-api>> to connect to the Bedrock Jurassic-2 service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -171,7 +171,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatClient.java[BedrockAi21Jurassic2ChatClient] and use it for text generations:
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatModel.java[BedrockAi21Jurassic2ChatModel] and use it for text generations:
 
 [source,java]
 ----
@@ -181,13 +181,13 @@ Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(Ai21Jurassic2C
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockAi21Jurassic2ChatClient chatClient = new BedrockAi21Jurassic2ChatClient(api,
+BedrockAi21Jurassic2ChatModel chatModel = new BedrockAi21Jurassic2ChatModel(api,
     BedrockAi21Jurassic2ChatOptions.builder()
         .withTemperature(0.5f)
         .withMaxTokens(100)
         .withTopP(0.9f).build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 ----

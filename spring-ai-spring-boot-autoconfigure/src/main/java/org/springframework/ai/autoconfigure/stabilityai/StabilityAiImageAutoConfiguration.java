@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.stabilityai;
 
-import org.springframework.ai.stabilityai.StabilityAiImageClient;
+import org.springframework.ai.stabilityai.StabilityAiImageModel;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -58,9 +58,9 @@ public class StabilityAiImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = StabilityAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public StabilityAiImageClient stabilityAiImageClient(StabilityAiApi stabilityAiApi,
+	public StabilityAiImageModel stabilityAiImageModel(StabilityAiApi stabilityAiApi,
 			StabilityAiImageProperties stabilityAiImageProperties) {
-		return new StabilityAiImageClient(stabilityAiApi, stabilityAiImageProperties.getOptions());
+		return new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.getOptions());
 	}
 
 }

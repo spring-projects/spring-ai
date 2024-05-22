@@ -1,6 +1,6 @@
 = Mistral AI Function Calling
 
-You can register custom Java functions with the `MistralAiChatClient` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the `MistralAiChatModel` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
 The `open-mixtral-8x22b`, `mistral_small_latest`, and `mistral_large_latest` models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
 
@@ -15,7 +15,7 @@ The `description` helps the model to understand when to call the function.
 As a developer, you need to implement a function that takes the function call arguments sent from the AI model, and respond with the result back to the model.
 Your function can in turn invoke other 3rd party services to provide the results.
 
-Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient`.
+Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
 The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallbackWrapper.java[FunctionCallbackWrapper.java] utility class to simplify the implementation and registration of Java callback functions.
@@ -62,7 +62,7 @@ public class MockWeatherService implements Function<Request, Response> {
 
 === Registering Functions as Beans
 
-With the link:../mistralai-chat.html#_auto_configuration[MistralAiChatClient Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
+With the link:../mistralai-chat.html#_auto_configuration[MistralAiChatModel Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
 
 We start with describing the most POJO friendly options.
 
@@ -70,7 +70,7 @@ We start with describing the most POJO friendly options.
 
 In this approach you define `@Beans` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatClient` will create an instance of a `FunctionCallbackWrapper` wrapper that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallbackWrapper` wrapper that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 
@@ -139,7 +139,7 @@ static class Config {
 }
 ----
 
-It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MistralAiChatClient`.
+It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `MistralAiChatModel`.
 It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
 
 NOTE: By default, the response converter does a JSON serialization of the Response object.
@@ -152,17 +152,17 @@ To let the model know and call your `CurrentWeather` function you need to enable
 
 [source,java]
 ----
-MistralAiChatClient chatClient = ...
+MistralAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
-ChatResponse response = chatClient.call(new Prompt(List.of(userMessage),
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 		MistralAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
 
-// NOTE: You can can have multiple functions registered in your `ChatClient` but only those enabled in the prompt request will be considered for the function calling.
+// NOTE: You can can have multiple functions registered in your `ChatModel` but only those enabled in the prompt request will be considered for the function calling.
 
 Above user question will trigger 3 calls to `CurrentWeather` function (one for each city) and produce the final response.
 
@@ -172,7 +172,7 @@ In addition to the auto-configuration you can register callback functions, dynam
 
 [source,java]
 ----
-MistralAiChatClient chatClient = ...
+MistralAiChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
@@ -183,14 +183,14 @@ var promptOptions = MistralAiChatOptions.builder()
 		new MockWeatherService()))) // function code
 	.build();
 
-ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 ----
 
 NOTE: The in-prompt registered functions are enabled by default for the duration of this request.
 
 This approach allows to dynamically chose different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusPromptIT.java[PaymentStatusPromptIT.java] integration test provides a complete example of how to register a function with the `MistralAiChatClient` and use it in a prompt request.
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/mistralai/tool/PaymentStatusPromptIT.java[PaymentStatusPromptIT.java] integration test provides a complete example of how to register a function with the `MistralAiChatModel` and use it in a prompt request.
 
 
 == Appendices

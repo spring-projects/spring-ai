@@ -31,7 +31,7 @@ public class OllamaEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.embedding";
 
 	/**
-	 * Enable Ollama embedding client.
+	 * Enable Ollama embedding model.
 	 */
 	private boolean enabled = true;
 

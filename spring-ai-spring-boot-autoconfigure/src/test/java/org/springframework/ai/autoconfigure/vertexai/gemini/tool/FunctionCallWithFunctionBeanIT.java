@@ -28,7 +28,7 @@ import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -55,12 +55,12 @@ class FunctionCallWithFunctionBeanIT {
 	void functionCallTest() {
 
 		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-				// + VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
-				+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
-			// + VertexAiGeminiChatClient.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
+				// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+				+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
+			// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
 			.run(context -> {
 
-				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
 
 				var systemMessage = new SystemMessage("""
 						Use Multi-turn function calling.
@@ -72,9 +72,9 @@ class FunctionCallWithFunctionBeanIT {
 						// Please let me know how many function calls you've preformed.");
 						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
-				// ChatResponse response = chatClient.call(new
+				// ChatResponse response = chatModel.call(new
 				// Prompt(List.of(userMessage),
 				// VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
 
@@ -84,14 +84,14 @@ class FunctionCallWithFunctionBeanIT {
 
 				Thread.sleep(10000);
 
-				response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+				response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				response = chatClient
+				response = chatModel
 					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);

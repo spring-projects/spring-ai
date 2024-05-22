@@ -32,7 +32,7 @@ public class BedrockLlamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.llama.chat";
 
 	/**
-	 * Enable Bedrock Llama chat client. Disabled by default.
+	 * Enable Bedrock Llama chat model. Disabled by default.
 	 */
 	private boolean enabled = false;
 

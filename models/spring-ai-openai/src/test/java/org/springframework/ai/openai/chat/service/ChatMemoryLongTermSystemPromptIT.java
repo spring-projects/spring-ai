@@ -33,11 +33,11 @@ import org.springframework.ai.chat.memory.VectorStoreChatMemoryChatServiceListen
 import org.springframework.ai.chat.memory.VectorStoreChatMemoryRetriever;
 import org.springframework.ai.chat.memory.LastMaxTokenSizeContentTransformer;
 import org.springframework.ai.chat.memory.SystemPromptChatMemoryAugmentor;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.evaluation.BaseMemoryTest;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
@@ -75,21 +75,21 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public OpenAiChatClient openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatClient(openAiApi);
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+			return new OpenAiChatModel(openAiApi);
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient(OpenAiApi openAiApi) {
-			return new OpenAiEmbeddingClient(openAiApi);
+		public EmbeddingModel embeddingModel(OpenAiApi openAiApi) {
+			return new OpenAiEmbeddingModel(openAiApi);
 		}
 
 		@Bean
-		public VectorStore qdrantVectorStore(EmbeddingClient embeddingClient) {
+		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel) {
 			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
 				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
 				.build());
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingClient);
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
 		}
 
 		@Bean
@@ -98,10 +98,10 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatService memoryChatService(OpenAiChatClient chatClient, VectorStore vectorStore,
+		public ChatService memoryChatService(OpenAiChatModel chatModel, VectorStore vectorStore,
 				TokenCountEstimator tokenCountEstimator) {
 
-			return PromptTransformingChatService.builder(chatClient)
+			return PromptTransformingChatService.builder(chatModel)
 				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
 				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
@@ -110,10 +110,10 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public StreamingChatService memoryStreamingChatService(OpenAiChatClient streamingChatClient,
+		public StreamingChatService memoryStreamingChatService(OpenAiChatModel streamingChatModel,
 				VectorStore vectorStore, TokenCountEstimator tokenCountEstimator) {
 
-			return StreamingPromptTransformingChatService.builder(streamingChatClient)
+			return StreamingPromptTransformingChatService.builder(streamingChatModel)
 				.withRetrievers(List.of(new VectorStoreChatMemoryRetriever(vectorStore, 10)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new SystemPromptChatMemoryAugmentor()))
@@ -122,8 +122,8 @@ public class ChatMemoryLongTermSystemPromptIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public RelevancyEvaluator relevancyEvaluator(OpenAiChatClient chatClient) {
-			return new RelevancyEvaluator(chatClient);
+		public RelevancyEvaluator relevancyEvaluator(OpenAiChatModel chatModel) {
+			return new RelevancyEvaluator(chatModel);
 		}
 
 	}

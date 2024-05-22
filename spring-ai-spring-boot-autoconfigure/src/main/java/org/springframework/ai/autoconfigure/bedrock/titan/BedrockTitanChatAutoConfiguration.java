@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.bedrock.titan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.titan.BedrockTitanChatClient;
+import org.springframework.ai.bedrock.titan.BedrockTitanChatModel;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -57,10 +57,10 @@ public class BedrockTitanChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(TitanChatBedrockApi.class)
-	public BedrockTitanChatClient titanChatClient(TitanChatBedrockApi titanChatApi,
+	public BedrockTitanChatModel titanChatModel(TitanChatBedrockApi titanChatApi,
 			BedrockTitanChatProperties properties) {
 
-		return new BedrockTitanChatClient(titanChatApi, properties.getOptions());
+		return new BedrockTitanChatModel(titanChatApi, properties.getOptions());
 	}
 
 }

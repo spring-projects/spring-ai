@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -58,16 +58,16 @@ public class AcmeIT extends AbstractIT {
 	private Resource systemBikePrompt;
 
 	@Autowired
-	private OpenAiEmbeddingClient embeddingClient;
+	private OpenAiEmbeddingModel embeddingModel;
 
 	@Autowired
-	private OpenAiChatClient chatClient;
+	private OpenAiChatModel chatModel;
 
 	@Test
 	void beanTest() {
 		assertThat(bikesResource).isNotNull();
-		assertThat(embeddingClient).isNotNull();
-		assertThat(chatClient).isNotNull();
+		assertThat(embeddingModel).isNotNull();
+		assertThat(chatModel).isNotNull();
 	}
 
 	// @Test
@@ -81,7 +81,7 @@ public class AcmeIT extends AbstractIT {
 		// Step 2 - Create embeddings and save to vector store
 
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = new SimpleVectorStore(embeddingClient);
+		VectorStore vectorStore = new SimpleVectorStore(embeddingModel);
 
 		vectorStore.accept(textSplitter.apply(jsonReader.get()));
 
@@ -108,7 +108,7 @@ public class AcmeIT extends AbstractIT {
 		logger.info("Asking AI generative to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		logger.info("AI responded.");
-		ChatResponse response = chatClient.call(prompt);
+		ChatResponse response = chatModel.call(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);
 	}

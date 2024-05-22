@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -113,7 +114,7 @@ public class OpenAiApi {
 	 * - <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a>
 	 * - <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
 		/**
 		 * Multimodal flagship model that’s cheaper and faster than GPT-4 Turbo.
 		 * Currently points to gpt-4o-2024-05-13.
@@ -198,6 +199,11 @@ public class OpenAiApi {
 
 		public String getValue() {
 			return value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.value;
 		}
 	}
 

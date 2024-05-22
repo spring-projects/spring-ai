@@ -34,7 +34,7 @@ public class ChatCompletionRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
+		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").withTemperature(66.6f).build());
 
 		var request = client.createRequest(new Prompt("Test message content"), false);
@@ -60,7 +60,7 @@ public class ChatCompletionRequestTests {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
+		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder().withModel("DEFAULT_MODEL").build());
 
 		var request = client.createRequest(new Prompt("Test message content",
@@ -90,7 +90,7 @@ public class ChatCompletionRequestTests {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new OpenAiChatClient(new OpenAiApi("TEST"),
+		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder()
 					.withModel("DEFAULT_MODEL")
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())

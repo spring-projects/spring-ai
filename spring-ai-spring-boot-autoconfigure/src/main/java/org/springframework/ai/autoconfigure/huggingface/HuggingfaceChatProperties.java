@@ -27,7 +27,7 @@ public class HuggingfaceChatProperties {
 	private String url;
 
 	/**
-	 * Enable Huggingface chat client.
+	 * Enable Huggingface chat model.
 	 */
 	private boolean enabled = true;
 

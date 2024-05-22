@@ -30,13 +30,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaChatRequestTests {
 
-	OllamaChatClient client = new OllamaChatClient(new OllamaApi(),
+	OllamaChatModel chatModel = new OllamaChatModel(new OllamaApi(),
 			new OllamaOptions().withModel("MODEL_NAME").withTopK(99).withTemperature(66.6f).withNumGPU(1));
 
 	@Test
 	public void createRequestWithDefaultOptions() {
 
-		var request = client.ollamaChatRequest(new Prompt("Test message content"), false);
+		var request = chatModel.ollamaChatRequest(new Prompt("Test message content"), false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -54,7 +54,7 @@ public class OllamaChatRequestTests {
 		// Runtime options should override the default options.
 		OllamaOptions promptOptions = new OllamaOptions().withTemperature(0.8f).withTopP(0.5f).withNumGPU(2);
 
-		var request = client.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -79,7 +79,7 @@ public class OllamaChatRequestTests {
 			.withTopP(0.6f)
 			.build();
 
-		var request = client.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);
+		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -97,7 +97,7 @@ public class OllamaChatRequestTests {
 		// Ollama runtime options.
 		OllamaOptions promptOptions = new OllamaOptions().withModel("PROMPT_MODEL");
 
-		var request = client.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		var request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 	}
@@ -105,17 +105,17 @@ public class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptionsModelOverride() {
 
-		OllamaChatClient client2 = new OllamaChatClient(new OllamaApi(),
+		OllamaChatModel chatModel = new OllamaChatModel(new OllamaApi(),
 				new OllamaOptions().withModel("DEFAULT_OPTIONS_MODEL"));
 
-		var request = client2.ollamaChatRequest(new Prompt("Test message content"), true);
+		var request = chatModel.ollamaChatRequest(new Prompt("Test message content"), true);
 
 		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
 
 		// Prompt options should override the default options.
 		OllamaOptions promptOptions = new OllamaOptions().withModel("PROMPT_MODEL");
 
-		request = client2.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 	}

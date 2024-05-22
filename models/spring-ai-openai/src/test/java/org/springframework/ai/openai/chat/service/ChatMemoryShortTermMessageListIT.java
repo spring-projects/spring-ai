@@ -31,7 +31,7 @@ import org.springframework.ai.chat.memory.LastMaxTokenSizeContentTransformer;
 import org.springframework.ai.chat.memory.MessageChatMemoryAugmentor;
 import org.springframework.ai.evaluation.BaseMemoryTest;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
-import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tokenizer.JTokkitTokenCountEstimator;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
@@ -59,8 +59,8 @@ public class ChatMemoryShortTermMessageListIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public OpenAiChatClient openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatClient(openAiApi);
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+			return new OpenAiChatModel(openAiApi);
 		}
 
 		@Bean
@@ -74,10 +74,10 @@ public class ChatMemoryShortTermMessageListIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public ChatService memoryChatService(OpenAiChatClient chatClient, ChatMemory chatHistory,
+		public ChatService memoryChatService(OpenAiChatModel chatModel, ChatMemory chatHistory,
 				TokenCountEstimator tokenCountEstimator) {
 
-			return PromptTransformingChatService.builder(chatClient)
+			return PromptTransformingChatService.builder(chatModel)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withContentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
@@ -86,10 +86,10 @@ public class ChatMemoryShortTermMessageListIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public StreamingChatService memoryStreamingChatService(OpenAiChatClient streamingChatClient,
+		public StreamingChatService memoryStreamingChatService(OpenAiChatModel streamingChatModel,
 				ChatMemory chatHistory, TokenCountEstimator tokenCountEstimator) {
 
-			return StreamingPromptTransformingChatService.builder(streamingChatClient)
+			return StreamingPromptTransformingChatService.builder(streamingChatModel)
 				.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 				.withDocumentPostProcessors(List.of(new LastMaxTokenSizeContentTransformer(tokenCountEstimator, 1000)))
 				.withAugmentors(List.of(new MessageChatMemoryAugmentor()))
@@ -98,8 +98,8 @@ public class ChatMemoryShortTermMessageListIT extends BaseMemoryTest {
 		}
 
 		@Bean
-		public RelevancyEvaluator relevancyEvaluator(OpenAiChatClient chatClient) {
-			return new RelevancyEvaluator(chatClient);
+		public RelevancyEvaluator relevancyEvaluator(OpenAiChatModel chatModel) {
+			return new RelevancyEvaluator(chatModel);
 		}
 
 	}

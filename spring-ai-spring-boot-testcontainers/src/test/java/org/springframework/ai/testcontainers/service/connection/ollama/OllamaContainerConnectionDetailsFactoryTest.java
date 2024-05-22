@@ -21,7 +21,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.ollama.OllamaEmbeddingClient;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -56,7 +56,7 @@ class OllamaContainerConnectionDetailsFactoryTest {
 	static OllamaContainer ollama = new OllamaContainer("ollama/ollama:0.1.29");
 
 	@Autowired
-	private OllamaEmbeddingClient embeddingClient;
+	private OllamaEmbeddingModel embeddingModel;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
@@ -67,10 +67,10 @@ class OllamaContainerConnectionDetailsFactoryTest {
 
 	@Test
 	public void singleTextEmbedding() {
-		EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of("Hello World"));
+		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-		assertThat(this.embeddingClient.dimensions()).isEqualTo(3200);
+		assertThat(this.embeddingModel.dimensions()).isEqualTo(3200);
 	}
 
 	@Configuration(proxyBeanMethods = false)

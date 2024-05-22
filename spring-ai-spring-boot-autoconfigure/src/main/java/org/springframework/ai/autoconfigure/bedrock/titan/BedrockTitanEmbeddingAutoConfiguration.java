@@ -21,7 +21,7 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingClient;
+import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -59,10 +59,10 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(TitanEmbeddingBedrockApi.class)
-	public BedrockTitanEmbeddingClient titanEmbeddingClient(TitanEmbeddingBedrockApi titanEmbeddingApi,
+	public BedrockTitanEmbeddingModel titanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingApi,
 			BedrockTitanEmbeddingProperties properties) {
 
-		return new BedrockTitanEmbeddingClient(titanEmbeddingApi).withInputType(properties.getInputType());
+		return new BedrockTitanEmbeddingModel(titanEmbeddingApi).withInputType(properties.getInputType());
 	}
 
 }

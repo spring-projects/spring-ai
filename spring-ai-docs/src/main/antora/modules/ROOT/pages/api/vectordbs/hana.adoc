@@ -3,7 +3,7 @@
 == Prerequisites
 
 * You need a SAP HANA Cloud vector engine account - Refer xref:api/vectordbs/hanadb-provision-a-trial-account.adoc[SAP HANA Cloud vector engine - provision a trial account] guide to create a trial account.
-* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the vector store.
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the vector store.
 
 
 == Auto-configuration
@@ -34,7 +34,7 @@ Please have a look at the list of xref:#_hanacloudvectorstore_properties[configu
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 == HanaCloudVectorStore properties
 
@@ -226,7 +226,7 @@ public class CricketWorldCupRepository implements HanaVectorRepository<CricketWo
 }
 ----
 
-* Now, create a REST Controller class `CricketWorldCupHanaController`, and autowire `ChatClient` and `VectorStore` as dependencies
+* Now, create a REST Controller class `CricketWorldCupHanaController`, and autowire `ChatModel` and `VectorStore` as dependencies
 In this controller class, create the following REST endpoints:
 
     - `/ai/hana-vector-store/cricket-world-cup/purge-embeddings` - to purge all the embeddings from the Vector Store
@@ -238,7 +238,7 @@ In this controller class, create the following REST endpoints:
 package com.interviewpedia.spring.ai.hana;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatModel;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -267,11 +267,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CricketWorldCupHanaController {
     private final VectorStore hanaCloudVectorStore;
-    private final ChatClient chatClient;
+    private final ChatModel chatModel;
 
     @Autowired
-    public CricketWorldCupHanaController(ChatClient chatClient, VectorStore hanaCloudVectorStore) {
-        this.chatClient = chatClient;
+    public CricketWorldCupHanaController(ChatModel chatModel, VectorStore hanaCloudVectorStore) {
+        this.chatModel = chatModel;
         this.hanaCloudVectorStore = hanaCloudVectorStore;
     }
 
@@ -303,7 +303,7 @@ public class CricketWorldCupHanaController {
 
         var userMessage = new UserMessage(message);
         Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
-        String generation = chatClient.call(prompt).getResult().getOutput().getContent();
+        String generation = chatModel.call(prompt).getResult().getOutput().getContent();
         log.info("Generation: {}", generation);
         return Map.of("generation", generation);
     }

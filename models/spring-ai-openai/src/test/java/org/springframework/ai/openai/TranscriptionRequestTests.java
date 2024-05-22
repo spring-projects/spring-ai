@@ -34,7 +34,7 @@ public class TranscriptionRequestTests {
 	@Test
 	public void defaultOptions() {
 
-		var client = new OpenAiAudioTranscriptionClient(new OpenAiAudioApi("TEST"),
+		var client = new OpenAiAudioTranscriptionModel(new OpenAiAudioApi("TEST"),
 				OpenAiAudioTranscriptionOptions.builder()
 					.withModel("DEFAULT_MODEL")
 					.withResponseFormat(TranscriptResponseFormat.TEXT)
@@ -58,7 +58,7 @@ public class TranscriptionRequestTests {
 	@Test
 	public void runtimeOptions() {
 
-		var client = new OpenAiAudioTranscriptionClient(new OpenAiAudioApi("TEST"),
+		var client = new OpenAiAudioTranscriptionModel(new OpenAiAudioApi("TEST"),
 				OpenAiAudioTranscriptionOptions.builder()
 					.withModel("DEFAULT_MODEL")
 					.withResponseFormat(TranscriptResponseFormat.TEXT)

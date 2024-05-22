@@ -35,9 +35,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.beans.factory.annotation.Value;
@@ -306,8 +306,8 @@ public class PgVectorStoreIT {
 		PgVectorStore.PgDistanceType distanceType;
 
 		@Bean
-		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-			return new PgVectorStore(jdbcTemplate, embeddingClient, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
+		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+			return new PgVectorStore(jdbcTemplate, embeddingModel, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
 					distanceType, true, PgIndexType.HNSW);
 		}
 
@@ -329,8 +329,8 @@ public class PgVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

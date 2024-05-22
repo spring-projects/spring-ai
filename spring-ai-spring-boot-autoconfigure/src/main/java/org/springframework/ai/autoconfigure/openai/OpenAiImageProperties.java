@@ -34,7 +34,7 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.DALL_E_3.getValue();
 
 	/**
-	 * Enable OpenAI Image client.
+	 * Enable OpenAI image model.
 	 */
 	private boolean enabled = true;
 
