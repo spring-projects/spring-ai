@@ -326,6 +326,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-qianfan</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Typesense vector store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

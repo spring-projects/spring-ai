@@ -325,7 +325,7 @@ public class ZhiPuAiApi {
 			/**
 			 * Specifying a particular function forces the model to call that function.
 			 */
-			public static Object FUNCTION(String functionName) {
+			public static Object function(String functionName) {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 		}

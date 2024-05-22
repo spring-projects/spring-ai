@@ -39,3 +39,4 @@ org.springframework.ai.autoconfigure.chat.client.ChatClientAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration
+org.springframework.ai.autoconfigure.qianfan.QianFanAutoConfiguration

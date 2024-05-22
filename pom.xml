@@ -69,6 +69,7 @@
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
+		<module>models/spring-ai-qianfan</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
@@ -86,6 +87,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-qianfan</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
