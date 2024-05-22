@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.openai;
 
+import java.time.Duration;
+
 /**
  * Internal parent properties for the OpenAI properties.
  *
@@ -26,6 +28,8 @@ class OpenAiParentProperties {
 	private String apiKey;
 
 	private String baseUrl;
+
+	private Duration readTimeout;
 
 	public String getApiKey() {
 		return apiKey;
@@ -41,6 +45,14 @@ class OpenAiParentProperties {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public Duration getReadTimeout() {
+		return readTimeout;
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.readTimeout = readTimeout;
 	}
 
 }
