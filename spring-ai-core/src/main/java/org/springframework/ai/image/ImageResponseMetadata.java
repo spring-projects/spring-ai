@@ -22,7 +22,7 @@ public interface ImageResponseMetadata extends ResponseMetadata {
 	ImageResponseMetadata NULL = new ImageResponseMetadata() {
 	};
 
-	default Long created() {
+	default Long getCreated() {
 		return System.currentTimeMillis();
 	}
 
