@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.vectorstore.qdrant;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Bean;
  * @since 0.8.1
  */
 @AutoConfiguration
-@ConditionalOnClass({ QdrantVectorStore.class, EmbeddingClient.class })
+@ConditionalOnClass({ QdrantVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties(QdrantVectorStoreProperties.class)
 public class QdrantVectorStoreAutoConfiguration {
 
@@ -56,9 +56,9 @@ public class QdrantVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties,
+	public QdrantVectorStore vectorStore(EmbeddingModel embeddingModel, QdrantVectorStoreProperties properties,
 			QdrantClient qdrantClient) {
-		return new QdrantVectorStore(qdrantClient, properties.getCollectionName(), embeddingClient);
+		return new QdrantVectorStore(qdrantClient, properties.getCollectionName(), embeddingModel);
 	}
 
 	static class PropertiesQdrantConnectionDetails implements QdrantConnectionDetails {

@@ -24,7 +24,7 @@ public class VertexAiPalm2EmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding";
 
 	/**
-	 * Enable Vertex AI PaLM API embedding client.
+	 * Enable Vertex AI PaLM API embedding model.
 	 */
 	private boolean enabled = true;
 

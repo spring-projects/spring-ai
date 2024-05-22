@@ -25,10 +25,10 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatModel;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.StreamingChatModel;
 import org.springframework.ai.chat.service.ChatServiceResponse;
 import org.springframework.ai.chat.service.PromptTransformingChatService;
 import org.springframework.ai.chat.messages.Message;
@@ -48,10 +48,10 @@ import static org.mockito.Mockito.when;
 public class ChatMemoryTests {
 
 	@Mock
-	ChatClient chatClient;
+	ChatModel chatModel;
 
 	@Mock
-	StreamingChatClient streamingChatClient;
+	StreamingChatModel streamingChatModel;
 
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
@@ -61,7 +61,7 @@ public class ChatMemoryTests {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
-		PromptTransformingChatService chatService = PromptTransformingChatService.builder(chatClient)
+		PromptTransformingChatService chatService = PromptTransformingChatService.builder(chatModel)
 			.withRetrievers(List.of(ChatMemoryRetriever.builder().withChatHistory(chatHistory).build()))
 			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
@@ -69,7 +69,7 @@ public class ChatMemoryTests {
 			.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory)))
 			.build();
 
-		chatClientUserMessages(chatService, chatHistory);
+		chatModelUserMessages(chatService, chatHistory);
 	}
 
 	@Test
@@ -77,7 +77,7 @@ public class ChatMemoryTests {
 
 		ChatMemory chatHistory = new InMemoryChatMemory();
 
-		PromptTransformingChatService chatService = PromptTransformingChatService.builder(chatClient)
+		PromptTransformingChatService chatService = PromptTransformingChatService.builder(chatModel)
 			.withRetrievers(List.of(new ChatMemoryRetriever(chatHistory)))
 			.withContentPostProcessors(
 					List.of(new LastMaxTokenSizeContentTransformer(new JTokkitTokenCountEstimator(), 10)))
@@ -85,12 +85,12 @@ public class ChatMemoryTests {
 			.withChatServiceListeners(List.of(new ChatMemoryChatServiceListener(chatHistory)))
 			.build();
 
-		chatClientUserMessages(chatService, chatHistory);
+		chatModelUserMessages(chatService, chatHistory);
 	}
 
-	public void chatClientUserMessages(PromptTransformingChatService chatService, ChatMemory chatHistory) {
+	public void chatModelUserMessages(PromptTransformingChatService chatService, ChatMemory chatHistory) {
 
-		when(chatClient.call(promptCaptor.capture()))
+		when(chatModel.call(promptCaptor.capture()))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:1"))))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:2"))))
 				.thenReturn(new ChatResponse(List.of(new Generation("assistant:3"))));

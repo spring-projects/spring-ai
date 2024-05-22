@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.cohere.BedrockCohereChatClient;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatModel;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -57,10 +57,10 @@ public class BedrockCohereChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(CohereChatBedrockApi.class)
-	public BedrockCohereChatClient cohereChatClient(CohereChatBedrockApi cohereChatApi,
+	public BedrockCohereChatModel cohereChatModel(CohereChatBedrockApi cohereChatApi,
 			BedrockCohereChatProperties properties) {
 
-		return new BedrockCohereChatClient(cohereChatApi, properties.getOptions());
+		return new BedrockCohereChatModel(cohereChatApi, properties.getOptions());
 	}
 
 }

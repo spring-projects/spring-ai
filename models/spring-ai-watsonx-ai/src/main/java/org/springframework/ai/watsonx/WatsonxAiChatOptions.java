@@ -324,5 +324,21 @@ public class WatsonxAiChatOptions implements ChatOptions {
         return input != null ? input.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase() : null;
     }
 
+    public static WatsonxAiChatOptions fromOptions(WatsonxAiChatOptions fromOptions) {
+        return WatsonxAiChatOptions.builder()
+                .withTemperature(fromOptions.getTemperature())
+                .withTopP(fromOptions.getTopP())
+                .withTopK(fromOptions.getTopK())
+                .withDecodingMethod(fromOptions.getDecodingMethod())
+                .withMaxNewTokens(fromOptions.getMaxNewTokens())
+                .withMinNewTokens(fromOptions.getMinNewTokens())
+                .withStopSequences(fromOptions.getStopSequences())
+                .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
+                .withRandomSeed(fromOptions.getRandomSeed())
+                .withModel(fromOptions.getModel())
+                .withAdditionalProperties(fromOptions.getAdditionalProperties())
+                .build();
+    }
+
 }
 // @formatter:on

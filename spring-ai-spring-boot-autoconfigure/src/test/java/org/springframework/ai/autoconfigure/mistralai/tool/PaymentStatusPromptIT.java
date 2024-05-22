@@ -30,7 +30,7 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.mistralai.MistralAiChatClient;
+import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -71,7 +71,7 @@ public class PaymentStatusPromptIT {
 			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.SMALL.getValue())
 			.run(context -> {
 
-				MistralAiChatClient chatClient = context.getBean(MistralAiChatClient.class);
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
@@ -86,7 +86,7 @@ public class PaymentStatusPromptIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
 				logger.info("Response: {}", response);
 

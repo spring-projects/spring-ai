@@ -72,7 +72,7 @@ It also contains metadata in the form of key-value pairs, including details such
 
 Upon insertion into the vector database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an embedding model. Embedding models, such as https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002`, are used to convert words, sentences, or paragraphs into these vector embeddings.
 
-The vector database's role is to store and facilitate similarity searches for these embeddings. It does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
+The vector database's role is to store and facilitate similarity searches for these embeddings. It does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingModel` should be utilized.
 
 The `similaritySearch` methods in the interface allow for retrieving documents similar to a given query string. These methods can be fine-tuned by using the following parameters:
 
@@ -113,9 +113,9 @@ Information on each of the `VectorStore` implementations can be found in the sub
 
 To compute the embeddings for a vector database, you need to pick an embedding model that matches the higher-level AI model being used.
 
-For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and a model named `text-embedding-ada-002`.
+For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingModel` and a model named `text-embedding-ada-002`.
 
-The Spring Boot starter's auto-configuration for OpenAI makes an implementation of `EmbeddingClient` available in the Spring application context for dependency injection.
+The Spring Boot starter's auto-configuration for OpenAI makes an implementation of `EmbeddingModel` available in the Spring application context for dependency injection.
 
 The general usage of loading data into a vector store is something you would do in a batch-like job, by first loading data into Spring AI's `Document` class and then calling the `save` method.
 

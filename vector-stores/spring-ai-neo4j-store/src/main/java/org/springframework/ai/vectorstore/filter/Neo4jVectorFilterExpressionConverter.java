@@ -24,6 +24,7 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
  * Converts {@link Expression} into Neo4j condition expression format.
  *
  * @author Gerrit Meier
+ * @author Dimitrios Begnis
  */
 public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -46,7 +47,7 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 			case AND -> " AND ";
 			case OR -> " OR ";
 			case EQ -> " = ";
-			case NE -> " != ";
+			case NE -> " <> ";
 			case LT -> " < ";
 			case LTE -> " <= ";
 			case GT -> " > ";

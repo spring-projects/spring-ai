@@ -20,11 +20,8 @@ import java.util.List;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
-import org.springframework.ai.openai.OpenAiChatClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
-import org.springframework.ai.openai.OpenAiImageClient;
-import org.springframework.ai.openai.OpenAiAudioSpeechClient;
+import org.springframework.ai.openai.*;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -57,7 +54,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OpenAiChatClient openAiChatClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiChatModel openAiChatModel(OpenAiConnectionProperties commonProperties,
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
@@ -69,21 +66,21 @@ public class OpenAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new OpenAiChatClient(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+		return new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OpenAiEmbeddingClient openAiEmbeddingClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiConnectionProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
-		return new OpenAiEmbeddingClient(openAiApi, embeddingProperties.getMetadataMode(),
+		return new OpenAiEmbeddingModel(openAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
 	}
 
@@ -103,7 +100,7 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OpenAiImageClient openAiImageClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiImageModel openAiImageModel(OpenAiConnectionProperties commonProperties,
 			OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -118,12 +115,12 @@ public class OpenAiAutoConfiguration {
 
 		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 
-		return new OpenAiImageClient(openAiImageApi, imageProperties.getOptions(), retryTemplate);
+		return new OpenAiImageModel(openAiImageApi, imageProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiAudioTranscriptionClient openAiAudioTranscriptionClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiAudioTranscriptionModel openAiAudioTranscriptionModel(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -138,15 +135,15 @@ public class OpenAiAutoConfiguration {
 
 		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder(), responseErrorHandler);
 
-		OpenAiAudioTranscriptionClient openAiChatClient = new OpenAiAudioTranscriptionClient(openAiAudioApi,
+		OpenAiAudioTranscriptionModel openAiChatModel = new OpenAiAudioTranscriptionModel(openAiAudioApi,
 				transcriptionProperties.getOptions(), retryTemplate);
 
-		return openAiChatClient;
+		return openAiChatModel;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiAudioSpeechClient openAiAudioSpeechClient(OpenAiConnectionProperties commonProperties,
+	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, ResponseErrorHandler responseErrorHandler) {
 
 		String apiKey = StringUtils.hasText(speechProperties.getApiKey()) ? speechProperties.getApiKey()
@@ -160,10 +157,10 @@ public class OpenAiAutoConfiguration {
 
 		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, RestClient.builder(), responseErrorHandler);
 
-		OpenAiAudioSpeechClient openAiSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi,
+		OpenAiAudioSpeechModel openAiSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi,
 				speechProperties.getOptions());
 
-		return openAiSpeechClient;
+		return openAiSpeechModel;
 	}
 
 	@Bean

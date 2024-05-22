@@ -80,7 +80,7 @@
 		<!-- Pinecone Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-pinecone</artifactId>
+			<artifactId>spring-ai-pinecone-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -141,7 +141,7 @@
 		<!-- Azure Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-azure-vector-store</artifactId>
+			<artifactId>spring-ai-azure-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -149,7 +149,7 @@
 		<!-- Apache Cassandra Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-cassandra</artifactId>
+			<artifactId>spring-ai-cassandra-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -165,7 +165,7 @@
 		<!-- Redis Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-redis</artifactId>
+			<artifactId>spring-ai-redis-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -242,7 +242,7 @@
 		<!-- Qdrant Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-qdrant</artifactId>
+			<artifactId>spring-ai-qdrant-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -267,10 +267,25 @@
 			<optional>true</optional>
 		</dependency>
 
+
 		<!-- Typesense vector store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-typesense-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-minimax</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-zhipuai</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -336,7 +351,7 @@
 			<artifactId>cassandra</artifactId>
 			<scope>test</scope>
 		</dependency>
-        
+
 		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>

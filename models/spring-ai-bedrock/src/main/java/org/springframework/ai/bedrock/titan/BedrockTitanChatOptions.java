@@ -128,4 +128,12 @@ public class BedrockTitanChatOptions implements ChatOptions {
 		throw new UnsupportedOperationException("Bedrock Titan Chat does not support the 'TopK' option.'");
 	}
 
+	public static BedrockTitanChatOptions fromOptions(BedrockTitanChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withMaxTokenCount(fromOptions.getMaxTokenCount())
+			.withStopSequences(fromOptions.getStopSequences())
+			.build();
+	}
+
 }

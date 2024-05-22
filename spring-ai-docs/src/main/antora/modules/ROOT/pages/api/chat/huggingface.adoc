@@ -27,7 +27,7 @@ export HUGGINGFACE_API_KEY=your_api_key_here
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Note, there is not yet a Spring Boot Starter for this client implementation.
+Note, there is not yet a Spring Boot Starter for this chat implementation.
 
 Obtain the endpoint URL of the Inference Endpoint.
 You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
@@ -36,9 +36,9 @@ You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggi
 
 [source,java]
 ----
-HuggingfaceChatClient client = new HuggingfaceChatClient(apiKey, basePath);
+HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, basePath);
 Prompt prompt = new Prompt("Your text here...");
-ChatResponse response = client.call(prompt);
+ChatResponse response = chatModel.call(prompt);
 System.out.println(response.getGeneration().getText());
 ----
 
@@ -56,7 +56,7 @@ String mistral7bInstruct = """
         Just generate the JSON object without explanations:
         [/INST]""";
 Prompt prompt = new Prompt(mistral7bInstruct);
-ChatResponse aiResponse = huggingfaceChatClient.call(prompt);
+ChatResponse aiResponse = huggingfaceChatModel.call(prompt);
 System.out.println(response.getGeneration().getText());
 ----
 Will produce the output

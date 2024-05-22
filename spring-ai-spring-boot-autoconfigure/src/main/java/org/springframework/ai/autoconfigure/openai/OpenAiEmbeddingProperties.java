@@ -28,7 +28,7 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 
 	/**
-	 * Enable OpenAI embedding client.
+	 * Enable OpenAI embedding model.
 	 */
 	private boolean enabled = true;
 

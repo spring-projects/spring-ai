@@ -109,4 +109,11 @@ public class BedrockLlamaChatOptions implements ChatOptions {
 		throw new UnsupportedOperationException("Unsupported option: 'TopK'");
 	}
 
+	public static BedrockLlamaChatOptions fromOptions(BedrockLlamaChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withMaxGenLen(fromOptions.getMaxGenLen())
+			.build();
+	}
+
 }

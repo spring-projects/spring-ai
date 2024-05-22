@@ -3,8 +3,8 @@ package org.springframework.ai.vectorstore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -241,7 +241,7 @@ public class TypesenseVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(Client client, EmbeddingClient embeddingClient) {
+		public VectorStore vectorStore(Client client, EmbeddingModel embeddingClient) {
 
 			TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
 				.withCollectionName("test_vector_store")
@@ -262,8 +262,8 @@ public class TypesenseVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingClient() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.anthropic;
 
-import org.springframework.ai.anthropic.AnthropicChatClient;
+import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -32,7 +32,7 @@ public class AnthropicChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.anthropic.chat";
 
 	/**
-	 * Enable Anthropic chat client.
+	 * Enable Anthropic chat model.
 	 */
 	private boolean enabled = true;
 
@@ -43,9 +43,9 @@ public class AnthropicChatProperties {
 	 */
 	@NestedConfigurationProperty
 	private AnthropicChatOptions options = AnthropicChatOptions.builder()
-		.withModel(AnthropicChatClient.DEFAULT_MODEL_NAME)
-		.withMaxTokens(AnthropicChatClient.DEFAULT_MAX_TOKENS)
-		.withTemperature(AnthropicChatClient.DEFAULT_TEMPERATURE)
+		.withModel(AnthropicChatModel.DEFAULT_MODEL_NAME)
+		.withMaxTokens(AnthropicChatModel.DEFAULT_MAX_TOKENS)
+		.withTemperature(AnthropicChatModel.DEFAULT_TEMPERATURE)
 		.build();
 
 	public AnthropicChatOptions getOptions() {

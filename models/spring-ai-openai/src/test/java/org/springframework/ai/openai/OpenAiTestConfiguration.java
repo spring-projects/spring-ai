@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.openai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -51,33 +51,33 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
-	public OpenAiChatClient openAiChatClient(OpenAiApi api) {
-		OpenAiChatClient openAiChatClient = new OpenAiChatClient(api);
-		return openAiChatClient;
+	public OpenAiChatModel openAiChatModel(OpenAiApi api) {
+		OpenAiChatModel openAiChatModel = new OpenAiChatModel(api);
+		return openAiChatModel;
 	}
 
 	@Bean
-	public OpenAiAudioTranscriptionClient openAiTranscriptionClient(OpenAiAudioApi api) {
-		OpenAiAudioTranscriptionClient openAiTranscriptionClient = new OpenAiAudioTranscriptionClient(api);
-		return openAiTranscriptionClient;
+	public OpenAiAudioTranscriptionModel openAiTranscriptionModel(OpenAiAudioApi api) {
+		OpenAiAudioTranscriptionModel openAiTranscriptionModel = new OpenAiAudioTranscriptionModel(api);
+		return openAiTranscriptionModel;
 	}
 
 	@Bean
-	public OpenAiAudioSpeechClient openAiAudioSpeechClient(OpenAiAudioApi api) {
-		OpenAiAudioSpeechClient openAiAudioSpeechClient = new OpenAiAudioSpeechClient(api);
-		return openAiAudioSpeechClient;
+	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiAudioApi api) {
+		OpenAiAudioSpeechModel openAiAudioSpeechModel = new OpenAiAudioSpeechModel(api);
+		return openAiAudioSpeechModel;
 	}
 
 	@Bean
-	public OpenAiImageClient openAiImageClient(OpenAiImageApi imageApi) {
-		OpenAiImageClient openAiImageClient = new OpenAiImageClient(imageApi);
-		// openAiImageClient.setModel("foobar");
-		return openAiImageClient;
+	public OpenAiImageModel openAiImageModel(OpenAiImageApi imageApi) {
+		OpenAiImageModel openAiImageModel = new OpenAiImageModel(imageApi);
+		// openAiImageModel.setModel("foobar");
+		return openAiImageModel;
 	}
 
 	@Bean
-	public EmbeddingClient openAiEmbeddingClient(OpenAiApi api) {
-		return new OpenAiEmbeddingClient(api);
+	public EmbeddingModel openAiEmbeddingModel(OpenAiApi api) {
+		return new OpenAiEmbeddingModel(api);
 	}
 
 }

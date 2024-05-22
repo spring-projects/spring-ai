@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.MongoDBAtlasVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -32,13 +32,13 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 @AutoConfiguration(after = MongoDataAutoConfiguration.class)
-@ConditionalOnClass({ MongoDBAtlasVectorStore.class, EmbeddingClient.class, MongoTemplate.class })
+@ConditionalOnClass({ MongoDBAtlasVectorStore.class, EmbeddingModel.class, MongoTemplate.class })
 @EnableConfigurationProperties(MongoDBAtlasVectorStoreProperties.class)
 public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient,
+	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBAtlasVectorStoreProperties properties) {
 
 		var builder = MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder();
@@ -54,7 +54,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 		}
 		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
 
-		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient, config);
+		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config);
 	}
 
 }

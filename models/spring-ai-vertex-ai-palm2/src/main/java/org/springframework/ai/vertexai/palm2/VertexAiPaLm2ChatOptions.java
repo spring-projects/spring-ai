@@ -127,4 +127,13 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 		this.topK = topK;
 	}
 
+	public static VertexAiPaLm2ChatOptions fromOptions(VertexAiPaLm2ChatOptions fromOptions) {
+		return VertexAiPaLm2ChatOptions.builder()
+			.withTemperature(fromOptions.getTemperature())
+			.withCandidateCount(fromOptions.getCandidateCount())
+			.withTopP(fromOptions.getTopP())
+			.withTopK(fromOptions.getTopK())
+			.build();
+	}
+
 }

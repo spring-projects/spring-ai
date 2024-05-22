@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.redis;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  */
 @AutoConfiguration
-@ConditionalOnClass({ RedisVectorStore.class, EmbeddingClient.class })
+@ConditionalOnClass({ RedisVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties(RedisVectorStoreProperties.class)
 public class RedisVectorStoreAutoConfiguration {
 
@@ -41,7 +41,7 @@ public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore vectorStore(EmbeddingClient embeddingClient, RedisVectorStoreProperties properties,
+	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
 			RedisConnectionDetails redisConnectionDetails) {
 
 		var config = RedisVectorStoreConfig.builder()
@@ -50,7 +50,7 @@ public class RedisVectorStoreAutoConfiguration {
 			.withPrefix(properties.getPrefix())
 			.build();
 
-		return new RedisVectorStore(config, embeddingClient);
+		return new RedisVectorStore(config, embeddingModel);
 	}
 
 	private static class PropertiesRedisConnectionDetails implements RedisConnectionDetails {

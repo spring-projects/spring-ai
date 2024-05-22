@@ -33,7 +33,7 @@ public class WatsonxAiChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai.chat";
 
 	/**
-	 * Enable Watsonx.AI chat client.
+	 * Enable Watsonx.AI chat model.
 	 */
 	private boolean enabled = true;
 
