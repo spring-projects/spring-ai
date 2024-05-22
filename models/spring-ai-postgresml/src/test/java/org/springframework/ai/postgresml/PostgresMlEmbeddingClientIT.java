@@ -21,17 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingClient.VectorType;
-
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -40,6 +33,10 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingClient.VectorType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -55,13 +52,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest(properties = "logging.level.sql=TRACE")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Disabled("Disabled from automatic execution, as it requires an excessive amount of memory (over 9GB)!")
+// @Disabled("Disabled from automatic execution, as it requires an excessive amount of
+// memory (over 9GB)!")
 class PostgresMlEmbeddingClientIT {
 
 	@Container
 	@ServiceConnection
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.8.1").asCompatibleSubstituteFor("postgres"))
+			DockerImageName.parse("ghcr.io/postgresml/postgresml:2.8.2").asCompatibleSubstituteFor("postgres"))
 		.withCommand("sleep", "infinity")
 		.withLabel("org.springframework.boot.service-connection", "postgres")
 		.withUsername("postgresml")
@@ -73,9 +71,11 @@ class PostgresMlEmbeddingClientIT {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
-	@AfterEach
+	@BeforeEach
 	void dropPgmlExtension() {
 		this.jdbcTemplate.execute("DROP EXTENSION IF EXISTS pgml");
+		this.jdbcTemplate.execute("DROP EXTENSION IF EXISTS hstore");
+		this.jdbcTemplate.execute("DROP EXTENSION IF EXISTS vector");
 	}
 
 	@Test
@@ -94,7 +94,8 @@ class PostgresMlEmbeddingClientIT {
 				PostgresMlEmbeddingOptions.builder()
 					.withTransformer("distilbert-base-uncased")
 					.withVectorType(PostgresMlEmbeddingClient.VectorType.PG_VECTOR)
-					.build());
+					.build(),
+				false);
 		embeddingClient.afterPropertiesSet();
 
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
@@ -105,7 +106,7 @@ class PostgresMlEmbeddingClientIT {
 	@Test
 	void embedWithDifferentModel() {
 		PostgresMlEmbeddingClient embeddingClient = new PostgresMlEmbeddingClient(this.jdbcTemplate,
-				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build());
+				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build(), false);
 		embeddingClient.afterPropertiesSet();
 
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
@@ -121,7 +122,8 @@ class PostgresMlEmbeddingClientIT {
 					.withVectorType(PostgresMlEmbeddingClient.VectorType.PG_ARRAY)
 					.withKwargs(Map.of("device", "cpu"))
 					.withMetadataMode(MetadataMode.EMBED)
-					.build());
+					.build(),
+				false);
 		embeddingClient.afterPropertiesSet();
 
 		List<Double> embed = embeddingClient.embed(new Document("Hello World!"));
@@ -136,7 +138,8 @@ class PostgresMlEmbeddingClientIT {
 				PostgresMlEmbeddingOptions.builder()
 					.withTransformer("distilbert-base-uncased")
 					.withVectorType(VectorType.valueOf(vectorType))
-					.build());
+					.build(),
+				false);
 		embeddingClient.afterPropertiesSet();
 
 		EmbeddingResponse embeddingResponse = embeddingClient
@@ -161,7 +164,8 @@ class PostgresMlEmbeddingClientIT {
 				PostgresMlEmbeddingOptions.builder()
 					.withTransformer("distilbert-base-uncased")
 					.withVectorType(VectorType.PG_VECTOR)
-					.build());
+					.build(),
+				false);
 		embeddingClient.afterPropertiesSet();
 
 		var request1 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"), EmbeddingOptions.EMPTY);
