@@ -16,11 +16,13 @@
 package org.springframework.ai.autoconfigure.vectorstore.qdrant;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 public class QdrantVectorStorePropertiesTests {
 
@@ -28,7 +30,7 @@ public class QdrantVectorStorePropertiesTests {
 	public void defaultValues() {
 		var props = new QdrantVectorStoreProperties();
 
-		assertThat(props.getCollectionName()).isNull();
+		assertThat(props.getCollectionName()).isEqualTo(QdrantVectorStore.DEFAULT_COLLECTION_NAME);
 		assertThat(props.getHost()).isEqualTo("localhost");
 		assertThat(props.getPort()).isEqualTo(6334);
 		assertThat(props.isUseTls()).isFalse();

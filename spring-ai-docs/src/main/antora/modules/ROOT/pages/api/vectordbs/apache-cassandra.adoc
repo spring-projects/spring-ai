@@ -57,7 +57,7 @@ Add these dependencies to your project:
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-cassandra</artifactId>
+  <artifactId>spring-ai-cassandra-store</artifactId>
 </dependency>
 ----
 
@@ -67,7 +67,7 @@ Add these dependencies to your project:
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-cassandra-spring-boot-starter</artifactId>
+  <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
 </dependency>
 ----
 

@@ -1,0 +1,117 @@
+= ZhiPuAI Image Generation
+
+
+Spring AI supports CogView, the Image generation model from ZhiPuAI.
+
+== Prerequisites
+
+You will need to create an API with ZhiPuAI to access ZhiPu AI language models.
+
+Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
+The Spring AI project defines a configuration property named `spring.ai.zhipuai.api-key` that you should set to the value of the `API Key` obtained from https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_ZHIPU_AI_API_KEY=<INSERT KEY HERE>
+----
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the ZhiPuAI Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-zhipuai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Image Generation Properties
+
+The prefix `spring.ai.zhipuai.image` is the property prefix that lets you configure the `ImageClient` implementation for ZhiPuAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.zhipuai.image.enabled        | Enable ZhiPuAI image client.  | true
+| spring.ai.zhipuai.image.base-url       | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url |  -
+| spring.ai.zhipuai.image.api-key        | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key |  -
+| spring.ai.zhipuai.image.options.model  | The model to use for image generation.  | cogview-3
+| spring.ai.zhipuai.image.options.user   | A unique identifier representing your end-user, which can help ZhiPuAI to monitor and detect abuse. | -
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.zhipuai` is used as the property prefix that lets you connect to ZhiPuAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.zhipuai.base-url   | The URL to connect to |  https://open.bigmodel.cn/api/paas
+| spring.ai.zhipuai.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the ZhiPuAI Image client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+
+== Runtime Options [[image-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiImageOptions.java[ZhiPuAiImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
+
+On start-up, the default options can be configured with the `ZhiPuAiImageClient(ZhiPuAiImageApi zhiPuAiImageApi)` constructor and the `withDefaultOptions(ZhiPuAiImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.zhipuai.image.options.*` properties described previously.
+
+At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+For example to override the ZhiPuAI specific options such as quality and the number of images to create, use the following code example:
+
+[source,java]
+----
+ImageResponse response = zhiPuAiImageClient.call(
+        new ImagePrompt("A light cream colored mini golden doodle",
+        ZhiPuAiImageOptions.builder()
+                .withQuality("hd")
+                .withN(4)
+                .withHeight(1024)
+                .withWidth(1024).build())
+
+);
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiImageOptions.java[ZhiPuAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].

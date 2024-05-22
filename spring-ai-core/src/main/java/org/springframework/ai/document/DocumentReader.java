@@ -20,4 +20,8 @@ import java.util.function.Supplier;
 
 public interface DocumentReader extends Supplier<List<Document>> {
 
+	default List<Document> read() {
+		return get();
+	}
+
 }

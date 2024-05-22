@@ -15,9 +15,10 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.qdrant;
 
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QdrantGrpcClient;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
-import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore.QdrantVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -42,21 +43,25 @@ public class QdrantVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties,
+	public QdrantClient qdrantClient(QdrantVectorStoreProperties properties,
 			QdrantConnectionDetails connectionDetails) {
+		QdrantGrpcClient.Builder grpcClientBuilder = QdrantGrpcClient.newBuilder(connectionDetails.getHost(),
+				connectionDetails.getPort(), properties.isUseTls());
 
-		var config = QdrantVectorStoreConfig.builder()
-			.withCollectionName(properties.getCollectionName())
-			.withHost(connectionDetails.getHost())
-			.withPort(connectionDetails.getPort())
-			.withTls(properties.isUseTls())
-			.withApiKey(properties.getApiKey())
-			.build();
-
-		return new QdrantVectorStore(config, embeddingClient);
+		if (properties.getApiKey() != null) {
+			grpcClientBuilder.withApiKey(properties.getApiKey());
+		}
+		return new QdrantClient(grpcClientBuilder.build());
 	}
 
-	private static class PropertiesQdrantConnectionDetails implements QdrantConnectionDetails {
+	@Bean
+	@ConditionalOnMissingBean
+	public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantVectorStoreProperties properties,
+			QdrantClient qdrantClient) {
+		return new QdrantVectorStore(qdrantClient, properties.getCollectionName(), embeddingClient);
+	}
+
+	static class PropertiesQdrantConnectionDetails implements QdrantConnectionDetails {
 
 		private final QdrantVectorStoreProperties properties;
 

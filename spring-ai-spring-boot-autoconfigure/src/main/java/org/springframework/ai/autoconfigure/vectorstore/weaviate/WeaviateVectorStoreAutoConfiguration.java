@@ -15,6 +15,10 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
+import io.weaviate.client.Config;
+import io.weaviate.client.WeaviateAuthClient;
+import io.weaviate.client.WeaviateClient;
+import io.weaviate.client.v1.auth.exception.AuthException;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.vectorstore.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
@@ -42,14 +46,24 @@ public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateVectorStoreProperties properties,
+	public WeaviateClient weaviateClient(WeaviateVectorStoreProperties properties,
 			WeaviateConnectionDetails connectionDetails) {
+		try {
+			return WeaviateAuthClient.apiKey(
+					new Config(properties.getScheme(), connectionDetails.getHost(), properties.getHeaders()),
+					properties.getApiKey());
+		}
+		catch (AuthException e) {
+			throw new IllegalArgumentException("WeaviateClient could not be created.", e);
+		}
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateClient weaviateClient,
+			WeaviateVectorStoreProperties properties) {
 
 		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-			.withScheme(properties.getScheme())
-			.withApiKey(properties.getApiKey())
-			.withHost(connectionDetails.getHost())
-			.withHeaders(properties.getHeaders())
 			.withObjectClass(properties.getObjectClass())
 			.withFilterableMetadataFields(properties.getFilterField()
 				.entrySet()
@@ -58,10 +72,10 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
-		return new WeaviateVectorStore(configBuilder.build(), embeddingClient);
+		return new WeaviateVectorStore(configBuilder.build(), embeddingClient, weaviateClient);
 	}
 
-	private static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {
+	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {
 
 		private final WeaviateVectorStoreProperties properties;
 

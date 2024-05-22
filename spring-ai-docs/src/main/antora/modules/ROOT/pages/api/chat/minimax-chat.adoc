@@ -1,0 +1,251 @@
+= MiniMax Chat
+
+Spring AI supports the various AI language models from MiniMax. You can interact with MiniMax language models and create a multilingual conversational assistant based on MiniMax models.
+
+== Prerequisites
+
+You will need to create an API with MiniMax to access MiniMax language models.
+
+Create an account at https://www.minimaxi.com/login[MiniMax registration page] and generate the token on the https://www.minimaxi.com/user-center/basic-information/interface-key[API Keys page].
+The Spring AI project defines a configuration property named `spring.ai.minimax.api-key` that you should set to the value of the `API Key` obtained from https://www.minimaxi.com/user-center/basic-information/interface-key[API Keys page].
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_MINIMAX_API_KEY=<INSERT KEY HERE>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the MiniMax Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-minimax-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-minimax-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the MiniMax Chat client.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.minimax` is used as the property prefix that lets you connect to MiniMax.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.minimax.base-url   | The URL to connect to |  https://api.minimax.chat
+| spring.ai.minimax.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+The prefix `spring.ai.minimax.chat` is the property prefix that lets you configure the chat client implementation for MiniMax.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.minimax.chat.enabled | Enable MiniMax chat client.  | true
+| spring.ai.minimax.chat.base-url | Optional overrides the spring.ai.minimax.base-url to provide chat specific url |  https://api.minimax.chat
+| spring.ai.minimax.chat.api-key | Optional overrides the spring.ai.minimax.api-key to provide chat specific api-key |  -
+| spring.ai.minimax.chat.options.model | This is the MiniMax Chat model to use | `abab5.5-chat` (the `abab5.5s-chat`, `abab5.5-chat`, and `abab6-chat` point to the latest model versions)
+| spring.ai.minimax.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.minimax.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
+| spring.ai.minimax.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 1.0
+| spring.ai.minimax.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Default value is 1 and cannot be greater than 5. Specifically, when the temperature is very small and close to 0, we can only return 1 result. If n is already set and>1 at this time, service will return an illegal input parameter (invalid_request_error) | 1
+| spring.ai.minimax.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. |  0.0f
+| spring.ai.minimax.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
+| spring.ai.minimax.chat.options.stop | The model will stop generating characters specified by stop, and currently only supports a single stop word in the format of ["stop_word1"] | -
+|====
+
+NOTE: You can override the common `spring.ai.minimax.base-url` and `spring.ai.minimax.api-key` for the `ChatClient` implementations.
+The `spring.ai.minimax.chat.base-url` and `spring.ai.minimax.chat.api-key` properties if set take precedence over the common properties.
+This is useful if you want to use different MiniMax accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.minimax.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatOptions.java[MiniMaxChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `MiniMaxChatClient(api, options)` constructor or the `spring.ai.minimax.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatClient.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        MiniMaxChatOptions.builder()
+            .withModel(MiniMaxApi.ChatModel.GLM_3_Turbo.getValue())
+            .withTemperature(0.5f)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatOptions.java[MiniMaxChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-minimax-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the MiniMax Chat client:
+
+[source,application.properties]
+----
+spring.ai.minimax.api-key=YOUR_API_KEY
+spring.ai.minimax.chat.options.model=glm-3-turbo
+spring.ai.minimax.chat.options.temperature=0.7
+----
+
+TIP: replace the `api-key` with your MiniMax credentials.
+
+This will create a `MiniMaxChatClient` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final MiniMaxChatClient chatClient;
+
+    @Autowired
+    public ChatController(MiniMaxChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var prompt = new Prompt(new UserMessage(message));
+        return chatClient.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatClient.java[MiniMaxChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the MiniMax service.
+
+Add the `spring-ai-minimax` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-minimax</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-minimax'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `MiniMaxChatClient` and use it for text generations:
+
+[source,java]
+----
+var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
+
+var chatClient = new MiniMaxChatClient(miniMaxApi, MiniMaxChatOptions.builder()
+                .withModel(MiniMaxApi.ChatModel.GLM_3_Turbo.getValue())
+                .withTemperature(0.4f)
+                .withMaxTokens(200)
+                .build());
+
+ChatResponse response = chatClient.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> streamResponse = chatClient.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `MiniMaxChatOptions` provides the configuration information for the chat requests.
+The `MiniMaxChatOptions.Builder` is fluent options builder.
+
+=== Low-level MiniMaxApi Client [[low-level-api]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi] provides is lightweight Java client for link:https://www.minimaxi.com/document/guides/chat-model/V2[MiniMax API].
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+MiniMaxApi miniMaxApi =
+    new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
+
+ChatCompletionMessage chatCompletionMessage =
+    new ChatCompletionMessage("Hello world", Role.USER);
+
+// Sync request
+ResponseEntity<ChatCompletion> response = miniMaxApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.GLM_3_Turbo.getValue(), 0.7f, false));
+
+// Streaming request
+Flux<ChatCompletionChunk> streamResponse = miniMaxApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.GLM_3_Turbo.getValue(), 0.7f, true));
+----
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi.java]'s JavaDoc for further information.
+
+==== MiniMaxApi Samples
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/test/java/org/springframework/ai/minimax/api/MiniMaxApiIT.java[MiniMaxApiIT.java] test provides some general examples how to use the lightweight library.
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/test/java/org/springframework/ai/minimax/api/MiniMaxApiToolFunctionCallIT.java.java[MiniMaxApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.

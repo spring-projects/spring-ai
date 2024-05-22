@@ -20,8 +20,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.ibm.cloud.sdk.core.security.IamAuthenticator;
+import com.ibm.cloud.sdk.core.security.IamToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.retry.RetryUtils;
@@ -50,6 +53,7 @@ public class WatsonxAiApi {
     private final String streamEndpoint;
     private final String textEndpoint;
     private final String projectId;
+    private IamToken token;
 
     /**
      * Create a new chat api.
@@ -72,6 +76,7 @@ public class WatsonxAiApi {
         this.textEndpoint = textEndpoint;
         this.projectId = projectId;
         this.iamAuthenticator = IamAuthenticator.fromConfiguration(Map.of("APIKEY", IAMToken));
+        this.token = this.iamAuthenticator.requestToken();
 
         Consumer<HttpHeaders> defaultHeaders = headers -> {
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -88,27 +93,33 @@ public class WatsonxAiApi {
             .build();
     }
 
+    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
     public ResponseEntity<WatsonxAiResponse> generate(WatsonxAiRequest watsonxAiRequest) {
         Assert.notNull(watsonxAiRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
 
-        String bearer = this.iamAuthenticator.requestToken().getAccessToken();
+        if(this.token.needsRefresh()) {
+            this.token = this.iamAuthenticator.requestToken();
+        }
 
         return this.restClient.post()
                 .uri(this.textEndpoint)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
                 .body(watsonxAiRequest.withProjectId(projectId))
                 .retrieve()
                 .toEntity(WatsonxAiResponse.class);
     }
 
+    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
     public Flux<WatsonxAiResponse> generateStreaming(WatsonxAiRequest watsonxAiRequest) {
         Assert.notNull(watsonxAiRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
 
-        String bearer = this.iamAuthenticator.requestToken().getAccessToken();
+        if(this.token.needsRefresh()) {
+            this.token = this.iamAuthenticator.requestToken();
+        }
 
         return this.webClient.post()
                 .uri(this.streamEndpoint)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
                 .bodyValue(watsonxAiRequest.withProjectId(this.projectId))
                 .retrieve()
                 .bodyToFlux(WatsonxAiResponse.class)
