@@ -74,13 +74,13 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
-The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the chat client implementation for Claude.
+The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that configures the chat model implementation for Claude.
 
 [cols="2,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat client. Disabled by default | false
+| spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat model. Disabled by default | false
 | spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatModel] for the supported models.  | anthropic.claude-v2
 | spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8
 | spring.ai.bedrock.anthropic.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
@@ -100,14 +100,14 @@ TIP: All properties prefixed with `spring.ai.bedrock.anthropic.chat.options` can
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] provides model configurations, such as temperature, topK, topP, etc.
 
-On start-up, the default options can be configured with the `BedrockAnthropicChatClient(api, options)` constructor or the `spring.ai.bedrock.anthropic.chat.options.*` properties.
+On start-up, the default options can be configured with the `BedrockAnthropicChatModel(api, options)` constructor or the `spring.ai.bedrock.anthropic.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AnthropicChatOptions.builder()
@@ -122,7 +122,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Anthropic chat model:
 
 [source]
 ----
@@ -138,37 +138,37 @@ spring.ai.bedrock.anthropic.chat.options.top-k=15
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
 
-This will create a `BedrockAnthropicChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `BedrockAnthropicChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final BedrockAnthropicChatClient chatClient;
+    private final BedrockAnthropicChatModel chatModel;
 
     @Autowired
-    public ChatController(BedrockAnthropicChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(BedrockAnthropicChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java[BedrockAnthropicChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatModel.java[BedrockAnthropicChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Bedrock Anthropic service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -191,7 +191,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatClient.java[BedrockAnthropicChatClient] and use it for text generations:
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatModel.java[BedrockAnthropicChatModel] and use it for text generations:
 
 [source,java]
 ----
@@ -202,7 +202,7 @@ AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockAnthropicChatClient chatClient = new BedrockAnthropicChatClient(anthropicApi,
+BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(anthropicApi,
     AnthropicChatOptions.builder()
         .withTemperature(0.6f)
         .withTopK(10)
@@ -211,11 +211,11 @@ BedrockAnthropicChatClient chatClient = new BedrockAnthropicChatClient(anthropic
         .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
         .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

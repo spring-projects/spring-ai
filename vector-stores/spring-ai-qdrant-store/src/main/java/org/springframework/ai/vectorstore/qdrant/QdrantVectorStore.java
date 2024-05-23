@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.InitializingBean;
@@ -61,7 +61,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final QdrantClient qdrantClient;
 
@@ -133,27 +133,26 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 	/**
 	 * Constructs a new QdrantVectorStore.
 	 * @param config The configuration for the store.
-	 * @param embeddingClient The client for embedding operations.
+	 * @param embeddingModel The client for embedding operations.
 	 * @deprecated since 1.0.0 in favor of {@link QdrantVectorStore}.
 	 */
 	@Deprecated(since = "1.0.0", forRemoval = true)
-	public QdrantVectorStore(QdrantClient qdrantClient, QdrantVectorStoreConfig config,
-			EmbeddingClient embeddingClient) {
-		this(qdrantClient, config.collectionName, embeddingClient);
+	public QdrantVectorStore(QdrantClient qdrantClient, QdrantVectorStoreConfig config, EmbeddingModel embeddingModel) {
+		this(qdrantClient, config.collectionName, embeddingModel);
 	}
 
 	/**
 	 * Constructs a new QdrantVectorStore.
 	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
 	 * @param collectionName The name of the collection to use in Qdrant.
-	 * @param embeddingClient The client for embedding operations.
+	 * @param embeddingModel The client for embedding operations.
 	 */
-	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingClient embeddingClient) {
+	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel) {
 		Assert.notNull(qdrantClient, "QdrantClient must not be null");
 		Assert.notNull(collectionName, "collectionName must not be null");
-		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
+		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.collectionName = collectionName;
 		this.qdrantClient = qdrantClient;
 	}
@@ -167,7 +166,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		try {
 			List<PointStruct> points = documents.stream().map(document -> {
 				// Compute and assign an embedding to the document.
-				document.setEmbedding(this.embeddingClient.embed(document));
+				document.setEmbedding(this.embeddingModel.embed(document));
 
 				return PointStruct.newBuilder()
 					.setId(id(UUID.fromString(document.getId())))
@@ -215,7 +214,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 					? this.filterExpressionConverter.convertExpression(request.getFilterExpression())
 					: Filter.getDefaultInstance();
 
-			List<Double> queryEmbedding = this.embeddingClient.embed(request.getQuery());
+			List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 			var searchPoints = SearchPoints.newBuilder()
 				.setCollectionName(this.collectionName)
@@ -290,7 +289,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		if (!isCollectionExists()) {
 			var vectorParams = VectorParams.newBuilder()
 				.setDistance(Distance.Cosine)
-				.setSize(this.embeddingClient.dimensions())
+				.setSize(this.embeddingModel.dimensions())
 				.build();
 			this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
 		}

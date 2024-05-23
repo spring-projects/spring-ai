@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient.ChatModel;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
@@ -78,10 +78,10 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	private @JsonProperty("modelName") String model;
 
 	/**
-	 * Tool Function Callbacks to register with the ChatClient.
+	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
-	 * from the registry to be used by the ChatClient chat completion requests.
+	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@NestedConfigurationProperty
 	@JsonIgnore
@@ -334,6 +334,20 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		else if (!functions.equals(other.functions))
 			return false;
 		return true;
+	}
+
+	public static VertexAiGeminiChatOptions fromOptions(VertexAiGeminiChatOptions fromOptions) {
+		VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
+		options.setStopSequences(fromOptions.getStopSequences());
+		options.setTemperature(fromOptions.getTemperature());
+		options.setTopP(fromOptions.getTopP());
+		options.setTopK(fromOptions.getTopK());
+		options.setCandidateCount(fromOptions.getCandidateCount());
+		options.setMaxOutputTokens(fromOptions.getMaxOutputTokens());
+		options.setModel(fromOptions.getModel());
+		options.setFunctionCallbacks(fromOptions.getFunctionCallbacks());
+		options.setFunctions(fromOptions.getFunctions());
+		return options;
 	}
 
 }

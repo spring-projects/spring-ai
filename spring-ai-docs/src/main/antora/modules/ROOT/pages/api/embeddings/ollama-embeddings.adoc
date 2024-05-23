@@ -1,7 +1,7 @@
 = Ollama Embeddings
 
 With https://ollama.ai/[Ollama] you can run various Large Language Models (LLMs) locally and generate embeddings from them.
-Spring AI supports the Ollama text embeddings with `OllamaEmbeddingClient`.
+Spring AI supports the Ollama text embeddings with `OllamaEmbeddingModel`.
 
 An embedding is a vector (list) of floating point numbers.
 The distance between two vectors measures their relatedness.
@@ -47,7 +47,7 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 The `spring.ai.ollama.embedding.options.*` properties are used to configure the default options used for all embedding requests.
-(It is used as `OllamaEmbeddingClient#withDefaultOptions()` instance).
+(It is used as `OllamaEmbeddingModel#withDefaultOptions()` instance).
 
 === Embedding Properties
 
@@ -60,13 +60,13 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 | spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
 |====
 
-The prefix `spring.ai.ollama.embedding.options` is the property prefix that configures the `EmbeddingClient` implementation for Ollama.
+The prefix `spring.ai.ollama.embedding.options` is the property prefix that configures the `EmbeddingModel` implementation for Ollama.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.ollama.embedding.enabled      | Enable Ollama embedding client. | true
+| spring.ai.ollama.embedding.enabled      | Enable Ollama embedding model. | true
 | spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
 |====
 
@@ -115,14 +115,14 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-olla
 
 The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
 
-At start-time use the `OllamaEmbeddingClient#withDefaultOptions()` to configure the  default options used for all embedding requests.
+At start-time use the `OllamaEmbeddingModel#withDefaultOptions()` to configure the  default options used for all embedding requests.
 At run-time you can override the default options, using a `OllamaOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
+EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.create()
             .withModel("Different-Embedding-Model-Deployment-Name"));
@@ -130,24 +130,24 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
 
 == Sample Controller
 
-This will create a `EmbeddingClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
 
 [source,java]
 ----
 @RestController
 public class EmbeddingController {
 
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingModel;
 
     @Autowired
-    public EmbeddingController(EmbeddingClient embeddingClient) {
-        this.embeddingClient = embeddingClient;
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     @GetMapping("/ai/embedding")
     public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
         return Map.of("embedding", embeddingResponse);
     }
 }
@@ -155,7 +155,7 @@ public class EmbeddingController {
 
 == Manual Configuration
 
-If you are not using Spring Boot, you can manually configure the `OllamaEmbeddingClient`.
+If you are not using Spring Boot, you can manually configure the `OllamaEmbeddingModel`.
 For this add the spring-ai-ollama dependency to your project’s Maven pom.xml file:
 
 [source,xml]
@@ -177,21 +177,21 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-NOTE: The `spring-ai-ollama` dependency provides access also to the `OllamaChatClient`.
-For more information about the `OllamaChatClient` refer to the link:../chat/ollama-chat.html[Ollama Chat Client] section.
+NOTE: The `spring-ai-ollama` dependency provides access also to the `OllamaChatModel`.
+For more information about the `OllamaChatModel` refer to the link:../chat/ollama-chat.html[Ollama Chat Client] section.
 
-Next, create an `OllamaEmbeddingClient` instance and use it to compute the similarity between two input texts:
+Next, create an `OllamaEmbeddingModel` instance and use it to compute the similarity between two input texts:
 
 [source,java]
 ----
 var ollamaApi = new OllamaApi();
 
-var embeddingClient = new OllamaEmbeddingClient(ollamaApi)
+var embeddingModel = new OllamaEmbeddingModel(ollamaApi)
     .withDefaultOptions(OllamaOptions.create()
 			.withModel(OllamaOptions.DEFAULT_MODEL)
             .toMap());
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

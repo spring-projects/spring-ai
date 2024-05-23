@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -706,7 +707,7 @@ public class MistralAiApi {
 	 * <li><b>LARGE</b> - mistral-large-latest (aka mistral-large-2402)</li>
 	 * </ul>
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
 
 		// @formatter:off
 		 TINY("open-mistral-7b"),
@@ -723,6 +724,11 @@ public class MistralAiApi {
 		}
 
 		public String getValue() {
+			return this.value;
+		}
+
+		@Override
+		public String getModelName() {
 			return this.value;
 		}
 

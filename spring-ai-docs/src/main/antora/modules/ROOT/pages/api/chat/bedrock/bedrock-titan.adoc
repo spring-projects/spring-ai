@@ -65,13 +65,13 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
-The prefix `spring.ai.bedrock.titan.chat` is the property prefix that configures the chat client implementation for Titan.
+The prefix `spring.ai.bedrock.titan.chat` is the property prefix that configures the chat model implementation for Titan.
 
 [cols="3,4,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.titan.chat.enable | Enable Bedrock Titan chat client. Disabled by default | false
+| spring.ai.bedrock.titan.chat.enable | Enable Bedrock Titan chat model. Disabled by default | false
 | spring.ai.bedrock.titan.chat.model  | The model id to use. See the link:https://github.com/spring-projects/spring-ai/blob/4839a6175cd1ec89498b97d3efb6647022c3c7cb/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/api/TitanChatBedrockApi.java#L220[TitanChatBedrockApi#TitanChatModel] for the supported models.  | amazon.titan-text-lite-v1
 | spring.ai.bedrock.titan.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7
 | spring.ai.bedrock.titan.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
@@ -89,14 +89,14 @@ TIP: All properties prefixed with `spring.ai.bedrock.titan.chat.options` can be 
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatOptions.java[BedrockTitanChatOptions.java] provides model configurations, such as temperature, topP, etc.
 
-On start-up, the default options can be configured with the `BedrockTitanChatClient(api, options)` constructor or the `spring.ai.bedrock.titan.chat.options.*` properties.
+On start-up, the default options can be configured with the `BedrockTitanChatModel(api, options)` constructor or the `spring.ai.bedrock.titan.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         BedrockTitanChatOptions.builder()
@@ -111,7 +111,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Titan Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Titan chat model:
 
 [source]
 ----
@@ -126,37 +126,37 @@ spring.ai.bedrock.titan.chat.options.temperature=0.8
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
 
-This will create a `BedrockTitanChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `BedrockTitanChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final BedrockTitanChatClient chatClient;
+    private final BedrockTitanChatModel chatModel;
 
     @Autowired
-    public ChatController(BedrockTitanChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(BedrockTitanChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatClient.java[BedrockTitanChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the Bedrock Titanic service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatModel.java[BedrockTitanChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Bedrock Titanic service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -179,7 +179,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatClient.java[BedrockTitanChatClient] and use it for text generations:
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanChatModel.java[BedrockTitanChatModel] and use it for text generations:
 
 [source,java]
 ----
@@ -190,18 +190,18 @@ TitanChatBedrockApi titanApi = new TitanChatBedrockApi(
     new ObjectMapper(),
     Duration.ofMillis(1000L));
 
-BedrockTitanChatClient chatClient = new BedrockTitanChatClient(titanApi,
+BedrockTitanChatModel chatModel = new BedrockTitanChatModel(titanApi,
     BedrockTitanChatOptions.builder()
         .withTemperature(0.6f)
         .withTopP(0.8f)
         .withMaxTokenCount(100)
     .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

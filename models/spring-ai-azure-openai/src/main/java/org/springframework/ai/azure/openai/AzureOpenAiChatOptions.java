@@ -127,11 +127,11 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	private String deploymentName;
 
 	/**
-	 * OpenAI Tool Function Callbacks to register with the ChatClient. For Prompt Options
+	 * OpenAI Tool Function Callbacks to register with the ChatModel. For Prompt Options
 	 * the functionCallbacks are automatically enabled for the duration of the prompt
 	 * execution. For Default Options the functionCallbacks are registered but disabled by
 	 * default. Use the enableFunctions to set the functions from the registry to be used
-	 * by the ChatClient chat completion requests.
+	 * by the ChatModel chat completion requests.
 	 */
 	@NestedConfigurationProperty
 	@JsonIgnore
@@ -354,6 +354,24 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 
 	public void setFunctions(Set<String> functions) {
 		this.functions = functions;
+	}
+
+	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
+		return builder().withDeploymentName(fromOptions.getDeploymentName())
+			.withFrequencyPenalty(
+					fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty().floatValue() : null)
+			.withLogitBias(fromOptions.getLogitBias())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withN(fromOptions.getN())
+			.withPresencePenalty(
+					fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty().floatValue() : null)
+			.withStop(fromOptions.getStop())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withUser(fromOptions.getUser())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withFunctions(fromOptions.getFunctions())
+			.build();
 	}
 
 }

@@ -21,16 +21,16 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.ChatModel;
 import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.StreamingChatClient;
+import org.springframework.ai.chat.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.image.ImageClient;
-import org.springframework.ai.openai.OpenAiAudioSpeechClient;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.openai.OpenAiAudioSpeechModel;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -43,19 +43,19 @@ public abstract class AbstractIT {
 	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
 
 	@Autowired
-	protected ChatClient chatClient;
+	protected ChatModel chatModel;
 
 	@Autowired
-	protected StreamingChatClient streamingChatClient;
+	protected StreamingChatModel streamingChatModel;
 
 	@Autowired
-	protected OpenAiAudioTranscriptionClient transcriptionClient;
+	protected OpenAiAudioTranscriptionModel transcriptionModel;
 
 	@Autowired
-	protected OpenAiAudioSpeechClient speechClient;
+	protected OpenAiAudioSpeechModel speechModel;
 
 	@Autowired
-	protected ImageClient imageClient;
+	protected ImageModel imageModel;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;
@@ -85,12 +85,12 @@ public abstract class AbstractIT {
 		}
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		String yesOrNo = chatClient.call(prompt).getResult().getOutput().getContent();
+		String yesOrNo = chatModel.call(prompt).getResult().getOutput().getContent();
 		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
-			String reasonForFailure = chatClient.call(prompt).getResult().getOutput().getContent();
+			String reasonForFailure = chatModel.call(prompt).getResult().getOutput().getContent();
 			fail(reasonForFailure);
 		}
 		else {

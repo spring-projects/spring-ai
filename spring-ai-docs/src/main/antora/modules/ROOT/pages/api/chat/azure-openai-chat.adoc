@@ -88,13 +88,13 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 |====
 
-The prefix `spring.ai.azure.openai.chat` is the property prefix that configures the `ChatClient` implementation for Azure OpenAI.
+The prefix `spring.ai.azure.openai.chat` is the property prefix that configures the `ChatModel` implementation for Azure OpenAI.
 
 [cols="3,5,3"]
 |====
 | Property | Description | Default
 
-| spring.ai.azure.openai.chat.enabled | Enable Azure OpenAI chat client.  | true
+| spring.ai.azure.openai.chat.enabled | Enable Azure OpenAI chat model.  | true
 | spring.ai.azure.openai.chat.options.deployment-name | 	 * In use with Azure, this refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal. It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly.
 Deployments model name to provide as part of this completions request.
  | gpt-35-turbo
@@ -115,14 +115,14 @@ TIP: All properties prefixed with `spring.ai.azure.openai.chat.options` can be o
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `AzureOpenAiChatClient(api, options)` constructor or the `spring.ai.azure.openai.chat.options.*` properties.
+On start-up, the default options can be configured with the `AzureOpenAiChatModel(api, options)` constructor or the `spring.ai.azure.openai.chat.options.*` properties.
 
 At runtime you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AzureOpenAiChatOptions.builder()
@@ -137,7 +137,7 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 
 == Function Calling
 
-You can register custom Java functions with the AzureOpenAiChatClient and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the AzureOpenAiChatModel and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
 
@@ -145,7 +145,7 @@ Read more about xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure 
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-azure-openai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi chat model:
 
 [source,application.properties]
 ----
@@ -157,8 +157,8 @@ spring.ai.azure.openai.chat.options.temperature=0.7
 
 TIP: replace the `api-key` and `endpoint` with your Azure OpenAI credentials.
 
-This will create a `AzureOpenAiChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `AzureOpenAiChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 
 [source,java]
@@ -166,29 +166,29 @@ Here is an example of a simple `@Controller` class that uses the chat client for
 @RestController
 public class ChatController {
 
-    private final AzureOpenAiChatClient chatClient;
+    private final AzureOpenAiChatModel chatModel;
 
     @Autowired
-    public ChatController(AzureOpenAiChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(AzureOpenAiChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatClient.java[AzureOpenAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the link:https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Azure OpenAI Java Client].
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatModel.java[AzureOpenAiChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the link:https://learn.microsoft.com/en-us/java/api/overview/azure/ai-openai-readme?view=azure-java-preview[Azure OpenAI Java Client].
 
 To enable it, add the `spring-ai-azure-openai` dependency to your project's Maven `pom.xml` file:
 [source, xml]
@@ -210,9 +210,9 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatClient`. For more information about the `AzureOpenAiChatClient` refer to the link:../chat/azure-openai-chat.html[Azure OpenAI Chat] section.
+TIP: The `spring-ai-azure-openai` dependency also provide the access to the `AzureOpenAiChatModel`. For more information about the `AzureOpenAiChatModel` refer to the link:../chat/azure-openai-chat.html[Azure OpenAI Chat] section.
 
-Next, create an `AzureOpenAiChatClient` instance and use it to generate text responses:
+Next, create an `AzureOpenAiChatModel` instance and use it to generate text responses:
 
 [source,java]
 ----
@@ -227,13 +227,13 @@ var openAIChatOptions = AzureOpenAiChatOptions.builder()
   .withMaxTokens(200)
   .build();
 
-var chatClient = new AzureOpenAiChatClient(openAIClient, openAIChatOptions);
+var chatModel = new AzureOpenAiChatModel(openAIClient, openAIChatOptions);
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
   new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
   new Prompt("Generate the names of 5 famous pirates."));
 
 ----

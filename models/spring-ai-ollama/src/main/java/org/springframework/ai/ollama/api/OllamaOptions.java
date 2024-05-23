@@ -714,6 +714,43 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
+	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
+		return new OllamaOptions()
+			.withModel(fromOptions.getModel())
+			.withFormat(fromOptions.getFormat())
+			.withKeepAlive(fromOptions.getKeepAlive())
+			.withUseNUMA(fromOptions.getUseNUMA())
+			.withNumCtx(fromOptions.getNumCtx())
+			.withNumBatch(fromOptions.getNumBatch())
+			.withNumGQA(fromOptions.getNumGQA())
+			.withNumGPU(fromOptions.getNumGPU())
+			.withMainGPU(fromOptions.getMainGPU())
+			.withLowVRAM(fromOptions.getLowVRAM())
+			.withF16KV(fromOptions.getF16KV())
+			.withLogitsAll(fromOptions.getLogitsAll())
+			.withVocabOnly(fromOptions.getVocabOnly())
+			.withUseMMap(fromOptions.getUseMMap())
+			.withUseMLock(fromOptions.getUseMLock())
+			.withNumThread(fromOptions.getNumThread())
+			.withNumKeep(fromOptions.getNumKeep())
+			.withSeed(fromOptions.getSeed())
+			.withNumPredict(fromOptions.getNumPredict())
+			.withTopK(fromOptions.getTopK())
+			.withTopP(fromOptions.getTopP())
+			.withTfsZ(fromOptions.getTfsZ())
+			.withTypicalP(fromOptions.getTypicalP())
+			.withRepeatLastN(fromOptions.getRepeatLastN())
+			.withTemperature(fromOptions.getTemperature())
+			.withRepeatPenalty(fromOptions.getRepeatPenalty())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withMirostat(fromOptions.getMirostat())
+			.withMirostatTau(fromOptions.getMirostatTau())
+			.withMirostatEta(fromOptions.getMirostatEta())
+			.withPenalizeNewline(fromOptions.getPenalizeNewline())
+			.withStop(fromOptions.getStop());
+	}
+
 
 	// @formatter:on
 

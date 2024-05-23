@@ -20,7 +20,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingClient;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -48,7 +48,7 @@ class PostgresMlEmbeddingPropertiesTests {
 		assertThat(this.postgresMlProperties).isNotNull();
 		assertThat(this.postgresMlProperties.getOptions().getTransformer()).isEqualTo("abc123");
 		assertThat(this.postgresMlProperties.getOptions().getVectorType())
-			.isEqualTo(PostgresMlEmbeddingClient.VectorType.PG_ARRAY);
+			.isEqualTo(PostgresMlEmbeddingModel.VectorType.PG_ARRAY);
 		assertThat(this.postgresMlProperties.getOptions().getKwargs())
 			.isEqualTo(Map.of("key1", "value1", "key2", "value2"));
 		assertThat(this.postgresMlProperties.getOptions().getMetadataMode()).isEqualTo(MetadataMode.ALL);

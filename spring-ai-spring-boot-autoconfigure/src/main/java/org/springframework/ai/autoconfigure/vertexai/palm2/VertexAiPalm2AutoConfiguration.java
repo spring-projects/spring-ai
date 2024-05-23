@@ -15,8 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.vertexai.palm2;
 
-import org.springframework.ai.vertexai.palm2.VertexAiPaLm2ChatClient;
-import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingClient;
+import org.springframework.ai.vertexai.palm2.VertexAiPaLm2ChatModel;
+import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingModel;
 import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -47,17 +47,17 @@ public class VertexAiPalm2AutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = VertexAiPlam2ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public VertexAiPaLm2ChatClient vertexAiChatClient(VertexAiPaLm2Api vertexAiApi,
+	public VertexAiPaLm2ChatModel vertexAiChatModel(VertexAiPaLm2Api vertexAiApi,
 			VertexAiPlam2ChatProperties chatProperties) {
-		return new VertexAiPaLm2ChatClient(vertexAiApi, chatProperties.getOptions());
+		return new VertexAiPaLm2ChatModel(vertexAiApi, chatProperties.getOptions());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = VertexAiPalm2EmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public VertexAiPaLm2EmbeddingClient vertexAiEmbeddingClient(VertexAiPaLm2Api vertexAiApi) {
-		return new VertexAiPaLm2EmbeddingClient(vertexAiApi);
+	public VertexAiPaLm2EmbeddingModel vertexAiEmbeddingModel(VertexAiPaLm2Api vertexAiApi) {
+		return new VertexAiPaLm2EmbeddingModel(vertexAiApi);
 	}
 
 }

@@ -48,7 +48,7 @@ var userMessage = new UserMessage(
 	"Explain what do you see in this picture?", // content
 	List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData))); // media
 
-ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
 and produce a response like:

@@ -29,7 +29,7 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
-	 * Enable OpenAI chat client.
+	 * Enable OpenAI chat model.
 	 */
 	private boolean enabled = true;
 

@@ -61,13 +61,13 @@ The prefix `spring.ai.vertex.ai` is used as the property prefix that lets you co
 | spring.ai.vertex.ai.api-key    | The API Key           |  -
 |====
 
-The prefix `spring.ai.vertex.ai.chat` is the property prefix that lets you configure the chat client implementation for VertexAI Chat.
+The prefix `spring.ai.vertex.ai.chat` is the property prefix that lets you configure the chat model implementation for VertexAI Chat.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.vertex.ai.chat.enabled | Enable Vertex AI PaLM API Chat client. | true
+| spring.ai.vertex.ai.chat.enabled | Enable Vertex AI PaLM API chat model. | true
 | spring.ai.vertex.ai.chat.model | This is the https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/text-chat[Vertex Chat model] to use | chat-bison-001
 | spring.ai.vertex.ai.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.7
 | spring.ai.vertex.ai.chat.options.topK | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | 20
@@ -81,14 +81,14 @@ TIP: All properties prefixed with `spring.ai.vertex.ai.chat.options` can be over
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-palm2/src/main/java/org/springframework/ai/vertexai/palm2/VertexAiPaLm2ChatOptions.java[VertexAiPaLm2ChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
-On start-up, the default options can be configured with the `VertexAiPaLm2ChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
+On start-up, the default options can be configured with the `VertexAiPaLm2ChatModel(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         VertexAiPaLm2ChatOptions.builder()
@@ -103,7 +103,7 @@ TIP: In addition to the model specific `VertexAiPaLm2ChatOptions` you can use a 
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
 
 [source,application.properties]
 ----
@@ -114,37 +114,37 @@ spring.ai.vertex.ai.chat.options.temperature=0.5
 
 TIP: replace the `api-key` with your VertexAI credentials.
 
-This will create a `VertexAiPaLm2ChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `VertexAiPaLm2ChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final VertexAiPaLm2ChatClient chatClient;
+    private final VertexAiPaLm2ChatModel chatModel;
 
     @Autowired
-    public ChatController(VertexAiPaLm2ChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(VertexAiPaLm2ChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/vertexai/paml2/VertexAiPaLm2ChatClient.java[VertexAiPaLm2ChatClient] implements the `ChatClient` and uses the <<low-level-api>> to connect to the VertexAI service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/vertexai/paml2/VertexAiPaLm2ChatModel.java[VertexAiPaLm2ChatModel] implements the `ChatModel` and uses the <<low-level-api>> to connect to the VertexAI service.
 
 Add the `spring-ai-vertex-ai-palm2` dependency to your project's Maven `pom.xml` file:
 
@@ -167,18 +167,18 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `VertexAiPaLm2ChatClient` and use it for text generations:
+Next, create a `VertexAiPaLm2ChatModel` and use it for text generations:
 
 [source,java]
 ----
 VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(< YOUR PALM_API_KEY>);
 
-var chatClient = new VertexAiPaLm2ChatClient(vertexAiApi,
+var chatModel = new VertexAiPaLm2ChatModel(vertexAiApi,
     VertexAiPaLm2ChatOptions.builder()
         .withTemperature(0.4)
     .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

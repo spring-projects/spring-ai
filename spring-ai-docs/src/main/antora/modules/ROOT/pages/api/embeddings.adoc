@@ -1,23 +1,23 @@
-[[EmbeddingClient]]
-= Embeddings API
+[[EmbeddingModel]]
+= Embeddings Model API
 
-The `EmbeddingClient` interface is designed for straightforward integration with embedding models in AI and machine learning.
+The `EmbeddingModel` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
 These embeddings are crucial for various tasks such as semantic analysis and text classification.
 
-The design of the EmbeddingClient interface centers around two primary goals:
+The design of the EmbeddingModel interface centers around two primary goals:
 
 * *Portability*: This interface ensures easy adaptability across various embedding models.
 It allows developers to switch between different embedding techniques or models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability.
 
-* *Simplicity*: EmbeddingClient simplifies the process of converting text to embeddings.
+* *Simplicity*: EmbeddingModel simplifies the process of converting text to embeddings.
 By providing straightforward methods like `embed(String text)` and `embed(Document document)`, it takes the complexity out of dealing with raw text data and embedding algorithms. This design choice makes it easier for developers, especially those new to AI, to utilize embeddings in their applications without delving deep into the underlying mechanics.
 
 == API Overview
 
-The Embedding API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
-As such, the EmbeddingClient interface extends the `ModelClient` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
+The Embedding Model API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
+As such, the EmbeddingModel interface extends the `Model` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
 
 The Embedding API in turn is used by higher-level components to implement Embedding Clients for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
 
@@ -25,13 +25,13 @@ Following diagram illustrates the Embedding API and its relationship with the Sp
 
 image:embeddings-api.jpg[title=Embeddings API,align=center,width=900]
 
-=== EmbeddingClient
+=== EmbeddingModel
 
-This section provides a guide to the `EmbeddingClient` interface and associated classes.
+This section provides a guide to the `EmbeddingModel` interface and associated classes.
 
 [source,java]
 ----
-public interface EmbeddingClient extends ModelClient<EmbeddingRequest, EmbeddingResponse> {
+public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingResponse> {
 
 	@Override
 	EmbeddingResponse call(EmbeddingRequest request);
@@ -148,7 +148,7 @@ public class Embedding implements ModelResult<List<Double>> {
 
 == Available Implementations [[available-implementations]]
 
-Internally the various `EmbeddingClient` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingClient` implementations:
+Internally the various `EmbeddingModel` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingModel` implementations:
 
 * xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
 * xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]

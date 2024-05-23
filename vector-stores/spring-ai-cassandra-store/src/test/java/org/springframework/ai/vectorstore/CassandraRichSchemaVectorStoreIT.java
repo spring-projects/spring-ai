@@ -43,8 +43,8 @@ import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -197,7 +197,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 			try (CassandraVectorStore store = new CassandraVectorStore(
 					storeBuilder(context, List.of()).withFixedThreadPoolExecutorSize(nThreads).build(),
-					context.getBean(EmbeddingClient.class))) {
+					context.getBean(EmbeddingModel.class))) {
 
 				var executor = Executors.newFixedThreadPool((int) (nThreads * 1.2));
 				for (int k = 0; k < rounds; ++k) {
@@ -489,9 +489,9 @@ class CassandraRichSchemaVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
+		public EmbeddingModel embeddingModel() {
 			// default is ONNX all-MiniLM-L6-v2
-			return new TransformersEmbeddingClient();
+			return new TransformersEmbeddingModel();
 		}
 
 		@Bean
@@ -524,7 +524,7 @@ class CassandraRichSchemaVectorStoreIT {
 		if (dropKeyspaceFirst) {
 			conf.dropKeyspace();
 		}
-		return new StoreWrapper(new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class)), conf);
+		return new StoreWrapper(new CassandraVectorStore(conf, context.getBean(EmbeddingModel.class)), conf);
 	}
 
 	static CassandraVectorStoreConfig.Builder storeBuilder(ApplicationContext context,

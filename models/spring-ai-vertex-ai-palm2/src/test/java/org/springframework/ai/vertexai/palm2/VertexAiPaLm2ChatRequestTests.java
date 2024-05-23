@@ -29,12 +29,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class VertexAiPaLm2ChatRequestTests {
 
-	VertexAiPaLm2ChatClient client = new VertexAiPaLm2ChatClient(new VertexAiPaLm2Api("bla"));
+	VertexAiPaLm2ChatModel chatModel = new VertexAiPaLm2ChatModel(new VertexAiPaLm2Api("bla"));
 
 	@Test
 	public void createRequestWithDefaultOptions() {
 
-		var request = client.createRequest(new Prompt("Test message content"));
+		var request = chatModel.createRequest(new Prompt("Test message content"));
 
 		assertThat(request.prompt().messages()).hasSize(1);
 
@@ -55,7 +55,7 @@ public class VertexAiPaLm2ChatRequestTests {
 			// .withCandidateCount(2)
 			.build();
 
-		var request = client.createRequest(new Prompt("Test message content", promptOptions));
+		var request = chatModel.createRequest(new Prompt("Test message content", promptOptions));
 
 		assertThat(request.prompt().messages()).hasSize(1);
 
@@ -75,7 +75,7 @@ public class VertexAiPaLm2ChatRequestTests {
 			.withTopP(0.6f)
 			.build();
 
-		var request = client.createRequest(new Prompt("Test message content", portablePromptOptions));
+		var request = chatModel.createRequest(new Prompt("Test message content", portablePromptOptions));
 
 		assertThat(request.prompt().messages()).hasSize(1);
 

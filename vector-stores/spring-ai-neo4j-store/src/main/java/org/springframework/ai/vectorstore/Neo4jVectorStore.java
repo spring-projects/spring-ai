@@ -20,7 +20,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -269,17 +269,17 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	private final Driver driver;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final Neo4jVectorStoreConfig config;
 
-	public Neo4jVectorStore(Driver driver, EmbeddingClient embeddingClient, Neo4jVectorStoreConfig config) {
+	public Neo4jVectorStore(Driver driver, EmbeddingModel embeddingModel, Neo4jVectorStoreConfig config) {
 
 		Assert.notNull(driver, "Neo4j driver must not be null");
-		Assert.notNull(embeddingClient, "Embedding client must not be null");
+		Assert.notNull(embeddingModel, "Embedding client must not be null");
 
 		this.driver = driver;
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 
 		this.config = config;
 	}
@@ -328,7 +328,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
-		var embedding = Values.value(toFloatArray(this.embeddingClient.embed(request.getQuery())));
+		var embedding = Values.value(toFloatArray(this.embeddingModel.embed(request.getQuery())));
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 			StringBuilder condition = new StringBuilder("score >= $threshold");
 			if (request.hasFilterExpression()) {
@@ -372,7 +372,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 	}
 
 	private Map<String, Object> documentToRecord(Document document) {
-		var embedding = this.embeddingClient.embed(document);
+		var embedding = this.embeddingModel.embed(document);
 		document.setEmbedding(embedding);
 
 		var row = new HashMap<String, Object>();

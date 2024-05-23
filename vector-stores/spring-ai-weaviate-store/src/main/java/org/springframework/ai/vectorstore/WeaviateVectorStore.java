@@ -43,7 +43,7 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
 import org.springframework.beans.factory.InitializingBean;
@@ -80,7 +80,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 
 	private static final String ADDITIONAL_VECTOR_FIELD_NAME = "vector";
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final WeaviateClient weaviateClient;
 
@@ -277,14 +277,14 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	/**
 	 * Constructs a new WeaviateVectorStore.
 	 * @param vectorStoreConfig The configuration for the store.
-	 * @param embeddingClient The client for embedding operations.
+	 * @param embeddingModel The client for embedding operations.
 	 */
-	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingClient embeddingClient,
+	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
 			WeaviateClient weaviateClient) {
 		Assert.notNull(vectorStoreConfig, "WeaviateVectorStoreConfig must not be null");
-		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
+		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.consistencyLevel = vectorStoreConfig.consistencyLevel;
 		this.weaviateObjectClass = vectorStoreConfig.weaviateObjectClass;
 		this.filterMetadataFields = vectorStoreConfig.filterMetadataFields;
@@ -360,7 +360,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	private WeaviateObject toWeaviateObject(Document document) {
 
 		if (CollectionUtils.isEmpty(document.getEmbedding())) {
-			List<Double> embedding = this.embeddingClient.embed(document);
+			List<Double> embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 		}
 
@@ -420,7 +420,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 
-		Float[] embedding = toFloatArray(this.embeddingClient.embed(request.getQuery()));
+		Float[] embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
 
 		GetBuilder.GetBuilderBuilder builder = GetBuilder.builder();
 

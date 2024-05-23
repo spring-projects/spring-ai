@@ -26,7 +26,7 @@ import org.springframework.ai.chroma.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.ChromaApi.Embedding;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.ChromaFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -37,9 +37,9 @@ import org.springframework.util.StringUtils;
 /**
  * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
  * interface. It is responsible for adding, deleting, and searching documents based on
- * their similarity to a query, using the {@link ChromaApi} and {@link EmbeddingClient}
- * for embedding calculations. For more information about how it does this, see the
- * official <a href="https://www.trychroma.com/">Chroma website</a>.
+ * their similarity to a query, using the {@link ChromaApi} and {@link EmbeddingModel} for
+ * embedding calculations. For more information about how it does this, see the official
+ * <a href="https://www.trychroma.com/">Chroma website</a>.
  */
 public class ChromaVectorStore implements VectorStore, InitializingBean {
 
@@ -51,7 +51,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 	public static final int DEFAULT_TOP_K = 4;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final ChromaApi chromaApi;
 
@@ -61,12 +61,12 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 	private String collectionId;
 
-	public ChromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi) {
-		this(embeddingClient, chromaApi, DEFAULT_COLLECTION_NAME);
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME);
 	}
 
-	public ChromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi, String collectionName) {
-		this.embeddingClient = embeddingClient;
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName) {
+		this.embeddingModel = embeddingModel;
 		this.chromaApi = chromaApi;
 		this.collectionName = collectionName;
 		this.filterExpressionConverter = new ChromaFilterExpressionConverter();
@@ -93,7 +93,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
 			contents.add(document.getContent());
-			document.setEmbedding(this.embeddingClient.embed(document));
+			document.setEmbedding(this.embeddingModel.embed(document));
 			embeddings.add(JsonUtils.toFloatArray(document.getEmbedding()));
 		}
 
@@ -118,7 +118,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
 
-		List<Double> embedding = this.embeddingClient.embed(query);
+		List<Double> embedding = this.embeddingModel.embed(query);
 		Map<String, Object> where = (StringUtils.hasText(nativeFilterExpression))
 				? JsonUtils.jsonToMap(nativeFilterExpression) : Map.of();
 		var queryRequest = new ChromaApi.QueryRequest(JsonUtils.toFloatList(embedding), request.getTopK(), where);

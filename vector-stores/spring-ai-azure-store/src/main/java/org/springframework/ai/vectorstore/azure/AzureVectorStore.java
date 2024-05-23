@@ -45,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -92,7 +92,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 
 	private final SearchIndexClient searchIndexClient;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private SearchClient searchClient;
 
@@ -146,29 +146,29 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	 * Constructs a new AzureCognitiveSearchVectorStore.
 	 * @param searchIndexClient A pre-configured Azure {@link SearchIndexClient} that CRUD
 	 * for Azure search indexes and factory for {@link SearchClient}.
-	 * @param embeddingClient The client for embedding operations.
+	 * @param embeddingModel The client for embedding operations.
 	 */
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
-		this(searchIndexClient, embeddingClient, List.of());
+	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+		this(searchIndexClient, embeddingModel, List.of());
 	}
 
 	/**
 	 * Constructs a new AzureCognitiveSearchVectorStore.
 	 * @param searchIndexClient A pre-configured Azure {@link SearchIndexClient} that CRUD
 	 * for Azure search indexes and factory for {@link SearchClient}.
-	 * @param embeddingClient The client for embedding operations.
+	 * @param embeddingModel The client for embedding operations.
 	 * @param filterMetadataFields List of metadata fields (as field name and type) that
 	 * can be used in similarity search query filter expressions.
 	 */
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient,
+	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			List<MetadataField> filterMetadataFields) {
 
-		Assert.notNull(embeddingClient, "The embedding client can not be null.");
+		Assert.notNull(embeddingModel, "The embedding model can not be null.");
 		Assert.notNull(searchIndexClient, "The search index client can not be null.");
 		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
 
 		this.searchIndexClient = searchIndexClient;
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.filterMetadataFields = filterMetadataFields;
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(filterMetadataFields);
 	}
@@ -211,7 +211,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 		}
 
 		final var searchDocuments = documents.stream().map(document -> {
-			final var embeddings = this.embeddingClient.embed(document);
+			final var embeddings = this.embeddingModel.embed(document);
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
 			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings);
@@ -277,7 +277,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 
 		Assert.notNull(request, "The search request must not be null.");
 
-		var searchEmbedding = toFloatList(embeddingClient.embed(request.getQuery()));
+		var searchEmbedding = toFloatList(embeddingModel.embed(request.getQuery()));
 
 		final var vectorQuery = new VectorizedQuery(searchEmbedding).setKNearestNeighborsCount(request.getTopK())
 			// Set the fields to compare the vector against. This is a comma-delimited
@@ -328,7 +328,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		int dimensions = this.embeddingClient.dimensions();
+		int dimensions = this.embeddingModel.dimensions();
 
 		List<SearchField> fields = new ArrayList<>();
 

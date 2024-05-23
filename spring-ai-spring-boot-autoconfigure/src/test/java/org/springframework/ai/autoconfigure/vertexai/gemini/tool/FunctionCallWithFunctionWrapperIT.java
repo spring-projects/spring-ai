@@ -30,7 +30,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -55,10 +55,10 @@ public class FunctionCallWithFunctionWrapperIT {
 	void functionCallTest() {
 		contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
 			.run(context -> {
 
-				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
 
 				var systemMessage = new SystemMessage("""
 						Use Multi-turn function calling.
@@ -67,7 +67,7 @@ public class FunctionCallWithFunctionWrapperIT {
 						""");
 				var userMessage = new UserMessage("What's the weather like in San Francisco, Paris and in Tokyo?");
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);

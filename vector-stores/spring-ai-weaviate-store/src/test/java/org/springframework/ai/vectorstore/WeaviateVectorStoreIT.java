@@ -29,8 +29,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
 import org.springframework.boot.SpringBootConfiguration;
@@ -243,7 +243,7 @@ public class WeaviateVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+		public VectorStore vectorStore(EmbeddingModel embeddingModel) {
 			WeaviateClient weaviateClient = new WeaviateClient(
 					new Config("http", weaviateContainer.getHttpHostAddress()));
 
@@ -252,14 +252,14 @@ public class WeaviateVectorStoreIT {
 				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
 				.build();
 
-			WeaviateVectorStore vectorStore = new WeaviateVectorStore(config, embeddingClient, weaviateClient);
+			WeaviateVectorStore vectorStore = new WeaviateVectorStore(config, embeddingModel, weaviateClient);
 
 			return vectorStore;
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

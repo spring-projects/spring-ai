@@ -35,7 +35,7 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 	public static final String DEFAULT_ENCODING_FORMAT = "float";
 
 	/**
-	 * Enable MistralAI embedding client.
+	 * Enable MistralAI embedding model.
 	 */
 	private boolean enabled = true;
 

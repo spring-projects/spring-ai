@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -192,8 +192,8 @@ class MongoDBAtlasVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
-			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient,
+		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel,
 					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
 						.withMetadataFieldsToFilter(List.of("country", "year"))
 						.build());
@@ -205,8 +205,8 @@ class MongoDBAtlasVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

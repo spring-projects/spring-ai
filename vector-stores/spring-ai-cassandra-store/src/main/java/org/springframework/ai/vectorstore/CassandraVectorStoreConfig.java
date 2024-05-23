@@ -318,7 +318,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 		/**
 		 * Executor to use when adding documents. The hotspot is the call to the
-		 * embeddingClient. For remote transformers you probably want a higher value to
+		 * embeddingModel. For remote transformers you probably want a higher value to
 		 * utilize network. For local transformers you probably want a lower value to
 		 * avoid saturation.
 		 **/

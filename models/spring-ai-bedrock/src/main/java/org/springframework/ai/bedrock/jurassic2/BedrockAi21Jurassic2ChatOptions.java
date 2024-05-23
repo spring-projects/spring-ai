@@ -413,4 +413,19 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 		}
 	}
 
+	public static BedrockAi21Jurassic2ChatOptions fromOptions(BedrockAi21Jurassic2ChatOptions fromOptions) {
+		return builder().withPrompt(fromOptions.getPrompt())
+			.withNumResults(fromOptions.getNumResults())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withMinTokens(fromOptions.getMinTokens())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTopK(fromOptions.getTopK())
+			.withStopSequences(fromOptions.getStopSequences())
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
+			.withPresencePenalty(fromOptions.getPresencePenalty())
+			.withCountPenalty(fromOptions.getCountPenalty())
+			.build();
+	}
+
 }

@@ -2,7 +2,7 @@
 
 link:https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock] is a managed service that provides foundation models from various AI providers, available through a unified API.
 
-Spring AI supports https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[all the Chat and Embedding AI models] available through Amazon Bedrock by implementing the Spring interfaces `ChatClient`, `StreamingChatClient`, and  `EmbeddingClient`.
+Spring AI supports https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[all the Chat and Embedding AI models] available through Amazon Bedrock by implementing the Spring interfaces `ChatModel`, `StreamingChatModel`, and  `EmbeddingModel`.
 
 Additionally, Spring AI provides Spring Auto-Configurations and Boot Starters for all clients, making it easy to bootstrap and configure for the Bedrock models.
 
@@ -94,7 +94,7 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 | titan      | Yes  | Yes            | Yes (however, no batch support)
 |====
 
-For example, to enable the Bedrock Llama Chat client, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
+For example, to enable the Bedrock Llama chat model, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
 
 Next, you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties to configure each model as provided.
 

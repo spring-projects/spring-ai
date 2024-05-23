@@ -35,8 +35,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumnTags;
 import org.springframework.boot.SpringBootConfiguration;
@@ -387,7 +387,7 @@ class CassandraVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingClient embeddingClient) {
+		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel) {
 
 			CassandraVectorStoreConfig conf = storeBuilder(cqlSession)
 				.addMetadataColumns(new SchemaColumn("meta1", DataTypes.TEXT),
@@ -396,12 +396,12 @@ class CassandraVectorStoreIT {
 				.build();
 
 			conf.dropKeyspace();
-			return new CassandraVectorStore(conf, embeddingClient);
+			return new CassandraVectorStore(conf, embeddingModel);
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 		@Bean
@@ -432,7 +432,7 @@ class CassandraVectorStoreIT {
 			CassandraVectorStoreConfig.Builder builder) {
 		CassandraVectorStoreConfig conf = builder.build();
 		conf.dropKeyspace();
-		return new CassandraVectorStore(conf, context.getBean(EmbeddingClient.class));
+		return new CassandraVectorStore(conf, context.getBean(EmbeddingModel.class));
 	}
 
 }

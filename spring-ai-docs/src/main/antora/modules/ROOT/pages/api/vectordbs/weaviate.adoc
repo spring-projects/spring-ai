@@ -10,7 +10,7 @@ It provides tools to store document embeddings, content, and metadata and to sea
 
 == Prerequisites
 
-1. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
+1. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
 
 - `Transformers Embedding` - computes the embedding in your local environment. Follow the ONNX Transformers Embedding instructions.
 - `OpenAI Embedding` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
@@ -40,10 +40,10 @@ dependencies {
 }
 ----
 
-The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
-For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingClient] add the following dependency to your project:
+For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel] add the following dependency to your project:
 
 [source,xml]
 ----
@@ -230,13 +230,13 @@ This provides you with an implementation of the Embeddings client:
 [source,java]
 ----
 @Bean
-public WeaviateVectorStore vectorStore(EmbeddingClient embeddingClient, WeaviateClient weaviateClient) {
+public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient) {
 
    WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
       .withObjectClass(<YOUR OBJECT CLASS>)
       .withConsistencyLevel(<YOUR CONSISTENCY LEVEL>);
 
-   return new WeaviateVectorStore(configBuilder.build(), embeddingClient, weaviateClient);
+   return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient);
 }
 ----
 

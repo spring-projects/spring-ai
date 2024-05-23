@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.ollama.OllamaEmbeddingClient;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -69,12 +69,12 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	@Test
 	public void singleTextEmbedding() {
 		contextRunner.run(context -> {
-			OllamaEmbeddingClient embeddingClient = context.getBean(OllamaEmbeddingClient.class);
-			assertThat(embeddingClient).isNotNull();
-			EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
+			OllamaEmbeddingModel embeddingModel = context.getBean(OllamaEmbeddingModel.class);
+			assertThat(embeddingModel).isNotNull();
+			EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
 			assertThat(embeddingResponse.getResults()).hasSize(1);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingClient.dimensions()).isEqualTo(3200);
+			assertThat(embeddingModel.dimensions()).isEqualTo(3200);
 		});
 	}
 
@@ -82,17 +82,17 @@ public class OllamaEmbeddingAutoConfigurationIT {
 	void embeddingActivation() {
 		contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=false").run(context -> {
 			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isEmpty();
 		});
 
 		contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
 		});
 
 		contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=true").run(context -> {
 			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingClient.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
 		});
 
 	}

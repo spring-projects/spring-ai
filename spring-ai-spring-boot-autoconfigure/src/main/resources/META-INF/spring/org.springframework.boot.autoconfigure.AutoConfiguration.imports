@@ -1,7 +1,7 @@
 org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
 org.springframework.ai.autoconfigure.stabilityai.StabilityAiImageAutoConfiguration
-org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingClientAutoConfiguration
+org.springframework.ai.autoconfigure.transformers.TransformersEmbeddingModelAutoConfiguration
 org.springframework.ai.autoconfigure.huggingface.HuggingfaceChatAutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.palm2.VertexAiPalm2AutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
@@ -32,3 +32,4 @@ org.springframework.ai.autoconfigure.anthropic.AnthropicAutoConfiguration
 org.springframework.ai.autoconfigure.watsonxai.WatsonxAiAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.elasticsearch.ElasticsearchVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.cassandra.CassandraVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.zhipuai.ZhiPuAiAutoConfiguration

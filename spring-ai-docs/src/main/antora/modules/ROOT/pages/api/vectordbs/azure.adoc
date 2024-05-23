@@ -97,13 +97,13 @@ public SearchIndexClient searchIndexClient() {
 }
 ----
 
-To create a vector store, you can use the following code by injecting the `SearchIndexClient` bean created in the above sample along with an `EmbeddingClient` provided by the Spring AI library that implements the desired Embeddings interface.
+To create a vector store, you can use the following code by injecting the `SearchIndexClient` bean created in the above sample along with an `EmbeddingModel` provided by the Spring AI library that implements the desired Embeddings interface.
 
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
-  return new AzureVectorStore(searchIndexClient, embeddingClient,
+public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+  return new AzureVectorStore(searchIndexClient, embeddingModel,
     // Define the metadata fields to be used
     // in the similarity search filters.
     List.of(MetadataField.text("country"),

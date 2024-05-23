@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,13 +32,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EmbeddingIT {
 
 	@Autowired
-	private OpenAiEmbeddingClient embeddingClient;
+	private OpenAiEmbeddingModel embeddingModel;
 
 	@Test
 	void defaultEmbedding() {
-		assertThat(embeddingClient).isNotNull();
+		assertThat(embeddingModel).isNotNull();
 
-		EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
+		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
@@ -46,13 +46,13 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
 		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
 
-		assertThat(embeddingClient.dimensions()).isEqualTo(1536);
+		assertThat(embeddingModel.dimensions()).isEqualTo(1536);
 	}
 
 	@Test
 	void embedding3Large() {
 
-		EmbeddingResponse embeddingResponse = embeddingClient.call(new EmbeddingRequest(List.of("Hello World"),
+		EmbeddingResponse embeddingResponse = embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
 				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-large").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
@@ -61,13 +61,13 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
 		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
 
-		// assertThat(embeddingClient.dimensions()).isEqualTo(3072);
+		// assertThat(embeddingModel.dimensions()).isEqualTo(3072);
 	}
 
 	@Test
 	void textEmbeddingAda002() {
 
-		EmbeddingResponse embeddingResponse = embeddingClient.call(new EmbeddingRequest(List.of("Hello World"),
+		EmbeddingResponse embeddingResponse = embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
 				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-small").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
@@ -77,7 +77,7 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
 		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
 
-		// assertThat(embeddingClient.dimensions()).isEqualTo(3072);
+		// assertThat(embeddingModel.dimensions()).isEqualTo(3072);
 	}
 
 }

@@ -27,8 +27,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
@@ -245,17 +245,17 @@ class RedisVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public RedisVectorStore vectorStore(EmbeddingClient embeddingClient) {
+		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			return new RedisVectorStore(RedisVectorStoreConfig.builder()
 				.withURI(redisContainer.getRedisURI())
 				.withMetadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"),
 						MetadataField.tag("country"), MetadataField.numeric("year"))
-				.build(), embeddingClient);
+				.build(), embeddingModel);
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

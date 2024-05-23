@@ -51,7 +51,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 ==== Retry Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Mistral AI Chat client.
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Mistral AI chat model.
 
 [cols="3,5,1"]
 |====
@@ -80,13 +80,13 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 
 ==== Configuration Properties
 
-The prefix `spring.ai.mistralai.chat` is the property prefix that lets you configure the chat client implementation for MistralAI.
+The prefix `spring.ai.mistralai.chat` is the property prefix that lets you configure the chat model implementation for MistralAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.mistralai.chat.enabled | Enable MistralAI chat client.  | true
+| spring.ai.mistralai.chat.enabled | Enable MistralAI chat model.  | true
 | spring.ai.mistralai.chat.base-url   | Optional overrides the spring.ai.mistralai.base-url to provide chat specific url |  -
 | spring.ai.mistralai.chat.api-key   | Optional overrides the spring.ai.mistralai.api-key to provide chat specific api-key |  -
 | spring.ai.mistralai.chat.options.model | This is the MistralAI Chat model to use | `open-mistral-7b`, `open-mixtral-8x7b`, `mistral-small-latest`, `mistral-medium-latest`, `mistral-large-latest`
@@ -100,10 +100,10 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
 | spring.ai.mistralai.chat.options.toolChoice | Controls which (if any) function is called by the model. none means the model will not call a function and instead generates a message. auto means the model can pick between generating a message or calling a function. Specifying a particular function via {"type: "function", "function": {"name": "my_function"}} forces the model to call that function. none is the default when no functions are present. auto is the default if functions are present. | -
 | spring.ai.mistralai.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
-| spring.ai.mistralai.chat.options.functionCallbacks | MistralAI Tool Function Callbacks to register with the ChatClient. | -
+| spring.ai.mistralai.chat.options.functionCallbacks | MistralAI Tool Function Callbacks to register with the ChatModel. | -
 |====
 
-NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.mistralai.chat.base-url` and `spring.ai.mistralai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different MistralAI accounts for different models and different model endpoints.
 
@@ -113,14 +113,14 @@ TIP: All properties prefixed with `spring.ai.mistralai.chat.options` can be over
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `MistralAiChatClient(api, options)` constructor or the `spring.ai.mistralai.chat.options.*` properties.
+On start-up, the default options can be configured with the `MistralAiChatModel(api, options)` constructor or the `spring.ai.mistralai.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MistralAiChatOptions.builder()
@@ -134,7 +134,7 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 
 == Function Calling
 
-You can register custom Java functions with the MistralAiChatClient and have the Mistral AI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the MistralAiChatModel and have the Mistral AI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI Function Calling].
 
@@ -142,7 +142,7 @@ Read more about xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-mistral-ai-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi chat model:
 
 [source,application.properties]
 ----
@@ -153,37 +153,37 @@ spring.ai.mistralai.chat.options.temperature=0.7
 
 TIP: replace the `api-key` with your OpenAI credentials.
 
-This will create a `MistralAiChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `MistralAiChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final MistralAiChatClient chatClient;
+    private final MistralAiChatModel chatModel;
 
     @Autowired
-    public ChatController(MistralAiChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(MistralAiChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatClient.java[MistralAiChatClient] implements the `ChatClient` and `StreamingChatClient` and uses the <<low-level-api>> to connect to the MistralAI service.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatModel.java[MistralAiChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the MistralAI service.
 
 Add the `spring-ai-mistral-ai` dependency to your project's Maven `pom.xml` file:
 
@@ -206,23 +206,23 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `MistralAiChatClient` and use it for text generations:
+Next, create a `MistralAiChatModel` and use it for text generations:
 
 [source,java]
 ----
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
-var chatClient = new MistralAiChatClient(mistralAiApi, MistralAiChatOptions.builder()
+var chatModel = new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder()
                 .withModel(MistralAiApi.ChatModel.LARGE.getValue())
                 .withTemperature(0.4f)
                 .withMaxToken(200)
                 .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = chatClient.stream(
+Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

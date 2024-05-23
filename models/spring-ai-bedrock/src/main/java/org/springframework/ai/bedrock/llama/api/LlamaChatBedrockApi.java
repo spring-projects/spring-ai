@@ -26,6 +26,7 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatRequest;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatResponse;
+import org.springframework.ai.model.ModelDescription;
 
 import java.time.Duration;
 
@@ -204,7 +205,7 @@ public class LlamaChatBedrockApi extends
 	/**
 	 * Llama models version.
 	 */
-	public enum LlamaChatModel {
+	public enum LlamaChatModel implements ModelDescription {
 
 		/**
 		 * meta.llama2-13b-chat-v1
@@ -237,6 +238,11 @@ public class LlamaChatBedrockApi extends
 
 		LlamaChatModel(String value) {
 			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
 		}
 	}
 

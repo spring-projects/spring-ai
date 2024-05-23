@@ -7,7 +7,7 @@ link:https://milvus.io/[Milvus] is an open-source vector database that has garne
 * A running Milvus instance. The following options are available:
 ** link:https://milvus.io/docs/install_standalone-docker.md[Milvus Standalone]: Docker, Operator, Helm,DEB/RPM, Docker Compose.
 ** link:https://milvus.io/docs/install_cluster-milvusoperator.md[Milvus Cluster]: Operator, Helm.
-* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `MilvusVectorStore`.
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `MilvusVectorStore`.
 
 == Dependencies
 
@@ -30,8 +30,8 @@ dependencies {
 }
 ----
 
-The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
@@ -99,14 +99,14 @@ To configure MilvusVectorStore in your application, you can use the following se
 [source,java]
 ----
 	@Bean
-	public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient) {
+	public VectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
 			.withCollectionName("test_vector_store")
 			.withDatabaseName("default")
 			.withIndexType(IndexType.IVF_FLAT)
 			.withMetricType(MetricType.COSINE)
 			.build();
-		return new MilvusVectorStore(milvusClient, embeddingClient, config);
+		return new MilvusVectorStore(milvusClient, embeddingModel, config);
 	}
 
 	@Bean
