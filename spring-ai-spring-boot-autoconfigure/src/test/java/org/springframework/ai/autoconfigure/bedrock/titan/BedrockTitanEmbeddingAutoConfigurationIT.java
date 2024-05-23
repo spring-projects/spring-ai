@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
@@ -47,7 +49,8 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 				"spring.ai.bedrock.titan.embedding.model=" + TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id())
-		.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				BedrockTitanEmbeddingAutoConfiguration.class));
 
 	@Test
 	public void singleTextEmbedding() {
@@ -87,7 +90,8 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 				"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 				"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 				"spring.ai.bedrock.titan.embedding.model=MODEL_XYZ", "spring.ai.bedrock.titan.embedding.inputType=TEXT")
-			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var properties = context.getBean(BedrockTitanEmbeddingProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -116,7 +120,8 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 
 		// Explicitly enable the embedding auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockTitanEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockTitanEmbeddingModel.class)).isNotEmpty();

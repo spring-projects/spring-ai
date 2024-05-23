@@ -30,7 +30,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChat
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse.Generation.FinishReason;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov

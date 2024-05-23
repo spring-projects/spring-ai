@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Client.
@@ -60,9 +61,10 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(TitanEmbeddingBedrockApi.class)
 	public BedrockTitanEmbeddingModel titanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingApi,
-			BedrockTitanEmbeddingProperties properties) {
+			BedrockTitanEmbeddingProperties properties, RetryTemplate retryTemplate) {
 
-		return new BedrockTitanEmbeddingModel(titanEmbeddingApi).withInputType(properties.getInputType());
+		return new BedrockTitanEmbeddingModel(titanEmbeddingApi, retryTemplate)
+			.withInputType(properties.getInputType());
 	}
 
 }

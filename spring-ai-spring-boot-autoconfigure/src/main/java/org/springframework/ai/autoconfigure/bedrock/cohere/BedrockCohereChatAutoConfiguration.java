@@ -28,6 +28,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -58,9 +60,9 @@ public class BedrockCohereChatAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(CohereChatBedrockApi.class)
 	public BedrockCohereChatModel cohereChatModel(CohereChatBedrockApi cohereChatApi,
-			BedrockCohereChatProperties properties) {
+			BedrockCohereChatProperties properties, RetryTemplate retryTemplate) {
 
-		return new BedrockCohereChatModel(cohereChatApi, properties.getOptions());
+		return new BedrockCohereChatModel(cohereChatApi, properties.getOptions(), retryTemplate);
 	}
 
 }

@@ -32,7 +32,7 @@ import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.Anth
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
 
-import static org.assertj.core.api.Assertions.assertThat;;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov

@@ -40,6 +40,9 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -48,6 +51,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel {
@@ -55,6 +59,11 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 	private final Anthropic3ChatBedrockApi anthropicChatApi;
 
 	private final Anthropic3ChatOptions defaultOptions;
+
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
 
 	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi) {
 		this(chatApi,
@@ -67,8 +76,18 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 	}
 
 	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi, Anthropic3ChatOptions options) {
+		this(chatApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi, Anthropic3ChatOptions options,
+			RetryTemplate retryTemplate) {
+		Assert.notNull(chatApi, "Anthropic3ChatBedrockApi must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
 		this.anthropicChatApi = chatApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
@@ -76,9 +95,11 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		return this.retryTemplate.execute(ctx -> {
+			AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+			return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+		});
 	}
 
 	@Override
@@ -86,25 +107,28 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		Flux<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> fluxResponse = this.anthropicChatApi
-			.chatCompletionStream(request);
+		return this.retryTemplate.execute(ctx -> {
+			Flux<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> fluxResponse = this.anthropicChatApi
+				.chatCompletionStream(request);
 
-		AtomicReference<Integer> inputTokens = new AtomicReference<>(0);
-		return fluxResponse.map(response -> {
-			if (response.type() == StreamingType.MESSAGE_START) {
-				inputTokens.set(response.message().usage().inputTokens());
-			}
-			String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
+			AtomicReference<Integer> inputTokens = new AtomicReference<>(0);
+			return fluxResponse.map(response -> {
+				if (response.type() == StreamingType.MESSAGE_START) {
+					inputTokens.set(response.message().usage().inputTokens());
+				}
+				String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
 
-			var generation = new Generation(content);
+				var generation = new Generation(content);
 
-			if (response.type() == StreamingType.MESSAGE_DELTA) {
-				generation = generation.withGenerationMetadata(ChatGenerationMetadata
-					.from(response.delta().stopReason(), new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
-							response.usage().outputTokens())));
-			}
+				if (response.type() == StreamingType.MESSAGE_DELTA) {
+					generation = generation
+						.withGenerationMetadata(ChatGenerationMetadata.from(response.delta().stopReason(),
+								new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
+										response.usage().outputTokens())));
+				}
 
-			return new ChatResponse(List.of(generation));
+				return new ChatResponse(List.of(generation));
+			});
 		});
 	}
 

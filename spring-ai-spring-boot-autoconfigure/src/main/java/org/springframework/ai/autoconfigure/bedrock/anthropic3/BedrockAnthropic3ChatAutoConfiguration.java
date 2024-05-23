@@ -28,6 +28,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -60,8 +62,8 @@ public class BedrockAnthropic3ChatAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(Anthropic3ChatBedrockApi.class)
 	public BedrockAnthropic3ChatModel anthropic3ChatModel(Anthropic3ChatBedrockApi anthropicApi,
-			BedrockAnthropic3ChatProperties properties) {
-		return new BedrockAnthropic3ChatModel(anthropicApi, properties.getOptions());
+			BedrockAnthropic3ChatProperties properties, RetryTemplate retryTemplate) {
+		return new BedrockAnthropic3ChatModel(anthropicApi, properties.getOptions(), retryTemplate);
 	}
 
 }

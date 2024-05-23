@@ -28,6 +28,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -57,10 +59,10 @@ public class BedrockTitanChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(TitanChatBedrockApi.class)
-	public BedrockTitanChatModel titanChatModel(TitanChatBedrockApi titanChatApi,
-			BedrockTitanChatProperties properties) {
+	public BedrockTitanChatModel titanChatModel(TitanChatBedrockApi titanChatApi, BedrockTitanChatProperties properties,
+			RetryTemplate retryTemplate) {
 
-		return new BedrockTitanChatModel(titanChatApi, properties.getOptions());
+		return new BedrockTitanChatModel(titanChatApi, properties.getOptions(), retryTemplate);
 	}
 
 }

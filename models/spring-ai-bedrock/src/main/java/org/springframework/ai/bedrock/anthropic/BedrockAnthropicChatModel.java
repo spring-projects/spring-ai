@@ -31,12 +31,16 @@ import org.springframework.ai.chat.StreamingChatModel;
 import org.springframework.ai.chat.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.Assert;
 
 /**
  * Java {@link ChatModel} and {@link StreamingChatModel} for the Bedrock Anthropic chat
  * generative.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel {
@@ -44,6 +48,11 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 	private final AnthropicChatBedrockApi anthropicChatApi;
 
 	private final AnthropicChatOptions defaultOptions;
+
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
 
 	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi) {
 		this(chatApi,
@@ -56,8 +65,18 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 	}
 
 	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi, AnthropicChatOptions options) {
+		this(chatApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi, AnthropicChatOptions options,
+			RetryTemplate retryTemplate) {
+		Assert.notNull(chatApi, "AnthropicChatBedrockApi must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
 		this.anthropicChatApi = chatApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
@@ -65,9 +84,11 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		return this.retryTemplate.execute(ctx -> {
+			AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.completion())));
+			return new ChatResponse(List.of(new Generation(response.completion())));
+		});
 	}
 
 	@Override
@@ -75,16 +96,18 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		Flux<AnthropicChatResponse> fluxResponse = this.anthropicChatApi.chatCompletionStream(request);
+		return this.retryTemplate.execute(ctx -> {
+			Flux<AnthropicChatResponse> fluxResponse = this.anthropicChatApi.chatCompletionStream(request);
 
-		return fluxResponse.map(response -> {
-			String stopReason = response.stopReason() != null ? response.stopReason() : null;
-			var generation = new Generation(response.completion());
-			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
-			}
-			return new ChatResponse(List.of(generation));
+			return fluxResponse.map(response -> {
+				String stopReason = response.stopReason() != null ? response.stopReason() : null;
+				var generation = new Generation(response.completion());
+				if (response.amazonBedrockInvocationMetrics() != null) {
+					generation = generation.withGenerationMetadata(
+							ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
+				}
+				return new ChatResponse(List.of(generation));
+			});
 		});
 	}
 

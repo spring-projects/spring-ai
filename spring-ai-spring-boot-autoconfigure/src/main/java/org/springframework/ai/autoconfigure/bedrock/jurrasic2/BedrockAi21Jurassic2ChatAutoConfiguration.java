@@ -29,6 +29,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -60,10 +62,11 @@ public class BedrockAi21Jurassic2ChatAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(Ai21Jurassic2ChatBedrockApi.class)
 	public BedrockAi21Jurassic2ChatModel jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi ai21Jurassic2ChatBedrockApi,
-			BedrockAi21Jurassic2ChatProperties properties) {
+			BedrockAi21Jurassic2ChatProperties properties, RetryTemplate retryTemplate) {
 
 		return BedrockAi21Jurassic2ChatModel.builder(ai21Jurassic2ChatBedrockApi)
 			.withOptions(properties.getOptions())
+			.withRetryTemplate(retryTemplate)
 			.build();
 	}
 

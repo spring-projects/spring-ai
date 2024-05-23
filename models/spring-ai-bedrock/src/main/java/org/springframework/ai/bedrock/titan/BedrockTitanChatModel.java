@@ -33,10 +33,13 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
@@ -45,45 +48,68 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
 	private final BedrockTitanChatOptions defaultOptions;
 
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
+
 	public BedrockTitanChatModel(TitanChatBedrockApi chatApi) {
 		this(chatApi, BedrockTitanChatOptions.builder().withTemperature(0.8f).build());
 	}
 
-	public BedrockTitanChatModel(TitanChatBedrockApi chatApi, BedrockTitanChatOptions defaultOptions) {
-		Assert.notNull(chatApi, "ChatApi must not be null");
-		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
+	public BedrockTitanChatModel(TitanChatBedrockApi chatApi, BedrockTitanChatOptions options) {
+		this(chatApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockTitanChatModel(TitanChatBedrockApi chatApi, BedrockTitanChatOptions options,
+			RetryTemplate retryTemplate) {
+		Assert.notNull(chatApi, "TitanChatBedrockApi must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
 		this.chatApi = chatApi;
-		this.defaultOptions = defaultOptions;
+		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
-		List<Generation> generations = response.results().stream().map(result -> {
-			return new Generation(result.outputText());
-		}).toList();
 
-		return new ChatResponse(generations);
+		TitanChatRequest request = this.createRequest(prompt);
+
+		return this.retryTemplate.execute(ctx -> {
+			TitanChatResponse response = this.chatApi.chatCompletion(request);
+			List<Generation> generations = response.results().stream().map(result -> {
+				return new Generation(result.outputText());
+			}).toList();
+
+			return new ChatResponse(generations);
+		});
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
 
-			Generation generation = new Generation(chunk.outputText());
+		TitanChatRequest request = this.createRequest(prompt);
 
-			if (chunk.amazonBedrockInvocationMetrics() != null) {
-				String completionReason = chunk.completionReason().name();
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
-			}
-			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
-				String completionReason = chunk.completionReason().name();
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
+		return this.retryTemplate.execute(ctx -> {
+			return this.chatApi.chatCompletionStream(request).map(chunk -> {
 
-			}
-			return new ChatResponse(List.of(generation));
+				Generation generation = new Generation(chunk.outputText());
+
+				if (chunk.amazonBedrockInvocationMetrics() != null) {
+					String completionReason = chunk.completionReason().name();
+					generation = generation.withGenerationMetadata(
+							ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
+				}
+				else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
+					String completionReason = chunk.completionReason().name();
+					generation = generation
+						.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
+
+				}
+				return new ChatResponse(List.of(generation));
+			});
 		});
 	}
 

@@ -32,6 +32,8 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -48,17 +50,29 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 
 	private final BedrockLlamaChatOptions defaultOptions;
 
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
+
 	public BedrockLlamaChatModel(LlamaChatBedrockApi chatApi) {
 		this(chatApi,
 				BedrockLlamaChatOptions.builder().withTemperature(0.8f).withTopP(0.9f).withMaxGenLen(100).build());
 	}
 
 	public BedrockLlamaChatModel(LlamaChatBedrockApi chatApi, BedrockLlamaChatOptions options) {
+		this(chatApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockLlamaChatModel(LlamaChatBedrockApi chatApi, BedrockLlamaChatOptions options,
+			RetryTemplate retryTemplate) {
 		Assert.notNull(chatApi, "LlamaChatBedrockApi must not be null");
-		Assert.notNull(options, "BedrockLlamaChatOptions must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 
 		this.chatApi = chatApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
@@ -66,10 +80,12 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 
 		var request = createRequest(prompt);
 
-		LlamaChatResponse response = this.chatApi.chatCompletion(request);
+		return this.retryTemplate.execute(ctx -> {
+			LlamaChatResponse response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(List.of(new Generation(response.generation()).withGenerationMetadata(
-				ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
+			return new ChatResponse(List.of(new Generation(response.generation()).withGenerationMetadata(
+					ChatGenerationMetadata.from(response.stopReason().name(), extractUsage(response)))));
+		});
 	}
 
 	@Override
@@ -77,12 +93,14 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 
 		var request = createRequest(prompt);
 
-		Flux<LlamaChatResponse> fluxResponse = this.chatApi.chatCompletionStream(request);
+		return this.retryTemplate.execute(ctx -> {
+			Flux<LlamaChatResponse> fluxResponse = this.chatApi.chatCompletionStream(request);
 
-		return fluxResponse.map(response -> {
-			String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
-			return new ChatResponse(List.of(new Generation(response.generation())
-				.withGenerationMetadata(ChatGenerationMetadata.from(stopReason, extractUsage(response)))));
+			return fluxResponse.map(response -> {
+				String stopReason = response.stopReason() != null ? response.stopReason().name() : null;
+				return new ChatResponse(List.of(new Generation(response.generation())
+					.withGenerationMetadata(ChatGenerationMetadata.from(stopReason, extractUsage(response)))));
+			});
 		});
 	}
 

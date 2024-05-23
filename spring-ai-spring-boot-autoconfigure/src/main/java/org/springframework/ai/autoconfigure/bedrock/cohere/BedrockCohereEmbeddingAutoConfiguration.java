@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Client.
@@ -60,9 +61,9 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(CohereEmbeddingBedrockApi.class)
 	public BedrockCohereEmbeddingModel cohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingApi,
-			BedrockCohereEmbeddingProperties properties) {
+			BedrockCohereEmbeddingProperties properties, RetryTemplate retryTemplate) {
 
-		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions());
+		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions(), retryTemplate);
 	}
 
 }

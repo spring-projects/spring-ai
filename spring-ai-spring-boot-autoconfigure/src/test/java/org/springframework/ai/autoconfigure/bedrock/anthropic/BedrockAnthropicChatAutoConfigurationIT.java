@@ -27,6 +27,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.Generation;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
@@ -54,7 +56,8 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 				"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 				"spring.ai.bedrock.anthropic.chat.model=" + AnthropicChatModel.CLAUDE_V2.id(),
 				"spring.ai.bedrock.anthropic.chat.options.temperature=0.5")
-		.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				BedrockAnthropicChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
@@ -106,7 +109,8 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 					"spring.ai.bedrock.anthropic.chat.model=MODEL_XYZ",
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.anthropic.chat.options.temperature=0.55")
-			.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockAnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				var anthropicChatProperties = context.getBean(BedrockAnthropicChatProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -135,7 +139,8 @@ public class BedrockAnthropicChatAutoConfigurationIT {
 
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.anthropic.chat.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockAnthropicChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockAnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockAnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockAnthropicChatModel.class)).isNotEmpty();

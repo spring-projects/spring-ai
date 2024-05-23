@@ -26,12 +26,15 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
  * Java {@link ChatModel} for the Bedrock Jurassic2 chat generative model.
  *
  * @author Ahmed Yousri
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAi21Jurassic2ChatModel implements ChatModel {
@@ -40,13 +43,10 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 	private final BedrockAi21Jurassic2ChatOptions defaultOptions;
 
-	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi, BedrockAi21Jurassic2ChatOptions options) {
-		Assert.notNull(chatApi, "Ai21Jurassic2ChatBedrockApi must not be null");
-		Assert.notNull(options, "BedrockAi21Jurassic2ChatOptions must not be null");
-
-		this.chatApi = chatApi;
-		this.defaultOptions = options;
-	}
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
 
 	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi) {
 		this(chatApi,
@@ -57,16 +57,34 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 					.build());
 	}
 
+	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi, BedrockAi21Jurassic2ChatOptions options) {
+		this(chatApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi, BedrockAi21Jurassic2ChatOptions options,
+			RetryTemplate retryTemplate) {
+		Assert.notNull(chatApi, "Ai21Jurassic2ChatBedrockApi must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
+		this.chatApi = chatApi;
+		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		var request = createRequest(prompt);
-		var response = this.chatApi.chatCompletion(request);
 
-		return new ChatResponse(response.completions()
-			.stream()
-			.map(completion -> new Generation(completion.data().text())
-				.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
-			.toList());
+		return this.retryTemplate.execute(ctx -> {
+			var response = this.chatApi.chatCompletion(request);
+
+			return new ChatResponse(response.completions()
+				.stream()
+				.map(completion -> new Generation(completion.data().text())
+					.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
+				.toList());
+		});
 	}
 
 	private Ai21Jurassic2ChatRequest createRequest(Prompt prompt) {
@@ -104,6 +122,8 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
 		private BedrockAi21Jurassic2ChatOptions options;
 
+		private RetryTemplate retryTemplate;
+
 		public Builder(Ai21Jurassic2ChatBedrockApi chatApi) {
 			this.chatApi = chatApi;
 		}
@@ -113,9 +133,15 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 			return this;
 		}
 
+		public Builder withRetryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
 		public BedrockAi21Jurassic2ChatModel build() {
 			return new BedrockAi21Jurassic2ChatModel(chatApi,
-					options != null ? options : BedrockAi21Jurassic2ChatOptions.builder().build());
+					options != null ? options : BedrockAi21Jurassic2ChatOptions.builder().build(),
+					retryTemplate != null ? retryTemplate : RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		}
 
 	}

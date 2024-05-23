@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Llama Chat Client.
@@ -59,9 +60,10 @@ public class BedrockLlamaChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(LlamaChatBedrockApi.class)
-	public BedrockLlamaChatModel llamaChatModel(LlamaChatBedrockApi llamaApi, BedrockLlamaChatProperties properties) {
+	public BedrockLlamaChatModel llamaChatModel(LlamaChatBedrockApi llamaApi, BedrockLlamaChatProperties properties,
+			RetryTemplate retryTemplate) {
 
-		return new BedrockLlamaChatModel(llamaApi, properties.getOptions());
+		return new BedrockLlamaChatModel(llamaApi, properties.getOptions(), retryTemplate);
 	}
 
 }

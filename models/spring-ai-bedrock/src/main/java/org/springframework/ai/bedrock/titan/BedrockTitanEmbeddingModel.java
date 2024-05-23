@@ -31,6 +31,8 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -50,6 +52,11 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final TitanEmbeddingBedrockApi embeddingApi;
 
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
+
 	public enum InputType {
 
 		TEXT, IMAGE
@@ -62,7 +69,15 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	private InputType inputType = InputType.TEXT;
 
 	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi) {
+		this(titanEmbeddingBedrockApi, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi, RetryTemplate retryTemplate) {
+		Assert.notNull(titanEmbeddingBedrockApi, "TitanEmbeddingBedrockApi must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
 		this.embeddingApi = titanEmbeddingBedrockApi;
+		this.retryTemplate = retryTemplate;
 	}
 
 	/**
@@ -87,17 +102,19 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 		}
 
-		List<List<Double>> embeddingList = new ArrayList<>();
-		for (String inputContent : request.getInstructions()) {
-			var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
-			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);
-			embeddingList.add(response.embedding());
-		}
-		var indexCounter = new AtomicInteger(0);
-		List<Embedding> embeddings = embeddingList.stream()
-			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
-			.toList();
-		return new EmbeddingResponse(embeddings);
+		return this.retryTemplate.execute(ctx -> {
+			List<List<Double>> embeddingList = new ArrayList<>();
+			for (String inputContent : request.getInstructions()) {
+				var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
+				TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);
+				embeddingList.add(response.embedding());
+			}
+			var indexCounter = new AtomicInteger(0);
+			List<Embedding> embeddings = embeddingList.stream()
+				.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
+				.toList();
+			return new EmbeddingResponse(embeddings);
+		});
 	}
 
 	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent, EmbeddingOptions requestOptions) {

@@ -27,6 +27,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.bedrock.titan.BedrockTitanChatModel;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.ai.chat.Generation;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
@@ -55,7 +57,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 				"spring.ai.bedrock.titan.chat.model=" + TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
 				"spring.ai.bedrock.titan.chat.options.temperature=0.5",
 				"spring.ai.bedrock.titan.chat.options.maxTokenCount=500")
-		.withConfiguration(AutoConfigurations.of(BedrockTitanChatAutoConfiguration.class));
+		.withConfiguration(
+				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, BedrockTitanChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
@@ -110,7 +113,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 					"spring.ai.bedrock.titan.chat.options.topP=0.55",
 					"spring.ai.bedrock.titan.chat.options.stopSequences=END1,END2",
 					"spring.ai.bedrock.titan.chat.options.maxTokenCount=123")
-			.withConfiguration(AutoConfigurations.of(BedrockTitanChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockTitanChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockTitanChatProperties.class);
 				var aswProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -142,7 +146,8 @@ public class BedrockTitanChatAutoConfigurationIT {
 
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.titan.chat.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockTitanChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockTitanChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockTitanChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockTitanChatModel.class)).isNotEmpty();

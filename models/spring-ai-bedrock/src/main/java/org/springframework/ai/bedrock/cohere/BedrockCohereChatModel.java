@@ -33,10 +33,13 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
@@ -45,38 +48,61 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 
 	private final BedrockCohereChatOptions defaultOptions;
 
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
+
 	public BedrockCohereChatModel(CohereChatBedrockApi chatApi) {
 		this(chatApi, BedrockCohereChatOptions.builder().build());
 	}
 
 	public BedrockCohereChatModel(CohereChatBedrockApi chatApi, BedrockCohereChatOptions options) {
+		this(chatApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockCohereChatModel(CohereChatBedrockApi chatApi, BedrockCohereChatOptions options,
+			RetryTemplate retryTemplate) {
 		Assert.notNull(chatApi, "CohereChatBedrockApi must not be null");
-		Assert.notNull(options, "BedrockCohereChatOptions must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 
 		this.chatApi = chatApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
-		List<Generation> generations = response.generations().stream().map(g -> {
-			return new Generation(g.text());
-		}).toList();
 
-		return new ChatResponse(generations);
+		CohereChatRequest request = this.createRequest(prompt, false);
+
+		return this.retryTemplate.execute(ctx -> {
+			CohereChatResponse response = this.chatApi.chatCompletion(request);
+
+			List<Generation> generations = response.generations().stream().map(g -> {
+				return new Generation(g.text());
+			}).toList();
+
+			return new ChatResponse(generations);
+		});
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(g -> {
-			if (g.isFinished()) {
-				String finishReason = g.finishReason().name();
-				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
-				return new ChatResponse(List
-					.of(new Generation("").withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
-			}
-			return new ChatResponse(List.of(new Generation(g.text())));
+
+		CohereChatRequest request = this.createRequest(prompt, true);
+
+		return this.retryTemplate.execute(ctx -> {
+			return this.chatApi.chatCompletionStream(request).map(g -> {
+				if (g.isFinished()) {
+					String finishReason = g.finishReason().name();
+					Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
+					return new ChatResponse(List.of(new Generation("")
+						.withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
+				}
+				return new ChatResponse(List.of(new Generation(g.text())));
+			});
 		});
 	}
 
