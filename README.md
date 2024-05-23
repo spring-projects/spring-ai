@@ -28,19 +28,18 @@ Here is an example of existing code before the change
 
 ```java
 @RestController
-public class OldSimpleAiController {
-
-	private final ChatClient chatClient;
-
-	@Autowired
-	public OldSimpleAiController(ChatClient chatClient) {
-		this.chatClient = chatClient;
-	}
-
-	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of("generation", chatClient.call(message));
-	}
+public class OldSimpleAiController { 
+    
+    private final ChatClient chatClient;
+    
+    public OldSimpleAiController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+    
+    @GetMapping("/ai/simple") 
+    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.call(message));
+    }
 }
 ```
 
@@ -49,18 +48,17 @@ Now after the changes this will be
 ```java
 @RestController
 public class SimpleAiController {
-
-	private final ChatModel chatModel;
-
-	@Autowired
-	public SimpleAiController(ChatModel chatModel) {
-		this.chatModel = chatModel;
-	}
-
-	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of("generation", chatModel.call(message));
-	}
+    
+    private final ChatModel chatModel;
+    
+    public SimpleAiController(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+    
+    @GetMapping("/ai/simple") 
+    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
 }
 ```
 
@@ -79,17 +77,16 @@ Here is an example of existing code before the change
 
 ```java
 @RestController
-public class OldSimpleAiController {
-
-	private final ChatClient chatClient;
-
-	@Autowired
-	public OldSimpleAiController(ChatClient chatClient) {
-		this.chatClient = chatClient;
+class OldSimpleAiController {
+    
+    ChatClient chatClient;
+    
+    OldSimpleAiController(ChatClient chatClient) {
+        this.chatClient = chatClient;
 	}
 
 	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
 		return Map.of(
                 "generation",
                 chatClient.call(message)
@@ -103,37 +100,24 @@ Now after the changes this will be
 
 ```java
 @RestController
-public class SimpleAiController {
+class SimpleAiController {
 
-	private final ChatClient chatClient;
-
-	@Autowired
-	public SimpleAiController(ChatClient chatClient) {
-		this.chatClient = chatClient;
-	}
-
-	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of(
+    private final ChatClient.Builder builder;
+    
+    SimpleAiController(ChatClient.Builder builder) {
+      this.builder = builder;
+    }
+    
+    @GetMapping("/ai/simple") 
+    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of(
                 "generation", 
                 chatClient.prompt().user(message).call().content()
         );
-	}
+    }
 }
 ```
 
-and in your `@Configuration` class you need to define an `@Bean` as shown below
-
-```java
-@Configuration
-public class ApplicationConfiguration {
-
-  @Bean
-  ChatClient chatClient(ChatModel chatModel) {
-    return ChatClient.builder(chatModel).build();
-  }
-}
-```
 
 NOTE: The `ChatModel` instance is made available to you through autoconfiguration.
 
