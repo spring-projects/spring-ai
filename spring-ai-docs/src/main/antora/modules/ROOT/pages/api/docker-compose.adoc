@@ -2,7 +2,7 @@
 = Docker Compose
 
 Spring AI provides Spring Boot auto-configuration for establishing a connection to a model service
-or vector store running via Dcoker Compose. To enable it, add the following dependency
+or vector store running via Docker Compose. To enable it, add the following dependency
 to your project's Maven `pom.xml` file:
 
 [source,xml]
