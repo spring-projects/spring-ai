@@ -81,11 +81,15 @@ public class JsonReader implements DocumentReader {
 	private Document parseJsonNode(JsonNode jsonNode, ObjectMapper objectMapper) {
 		Map<String, Object> item = objectMapper.convertValue(jsonNode, new TypeReference<Map<String, Object>>() {});
 		StringBuilder sb = new StringBuilder();
-		for (String key : jsonKeysToUse) {
-			if (item.containsKey(key)) {
-				sb.append(key).append(": ").append(item.get(key)).append(System.lineSeparator());
-			}
-		}
+
+		jsonKeysToUse.parallelStream()
+			.filter(item::containsKey)
+			.forEach(key -> {
+				sb.append(key)
+				  .append(": ")
+				  .append(item.get(key))
+				  .append(System.lineSeparator());
+				});
 
 		Map<String, Object> metadata = this.jsonMetadataGenerator.generate(item);
 		String content = sb.isEmpty() ? item.toString() : sb.toString();
