@@ -38,10 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
-import org.springframework.ai.chat.ChatModel;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.StreamingChatModel;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;

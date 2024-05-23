@@ -238,7 +238,7 @@ In this controller class, create the following REST endpoints:
 package com.interviewpedia.spring.ai.hana;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.ChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;

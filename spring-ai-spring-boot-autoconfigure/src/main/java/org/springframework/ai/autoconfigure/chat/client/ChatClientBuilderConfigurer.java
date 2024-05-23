@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.chat.client;
 
 import java.util.List;
 
-import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 
 /**

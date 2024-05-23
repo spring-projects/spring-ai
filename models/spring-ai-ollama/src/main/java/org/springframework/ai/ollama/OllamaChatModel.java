@@ -18,13 +18,13 @@ package org.springframework.ai.ollama;
 import java.util.Base64;
 import java.util.List;
 
-import org.springframework.ai.chat.ChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.ollama.metadata.OllamaChatResponseMetadata;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.StreamingChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;

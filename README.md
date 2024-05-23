@@ -20,6 +20,8 @@ We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, 
 
 ### Adapting to the changes
 
+NOTE: The `ChatClient` class is now in the package `org.springframework.ai.chat.client`
+
 #### Approach 1
 
 Now, instead of getting an Autoconfigured `ChatClient` instance, you will get a `ChatModel` instance.  The `call` method signatures after renaming remain the same.

@@ -30,8 +30,8 @@ import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;

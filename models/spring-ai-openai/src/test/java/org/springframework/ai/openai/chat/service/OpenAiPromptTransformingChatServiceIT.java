@@ -23,7 +23,7 @@ import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.ChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.service.ChatService;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.document.Document;

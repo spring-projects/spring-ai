@@ -18,12 +18,12 @@ package org.springframework.ai.watsonx;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.ChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.StreamingChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;

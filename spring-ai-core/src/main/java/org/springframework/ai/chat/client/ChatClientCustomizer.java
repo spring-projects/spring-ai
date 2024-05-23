@@ -16,8 +16,6 @@
 
 package org.springframework.ai.chat.client;
 
-import org.springframework.ai.chat.ChatClient;
-
 /**
  * Callback interface that can be used to customize a {@link ChatClient.Builder
  * ChatClient.Builder}.

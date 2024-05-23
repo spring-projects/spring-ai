@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.chat;
+package org.springframework.ai.chat.model;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -24,7 +24,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.Model;
 
-// @FunctionalInterface
 public interface ChatModel extends Model<Prompt, ChatResponse> {
 
 	default String call(String message) {

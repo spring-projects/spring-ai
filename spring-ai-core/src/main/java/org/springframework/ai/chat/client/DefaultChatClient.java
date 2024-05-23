@@ -1,12 +1,18 @@
-package org.springframework.ai.chat;
+package org.springframework.ai.chat.client;
 
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
 /**
+ * The default implementation of {@link ChatClient} as created by the
+ * {@link ChatClient.Builder#build()} } method.
+ *
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @since 1.0.0 M1
  */
 class DefaultChatClient implements ChatClient {
 

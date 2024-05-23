@@ -27,8 +27,8 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;

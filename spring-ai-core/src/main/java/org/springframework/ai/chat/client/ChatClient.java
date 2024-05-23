@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.chat;
+package org.springframework.ai.chat.client;
 
 import java.io.IOException;
 import java.net.URL;
@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.Media;
@@ -46,14 +49,16 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
-// todo support plugging in a outputConverter at runtime
-// todo figure out stream and list methods
-
 /**
+ * Client to perform stateless requests to an AI Model, using a fluent API.
+ *
+ * Use {@link ChatClient#builder(ChatModel)} to prepare an instance.
+ *
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @since 1.0.0 M1
  */
 public interface ChatClient {
 

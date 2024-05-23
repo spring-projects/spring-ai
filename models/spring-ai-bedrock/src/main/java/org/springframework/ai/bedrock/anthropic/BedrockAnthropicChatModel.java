@@ -17,9 +17,9 @@ package org.springframework.ai.bedrock.anthropic;
 
 import java.util.List;
 
-import org.springframework.ai.chat.ChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
 
@@ -27,8 +27,8 @@ import org.springframework.ai.bedrock.MessageToPromptConverter;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
-import org.springframework.ai.chat.StreamingChatModel;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 
