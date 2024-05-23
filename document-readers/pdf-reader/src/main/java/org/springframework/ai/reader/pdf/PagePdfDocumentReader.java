@@ -121,7 +121,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 						&& pagesPerDocument >= this.config.pagesPerDocument) {
 					pagesPerDocument = 0;
 
-					var aggregatedPageTextGroup = pageTextGroupList.stream().collect(Collectors.joining());
+					var aggregatedPageTextGroup = String.join("", pageTextGroupList);
 					if (StringUtils.hasText(aggregatedPageTextGroup)) {
 						readDocuments.add(toDocument(aggregatedPageTextGroup, startPageNumber, pageNumber));
 					}
@@ -150,7 +150,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 			}
 			if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
+				readDocuments.add(toDocument(String.join("", pageTextGroupList), startPageNumber,
 						pageNumber));
 			}
 			logger.info("Processing {} pages", totalPages);
