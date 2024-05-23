@@ -161,6 +161,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getContent()).isEqualTo("Default system text value1New, value2");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
+		// streaming
 		content = join(chatClient.prompt()
 				.system(s -> s.param("param1", "value1New"))
 				.stream().content());

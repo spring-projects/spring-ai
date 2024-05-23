@@ -24,10 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import reactor.core.publisher.Flux;
 
@@ -60,20 +57,9 @@ import org.springframework.util.StringUtils;
  */
 public interface ChatClient {
 
-	Pattern PLACEHOLDER_EXTRACTION_PATTER = Pattern.compile("\\{(.*?)\\}");
-
-	private static List<String> extractPlaceholders(String text) {
-		var placeholders = new ArrayList<String>();
-		var matcher = PLACEHOLDER_EXTRACTION_PATTER.matcher(text);
-		while (matcher.find()) {
-			placeholders.add(matcher.group(1));
-		}
-		return placeholders;
+	static ChatClient create(ChatModel chatModel) {
+		return builder(chatModel).build();
 	}
-
-	// static ChatClient create(ChatModel chatModel) {
-	// return builder(chatModel).build();
-	// }
 
 	static ChatClientBuilder builder(ChatModel chatModel) {
 		return new ChatClientBuilder(chatModel);
@@ -228,9 +214,9 @@ public interface ChatClient {
 
 		private final List<Message> messages = new ArrayList<>();
 
-		private final Map<String, Object> userParams = new ConcurrentHashMap<>();
+		private final Map<String, Object> userParams = new HashMap<>();
 
-		private final Map<String, Object> systemParams = new ConcurrentHashMap<>();
+		private final Map<String, Object> systemParams = new HashMap<>();
 
 		/* copy constructor */
 		ChatClientRequest(ChatClientRequest ccr) {
@@ -283,11 +269,6 @@ public interface ChatClient {
 
 		public ChatClientRequest functions(String... functionBeanNames) {
 			this.functionNames.addAll(List.of(functionBeanNames));
-			return this;
-		}
-
-		public ChatClientRequest chatOptions(ChatOptions chatOptions) {
-			this.chatOptions = chatOptions;
 			return this;
 		}
 
@@ -410,19 +391,6 @@ public interface ChatClient {
 
 		}
 
-		// Hack: Prune any trailing parameters not used in the system text.
-		// Later will cause the ST string template to fail.
-		private static Map<String, Object> pruneTrailingParams(String text, Map<String, Object> params) {
-			if (CollectionUtils.isEmpty(params)) {
-				return params;
-			}
-			List<String> paramNames = extractPlaceholders(text);
-			return params.entrySet()
-				.stream()
-				.filter(e -> paramNames.contains(e.getKey()))
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-		}
-
 		public static class CallResponseSpec {
 
 			private final ChatClientRequest request;
@@ -471,19 +439,15 @@ public interface ChatClient {
 				if (textsAreValid) {
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
-						userMessage = new UserMessage(
-								new PromptTemplate(processedUserText,
-										pruneTrailingParams(processedUserText, userParams))
-									.render(),
+						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
 								this.request.media);
 					}
 					else {
 						userMessage = new UserMessage(processedUserText, this.request.media);
 					}
 					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
-						var systemMessage = new SystemMessage(new PromptTemplate(this.request.systemText,
-								pruneTrailingParams(this.request.systemText, this.request.systemParams))
-							.render());
+						var systemMessage = new SystemMessage(
+								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
 						messages.add(systemMessage);
 					}
 					messages.add(userMessage);
@@ -514,13 +478,6 @@ public interface ChatClient {
 				return doGetChatResponse(this.request.userText).getResult().getOutput().getContent();
 			}
 
-			public List<String> contents() {
-				return doGetChatResponse(this.request.userText).getResults()
-					.stream()
-					.map(r -> r.getOutput().getContent())
-					.toList();
-			}
-
 		}
 
 		public static class StreamResponseSpec {
@@ -546,19 +503,15 @@ public interface ChatClient {
 				if (textsAreValid) {
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
-						userMessage = new UserMessage(
-								new PromptTemplate(processedUserText,
-										pruneTrailingParams(processedUserText, userParams))
-									.render(),
+						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
 								this.request.media);
 					}
 					else {
 						userMessage = new UserMessage(processedUserText, this.request.media);
 					}
 					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
-						var systemMessage = new SystemMessage(new PromptTemplate(this.request.systemText,
-								pruneTrailingParams(this.request.systemText, this.request.systemParams))
-							.render());
+						var systemMessage = new SystemMessage(
+								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
 						messages.add(systemMessage);
 					}
 					messages.add(userMessage);
@@ -625,7 +578,7 @@ public interface ChatClient {
 		}
 
 		public ChatClientBuilder defaultOptions(ChatOptions chatOptions) {
-			this.defaultRequest.chatOptions(chatOptions);
+			this.defaultRequest.options(chatOptions);
 			return this;
 		}
 
