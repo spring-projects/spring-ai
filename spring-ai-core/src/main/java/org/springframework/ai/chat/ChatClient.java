@@ -20,7 +20,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,6 +56,10 @@ import org.springframework.util.StringUtils;
  * @author Arjen Poutsma
  */
 public interface ChatClient {
+
+	// static ChatClient create(ChatModel chatModel) {
+	// return builder(chatModel).build();
+	// }
 
 	static ChatClientBuilder builder(ChatModel chatModel) {
 		return new ChatClientBuilder(chatModel);
@@ -579,7 +582,7 @@ public interface ChatClient {
 			return this;
 		}
 
-		public <I, O> ChatClientBuilder defaultFunctionWrappers(String name, String description,
+		public <I, O> ChatClientBuilder defaultFunction(String name, String description,
 				java.util.function.Function<I, O> function) {
 			this.defaultRequest.function(name, description, function);
 			return this;
