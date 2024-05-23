@@ -42,34 +42,53 @@ import org.springframework.util.Assert;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Hyunjoon Choi
  * @since 0.8.0
  */
 public class OpenAiImageModel implements ImageModel {
 
 	private final static Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
 
+	/**
+	 * The default options used for the image completion requests.
+	 */
 	private OpenAiImageOptions defaultOptions;
 
+	/**
+	 * The retry template used to retry the OpenAI Image API calls.
+	 */
+	private final RetryTemplate retryTemplate;
+
+	/**
+	 * Low-level access to the OpenAI Image API.
+	 */
 	private final OpenAiImageApi openAiImageApi;
 
-	public final RetryTemplate retryTemplate;
-
+	/**
+	 * Creates an instance of the OpenAiImageModel.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with the OpenAI
+	 * Image API.
+	 * @throws IllegalArgumentException if openAiImageApi is null
+	 */
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi) {
 		this(openAiImageApi, OpenAiImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions defaultOptions,
+	/**
+	 * Initializes a new instance of the OpenAiImageModel.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with the OpenAI
+	 * Image API.
+	 * @param options The OpenAiImageOptions to configure the image model.
+	 * @param retryTemplate The retry template.
+	 */
+	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options,
 			RetryTemplate retryTemplate) {
 		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
-		Assert.notNull(defaultOptions, "defaultOptions must not be null");
+		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.openAiImageApi = openAiImageApi;
-		this.defaultOptions = defaultOptions;
+		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
-	}
-
-	public OpenAiImageOptions getDefaultOptions() {
-		return this.defaultOptions;
 	}
 
 	@Override
@@ -158,4 +177,7 @@ public class OpenAiImageModel implements ImageModel {
 		return openAiImageOptionsBuilder.build();
 	}
 
+	public OpenAiImageOptions getDefaultOptions() {
+		return this.defaultOptions;
+	}
 }
