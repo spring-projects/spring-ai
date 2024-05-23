@@ -24,7 +24,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import reactor.core.publisher.Flux;
 
@@ -56,6 +59,17 @@ import org.springframework.util.StringUtils;
  * @author Arjen Poutsma
  */
 public interface ChatClient {
+
+	Pattern PLACEHOLDER_EXTRACTION_PATTER = Pattern.compile("\\{(.*?)\\}");
+
+	private static List<String> extractPlaceholders(String text) {
+		var placeholders = new ArrayList<String>();
+		var matcher = PLACEHOLDER_EXTRACTION_PATTER.matcher(text);
+		while (matcher.find()) {
+			placeholders.add(matcher.group(1));
+		}
+		return placeholders;
+	}
 
 	// static ChatClient create(ChatModel chatModel) {
 	// return builder(chatModel).build();
@@ -214,25 +228,27 @@ public interface ChatClient {
 
 		private final List<Message> messages = new ArrayList<>();
 
-		private final Map<String, Object> userParams = new HashMap<>();
+		private final Map<String, Object> userParams = new ConcurrentHashMap<>();
 
-		private final Map<String, Object> systemParams = new HashMap<>();
+		private final Map<String, Object> systemParams = new ConcurrentHashMap<>();
 
 		/* copy constructor */
 		ChatClientRequest(ChatClientRequest ccr) {
-			this(ccr.chatModel, ccr.userText, ccr.systemText, ccr.functionCallbacks, ccr.functionNames, ccr.media,
-					ccr.chatOptions);
+			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
+					ccr.functionNames, ccr.media, ccr.chatOptions);
 		}
 
-		public ChatClientRequest(ChatModel chatModel, String userText, String systemText,
-				List<FunctionCallback> functionCallbacks, List<String> functionNames, List<Media> media,
-				ChatOptions chatOptions) {
+		public ChatClientRequest(ChatModel chatModel, String userText, Map<String, Object> userParams,
+				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
+				List<String> functionNames, List<Media> media, ChatOptions chatOptions) {
 
 			this.chatModel = chatModel;
 			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
 
 			this.userText = userText;
+			this.userParams.putAll(userParams);
 			this.systemText = systemText;
+			this.systemParams.putAll(systemParams);
 
 			this.functionNames.addAll(functionNames);
 			this.functionCallbacks.addAll(functionCallbacks);
@@ -280,17 +296,46 @@ public interface ChatClient {
 			return this;
 		}
 
+		public ChatClientRequest system(Resource text, Charset charset) {
+			try {
+				this.systemText = text.getContentAsString(charset);
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		public ChatClientRequest system(Resource text) {
+			return this.system(text, Charset.defaultCharset());
+		}
+
 		public ChatClientRequest system(Consumer<SystemSpec> consumer) {
 			var ss = new SystemSpec();
 			consumer.accept(ss);
 			this.systemText = StringUtils.hasText(ss.text()) ? ss.text() : this.systemText;
 			this.systemParams.putAll(ss.params());
+
 			return this;
 		}
 
 		public ChatClientRequest user(String text) {
 			this.userText = text;
 			return this;
+		}
+
+		public ChatClientRequest user(Resource text, Charset charset) {
+			try {
+				this.userText = text.getContentAsString(charset);
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		public ChatClientRequest user(Resource text) {
+			return this.user(text, Charset.defaultCharset());
 		}
 
 		public ChatClientRequest user(Consumer<UserSpec> consumer) {
@@ -365,6 +410,19 @@ public interface ChatClient {
 
 		}
 
+		// Hack: Prune any trailing parameters not used in the system text.
+		// Later will cause the ST string template to fail.
+		private static Map<String, Object> pruneTrailingParams(String text, Map<String, Object> params) {
+			if (CollectionUtils.isEmpty(params)) {
+				return params;
+			}
+			List<String> paramNames = extractPlaceholders(text);
+			return params.entrySet()
+				.stream()
+				.filter(e -> paramNames.contains(e.getKey()))
+				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+		}
+
 		public static class CallResponseSpec {
 
 			private final ChatClientRequest request;
@@ -413,15 +471,19 @@ public interface ChatClient {
 				if (textsAreValid) {
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
-						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
+						userMessage = new UserMessage(
+								new PromptTemplate(processedUserText,
+										pruneTrailingParams(processedUserText, userParams))
+									.render(),
 								this.request.media);
 					}
 					else {
 						userMessage = new UserMessage(processedUserText, this.request.media);
 					}
 					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
-						var systemMessage = new SystemMessage(
-								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
+						var systemMessage = new SystemMessage(new PromptTemplate(this.request.systemText,
+								pruneTrailingParams(this.request.systemText, this.request.systemParams))
+							.render());
 						messages.add(systemMessage);
 					}
 					messages.add(userMessage);
@@ -484,15 +546,19 @@ public interface ChatClient {
 				if (textsAreValid) {
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
-						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
+						userMessage = new UserMessage(
+								new PromptTemplate(processedUserText,
+										pruneTrailingParams(processedUserText, userParams))
+									.render(),
 								this.request.media);
 					}
 					else {
 						userMessage = new UserMessage(processedUserText, this.request.media);
 					}
 					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
-						var systemMessage = new SystemMessage(
-								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
+						var systemMessage = new SystemMessage(new PromptTemplate(this.request.systemText,
+								pruneTrailingParams(this.request.systemText, this.request.systemParams))
+							.render());
 						messages.add(systemMessage);
 					}
 					messages.add(userMessage);
@@ -550,14 +616,15 @@ public interface ChatClient {
 		ChatClientBuilder(ChatModel chatModel) {
 			Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 			this.chatModel = chatModel;
-			this.defaultRequest = new ChatClientRequest(chatModel, "", "", List.of(), List.of(), List.of(), null);
+			this.defaultRequest = new ChatClientRequest(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
+					List.of(), null);
 		}
 
 		public ChatClient build() {
 			return new DefaultChatClient(this.chatModel, this.defaultRequest);
 		}
 
-		public ChatClientBuilder defaultRuntimeOptions(ChatOptions chatOptions) {
+		public ChatClientBuilder defaultOptions(ChatOptions chatOptions) {
 			this.defaultRequest.chatOptions(chatOptions);
 			return this;
 		}
@@ -565,6 +632,20 @@ public interface ChatClient {
 		public ChatClientBuilder defaultUser(String text) {
 			this.defaultRequest.user(text);
 			return this;
+		}
+
+		public ChatClientBuilder defaultUser(Resource text, Charset charset) {
+			try {
+				this.defaultRequest.user(text.getContentAsString(charset));
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		public ChatClientBuilder defaultUser(Resource text) {
+			return this.defaultUser(text, Charset.defaultCharset());
 		}
 
 		public ChatClientBuilder defaultUser(Consumer<UserSpec> userSpecConsumer) {
@@ -575,6 +656,20 @@ public interface ChatClient {
 		public ChatClientBuilder defaultSystem(String text) {
 			this.defaultRequest.system(text);
 			return this;
+		}
+
+		public ChatClientBuilder defaultSystem(Resource text, Charset charset) {
+			try {
+				this.defaultRequest.system(text.getContentAsString(charset));
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		public ChatClientBuilder defaultSystem(Resource text) {
+			return this.defaultSystem(text, Charset.defaultCharset());
 		}
 
 		public ChatClientBuilder defaultSystem(Consumer<SystemSpec> systemSpecConsumer) {
