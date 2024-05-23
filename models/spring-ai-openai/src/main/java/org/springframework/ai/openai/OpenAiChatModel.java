@@ -68,6 +68,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Josh Long
  * @author Jemin Huh
  * @author Grogdunn
+ * @author Hyunjoon Choi
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -86,7 +87,7 @@ public class OpenAiChatModel extends
 	/**
 	 * The retry template used to retry the OpenAI API calls.
 	 */
-	public final RetryTemplate retryTemplate;
+	private final RetryTemplate retryTemplate;
 
 	/**
 	 * Low-level access to the OpenAI API.
