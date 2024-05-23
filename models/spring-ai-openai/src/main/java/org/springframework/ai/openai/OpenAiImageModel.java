@@ -66,8 +66,8 @@ public class OpenAiImageModel implements ImageModel {
 
 	/**
 	 * Creates an instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with the OpenAI
-	 * Image API.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
+	 * the OpenAI Image API.
 	 * @throws IllegalArgumentException if openAiImageApi is null
 	 */
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi) {
@@ -76,13 +76,12 @@ public class OpenAiImageModel implements ImageModel {
 
 	/**
 	 * Initializes a new instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with the OpenAI
-	 * Image API.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
+	 * the OpenAI Image API.
 	 * @param options The OpenAiImageOptions to configure the image model.
 	 * @param retryTemplate The retry template.
 	 */
-	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options,
-			RetryTemplate retryTemplate) {
+	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate) {
 		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
@@ -180,4 +179,5 @@ public class OpenAiImageModel implements ImageModel {
 	public OpenAiImageOptions getDefaultOptions() {
 		return this.defaultOptions;
 	}
+
 }
