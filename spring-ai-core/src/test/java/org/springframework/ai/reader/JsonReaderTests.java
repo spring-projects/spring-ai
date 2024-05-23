@@ -29,15 +29,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class JsonReaderTests {
 
 	@Value("classpath:bikes.json")
-	private Resource resourceArray;
+	private Resource arrayResource;
 
 	@Value("classpath:person.json")
-	private Resource resourceObject;
+	private Resource ObjectResource;
 
 	@Test
 	void loadJsonArray() {
-		assertThat(resourceArray).isNotNull();
-		JsonReader jsonReader = new JsonReader(resourceArray, "description");
+		assertThat(arrayResource).isNotNull();
+		JsonReader jsonReader = new JsonReader(arrayResource, "description");
 		List<Document> documents = jsonReader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
@@ -47,8 +47,8 @@ public class JsonReaderTests {
 
 	@Test
 	void loadJsonObject() {
-		assertThat(resourceObject).isNotNull();
-		JsonReader jsonReader = new JsonReader(resourceObject, "description");
+		assertThat(ObjectResource).isNotNull();
+		JsonReader jsonReader = new JsonReader(ObjectResource, "description");
 		List<Document> documents = jsonReader.get();
 		assertThat(documents).isNotEmpty();
 		for (Document document : documents) {
