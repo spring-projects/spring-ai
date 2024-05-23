@@ -61,8 +61,8 @@ public interface ChatClient {
 		return builder(chatModel).build();
 	}
 
-	static ChatClientBuilder builder(ChatModel chatModel) {
-		return new ChatClientBuilder(chatModel);
+	static Builder builder(ChatModel chatModel) {
+		return new Builder(chatModel);
 	}
 
 	ChatClientRequest prompt();
@@ -560,13 +560,13 @@ public interface ChatClient {
 
 	}
 
-	class ChatClientBuilder {
+	class Builder {
 
 		private final ChatClientRequest defaultRequest;
 
 		private final ChatModel chatModel;
 
-		ChatClientBuilder(ChatModel chatModel) {
+		Builder(ChatModel chatModel) {
 			Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 			this.chatModel = chatModel;
 			this.defaultRequest = new ChatClientRequest(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
@@ -577,17 +577,17 @@ public interface ChatClient {
 			return new DefaultChatClient(this.chatModel, this.defaultRequest);
 		}
 
-		public ChatClientBuilder defaultOptions(ChatOptions chatOptions) {
+		public Builder defaultOptions(ChatOptions chatOptions) {
 			this.defaultRequest.options(chatOptions);
 			return this;
 		}
 
-		public ChatClientBuilder defaultUser(String text) {
+		public Builder defaultUser(String text) {
 			this.defaultRequest.user(text);
 			return this;
 		}
 
-		public ChatClientBuilder defaultUser(Resource text, Charset charset) {
+		public Builder defaultUser(Resource text, Charset charset) {
 			try {
 				this.defaultRequest.user(text.getContentAsString(charset));
 			}
@@ -597,21 +597,21 @@ public interface ChatClient {
 			return this;
 		}
 
-		public ChatClientBuilder defaultUser(Resource text) {
+		public Builder defaultUser(Resource text) {
 			return this.defaultUser(text, Charset.defaultCharset());
 		}
 
-		public ChatClientBuilder defaultUser(Consumer<UserSpec> userSpecConsumer) {
+		public Builder defaultUser(Consumer<UserSpec> userSpecConsumer) {
 			this.defaultRequest.user(userSpecConsumer);
 			return this;
 		}
 
-		public ChatClientBuilder defaultSystem(String text) {
+		public Builder defaultSystem(String text) {
 			this.defaultRequest.system(text);
 			return this;
 		}
 
-		public ChatClientBuilder defaultSystem(Resource text, Charset charset) {
+		public Builder defaultSystem(Resource text, Charset charset) {
 			try {
 				this.defaultRequest.system(text.getContentAsString(charset));
 			}
@@ -621,22 +621,22 @@ public interface ChatClient {
 			return this;
 		}
 
-		public ChatClientBuilder defaultSystem(Resource text) {
+		public Builder defaultSystem(Resource text) {
 			return this.defaultSystem(text, Charset.defaultCharset());
 		}
 
-		public ChatClientBuilder defaultSystem(Consumer<SystemSpec> systemSpecConsumer) {
+		public Builder defaultSystem(Consumer<SystemSpec> systemSpecConsumer) {
 			this.defaultRequest.system(systemSpecConsumer);
 			return this;
 		}
 
-		public <I, O> ChatClientBuilder defaultFunction(String name, String description,
+		public <I, O> Builder defaultFunction(String name, String description,
 				java.util.function.Function<I, O> function) {
 			this.defaultRequest.function(name, description, function);
 			return this;
 		}
 
-		public ChatClientBuilder defaultFunctions(String... functionNames) {
+		public Builder defaultFunctions(String... functionNames) {
 			this.defaultRequest.functions(functionNames);
 			return this;
 		}
