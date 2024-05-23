@@ -15,18 +15,9 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.springframework.ai.image.Image;
-import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.image.ImageGeneration;
-import org.springframework.ai.image.ImageOptions;
-import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.image.*;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
@@ -35,6 +26,8 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+
+import java.util.List;
 
 /**
  * OpenAiImageModel is a class that implements the ImageModel interface. It provides a
@@ -66,8 +59,8 @@ public class OpenAiImageModel implements ImageModel {
 
 	/**
 	 * Creates an instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with the OpenAI
-	 * Image API.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
+	 * the OpenAI Image API.
 	 * @throws IllegalArgumentException if openAiImageApi is null
 	 */
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi) {
@@ -76,13 +69,12 @@ public class OpenAiImageModel implements ImageModel {
 
 	/**
 	 * Initializes a new instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with the OpenAI
-	 * Image API.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
+	 * the OpenAI Image API.
 	 * @param options The OpenAiImageOptions to configure the image model.
 	 * @param retryTemplate The retry template.
 	 */
-	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options,
-			RetryTemplate retryTemplate) {
+	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate) {
 		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
@@ -177,7 +169,4 @@ public class OpenAiImageModel implements ImageModel {
 		return openAiImageOptionsBuilder.build();
 	}
 
-	public OpenAiImageOptions getDefaultOptions() {
-		return this.defaultOptions;
-	}
 }
