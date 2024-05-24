@@ -19,6 +19,7 @@ import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -120,7 +121,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 						&& pagesPerDocument >= this.config.pagesPerDocument) {
 					pagesPerDocument = 0;
 
-					var aggregatedPageTextGroup = String.join("", pageTextGroupList);
+					var aggregatedPageTextGroup = pageTextGroupList.stream().collect(Collectors.joining());
 					if (StringUtils.hasText(aggregatedPageTextGroup)) {
 						readDocuments.add(toDocument(aggregatedPageTextGroup, startPageNumber, pageNumber));
 					}
@@ -149,7 +150,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 			}
 			if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-				readDocuments.add(toDocument(String.join("", pageTextGroupList), startPageNumber,
+				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
 						pageNumber));
 			}
 			logger.info("Processing {} pages", totalPages);
