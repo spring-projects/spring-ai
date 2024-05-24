@@ -123,7 +123,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("ice cream flavors" + flavors);
 		assertThat(flavors).hasSize(5);
-		assertThat(flavors).contains("Vanilla");
+		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
 
 	@Test

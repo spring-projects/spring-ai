@@ -26,15 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -443,9 +443,7 @@ public interface ChatClient {
 			}
 
 			private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> boc) {
-				var processedUserText = this.request.userText + System.lineSeparator() + System.lineSeparator()
-						+ "{format}";
-				var chatResponse = doGetChatResponse(processedUserText, boc.getFormat());
+				var chatResponse = doGetChatResponse(boc.getFormat());
 				var stringResponse = chatResponse.getResult().getOutput().getContent();
 				return boc.convert(stringResponse);
 			}
@@ -456,11 +454,15 @@ public interface ChatClient {
 				return doSingleWithBeanOutputConverter(boc);
 			}
 
-			private ChatResponse doGetChatResponse(String processedUserText) {
-				return this.doGetChatResponse(processedUserText, "");
+			private ChatResponse doGetChatResponse() {
+				return this.doGetChatResponse("");
 			}
 
-			private ChatResponse doGetChatResponse(String processedUserText, String formatParam) {
+			private ChatResponse doGetChatResponse(String formatParam) {
+
+				var processedUserText = StringUtils.hasText(formatParam)
+						? this.request.userText + System.lineSeparator() + "{format}" : this.request.userText;
+
 				Map<String, Object> userParams = new HashMap<>(this.request.userParams);
 				if (StringUtils.hasText(formatParam)) {
 					userParams.put("format", formatParam);
@@ -486,9 +488,6 @@ public interface ChatClient {
 					messages.add(userMessage);
 				}
 				if (this.request.chatOptions instanceof FunctionCallingOptions functionCallingOptions) {
-					// if (this.request.chatOptions instanceof
-					// FunctionCallingOptionsBuilder.PortableFunctionCallingOptions
-					// functionCallingOptions) {
 					if (!this.request.functionNames.isEmpty()) {
 						functionCallingOptions.setFunctions(new HashSet<>(this.request.functionNames));
 					}
@@ -501,11 +500,11 @@ public interface ChatClient {
 			}
 
 			public ChatResponse chatResponse() {
-				return doGetChatResponse(this.request.userText);
+				return doGetChatResponse();
 			}
 
 			public String content() {
-				return doGetChatResponse(this.request.userText).getResult().getOutput().getContent();
+				return doGetChatResponse().getResult().getOutput().getContent();
 			}
 
 		}
