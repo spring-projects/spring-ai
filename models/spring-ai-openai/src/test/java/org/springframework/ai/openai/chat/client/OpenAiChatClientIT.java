@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat;
+package org.springframework.ai.openai.chat.client;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +33,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -42,6 +42,7 @@ import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
@@ -79,20 +80,21 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@Test
-	void listOutputConverter() {
+	void listOutputConverterString() {
 		// @formatter:off
-		Collection<String> collection = ChatClient.builder(chatModel).build().prompt()
+		List<String> collection = ChatClient.builder(chatModel).build().prompt()
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
 				.entity(new ParameterizedTypeReference<List<String>>() {});
 		// @formatter:on
 
+		logger.info(collection.toString());
 		assertThat(collection).hasSize(5);
 	}
 
 	@Test
-	void listOutputConverter2() {
+	void listOutputConverterBean() {
 
 		// @formatter:off
 		List<ActorsFilms> actorsFilms = ChatClient.builder(chatModel).build().prompt()
@@ -104,6 +106,24 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void customOutputConverter() {
+
+		var toStringListConverter = new ListOutputConverter(new DefaultConversionService());
+
+		// @formatter:off
+		List<String> flavors = ChatClient.builder(chatModel).build().prompt()
+				.user(u -> u.text("List five {subject}")
+				.param("subject", "ice cream flavors"))
+				.call()
+				.entity(toStringListConverter);
+		// @formatter:on
+
+		logger.info("ice cream flavors" + flavors);
+		assertThat(flavors).hasSize(5);
+		assertThat(flavors).contains("Vanilla");
 	}
 
 	@Test
@@ -187,6 +207,24 @@ class OpenAiChatClientIT extends AbstractIT {
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.call()
 				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).containsAnyOf("30.0", "30");
+		assertThat(response).containsAnyOf("10.0", "10");
+		assertThat(response).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void defaultFunctionCallTest() {
+
+		// @formatter:off
+		String response = ChatClient.builder(chatModel)
+				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+			.build()
+			.prompt().call().content();
 		// @formatter:on
 
 		logger.info("Response: {}", response);

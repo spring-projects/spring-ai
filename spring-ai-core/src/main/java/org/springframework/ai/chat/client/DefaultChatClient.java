@@ -36,6 +36,15 @@ class DefaultChatClient implements ChatClient {
 	}
 
 	/**
+	 * Return a {@code ChatClient.Builder} to create a new {@code ChatClient} whose
+	 * settings are replicated from this {@code ChatClientRequest}.
+	 */
+	@Override
+	public Builder mutate() {
+		return this.defaultChatClientRequest.mutate();
+	}
+
+	/**
 	 * use the new fluid DSL starting in {@link #prompt()}
 	 * @param prompt the {@link Prompt prompt} object
 	 * @return a {@link ChatResponse chat response}

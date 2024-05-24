@@ -39,6 +39,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
@@ -73,6 +74,12 @@ public interface ChatClient {
 	ChatClientRequest prompt();
 
 	ChatClientPromptRequest prompt(Prompt prompt);
+
+	/**
+	 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
+	 * settings are replicated from the default {@link ChatClientRequest} of this client.
+	 */
+	Builder mutate();
 
 	interface PromptSpec<T> {
 
@@ -222,6 +229,26 @@ public interface ChatClient {
 		private final Map<String, Object> userParams = new HashMap<>();
 
 		private final Map<String, Object> systemParams = new HashMap<>();
+
+		/**
+		 * Return a {@code ChatClient.Builder} to create a new {@code ChatClient} whose
+		 * settings are replicated from this {@code ChatClientRequest}.
+		 */
+		public Builder mutate() {
+			Builder builder = ChatClient.builder(chatModel)
+				.defaultSystem(s -> s.text(this.systemText).params(this.systemParams))
+				.defaultUser(u -> u.text(this.userText)
+					.params(this.userParams)
+					.media(this.media.toArray(new Media[this.media.size()])))
+				.defaultOptions(this.chatOptions)
+				.defaultFunctions(StringUtils.toStringArray(this.functionNames));
+
+			// workaround to set the missing fields.
+			builder.defaultRequest.messages.addAll(this.messages);
+			builder.defaultRequest.functionCallbacks.addAll(this.functionCallbacks);
+
+			return builder;
+		}
 
 		/* copy constructor */
 		ChatClientRequest(ChatClientRequest ccr) {
@@ -411,7 +438,11 @@ public interface ChatClient {
 				return doSingleWithBeanOutputConverter(new BeanOutputConverter<T>(type));
 			}
 
-			private <T> T doSingleWithBeanOutputConverter(BeanOutputConverter<T> boc) {
+			public <T> T entity(StructuredOutputConverter<T> structuredOutputConverter) {
+				return doSingleWithBeanOutputConverter(structuredOutputConverter);
+			}
+
+			private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> boc) {
 				var processedUserText = this.request.userText + System.lineSeparator() + System.lineSeparator()
 						+ "{format}";
 				var chatResponse = doGetChatResponse(processedUserText, boc.getFormat());
@@ -435,13 +466,15 @@ public interface ChatClient {
 					userParams.put("format", formatParam);
 				}
 
-				var messages = new ArrayList<Message>();
+				var messages = new ArrayList<Message>(this.request.messages);
 				var textsAreValid = (StringUtils.hasText(processedUserText)
 						|| StringUtils.hasText(this.request.systemText));
-				var messagesAreValid = !this.request.messages.isEmpty();
-				Assert.state(!(messagesAreValid && textsAreValid), "you must specify either " + Message.class.getName()
-						+ " instances or user/system texts, but not both");
 				if (textsAreValid) {
+					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
+						var systemMessage = new SystemMessage(
+								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
+						messages.add(systemMessage);
+					}
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
 						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
@@ -450,15 +483,7 @@ public interface ChatClient {
 					else {
 						userMessage = new UserMessage(processedUserText, this.request.media);
 					}
-					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
-						var systemMessage = new SystemMessage(
-								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
-						messages.add(systemMessage);
-					}
 					messages.add(userMessage);
-				}
-				else {
-					messages.addAll(this.request.messages);
 				}
 				if (this.request.chatOptions instanceof FunctionCallingOptions functionCallingOptions) {
 					// if (this.request.chatOptions instanceof

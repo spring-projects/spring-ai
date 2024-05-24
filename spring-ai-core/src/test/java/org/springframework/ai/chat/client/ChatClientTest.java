@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
+import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -196,6 +200,229 @@ public class ChatClientTest {
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getContent()).isEqualTo("Override default system text value3");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	static Function<String, String> mockFunction = new Function<String, String>() {
+		@Override
+		public String apply(String s) {
+			return s;
+		}
+	};
+
+	@Test
+	public void mutateDefaults() {
+
+		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
+		when(chatModel.getDefaultOptions()).thenReturn(options);
+
+		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation("response"))));
+
+		when(chatModel.stream(promptCaptor.capture()))
+			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation("response"))), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			}));
+
+		// @formatter:off
+		var chatClient = ChatClient.builder(chatModel)
+				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
+						.param("param1", "value1")
+						.param("param2", "value2"))
+				.defaultFunctions("fun1", "fun2")
+				.defaultFunction("fun3", "fun3description", mockFunction)
+				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
+						.param("uparam1", "value1")
+						.param("uparam2", "value2")
+						.media(MimeTypeUtils.IMAGE_JPEG,
+								new DefaultResourceLoader().getResource("classpath:/bikes.json")))
+				.build();
+		// @formatter:on
+
+		var content = chatClient.prompt().call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		Prompt prompt = promptCaptor.getValue();
+
+		Message systemMessage = prompt.getInstructions().get(0);
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getContent()).isEqualTo("Default system text value1, value2");
+
+		Message userMessage = prompt.getInstructions().get(1);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("Default user text value1, value2");
+		assertThat(userMessage.getMedia()).hasSize(1);
+		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+
+		var fco = (FunctionCallingOptions) prompt.getOptions();
+
+		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2");
+		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+
+		// Streaming
+		content = join(chatClient.prompt().stream().content());
+
+		assertThat(content).isEqualTo("response");
+
+		prompt = promptCaptor.getValue();
+
+		systemMessage = prompt.getInstructions().get(0);
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getContent()).isEqualTo("Default system text value1, value2");
+
+		userMessage = prompt.getInstructions().get(1);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("Default user text value1, value2");
+		assertThat(userMessage.getMedia()).hasSize(1);
+		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+
+		fco = (FunctionCallingOptions) prompt.getOptions();
+
+		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2");
+		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+
+		// mutate builder
+		// @formatter:off
+		chatClient = chatClient.mutate()
+				.defaultSystem("Mutated default system text {param1}, {param2}")
+				.defaultFunctions("fun4")
+				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
+				.build();
+		// @formatter:on
+
+		content = chatClient.prompt().call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		prompt = promptCaptor.getValue();
+
+		systemMessage = prompt.getInstructions().get(0);
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getContent()).isEqualTo("Mutated default system text value1, value2");
+
+		userMessage = prompt.getInstructions().get(1);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("Mutated default user text value1, value2");
+		assertThat(userMessage.getMedia()).hasSize(1);
+		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+
+		fco = (FunctionCallingOptions) prompt.getOptions();
+
+		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun4");
+		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+
+		// Streaming
+		content = join(chatClient.prompt().stream().content());
+
+		assertThat(content).isEqualTo("response");
+
+		prompt = promptCaptor.getValue();
+
+		systemMessage = prompt.getInstructions().get(0);
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getContent()).isEqualTo("Mutated default system text value1, value2");
+
+		userMessage = prompt.getInstructions().get(1);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("Mutated default user text value1, value2");
+		assertThat(userMessage.getMedia()).hasSize(1);
+		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+
+		fco = (FunctionCallingOptions) prompt.getOptions();
+
+		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun4");
+		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+
+	}
+
+	@Test
+	public void mutatePrompt() {
+
+		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
+		when(chatModel.getDefaultOptions()).thenReturn(options);
+
+		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation("response"))));
+
+		when(chatModel.stream(promptCaptor.capture()))
+			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation("response"))), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			}));
+		// @formatter:off
+		var chatClient = ChatClient.builder(chatModel)
+				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
+						.param("param1", "value1")
+						.param("param2", "value2"))
+				.defaultFunctions("fun1", "fun2")
+				.defaultFunction("fun3", "fun3description", mockFunction)
+				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
+						.param("uparam1", "value1")
+						.param("uparam2", "value2")
+						.media(MimeTypeUtils.IMAGE_JPEG,
+								new DefaultResourceLoader().getResource("classpath:/bikes.json")))
+				.build();
+
+		var content = chatClient
+				.prompt()
+					.system("New default system text {param1}, {param2}")
+					.user(u -> u.param("uparam1", "userValue1")
+						.param("uparam2", "userValue2"))
+					.functions("fun5")
+				.mutate().build() // mutate and build new prompt
+				.prompt().call().content();
+		// @formatter:on
+
+		assertThat(content).isEqualTo("response");
+
+		Prompt prompt = promptCaptor.getValue();
+
+		Message systemMessage = prompt.getInstructions().get(0);
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getContent()).isEqualTo("New default system text value1, value2");
+
+		Message userMessage = prompt.getInstructions().get(1);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("Default user text userValue1, userValue2");
+		assertThat(userMessage.getMedia()).hasSize(1);
+		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+
+		var fco = (FunctionCallingOptions) prompt.getOptions();
+
+		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun5");
+		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+
+		// Streaming
+		// @formatter:off
+		content = join(chatClient
+					.prompt()
+						.system("New default system text {param1}, {param2}")
+						.user(u -> u.param("uparam1", "userValue1")
+							.param("uparam2", "userValue2"))
+						.functions("fun5")
+					.mutate().build() // mutate and build new prompt
+					.prompt().stream().content());
+		// @formatter:on
+
+		assertThat(content).isEqualTo("response");
+
+		prompt = promptCaptor.getValue();
+
+		systemMessage = prompt.getInstructions().get(0);
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getContent()).isEqualTo("New default system text value1, value2");
+
+		userMessage = prompt.getInstructions().get(1);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getContent()).isEqualTo("Default user text userValue1, userValue2");
+		assertThat(userMessage.getMedia()).hasSize(1);
+		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+
+		fco = (FunctionCallingOptions) prompt.getOptions();
+
+		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun5");
+		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
 	}
 
 	@Test
