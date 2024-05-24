@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.postgresml;
 import java.util.Map;
 
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingClient;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingModel;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -36,14 +36,14 @@ public class PostgresMlEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.postgresml.embedding";
 
 	/**
-	 * Enable Postgres ML embedding client.
+	 * Enable Postgres ML embedding model.
 	 */
 	private boolean enabled = true;
 
 	@NestedConfigurationProperty
 	private PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
-		.withTransformer(PostgresMlEmbeddingClient.DEFAULT_TRANSFORMER_MODEL)
-		.withVectorType(PostgresMlEmbeddingClient.VectorType.PG_ARRAY)
+		.withTransformer(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL)
+		.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_ARRAY)
 		.withKwargs(Map.of())
 		.withMetadataMode(MetadataMode.EMBED)
 		.build();

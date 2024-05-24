@@ -81,19 +81,19 @@ The prefix `spring.ai.minimax` is used as the property prefix that lets you conn
 
 ==== Configuration Properties
 
-The prefix `spring.ai.minimax.embedding` is property prefix that configures the `EmbeddingClient` implementation for MiniMax.
+The prefix `spring.ai.minimax.embedding` is property prefix that configures the `EmbeddingModel` implementation for MiniMax.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.minimax.embedding.enabled | Enable MiniMax embedding client.  | true
+| spring.ai.minimax.embedding.enabled | Enable MiniMax embedding model.  | true
 | spring.ai.minimax.embedding.base-url   | Optional overrides the spring.ai.minimax.base-url to provide embedding specific url | -
 | spring.ai.minimax.embedding.api-key    | Optional overrides the spring.ai.minimax.api-key to provide embedding specific api-key  | -
 | spring.ai.minimax.embedding.options.model      | The model to use      | embo-01
 |====
 
-NOTE: You can override the common `spring.ai.minimax.base-url` and `spring.ai.minimax.api-key` for the `ChatClient` and `EmbeddingClient` implementations.
+NOTE: You can override the common `spring.ai.minimax.base-url` and `spring.ai.minimax.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.minimax.embedding.base-url` and `spring.ai.minimax.embedding.api-key` properties if set take precedence over the common properties.
 Similarly, the `spring.ai.minimax.embedding.base-url` and `spring.ai.minimax.embedding.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different MiniMax accounts for different models and different model endpoints.
@@ -106,14 +106,14 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mini
 
 The default options can be configured using the `spring.ai.minimax.embedding.options` properties as well.
 
-At start-time use the `MiniMaxEmbeddingClient` constructor to set the  default options used for all embedding requests.
+At start-time use the `MiniMaxEmbeddingModel` constructor to set the  default options used for all embedding requests.
 At run-time you can override the default options, using a `MiniMaxEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
+EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         MiniMaxEmbeddingOptions.builder()
             .withModel("Different-Embedding-Model-Deployment-Name")
@@ -122,8 +122,8 @@ EmbeddingResponse embeddingResponse = embeddingClient.call(
 
 == Sample Controller
 
-This will create a `EmbeddingClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the `EmbeddingClient` implementation.
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingC` implementation.
 
 [source,application.properties]
 ----
@@ -136,16 +136,16 @@ spring.ai.minimax.embedding.options.model=embo-01
 @RestController
 public class EmbeddingController {
 
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingModel;
 
     @Autowired
-    public EmbeddingController(EmbeddingClient embeddingClient) {
-        this.embeddingClient = embeddingClient;
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     @GetMapping("/ai/embedding")
     public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
         return Map.of("embedding", embeddingResponse);
     }
 }
@@ -174,21 +174,21 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-NOTE: The `spring-ai-minimax` dependency provides access also to the `MiniMaxChatClient`.
-For more information about the `MiniMaxChatClient` refer to the link:../chat/minimax-chat.html[MiniMax Chat Client] section.
+NOTE: The `spring-ai-minimax` dependency provides access also to the `MiniMaxChatModel`.
+For more information about the `MiniMaxChatModel refer to the link:../chat/minimax-chat.html[MiniMax Chat Client] section.
 
-Next, create an `MiniMaxEmbeddingClient` instance and use it to compute the similarity between two input texts:
+Next, create an `MiniMaxEmbeddingModel` instance and use it to compute the similarity between two input texts:
 
 [source,java]
 ----
 var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
-var embeddingClient = new MiniMaxEmbeddingClient(miniMaxApi)
+var embeddingModel = new MiniMaxEmbeddingModel(miniMaxApi)
     .withDefaultOptions(MiniMaxChatOptions.build()
         .withModel("embo-01")
         .build());
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

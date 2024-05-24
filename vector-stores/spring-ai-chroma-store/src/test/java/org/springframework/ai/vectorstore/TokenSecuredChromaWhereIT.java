@@ -25,9 +25,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -139,13 +139,13 @@ public class TokenSecuredChromaWhereIT {
 		}
 
 		@Bean
-		public VectorStore chromaVectorStore(EmbeddingClient embeddingClient, ChromaApi chromaApi) {
-			return new ChromaVectorStore(embeddingClient, chromaApi, "TestCollection");
+		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
+			return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection");
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

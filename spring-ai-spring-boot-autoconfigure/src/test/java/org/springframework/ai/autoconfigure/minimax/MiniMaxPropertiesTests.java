@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.minimax.MiniMaxChatClient;
-import org.springframework.ai.minimax.MiniMaxEmbeddingClient;
+import org.springframework.ai.minimax.MiniMaxChatModel;
+import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -168,7 +168,7 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.options.topP=0.56",
 
 				// "spring.ai.minimax.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.minimax.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName")),
+				"spring.ai.minimax.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
 				"spring.ai.minimax.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.minimax.chat.options.tools[0].function.description=function description",
@@ -270,7 +270,7 @@ public class MiniMaxPropertiesTests {
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -279,7 +279,7 @@ public class MiniMaxPropertiesTests {
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -289,7 +289,7 @@ public class MiniMaxPropertiesTests {
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
 			});
 	}
 
@@ -302,7 +302,7 @@ public class MiniMaxPropertiesTests {
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxChatClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -311,7 +311,7 @@ public class MiniMaxPropertiesTests {
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isNotEmpty();
 			});
 
 		new ApplicationContextRunner()
@@ -321,7 +321,7 @@ public class MiniMaxPropertiesTests {
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxChatClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isNotEmpty();
 			});
 
 	}

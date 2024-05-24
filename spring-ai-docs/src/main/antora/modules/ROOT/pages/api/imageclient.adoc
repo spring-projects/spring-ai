@@ -1,27 +1,27 @@
-[[ImageClient]]
-= Image Generation API
+[[ImageModel]]
+= Image Model API
 
 
-The `Spring Image Generation API` is designed to be a simple and portable interface for interacting with various xref:concepts.adoc#_models[AI Models] specialized in image generation, allowing developers to switch between different image-related models with minimal code changes.
+The `Spring Image Model API` is designed to be a simple and portable interface for interacting with various xref:concepts.adoc#_models[AI Models] specialized in image generation, allowing developers to switch between different image-related models with minimal code changes.
 This design aligns with Spring's philosophy of modularity and interchangeability, ensuring developers can quickly adapt their applications to different AI capabilities related to image processing.
 
-Additionally, with the support of companion classes like `ImagePrompt` for input encapsulation and `ImageResponse` for output handling, the Image Generation API unifies the communication with AI Models dedicated to image generation.
+Additionally, with the support of companion classes like `ImagePrompt` for input encapsulation and `ImageResponse` for output handling, the Image Model API unifies the communication with AI Models dedicated to image generation.
 It manages the complexity of request preparation and response parsing, offering a direct and simplified API interaction for image-generation functionalities.
 
-The Spring Image Generation API is built on top of the Spring AI `Generic Model API`, providing image-specific abstractions and implementations.
+The Spring Image Model API is built on top of the Spring AI `Generic Model API`, providing image-specific abstractions and implementations.
 
 == API Overview
 
-This section provides a guide to the Spring Image Generation API interface and associated classes.
+This section provides a guide to the Spring Image Model API interface and associated classes.
 
-== Image Client
+== Image Model
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageClient.java[ImageClient] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageModel.java[ImageModel] interface definition:
 
 [source,java]
 ----
 @FunctionalInterface
-public interface ImageClient extends ModelClient<ImagePrompt, ImageResponse> {
+public interface ImageModel extends Model<ImagePrompt, ImageResponse> {
 
 	ImageResponse call(ImagePrompt request);
 
@@ -68,7 +68,7 @@ public class ImageMessage {
 	public Float getWeight() {...}
 
    // constructors and utility methods omitted
-
+}
 ----
 
 ==== ImageOptions
@@ -94,7 +94,7 @@ public interface ImageOptions extends ModelOptions {
 }
 ----
 
-Additionally, every model specific ImageClient implementation can have its own options that can be passed to the AI model. For example, the OpenAI Image Generation model has its own options like `quality`, `style`, etc.
+Additionally, every model specific ImageModel implementation can have its own options that can be passed to the AI model. For example, the OpenAI Image Generation model has its own options like `quality`, `style`, etc.
 
 
 This is a powerful feature that allows developers to use model specific options when starting the application and then override them with at runtime using the `ImagePrompt`.
@@ -157,7 +157,7 @@ public class ImageGeneration implements ModelResult<Image> {
 
 == Available Implementations
 
-`ImageClient` implementations are provided for the following Model providers:
+`ImageModel` implementations are provided for the following Model providers:
 
 * xref:api/image/openai-image.adoc[OpenAI Image Generation]
 * xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]

@@ -17,8 +17,13 @@ package org.springframework.ai.minimax.api;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.minimax.api.MiniMaxApi.*;
+
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
+import org.springframework.ai.minimax.api.MiniMaxApi.EmbeddingList;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 

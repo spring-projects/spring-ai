@@ -22,12 +22,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.anthropic.AnthropicChatModel;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.anthropic.AnthropicChatClient;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -50,8 +50,8 @@ public class AnthropicAutoConfigurationIT {
 	@Test
 	void generate() {
 		contextRunner.run(context -> {
-			AnthropicChatClient chatClient = context.getBean(AnthropicChatClient.class);
-			String response = chatClient.call("Hello");
+			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
@@ -60,8 +60,8 @@ public class AnthropicAutoConfigurationIT {
 	@Test
 	void generateStreaming() {
 		contextRunner.run(context -> {
-			AnthropicChatClient chatClient = context.getBean(AnthropicChatClient.class);
-			Flux<ChatResponse> responseFlux = chatClient.stream(new Prompt(new UserMessage("Hello")));
+			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
 
 			String response = responseFlux.collectList()
 				.block()

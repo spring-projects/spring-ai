@@ -11,7 +11,7 @@
 
     <artifactId>spring-ai-watsonx-ai</artifactId>
 
-    <name>Spring AI WatsonX AI</name>
+    <name>Spring AI Model - WatsonX AI</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

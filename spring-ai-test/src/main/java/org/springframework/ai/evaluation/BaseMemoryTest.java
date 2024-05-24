@@ -44,10 +44,10 @@ public class BaseMemoryTest {
 	protected StreamingChatService streamingChatService;
 
 	public BaseMemoryTest(RelevancyEvaluator relevancyEvaluator, ChatService chatService,
-			StreamingChatService streamingChatClient) {
+			StreamingChatService streamingChatModel) {
 		this.relevancyEvaluator = relevancyEvaluator;
 		this.chatService = chatService;
-		this.streamingChatService = streamingChatClient;
+		this.streamingChatService = streamingChatModel;
 	}
 
 	@Test

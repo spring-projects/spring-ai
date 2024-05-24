@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-bedrock</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Bedrock</name>
-	<description>Bedrock AI support</description>
+	<name>Spring AI Model - Amazon Bedrock</name>
+	<description>Amazon Bedrock models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

@@ -36,7 +36,7 @@ public class AzureEmbeddingsOptionsTests {
 	public void createRequestWithChatOptions() {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
-		var client = new AzureOpenAiEmbeddingClient(mockClient, MetadataMode.EMBED,
+		var client = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.EMBED,
 				AzureOpenAiEmbeddingOptions.builder()
 					.withDeploymentName("DEFAULT_MODEL")
 					.withUser("USER_TEST")

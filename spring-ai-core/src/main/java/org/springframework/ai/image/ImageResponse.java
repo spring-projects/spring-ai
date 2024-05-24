@@ -19,32 +19,72 @@ import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.CollectionUtils;
 
+/**
+ * The image completion (e.g. imageGeneration) response returned by an AI provider.
+ *
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @author Hyunjoon Choi
+ */
 public class ImageResponse implements ModelResponse<ImageGeneration> {
 
 	private final ImageResponseMetadata imageResponseMetadata;
 
+	/**
+	 * List of generate images returned by the AI provider.
+	 */
 	private final List<ImageGeneration> imageGenerations;
 
+	/**
+	 * Construct a new {@link ImageResponse} instance without metadata.
+	 * @param generations the {@link List} of {@link ImageGeneration} returned by the AI
+	 * provider.
+	 */
 	public ImageResponse(List<ImageGeneration> generations) {
 		this(generations, ImageResponseMetadata.NULL);
 	}
 
+	/**
+	 * Construct a new {@link ImageResponse} instance.
+	 * @param generations the {@link List} of {@link ImageGeneration} returned by the AI
+	 * provider.
+	 * @param imageResponseMetadata {@link ImageResponseMetadata} containing information
+	 * about the use of the AI provider's API.
+	 */
 	public ImageResponse(List<ImageGeneration> generations, ImageResponseMetadata imageResponseMetadata) {
 		this.imageResponseMetadata = imageResponseMetadata;
 		this.imageGenerations = List.copyOf(generations);
 	}
 
-	@Override
-	public ImageGeneration getResult() {
-		return imageGenerations.get(0);
-	}
-
+	/**
+	 * The {@link List} of {@link ImageGeneration generated outputs}.
+	 * <p>
+	 * It is a {@link List} of {@link List lists} because the Prompt could request
+	 * multiple output {@link ImageGeneration generations}.
+	 * @return the {@link List} of {@link ImageGeneration generated outputs}.
+	 */
 	@Override
 	public List<ImageGeneration> getResults() {
 		return imageGenerations;
 	}
 
+	/**
+	 * @return Returns the first {@link ImageGeneration} in the generations list.
+	 */
+	@Override
+	public ImageGeneration getResult() {
+		if (CollectionUtils.isEmpty(this.imageGenerations)) {
+			return null;
+		}
+		return imageGenerations.get(0);
+	}
+
+	/**
+	 * @return Returns {@link ImageResponseMetadata} containing information about the use
+	 * of the AI provider's API.
+	 */
 	@Override
 	public ImageResponseMetadata getMetadata() {
 		return imageResponseMetadata;
@@ -52,8 +92,8 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 
 	@Override
 	public String toString() {
-		return "ImageResponse{" + "imageResponseMetadata=" + imageResponseMetadata + ", imageGenerations="
-				+ imageGenerations + '}';
+		return "ImageResponse [" + "imageResponseMetadata=" + imageResponseMetadata + ", imageGenerations="
+				+ imageGenerations + "]";
 	}
 
 	@Override

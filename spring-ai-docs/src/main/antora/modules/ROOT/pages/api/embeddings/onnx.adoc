@@ -1,6 +1,6 @@
 = Transformers (ONNX) Embeddings
 
-The `TransformersEmbeddingClient` is an `EmbeddingClient` implementation that locally computes https://www.sbert.net/examples/applications/computing-embeddings/README.html#sentence-embeddings-with-transformers[sentence embeddings] using a selected https://www.sbert.net/[sentence transformer].
+The `TransformersEmbeddingModel` is an `EmbeddingModel` implementation that locally computes https://www.sbert.net/examples/applications/computing-embeddings/README.html#sentence-embeddings-with-transformers[sentence embeddings] using a selected https://www.sbert.net/[sentence transformer].
 
 It uses https://www.sbert.net/docs/pretrained_models.html[pre-trained] transformer models, serialized into the https://onnx.ai/[Open Neural Network Exchange (ONNX)] format.
 
@@ -25,7 +25,7 @@ source ./venv/bin/activate
 (venv) optimum-cli export onnx --generative sentence-transformers/all-MiniLM-L6-v2 onnx-output-folder
 ----
 
-The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding client.
+The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding model.
 
 In place of the all-MiniLM-L6-v2 you can pick any huggingface transformer identifier or provide direct file path.
 
@@ -43,9 +43,9 @@ Add the `spring-ai-transformers` project to your maven dependencies:
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-then create a new `TransformersEmbeddingClient` instance and use the `setTokenizerResource(tokenizerJsonUri)` and `setModelResource(modelOnnxUri)` methods to set the URIs  of the exported `tokenizer.json` and `model.onnx` files. (`classpath:`, `file:` or `https:` URI schemas are supported).
+then create a new `TransformersEmbeddingModel` instance and use the `setTokenizerResource(tokenizerJsonUri)` and `setModelResource(modelOnnxUri)` methods to set the URIs  of the exported `tokenizer.json` and `model.onnx` files. (`classpath:`, `file:` or `https:` URI schemas are supported).
 
-If the model is not explicitly set, `TransformersEmbeddingClient` defaults to https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2]:
+If the model is not explicitly set, `TransformersEmbeddingModel` defaults to https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2]:
 
 [cols="2*"]
 |===
@@ -55,53 +55,53 @@ If the model is not explicitly set, `TransformersEmbeddingClient` defaults to ht
 | Size    | 80MB
 |===
 
-The following snippet illustrates how to use the `TransformersEmbeddingClient` manually:
+The following snippet illustrates how to use the `TransformersEmbeddingModel` manually:
 
 [source,java]
 ----
-TransformersEmbeddingClient embeddingClient = new TransformersEmbeddingClient();
+TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
 
 // (optional) defaults to classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json
-embeddingClient.setTokenizerResource("classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json");
+embeddingModel.setTokenizerResource("classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json");
 
 // (optional) defaults to classpath:/onnx/all-MiniLM-L6-v2/model.onnx
-embeddingClient.setModelResource("classpath:/onnx/all-MiniLM-L6-v2/model.onnx");
+embeddingModel.setModelResource("classpath:/onnx/all-MiniLM-L6-v2/model.onnx");
 
 // (optional) defaults to ${java.io.tmpdir}/spring-ai-onnx-model
 // Only the http/https resources are cached by default.
-embeddingClient.setResourceCacheDirectory("/tmp/onnx-zoo");
+embeddingModel.setResourceCacheDirectory("/tmp/onnx-zoo");
 
 // (optional) Set the tokenizer padding if you see an errors like:
 // "ai.onnxruntime.OrtException: Supplied array is ragged, ..."
-embeddingClient.setTokenizerOptions(Map.of("padding", "true"));
+embeddingModel.setTokenizerOptions(Map.of("padding", "true"));
 
-embeddingClient.afterPropertiesSet();
+embeddingModel.afterPropertiesSet();
 
-List<List<Double>> embeddings = embeddingClient.embed(List.of("Hello world", "World is big"));
+List<List<Double>> embeddings = embeddingModel.embed(List.of("Hello world", "World is big"));
 
 ----
 
-NOTE: If you create an instance of `TransformersEmbeddingClient` manually, you must call the `afterPropertiesSet()` method after setting the properties and before using the client.
+NOTE: If you create an instance of `TransformersEmbeddingModel` manually, you must call the `afterPropertiesSet()` method after setting the properties and before using the client.
 
 The first `embed()` call downloads the large ONNX model and caches it on the local file system.
 Therefore, the first call might take longer than usual.
 Use the `#setResourceCacheDirectory(<path>)` method to set the local folder where the ONNX models as stored.
 The default cache folder is `${java.io.tmpdir}/spring-ai-onnx-model`.
 
-It is more convenient (and preferred) to create the TransformersEmbeddingClient as a `Bean`.
+It is more convenient (and preferred) to create the TransformersEmbeddingModel as a `Bean`.
 Then you don't have to call the `afterPropertiesSet()` manually.
 
 [source,java]
 ----
 @Bean
-public EmbeddingClient embeddingClient() {
-   return new TransformersEmbeddingClient();
+public EmbeddingModel embeddingModel() {
+   return new TransformersEmbeddingModel();
 }
 ----
 
 == Transformers Embedding Spring Boot Starter
 
-You can bootstrap and autowire the `TransformersEmbeddingClient` with the following Spring Boot starter:
+You can bootstrap and autowire the `TransformersEmbeddingModel` with the following Spring Boot starter:
 
 [source,xml]
 ----

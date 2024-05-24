@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -79,7 +79,7 @@ class WikiVectorStoreExample {
 	public static class TestApplication {
 
 		@Bean
-		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingClient embeddingClient) {
+		public CassandraVectorStore store(CqlSession cqlSession, EmbeddingModel embeddingModel) {
 
 			List<SchemaColumn> partitionColumns = List.of(new SchemaColumn("wiki", DataTypes.TEXT),
 					new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT));
@@ -119,13 +119,13 @@ class WikiVectorStoreExample {
 				})
 				.build();
 
-			return new CassandraVectorStore(conf, embeddingClient());
+			return new CassandraVectorStore(conf, embeddingModel());
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
+		public EmbeddingModel embeddingModel() {
 			// default is ONNX all-MiniLM-L6-v2 which is what we want
-			return new TransformersEmbeddingClient();
+			return new TransformersEmbeddingModel();
 		}
 
 		@Bean

@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.anthropic;
 
 import java.util.List;
 
-import org.springframework.ai.anthropic.AnthropicChatClient;
+import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -57,7 +57,7 @@ public class AnthropicAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AnthropicChatClient anthropicChatClient(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
+	public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
 			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
 			List<FunctionCallback> toolFunctionCallbacks) {
 
@@ -65,7 +65,7 @@ public class AnthropicAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new AnthropicChatClient(anthropicApi, chatProperties.getOptions(), retryTemplate,
+		return new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate,
 				functionCallbackContext);
 	}
 

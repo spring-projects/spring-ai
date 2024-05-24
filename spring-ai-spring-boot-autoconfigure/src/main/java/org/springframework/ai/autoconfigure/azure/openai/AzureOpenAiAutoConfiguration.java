@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,8 +28,8 @@ import com.azure.core.http.policy.HttpLogOptions;
 import com.azure.core.management.AzureEnvironment;
 import com.azure.core.management.profile.AzureProfile;
 import com.azure.identity.ClientSecretCredentialBuilder;
-import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
-import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
+import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 @AutoConfiguration
-@ConditionalOnClass(OpenAIClientBuilder.class)
+@ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
 @EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
 		AzureOpenAiConnectionProperties.class })
 public class AzureOpenAiAutoConfiguration {
@@ -87,12 +87,8 @@ public class AzureOpenAiAutoConfiguration {
 		else {
 			Assert.hasText(connectionProperties.getApiKey(), "API key must not be empty");
 			Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
-
-			AzureKeyCredential keyCredential = new AzureKeyCredential(connectionProperties.getApiKey());
-
-			return new OpenAIClientBuilder().httpLogOptions(options)
-				.endpoint(connectionProperties.getEndpoint())
-				.credential(keyCredential)
+			return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
+				.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
 				.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
 				.buildClient();
 		}
@@ -101,7 +97,7 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient,
+	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
 			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext) {
 
@@ -109,18 +105,18 @@ public class AzureOpenAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(openAIClient,
-				chatProperties.getOptions(), functionCallbackContext);
+		AzureOpenAiChatModel azureOpenAiChatModel = new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(),
+				functionCallbackContext);
 
-		return azureOpenAiChatClient;
+		return azureOpenAiChatModel;
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient openAIClient,
+	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient,
 			AzureOpenAiEmbeddingProperties embeddingProperties) {
-		return new AzureOpenAiEmbeddingClient(openAIClient, embeddingProperties.getMetadataMode(),
+		return new AzureOpenAiEmbeddingModel(openAIClient, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions());
 	}
 

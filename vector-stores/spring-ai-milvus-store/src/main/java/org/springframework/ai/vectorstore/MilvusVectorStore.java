@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -92,7 +92,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private final MilvusServiceClient milvusClient;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final MilvusVectorStoreConfig config;
 
@@ -242,18 +242,18 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient) {
-		this(milvusClient, embeddingClient, MilvusVectorStoreConfig.defaultConfig());
+	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
+		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig());
 	}
 
-	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient,
+	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			MilvusVectorStoreConfig config) {
 
 		Assert.notNull(milvusClient, "MilvusServiceClient must not be null");
-		Assert.notNull(milvusClient, "EmbeddingClient must not be null");
+		Assert.notNull(milvusClient, "EmbeddingModel must not be null");
 
 		this.milvusClient = milvusClient;
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.config = config;
 	}
 
@@ -268,7 +268,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingClient.embed(document);
+			List<Double> embedding = this.embeddingModel.embed(document);
 
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
@@ -328,7 +328,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 
-		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
+		List<Double> embedding = this.embeddingModel.embed(request.getQuery());
 
 		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
@@ -481,13 +481,13 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 			return this.config.embeddingDimension;
 		}
 		try {
-			int embeddingDimensions = this.embeddingClient.dimensions();
+			int embeddingDimensions = this.embeddingModel.dimensions();
 			if (embeddingDimensions > 0) {
 				return embeddingDimensions;
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding client and fall backs to default:"
+			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
 					+ this.config.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;

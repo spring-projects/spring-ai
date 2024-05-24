@@ -29,13 +29,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.openai.OpenAiAudioTranscriptionClient;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
-import org.springframework.ai.openai.OpenAiChatClient;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
-import org.springframework.ai.openai.OpenAiImageClient;
+import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -107,13 +107,13 @@ public class OpenAiRetryTests {
 
 	private @Mock OpenAiImageApi openAiImageApi;
 
-	private OpenAiChatClient chatClient;
+	private OpenAiChatModel chatModel;
 
-	private OpenAiEmbeddingClient embeddingClient;
+	private OpenAiEmbeddingModel embeddingModel;
 
-	private OpenAiAudioTranscriptionClient audioTranscriptionClient;
+	private OpenAiAudioTranscriptionModel audioTranscriptionModel;
 
-	private OpenAiImageClient imageClient;
+	private OpenAiImageModel imageModel;
 
 	@BeforeEach
 	public void beforeEach() {
@@ -121,16 +121,16 @@ public class OpenAiRetryTests {
 		retryListener = new TestRetryListener();
 		retryTemplate.registerListener(retryListener);
 
-		chatClient = new OpenAiChatClient(openAiApi, OpenAiChatOptions.builder().build(), null, retryTemplate);
-		embeddingClient = new OpenAiEmbeddingClient(openAiApi, MetadataMode.EMBED,
+		chatModel = new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().build(), null, retryTemplate);
+		embeddingModel = new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED,
 				OpenAiEmbeddingOptions.builder().build(), retryTemplate);
-		audioTranscriptionClient = new OpenAiAudioTranscriptionClient(openAiAudioApi,
+		audioTranscriptionModel = new OpenAiAudioTranscriptionModel(openAiAudioApi,
 				OpenAiAudioTranscriptionOptions.builder()
 					.withModel("model")
 					.withResponseFormat(TranscriptResponseFormat.JSON)
 					.build(),
 				retryTemplate);
-		imageClient = new OpenAiImageClient(openAiImageApi, OpenAiImageOptions.builder().build(), retryTemplate);
+		imageModel = new OpenAiImageModel(openAiImageApi, OpenAiImageOptions.builder().build(), retryTemplate);
 	}
 
 	@Test
@@ -146,7 +146,7 @@ public class OpenAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
-		var result = chatClient.call(new Prompt("text"));
+		var result = chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response");
@@ -158,7 +158,7 @@ public class OpenAiRetryTests {
 	public void openAiChatNonTransientError() {
 		when(openAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatClient.call(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.call(new Prompt("text")));
 	}
 
 	@Test
@@ -174,7 +174,7 @@ public class OpenAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(Flux.just(expectedChatCompletion));
 
-		var result = chatClient.stream(new Prompt("text"));
+		var result = chatModel.stream(new Prompt("text"));
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getContent()).isSameAs("Response");
@@ -186,7 +186,7 @@ public class OpenAiRetryTests {
 	public void openAiChatStreamNonTransientError() {
 		when(openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatClient.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
 	}
 
 	@Test
@@ -199,7 +199,7 @@ public class OpenAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
 
-		var result = embeddingClient
+		var result = embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
@@ -212,7 +212,7 @@ public class OpenAiRetryTests {
 	public void openAiEmbeddingNonTransientError() {
 		when(openAiApi.embeddings(isA(EmbeddingRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> embeddingClient
+		assertThrows(RuntimeException.class, () -> embeddingModel
 				.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
 
@@ -226,7 +226,7 @@ public class OpenAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedResponse)));
 
-		AudioTranscriptionResponse result = audioTranscriptionClient
+		AudioTranscriptionResponse result = audioTranscriptionModel
 			.call(new AudioTranscriptionPrompt(new ClassPathResource("speech/jfk.flac")));
 
 		assertThat(result).isNotNull();
@@ -239,7 +239,7 @@ public class OpenAiRetryTests {
 	public void openAiAudioTranscriptionNonTransientError() {
 		when(openAiAudioApi.createTranscription(isA(TranscriptionRequest.class), isA(Class.class)))
 				.thenThrow(new RuntimeException("Transient Error 1"));
-		assertThrows(RuntimeException.class, () -> audioTranscriptionClient
+		assertThrows(RuntimeException.class, () -> audioTranscriptionModel
 				.call(new AudioTranscriptionPrompt(new ClassPathResource("speech/jfk.flac"))));
 	}
 
@@ -253,7 +253,7 @@ public class OpenAiRetryTests {
 			.thenThrow(new TransientAiException("Transient Error 2"))
 			.thenReturn(ResponseEntity.of(Optional.of(expectedResponse)));
 
-		var result = imageClient.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
+		var result = imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getUrl()).isEqualTo("url678");
@@ -266,7 +266,7 @@ public class OpenAiRetryTests {
 		when(openAiImageApi.createImage(isA(OpenAiImageRequest.class)))
 				.thenThrow(new RuntimeException("Transient Error 1"));
 		assertThrows(RuntimeException.class,
-				() -> imageClient.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
+				() -> imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
 	}
 
 }

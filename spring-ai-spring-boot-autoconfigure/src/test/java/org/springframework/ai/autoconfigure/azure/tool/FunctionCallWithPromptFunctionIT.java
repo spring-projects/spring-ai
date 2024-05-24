@@ -23,9 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
-import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
+import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -52,7 +52,7 @@ public class FunctionCallWithPromptFunctionIT {
 		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=gpt-4-0125-preview")
 			.run(context -> {
 
-				AzureOpenAiChatClient chatClient = context.getBean(AzureOpenAiChatClient.class);
+				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
@@ -64,7 +64,7 @@ public class FunctionCallWithPromptFunctionIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(userMessage), promptOptions));
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
 				logger.info("Response: {}", response);
 

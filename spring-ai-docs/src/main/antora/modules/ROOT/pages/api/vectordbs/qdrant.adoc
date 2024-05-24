@@ -7,12 +7,12 @@ link:https://www.qdrant.tech/[Qdrant] is an open-source, high-performance vector
 == Prerequisites
 
 * Qdrant Instance: Set up a Qdrant instance by following the link:https://qdrant.tech/documentation/guides/installation/[installation instructions] in the Qdrant documentation.
-* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `QdrantVectorStore`.
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `QdrantVectorStore`.
 
 To set up `QdrantVectorStore`, you'll need the following information from your Qdrant instance: `Host`, `GRPC Port`, `Collection Name`, and `API Key` (if required).
 
 NOTE: It is recommended that the Qdrant collection is link:https://qdrant.tech/documentation/concepts/collections/#create-a-collection[created] in advance with the appropriate dimensions and configurations.
-If the collection is not created, the `QdrantVectorStore` will attempt to create one using the `Cosine` similarity and the dimension of the configured `EmbeddingClient`.
+If the collection is not created, the `QdrantVectorStore` will attempt to create one using the `Cosine` similarity and the dimension of the configured `EmbeddingModel`.
 
 == Auto-configuration
 
@@ -35,10 +35,10 @@ dependencies {
 }
 ----
 
-The Vector Store, also requires an `EmbeddingClient` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingClient Implementations].
+The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
-For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingClient] add the following dependency to your project:
+For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel] add the following dependency to your project:
 
 [source,xml]
 ----
@@ -190,7 +190,7 @@ This provides you with an implementation of the Embeddings client:
 [source,java]
 ----
 @Bean
-public QdrantVectorStore vectorStore(EmbeddingClient embeddingClient, QdrantClient qdrantClient) {
-    return new QdrantVectorStore(qdrantClient, "<QDRANT_COLLECTION_NAME>", embeddingClient);
+public QdrantVectorStore vectorStore(EmbeddingModel embeddingModel, QdrantClient qdrantClient) {
+    return new QdrantVectorStore(qdrantClient, "<QDRANT_COLLECTION_NAME>", embeddingModel);
 }
 ----

@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -60,7 +60,7 @@ public class GemFireVectorStore implements VectorStore {
 
 	private final WebClient client;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final int topKPerBucket;
 
@@ -192,11 +192,11 @@ public class GemFireVectorStore implements VectorStore {
 		this.indexName = indexName;
 	}
 
-	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingClient embedding) {
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embedding) {
 		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
-		Assert.notNull(embedding, "EmbeddingClient must not be null");
+		Assert.notNull(embedding, "EmbeddingModel must not be null");
 		this.client = config.client;
-		this.embeddingClient = embedding;
+		this.embeddingModel = embedding;
 		this.topKPerBucket = config.topKPerBucket;
 		this.topK = config.topK;
 		this.documentField = config.documentField;
@@ -417,7 +417,7 @@ public class GemFireVectorStore implements VectorStore {
 	public void add(List<Document> documents) {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
-			document.setEmbedding(this.embeddingClient.embed(document));
+			document.setEmbedding(this.embeddingModel.embed(document));
 			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
 			return new UploadRequest.Embedding(document.getId(), floatVector, documentField, document.getContent(),
 					document.getMetadata());
@@ -465,7 +465,7 @@ public class GemFireVectorStore implements VectorStore {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("Gemfire does not support metadata filter expressions yet.");
 		}
-		List<Double> vector = this.embeddingClient.embed(request.getQuery());
+		List<Double> vector = this.embeddingModel.embed(request.getQuery());
 		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
 
 		return client.post()

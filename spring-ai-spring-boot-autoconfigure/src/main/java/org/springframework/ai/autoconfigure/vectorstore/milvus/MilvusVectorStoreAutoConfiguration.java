@@ -22,7 +22,7 @@ import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -37,7 +37,7 @@ import org.springframework.util.StringUtils;
  * @author Eddú Meléndez
  */
 @AutoConfiguration
-@ConditionalOnClass({ MilvusVectorStore.class, EmbeddingClient.class })
+@ConditionalOnClass({ MilvusVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties({ MilvusServiceClientProperties.class, MilvusVectorStoreProperties.class })
 public class MilvusVectorStoreAutoConfiguration {
 
@@ -50,7 +50,7 @@ public class MilvusVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingClient embeddingClient,
+	public MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			MilvusVectorStoreProperties properties) {
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
@@ -62,7 +62,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new MilvusVectorStore(milvusClient, embeddingClient, config);
+		return new MilvusVectorStore(milvusClient, embeddingModel, config);
 	}
 
 	@Bean

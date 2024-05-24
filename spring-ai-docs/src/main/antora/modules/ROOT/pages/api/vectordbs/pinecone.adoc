@@ -8,8 +8,8 @@ link:https://www.pinecone.io/[Pinecone] is a popular cloud-based vector database
 
 1. Pinecone Account: Before you start, sign up for a link:https://app.pinecone.io/[Pinecone account].
 2. Pinecone Project: Once registered, create a new project, an index, and generate an API key. You'll need these details for configuration.
-3. `EmbeddingClient` instance to compute the document embeddings. Several options are available:
-- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] to generate the embeddings stored by the `PineconeVectorStore`.
+3. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `PineconeVectorStore`.
 
 To set up `PineconeVectorStore`, gather the following details from your Pinecone account:
 
@@ -50,16 +50,16 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
-Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 Here is an example of the needed bean:
 
 [source,java]
 ----
 @Bean
-public EmbeddingClient embeddingClient() {
-    // Can be any other EmbeddingClient implementation.
-    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+public EmbeddingModel embeddingModel() {
+    // Can be any other EmbeddingModel implementation.
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
 }
 ----
 
@@ -203,8 +203,8 @@ This provides you with an implementation of the Embeddings client:
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingClient embeddingClient) {
-    return new PineconeVectorStore(config, embeddingClient);
+public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel) {
+    return new PineconeVectorStore(config, embeddingModel);
 }
 ----
 

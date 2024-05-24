@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore.MetadataField;
@@ -302,15 +302,15 @@ public class AzureVectorStoreIT {
 		}
 
 		@Bean
-		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingClient embeddingClient) {
+		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
 					MetadataField.date("activationDate"));
-			return new AzureVectorStore(searchIndexClient, embeddingClient, filterableMetaFields);
+			return new AzureVectorStore(searchIndexClient, embeddingModel, filterableMetaFields);
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

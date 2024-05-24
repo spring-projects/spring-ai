@@ -19,6 +19,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -111,7 +113,7 @@ public class MiniMaxApi {
 	 * MiniMax Chat Completion Models:
 	 * <a href="https://www.minimaxi.com/document/algorithm-concept">MiniMax Model</a>.
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
 		ABAB_6_Chat("abab6-chat"),
 		ABAB_5_5_Chat("abab5.5-chat"),
 		ABAB_5_5_S_Chat("abab5.5s-chat");
@@ -124,6 +126,11 @@ public class MiniMaxApi {
 
 		public String getValue() {
 			return value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.value;
 		}
 	}
 
@@ -313,7 +320,7 @@ public class MiniMaxApi {
 			/**
 			 * Specifying a particular function forces the model to call that function.
 			 */
-			public static Object FUNCTION(String functionName) {
+			public static Object function(String functionName) {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 		}
@@ -863,11 +870,7 @@ public class MiniMaxApi {
 	 *
 	 * @param embeddingRequest The embedding request.
 	 * @return Returns {@link EmbeddingList}.
-	 * @param <T> Type of the entity in the data list. Can be a {@link String} or {@link List} of tokens (e.g.
-	 * Integers). For embedding multiple inputs in a single request, You can pass a {@link List} of {@link String} or
-	 * {@link List} of {@link List} of tokens. For example:
 	 *
-	 * <pre>{@code List.of("text1", "text2", "text3") or List.of(List.of(1, 2, 3), List.of(3, 4, 5))} </pre>
 	 */
 	public ResponseEntity<EmbeddingList> embeddings(EmbeddingRequest embeddingRequest) {
 

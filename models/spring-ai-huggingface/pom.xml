@@ -9,8 +9,8 @@
 	</parent>
 	<artifactId>spring-ai-huggingface</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI HuggingFace</name>
-	<description>HuggingFace support</description>
+	<name>Spring AI Model - HuggingFace</name>
+	<description>HuggingFace models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

@@ -30,6 +30,7 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
 
 /**
@@ -366,7 +367,7 @@ public class CohereChatBedrockApi extends
 	/**
 	 * Cohere models version.
 	 */
-	public enum CohereChatModel {
+	public enum CohereChatModel implements ModelDescription {
 
 		/**
 		 * cohere.command-light-text-v14
@@ -389,6 +390,11 @@ public class CohereChatBedrockApi extends
 
 		CohereChatModel(String value) {
 			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
 		}
 	}
 

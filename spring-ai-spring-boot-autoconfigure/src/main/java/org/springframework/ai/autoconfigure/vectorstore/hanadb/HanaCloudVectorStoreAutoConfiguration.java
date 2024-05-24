@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.vectorstore.hanadb;
 
 import javax.sql.DataSource;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.HanaCloudVectorStore;
 import org.springframework.ai.vectorstore.HanaCloudVectorStoreConfig;
 import org.springframework.ai.vectorstore.HanaVectorEntity;
@@ -41,9 +41,9 @@ public class HanaCloudVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public HanaCloudVectorStore vectorStore(HanaVectorRepository<? extends HanaVectorEntity> repository,
-			EmbeddingClient embeddingClient, HanaCloudVectorStoreProperties properties) {
+			EmbeddingModel embeddingModel, HanaCloudVectorStoreProperties properties) {
 
-		return new HanaCloudVectorStore(repository, embeddingClient,
+		return new HanaCloudVectorStore(repository, embeddingModel,
 				HanaCloudVectorStoreConfig.builder()
 					.tableName(properties.getTableName())
 					.topK(properties.getTopK())

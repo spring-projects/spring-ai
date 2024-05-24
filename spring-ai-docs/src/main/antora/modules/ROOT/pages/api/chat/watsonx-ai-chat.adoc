@@ -1,7 +1,7 @@
 = watsonx.ai Chat
 
 With https://dataplatform.cloud.ibm.com/docs/content/wsj/getting-started/overview-wx.html?context=wx&audience=wdp[watsonx.ai] you can run various Large Language Models (LLMs) locally and generate text from them.
-Spring AI supports the watsonx.ai text generation with `WatsonxAiChatClient`.
+Spring AI supports the watsonx.ai text generation with `WatsonxAiChatModel`.
 
 
 == Prerequisites
@@ -53,13 +53,13 @@ The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you c
 
 ==== Configuration Properties
 
-The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you configure the chat client implementation for Watsonx.AI.
+The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you configure the chat model implementation for Watsonx.AI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.watsonx.ai.chat.enabled | Enable Watsonx.AI chat client.  | true
+| spring.ai.watsonx.ai.chat.enabled | Enable Watsonx.AI chat model.  | true
 | spring.ai.watsonx.ai.chat.options.temperature | The temperature of the model. Increasing the temperature will make the model answer more creatively.  | 0.7
 | spring.ai.watsonx.ai.chat.options.top-p | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.2) will generate more focused and conservative text.  | 1.0
 | spring.ai.watsonx.ai.chat.options.top-k | Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative.   |  50
@@ -76,14 +76,14 @@ The prefix `spring.ai.watsonx.ai.chat` is the property prefix that lets you conf
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-watsonx-ai/src/main/java/org/springframework/ai/watsonx/WatsonxAiChatOptions.java[WatsonxAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `WatsonxAiChatClient(api, options)` constructor or the `spring.ai.watsonxai.chat.options.*` properties.
+On start-up, the default options can be configured with the `WatsonxAiChatModel(api, options)` constructor or the `spring.ai.watsonxai.chat.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         WatsonxAiChatOptions.builder()
@@ -103,11 +103,11 @@ NOTE: For more information go to https://dataplatform.cloud.ibm.com/docs/content
 public class MyClass {
 
     private final static String MODEL = "google/flan-ul2";
-    private final WatsonxAiChatClient chat;
+    private final WatsonxAiChatModel chatModel;
 
     @Autowired
-    MyClass(WatsonxAiChatClient chat) {
-        this.chat = chat;
+    MyClass(WatsonxAiChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     public String generate(String userInput) {
@@ -119,7 +119,7 @@ public class MyClass {
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
-        var results = chat.call(prompt);
+        var results = chatModel.call(prompt);
 
         var generatedText = results.getResult().getOutput().getContent();
 
@@ -135,7 +135,7 @@ public class MyClass {
 
         Prompt prompt = new Prompt(new SystemMessage(userInput), options);
 
-        var results = chat.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
+        var results = chatModel.stream(prompt).collectList().block(); // wait till the stream is resolved (completed)
 
         var generatedText = results.stream()
             .map(generation -> generation.getResult().getOutput().getContent())

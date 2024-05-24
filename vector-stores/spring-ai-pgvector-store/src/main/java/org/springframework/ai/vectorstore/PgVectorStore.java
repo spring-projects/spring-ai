@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PgVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -66,7 +66,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private final EmbeddingClient embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private int dimensions;
 
@@ -197,21 +197,21 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient) {
-		this(jdbcTemplate, embeddingClient, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE,
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE,
 				false, PgIndexType.NONE);
 	}
 
-	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions) {
-		this(jdbcTemplate, embeddingClient, dimensions, PgVectorStore.PgDistanceType.COSINE_DISTANCE, false,
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions) {
+		this(jdbcTemplate, embeddingModel, dimensions, PgVectorStore.PgDistanceType.COSINE_DISTANCE, false,
 				PgIndexType.NONE);
 	}
 
-	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingClient embeddingClient, int dimensions,
+	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions,
 			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod) {
 
 		this.jdbcTemplate = jdbcTemplate;
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.dimensions = dimensions;
 		this.distanceType = distanceType;
 		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
@@ -237,7 +237,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 						var document = documents.get(i);
 						var content = document.getContent();
 						var json = toJson(document.getMetadata());
-						var pGvector = new PGvector(toFloatArray(embeddingClient.embed(document)));
+						var pGvector = new PGvector(toFloatArray(embeddingModel.embed(document)));
 
 						StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
 								UUID.fromString(document.getId()));
@@ -320,7 +320,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	private PGvector getQueryEmbedding(String query) {
-		List<Double> embedding = this.embeddingClient.embed(query);
+		List<Double> embedding = this.embeddingModel.embed(query);
 		return new PGvector(toFloatArray(embedding));
 	}
 
@@ -366,13 +366,13 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		}
 
 		try {
-			int embeddingDimensions = this.embeddingClient.dimensions();
+			int embeddingDimensions = this.embeddingModel.dimensions();
 			if (embeddingDimensions > 0) {
 				return embeddingDimensions;
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding client and fall backs to default:"
+			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
 					+ OPENAI_EMBEDDING_DIMENSION_SIZE, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
