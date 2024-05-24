@@ -28,6 +28,8 @@ Portable `Vector Store API` across multiple providers, including a novel `SQL-li
 
 image::function-calling-basic-flow.jpg[Function calling, width=500, align="center"]
 
+Check the Spring AI xref::api/functions.adoc[Function Calling] documentation.
+
 === Auto Configuration
 
 Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
