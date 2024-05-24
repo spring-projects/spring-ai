@@ -63,7 +63,6 @@ public class JsonReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try {
-			// TODO, not all json will be an array
 			JsonNode rootNode = objectMapper.readTree(this.resource.getInputStream());
 
 			if (rootNode.isArray()) {
