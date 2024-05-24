@@ -17,7 +17,7 @@ This section provides a guide to the Spring AI Chat Model API interface and asso
 
 === ChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatModel.java[ChatModel] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat//model/ChatModel.java[ChatModel] interface definition:
 
 [source,java]
 ----
@@ -37,7 +37,7 @@ In real-world applications, it is more common to use the `call` method that take
 
 === StreamingChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/StreamingChatModel.java[StreamingChatModel] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/StreamingChatModel.java[StreamingChatModel] interface definition:
 
 [source,java]
 ----
@@ -136,6 +136,7 @@ This is a powerful feature that allows developers to use model specific options 
 
 image::chat-options-flow.jpg[align="center", width="800px"]
 
+[[ChatResponse]]
 === ChatResponse
 
 The structure of the `ChatResponse` class is as follows:
@@ -157,13 +158,14 @@ public class ChatResponse implements ModelResponse<Generation> {
 }
 ----
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatResponse.java[ChatResponse] class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs resulting from a single prompt.
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/ChatResponse.java[ChatResponse] class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs resulting from a single prompt.
 
 The `ChatResponse` class also carries a `ChatResponseMetadata` metadata about the AI Model's response.
 
+[[Generation]]
 === Generation
 
-Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/Generation.java[Generation] class extends from the `ModelResult` to represent the output assistant message response and related metadata about this result:
+Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/Generation.java[Generation] class extends from the `ModelResult` to represent the output assistant message response and related metadata about this result:
 
 [source,java]
 ----

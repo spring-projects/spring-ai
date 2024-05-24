@@ -57,6 +57,9 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
 
+	record ActorsFilms(String actor, List<String> movies) {
+	}
+
 	@Test
 	void roleTest() {
 
@@ -92,16 +95,15 @@ class OpenAiChatClientIT extends AbstractIT {
 	void listOutputConverter2() {
 
 		// @formatter:off
-		List<ActorsFilmsRecord> actorsFilms = ChatClient.builder(chatModel).build().prompt()
+		List<ActorsFilms> actorsFilms = ChatClient.builder(chatModel).build().prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
+				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
 				});
 		// @formatter:on
 
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
-
 	}
 
 	@Test
@@ -129,20 +131,17 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:on
 
 		logger.info("" + actorsFilms);
-		assertThat(actorsFilms.getActor()).isNotBlank();
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
+		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
 	@Test
 	void beanOutputConverterRecords() {
 
 		// @formatter:off
-		ActorsFilmsRecord actorsFilms = ChatClient.builder(chatModel).build().prompt()
+		ActorsFilms actorsFilms = ChatClient.builder(chatModel).build().prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks.")
 				.call()
-				.entity(ActorsFilmsRecord.class);
+				.entity(ActorsFilms.class);
 		// @formatter:on
 
 		logger.info("" + actorsFilms);
@@ -153,7 +152,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void beanStreamOutputConverterRecords() {
 
-		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		// @formatter:off
 		Flux<String> chatResponse = ChatClient.builder(chatModel)
@@ -172,7 +171,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.collect(Collectors.joining());
 		// @formatter:on
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
+		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
 
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
