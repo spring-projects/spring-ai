@@ -7,5 +7,54 @@
     "bicycle",
     "city bike",
     "professional"
+  ],
+  "store": {
+    "name": "Bike Shop",
+    "location": {
+      "city": "San Francisco",
+      "state": "CA",
+      "address": {
+        "street": "123 Market St",
+        "zipcode": "94103"
+      }
+    },
+    "products": [
+      {
+        "name": "Avant SLR 6 Disc Pro",
+        "price": 999.99,
+        "tags": [
+          "bicycle",
+          "city bike",
+          "professional"
+        ],
+        "details": {
+          "weight": "7.5kg",
+          "color": "red"
+        }
+      },
+      {
+        "name": "Mountain Master 3000",
+        "price": 1299.99,
+        "tags": [
+          "bicycle",
+          "mountain bike",
+          "professional"
+        ],
+        "details": {
+          "weight": "9kg",
+          "color": "blue"
+        }
+      }
+    ]
+  },
+  "employees": [
+    {
+      "name": "John Doe",
+      "role": "Manager"
+    },
+    {
+      "name": "Jane Smith",
+      "role": "Sales"
+    }
   ]
 }
