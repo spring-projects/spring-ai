@@ -127,6 +127,14 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	private String deploymentName;
 
 	/**
+	 * The response format expected from the Azure OpenAI model
+	 * @see org.springframework.ai.azure.openai.AzureOpenAiResponseFormat for supported
+	 * formats
+	 */
+	@JsonProperty("response_format")
+	private AzureOpenAiResponseFormat responseFormat;
+
+	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatModel. For Prompt Options
 	 * the functionCallbacks are automatically enabled for the duration of the prompt
 	 * execution. For Default Options the functionCallbacks are registered but disabled by
@@ -236,6 +244,12 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withResponseFormat(AzureOpenAiResponseFormat responseFormat) {
+			Assert.notNull(responseFormat, "responseFormat must not be null");
+			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
@@ -354,6 +368,14 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 
 	public void setFunctions(Set<String> functions) {
 		this.functions = functions;
+	}
+
+	public AzureOpenAiResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(AzureOpenAiResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
