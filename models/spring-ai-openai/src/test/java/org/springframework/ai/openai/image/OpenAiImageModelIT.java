@@ -49,7 +49,7 @@ public class OpenAiImageModelIT extends AbstractIT {
 		assertThat(imageResponse.getResults()).hasSize(1);
 
 		ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
-		assertThat(imageResponseMetadata.created()).isPositive();
+		assertThat(imageResponseMetadata.getCreated()).isPositive();
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
