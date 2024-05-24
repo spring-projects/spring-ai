@@ -11,8 +11,8 @@
 
     <artifactId>spring-ai-ollama</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Ollama</name>
-    <description>Ollama support</description>
+    <name>Spring AI Model - Ollama</name>
+    <description>Ollama models support</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
