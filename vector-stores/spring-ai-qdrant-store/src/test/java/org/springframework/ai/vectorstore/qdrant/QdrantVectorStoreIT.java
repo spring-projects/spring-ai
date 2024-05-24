@@ -35,9 +35,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
@@ -250,8 +250,8 @@ public class QdrantVectorStoreIT {
 		}
 
 		@Bean
-		public VectorStore qdrantVectorStore(EmbeddingClient embeddingClient, QdrantClient qdrantClient) {
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingClient);
+		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel, QdrantClient qdrantClient) {
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
 		}
 
 		@Bean
@@ -262,8 +262,8 @@ public class QdrantVectorStoreIT {
 		}
 
 		@Bean
-		public AzureOpenAiEmbeddingClient azureEmbeddingClient(OpenAIClient openAIClient) {
-			return new AzureOpenAiEmbeddingClient(openAIClient);
+		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient) {
+			return new AzureOpenAiEmbeddingModel(openAIClient);
 		}
 
 	}

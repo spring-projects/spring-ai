@@ -27,7 +27,7 @@ public class AzureOpenAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
 	/**
-	 * Enable Azure OpenAI embedding client.
+	 * Enable Azure OpenAI embedding model.
 	 */
 	private boolean enabled = true;
 

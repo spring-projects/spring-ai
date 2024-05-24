@@ -35,7 +35,7 @@ public class BedrockAnthropicChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.anthropic.chat";
 
 	/**
-	 * Enable Bedrock Anthropic chat client. Disabled by default.
+	 * Enable Bedrock Anthropic chat model. Disabled by default.
 	 */
 	private boolean enabled = false;
 

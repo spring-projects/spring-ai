@@ -42,12 +42,12 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 === Image Generation Properties
 
 
-The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageClient` implementation for OpenAI.
+The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageModel` implementation for OpenAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.openai.image.enabled | Enable OpenAI image client.  | true
+| spring.ai.openai.image.enabled | Enable OpenAI image model.  | true
 | spring.ai.openai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.image.api-key               | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
@@ -97,14 +97,14 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiImageOptions.java[OpenAiImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
 
-On start-up, the default options can be configured with the `OpenAiImageClient(OpenAiImageApi openAiImageApi)` constructor and the `withDefaultOptions(OpenAiImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
+On start-up, the default options can be configured with the `OpenAiImageModel(OpenAiImageApi openAiImageApi)` constructor and the `withDefaultOptions(OpenAiImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
 
 At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
 For example to override the OpenAI specific options such as quality and the number of images to create, use the following code example:
 
 [source,java]
 ----
-ImageResponse response = openaiImageClient.call(
+ImageResponse response = openaiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         OpenAiImageOptions.builder()
                 .withQuality("hd")

@@ -3,7 +3,7 @@ package org.springframework.ai.chat.service;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 
 /**
  * Encapsulates the response from the ChatService. Contains the most up-to-date

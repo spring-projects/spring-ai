@@ -29,7 +29,7 @@ public class AzureOpenAiChatProperties {
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
-	 * Enable Azure OpenAI chat client.
+	 * Enable Azure OpenAI chat model.
 	 */
 	private boolean enabled = true;
 

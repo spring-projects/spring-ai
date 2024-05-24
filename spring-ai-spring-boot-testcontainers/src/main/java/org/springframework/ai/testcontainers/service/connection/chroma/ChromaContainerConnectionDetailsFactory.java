@@ -23,7 +23,7 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 /**
  * @author Eddú Meléndez
  */
-class ChromaContainerConnectionDetailsFactory
+public class ChromaContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<ChromaDBContainer, ChromaConnectionDetails> {
 
 	@Override

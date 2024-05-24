@@ -1,7 +1,6 @@
 package org.springframework.ai.evaluation;
 
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.service.ChatServiceResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Content;
 

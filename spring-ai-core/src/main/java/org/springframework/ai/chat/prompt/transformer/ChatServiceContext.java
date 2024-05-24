@@ -20,7 +20,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.service.ChatService;
 import org.springframework.ai.model.Content;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

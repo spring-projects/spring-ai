@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -71,7 +72,7 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken) {
-		this(baseUrl, openAiToken, RestClient.builder());
+		this(baseUrl, openAiToken, RestClient.builder(), WebClient.builder());
 	}
 
 	/**
@@ -81,8 +82,8 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
 	 */
-	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -93,7 +94,7 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
@@ -101,7 +102,7 @@ public class OpenAiApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder()
+		this.webClient = webClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
 				.build();
@@ -113,7 +114,7 @@ public class OpenAiApi {
 	 * - <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a>
 	 * - <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
 		/**
 		 * Multimodal flagship model that’s cheaper and faster than GPT-4 Turbo.
 		 * Currently points to gpt-4o-2024-05-13.
@@ -198,6 +199,11 @@ public class OpenAiApi {
 
 		public String getValue() {
 			return value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.value;
 		}
 	}
 

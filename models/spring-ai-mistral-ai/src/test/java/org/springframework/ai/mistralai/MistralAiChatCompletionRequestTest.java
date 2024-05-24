@@ -32,12 +32,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiChatCompletionRequestTest {
 
-	MistralAiChatClient chatClient = new MistralAiChatClient(new MistralAiApi("test"));
+	MistralAiChatModel chatModel = new MistralAiChatModel(new MistralAiApi("test"));
 
 	@Test
 	void chatCompletionDefaultRequestTest() {
 
-		var request = chatClient.createRequest(new Prompt("test content"), false);
+		var request = chatModel.createRequest(new Prompt("test content"), false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.topP()).isEqualTo(1);
@@ -52,7 +52,7 @@ public class MistralAiChatCompletionRequestTest {
 
 		var options = MistralAiChatOptions.builder().withTemperature(0.5f).withTopP(0.8f).build();
 
-		var request = chatClient.createRequest(new Prompt("test content", options), true);
+		var request = chatModel.createRequest(new Prompt("test content", options), true);
 
 		assertThat(request.messages().size()).isEqualTo(1);
 		assertThat(request.topP()).isEqualTo(0.8f);

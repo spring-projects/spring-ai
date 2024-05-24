@@ -21,7 +21,7 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingClient;
+import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -59,10 +59,10 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(CohereEmbeddingBedrockApi.class)
-	public BedrockCohereEmbeddingClient cohereEmbeddingClient(CohereEmbeddingBedrockApi cohereEmbeddingApi,
+	public BedrockCohereEmbeddingModel cohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingApi,
 			BedrockCohereEmbeddingProperties properties) {
 
-		return new BedrockCohereEmbeddingClient(cohereEmbeddingApi, properties.getOptions());
+		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions());
 	}
 
 }

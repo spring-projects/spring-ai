@@ -23,6 +23,7 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -436,7 +437,7 @@ public class Anthropic3ChatBedrockApi extends
 	/**
 	 * Anthropic models version.
 	 */
-	public enum AnthropicChatModel {
+	public enum AnthropicChatModel implements ModelDescription {
 
 		/**
 		 * anthropic.claude-instant-v1
@@ -474,6 +475,11 @@ public class Anthropic3ChatBedrockApi extends
 
 		AnthropicChatModel(String value) {
 			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
 		}
 
 	}

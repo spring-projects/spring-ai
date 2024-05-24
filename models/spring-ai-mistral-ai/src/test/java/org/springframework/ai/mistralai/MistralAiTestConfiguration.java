@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.mistralai;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -35,14 +35,14 @@ public class MistralAiTestConfiguration {
 	}
 
 	@Bean
-	public EmbeddingClient mistralAiEmbeddingClient(MistralAiApi api) {
-		return new MistralAiEmbeddingClient(api,
+	public EmbeddingModel mistralAiEmbeddingModel(MistralAiApi api) {
+		return new MistralAiEmbeddingModel(api,
 				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build());
 	}
 
 	@Bean
-	public MistralAiChatClient mistralAiChatClient(MistralAiApi mistralAiApi) {
-		return new MistralAiChatClient(mistralAiApi,
+	public MistralAiChatModel mistralAiChatModel(MistralAiApi mistralAiApi) {
+		return new MistralAiChatModel(mistralAiApi,
 				MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.MIXTRAL.getValue()).build());
 	}
 

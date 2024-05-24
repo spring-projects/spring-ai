@@ -2,4 +2,4 @@
 = Transcription API
 
 Spring AI provides support for OpenAI's Transcription API.
-When additional providers for Transcription are implemented, a common `AudioTranscriptionClient` interface will be extracted.
+When additional providers for Transcription are implemented, a common `AudioTranscriptionModel` interface will be extracted.

@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.bedrock.titan;
 
-import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingClient.InputType;
+import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

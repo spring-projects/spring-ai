@@ -41,7 +41,7 @@ TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section t
 
 Please have a look at the list of <<elasticsearchvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
 
-Additionally, you will need a configured `EmbeddingClient` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingClient] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 
 Now you can auto-wire the `ElasticsearchVectorStore` as a vector store in your application.
@@ -217,14 +217,14 @@ and then create the `ElasticsearchVectorStore` bean:
 [source,java]
 ----
 @Bean
-public ElasticsearchVectorStore vectorStore(EmbeddingClient embeddingClient, RestClient restClient) {
-    return new ElasticsearchVectorStore( restClient, embeddingClient);
+public ElasticsearchVectorStore vectorStore(EmbeddingModel embeddingModel, RestClient restClient) {
+    return new ElasticsearchVectorStore( restClient, embeddingModel);
 }
 
-// This can be any EmbeddingClient implementation.
+// This can be any EmbeddingModel implementation.
 @Bean
-public EmbeddingClient embeddingClient() {
-    return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 }
 ----
 

@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-openai</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI OpenAI</name>
-	<description>OpenAI support</description>
+	<name>Spring AI Model - OpenAI</name>
+	<description>OpenAI models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

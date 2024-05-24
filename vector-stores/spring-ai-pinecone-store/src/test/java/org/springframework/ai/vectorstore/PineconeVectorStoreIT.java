@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.PineconeVectorStore.PineconeVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -287,13 +287,13 @@ public class PineconeVectorStoreIT {
 		}
 
 		@Bean
-		public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingClient embeddingClient) {
-			return new PineconeVectorStore(config, embeddingClient);
+		public VectorStore vectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel) {
+			return new PineconeVectorStore(config, embeddingModel);
 		}
 
 		@Bean
-		public TransformersEmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public TransformersEmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

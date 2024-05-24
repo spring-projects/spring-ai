@@ -59,7 +59,7 @@ The prefix `spring.ai.vertex.ai.gemini` is used as the property prefix that lets
 | spring.ai.vertex.ai.gemini.transport | API transport. GRPC or REST. |  GRPC
 |====
 
-The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets you configure the chat client implementation for VertexAI Gemini Chat.
+The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets you configure the chat model implementation for VertexAI Gemini Chat.
 
 [cols="3,5,1"]
 |====
@@ -84,14 +84,14 @@ TIP: All properties prefixed with `spring.ai.vertex.ai.gemini.chat.options` can 
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatOptions.java[VertexAiGeminiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
-On start-up, the default options can be configured with the `VertexAiGeminiChatClient(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
+On start-up, the default options can be configured with the `VertexAiGeminiChatModel(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
 
 At runtime you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         VertexAiPaLm2ChatOptions.builder()
@@ -109,7 +109,7 @@ WARNING: As of 30th of April 2023, the Vertex AI `Gemini Pro` model has signific
 Apparently the Gemini Pro can not handle anymore the function name correctly.
 The parallel function calling is gone as well.
 
-You can register custom Java functions with the VertexAiGeminiChatClient and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the VertexAiGeminiChatModel and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
 
@@ -122,7 +122,7 @@ Google's Gemini AI models support this capability by comprehending and integrati
 Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
 This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClientIT.java[VertexAiGeminiChatClientIT.java], demonstrating the combination of user text with an image.
+Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatModelIT.java[VertexAiGeminiChatModelIT.java], demonstrating the combination of user text with an image.
 
 
 [source,java]
@@ -132,14 +132,14 @@ byte[] data = new ClassPathResource("/vertex-test.png").getContentAsByteArray();
 var userMessage = new UserMessage("Explain what do you see o this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
 
-ChatResponse response = chatClient.call(new Prompt(List.of(userMessage)));
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
 == Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-palm2-spring-boot-starter` to your pom (or gradle) dependencies.
 
-Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi Chat client:
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
 
 [source,application.properties]
 ----
@@ -151,37 +151,37 @@ spring.ai.vertex.ai.gemini.chat.options.temperature=0.5
 
 TIP: replace the `api-key` with your VertexAI credentials.
 
-This will create a `VertexAiGeminiChatClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `VertexAiGeminiChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class ChatController {
 
-    private final VertexAiGeminiChatClient chatClient;
+    private final VertexAiGeminiChatModel chatModel;
 
     @Autowired
-    public ChatController(VertexAiGeminiChatClient chatClient) {
-        this.chatClient = chatClient;
+    public ChatController(VertexAiGeminiChatModel chatModel) {
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", chatClient.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 
     @GetMapping("/ai/generateStream")
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return chatClient.stream(prompt);
+        return chatModel.stream(prompt);
     }
 }
 ----
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatClient.java[VertexAiGeminiChatClient] implements the `ChatClient` and uses the `VertexAI` to connect to the Vertex AI Gemini service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/main/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatModel.java[VertexAiGeminiChatModel] implements the `ChatModel` and uses the `VertexAI` to connect to the Vertex AI Gemini service.
 
 Add the `spring-ai-vertex-ai-gemini` dependency to your project's Maven `pom.xml` file:
 
@@ -204,19 +204,19 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `VertexAiGeminiChatClient` and use it for text generations:
+Next, create a `VertexAiGeminiChatModel` and use it for text generations:
 
 [source,java]
 ----
 VertexAI vertexApi =  new VertexAI(projectId, location);
 
-var chatClient = new VertexAiGeminiChatClient(vertexApi,
+var chatModel = new VertexAiGeminiChatModel(vertexApi,
     VertexAiGeminiChatOptions.builder()
         .withModel(ChatModel.GEMINI_PRO_1_5_PRO)
         .withTemperature(0.4)
     .build());
 
-ChatResponse response = chatClient.call(
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 

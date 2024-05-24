@@ -44,7 +44,7 @@ class PromptTests {
 			String promptString = pt.render(model);
 		})
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("All template variables were not replaced. Missing variable names are [lastName]");
+			.hasMessage("Not all template variables were replaced. Missing variable names are [lastName]");
 
 		pt.add("lastName", "Park"); // TODO investigate partial
 		String promptString = pt.render(model);

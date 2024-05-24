@@ -65,8 +65,8 @@ public GemFireVectorStoreConfig gemFireVectorStoreConfig() {
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingClient embeddingClient) {
-    return new GemFireVectorStore(config, embeddingClient);
+public VectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
+    return new GemFireVectorStore(config, embeddingModel);
 }
 ----
 - Create a Vector Index which will configure GemFire region.

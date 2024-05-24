@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingClient.VectorType;
+import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
  * @author Christian Tzolov
@@ -36,7 +36,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
-	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingClient.DEFAULT_TRANSFORMER_MODEL;
+	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 
 	/**
 	 * PostgresML vector type to use for the embedding.
