@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.service;
+package org.springframework.ai.chat.model;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,9 +25,6 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a

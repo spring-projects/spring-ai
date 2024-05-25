@@ -30,13 +30,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.function.FunctionCallingOptionsBuilder;
@@ -53,12 +52,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ChatClientTest {
 
-	public static interface MixChatModel extends ChatModel, StreamingChatModel {
-
-	}
-
 	@Mock
-	MixChatModel chatModel;
+	ChatModel chatModel;
 
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;

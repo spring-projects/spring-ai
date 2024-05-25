@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -35,8 +36,10 @@ import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.util.Assert;
 
 /**
+ * @deprecated Use the {@link PromptChatMemoryAdvisor} instead.
  * @author Christian Tzolov
  */
+@Deprecated
 public class SystemPromptChatMemoryAugmentor extends AbstractPromptTransformer {
 
 	public static final String DEFAULT_HISTORY_PROMPT = """

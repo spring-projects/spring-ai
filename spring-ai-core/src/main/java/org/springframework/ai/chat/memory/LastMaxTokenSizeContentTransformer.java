@@ -20,19 +20,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.ai.chat.client.advisor.LastMaxTokenSizeContentPurger;
 import org.springframework.ai.chat.prompt.transformer.AbstractPromptTransformer;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
 
 /**
+ *
  * Returns a new list of content (e.g list of messages of list of documents) that is a
  * subset of the input list of contents and complies with the max token size constraint.
  *
  * The token estimator is used to estimate the token count of the datum.
  *
+ * @deprecated Use the {@link LastMaxTokenSizeContentPurger} instead.
  * @author Christian Tzolov
  */
+@Deprecated
 public class LastMaxTokenSizeContentTransformer extends AbstractPromptTransformer {
 
 	protected final TokenCountEstimator tokenCountEstimator;

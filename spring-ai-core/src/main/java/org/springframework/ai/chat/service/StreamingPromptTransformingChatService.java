@@ -23,6 +23,7 @@ import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.transformer.PromptTransformer;
 
