@@ -67,7 +67,7 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request) {
+	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 
 		// 1. Advise the system text.
 		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
@@ -76,13 +76,13 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(request.userText()));
 
 		// 3. Create the context from the documents.
-		String context = documents.stream()
+		String documentContext = documents.stream()
 			.map(Content::getContent)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 4. Advise the user parameters.
 		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("context", context);
+		advisedUserParams.put("context", documentContext);
 
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
 			.withUserText(advisedUserText)

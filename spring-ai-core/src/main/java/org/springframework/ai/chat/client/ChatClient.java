@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import reactor.core.publisher.Flux;
@@ -483,10 +484,10 @@ public interface ChatClient {
 						inputRequest.userParams, inputRequest.systemParams, inputRequest.advisors);
 
 				// apply the advisors onRequest
-
+				Map<String, Object> context = new ConcurrentHashMap<>();
 				var currentAdvisors = new ArrayList<>(inputRequest.advisors);
 				for (RequestResponseAdvisor advisor : currentAdvisors) {
-					adviseRequest = advisor.adviseRequest(adviseRequest);
+					adviseRequest = advisor.adviseRequest(adviseRequest, context);
 				}
 
 				advisedRequest = new ChatClientRequest(adviseRequest.chatModel(), adviseRequest.userText(),
@@ -578,10 +579,11 @@ public interface ChatClient {
 
 				ChatResponse advisedResponse = chatResponse;
 				// apply the advisors on response
+				Map<String, Object> context = new ConcurrentHashMap<>();
 				if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
 					var currentAdvisors = new ArrayList<>(inputRequest.advisors);
 					for (RequestResponseAdvisor advisor : currentAdvisors) {
-						advisedResponse = advisor.adviseResponse(advisedResponse);
+						advisedResponse = advisor.adviseResponse(advisedResponse, context);
 					}
 				}
 
@@ -652,10 +654,11 @@ public interface ChatClient {
 
 				Flux<ChatResponse> advisedResponse = fluxChatResponse;
 				// apply the advisors on response
+				Map<String, Object> context = new ConcurrentHashMap<>();
 				if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
 					var currentAdvisors = new ArrayList<>(inputRequest.advisors);
 					for (RequestResponseAdvisor advisor : currentAdvisors) {
-						advisedResponse = advisor.adviseResponse(advisedResponse);
+						advisedResponse = advisor.adviseResponse(advisedResponse, context);
 					}
 				}
 

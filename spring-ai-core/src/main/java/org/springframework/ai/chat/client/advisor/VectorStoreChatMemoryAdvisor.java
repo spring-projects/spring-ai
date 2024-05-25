@@ -73,7 +73,7 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request) {
+	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 
 		String advisedSystemText = request.systemText() + System.lineSeparator() + this.systemTextAdvise;
 
@@ -102,7 +102,7 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public ChatResponse adviseResponse(ChatResponse chatResponse) {
+	public ChatResponse adviseResponse(ChatResponse chatResponse, Map<String, Object> context) {
 
 		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
 
@@ -112,7 +112,7 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse) {
+	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse, Map<String, Object> context) {
 
 		return new MessageAggregator().aggregate(fluxChatResponse, chatResponse -> {
 			List<Message> assistantMessages = chatResponse.getResults()

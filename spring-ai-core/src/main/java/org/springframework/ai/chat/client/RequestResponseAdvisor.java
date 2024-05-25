@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.Map;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequest;
@@ -32,15 +34,15 @@ import org.springframework.ai.chat.prompt.Prompt;
  */
 public interface RequestResponseAdvisor {
 
-	default AdvisedRequest adviseRequest(AdvisedRequest request) {
+	default AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 		return request;
 	}
 
-	default ChatResponse adviseResponse(ChatResponse response) {
+	default ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
 		return response;
 	}
 
-	default Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse) {
+	default Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
 		return fluxResponse;
 	}
 

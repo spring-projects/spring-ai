@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
@@ -59,7 +60,7 @@ public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request) {
+	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(this.conversationId, this.chatHistoryWindowSize);
@@ -79,7 +80,7 @@ public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public ChatResponse adviseResponse(ChatResponse chatResponse) {
+	public ChatResponse adviseResponse(ChatResponse chatResponse, Map<String, Object> context) {
 
 		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
 
@@ -89,7 +90,7 @@ public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
 	}
 
 	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse) {
+	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxChatResponse, Map<String, Object> context) {
 
 		return new MessageAggregator().aggregate(fluxChatResponse, chatResponse -> {
 			List<Message> assistantMessages = chatResponse.getResults()
