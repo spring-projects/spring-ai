@@ -15,14 +15,16 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.neo4j;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.Neo4jVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Jingzhou Ou
+ * @author Josh Long
  */
 @ConfigurationProperties(Neo4jVectorStoreProperties.CONFIG_PREFIX)
-public class Neo4jVectorStoreProperties {
+public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.neo4j";
 

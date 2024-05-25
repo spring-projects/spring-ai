@@ -49,6 +49,7 @@ import org.springframework.util.StringUtils;
  * vector index will be auto-created if not available.
  *
  * @author Christian Tzolov
+ * @author Josh Long
  */
 public class PgVectorStore implements VectorStore, InitializingBean {
 
@@ -77,6 +78,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	private boolean removeExistingVectorStoreTable;
 
 	private PgIndexType createIndexMethod;
+
+	private final boolean initializeSchema;
 
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
@@ -199,16 +202,17 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE,
-				false, PgIndexType.NONE);
+				false, PgIndexType.NONE, false);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions) {
 		this(jdbcTemplate, embeddingModel, dimensions, PgVectorStore.PgDistanceType.COSINE_DISTANCE, false,
-				PgIndexType.NONE);
+				PgIndexType.NONE, false);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions,
-			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod) {
+			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod,
+			boolean initializeSchema) {
 
 		this.jdbcTemplate = jdbcTemplate;
 		this.embeddingModel = embeddingModel;
@@ -216,6 +220,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		this.distanceType = distanceType;
 		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
 		this.createIndexMethod = createIndexMethod;
+		this.initializeSchema = initializeSchema;
 	}
 
 	public PgDistanceType getDistanceType() {
@@ -333,6 +338,11 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	// ---------------------------------------------------------------------------------
 	@Override
 	public void afterPropertiesSet() throws Exception {
+
+		if (!this.initializeSchema) {
+			return;
+		}
+
 		// Enable the PGVector, JSONB and UUID support.
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");

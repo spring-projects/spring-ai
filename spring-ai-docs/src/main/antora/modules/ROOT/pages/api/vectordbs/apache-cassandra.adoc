@@ -15,9 +15,16 @@ SELECT content FROM table ORDER BY content_vector ANN OF query_embedding ;
 
 More docs on this can be read https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
 
-This Spring AI Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.
+This Spring AI Vector Store is designed to work for both brand-new RAG applications and be able to be retrofitted on top of existing data and tables.
 
 The store can also be used for non-RAG use-cases in an existing database, e.g. semantic searches, geo-proximity searches, etc.
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
 
 The store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
 

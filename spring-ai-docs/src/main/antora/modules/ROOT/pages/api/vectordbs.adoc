@@ -83,6 +83,13 @@ The `similaritySearch` methods in the interface allow for retrieving documents s
 
 Find more information on the `Filter.Expression` in the <<metadata-filters>> section.
 
+== Schema Initialization
+
+Some vector stores require their backend schema to be initialized before usage.
+It will not be initialized for you by default.
+You must opt-in, by passing a `boolean` for the appropriate constructor argument or, if using Spring Boot, setting the appropriate `initialize-schema` property to `true` in `application.properties` or `application.yml`.
+Check the documentation for the vector store you are using for the specific property name.
+
 == Available Implementations
 
 These are the available implementations of the `VectorStore` interface:

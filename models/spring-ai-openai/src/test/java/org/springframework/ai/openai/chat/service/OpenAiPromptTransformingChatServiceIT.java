@@ -159,7 +159,7 @@ public class OpenAiPromptTransformingChatServiceIT {
 			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
 				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
 				.build());
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel, true);
 		}
 
 		@Bean

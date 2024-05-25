@@ -34,7 +34,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -246,6 +245,8 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	}
 
+	private final boolean initializeSchema;
+
 	public static final String DEFAULT_URI = "redis://localhost:6379";
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-index";
@@ -286,10 +287,11 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	private FilterExpressionConverter filterExpressionConverter;
 
-	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel) {
+	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema) {
 
 		Assert.notNull(config, "Config must not be null");
 		Assert.notNull(embeddingModel, "Embedding client must not be null");
+		this.initializeSchema = initializeSchema;
 
 		this.jedis = new JedisPooled(config.uri);
 		this.embeddingModel = embeddingModel;
@@ -404,6 +406,10 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
+
+		if (!this.initializeSchema) {
+			return;
+		}
 
 		// If index already exists don't do anything
 		if (this.jedis.ftList().contains(this.config.indexName)) {

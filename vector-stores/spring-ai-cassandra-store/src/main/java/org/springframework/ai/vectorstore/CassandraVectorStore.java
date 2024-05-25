@@ -34,7 +34,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,7 +88,7 @@ import java.util.concurrent.ConcurrentMap;
  * @see EmbeddingModel
  * @since 1.0.0
  */
-public class CassandraVectorStore implements VectorStore, InitializingBean, AutoCloseable {
+public class CassandraVectorStore implements VectorStore, AutoCloseable {
 
 	/**
 	 * Indexes are automatically created with COSINE. This can be changed manually via
@@ -244,10 +243,6 @@ public class CassandraVectorStore implements VectorStore, InitializingBean, Auto
 			documents.add(doc);
 		}
 		return documents;
-	}
-
-	@Override
-	public void afterPropertiesSet() {
 	}
 
 	@Override

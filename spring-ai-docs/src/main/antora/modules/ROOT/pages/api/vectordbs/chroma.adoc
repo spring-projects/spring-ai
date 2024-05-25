@@ -15,7 +15,7 @@ On startup, the `ChromaVectorStore` creates the required collection if one is no
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Chroma Vector Sore.
+Spring AI provides Spring Boot auto-configuration for the Chroma Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -39,6 +39,14 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
+
+
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 Here is an example of the needed bean:
@@ -58,6 +66,7 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 [source,properties]
 ----
 # Chroma Vector Store connection properties
+spring.ai.vectorstore.chroma.client.initialize-schema=<true or false>
 spring.ai.vectorstore.chroma.client.host=<your Chroma instance host>
 spring.ai.vectorstore.chroma.client.port=<your Chroma instance port>
 spring.ai.vectorstore.chroma.client.key-token=<your access token (if configure)>
@@ -75,7 +84,7 @@ spring.ai.openai.api.key=<OpenAI Api-key>
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
-Now you can Auto-wire the Chroma Vector Store in your application and use it
+Now you can auto-wire the Chroma Vector Store in your application and use it
 
 [source,java]
 ----

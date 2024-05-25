@@ -10,7 +10,7 @@ TODO: Add prerequisites instructions
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the MongoDB Atlas Vector Sore.
+Spring AI provides Spring Boot auto-configuration for the MongoDB Atlas Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -33,6 +33,16 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
+
+
+
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
@@ -88,6 +98,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |Property| Description | Default value
 
 |`spring.ai.vectorstore.mongodb.collection-name`| The name of the collection to store the vectors. | `vector_store`
+|`spring.ai.vectorstore.mongodb.initialize-schema`| whether to initialize the backend schema for you | `false`
 |`spring.ai.vectorstore.mongodb.path-name`| The name of the path to store the vectors. | `embedding`
 |`spring.ai.vectorstore.mongodb.indexName`| The name of the index to store the vectors. | `vector_index`
 |===

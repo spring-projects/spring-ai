@@ -196,7 +196,8 @@ class MongoDBAtlasVectorStoreIT {
 			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel,
 					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
 						.withMetadataFieldsToFilter(List.of("country", "year"))
-						.build());
+						.build(),
+					true);
 		}
 
 		@Bean

@@ -51,7 +51,7 @@ public class MilvusEmbeddingDimensionsTests {
 			.withEmbeddingDimension(explicitDimensions)
 			.build();
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config).embeddingDimensions();
+		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config, true).embeddingDimensions();
 
 		assertThat(dim).isEqualTo(explicitDimensions);
 		verify(embeddingModel, never()).dimensions();
@@ -63,7 +63,8 @@ public class MilvusEmbeddingDimensionsTests {
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder().build();
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config).embeddingDimensions();
+		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config ,true)
+				.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(969);
 
@@ -76,7 +77,7 @@ public class MilvusEmbeddingDimensionsTests {
 		when(embeddingModel.dimensions()).thenThrow(new RuntimeException());
 
 		var dim = new MilvusVectorStore(milvusClient, embeddingModel,
-				MilvusVectorStoreConfig.builder().build())
+				MilvusVectorStoreConfig.builder().build() ,true)
 						.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);

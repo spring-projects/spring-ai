@@ -54,7 +54,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 		}
 		MongoDBAtlasVectorStore.MongoDBVectorStoreConfig config = builder.build();
 
-		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config);
+		return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config, properties.isInitializeSchema());
 	}
 
 }

@@ -12,6 +12,27 @@ For further information go to our [Spring AI reference documentation](https://do
 
 On our march to release 1.0.0 M1 we have made several breaking changes.  Apologies, it is for the best!
 
+**(22.25.2024)**
+
+Vector stores that have a schema are now *not* initialized by default.
+As is the convention with other Spring projects that rely on a schema, you must opt into allowing Spring to create a schema for you.
+A new configuration property named `initialize-schema` has been introduced, with `false` being the default value.
+Check the documentation section for your vector store's configuration properties for the full syntax.
+The following vector stores have been impacted by this change
+
+* Azure AI Search
+* Chroma
+* Elasticsearch
+* SAP Hana
+* Milvus
+* MongoDB
+* Neo4j
+* PGVector
+* Pinecone
+* Qdrant
+* Redis
+* Weaviate
+
 **(22.05.2024)**
 
 A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/1.0.0-SNAPSHOT/api/) for more information on the Fluent API, proper reference documentation is coming shortly.

@@ -41,7 +41,15 @@ dependencies {
 }
 ----
 
+
+
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
 
 == Configuration
 
@@ -79,7 +87,7 @@ Spring Boot's auto-configuration feature for the Neo4j Driver will create a bean
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Neo4j Vector Sore.
+Spring AI provides Spring Boot auto-configuration for the Neo4j Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -185,6 +193,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |Property|Default value
 
 |`spring.ai.vectorstore.neo4j.database-name`|neo4j
+|`spring.ai.vectorstore.neo4j.initialize-schema`|false
 |`spring.ai.vectorstore.neo4j.embedding-dimension`|1536
 |`spring.ai.vectorstore.neo4j.distance-type`|cosine
 |`spring.ai.vectorstore.neo4j.label`|Document

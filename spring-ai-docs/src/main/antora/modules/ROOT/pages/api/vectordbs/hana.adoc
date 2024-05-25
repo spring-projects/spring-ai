@@ -8,7 +8,7 @@
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the SAP Hana Vector Sore.
+Spring AI provides Spring Boot auto-configuration for the SAP Hana Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -50,6 +50,7 @@ It uses `spring.datasource.*` properties to configure the Hana datasource and th
 |`spring.datasource.password` | Hana datasource password | -
 |`spring.ai.vectorstore.hanadb.top-k`| TODO | -
 |`spring.ai.vectorstore.hanadb.table-name`| TODO | -
+|`spring.ai.vectorstore.hanadb.initialize-schema`| whether to initialize the required schema  | `false`
 
 |===
 

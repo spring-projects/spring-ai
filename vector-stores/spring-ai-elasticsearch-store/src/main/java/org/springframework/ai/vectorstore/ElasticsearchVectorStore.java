@@ -68,12 +68,15 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	private String similarityFunction;
 
-	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
-		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel);
+	private final boolean initializeSchema;
+
+	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel, boolean initializeSchema) {
+		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel, initializeSchema);
 	}
 
 	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
-			EmbeddingModel embeddingModel) {
+			EmbeddingModel embeddingModel, boolean initializeSchema) {
+		this.initializeSchema = initializeSchema;
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
@@ -220,6 +223,11 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
+
+		if (!this.initializeSchema) {
+			return;
+		}
+
 		if (!indexExists()) {
 			createIndexMapping();
 		}

@@ -72,7 +72,8 @@ public class ChromaVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ChromaVectorStore vectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi,
 			ChromaVectorStoreProperties storeProperties) {
-		return new ChromaVectorStore(embeddingModel, chromaApi, storeProperties.getCollectionName());
+		return new ChromaVectorStore(embeddingModel, chromaApi, storeProperties.getCollectionName(),
+				storeProperties.isInitializeSchema());
 	}
 
 	private static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {

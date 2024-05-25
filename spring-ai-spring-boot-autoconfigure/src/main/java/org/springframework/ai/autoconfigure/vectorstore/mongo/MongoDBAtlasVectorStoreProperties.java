@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -23,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 1.0.0
  */
 @ConfigurationProperties(MongoDBAtlasVectorStoreProperties.CONFIG_PREFIX)
-public class MongoDBAtlasVectorStoreProperties {
+public class MongoDBAtlasVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.mongodb";
 

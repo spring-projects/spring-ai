@@ -265,7 +265,7 @@ public class MilvusVectorStoreIT {
 				.withIndexType(IndexType.IVF_FLAT)
 				.withMetricType(metricType)
 				.build();
-			return new MilvusVectorStore(milvusClient, embeddingModel, config);
+			return new MilvusVectorStore(milvusClient, embeddingModel, config, true);
 		}
 
 		@Bean
