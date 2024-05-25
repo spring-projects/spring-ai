@@ -285,13 +285,13 @@ public interface ChatClient {
 			return this;
 		}
 
-		public ChatClientRequest advisor(RequestResponseAdvisor... advisors) {
+		public ChatClientRequest advisors(RequestResponseAdvisor... advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
 			this.advisors.addAll(List.of(advisors));
 			return this;
 		}
 
-		public ChatClientRequest advisor(List<RequestResponseAdvisor> advisors) {
+		public ChatClientRequest advisors(List<RequestResponseAdvisor> advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
 			this.advisors.addAll(advisors);
 			return this;
@@ -709,13 +709,13 @@ public interface ChatClient {
 			return this;
 		}
 
-		public Builder defaultAdvisor(RequestResponseAdvisor... advisors) {
-			this.defaultRequest.advisor(advisors);
+		public Builder defaultAdvisors(RequestResponseAdvisor... advisors) {
+			this.defaultRequest.advisors(advisors);
 			return this;
 		}
 
-		public Builder defaultAdvisor(List<RequestResponseAdvisor> advisors) {
-			this.defaultRequest.advisor(advisors);
+		public Builder defaultAdvisors(List<RequestResponseAdvisor> advisors) {
+			this.defaultRequest.advisors(advisors);
 			return this;
 		}
 
