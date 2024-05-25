@@ -15,7 +15,7 @@ On startup, the `ChromaVectorStore` creates the required collection if one is no
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Chroma Vector Sore.
+Spring AI provides Spring Boot auto-configuration for the Chroma Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -38,6 +38,14 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
+
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
@@ -75,7 +83,7 @@ spring.ai.openai.api.key=<OpenAI Api-key>
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
-Now you can Auto-wire the Chroma Vector Store in your application and use it
+Now you can auto-wire the Chroma Vector Store in your application and use it
 
 [source,java]
 ----

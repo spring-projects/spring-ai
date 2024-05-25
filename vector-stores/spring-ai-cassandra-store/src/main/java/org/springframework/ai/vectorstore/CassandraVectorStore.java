@@ -89,7 +89,7 @@ import java.util.concurrent.ConcurrentMap;
  * @see EmbeddingModel
  * @since 1.0.0
  */
-public class CassandraVectorStore implements VectorStore, InitializingBean, AutoCloseable {
+public class CassandraVectorStore implements VectorStore, AutoCloseable {
 
 	/**
 	 * Indexes are automatically created with COSINE. This can be changed manually via
@@ -244,10 +244,6 @@ public class CassandraVectorStore implements VectorStore, InitializingBean, Auto
 			documents.add(doc);
 		}
 		return documents;
-	}
-
-	@Override
-	public void afterPropertiesSet() {
 	}
 
 	@Override

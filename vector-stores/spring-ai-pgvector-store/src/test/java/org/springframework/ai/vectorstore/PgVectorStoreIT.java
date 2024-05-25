@@ -308,7 +308,7 @@ public class PgVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return new PgVectorStore(jdbcTemplate, embeddingModel, PgVectorStore.INVALID_EMBEDDING_DIMENSION,
-					distanceType, true, PgIndexType.HNSW);
+					distanceType, true, PgIndexType.HNSW, true);
 		}
 
 		@Bean

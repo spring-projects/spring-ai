@@ -58,7 +58,8 @@ public class QdrantVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	public QdrantVectorStore vectorStore(EmbeddingModel embeddingModel, QdrantVectorStoreProperties properties,
 			QdrantClient qdrantClient) {
-		return new QdrantVectorStore(qdrantClient, properties.getCollectionName(), embeddingModel);
+		return new QdrantVectorStore(qdrantClient, properties.getCollectionName(), embeddingModel,
+				properties.isInitializeSchema());
 	}
 
 	static class PropertiesQdrantConnectionDetails implements QdrantConnectionDetails {

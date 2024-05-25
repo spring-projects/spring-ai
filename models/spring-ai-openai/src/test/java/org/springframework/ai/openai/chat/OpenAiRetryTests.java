@@ -78,7 +78,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class OpenAiRetryTests {
 
-	private class TestRetryListener implements RetryListener {
+	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;
 

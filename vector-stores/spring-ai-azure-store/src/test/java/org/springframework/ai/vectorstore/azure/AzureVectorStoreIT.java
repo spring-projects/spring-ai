@@ -305,7 +305,7 @@ public class AzureVectorStoreIT {
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
 					MetadataField.date("activationDate"));
-			return new AzureVectorStore(searchIndexClient, embeddingModel, filterableMetaFields);
+			return new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields);
 		}
 
 		@Bean

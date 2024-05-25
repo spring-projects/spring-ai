@@ -35,6 +35,11 @@ dependencies {
 }
 ----
 
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
 The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
 You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
@@ -110,6 +115,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.qdrant.api-key`| The API key to use for authentication with the Qdrant server. | -
 |`spring.ai.vectorstore.qdrant.collection-name`| The name of the collection to use in Qdrant. | -
 |`spring.ai.vectorstore.qdrant.use-tls`| Whether to use TLS(HTTPS). | false
+|`spring.ai.vectorstore.qdrant.initialize-schema`| Whether to initialize the backend schema or not | false
 |===
 
 == Metadata filtering

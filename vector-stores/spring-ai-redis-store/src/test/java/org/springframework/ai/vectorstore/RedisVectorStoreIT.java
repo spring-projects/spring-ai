@@ -250,7 +250,7 @@ class RedisVectorStoreIT {
 				.withURI(redisContainer.getRedisURI())
 				.withMetadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"),
 						MetadataField.tag("country"), MetadataField.numeric("year"))
-				.build(), embeddingModel);
+				.build(), embeddingModel, true);
 		}
 
 		@Bean

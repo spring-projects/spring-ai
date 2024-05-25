@@ -30,11 +30,20 @@ dependencies {
 }
 ----
 
-The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
-You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
+
+The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
+You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
+
 
 To connect to and configure the `MilvusVectorStore`, you need to provide access details for your instance.
 A simple configuration can either be provided via Spring Boot's `application.yml`
@@ -162,6 +171,7 @@ You can use the following properties in your Spring Boot configuration to custom
 
 |spring.ai.vectorstore.milvus.database-name |  The name of the Milvus database to use.  | default
 |spring.ai.vectorstore.milvus.collection-name | Milvus collection name to store the vectors  | vector_store
+|spring.ai.vectorstore.milvus.initialize-schema | whether to initialize Milvus' backend | false
 |spring.ai.vectorstore.milvus.embedding-dimension | The dimension of the vectors to be stored in the Milvus collection.  | 1536
 |spring.ai.vectorstore.milvus.index-type | The type of the index to be created for the Milvus collection.  | IVF_FLAT
 |spring.ai.vectorstore.milvus.metric-type | The metric type to be used for the Milvus collection.  | COSINE

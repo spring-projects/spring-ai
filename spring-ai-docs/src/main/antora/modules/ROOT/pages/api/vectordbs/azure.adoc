@@ -12,7 +12,12 @@ link:https://azure.microsoft.com/en-us/products/ai-services/ai-search/[Azure AI 
 
 == Configuration
 
-On startup, the AzureVectorStore will attempt to create a new index within your AI Search service instance. Alternatively, you can create the index manually.
+On startup, the `AzureVectorStore` can  attempt to create a new index within your AI Search service instance if you've opted in by setting the relevant `initializeSchema` `boolean` property to `true` in the constructor or, if using Spring Boot, setting `...initialize-schema=true`  in your `application.properties` file.
+
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+Alternatively, you can create the index manually.
 
 To set up an AzureVectorStore, you will need the settings retrieved from the prerequisites above along with your index name:
 

@@ -48,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Anush Shetty
+ * @author Josh Long
  * @since 0.8.1
  */
 @Testcontainers
@@ -251,7 +252,7 @@ public class QdrantVectorStoreIT {
 
 		@Bean
 		public VectorStore qdrantVectorStore(EmbeddingModel embeddingModel, QdrantClient qdrantClient) {
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel, true);
 		}
 
 		@Bean

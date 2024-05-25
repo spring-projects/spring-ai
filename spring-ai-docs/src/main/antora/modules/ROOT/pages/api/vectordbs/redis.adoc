@@ -45,6 +45,12 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 Here is an example of the needed bean:
@@ -102,6 +108,7 @@ You can use the following properties in your Spring Boot configuration to custom
 
 |`spring.ai.vectorstore.redis.uri`| Server connection URI | `redis://localhost:6379`
 |`spring.ai.vectorstore.redis.index`| Index name  | `default-index`
+|`spring.ai.vectorstore.redis.initialize-schema`| whether to initialize the required schema  | `false`
 |`spring.ai.vectorstore.redis.prefix`| Prefix | `default:`
 
 |===

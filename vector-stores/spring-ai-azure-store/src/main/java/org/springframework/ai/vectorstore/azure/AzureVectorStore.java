@@ -15,35 +15,16 @@
  */
 package org.springframework.ai.vectorstore.azure;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
 import com.azure.core.util.Context;
 import com.azure.search.documents.SearchClient;
 import com.azure.search.documents.SearchDocument;
 import com.azure.search.documents.indexes.SearchIndexClient;
-import com.azure.search.documents.indexes.models.HnswAlgorithmConfiguration;
-import com.azure.search.documents.indexes.models.HnswParameters;
-import com.azure.search.documents.indexes.models.SearchField;
-import com.azure.search.documents.indexes.models.SearchFieldDataType;
-import com.azure.search.documents.indexes.models.SearchIndex;
-import com.azure.search.documents.indexes.models.VectorSearch;
-import com.azure.search.documents.indexes.models.VectorSearchAlgorithmMetric;
-import com.azure.search.documents.indexes.models.VectorSearchProfile;
-import com.azure.search.documents.models.IndexDocumentsResult;
-import com.azure.search.documents.models.IndexingResult;
-import com.azure.search.documents.models.SearchOptions;
-import com.azure.search.documents.models.VectorSearchOptions;
-import com.azure.search.documents.models.VectorizedQuery;
+import com.azure.search.documents.indexes.models.*;
+import com.azure.search.documents.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -54,6 +35,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 /**
  * Uses Azure Cognitive Search as a backing vector store. Documents can be preloaded into
  * a Cognitive Search index and managed via Azure tools or added and managed through this
@@ -63,6 +47,7 @@ import org.springframework.util.StringUtils;
  * @author Greg Meyer
  * @author Xiangyang Yu
  * @author Christian Tzolov
+ * @author Josh Long
  */
 public class AzureVectorStore implements VectorStore, InitializingBean {
 
@@ -103,6 +88,8 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
 	private String indexName = DEFAULT_INDEX_NAME;
+
+	private final boolean initializeSchema;
 
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
@@ -148,8 +135,9 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	 * for Azure search indexes and factory for {@link SearchClient}.
 	 * @param embeddingModel The client for embedding operations.
 	 */
-	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
-		this(searchIndexClient, embeddingModel, List.of());
+	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		this(searchIndexClient, embeddingModel, initializeSchema, List.of());
 	}
 
 	/**
@@ -161,12 +149,13 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	 * can be used in similarity search query filter expressions.
 	 */
 	public AzureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
-			List<MetadataField> filterMetadataFields) {
+			boolean initializeSchema, List<MetadataField> filterMetadataFields) {
 
 		Assert.notNull(embeddingModel, "The embedding model can not be null.");
 		Assert.notNull(searchIndexClient, "The search index client can not be null.");
 		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not be null.");
 
+		this.initializeSchema = initializeSchema;
 		this.searchIndexClient = searchIndexClient;
 		this.embeddingModel = embeddingModel;
 		this.filterMetadataFields = filterMetadataFields;
@@ -327,6 +316,9 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+
+		if (!this.initializeSchema)
+			return;
 
 		int dimensions = this.embeddingModel.dimensions();
 
