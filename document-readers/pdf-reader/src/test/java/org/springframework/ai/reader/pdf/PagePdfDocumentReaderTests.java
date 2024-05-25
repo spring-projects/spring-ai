@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PagePdfDocumentReaderTests {
 
 	@Test
-	public void classpathRead() {
+	public void withoutHeadersAndFooters() {
 
 		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
 				PdfDocumentReaderConfig.builder()
@@ -50,9 +50,9 @@ public class PagePdfDocumentReaderTests {
 
 		assertThat(docs).hasSize(4);
 
-		String allText = docs.stream().map(Document::getContent).collect(Collectors.joining(System.lineSeparator()));
+		String allText = docs.stream().map(d -> d.getContent()).collect(Collectors.joining(System.lineSeparator()));
 
-		assertThat(allText).contains(
+		assertThat(allText).doesNotContain(
 				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));
 	}
 
