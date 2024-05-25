@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.springframework.ai.chat.service.ChatServiceListener;
 import org.springframework.ai.chat.service.ChatServiceResponse;
+import org.springframework.ai.chat.client.advisor.VectorStoreChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
@@ -31,8 +32,10 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * @deprecated Use the {@link VectorStoreChatMemoryAdvisor} instead.
  * @author Christian Tzolov
  */
+@Deprecated
 public class VectorStoreChatMemoryChatServiceListener implements ChatServiceListener {
 
 	private final VectorStore vectorStore;

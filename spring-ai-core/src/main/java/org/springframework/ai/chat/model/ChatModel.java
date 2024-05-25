@@ -20,11 +20,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.Arrays;
 
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.Model;
 
-public interface ChatModel extends Model<Prompt, ChatResponse> {
+public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatModel {
 
 	default String call(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
@@ -42,5 +44,9 @@ public interface ChatModel extends Model<Prompt, ChatResponse> {
 	ChatResponse call(Prompt prompt);
 
 	ChatOptions getDefaultOptions();
+
+	default Flux<ChatResponse> stream(Prompt prompt) {
+		throw new UnsupportedOperationException("streaming is not supported");
+	}
 
 }

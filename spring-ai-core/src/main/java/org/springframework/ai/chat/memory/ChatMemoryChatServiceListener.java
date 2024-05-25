@@ -20,14 +20,19 @@ import java.util.List;
 
 import org.springframework.ai.chat.service.ChatServiceResponse;
 import org.springframework.ai.chat.service.ChatServiceListener;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 
 /**
+ * @deprecated Use the {@link MessageChatMemoryAdvisor} or {@link PromptChatMemoryAdvisor}
+ * instead.
  * @author Christian Tzolov
  */
+@Deprecated
 public class ChatMemoryChatServiceListener implements ChatServiceListener {
 
 	private final ChatMemory chatHistory;

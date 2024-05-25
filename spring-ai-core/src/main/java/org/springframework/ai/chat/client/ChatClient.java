@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import reactor.core.publisher.Flux;
@@ -208,6 +209,34 @@ public interface ChatClient {
 
 	}
 
+	class AdvisorSpec {
+
+		private List<RequestResponseAdvisor> advisors = new ArrayList<>();
+
+		private final Map<String, Object> params = new HashMap<>();
+
+		public AdvisorSpec param(String k, Object v) {
+			this.params.put(k, v);
+			return this;
+		}
+
+		public AdvisorSpec params(Map<String, Object> p) {
+			this.params.putAll(p);
+			return this;
+		}
+
+		public AdvisorSpec advisors(RequestResponseAdvisor... advisors) {
+			this.advisors.addAll(List.of(advisors));
+			return this;
+		}
+
+		public AdvisorSpec advisors(List<RequestResponseAdvisor> advisors) {
+			this.advisors.addAll(advisors);
+			return this;
+		}
+
+	}
+
 	class ChatClientRequest {
 
 		private final ChatModel chatModel;
@@ -230,6 +259,37 @@ public interface ChatClient {
 
 		private final Map<String, Object> systemParams = new HashMap<>();
 
+		private List<RequestResponseAdvisor> advisors = new ArrayList<>();
+
+		private final Map<String, Object> advisorParams = new HashMap<>();
+
+		/* copy constructor */
+		ChatClientRequest(ChatClientRequest ccr) {
+			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
+					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams);
+		}
+
+		public ChatClientRequest(ChatModel chatModel, String userText, Map<String, Object> userParams,
+				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
+				List<Message> messages, List<String> functionNames, List<Media> media, ChatOptions chatOptions,
+				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams) {
+
+			this.chatModel = chatModel;
+			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
+
+			this.userText = userText;
+			this.userParams.putAll(userParams);
+			this.systemText = systemText;
+			this.systemParams.putAll(systemParams);
+
+			this.functionNames.addAll(functionNames);
+			this.functionCallbacks.addAll(functionCallbacks);
+			this.messages.addAll(messages);
+			this.media.addAll(media);
+			this.advisors.addAll(advisors);
+			this.advisorParams.putAll(advisorParams);
+		}
+
 		/**
 		 * Return a {@code ChatClient.Builder} to create a new {@code ChatClient} whose
 		 * settings are replicated from this {@code ChatClientRequest}.
@@ -250,46 +310,52 @@ public interface ChatClient {
 			return builder;
 		}
 
-		/* copy constructor */
-		ChatClientRequest(ChatClientRequest ccr) {
-			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
-					ccr.functionNames, ccr.media, ccr.chatOptions);
+		public ChatClientRequest advisors(Consumer<AdvisorSpec> consumer) {
+			Assert.notNull(consumer, "the consumer must be non-null");
+			var as = new AdvisorSpec();
+			consumer.accept(as);
+			this.advisorParams.putAll(as.params);
+			this.advisors.addAll(as.advisors);
+			return this;
 		}
 
-		public ChatClientRequest(ChatModel chatModel, String userText, Map<String, Object> userParams,
-				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
-				List<String> functionNames, List<Media> media, ChatOptions chatOptions) {
+		public ChatClientRequest advisors(RequestResponseAdvisor... advisors) {
+			Assert.notNull(advisors, "the advisors must be non-null");
+			this.advisors.addAll(List.of(advisors));
+			return this;
+		}
 
-			this.chatModel = chatModel;
-			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
-
-			this.userText = userText;
-			this.userParams.putAll(userParams);
-			this.systemText = systemText;
-			this.systemParams.putAll(systemParams);
-
-			this.functionNames.addAll(functionNames);
-			this.functionCallbacks.addAll(functionCallbacks);
-			this.media.addAll(media);
+		public ChatClientRequest advisors(List<RequestResponseAdvisor> advisors) {
+			Assert.notNull(advisors, "the advisors must be non-null");
+			this.advisors.addAll(advisors);
+			return this;
 		}
 
 		public ChatClientRequest messages(Message... messages) {
+			Assert.notNull(messages, "the messages must be non-null");
 			this.messages.addAll(List.of(messages));
 			return this;
 		}
 
 		public ChatClientRequest messages(List<Message> messages) {
+			Assert.notNull(messages, "the messages must be non-null");
 			this.messages.addAll(messages);
 			return this;
 		}
 
 		public <T extends ChatOptions> ChatClientRequest options(T options) {
+			Assert.notNull(options, "the options must be non-null");
 			this.chatOptions = options;
 			return this;
 		}
 
 		public <I, O> ChatClientRequest function(String name, String description,
 				java.util.function.Function<I, O> function) {
+
+			Assert.hasText(name, "the name must be non-null and non-empty");
+			Assert.hasText(description, "the description must be non-null and non-empty");
+			Assert.notNull(function, "the function must be non-null");
+
 			var fcw = FunctionCallbackWrapper.builder(function)
 				.withDescription(description)
 				.withName(name)
@@ -300,18 +366,24 @@ public interface ChatClient {
 		}
 
 		public ChatClientRequest functions(String... functionBeanNames) {
+			Assert.notNull(functionBeanNames, "the functionBeanNames must be non-null");
 			this.functionNames.addAll(List.of(functionBeanNames));
 			return this;
 		}
 
 		public ChatClientRequest system(String text) {
+			Assert.notNull(text, "the text must be non-null");
 			this.systemText = text;
 			return this;
 		}
 
-		public ChatClientRequest system(Resource text, Charset charset) {
+		public ChatClientRequest system(Resource textResource, Charset charset) {
+
+			Assert.notNull(textResource, "the text resource must be non-null");
+			Assert.notNull(charset, "the charset must be non-null");
+
 			try {
-				this.systemText = text.getContentAsString(charset);
+				this.systemText = textResource.getContentAsString(charset);
 			}
 			catch (IOException e) {
 				throw new RuntimeException(e);
@@ -320,10 +392,14 @@ public interface ChatClient {
 		}
 
 		public ChatClientRequest system(Resource text) {
+			Assert.notNull(text, "the text resource must be non-null");
 			return this.system(text, Charset.defaultCharset());
 		}
 
 		public ChatClientRequest system(Consumer<SystemSpec> consumer) {
+
+			Assert.notNull(consumer, "the consumer must be non-null");
+
 			var ss = new SystemSpec();
 			consumer.accept(ss);
 			this.systemText = StringUtils.hasText(ss.text()) ? ss.text() : this.systemText;
@@ -333,11 +409,16 @@ public interface ChatClient {
 		}
 
 		public ChatClientRequest user(String text) {
+			Assert.notNull(text, "the text must be non-null");
 			this.userText = text;
 			return this;
 		}
 
 		public ChatClientRequest user(Resource text, Charset charset) {
+
+			Assert.notNull(text, "the text resource must be non-null");
+			Assert.notNull(charset, "the charset must be non-null");
+
 			try {
 				this.userText = text.getContentAsString(charset);
 			}
@@ -348,10 +429,13 @@ public interface ChatClient {
 		}
 
 		public ChatClientRequest user(Resource text) {
+			Assert.notNull(text, "the text resource must be non-null");
 			return this.user(text, Charset.defaultCharset());
 		}
 
 		public ChatClientRequest user(Consumer<UserSpec> consumer) {
+			Assert.notNull(consumer, "the consumer must be non-null");
+
 			var us = new UserSpec();
 			consumer.accept(us);
 			this.userText = StringUtils.hasText(us.text()) ? us.text() : this.userText;
@@ -423,6 +507,33 @@ public interface ChatClient {
 
 		}
 
+		private static ChatClientRequest adviseOnRequest(ChatClientRequest inputRequest, Map<String, Object> context) {
+
+			ChatClientRequest advisedRequest = inputRequest;
+
+			if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
+				AdvisedRequest adviseRequest = new AdvisedRequest(inputRequest.chatModel, inputRequest.userText,
+						inputRequest.systemText, inputRequest.chatOptions, inputRequest.media,
+						inputRequest.functionNames, inputRequest.functionCallbacks, inputRequest.messages,
+						inputRequest.userParams, inputRequest.systemParams, inputRequest.advisors,
+						inputRequest.advisorParams);
+
+				// apply the advisors onRequest
+				var currentAdvisors = new ArrayList<>(inputRequest.advisors);
+				for (RequestResponseAdvisor advisor : currentAdvisors) {
+					adviseRequest = advisor.adviseRequest(adviseRequest, context);
+				}
+
+				advisedRequest = new ChatClientRequest(adviseRequest.chatModel(), adviseRequest.userText(),
+						adviseRequest.userParams(), adviseRequest.systemText(), adviseRequest.systemParams(),
+						adviseRequest.functionCallbacks(), adviseRequest.messages(), adviseRequest.functionNames(),
+						adviseRequest.media(), adviseRequest.chatOptions(), adviseRequest.advisors(),
+						adviseRequest.advisorParams());
+			}
+
+			return advisedRequest;
+		}
+
 		public static class CallResponseSpec {
 
 			private final ChatClientRequest request;
@@ -443,7 +554,7 @@ public interface ChatClient {
 			}
 
 			private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> boc) {
-				var chatResponse = doGetChatResponse(boc.getFormat());
+				var chatResponse = doGetChatResponse(this.request, boc.getFormat());
 				var stringResponse = chatResponse.getResult().getOutput().getContent();
 				return boc.convert(stringResponse);
 			}
@@ -455,48 +566,65 @@ public interface ChatClient {
 			}
 
 			private ChatResponse doGetChatResponse() {
-				return this.doGetChatResponse("");
+				return this.doGetChatResponse(this.request, "");
 			}
 
-			private ChatResponse doGetChatResponse(String formatParam) {
+			private ChatResponse doGetChatResponse(ChatClientRequest inputRequest, String formatParam) {
+
+				Map<String, Object> context = new ConcurrentHashMap<>();
+				context.putAll(inputRequest.advisorParams);
+				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest, context);
 
 				var processedUserText = StringUtils.hasText(formatParam)
-						? this.request.userText + System.lineSeparator() + "{format}" : this.request.userText;
+						? advisedRequest.userText + System.lineSeparator() + "{spring.ai.soc.format}"
+						: advisedRequest.userText;
 
-				Map<String, Object> userParams = new HashMap<>(this.request.userParams);
+				Map<String, Object> userParams = new HashMap<>(advisedRequest.userParams);
 				if (StringUtils.hasText(formatParam)) {
-					userParams.put("format", formatParam);
+					userParams.put("spring.ai.soc.format", formatParam);
 				}
 
-				var messages = new ArrayList<Message>(this.request.messages);
+				var messages = new ArrayList<Message>(advisedRequest.messages);
 				var textsAreValid = (StringUtils.hasText(processedUserText)
-						|| StringUtils.hasText(this.request.systemText));
+						|| StringUtils.hasText(advisedRequest.systemText));
 				if (textsAreValid) {
-					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
+					if (StringUtils.hasText(advisedRequest.systemText) || !advisedRequest.systemParams.isEmpty()) {
 						var systemMessage = new SystemMessage(
-								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
+								new PromptTemplate(advisedRequest.systemText, advisedRequest.systemParams).render());
 						messages.add(systemMessage);
 					}
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
 						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
-								this.request.media);
+								advisedRequest.media);
 					}
 					else {
-						userMessage = new UserMessage(processedUserText, this.request.media);
+						userMessage = new UserMessage(processedUserText, advisedRequest.media);
 					}
 					messages.add(userMessage);
 				}
-				if (this.request.chatOptions instanceof FunctionCallingOptions functionCallingOptions) {
-					if (!this.request.functionNames.isEmpty()) {
-						functionCallingOptions.setFunctions(new HashSet<>(this.request.functionNames));
+
+				if (advisedRequest.chatOptions instanceof FunctionCallingOptions functionCallingOptions) {
+					if (!advisedRequest.functionNames.isEmpty()) {
+						functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.functionNames));
 					}
-					if (!this.request.functionCallbacks.isEmpty()) {
-						functionCallingOptions.setFunctionCallbacks(this.request.functionCallbacks);
+					if (!advisedRequest.functionCallbacks.isEmpty()) {
+						functionCallingOptions.setFunctionCallbacks(advisedRequest.functionCallbacks);
 					}
 				}
-				var prompt = new Prompt(messages, this.request.chatOptions);
-				return this.chatModel.call(prompt);
+				var prompt = new Prompt(messages, advisedRequest.chatOptions);
+				var chatResponse = this.chatModel.call(prompt);
+
+				ChatResponse advisedResponse = chatResponse;
+				// apply the advisors on response
+				if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
+					var currentAdvisors = new ArrayList<>(inputRequest.advisors);
+					for (RequestResponseAdvisor advisor : currentAdvisors) {
+						advisedResponse = advisor.adviseResponse(advisedResponse, context);
+					}
+				}
+
+				return advisedResponse;
 			}
 
 			public ChatResponse chatResponse() {
@@ -520,55 +648,67 @@ public interface ChatClient {
 				this.request = request;
 			}
 
-			private Flux<ChatResponse> doGetFluxChatResponse(String processedUserText) {
-				Map<String, Object> userParams = new HashMap<>(this.request.userParams);
+			private Flux<ChatResponse> doGetFluxChatResponse(ChatClientRequest inputRequest) {
 
-				var messages = new ArrayList<Message>();
+				Map<String, Object> context = new ConcurrentHashMap<>();
+				context.putAll(inputRequest.advisorParams);
+				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest, context);
+
+				String processedUserText = advisedRequest.userText;
+				Map<String, Object> userParams = new HashMap<>(advisedRequest.userParams);
+
+				var messages = new ArrayList<Message>(advisedRequest.messages);
 				var textsAreValid = (StringUtils.hasText(processedUserText)
-						|| StringUtils.hasText(this.request.systemText));
-				var messagesAreValid = !this.request.messages.isEmpty();
-				Assert.state(!(messagesAreValid && textsAreValid), "you must specify either " + Message.class.getName()
-						+ " instances or user/system texts, but not both");
+						|| StringUtils.hasText(advisedRequest.systemText));
 				if (textsAreValid) {
 					UserMessage userMessage = null;
 					if (!CollectionUtils.isEmpty(userParams)) {
 						userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
-								this.request.media);
+								advisedRequest.media);
 					}
 					else {
-						userMessage = new UserMessage(processedUserText, this.request.media);
+						userMessage = new UserMessage(processedUserText, advisedRequest.media);
 					}
-					if (StringUtils.hasText(this.request.systemText) || !this.request.systemParams.isEmpty()) {
+					if (StringUtils.hasText(advisedRequest.systemText) || !advisedRequest.systemParams.isEmpty()) {
 						var systemMessage = new SystemMessage(
-								new PromptTemplate(this.request.systemText, this.request.systemParams).render());
+								new PromptTemplate(advisedRequest.systemText, advisedRequest.systemParams).render());
 						messages.add(systemMessage);
 					}
 					messages.add(userMessage);
 				}
-				else {
-					messages.addAll(this.request.messages);
-				}
-				if (this.request.chatOptions instanceof FunctionCallingOptions functionCallingOptions) {
-					// if (this.request.chatOptions instanceof
-					// FunctionCallingOptionsBuilder.PortableFunctionCallingOptions
-					// functionCallingOptions) {
-					if (!this.request.functionNames.isEmpty()) {
-						functionCallingOptions.setFunctions(new HashSet<>(this.request.functionNames));
+
+				if (advisedRequest.chatOptions instanceof
+
+				FunctionCallingOptions functionCallingOptions) {
+					if (!advisedRequest.functionNames.isEmpty()) {
+						functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.functionNames));
 					}
-					if (!this.request.functionCallbacks.isEmpty()) {
-						functionCallingOptions.setFunctionCallbacks(this.request.functionCallbacks);
+					if (!advisedRequest.functionCallbacks.isEmpty()) {
+						functionCallingOptions.setFunctionCallbacks(advisedRequest.functionCallbacks);
 					}
 				}
-				var prompt = new Prompt(messages, this.request.chatOptions);
-				return this.chatModel.stream(prompt);
+				var prompt = new Prompt(messages, advisedRequest.chatOptions);
+
+				var fluxChatResponse = this.chatModel.stream(prompt);
+
+				Flux<ChatResponse> advisedResponse = fluxChatResponse;
+				// apply the advisors on response
+				if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
+					var currentAdvisors = new ArrayList<>(inputRequest.advisors);
+					for (RequestResponseAdvisor advisor : currentAdvisors) {
+						advisedResponse = advisor.adviseResponse(advisedResponse, context);
+					}
+				}
+
+				return advisedResponse;
 			}
 
 			public Flux<ChatResponse> chatResponse() {
-				return doGetFluxChatResponse(this.request.userText);
+				return doGetFluxChatResponse(this.request);
 			}
 
 			public Flux<String> content() {
-				return doGetFluxChatResponse(this.request.userText).map(r -> {
+				return doGetFluxChatResponse(this.request).map(r -> {
 					if (r.getResult() == null || r.getResult().getOutput() == null
 							|| r.getResult().getOutput().getContent() == null) {
 						return "";
@@ -599,7 +739,22 @@ public interface ChatClient {
 			Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 			this.chatModel = chatModel;
 			this.defaultRequest = new ChatClientRequest(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-					List.of(), null);
+					List.of(), List.of(), null, List.of(), Map.of());
+		}
+
+		public Builder defaultAdvisors(RequestResponseAdvisor advisor) {
+			this.defaultRequest.advisors(advisor);
+			return this;
+		}
+
+		public Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer) {
+			this.defaultRequest.advisors(advisorSpecConsumer);
+			return this;
+		}
+
+		public Builder defaultAdvisors(List<RequestResponseAdvisor> advisors) {
+			this.defaultRequest.advisors(advisors);
+			return this;
 		}
 
 		public ChatClient build() {

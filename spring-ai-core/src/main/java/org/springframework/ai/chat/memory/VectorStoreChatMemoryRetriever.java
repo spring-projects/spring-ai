@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.client.advisor.VectorStoreChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.transformer.AbstractPromptTransformer;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
@@ -32,8 +33,10 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * @deprecated Use the {@link VectorStoreChatMemoryAdvisor} instead.
  * @author Christian Tzolov
  */
+@Deprecated
 public class VectorStoreChatMemoryRetriever extends AbstractPromptTransformer {
 
 	private final VectorStore vectorStore;
