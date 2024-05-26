@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
-class BedrockTitanModelCalerlIT {
+class BedrockTitanChatModelIT {
 
 	@Autowired
 	private BedrockTitanChatModel chatModel;
@@ -103,7 +103,7 @@ class BedrockTitanModelCalerlIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
+	// @Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
@@ -123,7 +123,7 @@ class BedrockTitanModelCalerlIT {
 		assertThat(list).hasSize(5);
 	}
 
-	@Disabled("TODO: Fix the parser instructions to return the correct format")
+	// @Disabled("TODO: Fix the parser instructions to return the correct format")
 	@Test
 	void mapOutputConverter() {
 		MapOutputConverter outputConverter = new MapOutputConverter();

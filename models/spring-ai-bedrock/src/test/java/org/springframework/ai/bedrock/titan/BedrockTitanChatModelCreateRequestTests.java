@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  */
-public class BedrockTitanChatCreateRequestTests {
+public class BedrockTitanChatModelCreateRequestTests {
 
 	private TitanChatBedrockApi api = new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
 			EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
@@ -41,7 +41,7 @@ public class BedrockTitanChatCreateRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new BedrockTitanChatModel(api,
+		var model = new BedrockTitanChatModel(api,
 				BedrockTitanChatOptions.builder()
 					.withTemperature(66.6f)
 					.withTopP(0.66f)
@@ -49,7 +49,7 @@ public class BedrockTitanChatCreateRequestTests {
 					.withStopSequences(List.of("stop1", "stop2"))
 					.build());
 
-		var request = client.createRequest(new Prompt("Test message content"));
+		var request = model.createRequest(new Prompt("Test message content"));
 
 		assertThat(request.inputText()).isNotEmpty();
 		assertThat(request.textGenerationConfig().temperature()).isEqualTo(66.6f);
@@ -57,7 +57,7 @@ public class BedrockTitanChatCreateRequestTests {
 		assertThat(request.textGenerationConfig().maxTokenCount()).isEqualTo(666);
 		assertThat(request.textGenerationConfig().stopSequences()).containsExactly("stop1", "stop2");
 
-		request = client.createRequest(new Prompt("Test message content",
+		request = model.createRequest(new Prompt("Test message content",
 				BedrockTitanChatOptions.builder()
 					.withTemperature(99.9f)
 					.withTopP(0.99f)
