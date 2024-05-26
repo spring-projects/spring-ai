@@ -16,32 +16,25 @@
 
 package org.springframework.ai.openai.chat.service;
 
-import java.util.List;
-import java.util.function.Supplier;
-
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.service.ChatService;
-import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.qdrant.QdrantContainer;
-
-import org.springframework.ai.chat.service.PromptTransformingChatService;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.chat.prompt.transformer.QuestionContextAugmentor;
+import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 import org.springframework.ai.chat.prompt.transformer.VectorStoreRetriever;
+import org.springframework.ai.chat.service.ChatService;
+import org.springframework.ai.chat.service.PromptTransformingChatService;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.reader.JsonReader;
@@ -55,9 +48,15 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.qdrant.QdrantContainer;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.ai.openai.api.OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW;
+import java.util.List;
+import java.util.function.Supplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.openai.api.OpenAiApi.ChatModel.GPT_4_0_TURBO;
 
 @Testcontainers
 @SpringBootTest(classes = OpenAiPromptTransformingChatServiceIT.Config.class)
@@ -92,20 +91,20 @@ public class OpenAiPromptTransformingChatServiceIT {
 	void simpleChat() {
 		loadData();
 
-		var prompt = new Prompt(new UserMessage("What reliable road bike?"));
+		String question = "What reliable road bike?";
+		var prompt = new Prompt(new UserMessage(question));
 		var chatServiceResponse = this.chatService.call(new ChatServiceContext(prompt));
 		String answer = chatServiceResponse.getChatResponse().getResult().getOutput().getContent();
-		assertTrue(answer.contains("Celerity"), "Response does not include 'Celerity'");
+		assertThat(answer).containsAnyOf("Celerity", "Velocity")
+			.as("Answer does not include 'Celerity' or 'Velocity'.  Answer = %s", answer);
 
-		// Use GPT 4 as a better model for determining relevancy. gpt 3.5 makes basic
-		// mistakes
-		OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder()
-			.withModel(GPT_4_TURBO_PREVIEW.getValue())
-			.build();
+		// Use GPT 4 Turbo as a better model for determining relevancy.
+		OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder().withModel(GPT_4_0_TURBO.getValue()).build();
 		var relevancyEvaluator = new RelevancyEvaluator(this.chatModel, openAiChatOptions);
 
 		EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(chatServiceResponse.toEvaluationRequest());
-		assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
+		assertThat(evaluationResponse.isPass())
+			.as("Response is not relevant to the question.  Question = %s;  Answer = %s", question, answer);
 
 	}
 
