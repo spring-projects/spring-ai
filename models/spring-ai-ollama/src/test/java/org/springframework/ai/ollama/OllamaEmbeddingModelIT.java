@@ -30,6 +30,7 @@ import org.testcontainers.ollama.OllamaContainer;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApiIT;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class OllamaEmbeddingModelIT {
 
+	private static String MODEL = "llava";
+
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
@@ -51,9 +54,9 @@ class OllamaEmbeddingModelIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the 'orca-mini' generative (3GB) ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", "orca-mini");
-		logger.info("orca-mini pulling competed!");
+		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
+		ollamaContainer.execInContainer("ollama", "pull", MODEL);
+		logger.info(MODEL + " pulling competed!");
 
 		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
 	}
@@ -67,7 +70,7 @@ class OllamaEmbeddingModelIT {
 		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-		assertThat(embeddingModel.dimensions()).isEqualTo(3200);
+		assertThat(embeddingModel.dimensions()).isEqualTo(4096);
 	}
 
 	@SpringBootConfiguration
@@ -80,7 +83,7 @@ class OllamaEmbeddingModelIT {
 
 		@Bean
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
-			return new OllamaEmbeddingModel(ollamaApi).withModel("orca-mini");
+			return new OllamaEmbeddingModel(ollamaApi, OllamaOptions.create().withModel(MODEL));
 		}
 
 	}
