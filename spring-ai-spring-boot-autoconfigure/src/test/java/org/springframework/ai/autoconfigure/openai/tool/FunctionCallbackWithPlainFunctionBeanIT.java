@@ -57,12 +57,13 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
@@ -84,66 +85,74 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
+					"spring.ai.openai.chat.options.temperature=0.1")
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 				.functions("weatherFunction")
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'")
 				.stream().content()
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			logger.info("Response: {}", content);
-		});
+				logger.info("Response: {}", content);
+			});
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
+					"spring.ai.openai.chat.options.temperature=0.1")
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+				Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-			String content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
-				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+				String content = response.collectList()
+					.block()
+					.stream()
+					.map(ChatResponse::getResults)
+					.flatMap(List::stream)
+					.map(Generation::getOutput)
+					.map(AssistantMessage::getContent)
+					.collect(Collectors.joining());
+				logger.info("Response: {}", content);
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("10.0", "10");
-			assertThat(content).containsAnyOf("15.0", "15");
+				assertThat(content).containsAnyOf("30.0", "30");
+				assertThat(content).containsAnyOf("10.0", "10");
+				assertThat(content).containsAnyOf("15.0", "15");
 
-			// Test weatherFunctionTwo
-			response = chatModel.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+				// Test weatherFunctionTwo
+				response = chatModel.stream(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
-			content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
-				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+				content = response.collectList()
+					.block()
+					.stream()
+					.map(ChatResponse::getResults)
+					.flatMap(List::stream)
+					.map(Generation::getOutput)
+					.map(AssistantMessage::getContent)
+					.collect(Collectors.joining());
+				logger.info("Response: {}", content);
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("10.0", "10");
-			assertThat(content).containsAnyOf("15.0", "15");
-		});
+				assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
+				assertThat(content).containsAnyOf("30.0", "30");
+				assertThat(content).containsAnyOf("10.0", "10");
+				assertThat(content).containsAnyOf("15.0", "15");
+			});
 	}
 
 	@Configuration

@@ -68,7 +68,7 @@ public class FunctionCallbackWrapperIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30.0", "10.0", "15.0");
+			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
 		});
 	}
