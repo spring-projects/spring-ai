@@ -5,7 +5,7 @@ package org.springframework.ai.autoconfigure;
  */
 public class CommonVectorStoreProperties {
 
-	private boolean initializeSchema = false;
+	private boolean initializeSchema = true;
 
 	public boolean isInitializeSchema() {
 		return initializeSchema;
