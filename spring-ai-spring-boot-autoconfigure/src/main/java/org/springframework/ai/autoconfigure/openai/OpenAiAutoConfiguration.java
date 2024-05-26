@@ -26,10 +26,12 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -44,11 +46,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * @author Christian Tzolov
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
+		SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class,
 		OpenAiEmbeddingProperties.class, OpenAiImageProperties.class, OpenAiAudioTranscriptionProperties.class,
 		OpenAiAudioSpeechProperties.class })
+@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+		WebClientAutoConfiguration.class })
 public class OpenAiAutoConfiguration {
 
 	@Bean

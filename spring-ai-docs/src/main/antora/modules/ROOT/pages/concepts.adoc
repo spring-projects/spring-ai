@@ -205,9 +205,9 @@ It allows you to register your own functions to connect the large language model
 These systems can provide LLMs with real-time data and perform data processing actions on their behalf.
 
 Spring AI greatly simplifies code you need to write to support function invocation.
-It brokers the function invocation conversation for you.
+It handles the function invocation conversation for you.
 You can provide your function as a `@Bean` and then provide the bean name of the function in your prompt options to activate that function.
-You can also define and reference multiple functions in a single prompt.
+Additionally, you can define and reference multiple functions in a single prompt.
 
 == Evaluating AI responses
 
