@@ -113,9 +113,9 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		return this.retryTemplate.execute(ctx -> {
 
-			ZhiPuAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
-					? new ZhiPuAiApi.EmbeddingRequest<>(request.getInstructions(), this.defaultOptions.getModel())
-					: new ZhiPuAiApi.EmbeddingRequest<>(request.getInstructions(), ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL);
+			ZhiPuAiApi.EmbeddingRequest<String> apiRequest = (this.defaultOptions != null)
+					? new ZhiPuAiApi.EmbeddingRequest<>(String.join("", request.getInstructions()), this.defaultOptions.getModel())
+					: new ZhiPuAiApi.EmbeddingRequest<>(String.join("", request.getInstructions()), ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL);
 
 			if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
 				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
