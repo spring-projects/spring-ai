@@ -77,7 +77,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	@Override
 	public Response apply(Request request) {
 
-		double temperature = 0;
+		double temperature = 30;
 		if (request.location().contains("Paris")) {
 			temperature = 15;
 		}
