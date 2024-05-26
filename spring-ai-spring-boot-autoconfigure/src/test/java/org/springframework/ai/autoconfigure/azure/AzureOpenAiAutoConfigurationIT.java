@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -44,7 +43,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @since 0.8.0
  */
-@Disabled("streaming response on mark p machine is not returning a list of size > 1")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 public class AzureOpenAiAutoConfigurationIT {

@@ -183,8 +183,8 @@ public class AzureOpenAiChatModel
 					isFunctionCall.set(false);
 					return true;
 				}
-				return false;
-			}, false)
+				return !isFunctionCall.get();
+			})
 			.concatMapIterable(window -> {
 				final var reduce = window.reduce(MergeUtils.emptyChatCompletions(), MergeUtils::mergeChatCompletions);
 				return List.of(reduce);
