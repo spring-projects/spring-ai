@@ -20,6 +20,7 @@ import java.util.List;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.service.ChatService;
 import org.springframework.ai.chat.service.StreamingChatService;
@@ -48,6 +49,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
+@Disabled("ChatService Memory implementation are deprecated. No need to test them.")
 @Testcontainers
 @SpringBootTest(classes = ChatMemoryLongTermSystemPromptIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
