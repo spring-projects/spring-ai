@@ -161,16 +161,12 @@ public class AzureOpenAiChatModel
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(true);
 
-		IterableStream<ChatCompletions> chatCompletionsStream = this.openAIClient
-			.getChatCompletionsStream(options.getModel(), options);
-
-		Flux<ChatCompletions> chatCompletionsFlux = Flux.fromIterable(chatCompletionsStream);
+		Flux<ChatCompletions> chatCompletionsFlux = Flux
+			.fromIterable(this.openAIClient.getChatCompletionsStream(options.getModel(), options));
 
 		final var isFunctionCall = new AtomicBoolean(false);
-		final var accessibleChatCompletionsFlux = chatCompletionsFlux
-			// Note: the first chat completions can be ignored when using Azure OpenAI
-			// service which is a known service bug.
-			.skip(1)
+
+		return chatCompletionsFlux.skip(1) // Skip the first completion as needed
 			.map(chatCompletions -> {
 				final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
 				isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
@@ -185,12 +181,7 @@ public class AzureOpenAiChatModel
 				}
 				return false;
 			}, false)
-			.concatMapIterable(window -> {
-				final var reduce = window.reduce(MergeUtils.emptyChatCompletions(), MergeUtils::mergeChatCompletions);
-				return List.of(reduce);
-			})
-			.flatMap(mono -> mono);
-		return accessibleChatCompletionsFlux
+			.flatMap(window -> window) // Directly process each window's Flux
 			.switchMap(accessibleChatCompletions -> handleFunctionCallOrReturnStream(options,
 					Flux.just(accessibleChatCompletions)))
 			.flatMapIterable(ChatCompletions::getChoices)

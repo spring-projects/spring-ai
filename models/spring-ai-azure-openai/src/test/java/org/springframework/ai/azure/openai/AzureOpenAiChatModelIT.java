@@ -15,23 +15,16 @@
  */
 package org.springframework.ai.azure.openai;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -43,8 +36,18 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
@@ -55,6 +58,21 @@ class AzureOpenAiChatModelIT {
 	private AzureOpenAiChatModel chatModel;
 
 	record ActorsFilms(String actor, List<String> movies) {
+	}
+
+	@Test
+	void streamMethodReturnsChunksAsExpectedTest() {
+
+		Flux<ChatResponse> chatResponses = chatModel
+			.stream(new Prompt("Explain how to configure server port in Springboot"));
+		AtomicInteger count = new AtomicInteger();
+
+		StepVerifier.create(chatResponses).thenConsumeWhile(chatResponse -> {
+			count.incrementAndGet();
+			return true;
+		}).thenCancel().verify();
+
+		assertTrue(count.get() > 1);
 	}
 
 	@Test
