@@ -24,22 +24,18 @@ import java.util.stream.Collectors;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
  * @since 1.0.0 M1
  */
-public class PromptChatMemoryAdvisor implements RequestResponseAdvisor {
-
-	private static final int CHAT_HISTORY_WINDOW_SIZE = 40;
+public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
 	private static final String DEFAULT_SYSTEM_TEXT_ADVISE = """
 
@@ -54,34 +50,27 @@ public class PromptChatMemoryAdvisor implements RequestResponseAdvisor {
 
 	private final String systemTextAdvise;
 
-	private final String conversationId;
-
-	private final ChatMemory chatMemory;
-
-	private final int chatHistoryWindowSize;
-
-	public PromptChatMemoryAdvisor(String conversationId, ChatMemory chatMemory) {
-		this(conversationId, chatMemory, DEFAULT_SYSTEM_TEXT_ADVISE, CHAT_HISTORY_WINDOW_SIZE);
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory) {
+		this(chatMemory, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
 
-	public PromptChatMemoryAdvisor(String conversationId, ChatMemory chatMemory, String systemTextAdvise,
-			int chatHistoryWindowSize) {
-		Assert.hasText(conversationId, "The conversationId must not be empty!");
-		Assert.notNull(chatMemory, "The chatMemory must not be null!");
-		Assert.hasText(systemTextAdvise, "The systemTextAdvise must not be empty!");
-		Assert.isTrue(chatHistoryWindowSize > 0, "The chatHistoryWindowSize must be greater than 0!");
-
-		this.conversationId = conversationId;
-		this.chatMemory = chatMemory;
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String systemTextAdvise) {
+		super(chatMemory);
 		this.systemTextAdvise = systemTextAdvise;
-		this.chatHistoryWindowSize = chatHistoryWindowSize;
+	}
+
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
+			String systemTextAdvise) {
+		super(chatMemory, defaultConversationId, chatHistoryWindowSize);
+		this.systemTextAdvise = systemTextAdvise;
 	}
 
 	@Override
 	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 
 		// 1. Advise system parameters.
-		List<Message> memoryMessages = this.chatMemory.get(this.conversationId, this.chatHistoryWindowSize);
+		List<Message> memoryMessages = this.getChatMemoryStore()
+			.get(this.doGetConversationId(context), this.doGetChatMemoryRetrieveSize(context));
 
 		String memory = (memoryMessages != null) ? memoryMessages.stream()
 			.filter(m -> m.getMessageType() != MessageType.SYSTEM)
@@ -102,7 +91,7 @@ public class PromptChatMemoryAdvisor implements RequestResponseAdvisor {
 
 		// 4. Add the new user input to the conversation memory.
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.chatMemory.add(this.conversationId, userMessage);
+		this.getChatMemoryStore().add(this.doGetConversationId(context), userMessage);
 
 		return advisedRequest;
 	}
@@ -112,7 +101,7 @@ public class PromptChatMemoryAdvisor implements RequestResponseAdvisor {
 
 		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
 
-		this.chatMemory.add(this.conversationId, assistantMessages);
+		this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
 
 		return chatResponse;
 	}
@@ -126,7 +115,7 @@ public class PromptChatMemoryAdvisor implements RequestResponseAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 
-			this.chatMemory.add(this.conversationId, assistantMessages);
+			this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
 		});
 	}
 

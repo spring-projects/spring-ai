@@ -209,6 +209,39 @@ public interface ChatClient {
 
 	}
 
+	class AdvisorSpec {
+
+		private List<RequestResponseAdvisor> advisors = new ArrayList<>();
+
+		private final Map<String, Object> params = new HashMap<>();
+
+		public AdvisorSpec param(String k, Object v) {
+			this.params.put(k, v);
+			return this;
+		}
+
+		public AdvisorSpec params(Map<String, Object> p) {
+			this.params.putAll(p);
+			return this;
+		}
+
+		public AdvisorSpec advisor(RequestResponseAdvisor advisor) {
+			this.advisors.add(advisor);
+			return this;
+		}
+
+		public AdvisorSpec advisors(RequestResponseAdvisor... advisors) {
+			this.advisors.addAll(List.of(advisors));
+			return this;
+		}
+
+		public AdvisorSpec advisors(List<RequestResponseAdvisor> advisors) {
+			this.advisors.addAll(advisors);
+			return this;
+		}
+
+	}
+
 	class ChatClientRequest {
 
 		private final ChatModel chatModel;
@@ -233,16 +266,18 @@ public interface ChatClient {
 
 		private List<RequestResponseAdvisor> advisors = new ArrayList<>();
 
+		private final Map<String, Object> advisorParams = new HashMap<>();
+
 		/* copy constructor */
 		ChatClientRequest(ChatClientRequest ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
-					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors);
+					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams);
 		}
 
 		public ChatClientRequest(ChatModel chatModel, String userText, Map<String, Object> userParams,
 				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
 				List<Message> messages, List<String> functionNames, List<Media> media, ChatOptions chatOptions,
-				List<RequestResponseAdvisor> advisors) {
+				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams) {
 
 			this.chatModel = chatModel;
 			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
@@ -257,6 +292,7 @@ public interface ChatClient {
 			this.messages.addAll(messages);
 			this.media.addAll(media);
 			this.advisors.addAll(advisors);
+			this.advisorParams.putAll(advisorParams);
 		}
 
 		/**
@@ -282,6 +318,15 @@ public interface ChatClient {
 		public ChatClientRequest advisor(RequestResponseAdvisor advisor) {
 			Assert.notNull(advisor, "the advisor must be non-null");
 			this.advisors.add(advisor);
+			return this;
+		}
+
+		public ChatClientRequest advisor(Consumer<AdvisorSpec> consumer) {
+			Assert.notNull(consumer, "the consumer must be non-null");
+			var as = new AdvisorSpec();
+			consumer.accept(as);
+			this.advisorParams.putAll(as.params);
+			this.advisors.addAll(as.advisors);
 			return this;
 		}
 
@@ -473,7 +518,7 @@ public interface ChatClient {
 
 		}
 
-		private static ChatClientRequest adviseOnRequest(ChatClientRequest inputRequest) {
+		private static ChatClientRequest adviseOnRequest(ChatClientRequest inputRequest, Map<String, Object> context) {
 
 			ChatClientRequest advisedRequest = inputRequest;
 
@@ -481,10 +526,10 @@ public interface ChatClient {
 				AdvisedRequest adviseRequest = new AdvisedRequest(inputRequest.chatModel, inputRequest.userText,
 						inputRequest.systemText, inputRequest.chatOptions, inputRequest.media,
 						inputRequest.functionNames, inputRequest.functionCallbacks, inputRequest.messages,
-						inputRequest.userParams, inputRequest.systemParams, inputRequest.advisors);
+						inputRequest.userParams, inputRequest.systemParams, inputRequest.advisors,
+						inputRequest.advisorParams);
 
 				// apply the advisors onRequest
-				Map<String, Object> context = new ConcurrentHashMap<>();
 				var currentAdvisors = new ArrayList<>(inputRequest.advisors);
 				for (RequestResponseAdvisor advisor : currentAdvisors) {
 					adviseRequest = advisor.adviseRequest(adviseRequest, context);
@@ -493,7 +538,8 @@ public interface ChatClient {
 				advisedRequest = new ChatClientRequest(adviseRequest.chatModel(), adviseRequest.userText(),
 						adviseRequest.userParams(), adviseRequest.systemText(), adviseRequest.systemParams(),
 						adviseRequest.functionCallbacks(), adviseRequest.messages(), adviseRequest.functionNames(),
-						adviseRequest.media(), adviseRequest.chatOptions(), adviseRequest.advisors());
+						adviseRequest.media(), adviseRequest.chatOptions(), adviseRequest.advisors(),
+						adviseRequest.advisorParams());
 			}
 
 			return advisedRequest;
@@ -536,14 +582,17 @@ public interface ChatClient {
 
 			private ChatResponse doGetChatResponse(ChatClientRequest inputRequest, String formatParam) {
 
-				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest);
+				Map<String, Object> context = new ConcurrentHashMap<>();
+				context.putAll(inputRequest.advisorParams);
+				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest, context);
 
 				var processedUserText = StringUtils.hasText(formatParam)
-						? advisedRequest.userText + System.lineSeparator() + "{format}" : advisedRequest.userText;
+						? advisedRequest.userText + System.lineSeparator() + "{spring.ai.soc.format}"
+						: advisedRequest.userText;
 
 				Map<String, Object> userParams = new HashMap<>(advisedRequest.userParams);
 				if (StringUtils.hasText(formatParam)) {
-					userParams.put("format", formatParam);
+					userParams.put("spring.ai.soc.format", formatParam);
 				}
 
 				var messages = new ArrayList<Message>(advisedRequest.messages);
@@ -579,7 +628,6 @@ public interface ChatClient {
 
 				ChatResponse advisedResponse = chatResponse;
 				// apply the advisors on response
-				Map<String, Object> context = new ConcurrentHashMap<>();
 				if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
 					var currentAdvisors = new ArrayList<>(inputRequest.advisors);
 					for (RequestResponseAdvisor advisor : currentAdvisors) {
@@ -613,7 +661,9 @@ public interface ChatClient {
 
 			private Flux<ChatResponse> doGetFluxChatResponse(ChatClientRequest inputRequest) {
 
-				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest);
+				Map<String, Object> context = new ConcurrentHashMap<>();
+				context.putAll(inputRequest.advisorParams);
+				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest, context);
 
 				String processedUserText = advisedRequest.userText;
 				Map<String, Object> userParams = new HashMap<>(advisedRequest.userParams);
@@ -654,7 +704,6 @@ public interface ChatClient {
 
 				Flux<ChatResponse> advisedResponse = fluxChatResponse;
 				// apply the advisors on response
-				Map<String, Object> context = new ConcurrentHashMap<>();
 				if (!CollectionUtils.isEmpty(inputRequest.advisors)) {
 					var currentAdvisors = new ArrayList<>(inputRequest.advisors);
 					for (RequestResponseAdvisor advisor : currentAdvisors) {
@@ -701,11 +750,16 @@ public interface ChatClient {
 			Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 			this.chatModel = chatModel;
 			this.defaultRequest = new ChatClientRequest(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-					List.of(), List.of(), null, List.of());
+					List.of(), List.of(), null, List.of(), Map.of());
 		}
 
 		public Builder defaultAdvisor(RequestResponseAdvisor advisor) {
 			this.defaultRequest.advisor(advisor);
+			return this;
+		}
+
+		public Builder defaultAdvisor(Consumer<AdvisorSpec> advisorSpecConsumer) {
+			this.defaultRequest.advisor(advisorSpecConsumer);
 			return this;
 		}
 

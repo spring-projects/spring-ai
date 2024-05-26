@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -39,7 +38,11 @@ import org.springframework.ai.vectorstore.VectorStore;
  * @author Christian Tzolov
  * @since 1.0.0 M1
  */
-public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
+public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
+
+	private static final String DOCUMENT_METADATA_CONVERSATION_ID = "conversationId";
+
+	private static final String DOCUMENT_METADATA_MESSAGE_TYPE = "messageType";
 
 	private static final String DEFAULT_SYSTEM_TEXT_ADVISE = """
 
@@ -52,24 +55,21 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 
 			""";
 
-	public static final String CONVERSATION_ID = "conversationId";
+	private final String systemTextAdvise;
 
-	private final VectorStore vectorStore;
-
-	private final int topK;
-
-	private final String conversationId;
-
-	private String systemTextAdvise = DEFAULT_SYSTEM_TEXT_ADVISE;
-
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String conversationId) {
-		this(vectorStore, conversationId, 5);
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore) {
+		this(vectorStore, DEFAULT_SYSTEM_TEXT_ADVISE);
 	}
 
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String conversationId, int topK) {
-		this.vectorStore = vectorStore;
-		this.conversationId = conversationId;
-		this.topK = topK;
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String systemTextAdvise) {
+		super(vectorStore);
+		this.systemTextAdvise = systemTextAdvise;
+	}
+
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize, String systemTextAdvise) {
+		super(vectorStore, defaultConversationId, chatHistoryWindowSize);
+		this.systemTextAdvise = systemTextAdvise;
 	}
 
 	@Override
@@ -78,10 +78,10 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 		String advisedSystemText = request.systemText() + System.lineSeparator() + this.systemTextAdvise;
 
 		var searchRequest = SearchRequest.query(request.userText())
-			.withTopK(this.topK)
-			.withFilterExpression(CONVERSATION_ID + "=='" + this.conversationId + "'");
+			.withTopK(this.doGetChatMemoryRetrieveSize(context))
+			.withFilterExpression(DOCUMENT_METADATA_CONVERSATION_ID + "=='" + this.doGetConversationId(context) + "'");
 
-		List<Document> documents = this.vectorStore.similaritySearch(searchRequest);
+		List<Document> documents = this.getChatMemoryStore().similaritySearch(searchRequest);
 
 		String longTermMemory = documents.stream()
 			.map(Content::getContent)
@@ -96,7 +96,7 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 			.build();
 
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.vectorStore.write(toDocuments(List.of(userMessage), this.conversationId));
+		this.getChatMemoryStore().write(toDocuments(List.of(userMessage), this.doGetConversationId(context)));
 
 		return advisedRequest;
 	}
@@ -106,7 +106,7 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 
 		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
 
-		this.vectorStore.write(toDocuments(assistantMessages, this.conversationId));
+		this.getChatMemoryStore().write(toDocuments(assistantMessages, this.doGetConversationId(context)));
 
 		return chatResponse;
 	}
@@ -120,7 +120,7 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 
-			this.vectorStore.write(toDocuments(assistantMessages, this.conversationId));
+			this.getChatMemoryStore().write(toDocuments(assistantMessages, this.doGetConversationId(context)));
 		});
 	}
 
@@ -130,8 +130,8 @@ public class VectorStoreChatMemoryAdvisor implements RequestResponseAdvisor {
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> {
 				var metadata = new HashMap<>(message.getMetadata() != null ? message.getMetadata() : new HashMap<>());
-				metadata.put(CONVERSATION_ID, conversationId);
-				metadata.put("messageType", message.getMessageType().name());
+				metadata.put(DOCUMENT_METADATA_CONVERSATION_ID, conversationId);
+				metadata.put(DOCUMENT_METADATA_MESSAGE_TYPE, message.getMessageType().name());
 				var doc = new Document(message.getContent(), metadata);
 				return doc;
 			})

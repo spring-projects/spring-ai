@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  */
 @ExtendWith(MockitoExtension.class)
-public class ChatClientAdviseTest {
+public class ChatClientAdvisorTests {
 
 	@Mock
 	ChatModel chatModel;
@@ -67,7 +68,7 @@ public class ChatClientAdviseTest {
 
 		var chatClient = ChatClient.builder(chatModel)
 				.defaultSystem("Default system text.")
-				.defaultAdvisor(new PromptChatMemoryAdvisor("default", chatMemory))
+				.defaultAdvisor(new PromptChatMemoryAdvisor(chatMemory))
 				.build();
 
 		var content = chatClient.prompt()
@@ -126,17 +127,18 @@ public class ChatClientAdviseTest {
 							return state;
 						}))
 				.thenReturn(
-						Flux.generate(() -> new ChatResponse(List.of(new Generation("Your name is John"))), (state, sink) -> {
-							sink.next(state);
-							sink.complete();
-							return state;
-						}));
+						Flux.generate(() -> new ChatResponse(List.of(new Generation("Your name is John"))),
+								(state, sink) -> {
+									sink.next(state);
+									sink.complete();
+									return state;
+								}));
 
 		ChatMemory chatMemory = new InMemoryChatMemory();
 
 		var chatClient = ChatClient.builder(chatModel)
 				.defaultSystem("Default system text.")
-				.defaultAdvisor(new PromptChatMemoryAdvisor("default", chatMemory))
+				.defaultAdvisor(new PromptChatMemoryAdvisor(chatMemory))
 				.build();
 
 		var content = join(chatClient.prompt()
@@ -182,6 +184,89 @@ public class ChatClientAdviseTest {
 
 		userMessage = promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("What is my name?");
+	}
+
+	public static class MockAdvisor implements RequestResponseAdvisor {
+
+		public AdvisedRequest advisedRequest;
+
+		public Map<String, Object> advisedRequestContext;
+
+		public Map<String, Object> chatResponseContext;
+
+		public ChatResponse chatResponse;
+
+		public Map<String, Object> fluxChatResponseContext;
+
+		public Flux<ChatResponse> fluxChatResponse;
+
+		@Override
+		public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+			advisedRequest = request;
+			advisedRequestContext = context;
+
+			context.put("adviseRequest", "adviseRequest");
+
+			return request;
+		}
+
+		@Override
+		public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
+			chatResponse = response;
+			chatResponseContext = context;
+
+			context.put("adviseResponse", "adviseResponse");
+			return response;
+		}
+
+		@Override
+		public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
+			fluxChatResponse = fluxResponse;
+			fluxChatResponseContext = context;
+
+			context.put("fluxAdviseResponse", "fluxAdviseResponse");
+
+			return fluxResponse;
+		}
+
+	};
+
+	@Test
+	public void advisors() {
+
+		var mockAdvisor = new MockAdvisor();
+
+		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation("Hello John"))))
+			.thenReturn(new ChatResponse(List.of(new Generation("Your name is John"))));
+
+		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation("Hello John"))))
+			.thenReturn(new ChatResponse(List.of(new Generation("Your name is John"))));
+
+		var chatClient = ChatClient.builder(chatModel)
+			.defaultSystem("Default system text.")
+			.defaultAdvisor(mockAdvisor)
+			.build();
+
+		var content = chatClient.prompt()
+			.user("my name is John")
+			.advisor(a -> a.param("key1", "value1").params(Map.of("key2", "value2")))
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("Hello John");
+
+		assertThat(mockAdvisor.advisedRequestContext).containsEntry("key1", "value1")
+			.containsEntry("key2", "value2")
+			.containsEntry("adviseRequest", "adviseRequest");
+		assertThat(mockAdvisor.advisedRequest.advisorParams()).containsEntry("key1", "value1")
+			.containsEntry("key2", "value2")
+			.doesNotContainKey("adviseRequest");
+
+		assertThat(mockAdvisor.chatResponseContext).containsEntry("key1", "value1")
+			.containsEntry("key2", "value2")
+			.containsEntry("adviseRequest", "adviseRequest")
+			.containsEntry("adviseResponse", "adviseResponse");
+		assertThat(mockAdvisor.chatResponse).isNotNull();
 	}
 
 }

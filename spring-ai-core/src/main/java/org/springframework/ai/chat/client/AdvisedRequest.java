@@ -30,7 +30,8 @@ import org.springframework.ai.model.function.FunctionCallback;
  */
 public record AdvisedRequest(ChatModel chatModel, String userText, String systemText, ChatOptions chatOptions,
 		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,
-		Map<String, Object> userParams, Map<String, Object> systemParams, List<RequestResponseAdvisor> advisors) {
+		Map<String, Object> userParams, Map<String, Object> systemParams, List<RequestResponseAdvisor> advisors,
+		Map<String, Object> advisorParams) {
 
 	public static Builder from(AdvisedRequest from) {
 		Builder builder = new Builder();
@@ -45,6 +46,7 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		builder.userParams = from.userParams;
 		builder.systemParams = from.systemParams;
 		builder.advisors = from.advisors;
+		builder.advisorParams = from.advisorParams;
 		return builder;
 	}
 
@@ -75,6 +77,8 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 		private Map<String, Object> systemParams = Map.of();
 
 		private List<RequestResponseAdvisor> advisors = List.of();
+
+		private Map<String, Object> advisorParams = Map.of();
 
 		public Builder withChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;
@@ -131,10 +135,15 @@ public record AdvisedRequest(ChatModel chatModel, String userText, String system
 			return this;
 		}
 
+		public Builder withAdvisorParams(Map<String, Object> advisorParams) {
+			this.advisorParams = advisorParams;
+			return this;
+		}
+
 		public AdvisedRequest build() {
 			return new AdvisedRequest(chatModel, this.userText, this.systemText, this.chatOptions, this.media,
 					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,
-					this.advisors);
+					this.advisors, this.advisorParams);
 		}
 
 	}

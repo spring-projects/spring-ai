@@ -23,47 +23,35 @@ import java.util.Map;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
  * @since 1.0.0 M1
  */
-public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
+public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
-	private static final int CHAT_HISTORY_WINDOW_SIZE = 40;
-
-	private final String conversationId;
-
-	private final ChatMemory chatMemory;
-
-	private final int chatHistoryWindowSize;
-
-	public MessageChatMemoryAdvisor(String conversationId, ChatMemory chatMemory) {
-		this(conversationId, chatMemory, CHAT_HISTORY_WINDOW_SIZE);
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory) {
+		super(chatMemory);
 	}
 
-	public MessageChatMemoryAdvisor(String conversationId, ChatMemory chatMemory, int chatHistoryWindowSize) {
-		Assert.hasText(conversationId, "The conversationId must not be empty!");
-		Assert.notNull(chatMemory, "The chatMemory must not be null!");
-		Assert.isTrue(chatHistoryWindowSize > 0, "The chatHistoryWindowSize must be greater than 0!");
-
-		this.conversationId = conversationId;
-		this.chatMemory = chatMemory;
-		this.chatHistoryWindowSize = chatHistoryWindowSize;
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
+		super(chatMemory, defaultConversationId, chatHistoryWindowSize);
 	}
 
 	@Override
 	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
 
+		String conversationId = this.doGetConversationId(context);
+
+		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(context);
+
 		// 1. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.chatMemory.get(this.conversationId, this.chatHistoryWindowSize);
+		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
 
 		// 2. Advise the request messages list.
 		List<Message> advisedMessages = new ArrayList<>(request.messages());
@@ -74,7 +62,7 @@ public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
 
 		// 4. Add the new user input to the conversation memory.
 		UserMessage userMessage = new UserMessage(request.userText(), request.media());
-		this.chatMemory.add(this.conversationId, userMessage);
+		this.getChatMemoryStore().add(this.doGetConversationId(context), userMessage);
 
 		return advisedRequest;
 	}
@@ -84,7 +72,7 @@ public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
 
 		List<Message> assistantMessages = chatResponse.getResults().stream().map(g -> (Message) g.getOutput()).toList();
 
-		this.chatMemory.add(this.conversationId, assistantMessages);
+		this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
 
 		return chatResponse;
 	}
@@ -98,7 +86,7 @@ public class MessageChatMemoryAdvisor implements RequestResponseAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 
-			this.chatMemory.add(this.conversationId, assistantMessages);
+			this.getChatMemoryStore().add(this.doGetConversationId(context), assistantMessages);
 		});
 	}
 
