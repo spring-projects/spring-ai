@@ -44,6 +44,7 @@
 *** xref:api/embeddings/minimax-embeddings.adoc[MiniMax]
 *** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
 ** xref:api/imageclient.adoc[]
+*** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
 *** xref:api/image/openai-image.adoc[OpenAI]
 *** xref:api/image/stabilityai-image.adoc[Stability]
 *** xref:api/image/zhipuai-image.adoc[ZhiPuAI]
