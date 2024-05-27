@@ -742,7 +742,7 @@ public interface ChatClient {
 					List.of(), List.of(), null, List.of(), Map.of());
 		}
 
-		public Builder defaultAdvisors(RequestResponseAdvisor advisor) {
+		public Builder defaultAdvisors(RequestResponseAdvisor... advisor) {
 			this.defaultRequest.advisors(advisor);
 			return this;
 		}
