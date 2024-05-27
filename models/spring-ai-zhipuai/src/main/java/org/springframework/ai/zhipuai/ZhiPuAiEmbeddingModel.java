@@ -24,14 +24,15 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ZhiPuAI Embedding Client implementation.
@@ -112,43 +113,43 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
 		return this.retryTemplate.execute(ctx -> {
-
-			ZhiPuAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
-					? new ZhiPuAiApi.EmbeddingRequest<>(request.getInstructions(), this.defaultOptions.getModel())
-					: new ZhiPuAiApi.EmbeddingRequest<>(request.getInstructions(), ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL);
-
-			if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
-				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
-						ZhiPuAiApi.EmbeddingRequest.class);
+			Assert.notEmpty(request.getInstructions(), "At least one text is required!");
+			if (request.getInstructions().size() != 1) {
+				logger.warn(
+						"ZhiPu Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 			}
 
-			ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> apiEmbeddingResponse = this.zhiPuAiApi.embeddings(apiRequest)
-				.getBody();
-
-			if (apiEmbeddingResponse == null) {
-				logger.warn("No embeddings returned for request: {}", request);
-				return new EmbeddingResponse(List.of());
+			List<List<Double>> embeddingList = new ArrayList<>();
+			for (String inputContent : request.getInstructions()) {
+				var apiRequest = createZhiPuEmbeddingRequest(inputContent, request.getOptions());
+				ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> response = this.zhiPuAiApi.embeddings(apiRequest)
+					.getBody();
+				if (response == null || response.data() == null || response.data().isEmpty()) {
+					logger.warn("No embeddings returned for input: {}", inputContent);
+					embeddingList.add(List.of());
+				}
+				else {
+					embeddingList.add(response.data().get(0).embedding());
+				}
 			}
-
-			var metadata = generateResponseMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
-
-			List<Embedding> embeddings = apiEmbeddingResponse.data()
-				.stream()
-				.map(e -> new Embedding(e.embedding(), e.index()))
+			var indexCounter = new AtomicInteger(0);
+			List<Embedding> embeddings = embeddingList.stream()
+				.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 				.toList();
-
-			return new EmbeddingResponse(embeddings, metadata);
-
+			return new EmbeddingResponse(embeddings);
 		});
 	}
 
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, ZhiPuAiApi.Usage usage) {
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.put("model", model);
-		metadata.put("prompt-tokens", usage.promptTokens());
-		metadata.put("completion-tokens", usage.completionTokens());
-		metadata.put("total-tokens", usage.totalTokens());
-		return metadata;
+	private ZhiPuAiApi.EmbeddingRequest<String> createZhiPuEmbeddingRequest(String text,
+			EmbeddingOptions requestOptions) {
+		ZhiPuAiApi.EmbeddingRequest<String> apiRequest = (this.defaultOptions != null)
+				? new ZhiPuAiApi.EmbeddingRequest<>(text, this.defaultOptions.getModel())
+				: new ZhiPuAiApi.EmbeddingRequest<>(text, ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL);
+
+		if (requestOptions != null && !EmbeddingOptions.EMPTY.equals(requestOptions)) {
+			apiRequest = ModelOptionsUtils.merge(requestOptions, apiRequest, ZhiPuAiApi.EmbeddingRequest.class);
+		}
+		return apiRequest;
 	}
 
 }
