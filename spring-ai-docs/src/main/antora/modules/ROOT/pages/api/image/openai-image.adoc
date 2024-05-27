@@ -23,8 +23,8 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 [source, xml]
 ----
 <dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <groupId>io.springboot.ai</groupId>
+    <artifactId>spring-ai-openai</artifactId>
 </dependency>
 ----
 
@@ -33,7 +33,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+    implementation 'io.springboot.ai:spring-ai-openai'
 }
 ----
 
