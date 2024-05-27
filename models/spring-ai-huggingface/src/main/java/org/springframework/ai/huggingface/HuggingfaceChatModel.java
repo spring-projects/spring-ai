@@ -22,9 +22,9 @@ import java.util.Map;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.chat.ChatModel;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
 import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;

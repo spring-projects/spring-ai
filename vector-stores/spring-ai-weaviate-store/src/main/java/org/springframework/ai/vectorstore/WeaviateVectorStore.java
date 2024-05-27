@@ -61,6 +61,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Josh Long
  */
 public class WeaviateVectorStore implements VectorStore, InitializingBean {
 
@@ -280,10 +281,11 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	 * @param embeddingModel The client for embedding operations.
 	 */
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
-			WeaviateClient weaviateClient) {
+			WeaviateClient weaviateClient, boolean initializeSchema) {
 		Assert.notNull(vectorStoreConfig, "WeaviateVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
+		this.initializeSchema = initializeSchema;
 		this.embeddingModel = embeddingModel;
 		this.consistencyLevel = vectorStoreConfig.consistencyLevel;
 		this.weaviateObjectClass = vectorStoreConfig.weaviateObjectClass;
@@ -524,8 +526,14 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 		return doubleList.stream().map(Number::floatValue).toList().toArray(new Float[0]);
 	}
 
+	private final boolean initializeSchema;
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
+
+		if (!this.initializeSchema) {
+			return;
+		}
 
 		Map<String, Object> metadata = new HashMap<>();
 		if (!CollectionUtils.isEmpty(this.filterMetadataFields)) {

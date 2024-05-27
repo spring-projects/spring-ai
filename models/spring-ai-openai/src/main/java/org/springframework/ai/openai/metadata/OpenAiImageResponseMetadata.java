@@ -35,7 +35,7 @@ public class OpenAiImageResponseMetadata implements ImageResponseMetadata {
 	}
 
 	@Override
-	public Long created() {
+	public Long getCreated() {
 		return this.created;
 	}
 

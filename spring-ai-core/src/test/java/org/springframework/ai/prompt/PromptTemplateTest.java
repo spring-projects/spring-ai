@@ -49,7 +49,7 @@ public class PromptTemplateTest {
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
-			.withMessage("All template variables were not replaced. Missing variable names are [items]");
+			.withMessage("Not all template variables were replaced. Missing variable names are [items]");
 	}
 
 	@Test

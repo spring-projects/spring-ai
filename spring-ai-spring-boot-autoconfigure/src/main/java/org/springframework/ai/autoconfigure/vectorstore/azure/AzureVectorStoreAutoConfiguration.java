@@ -50,7 +50,7 @@ public class AzureVectorStoreAutoConfiguration {
 	public AzureVectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			AzureVectorStoreProperties properties) {
 
-		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingModel);
+		var vectorStore = new AzureVectorStore(searchIndexClient, embeddingModel, properties.isInitializeSchema());
 
 		vectorStore.setIndexName(properties.getIndexName());
 

@@ -14,53 +14,53 @@ On our march to release 1.0.0 M1 we have made several breaking changes.  Apologi
 
 **(22.05.2024)**
 
-A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/1.0.0-SNAPSHOT/api/) for more information on the Fluent API, proper reference documentation is coming shortly. 
+A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done do support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/1.0.0-SNAPSHOT/api/) for more information on the Fluent API, proper reference documentation is coming shortly.
 
 We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, for example `ImageClient` was renamed to `ImageModel`.  The `Model` implementation represent the portability layer that converts between the Spring AI API and the underlying AI Model API.
 
 ### Adapting to the changes
 
+NOTE: The `ChatClient` class is now in the package `org.springframework.ai.chat.client`
+
 #### Approach 1
 
 Now, instead of getting an Autoconfigured `ChatClient` instance, you will get a `ChatModel` instance.  The `call` method signatures after renaming remain the same.
-To adapt your code should refactor you code to change use of the type `ChatClient` to `ChatModel` 
+To adapt your code should refactor you code to change use of the type `ChatClient` to `ChatModel`
 Here is an example of existing code before the change
 
 ```java
 @RestController
 public class OldSimpleAiController {
 
-	private final ChatClient chatClient;
+    private final ChatClient chatClient;
 
-	@Autowired
-	public OldSimpleAiController(ChatClient chatClient) {
-		this.chatClient = chatClient;
-	}
+    public OldSimpleAiController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
 
-	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of("generation", chatClient.call(message));
-	}
+    @GetMapping("/ai/simple")
+    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatClient.call(message));
+    }
 }
 ```
 
-Now after the changes this will be 
+Now after the changes this will be
 
 ```java
 @RestController
 public class SimpleAiController {
 
-	private final ChatModel chatModel;
+    private final ChatModel chatModel;
 
-	@Autowired
-	public SimpleAiController(ChatModel chatModel) {
-		this.chatModel = chatModel;
-	}
+    public SimpleAiController(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
 
-	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of("generation", chatModel.call(message));
-	}
+    @GetMapping("/ai/simple")
+    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
 }
 ```
 
@@ -79,17 +79,16 @@ Here is an example of existing code before the change
 
 ```java
 @RestController
-public class OldSimpleAiController {
+class OldSimpleAiController {
 
-	private final ChatClient chatClient;
+    ChatClient chatClient;
 
-	@Autowired
-	public OldSimpleAiController(ChatClient chatClient) {
-		this.chatClient = chatClient;
+    OldSimpleAiController(ChatClient chatClient) {
+        this.chatClient = chatClient;
 	}
 
 	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
 		return Map.of(
                 "generation",
                 chatClient.call(message)
@@ -98,42 +97,28 @@ public class OldSimpleAiController {
 }
 ```
 
-
 Now after the changes this will be
 
 ```java
 @RestController
-public class SimpleAiController {
+class SimpleAiController {
 
-	private final ChatClient chatClient;
+    private final ChatClient chatClient;
 
-	@Autowired
-	public SimpleAiController(ChatClient chatClient) {
-		this.chatClient = chatClient;
-	}
+    SimpleAiController(ChatClient.Builder builder) {
+      this.builder = builder.build();
+    }
 
-	@GetMapping("/ai/simple")
-	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of(
-                "generation", 
+    @GetMapping("/ai/simple")
+    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of(
+                "generation",
                 chatClient.prompt().user(message).call().content()
         );
-	}
+    }
 }
 ```
 
-and in your `@Configuration` class you need to define an `@Bean` as shown below
-
-```java
-@Configuration
-public class ApplicationConfiguration {
-
-  @Bean
-  ChatClient chatClient(ChatModel chatModel) {
-    return ChatClient.builder(chatModel).build();
-  }
-}
-```
 
 NOTE: The `ChatModel` instance is made available to you through autoconfiguration.
 
@@ -144,7 +129,7 @@ There is a tag in the GitHub repository called [v1.0.0-SNAPSHOT-before-chatclien
 ```bash
 git checkout tags/v1.0.0-SNAPSHOT-before-chatclient-changes
 
-./mvnw clean install -DskipTests  
+./mvnw clean install -DskipTests
 ```
 
 

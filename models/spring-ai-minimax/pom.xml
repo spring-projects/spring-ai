@@ -10,8 +10,8 @@
     </parent>
     <artifactId>spring-ai-minimax</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI MiniMax</name>
-    <description>MiniMax support</description>
+    <name>Spring AI Model - MiniMax</name>
+    <description>MiniMax models support</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>

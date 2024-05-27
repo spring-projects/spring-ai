@@ -96,6 +96,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private final MilvusVectorStoreConfig config;
 
+	private final boolean initializeSchema;
+
 	/**
 	 * Configuration for the Milvus vector store.
 	 */
@@ -242,12 +244,14 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
-		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig());
+	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema);
 	}
 
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			MilvusVectorStoreConfig config) {
+			MilvusVectorStoreConfig config, boolean initializeSchema) {
+		this.initializeSchema = initializeSchema;
 
 		Assert.notNull(milvusClient, "MilvusServiceClient must not be null");
 		Assert.notNull(milvusClient, "EmbeddingModel must not be null");
@@ -380,6 +384,11 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	// ---------------------------------------------------------------------------------
 	@Override
 	public void afterPropertiesSet() throws Exception {
+
+		if (!this.initializeSchema) {
+			return;
+		}
+
 		this.createCollection();
 	}
 

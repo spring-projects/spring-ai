@@ -239,7 +239,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 		SdkBytes body;
 		try {
-			body = SdkBytes.fromUtf8String(new ObjectMapper().writeValueAsString(request));
+			body = SdkBytes.fromUtf8String(this.objectMapper.writeValueAsString(request));
 		}
 		catch (JsonProcessingException e) {
 			throw new IllegalArgumentException("Invalid JSON format for the input request: " + request, e);

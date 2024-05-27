@@ -39,6 +39,14 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
+
 Please have a look at the list of <<elasticsearchvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
@@ -128,6 +136,7 @@ Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are 
 |`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector. | 1536
 |`spring.ai.vectorstore.elasticsearch.dense-vector-indexing` | Whether to use dense vector indexing. | true
 |`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`
+|`spring.ai.vectorstore.elasticsearch.initialize-schema`| whether to initialize the required schema  | `false`
 |===
 
 == Metadata Filtering

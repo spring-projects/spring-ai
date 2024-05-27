@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
@@ -78,6 +78,29 @@ class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
+	}
+
+	@Test
+	void streamRoleTest() {
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Flux<ChatResponse> flux = streamingChatModel.stream(prompt);
+
+		List<ChatResponse> responses = flux.collectList().block();
+		assertThat(responses.size()).isGreaterThan(1);
+
+		String stitchedResponseContent = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+
+		assertThat(stitchedResponseContent).contains("Blackbeard");
+
 	}
 
 	@Test

@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-vertex-ai-gemini</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vertex AI Gemini</name>
-	<description>Vertex AI Gemini support</description>
+	<name>Spring AI Model - Vertex AI Gemini</name>
+	<description>Vertex AI Gemini models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

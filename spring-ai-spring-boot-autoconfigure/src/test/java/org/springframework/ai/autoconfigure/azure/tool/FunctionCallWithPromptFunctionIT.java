@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -33,6 +33,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.autoconfigure.azure.tool.DeploymentNameUtil.getDeploymentName;
 
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
@@ -49,7 +50,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=gpt-4-0125-preview")
+		contextRunner.withPropertyValues("spring.ai.azure.openai.chat.options.deployment-name=" + getDeploymentName())
 			.run(context -> {
 
 				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);

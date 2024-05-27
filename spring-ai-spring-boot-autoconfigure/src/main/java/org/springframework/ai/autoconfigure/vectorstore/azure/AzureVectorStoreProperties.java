@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.azure;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -22,7 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Christian Tzolov
  */
 @ConfigurationProperties(AzureVectorStoreProperties.CONFIG_PREFIX)
-public class AzureVectorStoreProperties {
+public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.azure";
 

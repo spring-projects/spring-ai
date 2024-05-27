@@ -32,16 +32,19 @@ import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.FunctionCall;
 import com.azure.ai.openai.models.FunctionDefinition;
+import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
 import com.azure.core.util.BinaryData;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
-import org.springframework.ai.chat.ChatModel;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.StreamingChatModel;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
@@ -180,8 +183,8 @@ public class AzureOpenAiChatModel
 					isFunctionCall.set(false);
 					return true;
 				}
-				return false;
-			}, false)
+				return !isFunctionCall.get();
+			})
 			.concatMapIterable(window -> {
 				final var reduce = window.reduce(MergeUtils.emptyChatCompletions(), MergeUtils::mergeChatCompletions);
 				return List.of(reduce);
@@ -349,6 +352,11 @@ public class AzureOpenAiChatModel
 			mergedAzureOptions.setPresencePenalty(toSpringAiOptions.getPresencePenalty().doubleValue());
 		}
 
+		mergedAzureOptions.setResponseFormat(fromAzureOptions.getResponseFormat());
+		if (mergedAzureOptions.getResponseFormat() == null && toSpringAiOptions.getResponseFormat() != null) {
+			mergedAzureOptions.setResponseFormat(toAzureResponseFormat(toSpringAiOptions.getResponseFormat()));
+		}
+
 		mergedAzureOptions.setN(fromAzureOptions.getN() != null ? fromAzureOptions.getN() : toSpringAiOptions.getN());
 
 		mergedAzureOptions
@@ -417,6 +425,10 @@ public class AzureOpenAiChatModel
 			mergedAzureOptions.setModel(fromSpringAiOptions.getDeploymentName());
 		}
 
+		if (fromSpringAiOptions.getResponseFormat() != null) {
+			mergedAzureOptions.setResponseFormat(toAzureResponseFormat(fromSpringAiOptions.getResponseFormat()));
+		}
+
 		return mergedAzureOptions;
 	}
 
@@ -465,6 +477,9 @@ public class AzureOpenAiChatModel
 		if (fromOptions.getModel() != null) {
 			mergedOptions.setModel(fromOptions.getModel());
 		}
+		if (fromOptions.getResponseFormat() != null) {
+			mergedOptions.setResponseFormat(fromOptions.getResponseFormat());
+		}
 
 		return mergedOptions;
 	}
@@ -508,6 +523,9 @@ public class AzureOpenAiChatModel
 		}
 		if (fromOptions.getModel() != null) {
 			copyOptions.setModel(fromOptions.getModel());
+		}
+		if (fromOptions.getResponseFormat() != null) {
+			copyOptions.setResponseFormat(fromOptions.getResponseFormat());
 		}
 
 		return copyOptions;
@@ -588,6 +606,18 @@ public class AzureOpenAiChatModel
 		}
 
 		return choice.getFinishReason() == CompletionsFinishReason.TOOL_CALLS;
+	}
+
+	/**
+	 * Maps the SpringAI response format to the Azure response format
+	 * @param responseFormat SpringAI response format
+	 * @return Azure response format
+	 */
+	private ChatCompletionsResponseFormat toAzureResponseFormat(AzureOpenAiResponseFormat responseFormat) {
+		if (responseFormat == AzureOpenAiResponseFormat.JSON) {
+			return new ChatCompletionsJsonResponseFormat();
+		}
+		return new ChatCompletionsTextResponseFormat();
 	}
 
 }

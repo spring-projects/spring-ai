@@ -26,7 +26,7 @@ This information is available to you in the Pinecone UI portal.
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Pinecone Vector Sore.
+Spring AI provides Spring Boot auto-configuration for the Pinecone Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]

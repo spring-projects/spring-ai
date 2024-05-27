@@ -16,6 +16,8 @@
 package org.springframework.ai.azure.openai;
 
 import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -51,6 +53,7 @@ public class AzureChatCompletionsOptionsTests {
 			.withStop(List.of("foo", "bar"))
 			.withTopP(0.69f)
 			.withUser("user")
+			.withResponseFormat(AzureOpenAiResponseFormat.TEXT)
 			.build();
 
 		var client = new AzureOpenAiChatModel(mockClient, defaultOptions);
@@ -69,6 +72,7 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getStop()).isEqualTo(List.of("foo", "bar"));
 		assertThat(requestOptions.getTopP()).isEqualTo(0.69f);
 		assertThat(requestOptions.getUser()).isEqualTo("user");
+		assertThat(requestOptions.getResponseFormat()).isInstanceOf(ChatCompletionsTextResponseFormat.class);
 
 		var runtimeOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName("PROMPT_MODEL")
@@ -81,6 +85,7 @@ public class AzureChatCompletionsOptionsTests {
 			.withStop(List.of("foo", "bar"))
 			.withTopP(0.111f)
 			.withUser("user2")
+			.withResponseFormat(AzureOpenAiResponseFormat.JSON)
 			.build();
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content", runtimeOptions));
@@ -97,6 +102,7 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getStop()).isEqualTo(List.of("foo", "bar"));
 		assertThat(requestOptions.getTopP()).isEqualTo(0.111f);
 		assertThat(requestOptions.getUser()).isEqualTo("user2");
+		assertThat(requestOptions.getResponseFormat()).isInstanceOf(ChatCompletionsJsonResponseFormat.class);
 	}
 
 	private static Stream<Arguments> providePresencePenaltyAndFrequencyPenaltyTest() {

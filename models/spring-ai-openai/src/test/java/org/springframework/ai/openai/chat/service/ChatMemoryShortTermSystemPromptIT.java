@@ -18,6 +18,7 @@ package org.springframework.ai.openai.chat.service;
 
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.service.ChatService;
@@ -41,6 +42,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
+@Disabled("ChatService Memory implementation are deprecated. No need to test them.")
 @SpringBootTest(classes = ChatMemoryShortTermSystemPromptIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class ChatMemoryShortTermSystemPromptIT extends BaseMemoryTest {

@@ -295,8 +295,8 @@ class Neo4jVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
 
-			return new Neo4jVectorStore(driver, embeddingModel,
-					Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig());
+			return new Neo4jVectorStore(driver, embeddingModel, Neo4jVectorStore.Neo4jVectorStoreConfig.defaultConfig(),
+					true);
 		}
 
 		@Bean

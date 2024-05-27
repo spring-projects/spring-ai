@@ -55,6 +55,11 @@ dependencies {
 }
 ----
 
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
 The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
 You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
@@ -133,6 +138,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.pgvector.distance-type`| Search distance type. Defaults to `COSINE_DISTANCE`. But if vectors are normalized to length 1, you can use `EUCLIDEAN_DISTANCE` or `NEGATIVE_INNER_PRODUCT` for best performance.| COSINE_DISTANCE
 |`spring.ai.vectorstore.pgvector.dimensions`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingModel`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to re-create the vector_store table as well. | -
 |`spring.ai.vectorstore.pgvector.remove-existing-vector-store-table` | Deletes the existing `vector_store` table on start up.  | false
+|`spring.ai.vectorstore.pgvector.initialize-schema` | Whether to initialize the required schema | false
 
 |===
 

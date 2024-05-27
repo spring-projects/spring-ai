@@ -18,7 +18,7 @@ package org.springframework.ai.transformer;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.ChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.chat.prompt.Prompt;

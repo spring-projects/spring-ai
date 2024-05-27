@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -42,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -136,7 +137,17 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		@Bean
 		public String selectedModel() {
-			return Optional.ofNullable(System.getenv("AZURE_OPENAI_MODEL")).orElse("gpt-4-0125-preview");
+			return Optional.ofNullable(System.getenv("AZURE_OPENAI_MODEL")).orElse(getDeploymentName());
+		}
+
+		public static String getDeploymentName() {
+			String deploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
+			if (StringUtils.hasText(deploymentName)) {
+				return deploymentName;
+			}
+			else {
+				return "gpt-4-0125-preview";
+			}
 		}
 
 	}

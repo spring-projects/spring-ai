@@ -31,6 +31,7 @@ import org.springframework.util.StringUtils;
 /**
  * @author Eddú Meléndez
  * @author Wei Jiang
+ * @author Josh Long
  * @since 1.0.0
  */
 
@@ -58,7 +59,8 @@ class ElasticsearchVectorStoreAutoConfiguration {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
 		}
 
-		return new ElasticsearchVectorStore(elasticsearchVectorStoreOptions, restClient, embeddingModel);
+		return new ElasticsearchVectorStore(elasticsearchVectorStoreOptions, restClient, embeddingModel,
+				properties.isInitializeSchema());
 	}
 
 }

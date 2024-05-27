@@ -16,7 +16,7 @@
 
 package org.springframework.ai.chat.service;
 
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.transformer.ChatServiceContext;
 import org.springframework.ai.evaluation.EvaluationRequest;
 

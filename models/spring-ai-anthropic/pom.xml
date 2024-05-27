@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-anthropic</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Anthropic Chat Client</name>
-	<description>Anthropic support</description>
+	<name>Spring AI Model - Anthropic</name>
+	<description>Anthropic models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

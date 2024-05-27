@@ -22,6 +22,7 @@ import java.util.Set;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -73,6 +74,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.ai.openai.api.OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW;
 
+@Disabled("ChatService Memory implementation are deprecated. No need to test them.")
 @Testcontainers
 @SpringBootTest(classes = LongShortTermChatMemoryWithRagIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -177,7 +179,7 @@ public class LongShortTermChatMemoryWithRagIT {
 			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient
 				.newBuilder(qdrantContainer.getHost(), qdrantContainer.getMappedPort(QDRANT_GRPC_PORT), false)
 				.build());
-			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel);
+			return new QdrantVectorStore(qdrantClient, COLLECTION_NAME, embeddingModel, true);
 		}
 
 		@Bean

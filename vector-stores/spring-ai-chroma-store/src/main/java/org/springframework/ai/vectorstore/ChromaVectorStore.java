@@ -61,14 +61,18 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 	private String collectionId;
 
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME);
+	private final boolean initializeSchema;
+
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, boolean initializeSchema) {
+		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME, initializeSchema);
 	}
 
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName) {
+	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
+			boolean initializeSchema) {
 		this.embeddingModel = embeddingModel;
 		this.chromaApi = chromaApi;
 		this.collectionName = collectionName;
+		this.initializeSchema = initializeSchema;
 		this.filterExpressionConverter = new ChromaFilterExpressionConverter();
 	}
 
@@ -148,6 +152,10 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+
+		if (!this.initializeSchema)
+			return;
+
 		var collection = this.chromaApi.getCollection(this.collectionName);
 		if (collection == null) {
 			collection = this.chromaApi.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));

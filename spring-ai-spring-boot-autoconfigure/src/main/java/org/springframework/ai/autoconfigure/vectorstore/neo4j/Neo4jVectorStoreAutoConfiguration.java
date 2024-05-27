@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * @author Jingzhou Ou
+ * @author Josh Long
  */
 @AutoConfiguration(after = Neo4jAutoConfiguration.class)
 @ConditionalOnClass({ Neo4jVectorStore.class, EmbeddingModel.class, Driver.class })
@@ -49,7 +50,7 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.withConstraintName(properties.getConstraintName())
 			.build();
 
-		return new Neo4jVectorStore(driver, embeddingModel, config);
+		return new Neo4jVectorStore(driver, embeddingModel, config, properties.isInitializeSchema());
 	}
 
 }

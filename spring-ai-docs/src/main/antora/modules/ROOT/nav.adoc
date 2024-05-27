@@ -3,6 +3,7 @@
 * xref:getting-started.adoc[Getting Started]
 * xref:api/index.adoc[]
 ** xref:api/chatclient.adoc[]
+** xref:api/chatmodel.adoc[]
 *** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/functions/openai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/ollama-chat.adoc[Ollama]
@@ -78,4 +79,5 @@
 * xref:contribution-guidelines.adoc[Contribution Guidelines]
 * Appendices
 ** xref:upgrade-notes.adoc[]
+** xref:api/docker-compose.adoc[Docker Compose]
 ** xref:api/testcontainers.adoc[Testcontainers]

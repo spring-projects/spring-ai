@@ -23,7 +23,7 @@ import org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassi
 import org.springframework.ai.autoconfigure.bedrock.jurrasic2.BedrockAi21Jurassic2ChatProperties;
 import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatModel;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;

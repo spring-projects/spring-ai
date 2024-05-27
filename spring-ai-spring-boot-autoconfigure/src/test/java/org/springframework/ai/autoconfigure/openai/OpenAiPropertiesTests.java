@@ -30,6 +30,7 @@ import org.springframework.ai.openai.api.OpenAiApi.FunctionTool.Type;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +56,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -82,7 +83,7 @@ public class OpenAiPropertiesTests {
 			"spring.ai.openai.audio.transcription.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -111,7 +112,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -140,7 +141,7 @@ public class OpenAiPropertiesTests {
 						"spring.ai.openai.audio.transcription.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -169,7 +170,7 @@ public class OpenAiPropertiesTests {
 						"spring.ai.openai.audio.speech.options.speed=0.75")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var speechProperties = context.getBean(OpenAiAudioSpeechProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -201,7 +202,7 @@ public class OpenAiPropertiesTests {
 						"spring.ai.openai.audio.speech.options.speed=0.75")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var speechProperties = context.getBean(OpenAiAudioSpeechProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -232,7 +233,7 @@ public class OpenAiPropertiesTests {
 						"spring.ai.openai.audio.speech.options.speed=0.5")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var speechProperties = context.getBean(OpenAiAudioSpeechProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -261,7 +262,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -288,7 +289,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -313,7 +314,7 @@ public class OpenAiPropertiesTests {
 						"spring.ai.openai.image.options.n=3")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -341,7 +342,7 @@ public class OpenAiPropertiesTests {
 						"spring.ai.openai.image.options.n=3")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -410,7 +411,7 @@ public class OpenAiPropertiesTests {
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -464,7 +465,7 @@ public class OpenAiPropertiesTests {
 				)
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -498,7 +499,7 @@ public class OpenAiPropertiesTests {
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
@@ -531,7 +532,7 @@ public class OpenAiPropertiesTests {
 				)
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -558,7 +559,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.openai.embedding.enabled=false")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
@@ -567,7 +568,7 @@ public class OpenAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
@@ -577,7 +578,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.openai.embedding.enabled=true")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
@@ -590,7 +591,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.openai.chat.enabled=false")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
@@ -599,7 +600,7 @@ public class OpenAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
@@ -609,7 +610,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.openai.chat.enabled=true")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
@@ -623,7 +624,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.openai.image.enabled=false")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
@@ -632,7 +633,7 @@ public class OpenAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
@@ -642,7 +643,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.openai.image.enabled=true")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, WebClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();

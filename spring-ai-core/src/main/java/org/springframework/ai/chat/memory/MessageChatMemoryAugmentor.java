@@ -19,6 +19,7 @@ package org.springframework.ai.chat.memory;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -32,8 +33,10 @@ import org.springframework.ai.chat.prompt.transformer.PromptChange;
 import org.springframework.ai.chat.prompt.transformer.TransformerContentType;
 
 /**
+ * @deprecated Use the {@link MessageChatMemoryAdvisor} instead.
  * @author Christian Tzolov
  */
+@Deprecated
 public class MessageChatMemoryAugmentor extends AbstractPromptTransformer {
 
 	@Override
