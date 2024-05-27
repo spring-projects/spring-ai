@@ -18,11 +18,13 @@ package org.springframework.ai.vertexai.gemini.metadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 
+import java.util.HashMap;
+
 /**
  * @author Christian Tzolov
  * @since 0.8.1
  */
-public class VertexAiChatResponseMetadata implements ChatResponseMetadata {
+public class VertexAiChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
 	private final VertexAiUsage usage;
 

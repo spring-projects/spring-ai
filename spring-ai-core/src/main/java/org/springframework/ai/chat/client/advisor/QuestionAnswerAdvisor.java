@@ -23,11 +23,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.Assert;
+import reactor.core.publisher.Flux;
 
 /**
  * Context for the question is retrieved from a Vector Store and added to the prompt's
@@ -54,10 +56,22 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	private final SearchRequest searchRequest;
 
+	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest) {
 		this(vectorStore, searchRequest, DEFAULT_USER_TEXT_ADVISE);
 	}
 
+	/**
+	 * The QuestionAnswerAdvisor retrieves context information from a Vector Store and
+	 * combines it with the user's text.
+	 * @param vectorStore The vector store to use
+	 * @param searchRequest The search request defined using the portable filter
+	 * expression syntax
+	 * @param userTextAdvise the user text to append to the existing user prompt. The text
+	 * should contain a placeholder named "question_answer_context".
+	 *
+	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise) {
 
 		Assert.notNull(vectorStore, "The vectorStore must not be null!");
@@ -78,6 +92,8 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		// 2. Search for similar documents in the vector store.
 		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(request.userText()));
 
+		context.put(RETRIEVED_DOCUMENTS, documents);
+
 		// 3. Create the context from the documents.
 		String documentContext = documents.stream()
 			.map(Content::getContent)
@@ -93,6 +109,20 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 			.build();
 
 		return advisedRequest;
+	}
+
+	@Override
+	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
+		response.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+		return response;
+	}
+
+	@Override
+	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
+		return fluxResponse.map(cr -> {
+			cr.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+			return cr;
+		});
 	}
 
 }
