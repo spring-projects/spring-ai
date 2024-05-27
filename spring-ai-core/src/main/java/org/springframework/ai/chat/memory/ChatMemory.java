@@ -21,8 +21,12 @@ import java.util.List;
 import org.springframework.ai.chat.messages.Message;
 
 /**
- * @author Christian Tzolov
+ * The ChatMemory interface represents a storage for chat conversation history. It
+ * provides methods to add messages to a conversation, retrieve messages from a
+ * conversation, and clear the conversation history.
  *
+ * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
 public interface ChatMemory {
 
