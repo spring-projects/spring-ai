@@ -56,12 +56,9 @@ public class RelevancyEvaluator implements Evaluator {
 		ChatResponse chatResponse = this.chatModel.call(new Prompt(message, this.chatOptions));
 
 		var evaluationResponse = chatResponse.getResult().getOutput().getContent();
-		boolean passing = false;
-		float score = 0;
-		if (evaluationResponse.toLowerCase().contains("yes")) {
-			passing = true;
-			score = 1;
-		}
+		boolean passing = evaluationResponse.toLowerCase().contains("yes");
+		float score = passing ? 1.0f : 0.0f;
+
 
 		return new EvaluationResponse(passing, score, "", Collections.emptyMap());
 	}
