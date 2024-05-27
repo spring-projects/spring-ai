@@ -62,7 +62,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@Test
-	void roleTest() {
+	void call() {
 
 		// @formatter:off
 		ChatResponse response = ChatClient.builder(chatModel).build().prompt()

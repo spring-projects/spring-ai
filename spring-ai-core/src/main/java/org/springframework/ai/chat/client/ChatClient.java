@@ -576,12 +576,12 @@ public interface ChatClient {
 				ChatClientRequest advisedRequest = adviseOnRequest(inputRequest, context);
 
 				var processedUserText = StringUtils.hasText(formatParam)
-						? advisedRequest.userText + System.lineSeparator() + "{spring.ai.soc.format}"
+						? advisedRequest.userText + System.lineSeparator() + "{spring_ai_soc_format}"
 						: advisedRequest.userText;
 
 				Map<String, Object> userParams = new HashMap<>(advisedRequest.userParams);
 				if (StringUtils.hasText(formatParam)) {
-					userParams.put("spring.ai.soc.format", formatParam);
+					userParams.put("spring_ai_soc_format", formatParam);
 				}
 
 				var messages = new ArrayList<Message>(advisedRequest.messages);

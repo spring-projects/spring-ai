@@ -29,9 +29,9 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractChatMemoryAdvisor<T> implements RequestResponseAdvisor {
 
-	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat.memory.conversation.id";
+	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
-	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat.memory.response.size";
+	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_response_size";
 
 	public static final String DEFAULT_CHAT_MEMORY_CONVERSATION_ID = "default";
 

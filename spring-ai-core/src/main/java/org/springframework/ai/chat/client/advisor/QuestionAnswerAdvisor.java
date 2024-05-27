@@ -41,7 +41,7 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 	private static final String DEFAULT_USER_TEXT_ADVISE = """
 			Context information is below.
 			---------------------
-			{context}
+			{question_answer_context}
 			---------------------
 			Given the context and provided history information and not prior knowledge,
 			reply to the user comment. If the answer is not in the context, inform
@@ -85,7 +85,7 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 		// 4. Advise the user parameters.
 		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("context", documentContext);
+		advisedUserParams.put("question_answer_context", documentContext);
 
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
 			.withUserText(advisedUserText)
