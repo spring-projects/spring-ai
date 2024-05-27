@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
@@ -194,8 +195,16 @@ class AzureOpenAiChatModelIT {
 		}
 
 		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiChatModel(openAIClient,
+		public OpenAIAsyncClient openAIAsyncClient() {
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.buildAsyncClient();
+		}
+
+		@Bean
+		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
+				OpenAIAsyncClient openAIAsyncClient) {
+			return new AzureOpenAiChatModel(openAIClient, openAIAsyncClient,
 					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-35-turbo").withMaxTokens(200).build());
 
 		}
