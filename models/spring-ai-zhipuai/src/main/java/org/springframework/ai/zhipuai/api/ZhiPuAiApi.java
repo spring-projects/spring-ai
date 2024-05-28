@@ -44,7 +44,7 @@ import java.util.function.Predicate;
  * <a href="https://open.bigmodel.cn/dev/api#text_embedding">ZhiPuAI Embedding API</a>.
  *
  * @author Geng Rong
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class ZhiPuAiApi {
 
@@ -200,20 +200,8 @@ public class ZhiPuAiApi {
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
 	 * @param model ID of the model to use.
-	 * @param frequencyPenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
-	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
-	 * @param n How many chat completion choices to generate for each input message. Note that you will be charged based
-	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
-	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
-	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
-	 * @param responseFormat An object specifying the format that the model must output. Setting to { "type":
-	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
-	 * @param seed This feature is in Beta. If specified, our system will make a best effort to sample
-	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
-	 * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor
-	 * changes in the backend.
 	 * @param stop Up to 4 sequences where the API will stop generating further tokens.
 	 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events as
 	 * they become available, with the stream terminated by a data: [DONE] message.
@@ -237,19 +225,16 @@ public class ZhiPuAiApi {
 	public record ChatCompletionRequest (
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Float frequencyPenalty,
 			@JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("n") Integer n,
-			@JsonProperty("presence_penalty") Float presencePenalty,
-			@JsonProperty("response_format") ResponseFormat responseFormat,
-			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
-			@JsonProperty("user") String user) {
+			@JsonProperty("user") String user,
+			@JsonProperty("request_id") String requestId,
+			@JsonProperty("do_sample") Boolean doSample) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and model.
@@ -259,9 +244,8 @@ public class ZhiPuAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(messages, model, null,  null, null, null,
-					null, null, null, false, temperature, null,
-					null, null, null);
+			this(messages, model, null,  null, false, temperature, null,
+					null, null, null, null, null);
 		}
 
 		/**
@@ -274,9 +258,8 @@ public class ZhiPuAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
-			this(messages, model, null,  null, null, null,
-					null, null, null, stream, temperature, null,
-					null, null, null);
+			this(messages, model, null,  null,  stream, temperature, null,
+					null, null, null, null, null);
 		}
 
 		/**
@@ -290,12 +273,11 @@ public class ZhiPuAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
-			this(messages, model, null, null, null, null,
-					null, null, null, false, 0.8f, null,
-					tools, toolChoice, null);
+			this(messages, model, null, null,  false, 0.8f, null,
+					tools, toolChoice, null, null, null);
 		}
 
-				/**
+		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
 		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
 		 *
@@ -304,9 +286,8 @@ public class ZhiPuAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, null, null,  null, null, null,
-					null, null, null, stream, null, null,
-					null, null, null);
+			this(messages, null, null,  null,  stream, null, null,
+					null, null, null, null, null);
 		}
 
 		/**
