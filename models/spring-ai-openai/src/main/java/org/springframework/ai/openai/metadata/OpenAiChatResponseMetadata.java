@@ -24,6 +24,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
+
 /**
  * {@link ChatResponseMetadata} implementation for {@literal OpenAI}.
  *
@@ -33,7 +35,7 @@ import org.springframework.util.Assert;
  * @see Usage
  * @since 0.7.0
  */
-public class OpenAiChatResponseMetadata implements ChatResponseMetadata {
+public class OpenAiChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 

@@ -336,6 +336,19 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return "VertexAiGeminiChatOptions [stopSequences=" + stopSequences + ", temperature=" + temperature + ", topP="
+				+ topP + ", topK=" + topK + ", candidateCount=" + candidateCount + ", maxOutputTokens="
+				+ maxOutputTokens + ", model=" + model + ", functionCallbacks=" + functionCallbacks + ", functions="
+				+ functions + ", getClass()=" + getClass() + ", getStopSequences()=" + getStopSequences()
+				+ ", getTemperature()=" + getTemperature() + ", getTopP()=" + getTopP() + ", getTopK()=" + getTopK()
+				+ ", getCandidateCount()=" + getCandidateCount() + ", getMaxOutputTokens()=" + getMaxOutputTokens()
+				+ ", getModel()=" + getModel() + ", getFunctionCallbacks()=" + getFunctionCallbacks()
+				+ ", getFunctions()=" + getFunctions() + ", hashCode()=" + hashCode() + ", toString()="
+				+ super.toString() + "]";
+	}
+
 	public static VertexAiGeminiChatOptions fromOptions(VertexAiGeminiChatOptions fromOptions) {
 		VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
 		options.setStopSequences(fromOptions.getStopSequences());

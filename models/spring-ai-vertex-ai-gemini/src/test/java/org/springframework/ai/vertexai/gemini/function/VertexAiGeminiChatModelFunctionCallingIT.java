@@ -55,7 +55,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	private VertexAiGeminiChatModel vertexGeminiClient;
+	private VertexAiGeminiChatModel chatModel;
 
 	@AfterEach
 	public void afterEach() {
@@ -107,7 +107,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 				.build()))
 			.build();
 
-		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
+		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
@@ -142,13 +142,13 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 						.build()))
 			.build();
 
-		ChatResponse response = vertexGeminiClient.call(new Prompt(messages, promptOptions));
+		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
 
-		ChatResponse response2 = vertexGeminiClient
+		ChatResponse response2 = chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
 		logger.info("Response: {}", response2);
@@ -176,7 +176,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = vertexGeminiClient.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
 
 		String responseString = response.collectList()
 			.block()

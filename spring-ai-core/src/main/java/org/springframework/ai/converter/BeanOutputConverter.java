@@ -29,6 +29,8 @@ import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
@@ -51,6 +53,8 @@ import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_
  * @author Josh Long
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
+
+	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
 
 	/** Holds the generated JSON schema for the target type. */
 	private String jsonSchema;
@@ -147,6 +151,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
 		}
 		catch (JsonProcessingException e) {
+			logger.error("Could not pretty print json schema for jsonNode: " + jsonNode);
 			throw new RuntimeException("Could not pretty print json schema for " + this.typeRef, e);
 		}
 	}
@@ -159,9 +164,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public T convert(@NonNull String text) {
 		try {
+			if (text.startsWith("```json") && text.endsWith("```")) {
+				text = text.substring(7, text.length() - 3);
+			}
 			return (T) this.objectMapper.readValue(text, this.typeRef);
 		}
 		catch (JsonProcessingException e) {
+			logger.error("Could not parse the given text to the desired target type:" + text + " into " + this.typeRef);
 			throw new RuntimeException(e);
 		}
 	}

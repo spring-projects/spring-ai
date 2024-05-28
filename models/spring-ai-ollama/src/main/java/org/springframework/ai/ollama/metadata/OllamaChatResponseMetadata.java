@@ -20,13 +20,15 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
+
 /**
  * {@link ChatResponseMetadata} implementation for {@literal Ollama}
  *
  * @see ChatResponseMetadata
  * @author Fu Cheng
  */
-public class OllamaChatResponseMetadata implements ChatResponseMetadata {
+public class OllamaChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, usage: %2$s, rateLimit: %3$s }";
 

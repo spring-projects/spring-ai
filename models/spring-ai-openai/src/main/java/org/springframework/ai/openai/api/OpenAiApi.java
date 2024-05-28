@@ -128,12 +128,12 @@ public class OpenAiApi {
 		 * Vision requests can now use JSON mode and function calling.
 		 * Currently points to gpt-4-turbo-2024-04-09.
 		 */
-		GPT_4_0_TURBO("gpt-4-turbo"),
+		GPT_4_TURBO("gpt-4-turbo"),
 
 		/**
 		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling
 		 */
-		GPT_4_0_TURBO_2204_04_09("gpt-4-turbo-2024-04-09"),
+		GPT_4_TURBO_2204_04_09("gpt-4-turbo-2024-04-09"),
 
 		/**
 		 * (New) GPT-4 Turbo - latest GPT-4 model intended to reduce cases
