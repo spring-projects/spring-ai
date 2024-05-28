@@ -69,6 +69,11 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	}
 
 	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
+			int chatHistoryWindowSize) {
+		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE);
+	}
+
+	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
 			int chatHistoryWindowSize, String systemTextAdvise) {
 		super(vectorStore, defaultConversationId, chatHistoryWindowSize);
 		this.systemTextAdvise = systemTextAdvise;
