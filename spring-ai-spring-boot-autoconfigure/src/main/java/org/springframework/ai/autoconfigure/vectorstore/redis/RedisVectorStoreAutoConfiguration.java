@@ -35,7 +35,7 @@ public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(RedisConnectionDetails.class)
-	public PropertiesRedisConnectionDetails redisConnectionDetails(RedisVectorStoreProperties properties) {
+	public PropertiesRedisConnectionDetails redisVectorStoreConnectionDetails(RedisVectorStoreProperties properties) {
 		return new PropertiesRedisConnectionDetails(properties);
 	}
 
