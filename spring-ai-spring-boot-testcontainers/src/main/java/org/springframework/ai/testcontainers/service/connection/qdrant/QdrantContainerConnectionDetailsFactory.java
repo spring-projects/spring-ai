@@ -23,7 +23,7 @@ import org.testcontainers.qdrant.QdrantContainer;
 /**
  * @author Eddú Meléndez
  */
-public class QdrantContainerConnectionDetailsFactory
+class QdrantContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<QdrantContainer, QdrantConnectionDetails> {
 
 	@Override
