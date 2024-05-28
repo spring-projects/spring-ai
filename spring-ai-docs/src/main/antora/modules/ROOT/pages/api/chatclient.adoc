@@ -181,7 +181,7 @@ After specifying the `stream` method on `ChatClient`, there are a few options fo
 == Using Defaults
 
 Creating a ChatClient with default system text in an `@Configuration` class simplifies runtime code.
-By setting defaults, you only need to specify user text when calling `ChatClient, eliminating the need to set system text for each request in your runtime codeala path.
+By setting defaults, you only need to specify user text when calling `ChatClient`, eliminating the need to set system text for each request in your runtime code path.
 
 
 
