@@ -19,3 +19,5 @@ node_modules
 node/
 package-lock.json
 package.json
+build/
+
