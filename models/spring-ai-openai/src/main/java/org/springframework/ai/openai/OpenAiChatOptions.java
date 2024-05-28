@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -175,6 +176,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 		public Builder withModel(String model) {
 			this.options.model = model;
+			return this;
+		}
+
+		public Builder withModel(OpenAiApi.ChatModel openAiChatModel) {
+			this.options.model = openAiChatModel.getModelName();
 			return this;
 		}
 

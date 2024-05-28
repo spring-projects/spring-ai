@@ -22,6 +22,8 @@ import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
+
 /**
  * {@link ChatResponseMetadata} implementation for
  * {@literal Microsoft Azure OpenAI Service}.
@@ -30,7 +32,7 @@ import org.springframework.util.Assert;
  * @see ChatResponseMetadata
  * @since 0.7.1
  */
-public class AzureOpenAiChatResponseMetadata implements ChatResponseMetadata {
+public class AzureOpenAiChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 

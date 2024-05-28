@@ -19,9 +19,10 @@ import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
 import java.util.Objects;
 
-public class OpenAiImageResponseMetadata implements ImageResponseMetadata {
+public class OpenAiImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
 
 	private final Long created;
 

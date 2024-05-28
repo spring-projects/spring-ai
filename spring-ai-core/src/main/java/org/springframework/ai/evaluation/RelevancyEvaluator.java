@@ -1,18 +1,10 @@
 package org.springframework.ai.evaluation;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.Content;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RelevancyEvaluator implements Evaluator {
@@ -29,32 +21,27 @@ public class RelevancyEvaluator implements Evaluator {
 			    Answer: "
 			""";
 
-	private final ChatOptions chatOptions;
+	private final ChatClient.Builder chatClientBuilder;
 
-	private ChatModel chatModel;
-
-	public RelevancyEvaluator(ChatModel chatModel) {
-		this(chatModel, ChatOptionsBuilder.builder().build());
-	}
-
-	public RelevancyEvaluator(ChatModel chatModel, ChatOptions chatOptions) {
-		this.chatModel = chatModel;
-		this.chatOptions = chatOptions;
+	public RelevancyEvaluator(ChatClient.Builder chatClientBuilder) {
+		this.chatClientBuilder = chatClientBuilder;
 	}
 
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
-		var query = doGetUserQuestion(evaluationRequest);
+
 		var response = doGetResponse(evaluationRequest);
 		var context = doGetSupportingData(evaluationRequest);
 
-		var promptTemplate = new PromptTemplate(DEFAULT_EVALUATION_PROMPT_TEXT);
-		Message message = promptTemplate
-			.createMessage(Map.of("query", query, "response", response, "context", context));
+		String evaluationResponse = this.chatClientBuilder.build()
+			.prompt()
+			.user(userSpec -> userSpec.text(DEFAULT_EVALUATION_PROMPT_TEXT)
+				.param("query", evaluationRequest.getUserText())
+				.param("response", response)
+				.param("context", context))
+			.call()
+			.content();
 
-		ChatResponse chatResponse = this.chatModel.call(new Prompt(message, this.chatOptions));
-
-		var evaluationResponse = chatResponse.getResult().getOutput().getContent();
 		boolean passing = false;
 		float score = 0;
 		if (evaluationResponse.toLowerCase().contains("yes")) {
@@ -77,15 +64,6 @@ public class RelevancyEvaluator implements Evaluator {
 			.map(Content::getContent)
 			.collect(Collectors.joining(System.lineSeparator()));
 		return supportingData;
-	}
-
-	protected String doGetUserQuestion(EvaluationRequest evaluationRequest) {
-		List<Message> instructions = evaluationRequest.getPrompt().getInstructions();
-		String userMessage = instructions.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER)
-			.map(m -> m.getContent())
-			.collect(Collectors.joining(System.lineSeparator()));
-		return userMessage;
 	}
 
 }
