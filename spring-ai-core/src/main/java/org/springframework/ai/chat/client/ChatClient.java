@@ -26,7 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
+import org.springframework.ai.chat.client.resolver.BeanNameResolver;
+import org.springframework.ai.chat.client.resolver.SimpleNameResolver;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.support.GenericApplicationContext;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.Media;
@@ -64,12 +69,18 @@ import org.springframework.util.StringUtils;
  */
 public interface ChatClient {
 
-	static ChatClient create(ChatModel chatModel) {
-		return builder(chatModel).build();
+	static ChatClient create(ChatModel chatModel, BeanNameResolver beanNameResolver) {
+		return builder(chatModel, beanNameResolver).build();
 	}
 
+	// QUESTION: Should this constructor be removed in favour of the one requiring the
+	// beanNameResolver?
 	static Builder builder(ChatModel chatModel) {
-		return new Builder(chatModel);
+		return new Builder(chatModel, new SimpleNameResolver());
+	}
+
+	static Builder builder(ChatModel chatModel, BeanNameResolver beanNameResolver) {
+		return new Builder(chatModel, beanNameResolver);
 	}
 
 	ChatClientRequest prompt();
@@ -77,8 +88,8 @@ public interface ChatClient {
 	ChatClientPromptRequest prompt(Prompt prompt);
 
 	/**
-	 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
-	 * settings are replicated from the default {@link ChatClientRequest} of this client.
+	 * Return a {@link Builder} to create a new {@link ChatClient} whose settings are
+	 * replicated from the default {@link ChatClientRequest} of this client.
 	 */
 	Builder mutate();
 
@@ -263,16 +274,20 @@ public interface ChatClient {
 
 		private final Map<String, Object> advisorParams = new HashMap<>();
 
+		private final BeanNameResolver beanNameResolver;
+
 		/* copy constructor */
 		ChatClientRequest(ChatClientRequest ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
-					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams);
+					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
+					ccr.beanNameResolver);
 		}
 
 		public ChatClientRequest(ChatModel chatModel, String userText, Map<String, Object> userParams,
 				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
 				List<Message> messages, List<String> functionNames, List<Media> media, ChatOptions chatOptions,
-				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams) {
+				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams,
+				BeanNameResolver beanNameResolver) {
 
 			this.chatModel = chatModel;
 			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
@@ -288,6 +303,7 @@ public interface ChatClient {
 			this.media.addAll(media);
 			this.advisors.addAll(advisors);
 			this.advisorParams.putAll(advisorParams);
+			this.beanNameResolver = beanNameResolver;
 		}
 
 		/**
@@ -295,7 +311,7 @@ public interface ChatClient {
 		 * settings are replicated from this {@code ChatClientRequest}.
 		 */
 		public Builder mutate() {
-			Builder builder = ChatClient.builder(chatModel)
+			Builder builder = ChatClient.builder(chatModel, beanNameResolver)
 				.defaultSystem(s -> s.text(this.systemText).params(this.systemParams))
 				.defaultUser(u -> u.text(this.userText)
 					.params(this.userParams)
@@ -362,6 +378,11 @@ public interface ChatClient {
 				.withResponseConverter(Object::toString)
 				.build();
 			this.functionCallbacks.add(fcw);
+			return this;
+		}
+
+		public <T> ChatClientRequest functionBean(Class<T> functionBeanType) {
+			this.functionNames.add(beanNameResolver.resolveName(functionBeanType));
 			return this;
 		}
 
@@ -528,7 +549,7 @@ public interface ChatClient {
 						adviseRequest.userParams(), adviseRequest.systemText(), adviseRequest.systemParams(),
 						adviseRequest.functionCallbacks(), adviseRequest.messages(), adviseRequest.functionNames(),
 						adviseRequest.media(), adviseRequest.chatOptions(), adviseRequest.advisors(),
-						adviseRequest.advisorParams());
+						adviseRequest.advisorParams(), inputRequest.beanNameResolver);
 			}
 
 			return advisedRequest;
@@ -735,11 +756,11 @@ public interface ChatClient {
 
 		private final ChatModel chatModel;
 
-		Builder(ChatModel chatModel) {
+		Builder(ChatModel chatModel, BeanNameResolver beanNameResolver) {
 			Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 			this.chatModel = chatModel;
 			this.defaultRequest = new ChatClientRequest(chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-					List.of(), List.of(), null, List.of(), Map.of());
+					List.of(), List.of(), null, List.of(), Map.of(), beanNameResolver);
 		}
 
 		public Builder defaultAdvisors(RequestResponseAdvisor... advisor) {
