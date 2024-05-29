@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
@@ -31,9 +32,11 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
 
 /**
  * Cohere Embedding API.
- * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere.html#model-parameters-embed
+ * <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere.html#model-parameters-embed">AWS Bedrock Cohere Embedding API</a>
+ * Based on the <a href="https://docs.cohere.com/reference/embed">Cohere Embedding API</a>
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class CohereEmbeddingBedrockApi extends
@@ -92,6 +95,21 @@ public class CohereEmbeddingBedrockApi extends
 	}
 
 	/**
+	 * Create a new CohereEmbeddingBedrockApi instance using the provided credentials provider, region and object
+	 * mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
 	 * The Cohere Embed model request.
 	 *
 	 * @param texts An array of strings for the model to embed. For optimal performance, we recommend reducing the
@@ -134,22 +152,21 @@ public class CohereEmbeddingBedrockApi extends
 		}
 
 		/**
-		 * Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or RIGHT, the
-		 * model discards the input until the remaining input is exactly the maximum input token length for the model.
+		 * Specifies how the API handles inputs longer than the maximum token length. Passing START will discard the start of the input. END will discard the end of the input. In both cases, input is discarded until the remaining input is exactly the maximum input token length for the model.
 		 */
 		public enum Truncate {
 			/**
-			 * (Default) Returns an error when the input exceeds the maximum input token length.
+			 * Returns an error when the input exceeds the maximum input token length.
 			 */
 			NONE,
 			/**
-			 * Discard the start of the input.
+			 * Discards the start of the input.
 			 */
-			LEFT,
+			START,
 			/**
-			 * Discards the end of the input.
+			 * (default) Discards the end of the input.
 			 */
-			RIGHT
+			END
 		}
 	}
 

@@ -11,8 +11,8 @@
 
     <artifactId>spring-ai-ollama</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Ollama</name>
-    <description>Ollama support</description>
+    <name>Spring AI Model - Ollama</name>
+    <description>Ollama models support</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -32,6 +32,12 @@
             <artifactId>spring-ai-core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+        <dependency>
+    			<groupId>org.springframework.ai</groupId>
+    			<artifactId>spring-ai-retry</artifactId>
+    			<version>${project.parent.version}</version>
+    		</dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
@@ -71,6 +77,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>ollama</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

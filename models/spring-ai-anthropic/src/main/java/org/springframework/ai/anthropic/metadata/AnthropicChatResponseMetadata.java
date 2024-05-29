@@ -16,10 +16,15 @@
 package org.springframework.ai.anthropic.metadata;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.chat.metadata.*;
-
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.util.HashMap;
 
 /**
  * {@link ChatResponseMetadata} implementation for {@literal AnthropicApi}.
@@ -30,7 +35,7 @@ import org.springframework.util.Assert;
  * @see Usage
  * @since 1.0.0
  */
-public class AnthropicChatResponseMetadata implements ChatResponseMetadata {
+public class AnthropicChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
 

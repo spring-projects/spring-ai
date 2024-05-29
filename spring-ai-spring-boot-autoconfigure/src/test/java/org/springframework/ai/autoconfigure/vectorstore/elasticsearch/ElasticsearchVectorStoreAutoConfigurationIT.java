@@ -16,6 +16,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -105,6 +106,33 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
 						hasSize(0));
 		});
+	}
+
+	@Test
+	public void propertiesTest() {
+
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
+					ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
+			.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
+					"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
+					"spring.ai.vectorstore.elasticsearch.index-name=example",
+					"spring.ai.vectorstore.elasticsearch.dimensions=1024",
+					"spring.ai.vectorstore.elasticsearch.dense-vector-indexing=true",
+					"spring.ai.vectorstore.elasticsearch.similarity=dot_product")
+			.run(context -> {
+				var properties = context.getBean(ElasticsearchVectorStoreProperties.class);
+				var elasticsearchVectorStore = context.getBean(ElasticsearchVectorStore.class);
+
+				assertThat(properties).isNotNull();
+				assertThat(properties.getIndexName()).isEqualTo("example");
+				assertThat(properties.getDimensions()).isEqualTo(1024);
+				assertThat(properties.isDenseVectorIndexing()).isTrue();
+				assertThat(properties.getSimilarity()).isEqualTo("dot_product");
+
+				assertThat(elasticsearchVectorStore).isNotNull();
+			});
 	}
 
 	private String getText(String uri) {

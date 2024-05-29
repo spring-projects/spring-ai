@@ -15,18 +15,25 @@
  */
 package org.springframework.ai.ollama.api;
 
+import org.springframework.ai.model.ModelDescription;
+
 /**
  * Helper class for common Ollama models.
  *
  * @author Siarhei Blashuk
  * @since 0.8.1
  */
-public enum OllamaModel {
+public enum OllamaModel implements ModelDescription {
 
 	/**
 	 * Llama 2 is a collection of language models ranging from 7B to 70B parameters.
 	 */
 	LLAMA2("llama2"),
+
+	/**
+	 * Llama 3 is a collection of language models ranging from 8B and 70B parameters.
+	 */
+	LLAMA3("llama3"),
 
 	/**
 	 * The 7B parameters model
@@ -42,6 +49,11 @@ public enum OllamaModel {
 	 * The Phi-2 2.7B language model
 	 */
 	PHI("phi"),
+
+	/**
+	 * The Phi-3 3.8B language model
+	 */
+	PHI3("phi3"),
 
 	/**
 	 * A fine-tuned Mistral model
@@ -86,6 +98,11 @@ public enum OllamaModel {
 	}
 
 	public String id() {
+		return this.id;
+	}
+
+	@Override
+	public String getModelName() {
 		return this.id;
 	}
 

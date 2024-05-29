@@ -24,12 +24,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse.CompletionReason;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.model.ModelDescription;
 
 /**
  * Java client for the Bedrock Titan chat model.
@@ -38,6 +40,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRes
  * https://docs.aws.amazon.com/bedrock/latest/userguide/titan-text-models.html
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 // @formatter:off
@@ -88,6 +91,20 @@ public class TitanChatBedrockApi extends
 	 * @param timeout The timeout to use.
 	 */
 	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new TitanChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link TitanChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public TitanChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
@@ -249,7 +266,7 @@ public class TitanChatBedrockApi extends
 	/**
 	 * Titan models version.
 	 */
-	public enum TitanChatModel {
+	public enum TitanChatModel implements ModelDescription {
 
 		/**
 		 * amazon.titan-text-lite-v1
@@ -259,7 +276,12 @@ public class TitanChatBedrockApi extends
 		/**
 		 * amazon.titan-text-express-v1
 		 */
-		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1");
+		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1"),
+
+		/**
+		 * amazon.titan-text-premier-v1:0
+		 */
+		TITAN_TEXT_PREMIER_V1("amazon.titan-text-premier-v1:0");
 
 		private final String id;
 
@@ -272,6 +294,11 @@ public class TitanChatBedrockApi extends
 
 		TitanChatModel(String value) {
 			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
 		}
 	}
 

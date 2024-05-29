@@ -24,9 +24,9 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.ollama.OllamaContainer;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
@@ -50,7 +50,7 @@ public class OllamaApiIT {
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static GenericContainer<?> ollamaContainer = new GenericContainer<>("ollama/ollama:0.1.29").withExposedPorts(11434);
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
 
 	static OllamaApi ollamaApi;
 

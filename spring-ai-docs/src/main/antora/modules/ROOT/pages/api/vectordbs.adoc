@@ -72,7 +72,7 @@ It also contains metadata in the form of key-value pairs, including details such
 
 Upon insertion into the vector database, the text content is transformed into a numerical array, or a `List<Double>`, known as vector embeddings, using an embedding model. Embedding models, such as https://en.wikipedia.org/wiki/Word2vec[Word2Vec], https://en.wikipedia.org/wiki/GloVe_(machine_learning)[GLoVE], and https://en.wikipedia.org/wiki/BERT_(language_model)[BERT], or OpenAI's `text-embedding-ada-002`, are used to convert words, sentences, or paragraphs into these vector embeddings.
 
-The vector database's role is to store and facilitate similarity searches for these embeddings. It does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingClient` should be utilized.
+The vector database's role is to store and facilitate similarity searches for these embeddings. It does not generate the embeddings itself. For creating vector embeddings, the `EmbeddingModel` should be utilized.
 
 The `similaritySearch` methods in the interface allow for retrieving documents similar to a given query string. These methods can be fine-tuned by using the following parameters:
 
@@ -83,13 +83,21 @@ The `similaritySearch` methods in the interface allow for retrieving documents s
 
 Find more information on the `Filter.Expression` in the <<metadata-filters>> section.
 
+== Schema Initialization
+
+Some vector stores require their backend schema to be initialized before usage.
+It will not be initialized for you by default.
+You must opt-in, by passing a `boolean` for the appropriate constructor argument or, if using Spring Boot, setting the appropriate `initialize-schema` property to `true` in `application.properties` or `application.yml`.
+Check the documentation for the vector store you are using for the specific property name.
+
 == Available Implementations
 
 These are the available implementations of the `VectorStore` interface:
 
-* xref:api/vectordbs/azure.adoc[ Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
-* xref:api/vectordbs/apache-cassandra.adoc[Apache Cassandra] - The https://cassandra.apache.org/doc/latest/cassandra/vector-search/overview.html[Apache Cassandra]
+* xref:api/vectordbs/azure.adoc[Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
+* xref:api/vectordbs/apache-cassandra.adoc[Apache Cassandra] - The https://cassandra.apache.org/doc/latest/cassandra/vector-search/overview.html[Apache Cassandra] vector store.
 * xref:api/vectordbs/chroma.adoc[Chroma Vector Store] - The https://www.trychroma.com/[Chroma] vector store.
+* xref:api/vectordbs/elasticsearch.adoc[Elasticsearch Vector Store] - The https://www.elastic.co/[Elasticsearch] vector store.
 * xref:api/vectordbs/gemfire.adoc[GemFire Vector Store] - The https://tanzu.vmware.com/content/blog/vmware-gemfire-vector-database-extension[GemFire] vector store.
 * xref:api/vectordbs/milvus.adoc[Milvus Vector Store] - The https://milvus.io/[Milvus] vector store.
 * xref:api/vectordbs/mongodb.adoc[MongoDB Atlas Vector Store] - The https://www.mongodb.com/atlas/database[MongoDB Atlas] vector store.
@@ -100,7 +108,6 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/redis.adoc[Redis Vector Store] - The https://redis.io/[Redis] vector store.
 * xref:api/vectordbs/hana.adoc[SAP Hana Vector Store] - The https://news.sap.com/2024/04/sap-hana-cloud-vector-engine-ai-with-business-context/[SAP HANA] vector store.
 * xref:api/vectordbs/weaviate.adoc[Weaviate Vector Store] - The https://weaviate.io/[Weaviate] vector store.
-vector store.
 * link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.
 
 More implementations may be supported in future releases.
@@ -113,9 +120,9 @@ Information on each of the `VectorStore` implementations can be found in the sub
 
 To compute the embeddings for a vector database, you need to pick an embedding model that matches the higher-level AI model being used.
 
-For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingClient` and a model name of `text-embedding-ada-002`.
+For example, with OpenAI's ChatGPT, we use the `OpenAiEmbeddingModel` and a model named `text-embedding-ada-002`.
 
-The Spring Boot starter's auto-configuration for OpenAI makes an implementation of `EmbeddingClient` available in the Spring application context for dependency injection.
+The Spring Boot starter's auto-configuration for OpenAI makes an implementation of `EmbeddingModel` available in the Spring application context for dependency injection.
 
 The general usage of loading data into a vector store is something you would do in a batch-like job, by first loading data into Spring AI's `Document` class and then calling the `save` method.
 

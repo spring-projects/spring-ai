@@ -15,13 +15,14 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.redis;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Julien Ruaux
  */
 @ConfigurationProperties(RedisVectorStoreProperties.CONFIG_PREFIX)
-public class RedisVectorStoreProperties {
+public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.redis";
 

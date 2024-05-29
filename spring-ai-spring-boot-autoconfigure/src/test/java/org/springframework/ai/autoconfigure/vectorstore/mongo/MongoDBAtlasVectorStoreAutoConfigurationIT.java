@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
@@ -42,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Eddú Meléndez
  */
 @Testcontainers
+@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Container

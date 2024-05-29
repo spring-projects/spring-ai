@@ -26,7 +26,9 @@ spring boot new --from ai --name myai
 ```
 . Consult the generated `README.md` file for guidance on obtaining an OpenAI API Key and running your first AI application.
 
-To add the same simple AI application to an *existing* project, execute:
+NOTE: Currently, the Spring CLI only supports Maven projects.
+
+To add the same simple AI application to an *existing* Maven project, execute:
 
 ```shell
 spring boot add ai
@@ -138,7 +140,7 @@ Each of the following sections in the documentation shows which dependencies you
 ** xref:api/embeddings/mistralai-embeddings.adoc[Spring AI MistralAI Embeddings]
 
 === Chat Models
-* xref:api/chatclient.adoc[Chat Completion API]
+* xref:api/chatmodel.adoc[Chat Completion API]
 ** xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming and function-calling support)
 ** xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming and function-calling support)
 ** xref:api/chat/ollama-chat.adoc[Ollama Chat Completion]
@@ -147,7 +149,7 @@ Each of the following sections in the documentation shows which dependencies you
 ** xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 ** xref:api/bedrock.adoc[Amazon Bedrock]
 *** xref:api/chat/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
-*** xref:api/chat/bedrock/bedrock-llama2.adoc[Llama2 Chat Completion]
+*** xref:api/chat/bedrock/bedrock-llama.adoc[Llama Chat Completion]
 *** xref:api/chat/bedrock/bedrock-titan.adoc[Titan Chat Completion]
 *** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
 *** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]

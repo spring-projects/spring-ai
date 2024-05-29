@@ -68,7 +68,7 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .build();
 
 SpeechPrompt speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
-SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
+SpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 ----
 
 == Manual Configuration
@@ -94,13 +94,13 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create an `OpenAiAudioSpeechClient`:
+Next, create an `OpenAiAudioSpeechModel`:
 
 [source,java]
 ----
 var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
 
-var openAiAudioSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi);
+var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 
 var speechOptions = OpenAiAudioSpeechOptions.builder()
     .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
@@ -109,7 +109,7 @@ var speechOptions = OpenAiAudioSpeechOptions.builder()
     .build();
 
 var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
-SpeechResponse response = openAiAudioSpeechClient.call(speechPrompt);
+SpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 
 // Accessing metadata (rate limit info)
 OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
@@ -125,7 +125,7 @@ The Speech API provides support for real-time audio streaming using chunk transf
 ----
 var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
 
-var openAiAudioSpeechClient = new OpenAiAudioSpeechClient(openAiAudioApi);
+var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 
 OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
@@ -136,9 +136,9 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 
 SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", speechOptions);
 
-Flux<SpeechResponse> responseStream = openAiAudioSpeechClient.stream(speechPrompt);
+Flux<SpeechResponse> responseStream = openAiAudioSpeechModel.stream(speechPrompt);
 ----
 
 == Example Code
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/speech/OpenAiSpeechClientIT.java[OpenAiSpeechClientIT.java] test provides some general examples of how to use the library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/speech/OpenAiSpeechModelIT.java[OpenAiSpeechModelIT.java] test provides some general examples of how to use the library.

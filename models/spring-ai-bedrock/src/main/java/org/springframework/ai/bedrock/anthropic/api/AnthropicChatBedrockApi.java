@@ -24,14 +24,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 // @formatter:off
@@ -88,6 +91,20 @@ public class AnthropicChatBedrockApi extends
 	 * @param timeout The timeout to use.
 	 */
 	public AnthropicChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+			ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new AnthropicChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link AnthropicChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public AnthropicChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
@@ -200,6 +217,7 @@ public class AnthropicChatBedrockApi extends
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatResponse(
+			@JsonProperty("type") String type,
 			@JsonProperty("completion") String completion,
 			@JsonProperty("stop_reason") String stopReason,
 			@JsonProperty("stop") String stop,
@@ -209,7 +227,7 @@ public class AnthropicChatBedrockApi extends
 	/**
 	 * Anthropic models version.
 	 */
-	public enum AnthropicChatModel {
+	public enum AnthropicChatModel implements ModelDescription {
 		/**
 		 * anthropic.claude-instant-v1
 		 */
@@ -234,6 +252,11 @@ public class AnthropicChatBedrockApi extends
 
 		AnthropicChatModel(String value) {
 			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
 		}
 	}
 

@@ -23,6 +23,8 @@ package org.springframework.ai.parser;
  * @param <T> Specifies the desired response type.
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @deprecated Use the {@link org.springframework.ai.converter.StructuredOutputConverter}
+ * instead.
  */
 public interface OutputParser<T> extends Parser<T>, FormatProvider {
 

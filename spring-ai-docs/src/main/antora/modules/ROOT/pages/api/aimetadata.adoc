@@ -42,7 +42,7 @@ class MyService {
 
         Prompt prompt = createPrompt(request);
 
-        ChatResponse response = chatClient.call(prompt);
+        ChatResponse response = chatModel.call(prompt);
 
         // Process the chat response
 

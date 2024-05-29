@@ -16,8 +16,6 @@
 package org.springframework.ai.ollama;
 
 import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 
@@ -28,13 +26,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaEmbeddingRequestTests {
 
-	OllamaEmbeddingClient client = new OllamaEmbeddingClient(new OllamaApi()).withDefaultOptions(
+	OllamaEmbeddingModel chatModel = new OllamaEmbeddingModel(new OllamaApi(),
 			new OllamaOptions().withModel("DEFAULT_MODEL").withMainGPU(11).withUseMMap(true).withNumGPU(1));
 
 	@Test
 	public void ollamaEmbeddingRequestDefaultOptions() {
 
-		var request = client.ollamaEmbeddingRequest("Hello", null);
+		var request = chatModel.ollamaEmbeddingRequest("Hello", null);
 
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.options().get("num_gpu")).isEqualTo(1);
@@ -46,12 +44,13 @@ public class OllamaEmbeddingRequestTests {
 	@Test
 	public void ollamaEmbeddingRequestRequestOptions() {
 
-		EmbeddingOptions promptOptions = new OllamaOptions().withModel("PROMPT_MODEL")
-			.withMainGPU(22)
-			.withUseMMap(true)
+		var promptOptions = new OllamaOptions()//
+			.withModel("PROMPT_MODEL")//
+			.withMainGPU(22)//
+			.withUseMMap(true)//
 			.withNumGPU(2);
 
-		var request = client.ollamaEmbeddingRequest("Hello", promptOptions);
+		var request = chatModel.ollamaEmbeddingRequest("Hello", promptOptions);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.options().get("num_gpu")).isEqualTo(2);

@@ -33,7 +33,7 @@ public class BedrockAi21Jurassic2ChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.jurassic2.chat";
 
 	/**
-	 * Enable Bedrock Ai21Jurassic2 chat client. Disabled by default.
+	 * Enable Bedrock Ai21Jurassic2 chat model. Disabled by default.
 	 */
 	private boolean enabled = false;
 

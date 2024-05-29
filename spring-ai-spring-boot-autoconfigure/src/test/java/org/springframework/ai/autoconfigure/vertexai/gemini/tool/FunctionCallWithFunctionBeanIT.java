@@ -24,11 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatClient;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -54,12 +54,13 @@ class FunctionCallWithFunctionBeanIT {
 	@Test
 	void functionCallTest() {
 
-		contextRunner
-			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatClient.ChatModel.GEMINI_PRO.getValue())
+		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
+				// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+				+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
+			// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
 			.run(context -> {
 
-				VertexAiGeminiChatClient chatClient = context.getBean(VertexAiGeminiChatClient.class);
+				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
 
 				var systemMessage = new SystemMessage("""
 						Use Multi-turn function calling.
@@ -67,23 +68,30 @@ class FunctionCallWithFunctionBeanIT {
 						If the information was not fetched call the function again. Repeat at most 3 times.
 						""");
 				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Paris and in Tokyo (Japan)?");
+						// "What's the weather like in San Francisco, Paris and in Tokyo?
+						// Please let me know how many function calls you've preformed.");
+						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
-				ChatResponse response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
+				// ChatResponse response = chatModel.call(new
+				// Prompt(List.of(userMessage),
+				// VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				response = chatClient.call(new Prompt(List.of(systemMessage, userMessage),
+				Thread.sleep(10000);
+
+				response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-				response = chatClient
+				response = chatModel
 					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);

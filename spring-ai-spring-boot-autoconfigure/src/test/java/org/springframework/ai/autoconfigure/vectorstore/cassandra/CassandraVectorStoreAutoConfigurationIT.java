@@ -26,11 +26,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,18 +56,18 @@ class CassandraVectorStoreAutoConfigurationIT {
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(CassandraVectorStoreAutoConfiguration.class))
+		.withConfiguration(
+				AutoConfigurations.of(CassandraVectorStoreAutoConfiguration.class, CassandraAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.cassandra.keyspace=test_autoconfigure")
-		.withPropertyValues("spring.ai.vectorstore.cassandra.contentFieldName=doc_chunk");
+		.withPropertyValues("spring.ai.vectorstore.cassandra.contentColumnName=doc_chunk");
 
 	@Test
 	void addAndSearch() {
-		contextRunner
-			.withPropertyValues("spring.ai.vectorstore.cassandra.cassandraContactPointHosts=" + getContactPointHost())
-			.withPropertyValues("spring.ai.vectorstore.cassandra.cassandraContactPointPort=" + getContactPointPort())
-			.withPropertyValues("spring.ai.vectorstore.cassandra.cassandraLocalDatacenter="
-					+ cassandraContainer.getLocalDatacenter())
+		contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
+			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
+			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
+			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
 
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -92,8 +93,8 @@ class CassandraVectorStoreAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

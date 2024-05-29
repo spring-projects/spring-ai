@@ -101,11 +101,11 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 
 	/**
-	 * MistralAI Tool Function Callbacks to register with the ChatClient. For Prompt
+	 * MistralAI Tool Function Callbacks to register with the ChatModel. For Prompt
 	 * Options the functionCallbacks are automatically enabled for the duration of the
 	 * prompt execution. For Default Options the functionCallbacks are registered but
 	 * disabled by default. Use the enableFunctions to set the functions from the registry
-	 * to be used by the ChatClient chat completion requests.
+	 * to be used by the ChatModel chat completion requests.
 	 */
 	@NestedConfigurationProperty
 	@JsonIgnore
@@ -139,7 +139,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 			return this;
 		}
 
-		public Builder withMaxToken(Integer maxTokens) {
+		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.setMaxTokens(maxTokens);
 			return this;
 		}
@@ -307,6 +307,21 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	public void setFunctions(Set<String> functions) {
 		Assert.notNull(functions, "Function must not be null");
 		this.functions = functions;
+	}
+
+	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {
+		return builder().withModel(fromOptions.getModel())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withSafePrompt(fromOptions.getSafePrompt())
+			.withRandomSeed(fromOptions.getRandomSeed())
+			.withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withResponseFormat(fromOptions.getResponseFormat())
+			.withTools(fromOptions.getTools())
+			.withToolChoice(fromOptions.getToolChoice())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withFunctions(fromOptions.getFunctions())
+			.build();
 	}
 
 }

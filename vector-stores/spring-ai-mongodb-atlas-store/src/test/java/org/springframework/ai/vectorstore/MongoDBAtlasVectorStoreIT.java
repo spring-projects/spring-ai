@@ -17,11 +17,12 @@ package org.springframework.ai.vectorstore;
 
 import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.openai.OpenAiEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Smith
  */
 @Testcontainers
+@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container
@@ -190,11 +192,12 @@ class MongoDBAtlasVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingClient embeddingClient) {
-			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingClient,
+		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel,
 					MongoDBAtlasVectorStore.MongoDBVectorStoreConfig.builder()
 						.withMetadataFieldsToFilter(List.of("country", "year"))
-						.build());
+						.build(),
+					true);
 		}
 
 		@Bean
@@ -203,8 +206,8 @@ class MongoDBAtlasVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new OpenAiEmbeddingClient(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 		}
 
 	}

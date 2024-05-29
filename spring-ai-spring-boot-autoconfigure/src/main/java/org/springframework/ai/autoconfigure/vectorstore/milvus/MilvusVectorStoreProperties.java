@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
@@ -23,7 +24,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 @ConfigurationProperties(MilvusVectorStoreProperties.CONFIG_PREFIX)
-public class MilvusVectorStoreProperties {
+public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.milvus";
 

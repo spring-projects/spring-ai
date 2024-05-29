@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.GemFireVectorStore;
 import org.springframework.ai.vectorstore.GemFireVectorStore.GemFireVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Bean;
  * @author Philipp Kessler
  */
 @AutoConfiguration
-@ConditionalOnClass({ GemFireVectorStore.class, EmbeddingClient.class })
+@ConditionalOnClass({ GemFireVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties({ GemFireVectorStoreProperties.class })
 public class GemFireVectorStoreAutoConfiguration {
 
@@ -40,7 +40,7 @@ public class GemFireVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public GemFireVectorStore vectorStore(EmbeddingClient embeddingClient, GemFireConnectionDetails connectionDetails,
+	public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel, GemFireConnectionDetails connectionDetails,
 			GemFireVectorStoreProperties properties) {
 		var vectoreStoreConfig = GemFireVectorStoreConfig.builder()
 			.withHost(connectionDetails.getHost())
@@ -54,7 +54,7 @@ public class GemFireVectorStoreAutoConfiguration {
 			.withRequestTimeout(properties.getRequestTimeout())
 			.build();
 
-		var vectorStore = new GemFireVectorStore(vectoreStoreConfig, embeddingClient);
+		var vectorStore = new GemFireVectorStore(vectoreStoreConfig, embeddingModel);
 
 		vectorStore.setIndexName(properties.getIndex());
 

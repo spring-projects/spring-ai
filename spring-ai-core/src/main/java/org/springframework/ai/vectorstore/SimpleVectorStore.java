@@ -22,12 +22,22 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.core.io.Resource;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -51,18 +61,18 @@ public class SimpleVectorStore implements VectorStore {
 
 	protected Map<String, Document> store = new ConcurrentHashMap<>();
 
-	protected EmbeddingClient embeddingClient;
+	protected EmbeddingModel embeddingModel;
 
-	public SimpleVectorStore(EmbeddingClient embeddingClient) {
-		Objects.requireNonNull(embeddingClient, "EmbeddingClient must not be null");
-		this.embeddingClient = embeddingClient;
+	public SimpleVectorStore(EmbeddingModel embeddingModel) {
+		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
+		this.embeddingModel = embeddingModel;
 	}
 
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
-			logger.info("Calling EmbeddingClient for document id = {}", document.getId());
-			List<Double> embedding = this.embeddingClient.embed(document);
+			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
+			List<Double> embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.store.put(document.getId(), document);
 		}
@@ -177,7 +187,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	private List<Double> getUserQueryEmbedding(String query) {
-		return this.embeddingClient.embed(query);
+		return this.embeddingModel.embed(query);
 	}
 
 	public static class Similarity {

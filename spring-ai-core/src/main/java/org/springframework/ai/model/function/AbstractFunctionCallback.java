@@ -54,7 +54,7 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	/**
 	 * Constructs a new {@link AbstractFunctionCallback} with the given name, description,
 	 * input type and default object mapper.
-	 * @param name Function name. Should be unique within the ChatClient's function
+	 * @param name Function name. Should be unique within the ChatModel's function
 	 * registry.
 	 * @param description Function description. Used as a "system prompt" by the model to
 	 * decide if the function should be called.

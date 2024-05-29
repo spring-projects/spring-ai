@@ -27,14 +27,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
+import org.springframework.ai.model.ModelDescription;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * Java client for the Bedrock Jurassic2 chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class Ai21Jurassic2ChatBedrockApi extends
@@ -88,6 +91,20 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	 * @param timeout The timeout to use.
 	 */
 	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
+									ObjectMapper objectMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new Ai21Jurassic2ChatBedrockApi instance.
+	 *
+	 * @param modelId The model id to use. See the {@link Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 */
+	public Ai21Jurassic2ChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 									ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
@@ -355,7 +372,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	/**
 	 * Ai21 Jurassic2 models version.
 	 */
-	public enum Ai21Jurassic2ChatModel {
+	public enum Ai21Jurassic2ChatModel implements ModelDescription {
 
 		/**
 		 * ai21.j2-mid-v1
@@ -378,6 +395,11 @@ public class Ai21Jurassic2ChatBedrockApi extends
 
 		Ai21Jurassic2ChatModel(String value) {
 			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
 		}
 	}
 
