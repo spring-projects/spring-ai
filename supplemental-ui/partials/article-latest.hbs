@@ -1,0 +1,16 @@
+{{#if (and page.latest (ne page.url page.latest.url))}}
+<div class="admonitionblock important latest">
+  <table>
+    <tbody><tr>
+      <td class="icon">
+        <i class="fa icon-important" title="Important"></i>
+      </td>
+      <td class="content">
+        <div class="paragraph">
+          <p>{{#if page.componentVersion.prerelease}}This version is still in development and is not considered stable yet.{{/if}} For the latest snapshot version, please use <a href="{{{relativize ./page.latest.url}}}">{{page.component.title}} {{page.latest.displayVersion}}</a>!</p>
+        </div>
+      </td>
+    </tr></tbody>
+  </table>
+</div>
+{{/if}}

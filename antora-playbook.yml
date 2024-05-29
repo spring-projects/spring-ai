@@ -37,6 +37,7 @@ urls:
   latest_version_segment: ''
   redirect_facility: httpd
 ui:
+  supplemental_files: ./supplemental-ui
   bundle:
     url: https://github.com/spring-io/antora-ui-spring/releases/download/v0.4.7/ui-bundle.zip
     snapshot: true
