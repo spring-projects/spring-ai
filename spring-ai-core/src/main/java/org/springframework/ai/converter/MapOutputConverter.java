@@ -40,6 +40,10 @@ public class MapOutputConverter extends AbstractMessageOutputConverter<Map<Strin
 
 	@Override
 	public Map<String, Object> convert(@NonNull String text) {
+		if (text.startsWith("```json") && text.endsWith("```")) {
+			text = text.substring(7, text.length() - 3);
+		}
+
 		Message<?> message = MessageBuilder.withPayload(text.getBytes(StandardCharsets.UTF_8)).build();
 		return (Map) this.getMessageConverter().fromMessage(message, HashMap.class);
 	}
@@ -50,7 +54,8 @@ public class MapOutputConverter extends AbstractMessageOutputConverter<Map<Strin
 				Your response should be in JSON format.
 				The data structure for the JSON should match this Java class: %s
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
-				 """;
+				Remove the ```json markdown from the output.
+				""";
 		return String.format(raw, HashMap.class.getName());
 	}
 
