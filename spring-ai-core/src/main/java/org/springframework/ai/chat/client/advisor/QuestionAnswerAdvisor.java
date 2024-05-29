@@ -58,6 +58,10 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
 
+	public QuestionAnswerAdvisor(VectorStore vectorStore) {
+		this(vectorStore, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE);
+	}
+
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest) {
 		this(vectorStore, searchRequest, DEFAULT_USER_TEXT_ADVISE);
 	}
