@@ -64,6 +64,7 @@
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
+		<module>models/spring-ai-wenxin</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
@@ -85,6 +86,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-wenxin</module>
 	</modules>
 
 	<organization>
