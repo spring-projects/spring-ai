@@ -91,10 +91,9 @@ The prefix `spring.ai.yi.chat` is the property prefix that lets you configure th
 | spring.ai.yi.chat.base-url | Optional overrides the spring.ai.yi.base-url to provide chat specific url |  https://api.lingyiwanwu.com
 | spring.ai.yi.chat.api-key | Optional overrides the spring.ai.yi.api-key to provide chat specific api-key |  -
 | spring.ai.yi.chat.options.model | This is the YiAI Chat model to use | `YI_LARGE` (the `YI_LARGE`, `YI_MEDIUM`, `YI_MEDIUM`, `YI_VISION`, `YI_SPARK`, `YI_LARGE_RAG`, and `YI_LARGE_TURBO` point to the latest model versions)
-| spring.ai.yi.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
-| spring.ai.yi.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.9
-| spring.ai.yi.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 0.3
-| spring.ai.yi.chat.options.user | A unique identifier representing your end-user, which can help YiAI to monitor and detect abuse. | -
+| spring.ai.yi.chat.options.maxTokens | Specify the maximum number of tokens for the model when generating content. This defines the upper limit for generation, but does not guarantee that this number will be generated each time. | -
+| spring.ai.yi.chat.options.temperature | Controls the divergence and centralization of the generated results. The smaller the value, the more centralized; the larger the value, the more divergent. Range of values: between 0 and 2. | 0.9
+| spring.ai.yi.chat.options.topP | Control the randomness of the generated results. The smaller the value, the weaker the randomness; the larger the value, the stronger the randomness. Value range: between 0 and 1. | 0.3
 |====
 
 NOTE: You can override the common `spring.ai.yi.base-url` and `spring.ai.yi.api-key` for the `ChatModel` implementations.

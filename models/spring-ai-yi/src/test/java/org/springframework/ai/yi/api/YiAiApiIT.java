@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "YI_AI_API_KEY", matches = ".+")
 public class YiAiApiIT {
 
-	YiAiApi yiAiApi = new YiAiApi("c4e46efcf54747ccad35ce86a253f980");
+	YiAiApi yiAiApi = new YiAiApi(System.getenv("YI_AI_API_KEY"));
 
 	@Test
 	void chatCompletionEntity() {
