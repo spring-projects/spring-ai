@@ -122,8 +122,8 @@ public class OpenAiAutoConfiguration {
 		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
 				: commonProperties.getBaseUrl();
 
-		Assert.hasText(apiKey, "OpenAI API key must be set");
-		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+		Assert.hasText(apiKey, "OpenAI API key must be set.  Use the property: spring.ai.openai.base-url");
+		Assert.hasText(baseUrl, "OpenAI base URL must be set.  Use the property: spring.ai.openai.api-key");
 
 		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 

@@ -1,3 +1,95 @@
 = Evaluation Testing
 
-TBD
+Testing AI applications requires evaluating the generated content to ensure the AI model has not produced a hallucinated response.
+
+One method to evaluate the response is to use the AI model itself for evaluation. Select the best AI model for the evaluation, which may not be the same model used to generate the response.
+
+The Spring AI interface for evaluating responses is `Evaluator`, defined as:
+
+
+
+[source,java]
+----
+@FunctionalInterface
+public interface Evaluator {
+    EvaluationResponse evaluate(EvaluationRequest evaluationRequest)
+}
+----
+
+The input to the evaluation is the `EvaluationRequest` defined as
+
+[source,java]
+----
+public class EvaluationRequest {
+
+	private final String userText;
+
+	private final List<Content> dataList;
+
+	private final ChatResponse chatResponse;
+
+	public EvaluationRequest(String userText, List<Content> dataList, ChatResponse chatResponse) {
+		this.userText = userText;
+		this.dataList = dataList;
+		this.chatResponse = chatResponse;
+	}
+
+  ...
+}
+----
+
+* `userText`: The raw input from the user.
+* `dataList`: Contextual data, such as from Retrieval Augmented Generation, appended to the raw input.
+* `chatResponse`: The AI model's response.
+
+== RelevancyEvaluator
+
+One implementation is the `RelevancyEvaluator`, which uses the AI model for evaluation. More implementations will be available in future releases.
+
+The `RelevancyEvaluator` uses the input (`userText`) and the AI model's output (`chatResponse`) to ask the question:
+
+[source, text]
+----
+Your task is to evaluate if the response for the query
+is in line with the context information provided.\n
+You have two options to answer. Either YES/ NO.\n
+Answer - YES, if the response for the query
+is in line with context information otherwise NO.\n
+Query: \n {query}\n
+Response: \n {response}\n
+Context: \n {context}\n
+Answer: "
+----
+
+Here is an example of a JUnit test that performs a RAG query over a PDF document loaded into a Vector Store and then evaluates if the response is relevant to the user text.
+
+[source,java]
+----
+@Test
+void testEvaluation() {
+
+    dataController.delete();
+    dataController.load();
+
+    String userText = "What is the purpose of Carina?";
+
+    ChatResponse response = ChatClient.builder(chatModel)
+            .build().prompt()
+            .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+            .user(userText)
+            .call()
+            .chatResponse();
+
+    var relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
+
+    EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
+            (List<Content>) response.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS), response);
+
+    EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
+
+    assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
+
+}
+----
+
+The code above is from the example application located https://github.com/rd-1-2022/ai-azure-rag.git[here].
