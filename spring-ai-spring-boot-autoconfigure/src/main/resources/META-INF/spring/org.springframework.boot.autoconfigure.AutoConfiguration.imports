@@ -15,6 +15,7 @@ org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfigura
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
 org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.oracle.OracleAIVectorSearchStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pinecone.PineconeVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoConfiguration

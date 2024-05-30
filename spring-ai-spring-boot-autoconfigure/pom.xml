@@ -101,6 +101,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Oracle AI Vector Search Store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-oracle-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- PG Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
