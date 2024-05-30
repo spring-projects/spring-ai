@@ -16,7 +16,6 @@
 package org.springframework.ai.vectorstore;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -85,7 +84,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	// Metadata, automatically assigned by Milvus.
 	public static final String DISTANCE_FIELD_NAME = "distance";
 
-	public static final List<String> SEARCH_OUTPUT_FIELDS = Arrays.asList(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
+	public static final List<String> SEARCH_OUTPUT_FIELDS = List.of(DOC_ID_FIELD_NAME, CONTENT_FIELD_NAME,
 			METADATA_FIELD_NAME);
 
 	public final FilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
