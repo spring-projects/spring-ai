@@ -102,6 +102,7 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/milvus.adoc[Milvus Vector Store] - The https://milvus.io/[Milvus] vector store.
 * xref:api/vectordbs/mongodb.adoc[MongoDB Atlas Vector Store] - The https://www.mongodb.com/atlas/database[MongoDB Atlas] vector store.
 * xref:api/vectordbs/neo4j.adoc[Neo4j Vector Store] - The https://neo4j.com/[Neo4j] vector store.
+* xref:api/vectordbs/oracle.adoc[OracleVectorStore] - The https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/overview-ai-vector-search.html[Oracle Database] vector store.
 * xref:api/vectordbs/pgvector.adoc[PgVectorStore] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
 * xref:api/vectordbs/pinecone.adoc[Pinecone Vector Store] - https://www.pinecone.io/[PineCone] vector store.
 * xref:api/vectordbs/qdrant.adoc[Qdrant Vector Store] - https://www.qdrant.tech/[Qdrant] vector store.

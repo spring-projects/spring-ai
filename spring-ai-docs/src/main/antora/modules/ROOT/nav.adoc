@@ -62,6 +62,7 @@
 *** xref:api/vectordbs/milvus.adoc[]
 *** xref:api/vectordbs/mongodb.adoc[]
 *** xref:api/vectordbs/neo4j.adoc[]
+*** xref:api/vectordbs/oracle.adoc[]
 *** xref:api/vectordbs/pgvector.adoc[]
 *** xref:api/vectordbs/pinecone.adoc[]
 *** xref:api/vectordbs/qdrant.adoc[]
