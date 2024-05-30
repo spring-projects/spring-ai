@@ -35,6 +35,7 @@
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
+		<module>vector-stores/spring-ai-oracle-store</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-pinecone-store</module>
 		<module>vector-stores/spring-ai-qdrant-store</module>
@@ -49,6 +50,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-oracle-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
@@ -157,6 +159,7 @@
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
+		<oracle.version>23.4.0.24.05</oracle.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<milvus.version>2.3.4</milvus.version>
 		<pinecone.version>0.8.0</pinecone.version>
@@ -181,7 +184,7 @@
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
-		<maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
+		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
 		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
 		<!-- <maven-site-plugin.version>3.12.1</maven-site-plugin.version> -->
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
