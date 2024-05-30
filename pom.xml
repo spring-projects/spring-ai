@@ -70,6 +70,7 @@
 		<module>models/spring-ai-vertex-ai-palm2</module>
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
+		<module>models/spring-ai-yi</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
@@ -85,6 +86,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-yi</module>
 	</modules>
 
 	<organization>

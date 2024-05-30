@@ -24,6 +24,7 @@
 *** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/functions/mistralai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
+*** xref:api/chat/yiai-chat.adoc[Yi AI]
 **** xref:api/chat/functions/zhipuai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/anthropic-chat.adoc[Anthropic 3]
 **** xref:api/chat/functions/anthropic-chat-functions.adoc[Function Calling]
