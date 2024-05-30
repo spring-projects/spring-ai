@@ -75,7 +75,7 @@ public class OracleVectorStoreTests {
 				throw new RuntimeException("Failed configuring Oracle Database container", e);
 			}
 		}
-	}.withReuse(true).withInitScript("initialize.sql");
+	}.withInitScript("initialize.sql");
 
 	final List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
