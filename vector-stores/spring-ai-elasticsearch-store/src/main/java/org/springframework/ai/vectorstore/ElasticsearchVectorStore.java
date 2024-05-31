@@ -48,6 +48,7 @@ import static org.springframework.ai.vectorstore.SimilarityFunction.l2_norm;
 /**
  * @author Jemin Huh
  * @author Wei Jiang
+ * @author Laura Trotta
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
@@ -61,8 +62,6 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	private final ElasticsearchVectorStoreOptions options;
 
 	private final FilterExpressionConverter filterExpressionConverter;
-
-	private String similarityFunction;
 
 	private final boolean initializeSchema;
 
@@ -134,7 +133,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 				threshold = 1 - threshold;
 			}
 			final float finalThreshold = threshold;
-			List<Float> vectors = this.embeddingClient.embed(searchRequest.getQuery())
+			List<Float> vectors = this.embeddingModel.embed(searchRequest.getQuery())
 				.stream()
 				.map(Double::floatValue)
 				.toList();
@@ -151,7 +150,6 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 					Document.class);
 
 			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
-
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);

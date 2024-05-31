@@ -64,7 +64,7 @@ class ElasticsearchVectorStoreIT {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
-			"docker.elastic.co/elasticsearch/elasticsearch:8.12.2")
+			"docker.elastic.co/elasticsearch/elasticsearch:8.13.3")
 		.withEnv("xpack.security.enabled", "false");
 
 	private final List<Document> documents = List.of(
@@ -338,24 +338,24 @@ class ElasticsearchVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean("vectorStore_cosine")
-		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingClient embeddingClient, RestClient restClient) {
-			return new ElasticsearchVectorStore(restClient, embeddingClient);
+		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient) {
+			return new ElasticsearchVectorStore(restClient, embeddingModel, true);
 		}
 
 		@Bean("vectorStore_l2_norm")
-		public ElasticsearchVectorStore vectorStoreL2(EmbeddingClient embeddingClient, RestClient restClient) {
+		public ElasticsearchVectorStore vectorStoreL2(EmbeddingModel embeddingModel, RestClient restClient) {
 			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 			options.setIndexName("index_l2");
 			options.setSimilarity(SimilarityFunction.l2_norm);
-			return new ElasticsearchVectorStore(options, restClient, embeddingClient);
+			return new ElasticsearchVectorStore(options, restClient, embeddingModel,true);
 		}
 
 		@Bean("vectorStore_dot_product")
-		public ElasticsearchVectorStore vectorStoreDotProduct(EmbeddingClient embeddingClient, RestClient restClient) {
+		public ElasticsearchVectorStore vectorStoreDotProduct(EmbeddingModel embeddingModel, RestClient restClient) {
 			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 			options.setIndexName("index_dot_product");
 			options.setSimilarity(SimilarityFunction.dot_product);
-			return new ElasticsearchVectorStore(options, restClient, embeddingClient);
+			return new ElasticsearchVectorStore(options, restClient, embeddingModel,true);
 		}
 
 		@Bean
