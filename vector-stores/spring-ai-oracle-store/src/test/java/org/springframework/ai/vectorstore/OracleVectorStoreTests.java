@@ -22,16 +22,15 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
-import org.testcontainers.containers.ExecConfig;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.oracle.OracleContainer;
+import org.testcontainers.utility.MountableFile;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,37 +44,9 @@ import static org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARC
 public class OracleVectorStoreTests {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer("gvenzl/oracle-free:23-slim") {
-		protected void runInitScriptIfRequired() {
-			try {
-				final Map<String, String> envMap = new HashMap<>();
-				envMap.put("ORACLE_BASE", "/opt/oracle");
-				envMap.put("ORACLE_BASE_CONFIG", "/opt/oracle/product/23ai/dbhomeFree");
-				envMap.put("ORACLE_BASE_HOME", "/opt/oracle/product/23ai/dbhomeFree");
-				envMap.put("ORACLE_HOME", "/opt/oracle/product/23ai/dbhomeFree");
-				envMap.put("ORACLE_SID", "FREE");
-				envMap.put("NLS_LANG", ".AL32UTF8");
-
-				final ExecConfig ec = ExecConfig.builder().user("oracle").command(new String[] { "/bin/sh", "-c", """
-						/opt/oracle/product/23ai/dbhomeFree/bin/sqlplus -s / as sysdba <<EOF
-						       -- Exit on any errors
-						       WHENEVER SQLERROR EXIT SQL.SQLCODE
-
-						       -- Configure the size of the Vector Pool to 1 GiB.
-						       ALTER SYSTEM SET vector_memory_size=1G SCOPE=SPFILE;
-
-						       SHUTDOWN ABORT;
-						       STARTUP;
-
-						       exit;
-						EOF""" }).workDir("/opt/oracle").envVars(envMap).build();
-				execInContainer(ec);
-			}
-			catch (Exception e) {
-				throw new RuntimeException("Failed configuring Oracle Database container", e);
-			}
-		}
-	}.withInitScript("initialize.sql");
+	static OracleContainer oracle23aiContainer = new OracleContainer("gvenzl/oracle-free:23-slim")
+		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
+				"/container-entrypoint-initdb.d/initialize.sql");
 
 	final List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
