@@ -203,7 +203,7 @@ public class Document implements Content {
 
 	@Override
 	public String toString() {
-		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", content='" + new String(content) + '\''
+		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", content='" + content + '\''
 				+ '}';
 	}
 

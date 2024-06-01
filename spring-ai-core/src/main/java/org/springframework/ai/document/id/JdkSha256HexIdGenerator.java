@@ -72,29 +72,16 @@ public class JdkSha256HexIdGenerator implements IdGenerator {
 
 	private byte[] serializeToBytes(Object... contents) {
 		Assert.notNull(contents, "Contents must not be null");
-		ByteArrayOutputStream byteOut = null;
-		try {
-			byteOut = new ByteArrayOutputStream();
-			ObjectOutputStream out = new ObjectOutputStream(byteOut);
-			for (Object content : contents) {
-				out.writeObject(content);
-			}
-			return byteOut.toByteArray();
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to serialize", e);
-		}
-		finally {
-			if (byteOut != null) {
-				try {
-					byteOut.close();
-				}
-				catch (Exception e) {
-					// ignore
-				}
-			}
-		}
-	}
+        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream()) {
+            ObjectOutputStream out = new ObjectOutputStream(byteOut);
+            for (Object content : contents) {
+                out.writeObject(content);
+            }
+            return byteOut.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize", e);
+        }
+    }
 
 	MessageDigest getMessageDigest() {
 		try {

@@ -40,6 +40,10 @@ import java.util.stream.Collectors;
  */
 public class AiRuntimeHints {
 
+	private AiRuntimeHints() {
+
+	}
+
 	private static final Logger log = LoggerFactory.getLogger(AiRuntimeHints.class);
 
 	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(String packageName) {

@@ -48,6 +48,7 @@ class DefaultChatClient implements ChatClient {
 	 * use the new fluid DSL starting in {@link #prompt()}
 	 * @param prompt the {@link Prompt prompt} object
 	 * @return a {@link ChatResponse chat response}
+	 * @deprecated This method is deprecated
 	 */
 	@Deprecated(forRemoval = true, since = "1.0.0 M1")
 	@Override
