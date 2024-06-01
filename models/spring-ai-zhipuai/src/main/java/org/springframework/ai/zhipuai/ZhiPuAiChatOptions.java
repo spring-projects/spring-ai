@@ -52,7 +52,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 */
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
-	 * Up to 4 sequences where the API will stop generating further tokens.
+	 * The model will stop generating characters specified by stop, and currently only supports a single stop word in the format of ["stop_word1"].
 	 */
 	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
@@ -180,15 +180,15 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-        public Builder withRequestId(String requestId) {
-            this.options.requestId = requestId;
-            return this;
-        }
+		public Builder withRequestId(String requestId) {
+			this.options.requestId = requestId;
+			return this;
+		}
 
-        public Builder withDoSample(Boolean doSample) {
-            this.options.doSample = doSample;
-            return this;
-        }
+		public Builder withDoSample(Boolean doSample) {
+			this.options.doSample = doSample;
+			return this;
+		}
 
 		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
@@ -279,23 +279,23 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.user = user;
 	}
 
-    public String getRequestId() {
-        return requestId;
-    }
+	public String getRequestId() {
+		return requestId;
+	}
 
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
+	}
 
-    public Boolean getDoSample() {
-        return doSample;
-    }
+	public Boolean getDoSample() {
+		return doSample;
+	}
 
-    public void setDoSample(Boolean doSample) {
-        this.doSample = doSample;
-    }
+	public void setDoSample(Boolean doSample) {
+		this.doSample = doSample;
+	}
 
-    @Override
+	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
 	}
@@ -422,8 +422,8 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withTools(fromOptions.getTools())
 			.withToolChoice(fromOptions.getToolChoice())
 			.withUser(fromOptions.getUser())
-            .withRequestId(fromOptions.getRequestId())
-            .withDoSample(fromOptions.getDoSample())
+			.withRequestId(fromOptions.getRequestId())
+			.withDoSample(fromOptions.getDoSample())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.build();

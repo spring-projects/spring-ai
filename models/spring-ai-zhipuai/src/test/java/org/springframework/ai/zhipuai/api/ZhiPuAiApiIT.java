@@ -33,46 +33,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 public class ZhiPuAiApiIT {
 
-    ZhiPuAiApi zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
+	ZhiPuAiApi zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
-    @Test
-    void chatCompletionEntity() {
-        ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-        ResponseEntity<ChatCompletion> response = zhiPuAiApi.chatCompletionEntity(
-                new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, false));
+	@Test
+	void chatCompletionEntity() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ResponseEntity<ChatCompletion> response = zhiPuAiApi.chatCompletionEntity(
+				new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, false));
 
-        assertThat(response).isNotNull();
-        assertThat(response.getBody()).isNotNull();
-    }
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+	}
 
-    @Test
-    void chatCompletionEntityWithMoreParams() {
-        ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-        ResponseEntity<ChatCompletion> response = zhiPuAiApi.chatCompletionEntity(
-                new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 1024, null, false, 0.95f, 0.7f, null, null, null, "test_request_id", false));
+	@Test
+	void chatCompletionEntityWithMoreParams() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ResponseEntity<ChatCompletion> response = zhiPuAiApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 1024, null,
+					false, 0.95f, 0.7f, null, null, null, "test_request_id", false));
 
-        assertThat(response).isNotNull();
-        assertThat(response.getBody()).isNotNull();
-    }
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+	}
 
-    @Test
-    void chatCompletionStream() {
-        ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-        Flux<ChatCompletionChunk> response = zhiPuAiApi
-                .chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, true));
+	@Test
+	void chatCompletionStream() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		Flux<ChatCompletionChunk> response = zhiPuAiApi
+			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, true));
 
-        assertThat(response).isNotNull();
-        assertThat(response.collectList().block()).isNotNull();
-    }
+		assertThat(response).isNotNull();
+		assertThat(response.collectList().block()).isNotNull();
+	}
 
-    @Test
-    void embeddings() {
-        ResponseEntity<EmbeddingList<Embedding>> response = zhiPuAiApi
-                .embeddings(new ZhiPuAiApi.EmbeddingRequest<>("Hello world"));
+	@Test
+	void embeddings() {
+		ResponseEntity<EmbeddingList<Embedding>> response = zhiPuAiApi
+			.embeddings(new ZhiPuAiApi.EmbeddingRequest<>("Hello world"));
 
-        assertThat(response).isNotNull();
-        assertThat(Objects.requireNonNull(response.getBody()).data()).hasSize(1);
-        assertThat(response.getBody().data().get(0).embedding()).hasSize(1024);
-    }
+		assertThat(response).isNotNull();
+		assertThat(Objects.requireNonNull(response.getBody()).data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).embedding()).hasSize(1024);
+	}
 
 }
