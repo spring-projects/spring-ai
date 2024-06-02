@@ -153,6 +153,7 @@ Each of the following sections in the documentation shows which dependencies you
 *** xref:api/chat/bedrock/bedrock-titan.adoc[Titan Chat Completion]
 *** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
 *** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]
+*** xref:api/chat/bedrock/bedrock-mistral.adoc[Mistral Chat Completion]
 ** xref:api/chat/mistralai-chat.adoc[MistralAI Chat Completion] (streaming and function-calling support)
 
 === Image Generation Models

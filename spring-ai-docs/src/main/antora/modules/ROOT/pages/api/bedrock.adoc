@@ -108,3 +108,4 @@ For more information, refer to the documentation below for each supported model.
 * xref:api/chat/bedrock/bedrock-titan.adoc[Spring AI Bedrock Titan Chat]: `spring.ai.bedrock.titan.chat.enabled=true`
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-jurassic2.adoc[Spring AI Bedrock Ai21 Jurassic2 Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-mistral.adoc[Spring AI Bedrock Mistral Chat]: `spring.ai.bedrock.mistral.chat.enabled=true`
