@@ -376,7 +376,7 @@ public class CustomerSupportAssistant {
 
     public CustomerSupportAssistant(ChatClient.Builder builder, VectorStore vectorStore, ChatMemory chatMemory) {
 
-    this.chatClient = builderh
+    this.chatClient = builder
             .defaultSystem("""
                     You are a customer chat support agent of an airline named "Funnair".", Respond in a friendly,
                     helpful, and joyful manner.
