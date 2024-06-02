@@ -31,6 +31,7 @@ import software.amazon.awssdk.regions.Region;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Based on Bedrock's <a href=
@@ -141,6 +142,9 @@ public class Anthropic3ChatBedrockApi extends
 	 * @param stopSequences (defaults to "\n\nHuman:") Configure up to four sequences that the model recognizes. After a
 	 * stop sequence, the model stops generating further tokens. The returned text doesn't contain the stop sequence.
 	 * @param anthropicVersion The version of the model to use. The default value is bedrock-2023-05-31.
+	 * @param tools Definitions of tools that the model may use.
+	 * @param toolChoice Specifices how the model should use the provided tools. The model can use a specific tool,
+	 * any available tool, or decide by itself.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatRequest(
@@ -151,24 +155,64 @@ public class Anthropic3ChatBedrockApi extends
 			@JsonProperty("top_k") Integer topK,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("stop_sequences") List<String> stopSequences,
-			@JsonProperty("anthropic_version") String anthropicVersion) {
+			@JsonProperty("anthropic_version") String anthropicVersion,
+			@JsonProperty("tools") List<Tool> tools,
+			@JsonProperty("tool_choice") ToolChoice toolChoice) {
+
+		/**
+		 * Specifices how the model should use the provided tools. The model can use a specific tool, any available tool,
+		 * or decide by itself.
+		 *
+		 * @param type The type of tool choice. Possibile values are any (use any available tool),auto (the model decides),
+		 * andtool (use the specified tool).
+		 * @param name The name of the tool to use. Required if you specify tool in the type field.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolChoice(
+				@JsonProperty("type") String type,
+				@JsonProperty("name") String name) {
+		}
 
 		public static Builder builder(List<ChatCompletionMessage> messages) {
 			return new Builder(messages);
 		}
 
+		public static Builder from(AnthropicChatRequest request) {
+			return new Builder(request);
+		}
+
 		public static class Builder {
-			private final List<ChatCompletionMessage> messages;
+			private List<ChatCompletionMessage> messages;
 			private String system;
-			private Float temperature;// = 0.7f;
-			private Integer maxTokens;// = 500;
-			private Integer topK;// = 10;
+			private Float temperature;
+			private Integer maxTokens;
+			private Integer topK;
 			private Float topP;
 			private List<String> stopSequences;
 			private String anthropicVersion;
+			private List<Tool> tools;
+			private ToolChoice toolChoice;
 
 			private Builder(List<ChatCompletionMessage> messages) {
 				this.messages = messages;
+			}
+
+			private Builder(AnthropicChatRequest request) {
+				this.messages = request.messages();
+				this.system = request.system();
+				this.temperature = request.temperature();
+				this.maxTokens = request.maxTokens();
+				this.topK = request.topK();
+				this.topP = request.topP();
+				this.stopSequences = request.stopSequences();
+				this.anthropicVersion = request.anthropicVersion();
+				this.tools = request.tools();
+				this.toolChoice = request.toolChoice();
+			}
+
+			public Builder withMessages(List<ChatCompletionMessage> messages) {
+				this.messages = messages;
+				return this;
 			}
 
 			public Builder withSystem(String system) {
@@ -205,6 +249,16 @@ public class Anthropic3ChatBedrockApi extends
 				return this;
 			}
 
+			public Builder withTools(List<Tool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
+			public Builder withToolChoice(ToolChoice toolChoice) {
+				this.toolChoice = toolChoice;
+				return this;
+			}
+
 			public AnthropicChatRequest build() {
 				return new AnthropicChatRequest(
 						messages,
@@ -214,7 +268,9 @@ public class Anthropic3ChatBedrockApi extends
 						topK,
 						topP,
 						stopSequences,
-						anthropicVersion
+						anthropicVersion,
+						tools,
+						toolChoice
 				);
 			}
 		}
@@ -232,7 +288,18 @@ public class Anthropic3ChatBedrockApi extends
 		@JsonProperty("type") Type type,
 		@JsonProperty("source") Source source,
 		@JsonProperty("text") String text,
-		@JsonProperty("index") Integer index // applicable only for streaming responses.
+
+		// applicable only for streaming responses.
+		@JsonProperty("index") Integer index,
+
+		// tool_use response only
+		@JsonProperty("id") String id,
+		@JsonProperty("name") String name,
+		@JsonProperty("input") Map<String, Object> input,
+
+		// tool_result response only
+		@JsonProperty("tool_use_id") String toolUseId,
+		@JsonProperty("content") String content
 		) {
 		// @formatter:on
 
@@ -241,11 +308,16 @@ public class Anthropic3ChatBedrockApi extends
 		}
 
 		public MediaContent(Source source) {
-			this(Type.IMAGE, source, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null);
 		}
 
 		public MediaContent(String text) {
-			this(Type.TEXT, null, text, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null);
+		}
+
+		// Tool result
+		public MediaContent(Type type, String toolUseId, String content) {
+			this(type, null, null, null, null, null, null, toolUseId, content);
 		}
 
 		/**
@@ -262,7 +334,17 @@ public class Anthropic3ChatBedrockApi extends
 			 * Image message.
 			 */
 			@JsonProperty("image")
-			IMAGE
+			IMAGE,
+			/**
+			 * Tool use message.
+			 */
+			@JsonProperty("tool_use")
+			TOOL_USE,
+			/**
+			 * Send tool result back to LLM.
+			 */
+			@JsonProperty("tool_result")
+			TOOL_RESULT,
 
 		}
 
@@ -286,6 +368,18 @@ public class Anthropic3ChatBedrockApi extends
 				this("base64", mediaType, data);
 			}
 		}
+	}
+
+	/**
+	 * Definitions of tools that the model may use.
+	 *
+	 * @param name The name of the tool.
+	 * @param description The description of the tool.
+	 * @param inputSchema The schema for the tool.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record Tool(@JsonProperty("name") String name, @JsonProperty("description") String description,
+			@JsonProperty("input_schema") Map<String, Object> inputSchema) {
 	}
 
 	/**

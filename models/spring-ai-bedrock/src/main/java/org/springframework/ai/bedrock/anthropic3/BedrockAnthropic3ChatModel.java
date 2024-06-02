@@ -17,7 +17,9 @@ package org.springframework.ai.bedrock.anthropic3;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
+import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent.Type;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -40,6 +43,8 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -48,9 +53,12 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
-public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel {
+public class BedrockAnthropic3ChatModel extends
+		AbstractFunctionCallSupport<Anthropic3ChatBedrockApi.ChatCompletionMessage, Anthropic3ChatBedrockApi.AnthropicChatRequest, Anthropic3ChatBedrockApi.AnthropicChatResponse>
+		implements ChatModel, StreamingChatModel {
 
 	private final Anthropic3ChatBedrockApi anthropicChatApi;
 
@@ -67,6 +75,13 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 	}
 
 	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi, Anthropic3ChatOptions options) {
+		this(chatApi, options, null);
+	}
+
+	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi, Anthropic3ChatOptions options,
+			FunctionCallbackContext functionCallbackContext) {
+		super(functionCallbackContext);
+
 		this.anthropicChatApi = chatApi;
 		this.defaultOptions = options;
 	}
@@ -76,7 +91,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 
 		AnthropicChatRequest request = createRequest(prompt);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		AnthropicChatResponse response = this.callWithFunctionSupport(request);
 
 		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
 	}
@@ -117,8 +132,14 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 			.withSystem(toAnthropicSystemContext(prompt))
 			.build();
 
+		Set<String> functionsForThisRequest = new HashSet<>();
+
 		if (this.defaultOptions != null) {
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, AnthropicChatRequest.class);
+
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
+					!IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
 		}
 
 		if (prompt.getOptions() != null) {
@@ -126,11 +147,21 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 				Anthropic3ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
 						ChatOptions.class, Anthropic3ChatOptions.class);
 				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, AnthropicChatRequest.class);
+
+				Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+						IS_RUNTIME_CALL);
+				functionsForThisRequest.addAll(defaultEnabledFunctions);
 			}
 			else {
 				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
 						+ prompt.getOptions().getClass().getSimpleName());
 			}
+		}
+
+		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
+			List<Anthropic3ChatBedrockApi.Tool> tools = getFunctionTools(functionsForThisRequest);
+
+			request = AnthropicChatRequest.from(request).withTools(tools).build();
 		}
 
 		return request;
@@ -185,6 +216,80 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 		else {
 			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
 		}
+	}
+
+	private List<Anthropic3ChatBedrockApi.Tool> getFunctionTools(Set<String> functionNames) {
+		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
+			var description = functionCallback.getDescription();
+			var name = functionCallback.getName();
+			String inputSchema = functionCallback.getInputTypeSchema();
+			return new Anthropic3ChatBedrockApi.Tool(name, description, ModelOptionsUtils.jsonToMap(inputSchema));
+		}).toList();
+	}
+
+	@Override
+	protected AnthropicChatRequest doCreateToolResponseRequest(AnthropicChatRequest previousRequest,
+			ChatCompletionMessage responseMessage, List<ChatCompletionMessage> conversationHistory) {
+
+		List<MediaContent> toolToUseList = responseMessage.content()
+			.stream()
+			.filter(c -> c.type() == MediaContent.Type.TOOL_USE)
+			.toList();
+
+		List<MediaContent> toolResults = new ArrayList<>();
+
+		for (MediaContent toolToUse : toolToUseList) {
+
+			var functionCallId = toolToUse.id();
+			var functionName = toolToUse.name();
+			var functionArguments = toolToUse.input();
+
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.functionCallbackRegister.get(functionName)
+				.call(ModelOptionsUtils.toJsonString(functionArguments));
+
+			toolResults.add(new MediaContent(Type.TOOL_RESULT, functionCallId, functionResponse));
+		}
+
+		// Add the function response to the conversation.
+		conversationHistory.add(new ChatCompletionMessage(toolResults, Role.USER));
+
+		// Recursively call chatCompletionWithTools until the model doesn't call a
+		// functions anymore.
+		return AnthropicChatRequest.from(previousRequest).withMessages(conversationHistory).build();
+	}
+
+	@Override
+	protected List<ChatCompletionMessage> doGetUserMessages(AnthropicChatRequest request) {
+		return request.messages();
+	}
+
+	@Override
+	protected ChatCompletionMessage doGetToolResponseMessage(AnthropicChatResponse response) {
+		return new ChatCompletionMessage(response.content(), Role.ASSISTANT);
+	}
+
+	@Override
+	protected AnthropicChatResponse doChatCompletion(AnthropicChatRequest request) {
+		return this.anthropicChatApi.chatCompletion(request);
+	}
+
+	@Override
+	protected Flux<AnthropicChatResponse> doChatCompletionStream(AnthropicChatRequest request) {
+		// https://docs.anthropic.com/en/docs/tool-use
+		throw new UnsupportedOperationException(
+				"Streaming (stream=true) is not yet supported. We plan to add streaming support in a future beta version.");
+	}
+
+	@Override
+	protected boolean isToolFunctionCall(AnthropicChatResponse response) {
+		if (response == null || CollectionUtils.isEmpty(response.content())) {
+			return false;
+		}
+		return response.content().stream().anyMatch(content -> content.type() == MediaContent.Type.TOOL_USE);
 	}
 
 	@Override
