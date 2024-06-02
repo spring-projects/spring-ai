@@ -361,7 +361,7 @@ Two advisor implementations use the `ChatMemory` interface to advice the prompt 
 
 * `VectorStoreChatMemoryAdvisor`  : The construtor ` VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize)` lets you specify the VectorStore to retrieve the chat history from, the unqiue conversation ID, the size of the chat history to be retreived in token size.
 
-A sample `@Service` implementaiton that uses several advisors is shown below
+A sample `@Service` implementation that uses several advisors is shown below
 
 [source,java]
 ----
