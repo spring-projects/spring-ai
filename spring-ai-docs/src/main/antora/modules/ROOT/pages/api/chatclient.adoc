@@ -11,7 +11,7 @@ The AI model processes two main types of messages: user messages, which are dire
 
 These messages often contain placeholders that are substituted at runtime based on user input to customize the response of the AI model to the user input.
 
-There are also Prompt options that can be specified., such as the name of the AI Model to use and the temperature setting that controls the randomness or creativity of the generated output.
+There are also Prompt options that can be specified, such as the name of the AI Model to use and the temperature setting that controls the randomness or creativity of the generated output.
 
 == Creating a ChatClient
 
