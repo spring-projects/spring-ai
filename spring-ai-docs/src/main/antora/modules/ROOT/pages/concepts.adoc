@@ -189,7 +189,7 @@ The next phase in RAG is processing user input.
 When a user's question is to be answered by an AI model, the question and all the "`similar`" document pieces are placed into the prompt that is sent to the AI model.
 This is the reason to use a vector database. It is very good at finding similar content.
 
-image::spring-ai-rag2.jpg[Spring AI RAG, width=1000, align="center"]
+image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 
 There are several concepts that are used in implementing RAG.
 The concepts map onto classes in Spring AI:
