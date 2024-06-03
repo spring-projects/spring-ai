@@ -350,7 +350,7 @@ public class OpenAiApi {
 			@JsonProperty("user") String user) {
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages and model.
+		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param model ID of the model to use.
@@ -363,7 +363,7 @@ public class OpenAiApi {
 		}
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages, model and control for streaming.
+		 * Shortcut constructor for a chat completion request with the given messages, model, temperature and control for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param model ID of the model to use.
@@ -394,8 +394,7 @@ public class OpenAiApi {
 		}
 
 				/**
-		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
-		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
+		 * Shortcut constructor for a chat completion request with the given messages for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
