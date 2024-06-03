@@ -128,6 +128,12 @@ public interface ChatClient {
 
 		String content();
 
+		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
+
+		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
+
+		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter);
+
 	}
 
 	interface StreamResponseSpec {
@@ -204,9 +210,6 @@ public interface ChatClient {
 		ChatClientRequestSpec user(Resource text);
 
 		ChatClientRequestSpec user(Consumer<PromptUserSpec> consumer);
-
-		// ChatClientRequestSpec adviseOnRequest(ChatClientRequestSpec inputRequest,
-		// Map<String, Object> context);
 
 		CallResponseSpec call();
 

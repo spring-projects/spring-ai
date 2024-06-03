@@ -250,6 +250,28 @@ public class DefaultChatClient implements ChatClient {
 			this.request = request;
 		}
 
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
+			Assert.notNull(type, "the class must be non-null");
+			return doResponseEntity(new BeanOutputConverter<T>(type));
+		}
+
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type) {
+			return doResponseEntity(new BeanOutputConverter<T>(type));
+		}
+
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(
+				StructuredOutputConverter<T> structuredOutputConverter) {
+			return doResponseEntity(structuredOutputConverter);
+		}
+
+		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> boc) {
+			var chatResponse = doGetChatResponse(this.request, boc.getFormat());
+			var responseContent = chatResponse.getResult().getOutput().getContent();
+			T entity = boc.convert(responseContent);
+
+			return new ResponseEntity<>(chatResponse, entity);
+		}
+
 		public <T> T entity(ParameterizedTypeReference<T> type) {
 			return doSingleWithBeanOutputConverter(new BeanOutputConverter<T>(type));
 		}
