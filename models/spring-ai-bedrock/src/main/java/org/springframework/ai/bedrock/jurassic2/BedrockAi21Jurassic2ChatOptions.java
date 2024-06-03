@@ -18,22 +18,21 @@ package org.springframework.ai.bedrock.jurassic2;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
- * Request body for the /complete endpoint of the Jurassic-2 API.
+ * Java {@link ChatOptions} for the Bedrock Jurassic-2 chat generative model chat options.
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html
  *
  * @author Ahmed Yousri
+ * @author Wei Jiang
  * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
-
-	/**
-	 * The text which the model is requested to continue.
-	 */
-	@JsonProperty("prompt")
-	private String prompt;
 
 	/**
 	 * Number of completions to sample and return.
@@ -75,7 +74,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Stops decoding if any of the strings is generated.
 	 */
 	@JsonProperty("stopSequences")
-	private String[] stopSequences;
+	private List<String> stopSequences;
 
 	/**
 	 * Penalty object for frequency.
@@ -96,22 +95,6 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	private Penalty countPenalty;
 
 	// Getters and setters
-
-	/**
-	 * Gets the prompt text for the model to continue.
-	 * @return The prompt text.
-	 */
-	public String getPrompt() {
-		return prompt;
-	}
-
-	/**
-	 * Sets the prompt text for the model to continue.
-	 * @param prompt The prompt text.
-	 */
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
-	}
 
 	/**
 	 * Gets the number of completions to sample and return.
@@ -216,7 +199,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Gets the stop sequences for stopping decoding if any of the strings is generated.
 	 * @return The stop sequences.
 	 */
-	public String[] getStopSequences() {
+	public List<String> getStopSequences() {
 		return stopSequences;
 	}
 
@@ -224,7 +207,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	 * Sets the stop sequences for stopping decoding if any of the strings is generated.
 	 * @param stopSequences The stop sequences.
 	 */
-	public void setStopSequences(String[] stopSequences) {
+	public void setStopSequences(List<String> stopSequences) {
 		this.stopSequences = stopSequences;
 	}
 
@@ -284,11 +267,6 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 		private final BedrockAi21Jurassic2ChatOptions request = new BedrockAi21Jurassic2ChatOptions();
 
-		public Builder withPrompt(String prompt) {
-			request.setPrompt(prompt);
-			return this;
-		}
-
 		public Builder withNumResults(Integer numResults) {
 			request.setNumResults(numResults);
 			return this;
@@ -314,7 +292,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withStopSequences(String[] stopSequences) {
+		public Builder withStopSequences(List<String> stopSequences) {
 			request.setStopSequences(stopSequences);
 			return this;
 		}
@@ -414,8 +392,7 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	}
 
 	public static BedrockAi21Jurassic2ChatOptions fromOptions(BedrockAi21Jurassic2ChatOptions fromOptions) {
-		return builder().withPrompt(fromOptions.getPrompt())
-			.withNumResults(fromOptions.getNumResults())
+		return builder().withNumResults(fromOptions.getNumResults())
 			.withMaxTokens(fromOptions.getMaxTokens())
 			.withMinTokens(fromOptions.getMinTokens())
 			.withTemperature(fromOptions.getTemperature())

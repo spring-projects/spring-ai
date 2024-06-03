@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -31,13 +30,14 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -208,7 +208,7 @@ class BedrockAnthropic3ChatModelIT {
 
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see o this picture?",
+		var userMessage = new UserMessage("Explain what do you see on this picture?",
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = chatModel.call(new Prompt(List.of(userMessage)));
@@ -217,19 +217,47 @@ class BedrockAnthropic3ChatModelIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
 	}
 
+	@Test
+	void chatResponseUsage() {
+		Prompt prompt = new Prompt("Who are you?");
+
+		ChatResponse response = chatModel.call(prompt);
+
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage).isNotNull();
+		assertThat(usage.getPromptTokens()).isGreaterThan(1);
+		assertThat(usage.getGenerationTokens()).isGreaterThan(1);
+	}
+
+	@Test
+	void chatOptions() {
+		Anthropic3ChatOptions options = Anthropic3ChatOptions.builder()
+			.withTemperature(0.5F)
+			.withMaxTokens(100)
+			.withTopK(10)
+			.withTopP(0.5F)
+			.withStopSequences(List.of("stop sequences"))
+			.build();
+
+		Prompt prompt = new Prompt("Who are you?", options);
+		ChatResponse response = chatModel.call(prompt);
+		String content = response.getResult().getOutput().getContent();
+
+		assertThat(content).isNotNull();
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
 		@Bean
-		public Anthropic3ChatBedrockApi anthropicApi() {
-			return new Anthropic3ChatBedrockApi(Anthropic3ChatBedrockApi.AnthropicChatModel.CLAUDE_V3_SONNET.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
-					Duration.ofMinutes(5));
+		public BedrockConverseApi converseApi() {
+			return new BedrockConverseApi(EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(),
+					Duration.ofMinutes(2));
 		}
 
 		@Bean
-		public BedrockAnthropic3ChatModel anthropicChatModel(Anthropic3ChatBedrockApi anthropicApi) {
-			return new BedrockAnthropic3ChatModel(anthropicApi);
+		public BedrockAnthropic3ChatModel anthropicChatModel(BedrockConverseApi converseApi) {
+			return new BedrockAnthropic3ChatModel(converseApi);
 		}
 
 	}

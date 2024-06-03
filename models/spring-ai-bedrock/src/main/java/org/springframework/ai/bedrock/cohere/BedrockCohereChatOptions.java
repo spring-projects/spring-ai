@@ -21,13 +21,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.LogitBias;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * Java {@link ChatOptions} for the Bedrock Cohere Command chat generative model chat
+ * options.
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere-command.html
+ *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -211,6 +213,59 @@ public class BedrockCohereChatOptions implements ChatOptions {
 
 	public void setTruncate(Truncate truncate) {
 		this.truncate = truncate;
+	}
+
+	/**
+	 * Specify how and if the token likelihoods are returned with the response.
+	 */
+	public static enum ReturnLikelihoods {
+
+		/**
+		 * Only return likelihoods for generated tokens.
+		 */
+		GENERATION,
+		/**
+		 * Return likelihoods for all tokens.
+		 */
+		ALL,
+		/**
+		 * (Default) Don't return any likelihoods.
+		 */
+		NONE
+
+	}
+
+	/**
+	 * Specifies how the API handles inputs longer than the maximum token length. If you
+	 * specify START or END, the model discards the input until the remaining input is
+	 * exactly the maximum input token length for the model.
+	 */
+	public enum Truncate {
+
+		/**
+		 * Returns an error when the input exceeds the maximum input token length.
+		 */
+		NONE,
+		/**
+		 * Discard the start of the input.
+		 */
+		START,
+		/**
+		 * (Default) Discards the end of the input.
+		 */
+		END
+
+	}
+
+	/**
+	 * Prevents the model from generating unwanted tokens or incentivize the model to
+	 * include desired tokens.
+	 *
+	 * @param token The token likelihoods.
+	 * @param bias A float between -10 and 10.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record LogitBias(@JsonProperty("token") Integer token, @JsonProperty("bias") Float bias) {
 	}
 
 	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {

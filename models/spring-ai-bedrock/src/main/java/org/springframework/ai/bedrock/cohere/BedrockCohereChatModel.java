@@ -15,108 +15,114 @@
  */
 package org.springframework.ai.bedrock.cohere;
 
-import java.util.List;
-
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 
-import org.springframework.ai.bedrock.BedrockUsage;
-import org.springframework.ai.bedrock.MessageToPromptConverter;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatResponse;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApiUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
 
 /**
+ * Java {@link ChatModel} and {@link StreamingChatModel} for the Bedrock Cohere chat
+ * generative model.
+ *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 
-	private final CohereChatBedrockApi chatApi;
+	private final String modelId;
+
+	private final BedrockConverseApi converseApi;
 
 	private final BedrockCohereChatOptions defaultOptions;
 
-	public BedrockCohereChatModel(CohereChatBedrockApi chatApi) {
-		this(chatApi, BedrockCohereChatOptions.builder().build());
+	public BedrockCohereChatModel(BedrockConverseApi converseApi) {
+		this(converseApi, BedrockCohereChatOptions.builder().build());
 	}
 
-	public BedrockCohereChatModel(CohereChatBedrockApi chatApi, BedrockCohereChatOptions options) {
-		Assert.notNull(chatApi, "CohereChatBedrockApi must not be null");
+	public BedrockCohereChatModel(BedrockConverseApi converseApi, BedrockCohereChatOptions options) {
+		this(CohereChatModel.COHERE_COMMAND_V14.id(), converseApi, options);
+	}
+
+	public BedrockCohereChatModel(String modelId, BedrockConverseApi converseApi, BedrockCohereChatOptions options) {
+		Assert.notNull(modelId, "modelId must not be null.");
+		Assert.notNull(converseApi, "BedrockConverseApi must not be null.");
 		Assert.notNull(options, "BedrockCohereChatOptions must not be null");
 
-		this.chatApi = chatApi;
+		this.modelId = modelId;
+		this.converseApi = converseApi;
 		this.defaultOptions = options;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		CohereChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt, false));
-		List<Generation> generations = response.generations().stream().map(g -> {
-			return new Generation(g.text());
-		}).toList();
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		return new ChatResponse(generations);
+		var request = BedrockConverseApiUtils.createConverseRequest(modelId, prompt, defaultOptions);
+
+		ConverseResponse response = this.converseApi.converse(request);
+
+		return BedrockConverseApiUtils.convertConverseResponse(response);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return this.chatApi.chatCompletionStream(this.createRequest(prompt, true)).map(g -> {
-			if (g.isFinished()) {
-				String finishReason = g.finishReason().name();
-				Usage usage = BedrockUsage.from(g.amazonBedrockInvocationMetrics());
-				return new ChatResponse(List
-					.of(new Generation("").withGenerationMetadata(ChatGenerationMetadata.from(finishReason, usage))));
-			}
-			return new ChatResponse(List.of(new Generation(g.text())));
-		});
-	}
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-	/**
-	 * Test access.
-	 */
-	CohereChatRequest createRequest(Prompt prompt, boolean stream) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
+		var request = BedrockConverseApiUtils.createConverseStreamRequest(modelId, prompt, defaultOptions);
 
-		var request = CohereChatRequest.builder(promptValue)
-			.withTemperature(this.defaultOptions.getTemperature())
-			.withTopP(this.defaultOptions.getTopP())
-			.withTopK(this.defaultOptions.getTopK())
-			.withMaxTokens(this.defaultOptions.getMaxTokens())
-			.withStopSequences(this.defaultOptions.getStopSequences())
-			.withReturnLikelihoods(this.defaultOptions.getReturnLikelihoods())
-			.withStream(stream)
-			.withNumGenerations(this.defaultOptions.getNumGenerations())
-			.withLogitBias(this.defaultOptions.getLogitBias())
-			.withTruncate(this.defaultOptions.getTruncate())
-			.build();
+		Flux<ConverseStreamOutput> fluxResponse = this.converseApi.converseStream(request);
 
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockCohereChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockCohereChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, CohereChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
-		}
-
-		return request;
+		return fluxResponse.map(output -> BedrockConverseApiUtils.convertConverseStreamOutput(output));
 	}
 
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return BedrockCohereChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Cohere models version.
+	 */
+	public enum CohereChatModel implements ModelDescription {
+
+		/**
+		 * cohere.command-light-text-v14
+		 */
+		COHERE_COMMAND_LIGHT_V14("cohere.command-light-text-v14"),
+
+		/**
+		 * cohere.command-text-v14
+		 */
+		COHERE_COMMAND_V14("cohere.command-text-v14");
+
+		private final String id;
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return id;
+		}
+
+		CohereChatModel(String value) {
+			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
+		}
+
 	}
 
 }

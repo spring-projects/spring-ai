@@ -23,7 +23,11 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import java.util.List;
 
 /**
+ * Java {@link ChatOptions} for the Bedrock Anthropic chat generative model chat options.
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-text-completion.html
+ *
  * @author Ben Middleton
+ * @author Wei Jiang
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -62,10 +66,6 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	 */
 	private @JsonProperty("stop_sequences") List<String> stopSequences;
 
-	/**
-	 * The version of the generative to use. The default value is bedrock-2023-05-31.
-	 */
-	private @JsonProperty("anthropic_version") String anthropicVersion;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -98,11 +98,6 @@ public class Anthropic3ChatOptions implements ChatOptions {
 
 		public Builder withStopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
-			return this;
-		}
-
-		public Builder withAnthropicVersion(String anthropicVersion) {
-			this.options.setAnthropicVersion(anthropicVersion);
 			return this;
 		}
 
@@ -155,21 +150,12 @@ public class Anthropic3ChatOptions implements ChatOptions {
 		this.stopSequences = stopSequences;
 	}
 
-	public String getAnthropicVersion() {
-		return this.anthropicVersion;
-	}
-
-	public void setAnthropicVersion(String anthropicVersion) {
-		this.anthropicVersion = anthropicVersion;
-	}
-
 	public static Anthropic3ChatOptions fromOptions(Anthropic3ChatOptions fromOptions) {
 		return builder().withTemperature(fromOptions.getTemperature())
 			.withMaxTokens(fromOptions.getMaxTokens())
 			.withTopK(fromOptions.getTopK())
 			.withTopP(fromOptions.getTopP())
 			.withStopSequences(fromOptions.getStopSequences())
-			.withAnthropicVersion(fromOptions.getAnthropicVersion())
 			.build();
 	}
 

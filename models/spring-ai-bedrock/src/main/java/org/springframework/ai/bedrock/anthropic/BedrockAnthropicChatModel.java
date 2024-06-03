@@ -15,111 +15,117 @@
  */
 package org.springframework.ai.bedrock.anthropic;
 
-import java.util.List;
-
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 
-import org.springframework.ai.bedrock.MessageToPromptConverter;
-import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
-import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
-import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApiUtils;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.ModelDescription;
+import org.springframework.util.Assert;
 
 /**
  * Java {@link ChatModel} and {@link StreamingChatModel} for the Bedrock Anthropic chat
- * generative.
+ * generative model.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel {
 
-	private final AnthropicChatBedrockApi anthropicChatApi;
+	private final String modelId;
+
+	private final BedrockConverseApi converseApi;
 
 	private final AnthropicChatOptions defaultOptions;
 
-	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi) {
-		this(chatApi,
-				AnthropicChatOptions.builder()
-					.withTemperature(0.8f)
-					.withMaxTokensToSample(500)
-					.withTopK(10)
-					.withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
-					.build());
+	public BedrockAnthropicChatModel(BedrockConverseApi converseApi) {
+		this(converseApi, AnthropicChatOptions.builder().withTemperature(0.8f).withTopK(10).build());
 	}
 
-	public BedrockAnthropicChatModel(AnthropicChatBedrockApi chatApi, AnthropicChatOptions options) {
-		this.anthropicChatApi = chatApi;
+	public BedrockAnthropicChatModel(BedrockConverseApi converseApi, AnthropicChatOptions options) {
+		this(AnthropicChatModel.CLAUDE_V2.id(), converseApi, options);
+	}
+
+	public BedrockAnthropicChatModel(String modelId, BedrockConverseApi converseApi, AnthropicChatOptions options) {
+		Assert.notNull(modelId, "modelId must not be null.");
+		Assert.notNull(converseApi, "BedrockConverseApi must not be null.");
+		Assert.notNull(options, "AnthropicChatOptions must not be null.");
+
+		this.modelId = modelId;
+		this.converseApi = converseApi;
 		this.defaultOptions = options;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		AnthropicChatRequest request = createRequest(prompt);
+		var request = BedrockConverseApiUtils.createConverseRequest(modelId, prompt, defaultOptions);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		ConverseResponse response = this.converseApi.converse(request);
 
-		return new ChatResponse(List.of(new Generation(response.completion())));
+		return BedrockConverseApiUtils.convertConverseResponse(response);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		AnthropicChatRequest request = createRequest(prompt);
+		var request = BedrockConverseApiUtils.createConverseStreamRequest(modelId, prompt, defaultOptions);
 
-		Flux<AnthropicChatResponse> fluxResponse = this.anthropicChatApi.chatCompletionStream(request);
+		Flux<ConverseStreamOutput> fluxResponse = this.converseApi.converseStream(request);
 
-		return fluxResponse.map(response -> {
-			String stopReason = response.stopReason() != null ? response.stopReason() : null;
-			var generation = new Generation(response.completion());
-			if (response.amazonBedrockInvocationMetrics() != null) {
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(stopReason, response.amazonBedrockInvocationMetrics()));
-			}
-			return new ChatResponse(List.of(generation));
-		});
-	}
-
-	/**
-	 * Accessible for testing.
-	 */
-	AnthropicChatRequest createRequest(Prompt prompt) {
-
-		// Related to: https://github.com/spring-projects/spring-ai/issues/404
-		final String promptValue = MessageToPromptConverter.create("\n").toPrompt(prompt.getInstructions());
-
-		AnthropicChatRequest request = AnthropicChatRequest.builder(promptValue).build();
-
-		if (this.defaultOptions != null) {
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, AnthropicChatRequest.class);
-		}
-
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, AnthropicChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, AnthropicChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
-		}
-
-		return request;
+		return fluxResponse.map(output -> BedrockConverseApiUtils.convertConverseStreamOutput(output));
 	}
 
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return AnthropicChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Anthropic models version.
+	 */
+	public enum AnthropicChatModel implements ModelDescription {
+
+		/**
+		 * anthropic.claude-instant-v1
+		 */
+		CLAUDE_INSTANT_V1("anthropic.claude-instant-v1"),
+		/**
+		 * anthropic.claude-v2
+		 */
+		CLAUDE_V2("anthropic.claude-v2"),
+		/**
+		 * anthropic.claude-v2:1
+		 */
+		CLAUDE_V21("anthropic.claude-v2:1");
+
+		private final String id;
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return id;
+		}
+
+		AnthropicChatModel(String value) {
+			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
+		}
+
 	}
 
 }

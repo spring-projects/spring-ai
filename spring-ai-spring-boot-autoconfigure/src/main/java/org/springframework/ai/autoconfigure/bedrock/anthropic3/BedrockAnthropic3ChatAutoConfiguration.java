@@ -18,8 +18,10 @@ package org.springframework.ai.autoconfigure.bedrock.anthropic3;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
 import org.springframework.ai.bedrock.anthropic3.BedrockAnthropic3ChatModel;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -32,7 +34,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Anthropic Chat Client.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Anthropic3 Chat Client.
  *
  * Leverages the Spring Cloud AWS to resolve the {@link AwsCredentialsProvider}.
  *
@@ -40,8 +42,8 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
  * @author Wei Jiang
  * @since 0.8.0
  */
-@AutoConfiguration
-@ConditionalOnClass(Anthropic3ChatBedrockApi.class)
+@AutoConfiguration(after = BedrockConverseApiAutoConfiguration.class)
+@ConditionalOnClass(BedrockConverseApi.class)
 @EnableConfigurationProperties({ BedrockAnthropic3ChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockAnthropic3ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
@@ -58,10 +60,10 @@ public class BedrockAnthropic3ChatAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(Anthropic3ChatBedrockApi.class)
-	public BedrockAnthropic3ChatModel anthropic3ChatModel(Anthropic3ChatBedrockApi anthropicApi,
+	@ConditionalOnBean(BedrockConverseApi.class)
+	public BedrockAnthropic3ChatModel anthropic3ChatModel(BedrockConverseApi converseApi,
 			BedrockAnthropic3ChatProperties properties) {
-		return new BedrockAnthropic3ChatModel(anthropicApi, properties.getOptions());
+		return new BedrockAnthropic3ChatModel(properties.getModel(), converseApi, properties.getOptions());
 	}
 
 }

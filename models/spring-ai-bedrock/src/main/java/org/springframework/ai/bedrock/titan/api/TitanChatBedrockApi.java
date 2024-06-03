@@ -39,10 +39,12 @@ import org.springframework.ai.model.ModelDescription;
  * <p>
  * https://docs.aws.amazon.com/bedrock/latest/userguide/titan-text-models.html
  *
+ * @deprecated Use {@link BedrockConverseApi} instead.
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
+@Deprecated
 // @formatter:off
 public class TitanChatBedrockApi extends
 		AbstractBedrockApi<TitanChatRequest, TitanChatResponse, TitanChatResponseChunk> {

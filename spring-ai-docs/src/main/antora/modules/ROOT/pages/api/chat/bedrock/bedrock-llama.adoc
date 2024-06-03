@@ -76,10 +76,10 @@ The prefix `spring.ai.bedrock.llama.chat` is the property prefix that configures
 | Property | Description | Default
 
 | spring.ai.bedrock.llama.chat.enabled              | Enable or disable support for Llama  | false
-| spring.ai.bedrock.llama.chat.model                | The model id to use (See Below) | meta.llama3-70b-instruct-v1:0
-| spring.ai.bedrock.llama.chat.options.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model. This value specifies default to be used by the backend while making the call to the model. | 0.7
+| spring.ai.bedrock.llama.chat.model                | The model id to use (See Below) | `meta.llama3-70b-instruct-v1:0`
+| spring.ai.bedrock.llama.chat.options.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model. This value specifies default to be used by the backend while making the call to the model. | AWS Bedrock default
 | spring.ai.bedrock.llama.chat.options.top-p                | The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP. | AWS Bedrock default
-| spring.ai.bedrock.llama.chat.options.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | 300
+| spring.ai.bedrock.llama.chat.options.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | AWS Bedrock default
 |====
 
 Look at https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/api/LlamaChatBedrockApi.java#L164[LlamaChatBedrockApi#LlamaChatModel]  for other model IDs. The other value supported is `meta.llama2-13b-chat-v1`.

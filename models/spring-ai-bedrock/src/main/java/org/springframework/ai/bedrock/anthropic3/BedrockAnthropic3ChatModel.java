@@ -15,181 +15,119 @@
  */
 package org.springframework.ai.bedrock.anthropic3;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatRequest;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse.StreamingType;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApiUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.util.CollectionUtils;
+import org.springframework.ai.model.ModelDescription;
+import org.springframework.util.Assert;
 
 /**
- * Java {@link ChatModel} and {@link StreamingChatModel} for the Bedrock Anthropic chat
- * generative.
+ * Java {@link ChatModel} and {@link StreamingChatModel} for the Bedrock Anthropic3 chat
+ * generative model.
  *
  * @author Ben Middleton
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel {
 
-	private final Anthropic3ChatBedrockApi anthropicChatApi;
+	private final String modelId;
+
+	private final BedrockConverseApi converseApi;
 
 	private final Anthropic3ChatOptions defaultOptions;
 
-	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi) {
-		this(chatApi,
-				Anthropic3ChatOptions.builder()
-					.withTemperature(0.8f)
-					.withMaxTokens(500)
-					.withTopK(10)
-					.withAnthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
-					.build());
+	public BedrockAnthropic3ChatModel(BedrockConverseApi converseApi) {
+		this(converseApi,
+				Anthropic3ChatOptions.builder().withTemperature(0.8f).withMaxTokens(500).withTopK(10).build());
 	}
 
-	public BedrockAnthropic3ChatModel(Anthropic3ChatBedrockApi chatApi, Anthropic3ChatOptions options) {
-		this.anthropicChatApi = chatApi;
+	public BedrockAnthropic3ChatModel(BedrockConverseApi converseApi, Anthropic3ChatOptions options) {
+		this(Anthropic3ChatModel.CLAUDE_V3_SONNET.id(), converseApi, options);
+	}
+
+	public BedrockAnthropic3ChatModel(String modelId, BedrockConverseApi converseApi, Anthropic3ChatOptions options) {
+		Assert.notNull(modelId, "modelId must not be null.");
+		Assert.notNull(converseApi, "BedrockConverseApi must not be null.");
+		Assert.notNull(options, "Anthropic3ChatOptions must not be null.");
+
+		this.modelId = modelId;
+		this.converseApi = converseApi;
 		this.defaultOptions = options;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		AnthropicChatRequest request = createRequest(prompt);
+		var request = BedrockConverseApiUtils.createConverseRequest(modelId, prompt, defaultOptions);
 
-		AnthropicChatResponse response = this.anthropicChatApi.chatCompletion(request);
+		ConverseResponse response = this.converseApi.converse(request);
 
-		return new ChatResponse(List.of(new Generation(response.content().get(0).text())));
+		return BedrockConverseApiUtils.convertConverseResponse(response);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		AnthropicChatRequest request = createRequest(prompt);
+		var request = BedrockConverseApiUtils.createConverseStreamRequest(modelId, prompt, defaultOptions);
 
-		Flux<Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse> fluxResponse = this.anthropicChatApi
-			.chatCompletionStream(request);
+		Flux<ConverseStreamOutput> fluxResponse = this.converseApi.converseStream(request);
 
-		AtomicReference<Integer> inputTokens = new AtomicReference<>(0);
-		return fluxResponse.map(response -> {
-			if (response.type() == StreamingType.MESSAGE_START) {
-				inputTokens.set(response.message().usage().inputTokens());
-			}
-			String content = response.type() == StreamingType.CONTENT_BLOCK_DELTA ? response.delta().text() : "";
-
-			var generation = new Generation(content);
-
-			if (response.type() == StreamingType.MESSAGE_DELTA) {
-				generation = generation.withGenerationMetadata(ChatGenerationMetadata
-					.from(response.delta().stopReason(), new Anthropic3ChatBedrockApi.AnthropicUsage(inputTokens.get(),
-							response.usage().outputTokens())));
-			}
-
-			return new ChatResponse(List.of(generation));
-		});
-	}
-
-	/**
-	 * Accessible for testing.
-	 */
-	AnthropicChatRequest createRequest(Prompt prompt) {
-
-		AnthropicChatRequest request = AnthropicChatRequest.builder(toAnthropicMessages(prompt))
-			.withSystem(toAnthropicSystemContext(prompt))
-			.build();
-
-		if (this.defaultOptions != null) {
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, AnthropicChatRequest.class);
-		}
-
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				Anthropic3ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, Anthropic3ChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, AnthropicChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
-		}
-
-		return request;
-	}
-
-	/**
-	 * Extracts system context from prompt.
-	 * @param prompt The prompt.
-	 * @return The system context.
-	 */
-	private String toAnthropicSystemContext(Prompt prompt) {
-
-		return prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(Message::getContent)
-			.collect(Collectors.joining(System.lineSeparator()));
-	}
-
-	/**
-	 * Extracts list of messages from prompt.
-	 * @param prompt The prompt.
-	 * @return The list of {@link ChatCompletionMessage}.
-	 */
-	private List<ChatCompletionMessage> toAnthropicMessages(Prompt prompt) {
-
-		return prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(message -> {
-				List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(message.getContent())));
-				if (!CollectionUtils.isEmpty(message.getMedia())) {
-					List<MediaContent> mediaContent = message.getMedia()
-						.stream()
-						.map(media -> new MediaContent(media.getMimeType().toString(),
-								this.fromMediaData(media.getData())))
-						.toList();
-					contents.addAll(mediaContent);
-				}
-				return new ChatCompletionMessage(contents, Role.valueOf(message.getMessageType().name()));
-			})
-			.toList();
-	}
-
-	private String fromMediaData(Object mediaData) {
-		if (mediaData instanceof byte[] bytes) {
-			return Base64.getEncoder().encodeToString(bytes);
-		}
-		else if (mediaData instanceof String text) {
-			return text;
-		}
-		else {
-			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
-		}
+		return fluxResponse.map(output -> BedrockConverseApiUtils.convertConverseStreamOutput(output));
 	}
 
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return Anthropic3ChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Anthropic3 models version.
+	 */
+	public enum Anthropic3ChatModel implements ModelDescription {
+
+		/**
+		 * anthropic.claude-3-sonnet-20240229-v1:0
+		 */
+		CLAUDE_V3_SONNET("anthropic.claude-3-sonnet-20240229-v1:0"),
+		/**
+		 * anthropic.claude-3-haiku-20240307-v1:0
+		 */
+		CLAUDE_V3_HAIKU("anthropic.claude-3-haiku-20240307-v1:0"),
+		/**
+		 * anthropic.claude-3-opus-20240229-v1:0
+		 */
+		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0");
+
+		private final String id;
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return id;
+		}
+
+		Anthropic3ChatModel(String value) {
+			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
+		}
+
 	}
 
 }

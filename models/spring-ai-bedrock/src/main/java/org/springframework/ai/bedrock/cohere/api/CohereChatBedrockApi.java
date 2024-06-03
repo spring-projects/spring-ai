@@ -37,10 +37,13 @@ import org.springframework.util.Assert;
  * Java client for the Bedrock Cohere chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-cohere.html
  *
+ * @deprecated Use {@link BedrockConverseApi} instead.
+ *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
+@Deprecated
 public class CohereChatBedrockApi extends
 		AbstractBedrockApi<CohereChatRequest, CohereChatResponse, CohereChatResponse.Generation> {
 

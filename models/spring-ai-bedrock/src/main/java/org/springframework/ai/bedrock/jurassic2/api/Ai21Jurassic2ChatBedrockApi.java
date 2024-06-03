@@ -36,10 +36,13 @@ import software.amazon.awssdk.regions.Region;
  * Java client for the Bedrock Jurassic2 chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html
  *
+ * @deprecated Use {@link BedrockConverseApi} instead.
+ *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
+@Deprecated
 public class Ai21Jurassic2ChatBedrockApi extends
 		AbstractBedrockApi<Ai21Jurassic2ChatRequest, Ai21Jurassic2ChatResponse, Ai21Jurassic2ChatResponse> {
 

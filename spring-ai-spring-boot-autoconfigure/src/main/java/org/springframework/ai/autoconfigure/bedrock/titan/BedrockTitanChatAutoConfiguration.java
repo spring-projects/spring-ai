@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.bedrock.titan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.bedrock.titan.BedrockTitanChatModel;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -34,12 +36,14 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Chat Client.
  *
+ * Leverages the Spring Cloud AWS to resolve the {@link AwsCredentialsProvider}.
+ *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
-@AutoConfiguration
-@ConditionalOnClass(TitanChatBedrockApi.class)
+@AutoConfiguration(after = BedrockConverseApiAutoConfiguration.class)
+@ConditionalOnClass(BedrockConverseApi.class)
 @EnableConfigurationProperties({ BedrockTitanChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockTitanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
@@ -56,11 +60,10 @@ public class BedrockTitanChatAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(TitanChatBedrockApi.class)
-	public BedrockTitanChatModel titanChatModel(TitanChatBedrockApi titanChatApi,
-			BedrockTitanChatProperties properties) {
+	@ConditionalOnBean(BedrockConverseApi.class)
+	public BedrockTitanChatModel titanChatModel(BedrockConverseApi converseApi, BedrockTitanChatProperties properties) {
 
-		return new BedrockTitanChatModel(titanChatApi, properties.getOptions());
+		return new BedrockTitanChatModel(properties.getModel(), converseApi, properties.getOptions());
 	}
 
 }

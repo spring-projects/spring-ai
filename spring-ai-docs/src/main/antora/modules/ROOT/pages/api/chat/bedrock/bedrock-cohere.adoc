@@ -71,8 +71,8 @@ The prefix `spring.ai.bedrock.cohere.chat` is the property prefix that configure
 | Property | Description | Default
 
 | spring.ai.bedrock.cohere.chat.enabled              | Enable or disable support for Cohere  | false
-| spring.ai.bedrock.cohere.chat.model                | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereChatBedrockApi.java#L326C14-L326C29[CohereChatModel] for the supported models.  | cohere.command-text-v14
-| spring.ai.bedrock.cohere.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7
+| spring.ai.bedrock.cohere.chat.model                | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereChatBedrockApi.java#L326C14-L326C29[CohereChatModel] for the supported models.  | `cohere.command-text-v14`
+| spring.ai.bedrock.cohere.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | AWS Bedrock default
 | spring.ai.bedrock.cohere.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
 | spring.ai.bedrock.cohere.chat.options.topK  | Specify the number of token choices the model uses to generate the next token  | AWS Bedrock default
 | spring.ai.bedrock.cohere.chat.options.maxTokens  | Specify the maximum number of tokens to use in the generated response. | AWS Bedrock default

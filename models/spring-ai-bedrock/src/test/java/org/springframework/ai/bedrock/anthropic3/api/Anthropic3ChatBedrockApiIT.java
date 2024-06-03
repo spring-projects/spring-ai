@@ -41,6 +41,7 @@ import static org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedroc
 /**
  * @author Ben Middleton
  */
+@Deprecated
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class Anthropic3ChatBedrockApiIT {

@@ -16,25 +16,24 @@
 package org.springframework.ai.autoconfigure.bedrock.cohere;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.bedrock.cohere.BedrockCohereChatModel;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatModel.CohereChatModel;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions.ReturnLikelihoods;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions.Truncate;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.ReturnLikelihoods;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatRequest.Truncate;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -43,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
@@ -57,14 +57,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 				"spring.ai.bedrock.cohere.chat.model=" + CohereChatModel.COHERE_COMMAND_V14.id(),
 				"spring.ai.bedrock.cohere.chat.options.temperature=0.5",
 				"spring.ai.bedrock.cohere.chat.options.maxTokens=500")
-		.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class));
-
-	private final Message systemMessage = new SystemPromptTemplate("""
-			You are a helpful AI assistant. Your name is {name}.
-			You are an AI assistant that helps people find information.
-			Your name is {name}
-			You should reply to the user's request with your name and also in the style of a {voice}.
-			""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				BedrockConverseApiAutoConfiguration.class, BedrockCohereChatAutoConfiguration.class));
 
 	private final UserMessage userMessage = new UserMessage(
 			"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -73,7 +67,7 @@ public class BedrockCohereChatAutoConfigurationIT {
 	public void chatCompletion() {
 		contextRunner.run(context -> {
 			BedrockCohereChatModel cohereChatModel = context.getBean(BedrockCohereChatModel.class);
-			ChatResponse response = cohereChatModel.call(new Prompt(List.of(userMessage, systemMessage)));
+			ChatResponse response = cohereChatModel.call(new Prompt(List.of(userMessage)));
 			assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 		});
 	}
@@ -84,7 +78,7 @@ public class BedrockCohereChatAutoConfigurationIT {
 
 			BedrockCohereChatModel cohereChatModel = context.getBean(BedrockCohereChatModel.class);
 
-			Flux<ChatResponse> response = cohereChatModel.stream(new Prompt(List.of(userMessage, systemMessage)));
+			Flux<ChatResponse> response = cohereChatModel.stream(new Prompt(List.of(userMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
 			assertThat(responses.size()).isGreaterThan(2);
@@ -115,7 +109,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 					"spring.ai.bedrock.cohere.chat.options.numGenerations=3",
 					"spring.ai.bedrock.cohere.chat.options.truncate=START",
 					"spring.ai.bedrock.cohere.chat.options.maxTokens=123")
-			.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockCohereChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockCohereChatProperties.class);
 				var aswProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -143,7 +138,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 
 		// It is disabled by default
 		new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockCohereChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockCohereChatModel.class)).isEmpty();
@@ -151,7 +147,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.chat.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockCohereChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockCohereChatModel.class)).isNotEmpty();
@@ -159,7 +156,8 @@ public class BedrockCohereChatAutoConfigurationIT {
 
 		// Explicitly disable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.chat.enabled=false")
-			.withConfiguration(AutoConfigurations.of(BedrockCohereChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockCohereChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockCohereChatModel.class)).isEmpty();

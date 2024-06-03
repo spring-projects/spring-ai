@@ -39,12 +39,14 @@ import java.util.List;
  *
  * It is meant to replace the previous Chat API, which is now deprecated.
  *
+ * @deprecated Use {@link BedrockConverseApi} instead.
  * @author Ben Middleton
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 1.0.0
  */
 // @formatter:off
+@Deprecated
 public class Anthropic3ChatBedrockApi extends
 		AbstractBedrockApi<AnthropicChatRequest, AnthropicChatResponse, AnthropicChatStreamingResponse> {
 

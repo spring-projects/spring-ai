@@ -16,40 +16,34 @@
 
 package org.springframework.ai.bedrock.jurassic2;
 
-import org.springframework.ai.bedrock.MessageToPromptConverter;
-import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
-import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApiUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
+
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 
 /**
  * Java {@link ChatModel} for the Bedrock Jurassic2 chat generative model.
  *
  * @author Ahmed Yousri
+ * @author Wei Jiang
  * @since 1.0.0
  */
 public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 
-	private final Ai21Jurassic2ChatBedrockApi chatApi;
+	private final String modelId;
+
+	private final BedrockConverseApi converseApi;
 
 	private final BedrockAi21Jurassic2ChatOptions defaultOptions;
 
-	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi, BedrockAi21Jurassic2ChatOptions options) {
-		Assert.notNull(chatApi, "Ai21Jurassic2ChatBedrockApi must not be null");
-		Assert.notNull(options, "BedrockAi21Jurassic2ChatOptions must not be null");
-
-		this.chatApi = chatApi;
-		this.defaultOptions = options;
-	}
-
-	public BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi chatApi) {
-		this(chatApi,
+	public BedrockAi21Jurassic2ChatModel(BedrockConverseApi converseApi) {
+		this(converseApi,
 				BedrockAi21Jurassic2ChatOptions.builder()
 					.withTemperature(0.8f)
 					.withTopP(0.9f)
@@ -57,72 +51,70 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 					.build());
 	}
 
+	public BedrockAi21Jurassic2ChatModel(BedrockConverseApi converseApi, BedrockAi21Jurassic2ChatOptions options) {
+		this(Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(), converseApi, options);
+	}
+
+	public BedrockAi21Jurassic2ChatModel(String modelId, BedrockConverseApi converseApi,
+			BedrockAi21Jurassic2ChatOptions options) {
+		Assert.notNull(modelId, "modelId must not be null.");
+		Assert.notNull(converseApi, "BedrockConverseApi must not be null.");
+		Assert.notNull(options, "BedrockAi21Jurassic2ChatOptions must not be null.");
+
+		this.modelId = modelId;
+		this.converseApi = converseApi;
+		this.defaultOptions = options;
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		var request = createRequest(prompt);
-		var response = this.chatApi.chatCompletion(request);
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		return new ChatResponse(response.completions()
-			.stream()
-			.map(completion -> new Generation(completion.data().text())
-				.withGenerationMetadata(ChatGenerationMetadata.from(completion.finishReason().reason(), null)))
-			.toList());
-	}
+		var request = BedrockConverseApiUtils.createConverseRequest(modelId, prompt, defaultOptions);
 
-	private Ai21Jurassic2ChatRequest createRequest(Prompt prompt) {
+		ConverseResponse response = this.converseApi.converse(request);
 
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
-
-		Ai21Jurassic2ChatRequest request = Ai21Jurassic2ChatRequest.builder(promptValue).build();
-
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockAi21Jurassic2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockAi21Jurassic2ChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, Ai21Jurassic2ChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
-		}
-
-		if (this.defaultOptions != null) {
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, Ai21Jurassic2ChatRequest.class);
-		}
-
-		return request;
-	}
-
-	public static Builder builder(Ai21Jurassic2ChatBedrockApi chatApi) {
-		return new Builder(chatApi);
-	}
-
-	public static class Builder {
-
-		private final Ai21Jurassic2ChatBedrockApi chatApi;
-
-		private BedrockAi21Jurassic2ChatOptions options;
-
-		public Builder(Ai21Jurassic2ChatBedrockApi chatApi) {
-			this.chatApi = chatApi;
-		}
-
-		public Builder withOptions(BedrockAi21Jurassic2ChatOptions options) {
-			this.options = options;
-			return this;
-		}
-
-		public BedrockAi21Jurassic2ChatModel build() {
-			return new BedrockAi21Jurassic2ChatModel(chatApi,
-					options != null ? options : BedrockAi21Jurassic2ChatOptions.builder().build());
-		}
-
+		return BedrockConverseApiUtils.convertConverseResponse(response);
 	}
 
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return BedrockAi21Jurassic2ChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Ai21 Jurassic2 models version.
+	 */
+	public enum Ai21Jurassic2ChatModel implements ModelDescription {
+
+		/**
+		 * ai21.j2-mid-v1
+		 */
+		AI21_J2_MID_V1("ai21.j2-mid-v1"),
+
+		/**
+		 * ai21.j2-ultra-v1
+		 */
+		AI21_J2_ULTRA_V1("ai21.j2-ultra-v1");
+
+		private final String id;
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return id;
+		}
+
+		Ai21Jurassic2ChatModel(String value) {
+			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
+		}
+
 	}
 
 }

@@ -25,7 +25,11 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * Java {@link ChatOptions} for the Bedrock Anthropic chat generative model chat options.
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-text-completion.html
+ *
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @JsonInclude(Include.NON_NULL)
 public class AnthropicChatOptions implements ChatOptions {
@@ -44,7 +48,7 @@ public class AnthropicChatOptions implements ChatOptions {
 	 * reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We
 	 * recommend a limit of 4,000 tokens for optimal performance.
 	 */
-	private @JsonProperty("max_tokens_to_sample") Integer maxTokensToSample;
+	private @JsonProperty("max_tokens") Integer maxTokens;
 
 	/**
 	 * Specify the number of token choices the generative uses to generate the next token.
@@ -62,11 +66,6 @@ public class AnthropicChatOptions implements ChatOptions {
 	 * generating further tokens. The returned text doesn't contain the stop sequence.
 	 */
 	private @JsonProperty("stop_sequences") List<String> stopSequences;
-
-	/**
-	 * The version of the generative to use. The default value is bedrock-2023-05-31.
-	 */
-	private @JsonProperty("anthropic_version") String anthropicVersion;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -82,8 +81,8 @@ public class AnthropicChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withMaxTokensToSample(Integer maxTokensToSample) {
-			this.options.setMaxTokensToSample(maxTokensToSample);
+		public Builder withMaxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
 			return this;
 		}
 
@@ -102,11 +101,6 @@ public class AnthropicChatOptions implements ChatOptions {
 			return this;
 		}
 
-		public Builder withAnthropicVersion(String anthropicVersion) {
-			this.options.setAnthropicVersion(anthropicVersion);
-			return this;
-		}
-
 		public AnthropicChatOptions build() {
 			return this.options;
 		}
@@ -122,12 +116,12 @@ public class AnthropicChatOptions implements ChatOptions {
 		this.temperature = temperature;
 	}
 
-	public Integer getMaxTokensToSample() {
-		return this.maxTokensToSample;
+	public Integer getMaxTokens() {
+		return maxTokens;
 	}
 
-	public void setMaxTokensToSample(Integer maxTokensToSample) {
-		this.maxTokensToSample = maxTokensToSample;
+	public void setMaxTokens(Integer maxTokens) {
+		this.maxTokens = maxTokens;
 	}
 
 	@Override
@@ -156,21 +150,12 @@ public class AnthropicChatOptions implements ChatOptions {
 		this.stopSequences = stopSequences;
 	}
 
-	public String getAnthropicVersion() {
-		return this.anthropicVersion;
-	}
-
-	public void setAnthropicVersion(String anthropicVersion) {
-		this.anthropicVersion = anthropicVersion;
-	}
-
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
 		return builder().withTemperature(fromOptions.getTemperature())
-			.withMaxTokensToSample(fromOptions.getMaxTokensToSample())
+			.withMaxTokens(fromOptions.getMaxTokens())
 			.withTopK(fromOptions.getTopK())
 			.withTopP(fromOptions.getTopP())
 			.withStopSequences(fromOptions.getStopSequences())
-			.withAnthropicVersion(fromOptions.getAnthropicVersion())
 			.build();
 	}
 

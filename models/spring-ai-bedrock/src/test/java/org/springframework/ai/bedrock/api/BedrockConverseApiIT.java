@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.Message;
 
 /**
  * @author Wei Jiang
+ * @since 1.0.0
  */
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")

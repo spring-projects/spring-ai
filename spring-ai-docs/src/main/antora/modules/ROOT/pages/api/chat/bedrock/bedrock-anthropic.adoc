@@ -81,13 +81,12 @@ The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that config
 | Property | Description | Default
 
 | spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat model. Disabled by default | false
-| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatModel] for the supported models.  | anthropic.claude-v2
-| spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.8
-| spring.ai.bedrock.anthropic.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
+| spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatModel] for the supported models.  | `anthropic.claude-v2`
+| spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | AWS Bedrock default
+| spring.ai.bedrock.anthropic.chat.options.maxTokens  | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | AWS Bedrock default
 | spring.ai.bedrock.anthropic.chat.options.topK  | Specify the number of token choices the generative uses to generate the next token.  | AWS Bedrock default
-| spring.ai.bedrock.anthropic.chat.options.stopSequences  | Configure up to four sequences that the generative recognizes. After a stop sequence, the generative stops generating further tokens. The returned text doesn't contain the stop sequence.  | 10
-| spring.ai.bedrock.anthropic.chat.options.anthropicVersion  | The version of the generative to use. | bedrock-2023-05-31
-| spring.ai.bedrock.anthropic.chat.options.maxTokensToSample  | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | 500
+| spring.ai.bedrock.anthropic.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default
+| spring.ai.bedrock.anthropic.chat.options.stopSequences  | Configure up to four sequences that the generative recognizes. After a stop sequence, the generative stops generating further tokens. The returned text doesn't contain the stop sequence.  | AWS Bedrock default
 |====
 
 Look at the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/api/AnthropicChatBedrockApi.java[AnthropicChatModel] for other model IDs.
@@ -205,10 +204,10 @@ AnthropicChatBedrockApi anthropicApi =  new AnthropicChatBedrockApi(
 BedrockAnthropicChatModel chatModel = new BedrockAnthropicChatModel(anthropicApi,
     AnthropicChatOptions.builder()
         .withTemperature(0.6f)
+        .withMaxTokens(100)
         .withTopK(10)
         .withTopP(0.8f)
-        .withMaxTokensToSample(100)
-        .withAnthropicVersion(AnthropicChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
+        .withStopSequences(List.of("stop sequences"))
         .build());
 
 ChatResponse response = chatModel.call(

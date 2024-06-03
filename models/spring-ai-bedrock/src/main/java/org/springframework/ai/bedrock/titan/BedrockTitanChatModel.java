@@ -15,140 +15,120 @@
  */
 package org.springframework.ai.bedrock.titan;
 
-import java.util.List;
-
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 
-import org.springframework.ai.bedrock.MessageToPromptConverter;
-import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
-import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
-import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
-import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.api.BedrockConverseApiUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
 
 /**
+ * Java {@link ChatModel} and {@link StreamingChatModel} for the Bedrock Titan chat
+ * generative model.
+ *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 
-	private final TitanChatBedrockApi chatApi;
+	private final String modelId;
+
+	private final BedrockConverseApi converseApi;
 
 	private final BedrockTitanChatOptions defaultOptions;
 
-	public BedrockTitanChatModel(TitanChatBedrockApi chatApi) {
-		this(chatApi, BedrockTitanChatOptions.builder().withTemperature(0.8f).build());
+	public BedrockTitanChatModel(BedrockConverseApi converseApi) {
+		this(converseApi, BedrockTitanChatOptions.builder().withTemperature(0.8f).build());
 	}
 
-	public BedrockTitanChatModel(TitanChatBedrockApi chatApi, BedrockTitanChatOptions defaultOptions) {
-		Assert.notNull(chatApi, "ChatApi must not be null");
-		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
-		this.chatApi = chatApi;
+	public BedrockTitanChatModel(BedrockConverseApi converseApi, BedrockTitanChatOptions defaultOptions) {
+		this(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(), converseApi, defaultOptions);
+	}
+
+	public BedrockTitanChatModel(String modelId, BedrockConverseApi converseApi,
+			BedrockTitanChatOptions defaultOptions) {
+		Assert.notNull(modelId, "modelId must not be null.");
+		Assert.notNull(converseApi, "BedrockConverseApi must not be null.");
+		Assert.notNull(defaultOptions, "BedrockTitanChatOptions must not be null");
+
+		this.modelId = modelId;
+		this.converseApi = converseApi;
 		this.defaultOptions = defaultOptions;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		TitanChatResponse response = this.chatApi.chatCompletion(this.createRequest(prompt));
-		List<Generation> generations = response.results().stream().map(result -> {
-			return new Generation(result.outputText());
-		}).toList();
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-		return new ChatResponse(generations);
+		var request = BedrockConverseApiUtils.createConverseRequest(modelId, prompt, defaultOptions);
+
+		ConverseResponse response = this.converseApi.converse(request);
+
+		return BedrockConverseApiUtils.convertConverseResponse(response);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return this.chatApi.chatCompletionStream(this.createRequest(prompt)).map(chunk -> {
+		Assert.notNull(prompt, "Prompt must not be null.");
 
-			Generation generation = new Generation(chunk.outputText());
+		var request = BedrockConverseApiUtils.createConverseStreamRequest(modelId, prompt, defaultOptions);
 
-			if (chunk.amazonBedrockInvocationMetrics() != null) {
-				String completionReason = chunk.completionReason().name();
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(completionReason, chunk.amazonBedrockInvocationMetrics()));
-			}
-			else if (chunk.inputTextTokenCount() != null && chunk.totalOutputTextTokenCount() != null) {
-				String completionReason = chunk.completionReason().name();
-				generation = generation
-					.withGenerationMetadata(ChatGenerationMetadata.from(completionReason, extractUsage(chunk)));
+		Flux<ConverseStreamOutput> fluxResponse = this.converseApi.converseStream(request);
 
-			}
-			return new ChatResponse(List.of(generation));
-		});
-	}
-
-	/**
-	 * Test access.
-	 */
-	TitanChatRequest createRequest(Prompt prompt) {
-		final String promptValue = MessageToPromptConverter.create().toPrompt(prompt.getInstructions());
-
-		var requestBuilder = TitanChatRequest.builder(promptValue);
-
-		if (this.defaultOptions != null) {
-			requestBuilder = update(requestBuilder, this.defaultOptions);
-		}
-
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockTitanChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockTitanChatOptions.class);
-
-				requestBuilder = update(requestBuilder, updatedRuntimeOptions);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
-		}
-
-		return requestBuilder.build();
-	}
-
-	private TitanChatRequest.Builder update(TitanChatRequest.Builder builder, BedrockTitanChatOptions options) {
-		if (options.getTemperature() != null) {
-			builder.withTemperature(options.getTemperature());
-		}
-		if (options.getTopP() != null) {
-			builder.withTopP(options.getTopP());
-		}
-		if (options.getMaxTokenCount() != null) {
-			builder.withMaxTokenCount(options.getMaxTokenCount());
-		}
-		if (options.getStopSequences() != null) {
-			builder.withStopSequences(options.getStopSequences());
-		}
-		return builder;
-	}
-
-	private Usage extractUsage(TitanChatResponseChunk response) {
-		return new Usage() {
-
-			@Override
-			public Long getPromptTokens() {
-				return response.inputTextTokenCount().longValue();
-			}
-
-			@Override
-			public Long getGenerationTokens() {
-				return response.totalOutputTextTokenCount().longValue();
-			}
-		};
+		return fluxResponse.map(output -> BedrockConverseApiUtils.convertConverseStreamOutput(output));
 	}
 
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return BedrockTitanChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Titan models version.
+	 */
+	public enum TitanChatModel implements ModelDescription {
+
+		/**
+		 * amazon.titan-text-lite-v1
+		 */
+		TITAN_TEXT_LITE_V1("amazon.titan-text-lite-v1"),
+
+		/**
+		 * amazon.titan-text-express-v1
+		 */
+		TITAN_TEXT_EXPRESS_V1("amazon.titan-text-express-v1"),
+
+		/**
+		 * amazon.titan-text-premier-v1:0
+		 */
+		TITAN_TEXT_PREMIER_V1("amazon.titan-text-premier-v1:0");
+
+		private final String id;
+
+		/**
+		 * @return The model id.
+		 */
+		public String id() {
+			return id;
+		}
+
+		TitanChatModel(String value) {
+			this.id = value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.id;
+		}
+
 	}
 
 }

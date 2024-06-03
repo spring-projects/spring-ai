@@ -71,10 +71,17 @@ The prefix `spring.ai.bedrock.jurassic2.chat` is the property prefix that config
 | Property | Description | Default
 
 | spring.ai.bedrock.jurassic2.chat.enabled              | Enable or disable support for Jurassic-2  | false
-| spring.ai.bedrock.jurassic2.chat.model                | The model id to use (See Below) | ai21.j2-mid-v1
-| spring.ai.bedrock.jurassic2.chat.options.temperature          | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the model. This value specifies default to be used by the backend while making the call to the model. | 0.7
-| spring.ai.bedrock.jurassic2.chat.options.top-p                | The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP. | AWS Bedrock default
-| spring.ai.bedrock.jurassic2.chat.options.max-tokens          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxTokens. | 500
+| spring.ai.bedrock.jurassic2.chat.model                | The model id to use | `ai21.j2-mid-v1`
+| spring.ai.bedrock.jurassic2.chat.options.numResults         | Number of completions to sample and return | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.maxTokens          | The maximum number of tokens to generate per result | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.minTokens          | The minimum number of tokens to generate per result | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.temperature        | Modifies the distribution from which tokens are sampled | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.topP               | Sample tokens from the corresponding top percentile of probability mass | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.topKReturn         | Return the top-K (topKReturn) alternative tokens | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.stopSequences      | Stops decoding if any of the strings is generated | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.frequencyPenalty   | Penalty object for frequency | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.presencePenalty    | Penalty object for presence | AWS Bedrock default
+| spring.ai.bedrock.jurassic2.chat.options.countPenalty       | Penalty object for count | AWS Bedrock default
 |====
 
 Look at https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java#L164[Ai21Jurassic2ChatBedrockApi#Ai21Jurassic2ChatModel]  for other model IDs. The other value supported is `ai21.j2-ultra-v1`.
@@ -183,9 +190,17 @@ Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(Ai21Jurassic2C
 
 BedrockAi21Jurassic2ChatModel chatModel = new BedrockAi21Jurassic2ChatModel(api,
     BedrockAi21Jurassic2ChatOptions.builder()
-        .withTemperature(0.5f)
+        .withNumResults(1)
         .withMaxTokens(100)
-        .withTopP(0.9f).build());
+        .withMinTokens(1)
+        .withTemperature(0.5F)
+        .withTopP(0.5F)
+        .withTopK(20)
+        .withStopSequences(List.of("stop sequences"))
+        .withFrequencyPenalty(Penalty.builder().scale(1F).build())
+        .withPresencePenalty(Penalty.builder().scale(1F).build())
+        .withCountPenalty(Penalty.builder().scale(1F).build())
+        .build();
 
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));

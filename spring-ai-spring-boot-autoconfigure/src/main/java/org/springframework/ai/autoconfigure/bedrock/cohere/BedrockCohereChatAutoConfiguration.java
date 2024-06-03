@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.bedrock.cohere.BedrockCohereChatModel;
 import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -34,12 +36,14 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Chat Client.
  *
+ * Leverages the Spring Cloud AWS to resolve the {@link AwsCredentialsProvider}.
+ *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
-@AutoConfiguration
-@ConditionalOnClass(CohereChatBedrockApi.class)
+@AutoConfiguration(after = BedrockConverseApiAutoConfiguration.class)
+@ConditionalOnClass(BedrockConverseApi.class)
 @EnableConfigurationProperties({ BedrockCohereChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockCohereChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
@@ -56,11 +60,11 @@ public class BedrockCohereChatAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(CohereChatBedrockApi.class)
-	public BedrockCohereChatModel cohereChatModel(CohereChatBedrockApi cohereChatApi,
+	@ConditionalOnBean(BedrockConverseApi.class)
+	public BedrockCohereChatModel cohereChatModel(BedrockConverseApi converseApi,
 			BedrockCohereChatProperties properties) {
 
-		return new BedrockCohereChatModel(cohereChatApi, properties.getOptions());
+		return new BedrockCohereChatModel(properties.getModel(), converseApi, properties.getOptions());
 	}
 
 }

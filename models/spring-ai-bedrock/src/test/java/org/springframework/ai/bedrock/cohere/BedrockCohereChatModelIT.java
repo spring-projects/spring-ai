@@ -21,23 +21,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi.CohereChatModel;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions.ReturnLikelihoods;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions.Truncate;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
@@ -92,12 +91,8 @@ class BedrockCohereChatModelIT {
 	@Test
 	void roleTest() {
 		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
-		String name = "Bob";
-		String voice = "pirate";
 		UserMessage userMessage = new UserMessage(request);
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Prompt prompt = new Prompt(List.of(userMessage));
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
 	}
@@ -194,19 +189,50 @@ class BedrockCohereChatModelIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
+	@Test
+	void chatResponseUsage() {
+		Prompt prompt = new Prompt("Who are you?");
+
+		ChatResponse response = chatModel.call(prompt);
+
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage).isNotNull();
+		assertThat(usage.getPromptTokens()).isGreaterThan(1);
+		assertThat(usage.getGenerationTokens()).isGreaterThan(1);
+	}
+
+	@Test
+	void chatOptions() {
+		BedrockCohereChatOptions options = BedrockCohereChatOptions.builder()
+			.withTemperature(0.5F)
+			.withTopP(0.5F)
+			.withTopK(100)
+			.withMaxTokens(100)
+			.withStopSequences(List.of("stop sequences"))
+			.withReturnLikelihoods(ReturnLikelihoods.ALL)
+			.withNumGenerations(1)
+			.withTruncate(Truncate.START)
+			.build();
+
+		Prompt prompt = new Prompt("Who are you?", options);
+		ChatResponse response = chatModel.call(prompt);
+		String content = response.getResult().getOutput().getContent();
+
+		assertThat(content).isNotNull();
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
 		@Bean
-		public CohereChatBedrockApi cohereApi() {
-			return new CohereChatBedrockApi(CohereChatModel.COHERE_COMMAND_V14.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+		public BedrockConverseApi converseApi() {
+			return new BedrockConverseApi(EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(),
 					Duration.ofMinutes(2));
 		}
 
 		@Bean
-		public BedrockCohereChatModel cohereChatModel(CohereChatBedrockApi cohereApi) {
-			return new BedrockCohereChatModel(cohereApi);
+		public BedrockCohereChatModel cohereChatModel(BedrockConverseApi converseApi) {
+			return new BedrockCohereChatModel(converseApi);
 		}
 
 	}

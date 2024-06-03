@@ -35,10 +35,13 @@ import java.time.Duration;
  * Java client for the Bedrock Llama chat model.
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
  *
+ * @deprecated Use {@link BedrockConverseApi} instead.
+ *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
+@Deprecated
 public class LlamaChatBedrockApi extends
 		AbstractBedrockApi<LlamaChatRequest, LlamaChatResponse, LlamaChatResponse> {
 

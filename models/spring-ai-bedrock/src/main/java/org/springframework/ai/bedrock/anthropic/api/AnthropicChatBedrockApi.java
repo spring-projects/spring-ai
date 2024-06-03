@@ -33,11 +33,13 @@ import org.springframework.ai.model.ModelDescription;
 import org.springframework.util.Assert;
 
 /**
+ * @deprecated Use {@link BedrockConverseApi} instead.
  * @author Christian Tzolov
  * @author Wei Jiang
  * @since 0.8.0
  */
 // @formatter:off
+@Deprecated
 public class AnthropicChatBedrockApi extends
 		AbstractBedrockApi<AnthropicChatRequest, AnthropicChatResponse, AnthropicChatResponse> {
 

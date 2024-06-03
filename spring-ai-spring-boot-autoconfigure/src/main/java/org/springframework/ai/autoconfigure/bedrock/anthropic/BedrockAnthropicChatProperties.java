@@ -15,10 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.bedrock.anthropic;
 
-import java.util.List;
-
 import org.springframework.ai.bedrock.anthropic.AnthropicChatOptions;
-import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatModel;
+import org.springframework.ai.bedrock.anthropic.BedrockAnthropicChatModel.AnthropicChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -27,6 +25,7 @@ import org.springframework.util.Assert;
  * Configuration properties for Bedrock Anthropic.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockAnthropicChatProperties.CONFIG_PREFIX)
@@ -46,12 +45,7 @@ public class BedrockAnthropicChatProperties {
 	private String model = AnthropicChatModel.CLAUDE_V2.id();
 
 	@NestedConfigurationProperty
-	private AnthropicChatOptions options = AnthropicChatOptions.builder()
-		.withTemperature(0.7f)
-		.withMaxTokensToSample(300)
-		.withTopK(10)
-		.withStopSequences(List.of("\n\nHuman:"))
-		.build();
+	private AnthropicChatOptions options = AnthropicChatOptions.builder().build();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -75,7 +69,6 @@ public class BedrockAnthropicChatProperties {
 
 	public void setOptions(AnthropicChatOptions options) {
 		Assert.notNull(options, "AnthropicChatOptions must not be null");
-		Assert.notNull(options.getTemperature(), "AnthropicChatOptions.temperature must not be null");
 
 		this.options = options;
 	}

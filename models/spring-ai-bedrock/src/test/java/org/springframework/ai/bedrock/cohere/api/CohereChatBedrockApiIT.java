@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;;
 /**
  * @author Christian Tzolov
  */
+@Deprecated
 @EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
 public class CohereChatBedrockApiIT {

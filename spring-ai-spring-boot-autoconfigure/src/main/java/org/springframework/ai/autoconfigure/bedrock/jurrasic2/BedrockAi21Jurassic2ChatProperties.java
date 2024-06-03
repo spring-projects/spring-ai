@@ -17,14 +17,16 @@
 package org.springframework.ai.autoconfigure.bedrock.jurrasic2;
 
 import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatOptions;
-import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel;
+import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatModel.Ai21Jurassic2ChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * Configuration properties for Bedrock Ai21Jurassic2.
  *
  * @author Ahmed Yousri
+ * @author Wei Jiang
  * @since 1.0.0
  */
 @ConfigurationProperties(BedrockAi21Jurassic2ChatProperties.CONFIG_PREFIX)
@@ -44,10 +46,7 @@ public class BedrockAi21Jurassic2ChatProperties {
 	private String model = Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id();
 
 	@NestedConfigurationProperty
-	private BedrockAi21Jurassic2ChatOptions options = BedrockAi21Jurassic2ChatOptions.builder()
-		.withTemperature(0.7f)
-		.withMaxTokens(500)
-		.build();
+	private BedrockAi21Jurassic2ChatOptions options = BedrockAi21Jurassic2ChatOptions.builder().build();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -70,6 +69,8 @@ public class BedrockAi21Jurassic2ChatProperties {
 	}
 
 	public void setOptions(BedrockAi21Jurassic2ChatOptions options) {
+		Assert.notNull(options, "BedrockAi21Jurassic2ChatOptions must not be null");
+
 		this.options = options;
 	}
 

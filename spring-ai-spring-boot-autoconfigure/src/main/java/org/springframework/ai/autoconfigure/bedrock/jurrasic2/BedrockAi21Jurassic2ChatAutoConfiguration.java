@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.bedrock.jurrasic2;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatModel;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -35,12 +37,14 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Jurassic2 Chat Client.
  *
+ * Leverages the Spring Cloud AWS to resolve the {@link AwsCredentialsProvider}.
+ *
  * @author Ahmed Yousri
  * @author Wei Jiang
  * @since 1.0.0
  */
-@AutoConfiguration
-@ConditionalOnClass(Ai21Jurassic2ChatBedrockApi.class)
+@AutoConfiguration(after = BedrockConverseApiAutoConfiguration.class)
+@ConditionalOnClass(BedrockConverseApi.class)
 @EnableConfigurationProperties({ BedrockAi21Jurassic2ChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockAi21Jurassic2ChatProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true")
@@ -58,13 +62,11 @@ public class BedrockAi21Jurassic2ChatAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(Ai21Jurassic2ChatBedrockApi.class)
-	public BedrockAi21Jurassic2ChatModel jurassic2ChatModel(Ai21Jurassic2ChatBedrockApi ai21Jurassic2ChatBedrockApi,
+	@ConditionalOnBean(BedrockConverseApi.class)
+	public BedrockAi21Jurassic2ChatModel jurassic2ChatModel(BedrockConverseApi converseApi,
 			BedrockAi21Jurassic2ChatProperties properties) {
 
-		return BedrockAi21Jurassic2ChatModel.builder(ai21Jurassic2ChatBedrockApi)
-			.withOptions(properties.getOptions())
-			.build();
+		return new BedrockAi21Jurassic2ChatModel(properties.getModel(), converseApi, properties.getOptions());
 	}
 
 }

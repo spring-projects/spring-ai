@@ -21,8 +21,8 @@ Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` bu
 [source,xml]
 ----
 <dependency>
- <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
- <groupId>org.springframework.ai</groupId>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -83,15 +83,13 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 
 [cols="|,|,|,|"]
 |====
-| Model      | Chat | Chat Streaming | Embedding
-
-| llama     | Yes  | Yes            | No
-| jurassic2  | Yes  | No             | No
-| cohere     | Yes  | Yes            | Yes
+| Model       | Chat | Chat Streaming | Embedding
 | anthropic 2 | Yes  | Yes            | No
-| anthropic 3  | Yes  | Yes            | No
-| jurassic2 (WIP)  | Yes  | No             | No
-| titan      | Yes  | Yes            | Yes (however, no batch support)
+| anthropic 3 | Yes  | Yes            | No
+| cohere      | Yes  | Yes            | Yes
+| jurassic2   | Yes  | No             | No
+| llama       | Yes  | Yes            | No
+| titan       | Yes  | Yes            | Yes (however, no batch support)
 |====
 
 For example, to enable the Bedrock Llama chat model, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
