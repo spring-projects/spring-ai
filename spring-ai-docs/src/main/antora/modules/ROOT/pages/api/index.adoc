@@ -26,7 +26,7 @@ Portable `Vector Store API` across multiple providers, including a novel `SQL-li
 
 `Function calling`. Spring AI makes it easy to have the AI model invoke your POJO `java.util.Function` object.
 
-image::function-calling-basic-flow.jpg[Function calling, width=500, align="center"]
+image::function-calling-basic-flow2.jpg[Function calling, width=500, align="center"]
 
 Check the Spring AI xref::api/functions.adoc[Function Calling] documentation.
 
