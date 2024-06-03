@@ -24,7 +24,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.ai.chat.messages.Message;
 
 /**
+ * The InMemoryChatMemory class is an implementation of the ChatMemory interface that
+ * represents an in-memory storage for chat conversation history.
+ *
+ * This class stores the conversation history in a ConcurrentHashMap, where the keys are
+ * the conversation IDs and the values are lists of messages representing the conversation
+ * history.
+ *
+ * @see ChatMemory
  * @author Christian Tzolov
+ * @since 1.0.0 M1
  */
 public class InMemoryChatMemory implements ChatMemory {
 

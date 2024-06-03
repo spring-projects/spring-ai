@@ -15,15 +15,17 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Eddú Meléndez
  * @author Wei Jiang
+ * @author Josh Long
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = "spring.ai.vectorstore.elasticsearch")
-public class ElasticsearchVectorStoreProperties {
+public class ElasticsearchVectorStoreProperties extends CommonVectorStoreProperties {
 
 	/**
 	 * The name of the index to store the vectors.

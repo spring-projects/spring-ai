@@ -23,13 +23,15 @@ import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
+
 /**
  * Audio speech metadata implementation for {@literal OpenAI}.
  *
  * @author Ahmed Yousri
  * @see RateLimit
  */
-public class OpenAiAudioSpeechResponseMetadata implements ResponseMetadata {
+public class OpenAiAudioSpeechResponseMetadata extends HashMap<String, Object> implements ResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, requestsLimit: %2$s }";
 

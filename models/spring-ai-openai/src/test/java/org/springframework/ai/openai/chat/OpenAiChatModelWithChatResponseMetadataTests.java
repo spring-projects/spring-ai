@@ -39,6 +39,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
@@ -166,8 +167,8 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi(RestClient.Builder builder) {
-			return new OpenAiApi("", TEST_API_KEY, builder);
+		public OpenAiApi chatCompletionApi(RestClient.Builder builder, WebClient.Builder webClientBuilder) {
+			return new OpenAiApi("", TEST_API_KEY, builder, webClientBuilder);
 		}
 
 		@Bean

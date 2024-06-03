@@ -49,9 +49,12 @@ public class FunctionCallbackWrapper2IT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
+					"spring.ai.openai.chat.options.temperature=0.1")
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			ChatClient chatClient = ChatClient.builder(chatModel)
@@ -64,19 +67,22 @@ public class FunctionCallbackWrapper2IT {
 				.call().content();
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("15.0", "15");
-			assertThat(content).containsAnyOf("10", "10");
-		});
+				assertThat(content).containsAnyOf("30.0", "30");
+				assertThat(content).containsAnyOf("15.0", "15");
+				assertThat(content).containsAnyOf("10", "10");
+			});
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+		contextRunner
+			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
+					"spring.ai.openai.chat.options.temperature=0.1")
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
@@ -86,12 +92,12 @@ public class FunctionCallbackWrapper2IT {
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("10.0", "10");
-			assertThat(content).containsAnyOf("15.0", "15");
-		});
+				assertThat(content).containsAnyOf("30.0", "30");
+				assertThat(content).containsAnyOf("10.0", "10");
+				assertThat(content).containsAnyOf("15.0", "15");
+			});
 	}
 
 	@Configuration

@@ -68,6 +68,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Josh Long
  * @author Jemin Huh
  * @author Grogdunn
+ * @author Hyunjoon Choi
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -86,7 +87,7 @@ public class OpenAiChatModel extends
 	/**
 	 * The retry template used to retry the OpenAI API calls.
 	 */
-	public final RetryTemplate retryTemplate;
+	private final RetryTemplate retryTemplate;
 
 	/**
 	 * Low-level access to the OpenAI API.
@@ -150,7 +151,13 @@ public class OpenAiChatModel extends
 
 			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
-			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+			List<Choice> choices = chatCompletion.choices();
+			if (choices == null) {
+				logger.warn("No choices returned for prompt: {}", prompt);
+				return new ChatResponse(List.of());
+			}
+
+			List<Generation> generations = choices.stream().map(choice -> {
 				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
 			}).toList();

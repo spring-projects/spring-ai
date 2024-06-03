@@ -81,7 +81,7 @@ public class OpenAiImageModelWithImageResponseMetadataTests {
 
 		assertThat(imageResponseMetadata).isNotNull();
 
-		Long created = imageResponseMetadata.created();
+		Long created = imageResponseMetadata.getCreated();
 
 		assertThat(created).isNotNull();
 		assertThat(created).isEqualTo(1589478378);

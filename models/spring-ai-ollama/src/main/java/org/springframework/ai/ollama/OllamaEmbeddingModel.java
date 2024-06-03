@@ -105,13 +105,13 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		List<List<Double>> embeddingList = new ArrayList<>();
 		for (String inputContent : request.getInstructions()) {
 
-			var ollamaEmbeddingRequest = ollamaEmbeddingRequest(inputContent, request.getOptions());
+			EmbeddingRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(inputContent, request.getOptions());
 
 			OllamaApi.EmbeddingResponse response = this.ollamaApi.embeddings(ollamaEmbeddingRequest);
 
 			embeddingList.add(response.embedding());
 		}
-		var indexCounter = new AtomicInteger(0);
+		AtomicInteger indexCounter = new AtomicInteger(0);
 
 		List<Embedding> embeddings = embeddingList.stream()
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))

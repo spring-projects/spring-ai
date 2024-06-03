@@ -363,7 +363,7 @@ class ElasticsearchVectorStoreIT {
 		public ElasticsearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			return new ElasticsearchVectorStore(
 					RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build(),
-					embeddingModel);
+					embeddingModel, true);
 		}
 
 		@Bean

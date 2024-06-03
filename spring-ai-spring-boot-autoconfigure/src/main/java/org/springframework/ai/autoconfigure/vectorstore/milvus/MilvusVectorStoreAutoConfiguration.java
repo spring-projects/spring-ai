@@ -62,7 +62,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new MilvusVectorStore(milvusClient, embeddingModel, config);
+		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema());
 	}
 
 	@Bean

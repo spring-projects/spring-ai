@@ -106,6 +106,7 @@ Deployments model name to provide as part of this completions request.
 | spring.ai.azure.openai.chat.options.n | The number of chat completions choices that should be generated for a chat completions response. | -
 | spring.ai.azure.openai.chat.options.stop | A collection of textual sequences that will end completions generation. | -
 | spring.ai.azure.openai.chat.options.presencePenalty |  A value that influences the probability of generated tokens appearing based on their existing presence in generated text. Positive values will make tokens less likely to appear when they already exist and increase the model's likelihood to output new topics. | -
+| spring.ai.azure.openai.chat.options.responseFormat | An object specifying the format that the model must output. Using `AzureOpenAiResponseFormat.JSON` enables JSON mode, which guarantees the message the model generates is valid JSON.  Using AzureOpenAiResponseFormat.TEXT enables TEXT mode.| -
 | spring.ai.azure.openai.chat.options.frequencyPenalty | A value that influences the probability of generated tokens appearing based on their cumulative frequency in generated text. Positive values will make tokens less likely to appear as their frequency increases and decrease the likelihood of the model repeating the same statements verbatim. | -
 |====
 

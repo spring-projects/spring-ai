@@ -81,6 +81,29 @@ class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
+	void streamRoleTest() {
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Flux<ChatResponse> flux = streamingChatModel.stream(prompt);
+
+		List<ChatResponse> responses = flux.collectList().block();
+		assertThat(responses.size()).isGreaterThan(1);
+
+		String stitchedResponseContent = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getContent)
+			.collect(Collectors.joining());
+
+		assertThat(stitchedResponseContent).contains("Blackbeard");
+
+	}
+
+	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
 		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);

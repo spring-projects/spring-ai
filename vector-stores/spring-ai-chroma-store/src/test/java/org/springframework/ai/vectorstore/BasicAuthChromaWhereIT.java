@@ -108,7 +108,7 @@ public class BasicAuthChromaWhereIT {
 
 		@Bean
 		public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-			return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection");
+			return new ChromaVectorStore(embeddingModel, chromaApi, "TestCollection", true);
 		}
 
 		@Bean

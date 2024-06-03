@@ -14,6 +14,15 @@ docker run -p 6333:6333 -p 6334:6334 \
     qdrant/qdrant
 ```
 
+### Security: Adding API Key to Qdrant Container
+To enhance security, you can add an API key to your Qdrant container using the environment variable.
+
+```
+-e QDRANT__SERVICE__API_KEY=<your_generated_api_key_here>
+```
+
+This ensures that only authorized users with the correct API key can access the Qdrant service.
+
 The GUI is available at http://localhost:6333/dashboard
 
 ## Qdrant references

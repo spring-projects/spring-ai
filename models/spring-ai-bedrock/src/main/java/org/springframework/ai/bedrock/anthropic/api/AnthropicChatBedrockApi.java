@@ -217,6 +217,7 @@ public class AnthropicChatBedrockApi extends
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record AnthropicChatResponse(
+			@JsonProperty("type") String type,
 			@JsonProperty("completion") String completion,
 			@JsonProperty("stop_reason") String stopReason,
 			@JsonProperty("stop") String stop,

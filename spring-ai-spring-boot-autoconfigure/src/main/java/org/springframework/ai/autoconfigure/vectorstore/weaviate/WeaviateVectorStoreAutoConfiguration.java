@@ -72,7 +72,8 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
-		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient);
+		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient,
+				properties.isInitializeSchema());
 	}
 
 	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {

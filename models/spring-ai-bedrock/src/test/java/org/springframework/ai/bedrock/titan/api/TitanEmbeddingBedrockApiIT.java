@@ -63,7 +63,7 @@ public class TitanEmbeddingBedrockApiIT {
 
 		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
 				TitanEmbeddingModel.TITAN_EMBED_TEXT_V2.id(), EnvironmentVariableCredentialsProvider.create(),
-				Region.US_WEST_2.id(), new ObjectMapper(), Duration.ofMinutes(2));
+				Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().withInputText("I like to eat apples.").build();
 

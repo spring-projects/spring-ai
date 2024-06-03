@@ -64,20 +64,28 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 
 	private final MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
-	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
-		this(mongoTemplate, embeddingModel, MongoDBVectorStoreConfig.defaultConfig());
+	private final boolean initializeSchema;
+
+	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		this(mongoTemplate, embeddingModel, MongoDBVectorStoreConfig.defaultConfig(), initializeSchema);
 	}
 
 	public MongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
-			MongoDBVectorStoreConfig config) {
+			MongoDBVectorStoreConfig config, boolean initializeSchema) {
 		this.mongoTemplate = mongoTemplate;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
 
+		this.initializeSchema = initializeSchema;
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		if (!this.initializeSchema) {
+			return;
+		}
+
 		// Create the collection if it does not exist
 		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
 			mongoTemplate.createCollection(this.config.collectionName);

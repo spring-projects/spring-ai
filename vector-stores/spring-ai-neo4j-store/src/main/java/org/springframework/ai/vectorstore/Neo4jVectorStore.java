@@ -273,7 +273,11 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	private final Neo4jVectorStoreConfig config;
 
-	public Neo4jVectorStore(Driver driver, EmbeddingModel embeddingModel, Neo4jVectorStoreConfig config) {
+	private final boolean initializeSchema;
+
+	public Neo4jVectorStore(Driver driver, EmbeddingModel embeddingModel, Neo4jVectorStoreConfig config,
+			boolean initializeSchema) {
+		this.initializeSchema = initializeSchema;
 
 		Assert.notNull(driver, "Neo4j driver must not be null");
 		Assert.notNull(embeddingModel, "Embedding client must not be null");
@@ -350,6 +354,10 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
+
+		if (!this.initializeSchema) {
+			return;
+		}
 
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 
