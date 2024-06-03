@@ -144,9 +144,11 @@ Also, asking "`for JSON`" as part of the prompt is not 100% accurate.
 
 This intricacy has led to the emergence of a specialized field involving the creation of prompts to yield the intended output, followed by converting the resulting simple string into a usable data structure for application integration.
 
+image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=900, align="center"]
+
 The xref:api/structured-output-converter.adoc#_structuredoutputconverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
-== Bringing Your Data to the AI model
+== Bringing Your Data & APIs to the AI Model
 
 How can you equip the AI model with information on which it has not been trained?
 
@@ -187,6 +189,8 @@ The next phase in RAG is processing user input.
 When a user's question is to be answered by an AI model, the question and all the "`similar`" document pieces are placed into the prompt that is sent to the AI model.
 This is the reason to use a vector database. It is very good at finding similar content.
 
+image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
+
 There are several concepts that are used in implementing RAG.
 The concepts map onto classes in Spring AI:
 
@@ -196,9 +200,12 @@ The concepts map onto classes in Spring AI:
 * `DocumentWriter`: Lets you persist the Documents into a database (most commonly in the AI stack, a vector database).
 * `Embedding`: A representation of your data as a `List<Double>` that is used by the vector database to compute the "`similarity`" of a user's query to relevant documents.
 
+
 == Function Calling
 
 Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
+
+image::function-calling-basic-flow.jpg[Function calling, width=800, align="center"]
 
 The `Function Calling` mechanism addresses these shortcomings.
 It allows you to register your own functions to connect the large language models to the APIs of external systems.
