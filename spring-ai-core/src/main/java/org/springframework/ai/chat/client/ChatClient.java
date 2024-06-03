@@ -92,7 +92,7 @@ public interface ChatClient {
 
 		T params(Map<String, Object> p);
 
-		T param(String k, String v);
+		T param(String k, Object v);
 
 	}
 
@@ -126,7 +126,7 @@ public interface ChatClient {
 		}
 
 		@Override
-		public T param(String k, String v) {
+		public T param(String k, Object v) {
 			this.params.put(k, v);
 			return self();
 		}
