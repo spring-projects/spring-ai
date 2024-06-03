@@ -545,6 +545,28 @@ public interface ChatClient {
 				this.request = request;
 			}
 
+			public <E> ResponseEntity<ChatResponse, E> responseEntity(Class<E> type) {
+				Assert.notNull(type, "the class must be non-null");
+				return doResponseEntity(new BeanOutputConverter<E>(type));
+			}
+
+			public <E> ResponseEntity<ChatResponse, E> responseEntity(ParameterizedTypeReference<E> type) {
+				return doResponseEntity(new BeanOutputConverter<E>(type));
+			}
+
+			public <E> ResponseEntity<ChatResponse, E> responseEntity(
+					StructuredOutputConverter<E> structuredOutputConverter) {
+				return doResponseEntity(structuredOutputConverter);
+			}
+
+			protected <E> ResponseEntity<ChatResponse, E> doResponseEntity(StructuredOutputConverter<E> boc) {
+				var chatResponse = doGetChatResponse(this.request, boc.getFormat());
+				var responseContent = chatResponse.getResult().getOutput().getContent();
+				E entity = boc.convert(responseContent);
+
+				return new ResponseEntity<>(chatResponse, entity);
+			}
+
 			public <T> T entity(ParameterizedTypeReference<T> type) {
 				return doSingleWithBeanOutputConverter(new BeanOutputConverter<T>(type));
 			}
