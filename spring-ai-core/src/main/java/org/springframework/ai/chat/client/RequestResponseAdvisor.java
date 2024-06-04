@@ -20,7 +20,6 @@ import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.ChatClient.ChatClientRequest;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -31,7 +30,7 @@ import org.springframework.ai.chat.prompt.Prompt;
  * chain of advisors with chared execution context.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public interface RequestResponseAdvisor {
 
