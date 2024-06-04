@@ -144,7 +144,7 @@ Also, asking "`for JSON`" as part of the prompt is not 100% accurate.
 
 This intricacy has led to the emergence of a specialized field involving the creation of prompts to yield the intended output, followed by converting the resulting simple string into a usable data structure for application integration.
 
-image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=900, align="center"]
+image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=800, align="center"]
 
 The xref:api/structured-output-converter.adoc#_structuredoutputconverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
@@ -169,7 +169,7 @@ The Spring AI library helps you implement solutions based on the "`stuffing the 
 Spring AI greatly simplifies code you need to write to support xref:api/functions.adoc[function calling].
 
 [[concept-rag]]
-== Retrieval Augmented Generation
+=== Retrieval Augmented Generation
 
 A technique termed Retrieval Augmented Generation (RAG) has emerged to address the challenge of incorporating relevant data into prompts for accurate AI model responses.
 
@@ -194,11 +194,9 @@ image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 * The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from the data sources and stor it in a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
 * The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability to your application.
 
-== Function Calling
+=== Function Calling
 
 Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
-
-image::function-calling-basic-flow2.jpg[Function calling, width=700, align="center"]
 
 The xref::api/functions.adoc[Function Calling] mechanism addresses these shortcomings.
 It allows you to register your own functions to connect the large language models to the APIs of external systems.
@@ -209,6 +207,19 @@ It handles the function invocation conversation for you.
 You can provide your function as a `@Bean` and then provide the bean name of the function in your prompt options to activate that function.
 Additionally, you can define and reference multiple functions in a single prompt.
 
+image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
+
+* (1) perform a chat request along with a function definition information.
+Later provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
+* (2) when the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
+* (3) Spring AI handles this conversation for you.
+It dispatches the function call to the appropriate function and returns the result to the model (4).
+Model can perform multiple function calls to retrieve all the information it needs.
+* (5) once all information needed is acquired, the Model will generate a response.
+
+Follow the xref::api/functions.adoc[Function Calling] documentation for further information on how to use this feature with different AI models.
+
+[[concept-evaluating-ai-responses]]
 == Evaluating AI responses
 
 Effectively evaluating the output of an AI system in response to user requests is very important to ensuring the accuracy and usefulness of the final application.
