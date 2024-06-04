@@ -125,7 +125,8 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.create()
-            .withModel("Different-Embedding-Model-Deployment-Name"));
+            .withModel("Different-Embedding-Model-Deployment-Name"))
+);
 ----
 
 == Sample Controller
