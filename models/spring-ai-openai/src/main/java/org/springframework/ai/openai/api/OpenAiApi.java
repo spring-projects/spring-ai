@@ -28,7 +28,9 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -40,8 +42,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 // @formatter:off
 /**
- * Single class implementation of the OpenAI Chat Completion API: https://platform.openai.com/docs/api-reference/chat and
- * OpenAI Embedding API: https://platform.openai.com/docs/api-reference/embeddings.
+ * Single class implementation of the <a href="https://platform.openai.com/docs/api-reference/chat">OpenAI Chat Completion API</a>
+ * and <a href="https://platform.openai.com/docs/api-reference/embeddings">OpenAI Embedding API</a>.
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
@@ -57,12 +59,12 @@ public class OpenAiApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create an new chat completion api with base URL set to https://api.openai.com
+	 * Create a new chat completion api with base URL set to {@code https://api.openai.com}.
 	 *
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken);
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken);
 	}
 
 	/**
@@ -280,7 +282,7 @@ public class OpenAiApi {
 		}
 	}
 
-        /**
+	/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -393,7 +395,7 @@ public class OpenAiApi {
 					tools, toolChoice, null);
 		}
 
-				/**
+		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
 		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
 		 *

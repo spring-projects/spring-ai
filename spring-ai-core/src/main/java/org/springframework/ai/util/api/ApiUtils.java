@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.minimax.api;
+package org.springframework.ai.util.api;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,17 +25,17 @@ import java.util.function.Consumer;
  * responses.
  *
  * @author Geng Rong
+ * @author Christian Tzolov
+ * @author Piotr Olaszewski
  * @since 1.0.0 M1
  */
 public class ApiUtils {
-
-	public static final String DEFAULT_BASE_URL = "https://api.minimax.chat";
 
 	public static Consumer<HttpHeaders> getJsonContentHeaders(String apiKey) {
 		return (headers) -> {
 			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
-	};
+	}
 
 }
