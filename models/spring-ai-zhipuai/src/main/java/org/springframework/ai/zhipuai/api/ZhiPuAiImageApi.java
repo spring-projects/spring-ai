@@ -18,6 +18,7 @@ package org.springframework.ai.zhipuai.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -39,11 +40,12 @@ public class ZhiPuAiImageApi {
 	private final RestClient restClient;
 
 	/**
-	 * Create a new ZhiPuAI Image api with base URL set to https://api.ZhiPuAI.com
+	 * Create a new ZhiPuAI Image api with base URL set to
+	 * {@code https://api.ZhiPuAI.com}.
 	 * @param zhiPuAiToken ZhiPuAI apiKey.
 	 */
 	public ZhiPuAiImageApi(String zhiPuAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, zhiPuAiToken, RestClient.builder());
+		this(ZhiPuApiConstants.DEFAULT_BASE_URL, zhiPuAiToken, RestClient.builder());
 	}
 
 	/**
