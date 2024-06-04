@@ -21,7 +21,6 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.*;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -45,6 +44,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Christian Tzolov
+ * @author Stefan Vassilev
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
@@ -132,6 +132,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
 	public OpenAiAudioTranscriptionModel openAiAudioTranscriptionModel(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties, RetryTemplate retryTemplate,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
@@ -157,6 +159,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiAudioSpeechProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public OpenAiAudioSpeechModel openAiAudioSpeechClient(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
