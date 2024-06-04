@@ -81,7 +81,7 @@ As an example of how counter-intuitive it can be to create an effective prompt (
 That should give you an indication of why language is so important.
 We do not yet fully understand how to make the most effective use of previous iterations of this technology, such as ChatGPT 3.5, let alone new versions that are being developed.
 
-== Prompt Templates
+=== Prompt Templates
 
 Creating effective prompts involves establishing the context of the request and substituting parts of the request with values specific to the user's input.
 
@@ -163,9 +163,11 @@ However, it is a challenging process for machine learning experts and extremely 
 
 * `Prompt Stuffing`: A more practical alternative involves embedding your data within the prompt provided to the model. Given a model's token limits, techniques are required to present relevant data within the model's context window.
 This approach is colloquially referred to as "`stuffing the prompt.`"
-The Spring AI library helps you implement solutions based on the "`stuffing the prompt`" technique otherwise known as Retrieval Augmented Generation (RAG).
+The Spring AI library helps you implement solutions based on the "`stuffing the prompt`" technique otherwise known as xref::concepts.adoc#concept-rag[Retrieval Augmented Generation (RAG)].
 
-* `Function Calling`: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
+image::spring-ai-prompt-stuffing.jpg[Prompt stuffing, width=700, align="center"]
+
+* xref::concepts.adoc#concept-fc[Function Calling]: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
 Spring AI greatly simplifies code you need to write to support xref:api/functions.adoc[function calling].
 
 [[concept-rag]]
@@ -194,6 +196,7 @@ image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 * The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from the data sources and stor it in a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
 * The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability to your application.
 
+[[concept-fc]]
 === Function Calling
 
 Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
