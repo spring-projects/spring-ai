@@ -3,7 +3,7 @@
 
 The integration of function support in AI models, permits the model to request the execution of client-side functions, thereby accessing necessary information or performing tasks dynamically as required.
 
-image::function-calling-basic-flow2.jpg[Function calling, width=500, align="center"]
+image::function-calling-basic-flow2.jpg[Function calling, width=700, align="center"]
 
 Spring AI currently supports Function invocation for the following AI Models
 

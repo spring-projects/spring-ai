@@ -191,23 +191,16 @@ This is the reason to use a vector database. It is very good at finding similar 
 
 image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 
-There are several concepts that are used in implementing RAG.
-The concepts map onto classes in Spring AI:
-
-* `DocumentReader`: A Java functional interface that is responsible for loading a `List<Document>` from a data source. Common data sources are PDF, Markdown, and JSON.
-* `Document`: A text-based representation of your data source that also contains metadata to describe the contents.
-* `DocumentTransformer`: Responsible for processing the data in various ways (for example, splitting documents into smaller pieces or adding additional metadata to the `Document`).
-* `DocumentWriter`: Lets you persist the Documents into a database (most commonly in the AI stack, a vector database).
-* `Embedding`: A representation of your data as a `List<Double>` that is used by the vector database to compute the "`similarity`" of a user's query to relevant documents.
-
+* The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from the data sources and stor it in a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
+* The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability to your application.
 
 == Function Calling
 
 Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
 
-image::function-calling-basic-flow2.jpg[Function calling, width=800, align="center"]
+image::function-calling-basic-flow2.jpg[Function calling, width=700, align="center"]
 
-The `Function Calling` mechanism addresses these shortcomings.
+The xref::api/functions.adoc[Function Calling] mechanism addresses these shortcomings.
 It allows you to register your own functions to connect the large language models to the APIs of external systems.
 These systems can provide LLMs with real-time data and perform data processing actions on their behalf.
 
