@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.vectorstore.filter.converter;
 
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
@@ -37,11 +38,11 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	private String getOperationSymbol(Expression exp) {
 		switch (exp.type()) {
 			case AND:
-				return " && ";
+				return " AND ";
 			case OR:
-				return " || ";
+				return " OR ";
 			case EQ:
-				return " == ";
+				return " = ";
 			case NE:
 				return " != ";
 			case LT:
@@ -53,9 +54,9 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 			case GTE:
 				return " >= ";
 			case IN:
-				return " in ";
+				return " IN ";
 			case NIN:
-				return " nin ";
+				return " NOT IN ";
 			default:
 				throw new RuntimeException("Not supported expression type: " + exp.type());
 		}
@@ -63,7 +64,24 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("$." + key.key());
+		context.append("metadata::jsonb->>'");
+		if (hasOuterQuotes(key.key())) {
+			context.append(removeOuterQuotes(key.key()));
+		}
+		else {
+			context.append(key.key());
+		}
+		context.append('\'');
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		if (value instanceof String) {
+			context.append(String.format("\'%s\'", value));
+		}
+		else {
+			context.append(value);
+		}
 	}
 
 	@Override
@@ -73,6 +91,16 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doEndGroup(Group group, StringBuilder context) {
+		context.append(")");
+	}
+
+	@Override
+	protected void doStartValueRange(Filter.Value listValue, StringBuilder context) {
+		context.append("(");
+	}
+
+	@Override
+	protected void doEndValueRange(Filter.Value listValue, StringBuilder context) {
 		context.append(")");
 	}
 

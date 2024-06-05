@@ -299,7 +299,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(nativeFilterExpression)) {
-			jsonPathFilter = " AND metadata::jsonb @@ '" + nativeFilterExpression + "'::jsonpath ";
+			jsonPathFilter = " AND (" + nativeFilterExpression + ") ";
 		}
 
 		double distance = 1 - request.getSimilarityThreshold();
