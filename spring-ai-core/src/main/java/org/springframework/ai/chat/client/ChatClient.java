@@ -86,8 +86,6 @@ public interface ChatClient {
 
 		PromptUserSpec media(MimeType mimeType, Resource resource);
 
-		List<Media> media();
-
 	}
 
 	interface PromptSystemSpec {
@@ -228,8 +226,6 @@ public interface ChatClient {
 
 		Builder defaultAdvisors(List<RequestResponseAdvisor> advisors);
 
-		ChatClient build();
-
 		Builder defaultOptions(ChatOptions chatOptions);
 
 		Builder defaultUser(String text);
@@ -252,51 +248,8 @@ public interface ChatClient {
 
 		Builder defaultFunctions(String... functionNames);
 
-	}
+		ChatClient build();
 
-	/**
-	 * Calls the underlying chat model with a prompt message and returns the output
-	 * content of the first generation.
-	 * @param message The message to be used as a prompt for the chat model.
-	 * @return The output content of the first generation.
-	 * @deprecated This method is deprecated as of version 1.0.0 M1 and will be removed in
-	 * a future release. Use the method
-	 * builder(chatModel).build().prompt().user(message).call().content() instead
-	 *
-	 */
-	@Deprecated(since = "1.0.0 M1", forRemoval = true)
-	default String call(String message) {
-		var prompt = new Prompt(new UserMessage(message));
-		var generation = call(prompt).getResult();
-		return (generation != null) ? generation.getOutput().getContent() : "";
 	}
-
-	/**
-	 * Calls the underlying chat model with a prompt message and returns the output
-	 * content of the first generation.
-	 * @param messages The messages to be used as a prompt for the chat model.
-	 * @return The output content of the first generation.
-	 * @deprecated This method is deprecated as of version 1.0.0 M1 and will be removed in
-	 * a future release. Use the method
-	 * builder(chatModel).build().prompt().messages(messages).call().content() instead.
-	 */
-	@Deprecated(since = "1.0.0 M1", forRemoval = true)
-	default String call(Message... messages) {
-		var prompt = new Prompt(Arrays.asList(messages));
-		var generation = call(prompt).getResult();
-		return (generation != null) ? generation.getOutput().getContent() : "";
-	}
-
-	/**
-	 * Calls the underlying chat model with a prompt and returns the corresponding chat
-	 * response.
-	 * @param prompt The prompt to be used for the chat model.
-	 * @return The chat response containing the generated messages.
-	 * @deprecated This method is deprecated as of version 1.0.0 M1 and will be removed in
-	 * a future release. Use the method builder(chatModel).build().prompt(prompt).call()
-	 * instead.
-	 */
-	@Deprecated(since = "1.0.0 M1", forRemoval = true)
-	ChatResponse call(Prompt prompt);
 
 }
