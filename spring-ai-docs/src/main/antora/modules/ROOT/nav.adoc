@@ -11,6 +11,7 @@
 **** xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Function Calling]
 *** xref:api/bedrock-chat.adoc[Amazon Bedrock]
 **** xref:api/chat/bedrock/bedrock-anthropic3.adoc[Anthropic3]
+***** xref:api/chat/functions/bedrock/bedrock-anthropic3-chat-functions.adoc[Function Calling]
 **** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic2]
 **** xref:api/chat/bedrock/bedrock-llama.adoc[Llama]
 **** xref:api/chat/bedrock/bedrock-cohere.adoc[Cohere]

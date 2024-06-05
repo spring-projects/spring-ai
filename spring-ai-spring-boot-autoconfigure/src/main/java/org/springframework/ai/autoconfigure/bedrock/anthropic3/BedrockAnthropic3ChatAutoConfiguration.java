@@ -16,20 +16,28 @@
 package org.springframework.ai.autoconfigure.bedrock.anthropic3;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
+
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
 import org.springframework.ai.bedrock.anthropic3.BedrockAnthropic3ChatModel;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.util.CollectionUtils;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -62,8 +70,22 @@ public class BedrockAnthropic3ChatAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(BedrockConverseApi.class)
 	public BedrockAnthropic3ChatModel anthropic3ChatModel(BedrockConverseApi converseApi,
-			BedrockAnthropic3ChatProperties properties) {
-		return new BedrockAnthropic3ChatModel(properties.getModel(), converseApi, properties.getOptions());
+			BedrockAnthropic3ChatProperties properties, FunctionCallbackContext functionCallbackContext,
+			List<FunctionCallback> toolFunctionCallbacks) {
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			properties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+		}
+
+		return new BedrockAnthropic3ChatModel(properties.getModel(), converseApi, properties.getOptions(),
+				functionCallbackContext);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

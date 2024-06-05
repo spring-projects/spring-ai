@@ -15,12 +15,20 @@
  */
 package org.springframework.ai.bedrock.anthropic3;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Java {@link ChatOptions} for the Bedrock Anthropic chat generative model chat options.
@@ -31,7 +39,7 @@ import java.util.List;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class Anthropic3ChatOptions implements ChatOptions {
+public class Anthropic3ChatOptions implements ChatOptions, FunctionCallingOptions {
 
 	// @formatter:off
 	/**
@@ -66,6 +74,31 @@ public class Anthropic3ChatOptions implements ChatOptions {
 	 */
 	private @JsonProperty("stop_sequences") List<String> stopSequences;
 
+	/**
+	 * Tool Function Callbacks to register with the ChatModel. For Prompt
+	 * Options the functionCallbacks are automatically enabled for the duration of the
+	 * prompt execution. For Default Options the functionCallbacks are registered but
+	 * disabled by default. Use the enableFunctions to set the functions from the registry
+	 * to be used by the ChatModel chat completion requests.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+
+	/**
+	 * List of functions, identified by their names, to configure for function calling in
+	 * the chat completion requests. Functions with those names must exist in the
+	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
+	 * are automatically enabled for the duration of the prompt execution.
+	 *
+	 * Note that function enabled with the default options are enabled for all chat
+	 * completion requests. This could impact the token count and the billing. If the
+	 * functions is set in a prompt options, then the enabled functions are only active
+	 * for the duration of this prompt execution.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Set<String> functions = new HashSet<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -98,6 +131,23 @@ public class Anthropic3ChatOptions implements ChatOptions {
 
 		public Builder withStopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.options.functionCallbacks = functionCallbacks;
+			return this;
+		}
+
+		public Builder withFunctions(Set<String> functionNames) {
+			Assert.notNull(functionNames, "Function names must not be null");
+			this.options.functions = functionNames;
+			return this;
+		}
+
+		public Builder withFunction(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			this.options.functions.add(functionName);
 			return this;
 		}
 
@@ -150,12 +200,36 @@ public class Anthropic3ChatOptions implements ChatOptions {
 		this.stopSequences = stopSequences;
 	}
 
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
+		this.functionCallbacks = functionCallbacks;
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	@Override
+	public void setFunctions(Set<String> functions) {
+		Assert.notNull(functions, "Function must not be null");
+		this.functions = functions;
+	}
+
 	public static Anthropic3ChatOptions fromOptions(Anthropic3ChatOptions fromOptions) {
 		return builder().withTemperature(fromOptions.getTemperature())
 			.withMaxTokens(fromOptions.getMaxTokens())
 			.withTopK(fromOptions.getTopK())
 			.withTopP(fromOptions.getTopP())
 			.withStopSequences(fromOptions.getStopSequences())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+			.withFunctions(fromOptions.getFunctions())
 			.build();
 	}
 

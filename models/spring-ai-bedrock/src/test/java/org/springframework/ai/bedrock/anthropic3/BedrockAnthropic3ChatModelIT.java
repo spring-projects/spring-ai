@@ -17,6 +17,7 @@ package org.springframework.ai.bedrock.anthropic3;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.MockWeatherService;
 import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -44,6 +46,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -244,6 +247,30 @@ class BedrockAnthropic3ChatModelIT {
 		String content = response.getResult().getOutput().getContent();
 
 		assertThat(content).isNotNull();
+	}
+
+	@Test
+	void functionCallTest() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = Anthropic3ChatOptions.builder()
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.build()))
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		Generation generation = response.getResult();
+		assertThat(generation.getOutput().getContent()).containsAnyOf("30.0", "30");
+		assertThat(generation.getOutput().getContent()).containsAnyOf("10.0", "10");
+		assertThat(generation.getOutput().getContent()).containsAnyOf("15.0", "15");
 	}
 
 	@SpringBootConfiguration

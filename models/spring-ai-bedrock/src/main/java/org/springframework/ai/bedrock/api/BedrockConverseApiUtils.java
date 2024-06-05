@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.bedrock.BedrockConverseChatGenerationMetadata;
 import org.springframework.ai.bedrock.BedrockChatResponseMetadata;
+import org.springframework.ai.bedrock.api.BedrockConverseApi.BedrockConverseRequest;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -40,7 +42,6 @@ import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDeltaEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStopEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
@@ -50,9 +51,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamReques
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
-import software.amazon.awssdk.services.bedrockruntime.model.MessageStartEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock.Type;
 
 /**
  * Amazon Bedrock Converse API utils.
@@ -61,8 +62,31 @@ import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
  * @since 1.0.0
  */
 public class BedrockConverseApiUtils {
-
 	private static final ObjectMapper objectMapper = new ObjectMapper();
+
+	/**
+	 * Convert {@link Prompt} to {@link ConverseRequest} with model id and options. It
+	 * will merge default options and runtime options to converse inference parameters.
+	 *
+	 * @param modelId The Amazon Bedrock Model Id.
+	 * @param prompt The prompt that needs to convert.
+	 * @param defaultOptions The default options needs to convert.
+	 * @return Amazon Bedrock Converse encapsulates request.
+	 */
+	public static BedrockConverseRequest createBedrockConverseRequest(String modelId, Prompt prompt,
+			ChatOptions defaultOptions) {
+		Assert.notNull(modelId, "'modelId' must not be null.");
+		Assert.notNull(prompt, "'prompt' must not be null.");
+
+		List<Message> messages = getInstructionsMessages(prompt.getInstructions());
+
+		List<SystemContentBlock> systemMessages = getPromptSystemContentBlocks(prompt);
+
+		Document additionalModelRequestFields = getChatOptionsAdditionalModelRequestFields(defaultOptions,
+				prompt.getOptions());
+
+		return new BedrockConverseRequest(modelId, messages, systemMessages, additionalModelRequestFields);
+	}
 
 	/**
 	 * Convert {@link Prompt} to {@link ConverseRequest} with model id and options. It
@@ -88,22 +112,43 @@ public class BedrockConverseApiUtils {
 	 * @return Amazon Bedrock Converse request.
 	 */
 	public static ConverseRequest createConverseRequest(String modelId, Prompt prompt, ChatOptions defaultOptions) {
-		Assert.notNull(modelId, "'modelId' must not be null.");
-		Assert.notNull(prompt, "'prompt' must not be null.");
+		BedrockConverseRequest bedrockConverseRequest = createBedrockConverseRequest(modelId, prompt, defaultOptions);
 
-		List<SystemContentBlock> systemMessages = getPromptSystemContentBlocks(prompt);
+		return createConverseRequest(bedrockConverseRequest);
+	}
 
-		List<Message> userMessages = getPromptMessages(prompt);
-
-		Document additionalModelRequestFields = getChatOptionsAdditionalModelRequestFields(defaultOptions,
-				prompt.getOptions());
+	/**
+	 * Convert {@link Prompt} to {@link ConverseRequest} with model id and options. It
+	 * will merge default options and runtime options to converse inference parameters.
+	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html#API_runtime_Converse_RequestSyntax
+	 *
+	 * @param bedrockConverseRequest The Amazon Bedrock Converse encapsulates request.
+	 * @return Amazon Bedrock Converse request.
+	 */
+	public static ConverseRequest createConverseRequest(BedrockConverseRequest bedrockConverseRequest) {
+		Assert.notNull(bedrockConverseRequest, "'bedrockConverseRequest' must not be null.");
 
 		return ConverseRequest.builder()
-			.modelId(modelId)
-			.messages(userMessages)
-			.system(systemMessages)
-			.additionalModelRequestFields(additionalModelRequestFields)
+			.modelId(bedrockConverseRequest.modelId())
+			.messages(bedrockConverseRequest.messages())
+			.system(bedrockConverseRequest.systemMessages())
+			.additionalModelRequestFields(bedrockConverseRequest.additionalModelRequestFields())
+			.toolConfig(bedrockConverseRequest.toolConfiguration())
 			.build();
+	}
+
+	/**
+	 * Convert {@link Prompt} to {@link ConverseStreamRequest} with model id and options.
+	 * It will merge default options and runtime options to converse inference parameters.
+	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_ConverseStream.html
+	 *
+	 * @param modelId The Amazon Bedrock Model Id.
+	 * @param prompt The prompt that needs to convert.
+	 * @param defaultOptions The default options needs to convert.
+	 * @return Amazon Bedrock Converse stream request.
+	 */
+	public static ConverseStreamRequest createConverseStreamRequest(String modelId, Prompt prompt) {
+		return createConverseStreamRequest(modelId, prompt, null);
 	}
 
 	/**
@@ -118,21 +163,28 @@ public class BedrockConverseApiUtils {
 	 */
 	public static ConverseStreamRequest createConverseStreamRequest(String modelId, Prompt prompt,
 			ChatOptions defaultOptions) {
-		Assert.notNull(modelId, "'modelId' must not be null.");
-		Assert.notNull(prompt, "'prompt' must not be null.");
+		BedrockConverseRequest bedrockConverseRequest = createBedrockConverseRequest(modelId, prompt, defaultOptions);
 
-		List<SystemContentBlock> systemMessages = getPromptSystemContentBlocks(prompt);
+		return createConverseStreamRequest(bedrockConverseRequest);
+	}
 
-		List<Message> userMessages = getPromptMessages(prompt);
-
-		Document additionalModelRequestFields = getChatOptionsAdditionalModelRequestFields(defaultOptions,
-				prompt.getOptions());
+	/**
+	 * Convert {@link Prompt} to {@link ConverseStreamRequest} with model id and options.
+	 * It will merge default options and runtime options to converse inference parameters.
+	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_ConverseStream.html
+	 *
+	 * @param bedrockConverseRequest The Amazon Bedrock Converse encapsulates request.
+	 * @return Amazon Bedrock Converse stream request.
+	 */
+	public static ConverseStreamRequest createConverseStreamRequest(BedrockConverseRequest bedrockConverseRequest) {
+		Assert.notNull(bedrockConverseRequest, "'bedrockConverseRequest' must not be null.");
 
 		return ConverseStreamRequest.builder()
-			.modelId(modelId)
-			.messages(userMessages)
-			.system(systemMessages)
-			.additionalModelRequestFields(additionalModelRequestFields)
+			.modelId(bedrockConverseRequest.modelId())
+			.messages(bedrockConverseRequest.messages())
+			.system(bedrockConverseRequest.systemMessages())
+			.additionalModelRequestFields(bedrockConverseRequest.additionalModelRequestFields())
+			.toolConfig(bedrockConverseRequest.toolConfiguration())
 			.build();
 	}
 
@@ -147,17 +199,14 @@ public class BedrockConverseApiUtils {
 	public static ChatResponse convertConverseResponse(ConverseResponse response) {
 		Assert.notNull(response, "'response' must not be null.");
 
-		String stopReason = response.stopReasonAsString();
+		Message message = response.output().message();
 
-		List<Generation> generations = response.output()
-			.message()
-			.content()
-			.stream()
-			.map(content -> new Generation(content.text())
-				.withGenerationMetadata(ChatGenerationMetadata.from(stopReason, null)))
-			.toList();
+		String text = getConverseResponseTextContent(message.content());
 
-		return new ChatResponse(generations, BedrockChatResponseMetadata.from(response));
+		Generation generation = new Generation(text)
+			.withGenerationMetadata(BedrockConverseChatGenerationMetadata.from(response, message));
+
+		return new ChatResponse(List.of(generation), BedrockChatResponseMetadata.from(response));
 	}
 
 	/**
@@ -169,21 +218,29 @@ public class BedrockConverseApiUtils {
 	 * @return The ChatResponse entity.
 	 */
 	public static ChatResponse convertConverseStreamOutput(ConverseStreamOutput output) {
-		if (output instanceof MessageStartEvent) {
-			return new ChatResponse(List.of());
-		} else if (output instanceof ContentBlockDeltaEvent contentBlockDeltaEvent) {
-			return new ChatResponse(List.of(new Generation(contentBlockDeltaEvent.delta().text())));
-		} else if (output instanceof ContentBlockStopEvent) {
-			return new ChatResponse(List.of());
+		if (output instanceof ContentBlockDeltaEvent contentBlockDeltaEvent) {
+			Generation generation = new Generation(contentBlockDeltaEvent.delta().text())
+					.withGenerationMetadata(BedrockConverseChatGenerationMetadata.from(contentBlockDeltaEvent));
+
+			return new ChatResponse(List.of(generation));
 		} else if (output instanceof MessageStopEvent messageStopEvent) {
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.from(messageStopEvent.stopReasonAsString(), null);
+			var metadata = BedrockConverseChatGenerationMetadata.from(messageStopEvent);
 
 			return new ChatResponse(List.of(new Generation("").withGenerationMetadata(metadata)));
 		} else if (output instanceof ConverseStreamMetadataEvent converseStreamMetadataEvent) {
 			return new ChatResponse(List.of(), BedrockChatResponseMetadata.from(converseStreamMetadataEvent));
 		} else {
-			return new ChatResponse(List.of());
+			Generation generation = new Generation("")
+					.withGenerationMetadata(BedrockConverseChatGenerationMetadata.from(output));
+
+			return new ChatResponse(List.of(generation));
 		}
+	}
+
+	private static String getConverseResponseTextContent(List<ContentBlock> contents) {
+		Optional<ContentBlock> optional = contents.stream().filter(content -> content.type() == Type.TEXT).findFirst();
+
+		return optional.isPresent() ? optional.get().text() : "";
 	}
 
 	private static List<SystemContentBlock> getPromptSystemContentBlocks(Prompt prompt) {
@@ -194,17 +251,19 @@ public class BedrockConverseApiUtils {
 			.toList();
 	}
 
-	private static List<Message> getPromptMessages(Prompt prompt) {
-		return prompt.getInstructions()
-			.stream()
+	public static List<Message> getInstructionsMessages(
+			List<org.springframework.ai.chat.messages.Message> instructions) {
+		return instructions.stream()
 			.filter(message -> message.getMessageType() == MessageType.USER
 					|| message.getMessageType() == MessageType.ASSISTANT)
-			.map(instruction -> Message.builder()
-				.content(getInstructionContents(instruction))
-				.role(instruction.getMessageType() == MessageType.USER ? ConversationRole.USER
-						: ConversationRole.ASSISTANT)
-				.build())
+			.map(instruction -> createMessage(getInstructionContents(instruction),
+					instruction.getMessageType() == MessageType.USER ? ConversationRole.USER
+							: ConversationRole.ASSISTANT))
 			.toList();
+	}
+
+	public static Message createMessage(List<ContentBlock> contentBlocks, ConversationRole role) {
+		return Message.builder().content(contentBlocks).role(role).build();
 	}
 
 	private static List<ContentBlock> getInstructionContents(org.springframework.ai.chat.messages.Message instruction) {
@@ -232,11 +291,9 @@ public class BedrockConverseApiUtils {
 	private static byte[] getContentMediaData(Object mediaData) {
 		if (mediaData instanceof byte[] bytes) {
 			return bytes;
-		}
-		else if (mediaData instanceof String text) {
+		} else if (mediaData instanceof String text) {
 			return text.getBytes();
-		}
-		else {
+		} else {
 			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
 		}
 	}
@@ -267,19 +324,11 @@ public class BedrockConverseApiUtils {
 			}
 		}
 
-		return convertAttributesToDocument(attributes);
-	}
-
-	private static Document convertAttributesToDocument(Map<String, Object> attributes) {
-		Map<String, Document> attr = attributes.entrySet()
-			.stream()
-			.collect(Collectors.toMap(e -> e.getKey(), e -> convertAttributeValueToDocument(e.getValue())));
-
-		return Document.fromMap(attr);
+		return convertObjectToDocument(attributes);
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Document convertAttributeValueToDocument(Object value) {
+	public static Document convertObjectToDocument(Object value) {
 		if (value == null) {
 			return Document.fromNull();
 		} else if (value instanceof String stringValue) {
@@ -299,12 +348,20 @@ public class BedrockConverseApiUtils {
 		} else if (value instanceof BigInteger bigIntegerValue) {
 			return Document.fromNumber(bigIntegerValue);
 		} else if (value instanceof List listValue) {
-			return Document.fromList(listValue.stream().map(v -> convertAttributeValueToDocument(v)).toList());
+			return Document.fromList(listValue.stream().map(v -> convertObjectToDocument(v)).toList());
 		} else if (value instanceof Map mapValue) {
-			return convertAttributesToDocument(mapValue);
+			return convertMapToDocument(mapValue);
 		} else {
 			throw new IllegalArgumentException("Unsupported value type:" + value.getClass().getSimpleName());
 		}
+	}
+
+	private static Document convertMapToDocument(Map<String, Object> value) {
+		Map<String, Document> attr = value.entrySet()
+			.stream()
+			.collect(Collectors.toMap(e -> e.getKey(), e -> convertObjectToDocument(e.getValue())));
+
+		return Document.fromMap(attr);
 	}
 
 }

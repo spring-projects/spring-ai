@@ -17,9 +17,11 @@
 package org.springframework.ai.bedrock.api;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -30,6 +32,7 @@ import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.publisher.Sinks.EmitResult;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
@@ -38,6 +41,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
+import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
 
 /**
  * Amazon Bedrock Converse API, It provides the basic functionality to invoke the Bedrock
@@ -183,6 +189,25 @@ public class BedrockConverseApi {
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
 	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
 	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeClient.html#converse
+	 * @param bedrockConverseRequest Model invocation request.
+	 * @return The model invocation response.
+	 */
+	public ChatResponse converse(BedrockConverseRequest bedrockConverseRequest) {
+		Assert.notNull(bedrockConverseRequest, "'bedrockConverseRequest' must not be null");
+
+		ConverseRequest converseRequest = BedrockConverseApiUtils.createConverseRequest(bedrockConverseRequest);
+
+		ConverseResponse converseResponse = converse(converseRequest);
+
+		return BedrockConverseApiUtils.convertConverseResponse(converseResponse);
+	}
+
+	/**
+	 * Invoke the model and return the response.
+	 *
+	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
+	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
+	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeClient.html#converse
 	 * @param converseRequest Model invocation request.
 	 * @return The model invocation response.
 	 */
@@ -192,6 +217,26 @@ public class BedrockConverseApi {
 		return this.retryTemplate.execute(ctx -> {
 			return client.converse(converseRequest);
 		});
+	}
+
+	/**
+	 * Invoke the model and return the response stream.
+	 *
+	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
+	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
+	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeAsyncClient.html#converseStream
+	 * @param bedrockConverseRequest Model invocation request.
+	 * @return The model invocation response stream.
+	 */
+	public Flux<ChatResponse> converseStream(BedrockConverseRequest bedrockConverseRequest) {
+		Assert.notNull(bedrockConverseRequest, "'bedrockConverseRequest' must not be null");
+
+		ConverseStreamRequest converseStreamRequest = BedrockConverseApiUtils
+			.createConverseStreamRequest(bedrockConverseRequest);
+
+		return converseStream(converseStreamRequest)
+			.map(output -> BedrockConverseApiUtils.convertConverseStreamOutput(output));
+
 	}
 
 	/**
@@ -239,6 +284,86 @@ public class BedrockConverseApi {
 
 			return eventSink.asFlux();
 		});
+	}
+
+	/**
+	 * BedrockConverseRequest encapsulates the request parameters for the Amazon Bedrock
+	 * Converse Api.
+	 *
+	 * @param modelId The Amazon Bedrock Model Id.
+	 * @param messages The messages that you want to send to the model.
+	 * @param systemMessages The system prompt to pass to the model.
+	 * @param additionalModelRequestFields Additional inference parameters that the model
+	 * supports, beyond the base set of inference parameters that Converse supports in the
+	 * inferenceConfig field.
+	 * @param toolConfiguration Configuration information for the tools that the model can
+	 * use when generating a response.
+	 */
+	public record BedrockConverseRequest(String modelId, List<Message> messages,
+			List<SystemContentBlock> systemMessages, Document additionalModelRequestFields,
+			ToolConfiguration toolConfiguration) {
+
+		public BedrockConverseRequest(String modelId, List<Message> messages, List<SystemContentBlock> systemMessages,
+				Document additionalModelRequestFields) {
+			this(modelId, messages, systemMessages, additionalModelRequestFields, null);
+		}
+
+		public static Builder from(BedrockConverseRequest request) {
+			return new Builder(request);
+		}
+
+		public static class Builder {
+
+			private String modelId;
+
+			private List<Message> messages;
+
+			private List<SystemContentBlock> systemMessages;
+
+			private Document additionalModelRequestFields;
+
+			private ToolConfiguration toolConfiguration;
+
+			private Builder(BedrockConverseRequest request) {
+				this.modelId = request.modelId();
+				this.messages = request.messages();
+				this.systemMessages = request.systemMessages();
+				this.additionalModelRequestFields = request.additionalModelRequestFields();
+				this.toolConfiguration = request.toolConfiguration();
+			}
+
+			public Builder withModelId(String modelId) {
+				this.modelId = modelId;
+				return this;
+			}
+
+			public Builder withMessages(List<Message> messages) {
+				this.messages = messages;
+				return this;
+			}
+
+			public Builder withSystemMessages(List<SystemContentBlock> systemMessages) {
+				this.systemMessages = systemMessages;
+				return this;
+			}
+
+			public Builder withAdditionalModelRequestFields(Document additionalModelRequestFields) {
+				this.additionalModelRequestFields = additionalModelRequestFields;
+				return this;
+			}
+
+			public Builder withToolConfiguration(ToolConfiguration toolConfiguration) {
+				this.toolConfiguration = toolConfiguration;
+				return this;
+			}
+
+			public BedrockConverseRequest build() {
+				return new BedrockConverseRequest(modelId, messages, systemMessages, additionalModelRequestFields,
+						toolConfiguration);
+			}
+
+		}
+
 	}
 
 }

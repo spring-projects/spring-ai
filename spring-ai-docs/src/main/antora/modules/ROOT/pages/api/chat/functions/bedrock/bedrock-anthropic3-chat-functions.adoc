@@ -1,12 +1,9 @@
-= Anthropic Function Calling
+= Bedrock Anthropic 3 Function Calling
 
-You can register custom Java functions with the `AnthropicChatModel` and have the Anthropic models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+You can register custom Java functions with the `BedrockAnthropic3ChatModel` and have the Bedrock Anthropic 3 models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
-The `claude-3-opus`, `claude-3-sonnet` and `claude-3-haiku` link:https://docs.anthropic.com/claude/docs/tool-use#tool-use-best-practices-and-limitations[models are trained to detect when a function should be called] and to respond with JSON that adheres to the function signature.
 
-The Anthropic API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
-
-NOTE: As of April 4th, 2024, streaming is not yet supported for function calling and Tool use is not yet available on third-party platforms like Vertex AI, but is coming soon.
+The Bedrock Anthropic 3 API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
 
 Spring AI provides flexible and user-friendly ways to register and call custom functions.
 In general, the custom functions need to provide a function `name`,  `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.
@@ -62,7 +59,7 @@ public class MockWeatherService implements Function<Request, Response> {
 
 === Registering Functions as Beans
 
-With the link:../anthropic-chat.html#_auto_configuration[AnthropicChatModel Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
+With the link:../bedrock/bedrock-anthropic3.html#_auto_configuration[BedrockAnthropic3ChatModel Auto-Configuration] you have multiple ways to register custom functions as beans in the Spring context.
 
 We start with describing the most POJO friendly options.
 
@@ -136,7 +133,7 @@ static class Config {
 }
 ----
 
-It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `AnthropicChatModel`.
+It wraps the 3rd party `MockWeatherService` function and registers it as a `CurrentWeather` function with the `BedrockAnthropic3ChatModel`.
 It also provides a description (2) and an optional response converter (3) to convert the response into a text as expected by the model.
 
 NOTE: By default, the response converter does a JSON serialization of the Response object.
@@ -149,12 +146,12 @@ To let the model know and call your `CurrentWeather` function you need to enable
 
 [source,java]
 ----
-AnthropicChatModel chatModel = ...
+BedrockAnthropic3ChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-		AnthropicChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
+		Anthropic3ChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -169,11 +166,11 @@ In addition to the auto-configuration you can register callback functions, dynam
 
 [source,java]
 ----
-AnthropicChatModel chatModel = ...
+BedrockAnthropic3ChatModel chatModel = ...
 
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
-var promptOptions = AnthropicChatOptions.builder()
+var promptOptions = Anthropic3ChatOptions.builder()
 	.withFunctionCallbacks(List.of(new FunctionCallbackWrapper<>(
 		"CurrentWeather", // name
 		"Get the weather in location", // function description
@@ -187,5 +184,4 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows to dynamically chose different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/anthropic/tool/FunctionCallWithPromptFunctionIT.java[FunctionCallWithPromptFunctionIT.java] integration test provides a complete example of how to register a function with the `AnthropicChatModel` and use it in a prompt request.
-
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/anthropic/tool/FunctionCallWithPromptFunctionIT.java[FunctionCallWithPromptFunctionIT.java] integration test provides a complete example of how to register a function with the `BedrockAnthropic3ChatModel` and use it in a prompt request.
