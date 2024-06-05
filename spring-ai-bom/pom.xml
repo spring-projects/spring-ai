@@ -131,7 +131,7 @@
             </dependency>
 
 
-            <!-- Vector Databses -->
+            <!-- Vector Databases -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-azure-store</artifactId>
