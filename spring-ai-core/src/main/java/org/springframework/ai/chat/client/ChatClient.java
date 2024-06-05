@@ -365,6 +365,11 @@ public interface ChatClient {
 			return this;
 		}
 
+		public <I, O> ChatClientRequest function(FunctionCallbackWrapper<I, O> functionWrapper) {
+			this.functionCallbacks.add(functionWrapper);
+			return this;
+		}
+
 		public <I, O> ChatClientRequest function(String name, String description,
 				java.util.function.Function<I, O> function) {
 
