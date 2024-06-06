@@ -142,6 +142,44 @@ You can register custom Java functions with the AzureOpenAiChatModel and have th
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
 
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
+Presently, the Azure OpenAI `gpt-4o` model offers multimodal support.
+
+The Azure OpenAI can incorporate a list of base64-encoded images or image urls with the message.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Media.java[Media] type.
+This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/b3cfa2b900ea785e055e4ff71086eeb52f6578a3/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java[OpenAiChatModelIT.java], illustrating the fusion of user text with an image using the the `GPT_4_VISION_PREVIEW` model.
+
+[source,java]
+----
+URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
+String response = ChatClient.create(chatModel).prompt()
+        .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt4o").build())
+        .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+        .call()
+        .content();
+----
+
+TIP: you can pass multiple images as well.
+
+It takes as an input the `multimodal.test.png` image:
+
+image::multimodal.test.png[Multimodal Test Image, 200, 200, align="left"]
+
+along with the text message "Explain what do you see on this picture?", and generates a response like this:
+
+----
+This is an image of a fruit bowl with a simple design. The bowl is made of metal with curved wire edges that
+create an open structure, allowing the fruit to be visible from all angles. Inside the bowl, there are two
+yellow bananas resting on top of what appears to be a red apple. The bananas are slightly overripe, as
+indicated by the brown spots on their peels. The bowl has a metal ring at the top, likely to serve as a handle
+for carrying. The bowl is placed on a flat surface with a neutral-colored background that provides a clear
+view of the fruit inside.
+----
+
 == Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-azure-openai-spring-boot-starter` to your pom (or gradle) dependencies.

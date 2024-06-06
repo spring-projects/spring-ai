@@ -15,23 +15,19 @@
  */
 package org.springframework.ai.azure.openai;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -43,6 +39,17 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StringUtils;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,11 +58,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 class AzureOpenAiChatModelIT {
 
+	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelIT.class);
+
 	@Autowired
 	private AzureOpenAiChatModel chatModel;
 
-	record ActorsFilms(String actor, List<String> movies) {
-	}
+	@Autowired
+	private String selectedModel;
 
 	@Test
 	void roleTest() {
@@ -130,9 +139,6 @@ class AzureOpenAiChatModelIT {
 		assertThat(actorsFilms.actor()).isNotNull();
 	}
 
-	record ActorsFilmsRecord(String actor, List<String> movies) {
-	}
-
 	@Test
 	void beanOutputConverterRecords() {
 
@@ -183,14 +189,54 @@ class AzureOpenAiChatModelIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
+	@Test
+	void multiModalityImageUrl() throws IOException {
+
+		// TODO: add url method that wrapps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
+
+		// @formatter:off
+		String response = ChatClient.create(chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder().withDeploymentName(selectedModel).build())
+				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info(response);
+		assertThat(response).contains("bananas", "apple");
+		assertThat(response).containsAnyOf("bowl", "basket");
+	}
+
+	record ActorsFilms(String actor, List<String> movies) {
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
+
+		public static String getDeploymentName() {
+			String deploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
+			if (StringUtils.hasText(deploymentName)) {
+				return deploymentName;
+			}
+			else {
+				return "gpt-4-0125-preview";
+			}
+		}
 
 		@Bean
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
 				.buildClient();
+		}
+
+		@Bean
+		public String selectedModel() {
+			return Optional.ofNullable(System.getenv("AZURE_OPENAI_MODEL")).orElse(getDeploymentName());
 		}
 
 		@Bean
