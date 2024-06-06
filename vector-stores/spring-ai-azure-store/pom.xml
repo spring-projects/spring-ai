@@ -57,7 +57,7 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Contains smaple test data -->
+		<!-- Contains sample test data -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>

@@ -20,7 +20,6 @@ import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.ChatClient.ChatClientRequest;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -31,13 +30,13 @@ import org.springframework.ai.chat.prompt.Prompt;
  * chain of advisors with chared execution context.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public interface RequestResponseAdvisor {
 
 	/**
 	 * @param request the {@link AdvisedRequest} data to be advised. Represents the row
-	 * {@link ChatClientRequest} data before sealed into a {@link Prompt}.
+	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 * @param context the shared data between the advisors in the chain. It is shared
 	 * between all request and response advising points of all advisors in the chain.
 	 * @return the advised {@link AdvisedRequest}.
