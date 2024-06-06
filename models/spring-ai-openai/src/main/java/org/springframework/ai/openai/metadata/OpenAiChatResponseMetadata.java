@@ -46,42 +46,37 @@ public class OpenAiChatResponseMetadata extends HashMap<String, Object> implemen
 		return chatResponseMetadata;
 	}
 
-	private final String id;
-
-	@Nullable
-	private RateLimit rateLimit;
-
-	private final Usage usage;
+	// Removed the private final fields to directly manage via the map
 
 	protected OpenAiChatResponseMetadata(String id, OpenAiUsage usage) {
 		this(id, usage, null);
 	}
 
 	protected OpenAiChatResponseMetadata(String id, OpenAiUsage usage, @Nullable OpenAiRateLimit rateLimit) {
-		this.id = id;
-		this.usage = usage;
-		this.rateLimit = rateLimit;
+		this.put("id", id);
+		this.put("usage", usage);
+		this.put("rateLimit", rateLimit);
 	}
 
 	public String getId() {
-		return this.id;
+		return (String) this.get("id");
 	}
 
 	@Override
 	@Nullable
 	public RateLimit getRateLimit() {
-		RateLimit rateLimit = this.rateLimit;
+		RateLimit rateLimit = (RateLimit) this.get("rateLimit");
 		return rateLimit != null ? rateLimit : new EmptyRateLimit();
 	}
 
 	@Override
 	public Usage getUsage() {
-		Usage usage = this.usage;
+		Usage usage = (OpenAiUsage) this.get("usage");
 		return usage != null ? usage : new EmptyUsage();
 	}
 
 	public OpenAiChatResponseMetadata withRateLimit(RateLimit rateLimit) {
-		this.rateLimit = rateLimit;
+		this.put("rateLimit", rateLimit);
 		return this;
 	}
 
@@ -89,5 +84,4 @@ public class OpenAiChatResponseMetadata extends HashMap<String, Object> implemen
 	public String toString() {
 		return AI_METADATA_STRING.formatted(getClass().getName(), getId(), getUsage(), getRateLimit());
 	}
-
 }
