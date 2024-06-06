@@ -143,8 +143,7 @@ public class AzureOpenAiChatModel
 		ChatCompletions chatCompletions = this.callWithFunctionSupport(options);
 		logger.trace("Azure ChatCompletions: {}", chatCompletions);
 
-		List<Generation> generations = chatCompletions.getChoices()
-			.stream()
+		List<Generation> generations = nullSafeList(chatCompletions.getChoices()).stream()
 			.map(choice -> new Generation(choice.getMessage().getContent())
 				.withGenerationMetadata(generateChoiceMetadata(choice)))
 			.toList();
