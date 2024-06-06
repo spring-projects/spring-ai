@@ -9,12 +9,16 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageOptions;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
-import org.springframework.ai.image.*;
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
