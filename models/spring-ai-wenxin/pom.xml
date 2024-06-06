@@ -10,7 +10,7 @@
     </parent>
     <artifactId>spring-ai-wenxin</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Wenxin</name>
+    <name>Spring AI Model - Wenxin</name>
     <description>Wenxin support</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
