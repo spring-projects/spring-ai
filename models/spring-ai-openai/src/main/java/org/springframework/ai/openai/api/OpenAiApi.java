@@ -40,8 +40,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 // @formatter:off
 /**
- * Single class implementation of the OpenAI Chat Completion API: https://platform.openai.com/docs/api-reference/chat and
- * OpenAI Embedding API: https://platform.openai.com/docs/api-reference/embeddings.
+ * Single class implementation of the <a href="https://platform.openai.com/docs/api-reference/chat">OpenAI Chat
+ * Completion API</a> and <a href="https://platform.openai.com/docs/api-reference/embeddings">OpenAI Embedding API</a>.
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
@@ -57,7 +57,7 @@ public class OpenAiApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create an new chat completion api with base URL set to https://api.openai.com
+	 * Create a new chat completion api with base URL set to https://api.openai.com
 	 *
 	 * @param openAiToken OpenAI apiKey.
 	 */
@@ -300,7 +300,7 @@ public class OpenAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 * @param n How many chat completion choices to generate for each input message. Note that you will be charged based
-	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
+	 * on the number of generated tokens across all the choices. Keep n as 1 to minimize costs.
 	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 * @param responseFormat An object specifying the format that the model must output. Setting to { "type":
