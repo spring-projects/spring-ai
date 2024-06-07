@@ -122,7 +122,7 @@ public class GemFireVectorStore implements VectorStore {
 			}
 
 			public Builder withPort(int port) {
-				Assert.isTrue(port > 0, "port must be postive");
+				Assert.isTrue(port > 0, "port must be positive");
 				this.port = port;
 				return this;
 			}

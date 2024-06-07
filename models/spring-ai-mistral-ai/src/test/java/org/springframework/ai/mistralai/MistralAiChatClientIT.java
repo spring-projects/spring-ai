@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat.client;
+package org.springframework.ai.mistralai;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -34,26 +30,25 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = OpenAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class OpenAiChatClientIT extends AbstractIT {
+@SpringBootTest(classes = MistralAiTestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
+class MistralAiChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatClientIT.class);
+
+	@Autowired
+	MistralAiChatModel chatModel;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -63,7 +58,6 @@ class OpenAiChatClientIT extends AbstractIT {
 
 	@Test
 	void call() {
-
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.system(s -> s.text(systemTextResource)
@@ -115,14 +109,14 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		List<String> flavors = ChatClient.create(chatModel).prompt()
-				.user(u -> u.text("List five {subject}")
+				.user(u -> u.text("List 10 {subject}")
 				.param("subject", "ice cream flavors"))
 				.call()
 				.entity(toStringListConverter);
 		// @formatter:on
 
 		logger.info("ice cream flavors" + flavors);
-		assertThat(flavors).hasSize(5);
+		assertThat(flavors).hasSize(10);
 		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
 
@@ -202,7 +196,8 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.create(chatModel).prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).withToolChoice(ToolChoice.AUTO).build())
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.call()
 				.content();
@@ -220,8 +215,9 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(chatModel)
+				.defaultOptions(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
 				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
 			.build()
 			.prompt().call().content();
 		// @formatter:on
@@ -238,7 +234,8 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
+				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.stream()
 				.content();
@@ -250,68 +247,6 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
 		assertThat(content).containsAnyOf("15.0", "15");
-	}
-
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
-	void multiModalityEmbeddedImage(String modelName) throws IOException {
-
-		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
-				.user(u -> u.text("Explain what do you see on this picture?")
-						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
-	}
-
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
-	void multiModalityImageUrl(String modelName) throws IOException {
-
-		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
-
-		// @formatter:off
-		String response = ChatClient.create(chatModel).prompt()
-				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
-				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
-	}
-
-	@Test
-	void streamingMultiModalityImageUrl() throws IOException {
-
-		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
-
-		// @formatter:off
-		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
-						.build())
-				.user(u -> u.text("Explain what do you see on this picture?")
-						.media(MimeTypeUtils.IMAGE_PNG, url))
-				.stream()
-				.content();
-		// @formatter:on
-
-		String content = response.collectList().block().stream().collect(Collectors.joining());
-
-		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
 	}
 
 }
