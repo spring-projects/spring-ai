@@ -138,7 +138,7 @@
 		<victools.version>4.31.1</victools.version>
 		<bedrockruntime.version>2.25.3</bedrockruntime.version>
 		<jackson.version>2.16.1</jackson.version>
-		<djl.version>0.26.0</djl.version>
+		<djl.version>0.28.0</djl.version>
 		<onnxruntime.version>1.17.0</onnxruntime.version>
 		<com.google.cloud.version>26.41.0</com.google.cloud.version>
 		<qdrant.version>1.9.1</qdrant.version>
