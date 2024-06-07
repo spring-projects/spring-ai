@@ -1,6 +1,6 @@
 = Gemini Function Calling
 
-WARNING: As of 30th of April 2023, the Vertex AI `Gemini Pro` model has significantly degraded the support for function calling! While the feature is still available, it is not recommended for production use.
+WARNING: 
 Apparently the Gemini Pro can not handle anymore the function name correctly.
 The parallel function calling is gone as well.
 

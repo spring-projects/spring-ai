@@ -26,7 +26,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 
 /**
- * The data of the chat client request that can be modifed before the execution of the
+ * The data of the chat client request that can be modified before the execution of the
  * ChatClient's call method
  *
  * @author Christian Tzolov

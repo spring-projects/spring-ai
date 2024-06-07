@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
@@ -136,6 +137,11 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 
 		public Builder withModel(String model) {
 			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withModel(MistralAiApi.ChatModel chatModel) {
+			this.options.setModel(chatModel.getModelName());
 			return this;
 		}
 

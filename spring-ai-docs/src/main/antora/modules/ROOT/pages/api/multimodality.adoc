@@ -51,6 +51,18 @@ var userMessage = new UserMessage(
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
+or with the fluent xref::api/chatclient.adoc[ChatClient] API:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel).prompt()
+		.user(u -> u.text("Explain what do you see on this picture?")
+				.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/multimodal.test.png")))
+		.call()
+		.content();
+----
+
+
 and produce a response like:
 
 > This is an image of a fruit bowl with a simple design. The bowl is made of metal with curved wire edges that create an open structure, allowing the fruit to be visible from all angles. Inside the bowl, there are two yellow bananas resting on top of what appears to be a red apple. The bananas are slightly overripe, as indicated by the brown spots on their peels. The bowl has a metal ring at the top, likely to serve as a handle for carrying. The bowl is placed on a flat surface with a neutral-colored background that provides a clear view of the fruit inside.
@@ -58,7 +70,7 @@ and produce a response like:
 Latest version of Spring AI provides multimodal support for the following Chat Clients:
 
 * xref:api/chat/openai-chat.adoc#_multimodal[Open AI - (GPT-4-Vision and GPT-4o models)]
-* xref:api/chat/openai-chat.adoc#_multimodal[Ollama - (LlaVa and Baklava models)]
+* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama - (LlaVa and Baklava models)]
 * xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini - (gemini-pro-vision model)]
 * xref:api/chat/anthropic-chat.adoc#_multimodal[Anthropic Claude 3]
 * xref:api/chat/bedrock/bedrock-anthropic3.adoc#_multimodal[AWS Bedrock Anthropic Claude 3]

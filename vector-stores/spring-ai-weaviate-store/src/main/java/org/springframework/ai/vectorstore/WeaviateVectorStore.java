@@ -115,7 +115,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	 * Used to serialize/deserialize the document metadata when stored/retrieved from the
 	 * weaviate vector store.
 	 */
-	private final ObjectMapper objetMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * Configuration class for the WeaviateVectorStore.
@@ -370,7 +370,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 		Map<String, Object> fields = new HashMap<>();
 		fields.put(CONTENT_FIELD_NAME, document.getContent());
 		try {
-			String metadataString = this.objetMapper.writeValueAsString(document.getMetadata());
+			String metadataString = this.objectMapper.writeValueAsString(document.getMetadata());
 			fields.put(METADATA_FIELD_NAME, metadataString);
 		}
 		catch (JsonProcessingException e) {
@@ -501,7 +501,7 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 		try {
 			String metadataJson = (String) item.get(METADATA_FIELD_NAME);
 			if (StringUtils.hasText(metadataJson)) {
-				metadata.putAll(this.objetMapper.readValue(metadataJson, Map.class));
+				metadata.putAll(this.objectMapper.readValue(metadataJson, Map.class));
 			}
 		}
 		catch (Exception e) {

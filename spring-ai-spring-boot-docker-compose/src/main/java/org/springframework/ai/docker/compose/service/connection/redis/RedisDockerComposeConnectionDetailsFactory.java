@@ -23,7 +23,8 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-class RedisDockerComposeConnectionDetailsFactory extends DockerComposeConnectionDetailsFactory<RedisConnectionDetails> {
+public class RedisDockerComposeConnectionDetailsFactory
+		extends DockerComposeConnectionDetailsFactory<RedisConnectionDetails> {
 
 	private static final int REDIS_PORT = 6379;
 
