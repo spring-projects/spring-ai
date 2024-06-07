@@ -14,40 +14,7 @@ Before ChatGPT, many people were fascinated by text-to-image generation models s
 
 The following table categorizes several models based on their input and output types:
 
-[cols=3*, options=header]
-|===
-|Input
-|Output
-|Examples
-
-|Language/Code/Images (Multi-Modal)
-|Language/Code
-|GPT4 - OpenAI, Google Gemini
-
-|Language/Code
-|Language/Code
-|GPT 3.5 - OpenAI-Azure OpenAI, Google Bard, Meta Llama
-
-|Language
-|Image
-|Dall-E - OpenAI + Azure, Deep AI
-
-|Language/Image
-|Image
-|Midjourney, Stable Diffusion, RunwayML
-
-|Language
-|Audio
-|OpenAI, Azure OpenAI
-
-|Audio
-|Language
-|OpenAI, Azure OpenAI
-
-|Text
-|Numbers
-|Many (AKA embeddings)
-|===
+image::spring-ai-concepts-model-types.jpg[Model types, width=600, align="center"]
 
 Spring AI currently supports models that process input and output as language, image, and audio.
 The last row in the previous table, which accepts text as input and outputs numbers, is more commonly known as embedding text and represents the internal data structures used in an AI model.
@@ -104,7 +71,10 @@ Initially starting as simple strings, prompts have evolved to include multiple m
 == Embeddings
 
 Embeddings transform text into numerical arrays or vectors, enabling AI models to process and interpret language data.
-This transformation from text to numbers and back is a key element in how AI interacts with and understands human language.
+This transformation from text to numbers is a key element in how AI interacts with and understands human language.
+
+image::spring-ai-embeddings.jpg[Embeddings, width=900, align="center"]
+
 As a Java developer exploring AI, it's not necessary to comprehend the intricate mathematical theories or the specific implementations behind these vector representations.
 A basic understanding of their role and function within AI systems suffices, particularly when you're integrating AI functionalities into your applications.
 
@@ -123,8 +93,9 @@ On input, models convert words to tokens. On output, they convert tokens back to
 
 In English, one token roughly corresponds to 75% of a word. For reference, Shakespeare's complete works, totaling around 900,000 words, translates to approximately 1.2 million tokens.
 
-Perhaps more important is that Tokens = Money.
+image::spring-ai-concepts-tokens.png[Tokens, width=600, align="center"]
 
+Perhaps more important is that Tokens = Money.
 In the context of hosted AI models, your charges are determined by the number of tokens used. Both input and output contribute to the overall token count.
 
 Also, models are subject to token limits, which restrict the amount of text processed in a single API call.
