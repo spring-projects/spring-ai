@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 public class AzureOpenAiAutoConfigurationIT {
 
-	private static String CHAT_MODEL_NAME = "gpt-35-turbo";
+	private static String CHAT_MODEL_NAME = "gpt-4o";
 
 	private static String EMBEDDING_MODEL_NAME = "text-embedding-ada-002";
 

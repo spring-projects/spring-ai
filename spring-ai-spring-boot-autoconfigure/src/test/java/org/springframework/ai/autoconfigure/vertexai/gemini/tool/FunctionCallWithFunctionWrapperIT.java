@@ -55,7 +55,7 @@ public class FunctionCallWithFunctionWrapperIT {
 	void functionCallTest() {
 		contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -65,7 +65,8 @@ public class FunctionCallWithFunctionWrapperIT {
 						Answer for all listed locations.
 						If the information was not fetched call the function again. Repeat at most 3 times.
 						""");
-				var userMessage = new UserMessage("What's the weather like in San Francisco, Paris and in Tokyo?");
+				var userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("WeatherInfo").build()));
