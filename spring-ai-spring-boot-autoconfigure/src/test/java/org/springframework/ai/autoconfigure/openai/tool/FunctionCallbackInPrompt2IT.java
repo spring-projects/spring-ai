@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.openai.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,16 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackInPrompt2IT {
@@ -40,12 +37,11 @@ public class FunctionCallbackInPrompt2IT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -72,7 +68,7 @@ public class FunctionCallbackInPrompt2IT {
 
 	@Test
 	void functionCallTest2() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -97,7 +93,7 @@ public class FunctionCallbackInPrompt2IT {
 	@Test
 	void streamingFunctionCallTest() {
 
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo-preview").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 

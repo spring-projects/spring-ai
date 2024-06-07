@@ -48,7 +48,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_3_5_TURBO.getValue();
+	public static final OpenAiApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.GPT_4_O;
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 

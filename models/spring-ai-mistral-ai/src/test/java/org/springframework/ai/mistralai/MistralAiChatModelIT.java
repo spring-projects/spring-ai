@@ -188,7 +188,7 @@ class MistralAiChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco? Response in Celsius");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -211,7 +211,7 @@ class MistralAiChatModelIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in Tokyo, Japan?");
+		UserMessage userMessage = new UserMessage("What's the weather like in Tokyo, Japan? Response in Celsius");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
