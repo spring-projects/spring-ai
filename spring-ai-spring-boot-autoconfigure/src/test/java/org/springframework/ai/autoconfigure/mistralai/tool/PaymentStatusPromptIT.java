@@ -15,30 +15,28 @@
  */
 package org.springframework.ai.autoconfigure.mistralai.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
 public class PaymentStatusPromptIT {
@@ -47,8 +45,7 @@ public class PaymentStatusPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MistralAiAutoConfiguration.class));
 
 	public record Transaction(@JsonProperty(required = true, value = "transaction_id") String id) {
 	}

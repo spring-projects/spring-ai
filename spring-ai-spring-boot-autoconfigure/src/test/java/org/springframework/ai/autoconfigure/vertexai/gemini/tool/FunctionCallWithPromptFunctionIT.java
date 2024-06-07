@@ -51,7 +51,7 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -62,7 +62,7 @@ public class FunctionCallWithPromptFunctionIT {
 						If the information was not fetched call the function again. Repeat at most 3 times.
 						""");
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris and in Tokyo?");
+						"What's the weather like in San Francisco, in Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
 
 				var promptOptions = VertexAiGeminiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())

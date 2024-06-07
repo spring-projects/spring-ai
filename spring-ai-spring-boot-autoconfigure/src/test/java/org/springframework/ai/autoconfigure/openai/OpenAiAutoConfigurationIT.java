@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.openai;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,23 +26,22 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.openai.*;
+import org.springframework.ai.openai.OpenAiAudioSpeechModel;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+
 import reactor.core.publisher.Flux;
-
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiAutoConfigurationIT {
@@ -49,8 +50,7 @@ public class OpenAiAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class));
 
 	@Test
 	void generate() {

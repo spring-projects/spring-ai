@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.openai.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,26 +25,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
@@ -51,13 +49,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -86,7 +83,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
 		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
+			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o",
 					"spring.ai.openai.chat.options.temperature=0.1")
 			.run(context -> {
 
@@ -107,7 +104,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	@Test
 	void streamFunctionCallTest() {
 		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
+			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o",
 					"spring.ai.openai.chat.options.temperature=0.1")
 			.run(context -> {
 
