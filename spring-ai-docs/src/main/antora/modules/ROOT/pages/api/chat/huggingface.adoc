@@ -1,72 +1,134 @@
-= HuggingFace Chat
+= Hugging Face Chat
 
-HuggingFace Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
-
-== Getting Started
-
-Further details on HuggingFace Inference Endpoints can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
+Hugging Face Inference Endpoints allow you to deploy and serve machine learning models in the cloud, making them accessible via an API.
 
 == Prerequisites
 
-Add the `spring-ai-huggingface` dependency:
-
-[source,xml]
-----
-<dependency>
-   <groupId>org.springframework.ai</groupId>
-   <artifactId>spring-ai-huggingface</artifactId>
-</dependency>
-----
-
-You should get your HuggingFace API key and set it as an environment variable
+You will need to create an Inference Endpoint on Hugging Face and create an API token to access the endpoint.
+Further details can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
+The Spring AI project defines a configuration property named `spring.ai.huggingface.chat.api-key` that you should set to the value of the API token obtained from Hugging Face.
+There is also a configuration property named `spring.ai.huggingface.chat.url` that you should set to the inference endpoint URL obtained when provisioning your model in Hugging Face.
+You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
+Exporting environment variables is one way to set these configuration properties:
 
 [source,shell]
 ----
-export HUGGINGFACE_API_KEY=your_api_key_here
+export SPRING_AI_HUGGINGFACE_CHAT_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_HUGGINGFACE_CHAT_URL=<INSERT INFERENCE ENDPOINT URL HERE>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Hugging Face Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-huggingface-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-huggingface-spring-boot-starter'
+}
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Note, there is not yet a Spring Boot Starter for this chat implementation.
+=== Chat Properties
 
-Obtain the endpoint URL of the Inference Endpoint.
-You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
+The prefix `spring.ai.huggingface` is the property prefix that lets you configure the chat model implementation for Hugging Face.
 
-== Making a call to the model
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -
+| spring.ai.huggingface.chat.url        | URL of the Inference Endpoint to connect to           |  -
+| spring.ai.huggingface.chat.enabled    | Enable Hugging Face chat model.                       | true
+|====
+
+== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-huggingface-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add an `application.properties` file, under the `src/main/resources` directory, to enable and configure the Hugging Face chat model:
+
+[source,application.properties]
+----
+spring.ai.huggingface.chat.api-key=YOUR_API_KEY
+spring.ai.huggingface.chat.url=YOUR_INFERENCE_ENDPOINT_URL
+----
+
+TIP: replace the `api-key` and `url` with your Hugging Face values.
+
+This will create a `HuggingfaceChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
-HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, basePath);
-Prompt prompt = new Prompt("Your text here...");
-ChatResponse response = chatModel.call(prompt);
-System.out.println(response.getGeneration().getText());
-----
+@RestController
+public class ChatController {
 
-== Example
+    private final HuggingfaceChatModel chatModel;
 
-Using the example found link:https://www.promptingguide.ai/models/mistral-7b[here]
+    @Autowired
+    public ChatController(HuggingfaceChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
 
-[source,java]
-----
-String mistral7bInstruct = """
-        [INST] You are a helpful code assistant. Your task is to generate a valid JSON object based on the given information:
-        name: John
-        lastname: Smith
-        address: #1 Samuel St.
-        Just generate the JSON object without explanations:
-        [/INST]""";
-Prompt prompt = new Prompt(mistral7bInstruct);
-ChatResponse aiResponse = huggingfaceChatModel.call(prompt);
-System.out.println(response.getGeneration().getText());
-----
-Will produce the output
-
-[source,json]
-----
-{
-    "name": "John",
-    "lastname": "Smith",
-    "address": "#1 Samuel St."
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
 }
 ----
 
+== Manual Configuration
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-huggingface/src/main/java/org/springframework/ai/huggingface/HuggingfaceChatModel.java[HuggingfaceChatModel] implements the `ChatModel` interface and uses the <<low-level-api>> to connect to the Hugging Face inference endpoints.
+
+Add the `spring-ai-huggingface` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-huggingface</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-huggingface'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `HuggingfaceChatModel` and use it for text generations:
+
+[source,java]
+----
+HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, url);
+
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+System.out.println(response.getGeneration().getResult().getOutput().getContent());
+----

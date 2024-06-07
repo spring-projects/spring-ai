@@ -89,7 +89,7 @@ Spring AI supports many AI models.  For an overview see here.  Specific models c
 * OpenAI
 * Azure OpenAI
 * Amazon Bedrock (Anthropic, Llama, Cohere, Titan, Jurassic2)
-* HuggingFace
+* Hugging Face
 * Google VertexAI (PaLM2, Gemini)
 * Mistral AI
 * Stability AI
