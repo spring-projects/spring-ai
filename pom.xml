@@ -74,6 +74,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
