@@ -50,7 +50,7 @@ The prefix `spring.ai.postgresml.embedding` is property prefix that configures t
 |====
 | Property | Description | Default
 | spring.ai.postgresml.embedding.enabled | Enable PostgresML embedding model.  | true
-| spring.ai.postgresml.embedding.options.transformer  | The Huggingface transformer model to use for the embedding.  | distilbert-base-uncased
+| spring.ai.postgresml.embedding.options.transformer  | The Hugging Face transformer model to use for the embedding.  | distilbert-base-uncased
 | spring.ai.postgresml.embedding.options.kwargs   | Additional transformer specific options.  | empty map
 | spring.ai.postgresml.embedding.options.vectorType   | PostgresML vector type to use for the embedding. Two options are supported: `PG_ARRAY` and `PG_VECTOR`. | PG_ARRAY
 | spring.ai.postgresml.embedding.options.metadataMode   | Document metadata aggregation mode  | EMBED

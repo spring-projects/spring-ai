@@ -262,6 +262,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-huggingface-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
