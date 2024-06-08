@@ -134,6 +134,7 @@ The complete list of supported properties are:
 | spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true
 | spring.ai.embedding.transformer.cache.directory  | Directory path to cache remote resources, such as the ONNX models   | ${java.io.tmpdir}/spring-ai-onnx-model
 | spring.ai.embedding.transformer.onnx.modelUri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx
+| spring.ai.embedding.transformer.onnx.modelOutputName | The ONNX model's output node name, which we'll use for embedding calculation.  | last_hidden_state
 | spring.ai.embedding.transformer.onnx.gpuDeviceId  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise. |  -1
 | spring.ai.embedding.transformer.metadataMode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE
 |===
@@ -142,4 +143,10 @@ NOTE: If you see an error like `Caused by: ai.onnxruntime.OrtException: Supplied
 
 ----
 spring.ai.embedding.transformer.tokenizer.options.padding=true
+----
+
+NOTE: If you get an error like `Exception in thread "main" java.lang.IllegalArgumentException: The generative output names doesn't contain expected: last_hidden_state`, you need to set the model output name to a correct value per your models. For example:
+
+----
+spring.ai.embedding.transformer.onnx.modelOutputName=token_embeddings
 ----
