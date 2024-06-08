@@ -16,23 +16,19 @@
 
 package org.springframework.ai.autoconfigure.bedrock.jurrasic2;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
 import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatModel;
-import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Jurassic2 Chat Client.
@@ -50,16 +46,6 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 		havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockAi21Jurassic2ChatAutoConfiguration {
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public Ai21Jurassic2ChatBedrockApi ai21Jurassic2ChatBedrockApi(AwsCredentialsProvider credentialsProvider,
-			AwsRegionProvider regionProvider, BedrockAi21Jurassic2ChatProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
-		return new Ai21Jurassic2ChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
-	}
 
 	@Bean
 	@ConditionalOnBean(BedrockConverseApi.class)

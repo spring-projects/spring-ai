@@ -84,7 +84,7 @@ The prefix `spring.ai.bedrock.jurassic2.chat` is the property prefix that config
 | spring.ai.bedrock.jurassic2.chat.options.countPenalty       | Penalty object for count | AWS Bedrock default
 |====
 
-Look at https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java#L164[Ai21Jurassic2ChatBedrockApi#Ai21Jurassic2ChatModel]  for other model IDs. The other value supported is `ai21.j2-ultra-v1`.
+Look at https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/BedrockAi21Jurassic2ChatModel.java[Ai21Jurassic2ChatModel]  for other model IDs. The other value supported is `ai21.j2-ultra-v1`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 TIP: All properties prefixed with `spring.ai.bedrock.jurassic2.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
@@ -182,13 +182,12 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 
 [source,java]
 ----
-Ai21Jurassic2ChatBedrockApi api = new Ai21Jurassic2ChatBedrockApi(Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(),
+BedrockConverseApi converseApi = new BedrockConverseApi(
     EnvironmentVariableCredentialsProvider.create(),
-    Region.US_EAST_1.id(),
-    new ObjectMapper(),
+    Region.EU_CENTRAL_1.id(),
     Duration.ofMillis(1000L));
 
-BedrockAi21Jurassic2ChatModel chatModel = new BedrockAi21Jurassic2ChatModel(api,
+BedrockAi21Jurassic2ChatModel chatModel = new BedrockAi21Jurassic2ChatModel(converseApi,
     BedrockAi21Jurassic2ChatOptions.builder()
         .withNumResults(1)
         .withMaxTokens(100)
@@ -204,34 +203,4 @@ BedrockAi21Jurassic2ChatModel chatModel = new BedrockAi21Jurassic2ChatModel(api,
 
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
-
 ----
-
-== Low-level Client [[low-level-api]]
-
-https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java[Ai21Jurassic2ChatBedrockApi] provides a lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-jurassic2.html[Jurassic-2 and Jurassic-2 Chat models].
-
-The `Ai21Jurassic2ChatBedrockApi` supports the `ai21.j2-mid-v1` and `ai21.j2-ultra-v1` models and only support synchronous  ( `chatCompletion()`).
-
-Here is a simple snippet on how to use the API programmatically:
-
-
-[source,java]
-----
-Ai21Jurassic2ChatBedrockApi jurassic2ChatApi = new Ai21Jurassic2ChatBedrockApi(
-        Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(),
-        Region.US_EAST_1.id(),
-        Duration.ofMillis(1000L));
-
-Ai21Jurassic2ChatRequest request = Ai21Jurassic2ChatRequest.builder("Hello, my name is")
-        .withTemperature(0.9f)
-        .withTopP(0.9f)
-        .withMaxTokens(20)
-        .build();
-
-Ai21Jurassic2ChatResponse response = jurassic2ChatApi.chatCompletion(request);
-
-
-----
-
-Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/jurassic2/api/Ai21Jurassic2ChatBedrockApi.java[Ai21Jurassic2ChatBedrockApi.java]'s JavaDoc for further information.

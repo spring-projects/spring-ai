@@ -82,7 +82,7 @@ The prefix `spring.ai.bedrock.llama.chat` is the property prefix that configures
 | spring.ai.bedrock.llama.chat.options.max-gen-len          | Specify the maximum number of tokens to use in the generated response. The model truncates the response once the generated text exceeds maxGenLen. | AWS Bedrock default
 |====
 
-Look at https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/api/LlamaChatBedrockApi.java#L164[LlamaChatBedrockApi#LlamaChatModel]  for other model IDs. The other value supported is `meta.llama2-13b-chat-v1`.
+Look at https://github.com/spring-projects/spring-ai/blob/4ba9a3cd689b9fd3a3805f540debe398a079c6ef/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/BedrockLlamaChatModel.java[LlamaChatModel]  for other model IDs. The other value supported is `meta.llama2-13b-chat-v1`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
 TIP: All properties prefixed with `spring.ai.bedrock.llama.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
@@ -185,13 +185,12 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 
 [source,java]
 ----
-LlamaChatBedrockApi api = new LlamaChatBedrockApi(LlamaChatModel.LLAMA2_70B_CHAT_V1.id(),
-	EnvironmentVariableCredentialsProvider.create(),
-	Region.US_EAST_1.id(),
-	new ObjectMapper(),
-	Duration.ofMillis(1000L));
+BedrockConverseApi converseApi = new BedrockConverseApi(
+    EnvironmentVariableCredentialsProvider.create(),
+    Region.EU_CENTRAL_1.id(),
+    Duration.ofMillis(1000L));
 
-BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(api,
+BedrockLlamaChatModel chatModel = new BedrockLlamaChatModel(converseApi,
     BedrockLlamaChatOptions.builder()
         .withTemperature(0.5f)
         .withMaxGenLen(100)
@@ -204,39 +203,3 @@ ChatResponse response = chatModel.call(
 Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
-
-== Low-level LlamaChatBedrockApi Client [[low-level-api]]
-
-https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/api/LlamaChatBedrockApi.java[LlamaChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html[Meta Llama 2 and Llama 2 Chat models].
-
-Following class diagram illustrates the LlamaChatBedrockApi interface and building blocks:
-
-image::bedrock/bedrock-llama-chat-api.jpg[LlamaChatBedrockApi Class Diagram]
-
-The LlamaChatBedrockApi supports the `meta.llama3-8b-instruct-v1:0`,`meta.llama3-70b-instruct-v1:0`,`meta.llama2-13b-chat-v1` and `meta.llama2-70b-chat-v1` models for both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) responses.
-
-Here is a simple snippet how to use the api programmatically:
-
-[source,java]
-----
-LlamaChatBedrockApi llamaChatApi = new LlamaChatBedrockApi(
-        LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
-        Region.US_EAST_1.id(),
-        Duration.ofMillis(1000L));
-
-LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
-		.withTemperature(0.9f)
-		.withTopP(0.9f)
-		.withMaxGenLen(20)
-		.build();
-
-LlamaChatResponse response = llamaChatApi.chatCompletion(request);
-
-// Streaming response
-Flux<LlamaChatResponse> responseStream = llamaChatApi.chatCompletionStream(request);
-List<LlamaChatResponse> responses = responseStream.collectList().block();
-----
-
-Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/llama/api/LlamaChatBedrockApi.java[LlamaChatBedrockApi.java]'s JavaDoc for further information.
-
-

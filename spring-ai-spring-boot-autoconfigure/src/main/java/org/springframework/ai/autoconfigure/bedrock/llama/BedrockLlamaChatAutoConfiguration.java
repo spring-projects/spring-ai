@@ -15,21 +15,16 @@
  */
 package org.springframework.ai.autoconfigure.bedrock.llama;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.bedrock.llama.BedrockLlamaChatModel;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
-import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -50,15 +45,6 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnProperty(prefix = BedrockLlamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockLlamaChatAutoConfiguration {
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public LlamaChatBedrockApi llamaApi(AwsCredentialsProvider credentialsProvider, AwsRegionProvider regionProvider,
-			BedrockLlamaChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new LlamaChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
-	}
 
 	@Bean
 	@ConditionalOnBean(BedrockConverseApi.class)

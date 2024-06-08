@@ -15,15 +15,12 @@
  */
 package org.springframework.ai.autoconfigure.bedrock.anthropic3;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.List;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
 import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
 import org.springframework.ai.bedrock.anthropic3.BedrockAnthropic3ChatModel;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -39,7 +36,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.util.CollectionUtils;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Anthropic3 Chat Client.
@@ -56,16 +52,6 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 @ConditionalOnProperty(prefix = BedrockAnthropic3ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockAnthropic3ChatAutoConfiguration {
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public Anthropic3ChatBedrockApi anthropic3Api(AwsCredentialsProvider credentialsProvider,
-			AwsRegionProvider regionProvider, BedrockAnthropic3ChatProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
-		return new Anthropic3ChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
-	}
 
 	@Bean
 	@ConditionalOnBean(BedrockConverseApi.class)

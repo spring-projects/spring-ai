@@ -86,7 +86,7 @@ The prefix `spring.ai.bedrock.anthropic3.chat` is the property prefix that confi
 | spring.ai.bedrock.anthropic3.chat.options.stopSequences  | Configure up to four sequences that the generative recognizes. After a stop sequence, the generative stops generating further tokens. The returned text doesn't contain the stop sequence.  | AWS Bedrock default
 |====
 
-Look at the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/api/Anthropic3ChatBedrockApi.java[AnthropicChatModel] for other model IDs.
+Look at the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatModel.java[Anthropic3ChatModel] for other model IDs.
 Supported values are: `anthropic.claude-instant-v1`, `anthropic.claude-v2` and `anthropic.claude-v2:1`.
 Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[AWS Bedrock documentation for base model IDs].
 
@@ -235,14 +235,12 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 
 [source,java]
 ----
-Anthropic3ChatBedrockApi anthropicApi =  new Anthropic3ChatBedrockApi(
-    AnthropicChatBedrockApi.AnthropicModel.CLAUDE_V3_SONNET.id(),
+BedrockConverseApi converseApi = new BedrockConverseApi(
     EnvironmentVariableCredentialsProvider.create(),
-    Region.US_EAST_1.id(),
-    new ObjectMapper(),
+    Region.EU_CENTRAL_1.id(),
     Duration.ofMillis(1000L));
 
-BedrockAnthropic3ChatModel chatModel = new BedrockAnthropic3ChatModel(anthropicApi,
+BedrockAnthropic3ChatModel chatModel = new BedrockAnthropic3ChatModel(converseApi,
     AnthropicChatOptions.builder()
         .withTemperature(0.6f)
         .withMaxTokens(100)
@@ -258,33 +256,3 @@ ChatResponse response = chatModel.call(
 Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
-
-=== Low-level Anthropic3ChatBedrockApi Client [[low-level-api]]
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/api/Anthropic3ChatBedrockApi.java[Anthropic3ChatBedrockApi] provides is lightweight Java client on top of AWS Bedrock link:https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html[Anthropic Claude models].
-
-Client supports the `anthropic.claude-3-opus-20240229-v1:0`,`anthropic.claude-3-sonnet-20240229-v1:0`,`anthropic.claude-3-haiku-20240307-v1:0` and the legacy `anthropic.claude-v2`, `anthropic.claude-v2:1` and `anthropic.claude-instant-v1` models for both synchronous (e.g. `chatCompletion()`) and streaming (e.g. `chatCompletionStream()`) responses.
-
-Here is a simple snippet how to use the api programmatically:
-
-[source,java]
-----
-Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
-   AnthropicModel.CLAUDE_V2.id(), Region.EU_CENTRAL_1.id(), Duration.ofMillis(1000L));
-
-AnthropicChatRequest request = AnthropicChatRequest
-  .builder(String.format(Anthropic3ChatBedrockApi.PROMPT_TEMPLATE, "Name 3 famous pirates"))
-  .withTemperature(0.8f)
-  .withMaxTokensToSample(300)
-  .withTopK(10)
-  .build();
-
-// Sync request
-AnthropicChatResponse response = anthropicChatApi.chatCompletion(request);
-
-// Streaming request
-Flux<AnthropicChatResponse> responseStream = anthropicChatApi.chatCompletionStream(request);
-List<AnthropicChatResponse> responses = responseStream.collectList().block();
-----
-
-Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic3/api/Anthropic3ChatBedrockApi.java[Anthropic3ChatBedrockApi.java]'s JavaDoc for further information.
