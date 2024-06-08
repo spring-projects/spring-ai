@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -31,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Client.
@@ -39,7 +41,7 @@ import org.springframework.context.annotation.Import;
  * @author Wei Jiang
  * @since 0.8.0
  */
-@AutoConfiguration
+@AutoConfiguration(after = SpringAiRetryAutoConfiguration.class)
 @ConditionalOnClass(CohereEmbeddingBedrockApi.class)
 @EnableConfigurationProperties({ BedrockCohereEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockCohereEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
@@ -59,9 +61,9 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(CohereEmbeddingBedrockApi.class)
 	public BedrockCohereEmbeddingModel cohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingApi,
-			BedrockCohereEmbeddingProperties properties) {
+			BedrockCohereEmbeddingProperties properties, RetryTemplate retryTemplate) {
 
-		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions());
+		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions(), retryTemplate);
 	}
 
 }

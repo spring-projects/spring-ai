@@ -28,6 +28,8 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -43,6 +45,11 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	private final CohereEmbeddingBedrockApi embeddingApi;
 
 	private final BedrockCohereEmbeddingOptions defaultOptions;
+
+	/**
+	 * The retry template used to retry the Bedrock API calls.
+	 */
+	private final RetryTemplate retryTemplate;
 
 	// private CohereEmbeddingRequest.InputType inputType =
 	// CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT;
@@ -60,10 +67,18 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi,
 			BedrockCohereEmbeddingOptions options) {
+		this(cohereEmbeddingBedrockApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi,
+			BedrockCohereEmbeddingOptions options, RetryTemplate retryTemplate) {
 		Assert.notNull(cohereEmbeddingBedrockApi, "CohereEmbeddingBedrockApi must not be null");
-		Assert.notNull(options, "BedrockCohereEmbeddingOptions must not be null");
+		Assert.notNull(options, "DefaultOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
 		this.embeddingApi = cohereEmbeddingBedrockApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	// /**
@@ -104,13 +119,16 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 		var apiRequest = new CohereEmbeddingRequest(request.getInstructions(), optionsToUse.getInputType(),
 				optionsToUse.getTruncate());
-		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
-		var indexCounter = new AtomicInteger(0);
-		List<Embedding> embeddings = apiResponse.embeddings()
-			.stream()
-			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
-			.toList();
-		return new EmbeddingResponse(embeddings);
+
+		return this.retryTemplate.execute(ctx -> {
+			CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
+			var indexCounter = new AtomicInteger(0);
+			List<Embedding> embeddings = apiResponse.embeddings()
+				.stream()
+				.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
+				.toList();
+			return new EmbeddingResponse(embeddings);
+		});
 	}
 
 	/**
