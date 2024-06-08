@@ -69,11 +69,9 @@ public class BedrockConverseApi {
 
 	private static final Logger logger = LoggerFactory.getLogger(BedrockConverseApi.class);
 
-	private final Region region;
+	private final BedrockRuntimeClient bedrockRuntimeClient;
 
-	private final BedrockRuntimeClient client;
-
-	private final BedrockRuntimeAsyncClient clientStreaming;
+	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 	private final RetryTemplate retryTemplate;
 
@@ -155,32 +153,34 @@ public class BedrockConverseApi {
 	 */
 	public BedrockConverseApi(AwsCredentialsProvider credentialsProvider, Region region, Duration timeout,
 			RetryTemplate retryTemplate) {
-		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
-		Assert.notNull(region, "Region must not be empty");
-		Assert.notNull(timeout, "Timeout must not be null");
-		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
-
-		this.region = region;
-		this.retryTemplate = retryTemplate;
-
-		this.client = BedrockRuntimeClient.builder()
-			.region(this.region)
-			.credentialsProvider(credentialsProvider)
-			.overrideConfiguration(c -> c.apiCallTimeout(timeout))
-			.build();
-
-		this.clientStreaming = BedrockRuntimeAsyncClient.builder()
-			.region(this.region)
-			.credentialsProvider(credentialsProvider)
-			.overrideConfiguration(c -> c.apiCallTimeout(timeout))
-			.build();
+		this(BedrockRuntimeClient.builder()
+				.region(region)
+				.credentialsProvider(credentialsProvider)
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+				.build(), BedrockRuntimeAsyncClient.builder()
+				.region(region)
+				.credentialsProvider(credentialsProvider)
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+				.build(), retryTemplate);
 	}
 
 	/**
-	 * @return The AWS region.
+	 * Create a new BedrockConverseApi instance using the provided AWS Bedrock clients and the RetryTemplate.
+	 *
+	 * @param bedrockRuntimeClient The AWS BedrockRuntimeClient instance.
+	 * @param bedrockRuntimeAsyncClient The AWS BedrockRuntimeAsyncClient instance.
+	 * @param retryTemplate The retry template used to retry the Amazon Bedrock Converse
+	 * API calls.
 	 */
-	public Region getRegion() {
-		return this.region;
+	public BedrockConverseApi(BedrockRuntimeClient bedrockRuntimeClient, BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient,
+			RetryTemplate retryTemplate) {
+		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
+		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
+		this.bedrockRuntimeClient = bedrockRuntimeClient;
+		this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
+		this.retryTemplate = retryTemplate;
 	}
 
 	/**
@@ -215,7 +215,7 @@ public class BedrockConverseApi {
 		Assert.notNull(converseRequest, "'converseRequest' must not be null");
 
 		return this.retryTemplate.execute(ctx -> {
-			return client.converse(converseRequest);
+			return bedrockRuntimeClient.converse(converseRequest);
 		});
 	}
 
@@ -280,7 +280,7 @@ public class BedrockConverseApi {
 				})
 				.build();
 
-			clientStreaming.converseStream(converseStreamRequest, responseHandler);
+			bedrockRuntimeAsyncClient.converseStream(converseStreamRequest, responseHandler);
 
 			return eventSink.asFlux();
 		});

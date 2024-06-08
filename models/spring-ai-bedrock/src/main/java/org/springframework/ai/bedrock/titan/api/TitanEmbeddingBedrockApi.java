@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
@@ -80,6 +82,20 @@ public class TitanEmbeddingBedrockApi extends
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
 	}
+
+	/**
+	 * Create a new TitanEmbeddingBedrockApi instance.
+	 *
+	 * @param modelId The model id to use.
+	 * @param bedrockRuntimeClient The AWS BedrockRuntimeClient instance.
+	 * @param bedrockRuntimeAsyncClient The AWS BedrockRuntimeAsyncClient instance.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 */
+	public TitanEmbeddingBedrockApi(String model, BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ObjectMapper objectMapper) {
+		super(model, bedrockRuntimeClient, bedrockRuntimeAsyncClient, objectMapper);
+	}
+
 
 	/**
 	 * Titan Embedding request parameters.

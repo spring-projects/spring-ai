@@ -28,8 +28,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.retry.support.RetryTemplate;
 
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
@@ -47,12 +45,10 @@ public class BedrockConverseApiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public BedrockConverseApi bedrockConverseApi(AwsCredentialsProvider credentialsProvider,
-			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties awsProperties,
-			RetryTemplate retryTemplate) {
-		return new BedrockConverseApi(credentialsProvider, regionProvider.getRegion(), awsProperties.getTimeout(),
-				retryTemplate);
+	@ConditionalOnBean({ BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
+	public BedrockConverseApi bedrockConverseApi(BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, RetryTemplate retryTemplate) {
+		return new BedrockConverseApi(bedrockRuntimeClient, bedrockRuntimeAsyncClient, retryTemplate);
 	}
 
 }

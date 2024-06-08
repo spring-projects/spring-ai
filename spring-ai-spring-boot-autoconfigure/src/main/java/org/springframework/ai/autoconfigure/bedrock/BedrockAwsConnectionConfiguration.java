@@ -22,7 +22,10 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +61,32 @@ public class BedrockAwsConnectionConfiguration {
 		}
 
 		return DefaultAwsRegionProviderChain.builder().build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
+	public BedrockRuntimeClient bedrockRuntimeClient(AwsCredentialsProvider credentialsProvider,
+			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties properties) {
+
+		return BedrockRuntimeClient.builder()
+			.region(regionProvider.getRegion())
+			.credentialsProvider(credentialsProvider)
+			.overrideConfiguration(c -> c.apiCallTimeout(properties.getTimeout()))
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
+	public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient(AwsCredentialsProvider credentialsProvider,
+			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties properties) {
+
+		return BedrockRuntimeAsyncClient.builder()
+			.region(regionProvider.getRegion())
+			.credentialsProvider(credentialsProvider)
+			.overrideConfiguration(c -> c.apiCallTimeout(properties.getTimeout()))
+			.build();
 	}
 
 	/**

@@ -46,8 +46,6 @@ public class BedrockConverseApiAutoConfigurationIT {
 				var bedrockConverseApi = context.getBean(BedrockConverseApi.class);
 
 				assertThat(bedrockConverseApi).isNotNull();
-
-				assertThat(bedrockConverseApi.getRegion()).isEqualTo(Region.US_EAST_1);
 			});
 	}
 
