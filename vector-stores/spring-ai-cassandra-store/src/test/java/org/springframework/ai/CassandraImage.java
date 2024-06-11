@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class CassandraImage {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("cassandra:5.0");
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("cassandra:5.0.2");
 
 	private CassandraImage() {
 

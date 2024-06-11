@@ -36,7 +36,6 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumn;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
@@ -234,25 +233,15 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
 			}
 
-			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
+			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT)
+				.withColumn(this.schema.embedding, DataTypes.vectorOf(DataTypes.FLOAT, vectorDimension));
 
 			for (SchemaColumn metadata : this.schema.metadataColumns) {
 				createTable = createTable.withColumn(metadata.name(), metadata.type());
 			}
 
-			// https://datastax-oss.atlassian.net/browse/JAVA-3118
-			// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
-			// vectorDimension));
-
-			StringBuilder tableStmt = new StringBuilder(createTable.asCql());
-			tableStmt.setLength(tableStmt.length() - 1);
-			tableStmt.append(',')
-				.append(this.schema.embedding)
-				.append(" vector<float,")
-				.append(vectorDimension)
-				.append(">)");
-			logger.debug("Executing {}", tableStmt.toString());
-			this.session.execute(tableStmt.toString());
+			logger.debug("Executing {}", createTable.asCql());
+			this.session.execute(createTable.build());
 		}
 	}
 
@@ -290,28 +279,12 @@ public final class CassandraVectorStoreConfig implements AutoCloseable {
 				alterTable = alterTable.addColumn(this.schema.content, DataTypes.TEXT);
 			}
 			if (addEmbedding) {
-				// special case for embedding column, bc JAVA-3118, as above
-				StringBuilder alterTableStmt = new StringBuilder(((BuildableQuery) alterTable).asCql());
-				if (newColumns.isEmpty() && !addContent) {
-					alterTableStmt.append(" ADD (");
-				}
-				else {
-					alterTableStmt.setLength(alterTableStmt.length() - 1);
-					alterTableStmt.append(',');
-				}
-				alterTableStmt.append(this.schema.embedding)
-					.append(" vector<float,")
-					.append(vectorDimension)
-					.append(">)");
-
-				logger.debug("Executing {}", alterTableStmt.toString());
-				this.session.execute(alterTableStmt.toString());
+				alterTable = alterTable.addColumn(this.schema.embedding,
+						DataTypes.vectorOf(DataTypes.FLOAT, vectorDimension));
 			}
-			else {
-				SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-				logger.debug("Executing {}", stmt.getQuery());
-				this.session.execute(stmt);
-			}
+			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
+			logger.debug("Executing {}", stmt.getQuery());
+			this.session.execute(stmt);
 		}
 	}
 
