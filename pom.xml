@@ -170,7 +170,7 @@
 		<protobuf-java.version>3.25.2</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
-		<cassandra.java-driver.version>4.18.0</cassandra.java-driver.version>
+		<cassandra.java-driver.version>4.18.1</cassandra.java-driver.version>
 		<pdfbox.version>3.0.1</pdfbox.version>
 		<pgvector.version>0.1.4</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
