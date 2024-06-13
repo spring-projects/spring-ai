@@ -90,7 +90,7 @@ The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configu
 | spring.ai.zhipuai.chat.enabled | Enable ZhiPuAI chat model.  | true
 | spring.ai.zhipuai.chat.base-url | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url |  https://open.bigmodel.cn/api/paas
 | spring.ai.zhipuai.chat.api-key | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key |  -
-| spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use | `GLM-3-Turbo` (the `GLM-3-Turbo`, `GLM-4`, and `GLM-4V` point to the latest model versions)
+| spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use | `GLM-3-Turbo` (the `GLM-3-Turbo`, `GLM-4`, `GLM-4-Air`, `GLM-4-AirX`, `GLM-4-Flash`, and `GLM-4V` point to the latest model versions)
 | spring.ai.zhipuai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.zhipuai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 | spring.ai.zhipuai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 1.0
@@ -139,7 +139,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.zhipuai.api-key=YOUR_API_KEY
-spring.ai.zhipuai.chat.options.model=glm-3-turbo
+spring.ai.zhipuai.chat.options.model=glm-4-air
 spring.ai.zhipuai.chat.options.temperature=0.7
 ----
 
