@@ -253,18 +253,23 @@ public class OpenAiChatModel extends
 		Set<String> functionsForThisRequest = new HashSet<>();
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
-			// Add text content.
-			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
-			if (!CollectionUtils.isEmpty(m.getMedia())) {
-				// Add media content.
-				contents.addAll(m.getMedia()
+			Object content;
+			if (CollectionUtils.isEmpty(m.getMedia())) {
+				content = m.getContent();
+			}
+			else {
+				List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(m.getContent())));
+
+				contentList.addAll(m.getMedia()
 					.stream()
 					.map(media -> new MediaContent(
 							new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
 					.toList());
+
+				content = contentList;
 			}
 
-			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+			return new ChatCompletionMessage(content, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
 		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
