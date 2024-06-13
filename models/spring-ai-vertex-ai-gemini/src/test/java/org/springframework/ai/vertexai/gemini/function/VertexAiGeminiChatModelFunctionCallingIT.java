@@ -60,16 +60,10 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	@Test
 	public void functionCallExplicitOpenApiSchema() {
 
-		var systemMessage = new SystemMessage("""
-				Use Multi-turn function calling.
-				Answer for all listed locations.
-				If the information was not fetched call the function again. Repeat at most 3 times.
-				""");
-
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
 
-		List<Message> messages = new ArrayList<>(List.of(systemMessage, userMessage));
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		String openApiSchema = """
 				{
@@ -90,8 +84,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			// .withModel(VertexAiGeminiModelCall.ChatModel.GEMINI_PRO_1_5_PRO)
+			// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("get_current_weather")
 				.withDescription("Get the current weather in a given location")
@@ -114,8 +107,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-			// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO)
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 			.withFunctionCallbacks(List.of(
 					FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
@@ -148,15 +140,10 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	@Test
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
-		var systemMessage = new SystemMessage("""
-				Use Multi-turn function calling.
-				Answer for all listed locations.
-				If the information was not fetched call the function again. Repeat at most 3 times.
-				""");
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
 
-		List<Message> messages = new ArrayList<>(List.of(systemMessage, userMessage));
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
