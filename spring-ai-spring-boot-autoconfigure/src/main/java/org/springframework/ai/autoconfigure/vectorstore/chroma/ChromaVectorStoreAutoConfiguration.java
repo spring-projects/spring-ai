@@ -76,7 +76,7 @@ public class ChromaVectorStoreAutoConfiguration {
 				storeProperties.isInitializeSchema());
 	}
 
-	private static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {
+	static class PropertiesChromaConnectionDetails implements ChromaConnectionDetails {
 
 		private final ChromaApiProperties properties;
 

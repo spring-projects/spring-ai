@@ -53,7 +53,7 @@ public class RedisVectorStoreAutoConfiguration {
 		return new RedisVectorStore(config, embeddingModel, properties.isInitializeSchema());
 	}
 
-	private static class PropertiesRedisConnectionDetails implements RedisConnectionDetails {
+	static class PropertiesRedisConnectionDetails implements RedisConnectionDetails {
 
 		private final RedisVectorStoreProperties properties;
 
