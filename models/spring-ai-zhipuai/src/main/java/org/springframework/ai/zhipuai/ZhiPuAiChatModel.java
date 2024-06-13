@@ -17,12 +17,11 @@ package org.springframework.ai.zhipuai;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -287,7 +286,7 @@ public class ZhiPuAiChatModel extends
 		if (mediaContentData instanceof byte[] bytes) {
 			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
 			// following the prefix pattern.
-			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+			return Base64.getEncoder().encodeToString(bytes);
 		}
 		else if (mediaContentData instanceof String text) {
 			// Assume the text is a URLs or a base64 encoded image prefixed by the user.

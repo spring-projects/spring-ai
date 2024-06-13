@@ -18,7 +18,6 @@ package org.springframework.ai.zhipuai.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
@@ -49,7 +48,7 @@ import java.util.function.Predicate;
  */
 public class ZhiPuAiApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GLM_3_Turbo.getValue();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.GLM_4_Air.getValue();
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.Embedding_2.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -115,6 +114,10 @@ public class ZhiPuAiApi {
 	 */
 	public enum ChatModel implements ModelDescription {
 		GLM_4("GLM-4"),
+		GLM_4V("glm-4v"),
+		GLM_4_Air("glm-4-air"),
+		GLM_4_AirX("glm-4-airx"),
+		GLM_4_Flash("glm-4-flash"),
 		GLM_3_Turbo("GLM-3-Turbo");
 
 		public final String  value;
