@@ -15,37 +15,37 @@
  */
 package org.springframework.ai.vertexai.gemini.function;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.google.cloud.vertexai.Transport;
+import com.google.cloud.vertexai.VertexAI;
+
+import reactor.core.publisher.Flux;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
@@ -57,27 +57,19 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	@Autowired
 	private VertexAiGeminiChatModel chatModel;
 
-	@AfterEach
-	public void afterEach() {
-		try {
-			Thread.sleep(3000);
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
-
 	@Test
-	@Disabled("Google Vertex AI degraded support for parallel function calls")
 	public void functionCallExplicitOpenApiSchema() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, in Paris and in Tokyo, Japan?"
-						+ " Use Celsius units. Answer for all requested locations.");
-		// " Use Celsius units. Use Multi-turn function calling. Provide answer for all
-		// requested locations.");
+		var systemMessage = new SystemMessage("""
+				Use Multi-turn function calling.
+				Answer for all listed locations.
+				If the information was not fetched call the function again. Repeat at most 3 times.
+				""");
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(systemMessage, userMessage));
 
 		String openApiSchema = """
 				{
@@ -98,7 +90,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO)
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 			// .withModel(VertexAiGeminiModelCall.ChatModel.GEMINI_PRO_1_5_PRO)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("get_current_weather")
@@ -111,11 +103,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
-		// System.out.println(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
-
+		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -126,8 +114,8 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			// .withModel(VertexAiGeminiModelCall.ChatModel.GEMINI_PRO_1_5_PRO)
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
+			// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO)
 			.withFunctionCallbacks(List.of(
 					FunctionCallbackWrapper.builder(new MockWeatherService())
 						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
@@ -160,15 +148,18 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	@Test
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco in Celsius units?");
-		// UserMessage userMessage = new UserMessage(
-		// "What's the weather like in San Francisco, in Paris and in Tokyo, Japan? Use
-		// Multi-turn function calling. Provide answer for all requested locations.");
+		var systemMessage = new SystemMessage("""
+				Use Multi-turn function calling.
+				Answer for all listed locations.
+				If the information was not fetched call the function again. Repeat at most 3 times.
+				""");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
+		List<Message> messages = new ArrayList<>(List.of(systemMessage, userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO)
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withSchemaType(SchemaType.OPEN_API_SCHEMA)
 				.withName("getCurrentWeather")
@@ -189,9 +180,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", responseString);
 
-		// assertThat(responseString).containsAnyOf("15.0", "15");
-		assertThat(responseString).containsAnyOf("30.0", "30");
-		// assertThat(responseString).containsAnyOf("10.0", "10");
+		assertThat(responseString).contains("30", "10", "15");
 
 	}
 
@@ -227,7 +216,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO)
+						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
 						.withTemperature(0.9f)
 						.build());
 		}
