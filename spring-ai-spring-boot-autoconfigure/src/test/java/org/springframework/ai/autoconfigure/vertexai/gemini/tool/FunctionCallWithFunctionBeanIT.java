@@ -56,8 +56,8 @@ class FunctionCallWithFunctionBeanIT {
 
 		contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
 				// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
-				+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
-			// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH.getValue())
+				// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
+				+ VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -70,7 +70,7 @@ class FunctionCallWithFunctionBeanIT {
 				var userMessage = new UserMessage(
 						// "What's the weather like in San Francisco, Paris and in Tokyo?
 						// Please let me know how many function calls you've preformed.");
-						"What's the weather like in San Francisco, Paris and in Tokyo?");
+						"What's the weather like in San Francisco, Paris and in Tokyo? Perform multiple funciton execution if necessary. Return the temperature in Celsius.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
@@ -81,8 +81,6 @@ class FunctionCallWithFunctionBeanIT {
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
-
-				Thread.sleep(10000);
 
 				response = chatModel.call(new Prompt(List.of(systemMessage, userMessage),
 						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));

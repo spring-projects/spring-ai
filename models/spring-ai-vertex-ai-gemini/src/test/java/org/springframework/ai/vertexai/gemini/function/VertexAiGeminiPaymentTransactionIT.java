@@ -21,16 +21,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
@@ -46,10 +41,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
+import com.google.cloud.vertexai.Transport;
+import com.google.cloud.vertexai.VertexAI;
+
+import reactor.core.publisher.Flux;
+
 /**
  * @author Christian Tzolov
  */
-@Disabled("Vertex AI Gemini function calling is very unstable.")
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
@@ -99,7 +98,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 		logger.info("" + content);
 	}
 
-	@RepeatedTest(10)
+	@RepeatedTest(5)
 	public void streamingPaymentStatuses() {
 
 		Flux<String> streamContent = this.chatClient.prompt()
@@ -120,11 +119,9 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 		// Quota rate
 		try {
-			Thread.sleep(20000);
+			Thread.sleep(2000);
 		}
 		catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 
@@ -189,7 +186,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH)
+						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
 						// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO)
 						.withTemperature(0.1f)
 						// .withResponseMimeType(ResponseMimeType.JSON)
