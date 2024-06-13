@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
+import com.google.cloud.vertexai.api.Content.Builder;
 import com.google.cloud.vertexai.api.FunctionCall;
 import com.google.cloud.vertexai.api.FunctionDeclaration;
 import com.google.cloud.vertexai.api.FunctionResponse;
@@ -102,9 +103,9 @@ public class VertexAiGeminiChatModel
 
 		GEMINI_PRO("gemini-pro"),
 
-		GEMINI_1_5_PRO("gemini-1.5-pro-preview-0514"),
+		GEMINI_1_5_PRO("gemini-1.5-pro-001"),
 
-		GEMINI_1_5_FLASH("gemini-1.5-flash-preview-0514");
+		GEMINI_1_5_FLASH("gemini-1.5-flash-001");
 
 		ChatModel(String value) {
 			this.value = value;
@@ -416,27 +417,31 @@ public class VertexAiGeminiChatModel
 	protected GeminiRequest doCreateToolResponseRequest(GeminiRequest previousRequest, Content responseMessage,
 			List<Content> conversationHistory) {
 
-		FunctionCall functionCall = responseMessage.getPartsList().iterator().next().getFunctionCall();
+		var iterator = responseMessage.getPartsList().iterator();
 
-		var functionName = functionCall.getName();
-		String functionArguments = structToJson(functionCall.getArgs());
+		Builder builder = Content.newBuilder();
+		while (iterator.hasNext()) {
 
-		if (!this.functionCallbackRegister.containsKey(functionName)) {
-			throw new IllegalStateException("No function callback found for function name: " + functionName);
-		}
+			FunctionCall functionCall = iterator.next().getFunctionCall();
 
-		String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+			var functionName = functionCall.getName();
+			String functionArguments = structToJson(functionCall.getArgs());
 
-		Content contentFnResp = Content.newBuilder()
-			.addParts(Part.newBuilder()
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+
+			builder.addParts(Part.newBuilder()
 				.setFunctionResponse(FunctionResponse.newBuilder()
 					.setName(functionCall.getName())
 					.setResponse(jsonToStruct(functionResponse))
 					.build())
-				.build())
-			.build();
+				.build());
 
-		conversationHistory.add(contentFnResp);
+		}
+		conversationHistory.add(builder.build());
 
 		return new GeminiRequest(conversationHistory, previousRequest.model());
 	}
