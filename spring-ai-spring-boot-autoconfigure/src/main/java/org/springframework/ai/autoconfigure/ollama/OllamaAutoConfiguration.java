@@ -72,7 +72,7 @@ public class OllamaAutoConfiguration {
 		return new OllamaEmbeddingModel(ollamaApi, properties.getOptions());
 	}
 
-	private static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
+	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
 
 		private final OllamaConnectionProperties properties;
 
