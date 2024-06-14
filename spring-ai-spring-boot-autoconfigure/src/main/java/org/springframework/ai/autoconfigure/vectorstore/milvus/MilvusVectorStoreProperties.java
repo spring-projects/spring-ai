@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.milvus;
 
-import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
