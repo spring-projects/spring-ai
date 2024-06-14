@@ -63,7 +63,7 @@ public class OracleVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestClient.class)
-		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE_DISTANCE",
+		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
 				"test.spring.ai.vectorstore.oracle.dimensions=384",
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=%s", oracle23aiContainer.getJdbcUrl()),
@@ -76,7 +76,7 @@ public class OracleVectorStoreIT {
 	public static class TestClient {
 
 		@Value("${test.spring.ai.vectorstore.oracle.distanceType}")
-		OracleVectorStore.OracleAIVectorSearchDistanceType distanceType;
+		OracleVectorStore.OracleVectorStoreDistanceType distanceType;
 
 		@Value("${test.spring.ai.vectorstore.oracle.searchAccuracy}")
 		int searchAccuracy;
@@ -84,7 +84,7 @@ public class OracleVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return new OracleVectorStore(jdbcTemplate, embeddingModel, OracleVectorStore.DEFAULT_TABLE_NAME,
-					OracleVectorStore.OracleAIVectorSearchIndexType.IVF, distanceType, 384, searchAccuracy, true, true,
+					OracleVectorStore.OracleVectorStoreIndexType.IVF, distanceType, 384, searchAccuracy, true, true,
 					true);
 		}
 
