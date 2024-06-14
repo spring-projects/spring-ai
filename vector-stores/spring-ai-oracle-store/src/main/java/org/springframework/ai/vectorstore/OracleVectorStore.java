@@ -178,7 +178,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 
 	private final boolean removeExistingVectorStoreTable;
 
-	public final FilterExpressionConverter filterExpressionConverter = new IsoSqlJsonPathFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter = new SqlJsonPathFilterExpressionConverter();
 
 	/**
 	 * Table name where vectors will be stored.

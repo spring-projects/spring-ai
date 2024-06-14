@@ -6,13 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
-public class IsoSqlJsonPathFilterExpressionConverterTests {
+public class SqlJsonPathFilterExpressionConverterTests {
 
 	@Test
 	public void testNIN() {
 		final Filter.Expression e = new FilterExpressionTextParser().parse("weather nin [\"windy\", \"rainy\"]");
 
-		final String jsonPathExpression = new IsoSqlJsonPathFilterExpressionConverter().convertExpression(e);
+		final String jsonPathExpression = new SqlJsonPathFilterExpressionConverter().convertExpression(e);
 
 		assertThat(jsonPathExpression).isEqualTo("$?( !( @.weather in ( \"windy\",\"rainy\" ) ) )");
 	}
@@ -21,7 +21,7 @@ public class IsoSqlJsonPathFilterExpressionConverterTests {
 	public void testNOT() {
 		final Filter.Expression e = new FilterExpressionTextParser().parse("NOT( weather in [\"windy\", \"rainy\"] )");
 
-		final String jsonPathExpression = new IsoSqlJsonPathFilterExpressionConverter().convertExpression(e);
+		final String jsonPathExpression = new SqlJsonPathFilterExpressionConverter().convertExpression(e);
 
 		assertThat(jsonPathExpression).isEqualTo("$?( (!( @.weather in ( \"windy\",\"rainy\" ) )) )");
 	}

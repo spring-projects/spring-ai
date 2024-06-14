@@ -9,7 +9,7 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
  * "https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/json-path-expressions.html#GUID-8656CAB9-C293-4A99-BB62-F38F3CFC4C13">JSON
  * Path Documentation</a>
  */
-public class IsoSqlJsonPathFilterExpressionConverter extends AbstractFilterExpressionConverter {
+public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	@Override
 	protected String convertOperand(final Filter.Operand operand) {
