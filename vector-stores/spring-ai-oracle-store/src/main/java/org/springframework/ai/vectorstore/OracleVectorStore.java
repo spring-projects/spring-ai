@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.springframework.ai.vectorstore.OracleVectorStore.OracleAIVectorSearchDistanceType.DOT;
+import static org.springframework.ai.vectorstore.OracleVectorStore.OracleVectorStoreDistanceType.DOT;
 import static org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue;
 
 /**
@@ -76,7 +76,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 
 	public static final double SIMILARITY_THRESHOLD_EXACT_MATCH = 1.0d;
 
-	public enum OracleAIVectorSearchIndexType {
+	public enum OracleVectorStoreIndexType {
 
 		/**
 		 * Performs exact nearest neighbor search.
@@ -123,7 +123,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public enum OracleAIVectorSearchDistanceType {
+	public enum OracleVectorStoreDistanceType {
 
 		/**
 		 * Default metric. It calculates the cosine distane between two vectors.
@@ -162,9 +162,9 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 
 	public static final String DEFAULT_TABLE_NAME = "SPRING_AI_VECTORS";
 
-	public static final OracleAIVectorSearchIndexType DEFAULT_INDEX_TYPE = OracleAIVectorSearchIndexType.IVF;
+	public static final OracleVectorStoreIndexType DEFAULT_INDEX_TYPE = OracleVectorStoreIndexType.IVF;
 
-	public static final OracleAIVectorSearchDistanceType DEFAULT_DISTANCE_TYPE = OracleAIVectorSearchDistanceType.COSINE;
+	public static final OracleVectorStoreDistanceType DEFAULT_DISTANCE_TYPE = OracleVectorStoreDistanceType.COSINE;
 
 	public static final int DEFAULT_DIMENSIONS = -1;
 
@@ -189,12 +189,12 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	 * Index type used to index the vectors. It can impact performance and database memory
 	 * consumption.
 	 */
-	private final OracleAIVectorSearchIndexType indexType;
+	private final OracleVectorStoreIndexType indexType;
 
 	/**
 	 * Distance type to use for computing vector distances.
 	 */
-	private final OracleAIVectorSearchDistanceType distanceType;
+	private final OracleVectorStoreDistanceType distanceType;
 
 	/**
 	 * Expected number of dimensions for vectors. Enforcing vector dimensions is very
@@ -217,7 +217,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public OracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, String tableName,
-			OracleAIVectorSearchIndexType indexType, OracleAIVectorSearchDistanceType distanceType, int dimensions,
+			OracleVectorStoreIndexType indexType, OracleVectorStoreDistanceType distanceType, int dimensions,
 			int searchAccuracy, boolean initializeSchema, boolean removeExistingVectorStoreTable,
 			boolean forcedNormalization) {
 		if (dimensions != DEFAULT_DIMENSIONS) {
@@ -496,7 +496,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 			}
 			else {
 				if (!forcedNormalization
-						|| (distanceType != OracleAIVectorSearchDistanceType.COSINE && distanceType != DOT)) {
+						|| (distanceType != OracleVectorStoreDistanceType.COSINE && distanceType != DOT)) {
 					throw new RuntimeException(
 							"Similarity threshold filtering requires all vectors to be normalized, see the forcedNormalization parameter for this Vector store. Also only COSINE and DOT distance types are supported.");
 				}
