@@ -24,16 +24,16 @@ import static org.springframework.ai.vectorstore.OracleVectorStore.DEFAULT_SEARC
 /**
  * @author Loïc Lefèvre
  */
-@ConfigurationProperties(OracleAIVectorSearchStoreProperties.CONFIG_PREFIX)
-public class OracleAIVectorSearchStoreProperties extends CommonVectorStoreProperties {
+@ConfigurationProperties(OracleVectorStoreProperties.CONFIG_PREFIX)
+public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.oracle";
 
 	private String tableName = OracleVectorStore.DEFAULT_TABLE_NAME;
 
-	private OracleVectorStore.OracleAIVectorSearchIndexType indexType = OracleVectorStore.DEFAULT_INDEX_TYPE;
+	private OracleVectorStore.OracleVectorStoreIndexType indexType = OracleVectorStore.DEFAULT_INDEX_TYPE;
 
-	private OracleVectorStore.OracleAIVectorSearchDistanceType distanceType = OracleVectorStore.DEFAULT_DISTANCE_TYPE;
+	private OracleVectorStore.OracleVectorStoreDistanceType distanceType = OracleVectorStore.DEFAULT_DISTANCE_TYPE;
 
 	private int dimensions = OracleVectorStore.DEFAULT_DIMENSIONS;
 
@@ -51,19 +51,19 @@ public class OracleAIVectorSearchStoreProperties extends CommonVectorStoreProper
 		this.tableName = tableName;
 	}
 
-	public OracleVectorStore.OracleAIVectorSearchIndexType getIndexType() {
+	public OracleVectorStore.OracleVectorStoreIndexType getIndexType() {
 		return indexType;
 	}
 
-	public void setIndexType(OracleVectorStore.OracleAIVectorSearchIndexType indexType) {
+	public void setIndexType(OracleVectorStore.OracleVectorStoreIndexType indexType) {
 		this.indexType = indexType;
 	}
 
-	public OracleVectorStore.OracleAIVectorSearchDistanceType getDistanceType() {
+	public OracleVectorStore.OracleVectorStoreDistanceType getDistanceType() {
 		return distanceType;
 	}
 
-	public void setDistanceType(OracleVectorStore.OracleAIVectorSearchDistanceType distanceType) {
+	public void setDistanceType(OracleVectorStore.OracleVectorStoreDistanceType distanceType) {
 		this.distanceType = distanceType;
 	}
 

@@ -32,13 +32,13 @@ import javax.sql.DataSource;
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ OracleVectorStore.class, DataSource.class, JdbcTemplate.class })
-@EnableConfigurationProperties(OracleAIVectorSearchStoreProperties.class)
-public class OracleAIVectorSearchStoreAutoConfiguration {
+@EnableConfigurationProperties(OracleVectorStoreProperties.class)
+public class OracleVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	public OracleVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
-			OracleAIVectorSearchStoreProperties properties) {
+			OracleVectorStoreProperties properties) {
 		return new OracleVectorStore(jdbcTemplate, embeddingModel, properties.getTableName(), properties.getIndexType(),
 				properties.getDistanceType(), properties.getDimensions(), properties.getSearchAccuracy(),
 				properties.isInitializeSchema(), properties.isRemoveExistingVectorStoreTable(),
