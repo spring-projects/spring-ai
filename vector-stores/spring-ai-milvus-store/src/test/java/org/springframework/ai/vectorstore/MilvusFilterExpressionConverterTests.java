@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore.filter.converter;
+package org.springframework.ai.vectorstore;
 
 import java.util.List;
 
@@ -38,15 +38,15 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 /**
  * @author Christian Tzolov
  */
-public class PgVectorFilterExpressionConverterTests {
+public class MilvusFilterExpressionConverterTests {
 
-	FilterExpressionConverter converter = new PgVectorFilterExpressionConverter();
+	FilterExpressionConverter converter = new MilvusFilterExpressionConverter();
 
 	@Test
 	public void testEQ() {
 		// country == "BG"
 		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("$.country == \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata[\"country\"] == \"BG\"");
 	}
 
 	@Test
@@ -55,7 +55,7 @@ public class PgVectorFilterExpressionConverterTests {
 		String vectorExpr = converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 					new Expression(GTE, new Key("year"), new Value(2020))));
-		assertThat(vectorExpr).isEqualTo("$.genre == \"drama\" && $.year >= 2020");
+		assertThat(vectorExpr).isEqualTo("metadata[\"genre\"] == \"drama\" && metadata[\"year\"] >= 2020");
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class PgVectorFilterExpressionConverterTests {
 		// genre in ["comedy", "documentary", "drama"]
 		String vectorExpr = converter.convertExpression(
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("$.genre in [\"comedy\",\"documentary\",\"drama\"]");
+		assertThat(vectorExpr).isEqualTo("metadata[\"genre\"] in [\"comedy\",\"documentary\",\"drama\"]");
 	}
 
 	@Test
@@ -73,7 +73,8 @@ public class PgVectorFilterExpressionConverterTests {
 			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 					new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 							new Expression(NE, new Key("city"), new Value("Sofia")))));
-		assertThat(vectorExpr).isEqualTo("$.year >= 2020 || $.country == \"BG\" && $.city != \"Sofia\"");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"city\"] != \"Sofia\"");
 	}
 
 	@Test
@@ -83,8 +84,8 @@ public class PgVectorFilterExpressionConverterTests {
 				new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
-		assertThat(vectorExpr)
-			.isEqualTo("($.year >= 2020 || $.country == \"BG\") && $.city nin [\"Sofia\",\"Plovdiv\"]");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"city\"] nin [\"Sofia\",\"Plovdiv\"]");
 	}
 
 	@Test
@@ -95,7 +96,8 @@ public class PgVectorFilterExpressionConverterTests {
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
 
-		assertThat(vectorExpr).isEqualTo("$.isOpen == true && $.year >= 2020 && $.country in [\"BG\",\"NL\",\"US\"]");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"isOpen\"] == true && metadata[\"year\"] >= 2020 && metadata[\"country\"] in [\"BG\",\"NL\",\"US\"]");
 	}
 
 	@Test
@@ -105,14 +107,17 @@ public class PgVectorFilterExpressionConverterTests {
 			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
 					new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
-		assertThat(vectorExpr).isEqualTo("$.temperature >= -15.6 && $.temperature <= 20.13");
+		assertThat(vectorExpr).isEqualTo("metadata[\"temperature\"] >= -15.6 && metadata[\"temperature\"] <= 20.13");
 	}
 
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("$.\"country 1 2 3\" == \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata[\"country 1 2 3\"] == \"BG\"");
+
+		vectorExpr = converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"country 1 2 3\"] == \"BG\"");
 	}
 
 }

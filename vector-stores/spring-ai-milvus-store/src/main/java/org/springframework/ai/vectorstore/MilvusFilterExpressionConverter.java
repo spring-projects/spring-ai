@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore.filter.converter;
+package org.springframework.ai.vectorstore;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
- * Converts {@link Expression} into PgVector metadata filter expression format.
- * (https://www.postgresql.org/docs/current/functions-json.html)
+ * Converts {@link Expression} into Milvus metadata filter expression format.
+ * (https://milvus.io/docs/json_data_type.md)
  *
  * @author Christian Tzolov
  */
-public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
+public class MilvusFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	@Override
-	protected void doExpression(Expression expression, StringBuilder context) {
-		this.convertOperand(expression.left(), context);
-		context.append(getOperationSymbol(expression));
-		this.convertOperand(expression.right(), context);
+	protected void doExpression(Expression exp, StringBuilder context) {
+		this.convertOperand(exp.left(), context);
+		context.append(getOperationSymbol(exp));
+		this.convertOperand(exp.right(), context);
 	}
 
 	private String getOperationSymbol(Expression exp) {
@@ -57,23 +59,19 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 			case NIN:
 				return " nin ";
 			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
+				throw new RuntimeException("Not supported expression type:" + exp.type());
 		}
 	}
 
 	@Override
+	protected void doGroup(Group group, StringBuilder context) {
+		this.convertOperand(new Expression(ExpressionType.AND, group.content(), group.content()), context); // trick
+	}
+
+	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("$." + key.key());
-	}
-
-	@Override
-	protected void doStartGroup(Group group, StringBuilder context) {
-		context.append("(");
-	}
-
-	@Override
-	protected void doEndGroup(Group group, StringBuilder context) {
-		context.append(")");
+		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
+		context.append("metadata[\"" + identifier + "\"]");
 	}
 
 }

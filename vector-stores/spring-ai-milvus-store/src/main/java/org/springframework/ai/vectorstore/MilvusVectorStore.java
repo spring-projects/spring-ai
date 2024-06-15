@@ -21,7 +21,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
 import com.alibaba.fastjson.JSONObject;
+
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.common.clientenum.ConsistencyLevelEnum;
 import io.milvus.grpc.DataType;
@@ -48,16 +58,6 @@ import io.milvus.param.index.DescribeIndexParam;
 import io.milvus.param.index.DropIndexParam;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.converter.MilvusFilterExpressionConverter;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
