@@ -23,17 +23,16 @@ import org.springframework.util.StringUtils;
 public class HuggingfaceTestConfiguration {
 
 	@Bean
-	public HuggingfaceChatClient huggingfaceChatClient() {
+	public HuggingfaceChatModel huggingfaceChatModel() {
 		String apiKey = System.getenv("HUGGINGFACE_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name HUGGINGFACE_API_KEY");
 		}
-		// Created aws-mistral-7b-instruct-v0-1-805 via
-		// https://ui.endpoints.huggingface.co/
-		HuggingfaceChatClient huggingfaceChatClient = new HuggingfaceChatClient(apiKey,
-				"https://f6hg7b3cvlmntp5i.us-east-1.aws.endpoints.huggingface.cloud");
-		return huggingfaceChatClient;
+		// Created aws-mistral-7b-instruct and update the HUGGINGFACE_CHAT_URL
+		HuggingfaceChatModel huggingfaceChatModel = new HuggingfaceChatModel(apiKey,
+				System.getenv("HUGGINGFACE_CHAT_URL"));
+		return huggingfaceChatModel;
 	}
 
 }

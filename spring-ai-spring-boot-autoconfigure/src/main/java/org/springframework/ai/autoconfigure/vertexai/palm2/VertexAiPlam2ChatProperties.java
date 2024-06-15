@@ -25,7 +25,7 @@ public class VertexAiPlam2ChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.chat";
 
 	/**
-	 * Enable Vertex AI PaLM API chat client.
+	 * Enable Vertex AI PaLM API chat model
 	 */
 	private boolean enabled = true;
 

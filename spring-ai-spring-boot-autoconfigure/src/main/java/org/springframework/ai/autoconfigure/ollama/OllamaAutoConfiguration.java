@@ -15,14 +15,16 @@
  */
 package org.springframework.ai.autoconfigure.ollama;
 
-import org.springframework.ai.ollama.OllamaChatClient;
-import org.springframework.ai.ollama.OllamaEmbeddingClient;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestClient;
@@ -38,6 +40,7 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
 		OllamaConnectionProperties.class })
+@ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
 public class OllamaAutoConfiguration {
 
 	@Bean
@@ -56,23 +59,20 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OllamaChatClient ollamaChatClient(OllamaApi ollamaApi, OllamaChatProperties properties) {
-
-		return new OllamaChatClient(ollamaApi).withModel(properties.getModel())
-			.withDefaultOptions(properties.getOptions());
+	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties) {
+		return new OllamaChatModel(ollamaApi, properties.getOptions());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OllamaEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OllamaEmbeddingClient ollamaEmbeddingClient(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
+	public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
 
-		return new OllamaEmbeddingClient(ollamaApi).withModel(properties.getModel())
-			.withDefaultOptions(properties.getOptions());
+		return new OllamaEmbeddingModel(ollamaApi, properties.getOptions());
 	}
 
-	private static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
+	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
 
 		private final OllamaConnectionProperties properties;
 

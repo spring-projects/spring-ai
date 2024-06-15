@@ -62,7 +62,7 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
-The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbeddingProperties`) is the property prefix that configures the embedding client implementation for Cohere.
+The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbeddingProperties`) is the property prefix that configures the embedding model implementation for Cohere.
 
 [cols="3,4,1"]
 |====
@@ -83,14 +83,14 @@ TIP: All properties prefixed with `spring.ai.bedrock.cohere.embedding.options` c
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingOptions.java[BedrockCohereEmbeddingOptions.java] provides model configurations, such as `input-type` or `truncate`.
 
-On start-up, the default options can be configured with the `BedrockCohereEmbeddingClient(api, options)` constructor or the `spring.ai.bedrock.cohere.embedding.options.*` properties.
+On start-up, the default options can be configured with the `BedrockCohereEmbeddingModel(api, options)` constructor or the `spring.ai.bedrock.cohere.embedding.options.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `EmbeddingRequest` call.
 For example to override the default temperature for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingClient.call(
+EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         BedrockCohereEmbeddingOptions.builder()
         	.withInputType(InputType.SEARCH_DOCUMENT)
@@ -115,24 +115,24 @@ spring.ai.bedrock.cohere.embedding.options.input-type=search-document
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
 
-This will create a `BedrockCohereEmbeddingClient` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the chat client for text generations.
+This will create a `BedrockCohereEmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
 
 [source,java]
 ----
 @RestController
 public class EmbeddingController {
 
-    private final EmbeddingClient embeddingClient;
+    private final EmbeddingModel embeddingModel;
 
     @Autowired
-    public EmbeddingController(EmbeddingClient embeddingClient) {
-        this.embeddingClient = embeddingClient;
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     @GetMapping("/ai/embedding")
     public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        EmbeddingResponse embeddingResponse = this.embeddingClient.embedForResponse(List.of(message));
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
         return Map.of("embedding", embeddingResponse);
     }
 }
@@ -140,7 +140,7 @@ public class EmbeddingController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingClient.java[BedrockCohereEmbeddingClient] implements the `EmbeddingClient` and uses the <<low-level-api>> to connect to the Bedrock Cohere service.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingModel.java[BedrockCohereEmbeddingModel] implements the `EmbeddingModel` and uses the <<low-level-api>> to connect to the Bedrock Cohere service.
 
 Add the `spring-ai-bedrock` dependency to your project's Maven `pom.xml` file:
 
@@ -163,7 +163,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingClient.java[BedrockCohereEmbeddingClient] and use it for text embeddings:
+Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/BedrockCohereEmbeddingModel.java[BedrockCohereEmbeddingModel] and use it for text embeddings:
 
 [source,java]
 ----
@@ -172,9 +172,9 @@ var cohereEmbeddingApi =new CohereEmbeddingBedrockApi(
 		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
 
 
-var embeddingClient = new BedrockCohereEmbeddingClient(cohereEmbeddingApi);
+var embeddingModel = new BedrockCohereEmbeddingModel(cohereEmbeddingApi);
 
-EmbeddingResponse embeddingResponse = embeddingClient
+EmbeddingResponse embeddingResponse = embeddingModel
 	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 ----
 

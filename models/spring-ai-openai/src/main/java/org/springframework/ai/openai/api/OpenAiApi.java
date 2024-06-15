@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -39,15 +40,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 // @formatter:off
 /**
- * Single class implementation of the OpenAI Chat Completion API: https://platform.openai.com/docs/api-reference/chat and
- * OpenAI Embedding API: https://platform.openai.com/docs/api-reference/embeddings.
+ * Single class implementation of the <a href="https://platform.openai.com/docs/api-reference/chat">OpenAI Chat
+ * Completion API</a> and <a href="https://platform.openai.com/docs/api-reference/embeddings">OpenAI Embedding API</a>.
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
  */
 public class OpenAiApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_3_5_TURBO.getValue();
+	public static final OpenAiApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.GPT_4_O;
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -56,7 +57,7 @@ public class OpenAiApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create an new chat completion api with base URL set to https://api.openai.com
+	 * Create a new chat completion api with base URL set to https://api.openai.com
 	 *
 	 * @param openAiToken OpenAI apiKey.
 	 */
@@ -71,7 +72,7 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken) {
-		this(baseUrl, openAiToken, RestClient.builder());
+		this(baseUrl, openAiToken, RestClient.builder(), WebClient.builder());
 	}
 
 	/**
@@ -81,8 +82,8 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
 	 */
-	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
+		this(baseUrl, openAiToken, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -93,7 +94,7 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
@@ -101,7 +102,7 @@ public class OpenAiApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder()
+		this.webClient = webClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
 				.build();
@@ -109,10 +110,31 @@ public class OpenAiApi {
 
 	/**
 	 * OpenAI Chat Completion Models:
-	 * <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a> and
-	 * <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
+	 * - <a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a>
+	 * - <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a>
+	 * - <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
 	 */
-	public enum ChatModel {
+	public enum ChatModel implements ModelDescription {
+		/**
+		 * Multimodal flagship model that’s cheaper and faster than GPT-4 Turbo.
+		 * Currently points to gpt-4o-2024-05-13.
+		 */
+		GPT_4_O("gpt-4o"),
+
+
+		/**
+		 * GPT-4 Turbo with Vision
+		 * The latest GPT-4 Turbo model with vision capabilities.
+		 * Vision requests can now use JSON mode and function calling.
+		 * Currently points to gpt-4-turbo-2024-04-09.
+		 */
+		GPT_4_TURBO("gpt-4-turbo"),
+
+		/**
+		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling
+		 */
+		GPT_4_TURBO_2204_04_09("gpt-4-turbo-2024-04-09"),
+
 		/**
 		 * (New) GPT-4 Turbo - latest GPT-4 model intended to reduce cases
 		 * of “laziness” where the model doesn’t complete a task.
@@ -191,6 +213,11 @@ public class OpenAiApi {
 
 		public String getValue() {
 			return value;
+		}
+
+		@Override
+		public String getModelName() {
+			return this.value;
 		}
 	}
 
@@ -273,7 +300,7 @@ public class OpenAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 * @param n How many chat completion choices to generate for each input message. Note that you will be charged based
-	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
+	 * on the number of generated tokens across all the choices. Keep n as 1 to minimize costs.
 	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 * @param responseFormat An object specifying the format that the model must output. Setting to { "type":
@@ -323,7 +350,7 @@ public class OpenAiApi {
 			@JsonProperty("user") String user) {
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages and model.
+		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param model ID of the model to use.
@@ -336,7 +363,7 @@ public class OpenAiApi {
 		}
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages, model and control for streaming.
+		 * Shortcut constructor for a chat completion request with the given messages, model, temperature and control for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param model ID of the model to use.
@@ -367,8 +394,7 @@ public class OpenAiApi {
 		}
 
 				/**
-		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
-		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
+		 * Shortcut constructor for a chat completion request with the given messages for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events

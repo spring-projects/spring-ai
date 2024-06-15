@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.PgVectorStore.PgDistanceType;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
@@ -24,7 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Christian Tzolov
  */
 @ConfigurationProperties(PgVectorStoreProperties.CONFIG_PREFIX)
-public class PgVectorStoreProperties {
+public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.pgvector";
 

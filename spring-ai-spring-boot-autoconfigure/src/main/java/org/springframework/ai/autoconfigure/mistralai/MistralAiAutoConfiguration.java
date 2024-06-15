@@ -18,16 +18,18 @@ package org.springframework.ai.autoconfigure.mistralai;
 import java.util.List;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.mistralai.MistralAiChatClient;
-import org.springframework.ai.mistralai.MistralAiEmbeddingClient;
+import org.springframework.ai.mistralai.MistralAiChatModel;
+import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -47,13 +49,15 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({ MistralAiEmbeddingProperties.class, MistralAiCommonProperties.class,
 		MistralAiChatProperties.class })
 @ConditionalOnClass(MistralAiApi.class)
+@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+		WebClientAutoConfiguration.class })
 public class MistralAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = MistralAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public MistralAiEmbeddingClient mistralAiEmbeddingClient(MistralAiCommonProperties commonProperties,
+	public MistralAiEmbeddingModel mistralAiEmbeddingModel(MistralAiCommonProperties commonProperties,
 			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
@@ -61,7 +65,7 @@ public class MistralAiAutoConfiguration {
 				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder,
 				responseErrorHandler);
 
-		return new MistralAiEmbeddingClient(mistralAiApi, embeddingProperties.getMetadataMode(),
+		return new MistralAiEmbeddingModel(mistralAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
 	}
 
@@ -69,7 +73,7 @@ public class MistralAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = MistralAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public MistralAiChatClient mistralAiChatClient(MistralAiCommonProperties commonProperties,
+	public MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
 			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
@@ -81,7 +85,7 @@ public class MistralAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new MistralAiChatClient(mistralAiApi, chatProperties.getOptions(), functionCallbackContext,
+		return new MistralAiChatModel(mistralAiApi, chatProperties.getOptions(), functionCallbackContext,
 				retryTemplate);
 	}
 

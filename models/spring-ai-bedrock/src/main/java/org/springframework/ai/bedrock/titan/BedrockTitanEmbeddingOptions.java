@@ -18,7 +18,7 @@ package org.springframework.ai.bedrock.titan;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingClient.InputType;
+import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.Assert;
 

@@ -163,4 +163,14 @@ public class Anthropic3ChatOptions implements ChatOptions {
 		this.anthropicVersion = anthropicVersion;
 	}
 
+	public static Anthropic3ChatOptions fromOptions(Anthropic3ChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withTopK(fromOptions.getTopK())
+			.withTopP(fromOptions.getTopP())
+			.withStopSequences(fromOptions.getStopSequences())
+			.withAnthropicVersion(fromOptions.getAnthropicVersion())
+			.build();
+	}
+
 }

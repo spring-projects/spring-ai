@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingClient;
+import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
@@ -52,12 +52,12 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	@Test
 	public void singleEmbedding() {
 		contextRunner.run(context -> {
-			BedrockCohereEmbeddingClient embeddingClient = context.getBean(BedrockCohereEmbeddingClient.class);
-			assertThat(embeddingClient).isNotNull();
-			EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(List.of("Hello World"));
+			BedrockCohereEmbeddingModel embeddingModel = context.getBean(BedrockCohereEmbeddingModel.class);
+			assertThat(embeddingModel).isNotNull();
+			EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
 			assertThat(embeddingResponse.getResults()).hasSize(1);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingClient.dimensions()).isEqualTo(1024);
+			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
 		});
 	}
 
@@ -65,10 +65,10 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	public void batchEmbedding() {
 		contextRunner.run(context -> {
 
-			BedrockCohereEmbeddingClient embeddingClient = context.getBean(BedrockCohereEmbeddingClient.class);
+			BedrockCohereEmbeddingModel embeddingModel = context.getBean(BedrockCohereEmbeddingModel.class);
 
-			assertThat(embeddingClient).isNotNull();
-			EmbeddingResponse embeddingResponse = embeddingClient
+			assertThat(embeddingModel).isNotNull();
+			EmbeddingResponse embeddingResponse = embeddingModel
 				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 			assertThat(embeddingResponse.getResults()).hasSize(2);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
@@ -76,7 +76,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingClient.dimensions()).isEqualTo(1024);
+			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
 
 		});
 	}
@@ -116,7 +116,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(BedrockCohereEmbeddingClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isEmpty();
 			});
 
 		// Explicitly enable the embedding auto-configuration.
@@ -124,7 +124,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(BedrockCohereEmbeddingClient.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isNotEmpty();
 			});
 
 		// Explicitly disable the embedding auto-configuration.
@@ -132,7 +132,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(BedrockCohereEmbeddingClient.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isEmpty();
 			});
 	}
 

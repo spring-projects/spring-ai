@@ -213,4 +213,17 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		this.truncate = truncate;
 	}
 
+	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
+		return builder().withTemperature(fromOptions.getTemperature())
+			.withTopP(fromOptions.getTopP())
+			.withTopK(fromOptions.getTopK())
+			.withMaxTokens(fromOptions.getMaxTokens())
+			.withStopSequences(fromOptions.getStopSequences())
+			.withReturnLikelihoods(fromOptions.getReturnLikelihoods())
+			.withNumGenerations(fromOptions.getNumGenerations())
+			.withLogitBias(fromOptions.getLogitBias())
+			.withTruncate(fromOptions.getTruncate())
+			.build();
+	}
+
 }

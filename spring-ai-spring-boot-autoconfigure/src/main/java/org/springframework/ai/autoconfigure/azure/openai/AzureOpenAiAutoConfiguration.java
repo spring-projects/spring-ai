@@ -22,8 +22,9 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
 
-import org.springframework.ai.azure.openai.AzureOpenAiChatClient;
-import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingClient;
+import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
+import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
+import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -37,9 +38,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 @AutoConfiguration
-@ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatClient.class })
+@ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
 @EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
-		AzureOpenAiConnectionProperties.class })
+		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class })
 public class AzureOpenAiAutoConfiguration {
 
 	@Bean
@@ -58,7 +59,7 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public AzureOpenAiChatClient azureOpenAiChatClient(OpenAIClient openAIClient,
+	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
 			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext) {
 
@@ -66,18 +67,18 @@ public class AzureOpenAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		AzureOpenAiChatClient azureOpenAiChatClient = new AzureOpenAiChatClient(openAIClient,
-				chatProperties.getOptions(), functionCallbackContext);
+		AzureOpenAiChatModel azureOpenAiChatModel = new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(),
+				functionCallbackContext);
 
-		return azureOpenAiChatClient;
+		return azureOpenAiChatModel;
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiEmbeddingClient azureOpenAiEmbeddingClient(OpenAIClient openAIClient,
+	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient,
 			AzureOpenAiEmbeddingProperties embeddingProperties) {
-		return new AzureOpenAiEmbeddingClient(openAIClient, embeddingProperties.getMetadataMode(),
+		return new AzureOpenAiEmbeddingModel(openAIClient, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions());
 	}
 
@@ -87,6 +88,15 @@ public class AzureOpenAiAutoConfiguration {
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setApplicationContext(context);
 		return manager;
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = AzureOpenAiImageOptionsProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClient openAIClient,
+			AzureOpenAiImageOptionsProperties imageProperties) {
+
+		return new AzureOpenAiImageModel(openAIClient, imageProperties.getOptions());
 	}
 
 }

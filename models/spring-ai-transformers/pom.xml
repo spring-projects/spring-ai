@@ -10,8 +10,8 @@
 	</parent>
 	<artifactId>spring-ai-transformers</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Transformers Embedding Client</name>
-	<description>Spring AI Transformers Embedding Client</description>
+	<name>Spring AI Model - ONNX Transformers</name>
+	<description>ONNX Transformers model support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

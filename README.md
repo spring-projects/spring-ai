@@ -8,12 +8,16 @@ Let's make your `@Beans` intelligent!
 
 For further information go to our [Spring AI reference documentation](https://docs.spring.io/spring-ai/reference/).
 
+## Breaking changes
+
+* Refer to the [upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html) to see how to upgrade to 1.0.0.M1 or higher.
+
 ## Project Links
 
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [Issues](https://github.com/spring-projects/spring-ai/issues)
 * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback!
-* [Upgrade from 0.7.1-SNAPSHOT](https://docs.spring.io/spring-ai/reference/upgrade-notes.html)
+
 
 ## Educational Resources
 
@@ -85,7 +89,7 @@ Spring AI supports many AI models.  For an overview see here.  Specific models c
 * OpenAI
 * Azure OpenAI
 * Amazon Bedrock (Anthropic, Llama, Cohere, Titan, Jurassic2)
-* HuggingFace
+* Hugging Face
 * Google VertexAI (PaLM2, Gemini)
 * Mistral AI
 * Stability AI
@@ -93,6 +97,7 @@ Spring AI supports many AI models.  For an overview see here.  Specific models c
 * PostgresML
 * Transformers (ONNX)
 * Anthropic Claude3
+* MiniMax
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.
@@ -158,7 +163,7 @@ Though the `DocumentWriter` interface isn't exclusively for Vector Database writ
 
 **Vector Stores:**  Vector Databases are instrumental in incorporating your data with AI models.
 They ascertain which document sections the AI should use for generating responses.
-Examples of Vector Databases include Chroma, Postgres, Pinecone, Qdrant, Weaviate, Mongo Atlas, and Redis. Spring AI's `VectorStore` abstraction permits effortless transitions between database implementations.
+Examples of Vector Databases include Chroma, Oracle, Postgres, Pinecone, Qdrant, Weaviate, Mongo Atlas, and Redis. Spring AI's `VectorStore` abstraction permits effortless transitions between database implementations.
 
 
 

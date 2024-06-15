@@ -26,8 +26,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PgVectorStoreAutoConfigurationIT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector:v0.5.1")
+	static GenericContainer<?> postgresContainer = new GenericContainer<>("pgvector/pgvector:0.7.2-pg16")
 		.withEnv("POSTGRES_USER", "postgres")
 		.withEnv("POSTGRES_PASSWORD", "postgres")
 		.withExposedPorts(5432);
@@ -104,8 +104,8 @@ public class PgVectorStoreAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

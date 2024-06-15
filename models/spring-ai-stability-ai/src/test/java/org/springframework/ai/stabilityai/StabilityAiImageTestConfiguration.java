@@ -29,8 +29,8 @@ public class StabilityAiImageTestConfiguration {
 	}
 
 	@Bean
-	StabilityAiImageClient stabilityAiImageClient(StabilityAiApi stabilityAiApi) {
-		return new StabilityAiImageClient(stabilityAiApi);
+	StabilityAiImageModel stabilityAiImageModel(StabilityAiApi stabilityAiApi) {
+		return new StabilityAiImageModel(stabilityAiApi);
 	}
 
 	private String getApiKey() {

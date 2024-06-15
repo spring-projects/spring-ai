@@ -15,14 +15,20 @@
  */
 package org.springframework.ai.image;
 
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
+
+import java.util.HashMap;
 
 public interface ImageResponseMetadata extends ResponseMetadata {
 
-	ImageResponseMetadata NULL = new ImageResponseMetadata() {
-	};
+	static class DefaultImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
 
-	default Long created() {
+	}
+
+	ImageResponseMetadata NULL = new DefaultImageResponseMetadata();
+
+	default Long getCreated() {
 		return System.currentTimeMillis();
 	}
 

@@ -19,13 +19,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingClient;
-import org.springframework.ai.transformers.TransformersEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -37,19 +37,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class ChromaVectorStoreAutoConfigurationIT {
 
 	@Container
-	static GenericContainer<?> chromaContainer = new GenericContainer<>("ghcr.io/chroma-core/chroma:0.4.15")
-		.withExposedPorts(8000);
+	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.15");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ChromaVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chromaContainer.getHost(),
-				"spring.ai.vectorstore.chroma.client.port=" + chromaContainer.getMappedPort(8000),
+		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chroma.getHost(),
+				"spring.ai.vectorstore.chroma.client.port=" + chroma.getMappedPort(8000),
 				"spring.ai.vectorstore.chroma.store.collectionName=TestCollection");
 
 	@Test
@@ -90,8 +90,8 @@ public class ChromaVectorStoreAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public EmbeddingClient embeddingClient() {
-			return new TransformersEmbeddingClient();
+		public EmbeddingModel embeddingModel() {
+			return new TransformersEmbeddingModel();
 		}
 
 	}

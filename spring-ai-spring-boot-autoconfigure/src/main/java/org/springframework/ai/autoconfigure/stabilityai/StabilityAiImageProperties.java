@@ -30,7 +30,7 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.stabilityai.image";
 
 	/**
-	 * Enable Stability Image client.
+	 * Enable Stability image model.
 	 */
 	private boolean enabled = true;
 

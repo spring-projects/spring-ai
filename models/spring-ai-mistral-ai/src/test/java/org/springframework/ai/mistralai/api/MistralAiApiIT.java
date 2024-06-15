@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -45,7 +46,7 @@ public class MistralAiApiIT {
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), MistralAiApi.ChatModel.TINY.getValue(), 0.8f, false));
+				List.of(chatCompletionMessage), MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue(), 0.8f, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -62,7 +63,7 @@ public class MistralAiApiIT {
 					""", Role.SYSTEM);
 
 		ResponseEntity<ChatCompletion> response = mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(systemMessage, userMessage), MistralAiApi.ChatModel.TINY.getValue(), 0.8f, false));
+				List.of(systemMessage, userMessage), MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue(), 0.8f, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -72,7 +73,7 @@ public class MistralAiApiIT {
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = mistralAiApi.chatCompletionStream(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), MistralAiApi.ChatModel.TINY.getValue(), 0.8f, true));
+				List.of(chatCompletionMessage), MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue(), 0.8f, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();

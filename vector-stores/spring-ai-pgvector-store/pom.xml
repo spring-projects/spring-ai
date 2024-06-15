@@ -10,7 +10,7 @@
 	</parent>
 	<artifactId>spring-ai-pgvector-store</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vector Store - pgvector</name>
+	<name>Spring AI Vector Store - PGVector</name>
 	<description>Spring AI PGVector Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
@@ -74,6 +74,11 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
 

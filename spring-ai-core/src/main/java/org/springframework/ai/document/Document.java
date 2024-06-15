@@ -112,7 +112,7 @@ public class Document implements Content {
 	}
 
 	@Override
-	public List<Media> getMedia() {
+	public List<Media> getMedia(String... dummy) {
 		return this.media;
 	}
 

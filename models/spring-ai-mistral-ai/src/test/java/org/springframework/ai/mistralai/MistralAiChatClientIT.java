@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.mistralai;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,33 +26,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
-import org.springframework.ai.chat.Generation;
-import org.springframework.ai.chat.StreamingChatClient;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Christian Tzolov
- * @since 0.8.1
- */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralAiChatClientIT {
@@ -61,96 +48,116 @@ class MistralAiChatClientIT {
 	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatClientIT.class);
 
 	@Autowired
-	protected ChatClient chatClient;
-
-	@Autowired
-	protected StreamingChatClient streamingChatClient;
+	MistralAiChatModel chatModel;
 
 	@Value("classpath:/prompts/system-message.st")
-	private Resource systemResource;
+	private Resource systemTextResource;
 
-	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
-	protected Resource qaEvaluatorAccurateAnswerResource;
-
-	@Value("classpath:/prompts/eval/qa-evaluator-not-related-message.st")
-	protected Resource qaEvaluatorNotRelatedResource;
-
-	@Value("classpath:/prompts/eval/qa-evaluator-fact-based-answer.st")
-	protected Resource qaEvalutaorFactBasedAnswerResource;
-
-	@Value("classpath:/prompts/eval/user-evaluator-message.st")
-	protected Resource userEvaluatorResource;
+	record ActorsFilms(String actor, List<String> movies) {
+	}
 
 	@Test
-	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		// NOTE: Mistral expects the system message to be before the user message or will
-		// fail with 400 error.
-		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		ChatResponse response = chatClient.call(prompt);
+	void call() {
+		// @formatter:off
+		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.system(s -> s.text(systemTextResource)
+						.param("name", "Bob")
+						.param("voice", "pirate"))
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 	}
 
 	@Test
-	void listOutputConverter() {
-		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
+	void listOutputConverterString() {
+		// @formatter:off
+		List<String> collection = ChatClient.create(chatModel).prompt()
+				.user(u -> u.text("List five {subject}")
+						.param("subject", "ice cream flavors"))
+				.call()
+				.entity(new ParameterizedTypeReference<List<String>>() {});
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				List five {subject}
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.chatClient.call(prompt).getResult();
+		logger.info(collection.toString());
+		assertThat(collection).hasSize(5);
+	}
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
-		assertThat(list).hasSize(5);
+	@Test
+	void listOutputConverterBean() {
+
+		// @formatter:off
+		List<ActorsFilms> actorsFilms = ChatClient.create(chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				});
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void customOutputConverter() {
+
+		var toStringListConverter = new ListOutputConverter(new DefaultConversionService());
+
+		// @formatter:off
+		List<String> flavors = ChatClient.create(chatModel).prompt()
+				.user(u -> u.text("List 10 {subject}")
+				.param("subject", "ice cream flavors"))
+				.call()
+				.entity(toStringListConverter);
+		// @formatter:on
+
+		logger.info("ice cream flavors" + flavors);
+		assertThat(flavors).hasSize(10);
+		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
 
 	@Test
 	void mapOutputConverter() {
-		MapOutputConverter outputConverter = new MapOutputConverter();
+		// @formatter:off
+		Map<String, Object> result = ChatClient.create(chatModel).prompt()
+				.user(u -> u.text("Provide me a List of {subject}")
+						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
+				.call()
+				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				});
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Provide me a List of {subject}
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.call(prompt).getResult();
-
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
-
 	}
 
-	record ActorsFilmsRecord(String actor, List<String> movies) {
+	@Test
+	void beanOutputConverter() {
+
+		// @formatter:off
+		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+				.user("Generate the filmography for a random actor.")
+				.call()
+				.entity(ActorsFilms.class);
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
 	@Test
 	void beanOutputConverterRecords() {
 
-		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+		// @formatter:off
+		ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks.")
+				.call()
+				.entity(ActorsFilms.class);
+		// @formatter:on
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatClient.call(prompt).getResult();
-
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -159,27 +166,26 @@ class MistralAiChatClientIT {
 	@Test
 	void beanStreamOutputConverterRecords() {
 
-		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
-				{format}
-				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		// @formatter:off
+		Flux<String> chatResponse = ChatClient.create(chatModel)
+				.prompt()
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "{format}")
+						.param("format", outputConverter.getFormat()))
+				.stream()
+				.content();
 
-		String generationTextFromStream = streamingChatClient.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+		String generationTextFromStream = chatResponse.collectList()
+				.block()
+				.stream()
+				.collect(Collectors.joining());
+		// @formatter:on
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
+		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
+
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -188,55 +194,59 @@ class MistralAiChatClientIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco?");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
-
-		ChatResponse response = chatClient.call(new Prompt(messages, promptOptions));
+		// @formatter:off
+		String response = ChatClient.create(chatModel).prompt()
+				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).withToolChoice(ToolChoice.AUTO).build())
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
+				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.call()
+				.content();
+		// @formatter:on
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
+		assertThat(response).containsAnyOf("30.0", "30");
+		assertThat(response).containsAnyOf("10.0", "10");
+		assertThat(response).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void defaultFunctionCallTest() {
+
+		// @formatter:off
+		String response = ChatClient.builder(chatModel)
+				.defaultOptions(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
+				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
+			.build()
+			.prompt().call().content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).containsAnyOf("30.0", "30");
+		assertThat(response).containsAnyOf("10.0", "10");
+		assertThat(response).containsAnyOf("15.0", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in Tokyo, Japan?");
+		// @formatter:off
+		Flux<String> response = ChatClient.create(chatModel).prompt()
+				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
+				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
+				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
+				.stream()
+				.content();
+		// @formatter:on
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = MistralAiChatOptions.builder()
-			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
-
-		Flux<ChatResponse> response = streamingChatClient.stream(new Prompt(messages, promptOptions));
-
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+		String content = response.collectList().block().stream().collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
+		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
+		assertThat(content).containsAnyOf("15.0", "15");
 	}
 
 }

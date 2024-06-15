@@ -1,7 +1,7 @@
 [[generic-model-api]]
 = Generic Model API
 
-In order to provide a foundation for all AI Model clients, the Generic Model API was created.
+In order to provide a foundation for all AI Models, the Generic Model API was created.
 This makes it easy to contribute new AI Model support to Spring AI by following a common pattern.
 The following sections walk through this API.
 
@@ -9,15 +9,15 @@ The following sections walk through this API.
 
 image::spring-ai-generic-model-api.jpg[width=900, align="center"]
 
-== ModelClient
+== Model
 
-The ModelClient interface provides a generic API for invoking AI models. It is designed to handle the interaction with various types of AI models by abstracting the process of sending requests and receiving responses. The interface uses Java generics to accommodate different types of requests and responses, enhancing flexibility and adaptability across different AI model implementations.
+The Model interface provides a generic API for invoking AI models. It is designed to handle the interaction with various types of AI models by abstracting the process of sending requests and receiving responses. The interface uses Java generics to accommodate different types of requests and responses, enhancing flexibility and adaptability across different AI model implementations.
 
 The interface is defined below:
 
 [source,java]
 ----
-public interface ModelClient<TReq extends ModelRequest<?>, TRes extends ModelResponse<?>> {
+public interface Model<TReq extends ModelRequest<?>, TRes extends ModelResponse<?>> {
 
 	/**
 	 * Executes a method call to the AI model.
@@ -29,13 +29,13 @@ public interface ModelClient<TReq extends ModelRequest<?>, TRes extends ModelRes
 }
 ----
 
-== StreamingModelClient
+== StreamingModel
 
-The StreamingModelClient interface provides a generic API for invoking an AI model with streaming response. It abstracts the process of sending requests and receiving a streaming response. The interface uses Java generics to accommodate different types of requests and responses, enhancing flexibility and adaptability across different AI model implementations.
+The StreamingModel interface provides a generic API for invoking an AI model with streaming response. It abstracts the process of sending requests and receiving a streaming response. The interface uses Java generics to accommodate different types of requests and responses, enhancing flexibility and adaptability across different AI model implementations.
 
 [source,java]
 ----
-public interface StreamingModelClient<TReq extends ModelRequest<?>, TResChunk extends ModelResponse<?>> {
+public interface StreamingModel<TReq extends ModelRequest<?>, TResChunk extends ModelResponse<?>> {
 
 	/**
 	 * Executes a method call to the AI model.

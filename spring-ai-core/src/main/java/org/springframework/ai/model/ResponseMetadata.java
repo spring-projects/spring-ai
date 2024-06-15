@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.model;
 
+import java.util.Map;
+
 /**
  * Interface representing metadata associated with an AI model's response. This interface
  * is designed to provide additional information about the generative response from an AI
@@ -25,6 +27,6 @@ package org.springframework.ai.model;
  * @author Mark Pollack
  * @since 0.8.0
  */
-public interface ResponseMetadata {
+public interface ResponseMetadata extends Map<String, Object> {
 
 }

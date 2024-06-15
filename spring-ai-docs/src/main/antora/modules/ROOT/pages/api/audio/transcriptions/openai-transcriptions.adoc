@@ -37,7 +37,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Transcription Properties
 
-The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Image client.
+The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI image model.
 
 [cols="3,5,2"]
 |====
@@ -69,7 +69,7 @@ OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionO
     .withResponseFormat(responseFormat)
     .build();
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
-AudioTranscriptionResponse response = openAiTranscriptionClient.call(transcriptionRequest);
+AudioTranscriptionResponse response = openAiTranscriptionModel.call(transcriptionRequest);
 ----
 
 == Manual Configuration
@@ -95,13 +95,13 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `OpenAiAudioTranscriptionClient`
+Next, create a `OpenAiAudioTranscriptionModel`
 
 [source,java]
 ----
 var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
 
-var openAiAudioTranscriptionClient = new OpenAiAudioTranscriptionClient(openAiAudioApi);
+var openAiAudioTranscriptionModel = new OpenAiAudioTranscriptionModel(openAiAudioApi);
 
 var transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
     .withResponseFormat(TranscriptResponseFormat.TEXT)
@@ -111,8 +111,8 @@ var transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
 var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac");
 
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
-AudioTranscriptionResponse response = openAiTranscriptionClient.call(transcriptionRequest);
+AudioTranscriptionResponse response = openAiTranscriptionModel.call(transcriptionRequest);
 ----
 
 == Example Code
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/transcription/OpenAiTranscriptionClientIT.java[OpenAiTranscriptionClientIT.java] test provides some general examples how to use the library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/transcription/OpenAiTranscriptionModelIT.java[OpenAiTranscriptionModelIT.java] test provides some general examples how to use the library.

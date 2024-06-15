@@ -1,0 +1,48 @@
+[[docker-compose]]
+= Docker Compose
+
+Spring AI provides Spring Boot auto-configuration for establishing a connection to a model service
+or vector store running via Docker Compose. To enable it, add the following dependency
+to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-spring-boot-docker-compose</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-spring-boot-docker-compose'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Service Connections
+
+The following service connection factories are provided in the `spring-ai-spring-boot-docker-compose` module:
+
+[cols="|,|"]
+|====
+| Connection Details	 | Matched on
+| `ChromaConnectionDetails`
+| Containers named `chromadb/chroma`, `ghcr.io/chroma-core/chroma`
+
+| `OllamaConnectionDetails`
+| Containers named `ollama/ollama`
+
+| `QdrantConnectionDetails`
+| Containers named `qdrant/qdrant`
+
+| `RedisConnectionDetails`
+| Containers named `redis/redis-stack-server`
+
+| `WeaviateConnectionDetails`
+| Containers named `semitechnologies/weaviate`, `cr.weaviate.io/semitechnologies/weaviate`
+|====

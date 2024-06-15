@@ -15,9 +15,16 @@ SELECT content FROM table ORDER BY content_vector ANN OF query_embedding ;
 
 More docs on this can be read https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html[here].
 
-This Spring AI Vector Store is designed to work for both brand new RAG applications as well as being able to be retrofitted on top of existing data and tables.
+This Spring AI Vector Store is designed to work for both brand-new RAG applications and be able to be retrofitted on top of existing data and tables.
 
 The store can also be used for non-RAG use-cases in an existing database, e.g. semantic searches, geo-proximity searches, etc.
+
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+
 
 The store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
 
@@ -37,7 +44,7 @@ It stands out from other HNSW Vector Similarity Search implementations by being
 
 == Prerequisites
 
-1. A `EmbeddingClient` instance to compute the document embeddings. This is usually configured as a Spring Bean.  Several options are available:
+1. A `Embedding` instance to compute the document embeddings. This is usually configured as a Spring Bean.  Several options are available:
 
 - `Transformers Embedding` - computes the embedding in your local environment. The default is via ONNX and the all-MiniLM-L6-v2 Sentence Transformers. This just works.
 - If you want to use OpenAI's Embeddings` - uses the OpenAI embedding endpoint. You need to create an account at link:https://platform.openai.com/signup[OpenAI Signup] and generate the api-key token at link:https://platform.openai.com/account/api-keys[API Keys].
@@ -57,7 +64,7 @@ Add these dependencies to your project:
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-cassandra</artifactId>
+  <artifactId>spring-ai-cassandra-store</artifactId>
 </dependency>
 ----
 
@@ -67,7 +74,7 @@ Add these dependencies to your project:
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-cassandra-spring-boot-starter</artifactId>
+  <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -82,11 +89,11 @@ Create a CassandraVectorStore instance connected to your Apache Cassandra databa
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(EmbeddingClient embeddingClient) {
+public VectorStore vectorStore(EmbeddingModel embeddingModel) {
 
   CassandraVectorStoreConfig config = CassandraVectorStoreConfig.builder().build();
 
-  return new CassandraVectorStore(config, embeddingClient);
+  return new CassandraVectorStore(config, embeddingModel);
 }
 ----
 
@@ -189,7 +196,7 @@ Then configure the store like:
 [source,java]
 ----
 @Bean
-public CassandraVectorStore store(EmbeddingClient embeddingClient) {
+public CassandraVectorStore store(EmbeddingModel embeddingModel) {
 
     List<SchemaColumn> partitionColumns = List.of(new SchemaColumn("wiki", DataTypes.TEXT),
             new SchemaColumn("language", DataTypes.TEXT), new SchemaColumn("title", DataTypes.TEXT));
@@ -226,13 +233,13 @@ public CassandraVectorStore store(EmbeddingClient embeddingClient) {
         })
         .build();
 
-    return new CassandraVectorStore(conf, embeddingClient());
+    return new CassandraVectorStore(conf, embeddingModel());
 }
 
 @Bean
-public EmbeddingClient embeddingClient() {
+public EmbeddingModel embeddingModel() {
     // default is ONNX all-MiniLM-L6-v2 which is what we want
-    return new TransformersEmbeddingClient();
+    return new TransformersEmbeddingModel();
 }
 ----
 

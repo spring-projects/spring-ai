@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 
 import org.antlr.runtime.Token;
@@ -34,8 +33,6 @@ import org.stringtemplate.v4.compiler.STLexer;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.converter.StructuredOutputConverter;
-import org.springframework.ai.parser.OutputParser;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
@@ -48,10 +45,6 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	protected String template;
 
 	protected TemplateFormat templateFormat = TemplateFormat.ST;
-
-	private OutputParser outputParser;
-
-	private StructuredOutputConverter structuredOutputConverter;
 
 	public PromptTemplate(Resource resource) {
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -86,7 +79,6 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			this.st = new ST(this.template, '{', '}');
 			for (Entry<String, Object> entry : model.entrySet()) {
 				add(entry.getKey(), entry.getValue());
-				dynamicModel.put(entry.getKey(), entry.getValue());
 			}
 		}
 		catch (Exception ex) {
@@ -105,37 +97,12 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		try {
 			this.st = new ST(this.template, '{', '}');
 			for (Entry<String, Object> entry : model.entrySet()) {
-				add(entry.getKey(), entry.getValue());
-				dynamicModel.put(entry.getKey(), entry.getValue());
+				this.add(entry.getKey(), entry.getValue());
 			}
 		}
 		catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
 		}
-	}
-
-	/**
-	 * @deprecated Use {@link #getOutputConverter()} instead.
-	 */
-	public OutputParser getOutputParser() {
-		return this.outputParser;
-	}
-
-	/**
-	 * @deprecated Use {@link #setOutputConverter(StructuredOutputConverter)} instead.
-	 */
-	public void setOutputParser(OutputParser outputParser) {
-		Objects.requireNonNull(outputParser, "Output Parser can not be null");
-		this.outputParser = outputParser;
-	}
-
-	public StructuredOutputConverter getOutputConverter() {
-		return this.structuredOutputConverter;
-	}
-
-	public void setOutputConverter(StructuredOutputConverter structuredOutputConverter) {
-		Objects.requireNonNull(structuredOutputConverter, "Structured Output Converter can not be null");
-		this.structuredOutputConverter = structuredOutputConverter;
 	}
 
 	public void add(String name, Object value) {
@@ -162,18 +129,18 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	public String render(Map<String, Object> model) {
 		validate(model);
 		for (Entry<String, Object> entry : model.entrySet()) {
-			if (st.getAttribute(entry.getKey()) != null) {
-				st.remove(entry.getKey());
+			if (this.st.getAttribute(entry.getKey()) != null) {
+				this.st.remove(entry.getKey());
 			}
 			if (entry.getValue() instanceof Resource) {
-				st.add(entry.getKey(), renderResource((Resource) entry.getValue()));
+				this.st.add(entry.getKey(), renderResource((Resource) entry.getValue()));
 			}
 			else {
-				st.add(entry.getKey(), entry.getValue());
+				this.st.add(entry.getKey(), entry.getValue());
 			}
 
 		}
-		return st.render();
+		return this.st.render();
 	}
 
 	private String renderResource(Resource resource) {
@@ -252,14 +219,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		if (!modelKeys.containsAll(templateTokens)) {
 			templateTokens.removeAll(modelKeys);
 			throw new IllegalStateException(
-					"All template variables were not replaced. Missing variable names are " + templateTokens);
-		}
-
-		// Check if the template references any keys not provided by the model
-		if (!templateTokens.containsAll(modelKeys)) {
-			modelKeys.removeAll(templateTokens);
-			throw new IllegalStateException(
-					"All model variables were not replaced. Missing variable names are " + modelKeys);
+					"Not all template variables were replaced. Missing variable names are " + templateTokens);
 		}
 	}
 

@@ -17,6 +17,8 @@ package org.springframework.ai.chat.metadata;
 
 import org.springframework.ai.model.ResponseMetadata;
 
+import java.util.HashMap;
+
 /**
  * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
  * response.
@@ -26,8 +28,11 @@ import org.springframework.ai.model.ResponseMetadata;
  */
 public interface ChatResponseMetadata extends ResponseMetadata {
 
-	ChatResponseMetadata NULL = new ChatResponseMetadata() {
-	};
+	static class DefaultChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
+
+	}
+
+	ChatResponseMetadata NULL = new DefaultChatResponseMetadata();
 
 	/**
 	 * Returns AI provider specific metadata on rate limits.

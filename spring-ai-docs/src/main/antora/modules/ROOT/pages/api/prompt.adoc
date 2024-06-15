@@ -11,7 +11,7 @@ Another analogy is a SQL statement that contain placeholders for certain express
 
 As Spring AI evolves, it will introduce higher levels of abstraction for interacting with AI models.
 The foundational classes described in this section can be likened to JDBC in terms of their role and functionality.
-The `ChatClient` class, for instance, is analogous to the core JDBC library in the JDK.
+The `ChatModel` class, for instance, is analogous to the core JDBC library in the JDK.
 Building upon this, Spring AI can provide helper classes similar to `JdbcTemplate`, Spring Data Repositories, and eventually, more advanced constructs like ChatEngines and Agents that consider past interactions with the model.
 
 The structure of prompts has evolved over time within the AI field.
@@ -24,7 +24,7 @@ OpenAI have introduced even more structure to prompts by categorizing multiple m
 
 === Prompt
 
-It is common to use the `call` method of `ChatClient` that takes a `Prompt` instance and returns an `ChatResponse`.
+It is common to use the `call` method of `ChatModel` that takes a `Prompt` instance and returns an `ChatResponse`.
 
 The Prompt class functions as a container for an organized series of Message objects, with each one forming a segment of the overall prompt.
 Every Message embodies a unique role within the prompt, differing in its content and intent.
@@ -152,7 +152,7 @@ The interfaces implemented by this class support different aspects of prompt cre
 
 `PromptTemplateMessageActions` is tailored for prompt creation through the generation and manipulation of Message objects.
 
-`PromptTemplateActions` is designed to return the Prompt object, which can be passed to ChatClient for generating a response.
+`PromptTemplateActions` is designed to return the Prompt object, which can be passed to ChatModel for generating a response.
 
 While these interfaces might not be used extensively in many projects, they show the different approaches to prompt creation.
 
@@ -213,7 +213,7 @@ PromptTemplate promptTemplate = new PromptTemplate("Tell me a {adjective} joke a
 
 Prompt prompt = promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
 
-return chatClient.call(prompt).getResult();
+return chatModel.call(prompt).getResult();
 ```
 
 Another example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/3-README-prompt-roles.md[AI Workshop on Roles] is shown below.
@@ -237,13 +237,13 @@ Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, 
 
 Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
-List<Generation> response = chatClient.call(prompt).getResults();
+List<Generation> response = chatModel.call(prompt).getResults();
 
 ```
 
 This shows how you can build up the `Prompt` instance by using the `SystemPromptTemplate` to create a `Message` with the system role passing in placeholder values.
 The message with the role `user` is then combined with the message of the role `system` to form the prompt.
-The prompt is then passed to the ChatClient to get a generative response.
+The prompt is then passed to the ChatModel to get a generative response.
 
 
 === Using resources instead of raw Strings
