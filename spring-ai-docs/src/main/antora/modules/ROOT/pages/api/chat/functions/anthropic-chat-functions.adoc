@@ -127,10 +127,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-		return new FunctionCallbackWrapper<>("CurrentWeather", // (1) function name
-				"Get the weather in location", // (2) function description
-				(response) -> "" + response.temp() + response.unit(), // (3) Response Converter
-				new MockWeatherService()); // function code
+    return FunctionCallbackWrapper.builder(new MockWeatherService())
+        .withName("CurrentWeather") // (1) function name
+        .withDescription("Get the weather in location") // (2) function description
+        .build();
 	}
 	...
 }
@@ -188,4 +188,3 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 This approach allows to dynamically chose different functions to be called based on the user input.
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/anthropic/tool/FunctionCallWithPromptFunctionIT.java[FunctionCallWithPromptFunctionIT.java] integration test provides a complete example of how to register a function with the `AnthropicChatModel` and use it in a prompt request.
-
