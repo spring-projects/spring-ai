@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.ChatResponse;
@@ -100,6 +101,27 @@ class OpenAiChatModelIT extends AbstractIT {
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
+
+	}
+
+	@Test
+	void streamingWithTokenUsage() {
+		var promptOptions = OpenAiChatOptions.builder()
+			.withStreamOptions(StreamOptions.INCLUDE_USAGE)
+			.withSeed(1)
+			.build();
+
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
+		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
+		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
+
+		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
+
+		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
+		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
 
 	}
 

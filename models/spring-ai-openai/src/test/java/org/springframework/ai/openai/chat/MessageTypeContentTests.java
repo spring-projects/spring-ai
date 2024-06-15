@@ -61,7 +61,7 @@ public class MessageTypeContentTests {
 	ArgumentCaptor<ChatCompletionRequest> promptCaptor;
 
 	Flux<ChatCompletionChunk> fluxResponse = Flux
-		.generate(() -> new ChatCompletionChunk("id", List.of(), 0l, "model", "fp", "object"), (state, sink) -> {
+		.generate(() -> new ChatCompletionChunk("id", List.of(), 0l, "model", "fp", "object", null), (state, sink) -> {
 			sink.next(state);
 			sink.complete();
 			return state;

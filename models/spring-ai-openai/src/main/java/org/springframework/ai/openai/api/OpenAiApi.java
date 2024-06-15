@@ -345,6 +345,7 @@ public class OpenAiApi {
 			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("stream_options") StreamOptions streamOptions,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
@@ -360,7 +361,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, temperature, null,
+					null, null, null, false, null, temperature, null,
 					null, null, null);
 		}
 
@@ -375,7 +376,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, stream, temperature, null,
+					null, null, null, stream, null, temperature, null,
 					null, null, null);
 		}
 
@@ -391,7 +392,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, 0.8f, null,
+					null, null, null, false, null, 0.8f, null,
 					tools, toolChoice, null);
 		}
 
@@ -404,8 +405,20 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null,
-					null, null, null, stream, null, null,
+					null, null, null, stream, null, null, null,
 					null, null, null);
+		}
+
+		/**
+		 * Sets the {@link StreamOptions} for this request.
+		 *
+		 * @param streamOptions The new stream options to use.
+		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
+		 */
+		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
+			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, presencePenalty,
+					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
+					tools, toolChoice, user);
 		}
 
 		/**
@@ -436,6 +449,13 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
 				@JsonProperty("type") String type) {
+		}
+
+		@JsonInclude(Include.NON_NULL)
+		public record StreamOptions(
+				@JsonProperty("include_usage") Boolean includeUsage) {
+
+			public static StreamOptions INCLUDE_USAGE = new StreamOptions(true);
 		}
 	}
 
@@ -742,7 +762,8 @@ public class OpenAiApi {
 			@JsonProperty("created") Long created,
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) {
+			@JsonProperty("object") String object,
+			@JsonProperty("usage") Usage usage) {
 
 		/**
 		 * Chat completion choice.
@@ -825,7 +846,7 @@ public class OpenAiApi {
 				// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 				.concatMapIterable(window -> {
 					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
+							new ChatCompletionChunk(null, null, null, null, null, null, null),
 							(previous, current) -> this.chunkMerger.merge(previous, current));
 					return List.of(monoChunk);
 				})
