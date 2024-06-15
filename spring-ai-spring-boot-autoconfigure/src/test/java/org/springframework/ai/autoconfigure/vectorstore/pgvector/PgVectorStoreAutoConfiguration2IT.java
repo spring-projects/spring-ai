@@ -22,9 +22,10 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
+import org.testcontainers.utility.DockerImageName;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -44,13 +45,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @Testcontainers
-public class PgVectorStoreAutoConfigurationIT {
+public class PgVectorStoreAutoConfiguration2IT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("pgvector/pgvector:0.7.2-pg16")
-		.withEnv("POSTGRES_USER", "postgres")
-		.withEnv("POSTGRES_PASSWORD", "postgres")
-		.withExposedPorts(5432);
+	@SuppressWarnings("resource")
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+		.withUsername("postgres")
+		.withPassword("postgres");
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
