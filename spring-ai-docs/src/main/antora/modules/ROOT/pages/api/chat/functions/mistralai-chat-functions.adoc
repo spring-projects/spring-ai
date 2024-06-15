@@ -2,7 +2,7 @@
 
 You can register custom Java functions with the `MistralAiChatModel` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
-The `open-mixtral-8x22b`, `mistral_small_latest`, and `mistral-large-latest` models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
+The `open-mixtral-8x22b`, `mistral-small-latest`, and `mistral-large-latest` models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
 
 The MistralAI API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
 
