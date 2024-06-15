@@ -27,6 +27,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ResponseFormat;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -39,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Christian Tzolov
+ * @author Mariusz Bernacki
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -93,6 +95,10 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
 	private @JsonProperty("response_format") ResponseFormat responseFormat;
+	/**
+	 * Options for streaming response. Included in the API only if streaming-mode completion is requested.
+	 */
+	private @JsonProperty("stream_options") StreamOptions streamOptions;
 	/**
 	 * This feature is in Beta. If specified, our system will make a best effort to sample
 	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
@@ -226,6 +232,13 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
+		public Builder withStreamUsage(boolean enableStreamUsage) {
+			if (enableStreamUsage) {
+				this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
+			}
+			return this;
+		}
+
 		public Builder withSeed(Integer seed) {
 			this.options.seed = seed;
 			return this;
@@ -282,6 +295,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this.options;
 		}
 
+	}
+
+	public Boolean getStreamUsage() {
+		return this.streamOptions != null;
+	}
+
+	public void setStreamUsage(Boolean enableStreamUsage) {
+		this.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
 	}
 
 	public String getModel() {
@@ -354,6 +375,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setResponseFormat(ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
+	}
+
+	public StreamOptions getStreamOptions() {
+		return streamOptions;
+	}
+
+	public void setStreamOptions(StreamOptions streamOptions) {
+		this.streamOptions = streamOptions;
 	}
 
 	public Integer getSeed() {
@@ -446,6 +475,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((n == null) ? 0 : n.hashCode());
 		result = prime * result + ((presencePenalty == null) ? 0 : presencePenalty.hashCode());
 		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
+		result = prime * result + ((streamOptions == null) ? 0 : streamOptions.hashCode());
 		result = prime * result + ((seed == null) ? 0 : seed.hashCode());
 		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
 		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
@@ -519,6 +549,12 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!this.responseFormat.equals(other.responseFormat))
 			return false;
+		if (this.streamOptions == null) {
+			if (other.streamOptions != null)
+				return false;
+		}
+		else if (!this.streamOptions.equals(other.streamOptions))
+			return false;
 		if (this.seed == null) {
 			if (other.seed != null)
 				return false;
@@ -586,6 +622,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withN(fromOptions.getN())
 			.withPresencePenalty(fromOptions.getPresencePenalty())
 			.withResponseFormat(fromOptions.getResponseFormat())
+			.withStreamUsage(fromOptions.getStreamUsage())
 			.withSeed(fromOptions.getSeed())
 			.withStop(fromOptions.getStop())
 			.withTemperature(fromOptions.getTemperature())

@@ -47,6 +47,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
+ * @author Mariusz Bernacki
  */
 public class OpenAiApi {
 
@@ -314,6 +315,7 @@ public class OpenAiApi {
 	 * @param stop Up to 4 sequences where the API will stop generating further tokens.
 	 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events as
 	 * they become available, with the stream terminated by a data: [DONE] message.
+	 * @param streamOptions Options for streaming response. Only set this when you set.
 	 * @param temperature What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
@@ -345,6 +347,7 @@ public class OpenAiApi {
 			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("stream_options") StreamOptions streamOptions,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
@@ -360,7 +363,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, temperature, null,
+					null, null, null, false, null, temperature, null,
 					null, null, null);
 		}
 
@@ -375,7 +378,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, stream, temperature, null,
+					null, null, null, stream, null, temperature, null,
 					null, null, null);
 		}
 
@@ -391,7 +394,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, 0.8f, null,
+					null, null, null, false, null, 0.8f, null,
 					tools, toolChoice, null);
 		}
 
@@ -404,8 +407,20 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null,
-					null, null, null, stream, null, null,
+					null, null, null, stream, null, null, null,
 					null, null, null);
+		}
+
+		/**
+		 * Sets the {@link StreamOptions} for this request.
+		 *
+		 * @param streamOptions The new stream options to use.
+		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
+		 */
+		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
+			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, presencePenalty,
+					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
+					tools, toolChoice, user);
 		}
 
 		/**
@@ -436,6 +451,20 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
 				@JsonProperty("type") String type) {
+		}
+
+		/**
+		 * @param includeUsage If set, an additional chunk will be streamed 
+		 * before the data: [DONE] message. The usage field on this chunk 
+		 * shows the token usage statistics for the entire request, and 
+		 * the choices field will always be an empty array. All other chunks
+		 * will also include a usage field, but with a null value.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record StreamOptions(
+				@JsonProperty("include_usage") Boolean includeUsage) {
+
+			public static StreamOptions INCLUDE_USAGE = new StreamOptions(true);
 		}
 	}
 
@@ -742,7 +771,8 @@ public class OpenAiApi {
 			@JsonProperty("created") Long created,
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) {
+			@JsonProperty("object") String object,
+			@JsonProperty("usage") Usage usage) {
 
 		/**
 		 * Chat completion choice.
@@ -825,7 +855,7 @@ public class OpenAiApi {
 				// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 				.concatMapIterable(window -> {
 					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
+							new ChatCompletionChunk(null, null, null, null, null, null, null),
 							(previous, current) -> this.chunkMerger.merge(previous, current));
 					return List.of(monoChunk);
 				})

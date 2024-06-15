@@ -222,7 +222,12 @@ public class OpenAiChatModel extends
 							return generation;
 						}).toList();
 
-						return new ChatResponse(generations);
+						if (chatCompletion.usage() != null) {
+							return new ChatResponse(generations, OpenAiChatResponseMetadata.from(chatCompletion));
+						}
+						else {
+							return new ChatResponse(generations);
+						}
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -245,7 +250,7 @@ public class OpenAiChatModel extends
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
-				chunk.systemFingerprint(), "chat.completion", null);
+				chunk.systemFingerprint(), "chat.completion", chunk.usage());
 	}
 
 	/**
@@ -304,6 +309,12 @@ public class OpenAiChatModel extends
 			request = ModelOptionsUtils.merge(
 					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
+		}
+
+		// Remove `streamOptions` from the request if it is not a streaming request
+		if (request.streamOptions() != null && !stream) {
+			logger.warn("Removing streamOptions from the request as it is not a streaming request!");
+			request = request.withStreamOptions(null);
 		}
 
 		return request;
