@@ -15,28 +15,30 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.oracle;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.oracle.OracleContainer;
+import org.testcontainers.utility.MountableFile;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.oracle.OracleContainer;
-import org.testcontainers.utility.MountableFile;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
@@ -55,13 +57,15 @@ public class OracleVectorStoreAutoConfigurationIT {
 			new Document(getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(OracleVectorStoreAutoConfiguration.class))
+		.withConfiguration(
+				AutoConfigurations.of(OracleVectorStoreAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.oracle.distanceType=COSINE",
+		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+				"test.spring.ai.vectorstore.oracle.dimensions=384",
 				// JdbcTemplate configuration
-				String.format("spring.datasource.url=jdbc:oracle:thin:@//%s:%d/%s", oracle23aiContainer.getHost(),
-						oracle23aiContainer.getMappedPort(1521), "freepdb1"),
-				"spring.datasource.username=mlops", "spring.datasource.password=mlops",
+				String.format("spring.datasource.url=%s", oracle23aiContainer.getJdbcUrl()),
+				String.format("spring.datasource.username=%s", oracle23aiContainer.getUsername()),
+				String.format("spring.datasource.password=%s", oracle23aiContainer.getPassword()),
 				"spring.datasource.type=oracle.jdbc.pool.OracleDataSource");
 
 	@Test
