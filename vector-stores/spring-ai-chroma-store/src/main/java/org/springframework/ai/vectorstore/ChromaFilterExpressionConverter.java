@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore.filter.converter;
+package org.springframework.ai.vectorstore;
 
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 
 /**
  * Converts {@link Filter.Expression} into Chroma metadata filter expression format.
