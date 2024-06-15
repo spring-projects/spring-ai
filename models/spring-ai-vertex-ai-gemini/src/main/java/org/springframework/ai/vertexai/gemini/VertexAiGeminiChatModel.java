@@ -83,7 +83,9 @@ public class VertexAiGeminiChatModel
 
 		USER("user"),
 
-		MODEL("model");
+		MODEL("model"),
+
+		FUNCTION("function");
 
 		GeminiMessageType(String value) {
 			this.value = value;
@@ -303,7 +305,7 @@ public class VertexAiGeminiChatModel
 
 		List<Content> contents = prompt.getInstructions()
 			.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
 				.addAllParts(messageToGeminiParts(message, systemContext))
@@ -322,6 +324,8 @@ public class VertexAiGeminiChatModel
 				return GeminiMessageType.USER;
 			case ASSISTANT:
 				return GeminiMessageType.MODEL;
+			case FUNCTION:
+				return GeminiMessageType.FUNCTION;
 			default:
 				throw new IllegalArgumentException("Unsupported message type: " + type);
 		}
