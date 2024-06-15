@@ -305,7 +305,8 @@ public class VertexAiGeminiChatModel
 
 		List<Content> contents = prompt.getInstructions()
 			.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT || m.getMessageType() == MessageType.FUNCTION)
+			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT
+					|| m.getMessageType() == MessageType.FUNCTION)
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
 				.addAllParts(messageToGeminiParts(message, systemContext))
