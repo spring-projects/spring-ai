@@ -69,7 +69,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Transformers Embedding Client -->
+		<!-- Transformers Embedding Model -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-transformers</artifactId>

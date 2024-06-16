@@ -27,7 +27,7 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Client.
+Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -61,13 +61,13 @@ The prefix `spring.ai.vertex.ai` is used as the property prefix that lets you co
 | spring.ai.vertex.ai.api-key    | The API Key           |  -
 |====
 
-The prefix `spring.ai.vertex.ai.embedding` is the property prefix that lets you configure the embedding client implementation for VertexAI Chat.
+The prefix `spring.ai.vertex.ai.embedding` is the property prefix that lets you configure the embedding model implementation for VertexAI Chat.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.vertex.ai.embedding.enabled | Enable Vertex AI PaLM API Embedding client. | true
+| spring.ai.vertex.ai.embedding.enabled | Enable Vertex AI PaLM API Embedding model. | true
 | spring.ai.vertex.ai.embedding.model | This is the https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/text-embeddings[Vertex Embedding model] to use | embedding-gecko-001
 |====
 
@@ -87,7 +87,7 @@ spring.ai.vertex.ai.embedding.model=embedding-gecko-001
 TIP: replace the `api-key` with your VertexAI credentials.
 
 This will create a `VertexAiPaLm2EmbeddingModel` implementation that you can inject into your class.
-Here is an example of a simple `@Controller` class that uses the embedding client for text generations.
+Here is an example of a simple `@Controller` class that uses the embedding model for text generations.
 
 [source,java]
 ----
