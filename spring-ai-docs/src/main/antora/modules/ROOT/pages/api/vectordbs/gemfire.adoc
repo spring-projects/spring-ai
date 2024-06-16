@@ -20,7 +20,7 @@ You can download the GemFire VectorDB extension from the link:https://network.pi
 
 Add these dependencies to your project:
 
-- Embedding Client boot starter, required for calculating embeddings.
+- Embedding Model boot starter, required for calculating embeddings.
 - Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions.
 
 [source,xml]

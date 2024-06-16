@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * ZhiPuAI Embedding Client implementation.
+ * ZhiPuAI Embedding Model implementation.
  *
  * @author Geng Rong
  * @since 1.0.0 M1

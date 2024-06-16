@@ -68,7 +68,7 @@ Add these dependencies to your project:
 </dependency>
 ----
 
-* Or, for everything you need in a RAG application (using the default ONNX Embedding Client)
+* Or, for everything you need in a RAG application (using the default ONNX Embedding Model)
 
 [source,xml]
 ----

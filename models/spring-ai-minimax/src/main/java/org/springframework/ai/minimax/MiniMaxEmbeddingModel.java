@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MiniMax Embedding Client implementation.
+ * MiniMax Embedding Model implementation.
  *
  * @author Geng Rong
  * @since 1.0.0 M1

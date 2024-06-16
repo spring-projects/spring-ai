@@ -98,7 +98,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public EmbeddingModel embeddingClient() {
+		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
 		}
 
