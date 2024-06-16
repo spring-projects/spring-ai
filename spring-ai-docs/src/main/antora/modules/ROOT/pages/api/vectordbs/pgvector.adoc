@@ -142,8 +142,14 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.pgvector.dimensions`| Embeddings dimension. If not specified explicitly the PgVectorStore will retrieve the dimensions form the provided `EmbeddingModel`. Dimensions are set to the embedding column the on table creation. If you change the dimensions your would have to re-create the vector_store table as well. | -
 |`spring.ai.vectorstore.pgvector.remove-existing-vector-store-table` | Deletes the existing `vector_store` table on start up.  | false
 |`spring.ai.vectorstore.pgvector.initialize-schema` | Whether to initialize the required schema | false
+|`spring.ai.vectorstore.pgvector.schema-name` | Vector store schema name | `public`
+|`spring.ai.vectorstore.pgvector.table-name` | Vector store table name | `vector_store`
+|`spring.ai.vectorstore.pgvector.schema-validation` | Enables schema and table name validation to ensure they are valid and existing objects. | false
 
 |===
+
+TIP: If you configure a custom schema and/or table name, consider enabling schema validation by setting `spring.ai.vectorstore.pgvector.schema-validation=true`. 
+This ensures the correctness of the names and reduces the risk of SQL injection attacks.
 
 == Metadata filtering
 
