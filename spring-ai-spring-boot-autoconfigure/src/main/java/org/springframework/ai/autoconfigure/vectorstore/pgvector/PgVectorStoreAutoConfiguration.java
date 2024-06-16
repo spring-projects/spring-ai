@@ -33,16 +33,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Josh Long
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
-@ConditionalOnClass({ PgVectorStore.class, DataSource.class, JdbcTemplate.class })
+@ConditionalOnClass({PgVectorStore.class, DataSource.class, JdbcTemplate.class})
 @EnableConfigurationProperties(PgVectorStoreProperties.class)
 public class PgVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
-			PgVectorStoreProperties properties) {
+									 PgVectorStoreProperties properties) {
 		var initializeSchema = properties.isInitializeSchema();
-		return new PgVectorStore(jdbcTemplate, embeddingModel, properties.getDimensions(), properties.getDistanceType(),
+		return new PgVectorStore(properties.getVectorTableName(), properties.getVectorIndexName(), jdbcTemplate,
+				embeddingModel, properties.getDimensions(), properties.getDistanceType(),
 				properties.isRemoveExistingVectorStoreTable(), properties.getIndexType(), initializeSchema);
 	}
 

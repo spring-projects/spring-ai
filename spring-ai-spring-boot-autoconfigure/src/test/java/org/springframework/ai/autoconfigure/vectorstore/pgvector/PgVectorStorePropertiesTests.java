@@ -35,6 +35,7 @@ public class PgVectorStorePropertiesTests {
 		assertThat(props.getDistanceType()).isEqualTo(PgDistanceType.COSINE_DISTANCE);
 		assertThat(props.getIndexType()).isEqualTo(PgIndexType.HNSW);
 		assertThat(props.isRemoveExistingVectorStoreTable()).isFalse();
+
 	}
 
 	@Test
@@ -45,11 +46,13 @@ public class PgVectorStorePropertiesTests {
 		props.setDistanceType(PgDistanceType.EUCLIDEAN_DISTANCE);
 		props.setIndexType(PgIndexType.IVFFLAT);
 		props.setRemoveExistingVectorStoreTable(true);
+		props.setVectorTableName("my_vector_table");
 
 		assertThat(props.getDimensions()).isEqualTo(1536);
 		assertThat(props.getDistanceType()).isEqualTo(PgDistanceType.EUCLIDEAN_DISTANCE);
 		assertThat(props.getIndexType()).isEqualTo(PgIndexType.IVFFLAT);
 		assertThat(props.isRemoveExistingVectorStoreTable()).isTrue();
+		assertThat(props.getVectorTableName()).isEqualTo("my_vector_table");
 	}
 
 }

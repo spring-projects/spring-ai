@@ -37,6 +37,11 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private boolean removeExistingVectorStoreTable = false;
 
+	// Dynamically generate table name in PgVectorStore to allow backward compatibility
+	private String vectorTableName = "";
+
+	private String vectorIndexName = "";
+
 	public int getDimensions() {
 		return dimensions;
 	}
@@ -67,6 +72,22 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setRemoveExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
 		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
+	}
+
+	public String getVectorTableName() {
+		return vectorTableName;
+	}
+
+	public void setVectorTableName(String vectorTableName) {
+		this.vectorTableName = vectorTableName;
+	}
+
+	public String getVectorIndexName() {
+		return vectorIndexName;
+	}
+
+	public void setVectorIndexName(String vectorIndexName) {
+		this.vectorIndexName = vectorIndexName;
 	}
 
 }

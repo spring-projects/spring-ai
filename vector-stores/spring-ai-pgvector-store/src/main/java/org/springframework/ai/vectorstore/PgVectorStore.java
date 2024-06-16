@@ -58,9 +58,13 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
-	public static final String VECTOR_TABLE_NAME = "vector_store";
+	private final String vectorTableName;
 
-	public static final String VECTOR_INDEX_NAME = "spring_ai_vector_index";
+	private final String vectorIndexName;
+
+	public final static String DEFAULT_VECTOR_TABLE_NAME = "vector_store";
+
+	public final static String DEFAULT_VECTOR_INDEX_NAME = "spring_ai_vector_index";
 
 	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
@@ -213,6 +217,29 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod,
 			boolean initializeSchema) {
 
+		this(DEFAULT_VECTOR_TABLE_NAME, DEFAULT_VECTOR_INDEX_NAME, jdbcTemplate, embeddingModel, dimensions,
+				distanceType, removeExistingVectorStoreTable, createIndexMethod, initializeSchema);
+	}
+
+	public PgVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		this(vectorTableName, vectorTableName + "_index", jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION,
+				PgVectorStore.PgDistanceType.COSINE_DISTANCE, false, PgIndexType.NONE, false);
+	}
+
+	public PgVectorStore(String vectorTableName, String vectorIndexName, JdbcTemplate jdbcTemplate,
+			EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
+			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema) {
+
+		this.vectorTableName = (null == vectorTableName || vectorTableName.isEmpty()) ? DEFAULT_VECTOR_TABLE_NAME
+				: vectorTableName.trim();
+
+		// Assign a default name to vectorIndexName if it's unset, appending "_index" to
+		// vectorTableName when it differs from the default.
+		this.vectorIndexName = (vectorIndexName == null || vectorIndexName.isEmpty())
+				? (this.vectorTableName.equals(DEFAULT_VECTOR_TABLE_NAME) ? DEFAULT_VECTOR_INDEX_NAME
+						: this.vectorTableName + "_index")
+				: vectorIndexName.trim();
+
 		this.jdbcTemplate = jdbcTemplate;
 		this.embeddingModel = embeddingModel;
 		this.dimensions = dimensions;
@@ -232,8 +259,9 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		int size = documents.size();
 
 		this.jdbcTemplate.batchUpdate(
-				"INSERT INTO " + VECTOR_TABLE_NAME + " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) "
-						+ "ON CONFLICT (id) DO " + "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
+				"INSERT INTO " + getVectorTableName()
+						+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
+						+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
 				new BatchPreparedStatementSetter() {
 					@Override
 					public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -282,7 +310,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public Optional<Boolean> delete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
-			int count = jdbcTemplate.update("DELETE FROM " + VECTOR_TABLE_NAME + " WHERE id = ?", UUID.fromString(id));
+			int count = jdbcTemplate.update("DELETE FROM " + getVectorTableName() + " WHERE id = ?",
+					UUID.fromString(id));
 			updateCount = updateCount + count;
 		}
 
@@ -306,13 +335,13 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
-				String.format(this.getDistanceType().similaritySearchSqlTemplate, VECTOR_TABLE_NAME, jsonPathFilter),
+				String.format(this.getDistanceType().similaritySearchSqlTemplate, getVectorTableName(), jsonPathFilter),
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {
 		return this.jdbcTemplate.query(
-				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + VECTOR_TABLE_NAME,
+				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + getVectorTableName(),
 				new RowMapper<Double>() {
 					@Override
 					@Nullable
@@ -349,7 +378,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		// Remove existing VectorStoreTable
 		if (this.removeExistingVectorStoreTable) {
-			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + VECTOR_TABLE_NAME);
+			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + getVectorTableName());
 		}
 
 		this.jdbcTemplate.execute(String.format("""
@@ -359,13 +388,22 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					metadata json,
 					embedding vector(%d)
 				)
-				""", VECTOR_TABLE_NAME, this.embeddingDimensions()));
+				""", getVectorTableName(), this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
 					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
-					""", VECTOR_INDEX_NAME, VECTOR_TABLE_NAME, this.createIndexMethod, this.getDistanceType().index));
+					""", getVectorIndexName(), getVectorTableName(), this.createIndexMethod,
+					this.getDistanceType().index));
 		}
+	}
+
+	private String getVectorIndexName() {
+		return this.vectorIndexName;
+	}
+
+	private String getVectorTableName() {
+		return this.vectorTableName;
 	}
 
 	int embeddingDimensions() {
