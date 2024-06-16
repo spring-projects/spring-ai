@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
@@ -130,8 +131,16 @@ class AzureOpenAiChatModelFunctionCallIT {
 		}
 
 		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient, String selectedModel) {
-			return new AzureOpenAiChatModel(openAIClient,
+		public OpenAIAsyncClient openAIAsyncClient() {
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.buildAsyncClient();
+		}
+
+		@Bean
+		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient, OpenAIAsyncClient openAIAsyncClient,
+				String selectedModel) {
+			return new AzureOpenAiChatModel(openAIClient, openAIAsyncClient,
 					AzureOpenAiChatOptions.builder().withDeploymentName(selectedModel).withMaxTokens(500).build());
 		}
 

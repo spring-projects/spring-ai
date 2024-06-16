@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.azure.openai;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
@@ -41,6 +42,7 @@ public class AzureChatCompletionsOptionsTests {
 	public void createRequestWithChatOptions() {
 
 		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
+		OpenAIAsyncClient mockClientAsync = Mockito.mock(OpenAIAsyncClient.class);
 
 		var defaultOptions = AzureOpenAiChatOptions.builder()
 			.withDeploymentName("DEFAULT_MODEL")
@@ -56,7 +58,7 @@ public class AzureChatCompletionsOptionsTests {
 			.withResponseFormat(AzureOpenAiResponseFormat.TEXT)
 			.build();
 
-		var client = new AzureOpenAiChatModel(mockClient, defaultOptions);
+		var client = new AzureOpenAiChatModel(mockClient, mockClientAsync, defaultOptions);
 
 		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content"));
 

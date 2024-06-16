@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.azure.openai;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
@@ -36,7 +37,6 @@ import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
 import com.azure.core.util.BinaryData;
-import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,30 +97,35 @@ public class AzureOpenAiChatModel
 	 */
 	private final OpenAIClient openAIClient;
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient) {
-		this(microsoftOpenAiClient,
+	private final OpenAIAsyncClient openAIAsyncClient;
+
+	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, OpenAIAsyncClient openAIAsyncClient) {
+		this(microsoftOpenAiClient, openAIAsyncClient,
 				AzureOpenAiChatOptions.builder()
 					.withDeploymentName(DEFAULT_DEPLOYMENT_NAME)
 					.withTemperature(DEFAULT_TEMPERATURE)
 					.build());
 	}
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options) {
-		this(microsoftOpenAiClient, options, null);
+	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, OpenAIAsyncClient openAIAsyncClient,
+			AzureOpenAiChatOptions options) {
+		this(microsoftOpenAiClient, openAIAsyncClient, options, null);
 	}
 
-	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext) {
+	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, OpenAIAsyncClient openAIAsyncClient,
+			AzureOpenAiChatOptions options, FunctionCallbackContext functionCallbackContext) {
 		super(functionCallbackContext);
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
+		this.openAIAsyncClient = openAIAsyncClient;
 		this.defaultOptions = options;
 	}
 
 	/**
 	 * @deprecated since 0.8.0, use
-	 * {@link #AzureOpenAiChatModel(OpenAIClient, AzureOpenAiChatOptions)} instead.
+	 * {@link #AzureOpenAiChatModel(OpenAIClient, OpenAIAsyncClient, AzureOpenAiChatOptions)}
+	 * instead.
 	 */
 	@Deprecated(forRemoval = true, since = "0.8.0")
 	public AzureOpenAiChatModel withDefaultOptions(AzureOpenAiChatOptions defaultOptions) {
@@ -160,10 +165,8 @@ public class AzureOpenAiChatModel
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(true);
 
-		IterableStream<ChatCompletions> chatCompletionsStream = this.openAIClient
-			.getChatCompletionsStream(options.getModel(), options);
-
-		Flux<ChatCompletions> chatCompletionsFlux = Flux.fromIterable(chatCompletionsStream);
+		Flux<ChatCompletions> chatCompletionsFlux = this.openAIAsyncClient.getChatCompletionsStream(options.getModel(),
+				options);
 
 		final var isFunctionCall = new AtomicBoolean(false);
 		final var accessibleChatCompletionsFlux = chatCompletionsFlux
