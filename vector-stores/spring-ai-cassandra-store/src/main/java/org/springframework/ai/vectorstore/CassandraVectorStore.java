@@ -28,8 +28,10 @@ import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
@@ -123,6 +125,10 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 	private final String similarityStmt;
 
 	private final Similarity similarity;
+
+	public static CassandraVectorStore create(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
+		return new CassandraVectorStore(conf, embeddingModel);
+	}
 
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
 

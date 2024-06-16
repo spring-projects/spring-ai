@@ -1,4 +1,4 @@
-package org.springframework.ai.autoconfigure;
+package org.springframework.ai.autoconfigure.vectorstore;
 
 /**
  * @author Josh Long

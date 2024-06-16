@@ -54,14 +54,14 @@ public class CassandraVectorStoreAutoConfiguration {
 			.withIndexName(properties.getIndexName())
 			.withFixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize());
 
-		if (properties.getDisallowSchemaCreation()) {
+		if (!properties.isInitializeSchema()) {
 			builder = builder.disallowSchemaChanges();
 		}
 		if (properties.getReturnEmbeddings()) {
 			builder = builder.returnEmbeddings();
 		}
 
-		return new CassandraVectorStore(builder.build(), embeddingModel);
+		return CassandraVectorStore.create(builder.build(), embeddingModel);
 	}
 
 	@Bean

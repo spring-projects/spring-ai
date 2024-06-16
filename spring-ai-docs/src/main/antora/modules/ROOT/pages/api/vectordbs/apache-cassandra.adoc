@@ -20,13 +20,10 @@ This Spring AI Vector Store is designed to work for both brand-new RAG applicati
 The store can also be used for non-RAG use-cases in an existing database, e.g. semantic searches, geo-proximity searches, etc.
 
 
-The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
-
-NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
-
-
-
 The store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
+
+When using spring-boot-autoconfigure `disallowSchemaChanges` defaults to true, per Spring Boot standards, and you must opt-in to schema creation/modifications by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
 
 == What is JVector ?
 

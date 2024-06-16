@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
-import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.PgVectorStore.PgDistanceType;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;

@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
