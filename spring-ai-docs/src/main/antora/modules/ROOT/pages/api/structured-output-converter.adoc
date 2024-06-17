@@ -107,7 +107,18 @@ record ActorsFilms(String actor, List<String> movies) {
 }
 ----
 
-Here is how to apply the BeanOutputConverter:
+Here is how to apply the BeanOutputConverter using the new, fluent ChatClient API:
+
+[source,java]
+----
+ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+        .user(u -> u.text("Generate the filmography of 5 movies for {actor}.")
+                .param("actor", "Tom Hanks"))
+        .call()
+        .entity(ActorsFilms.class);
+----
+
+or using the low-level, ChatModel API directly:
 
 [source,java]
 ----
@@ -136,8 +147,19 @@ For example, to represent a list of actors and their filmographies:
 
 [source,java]
 ----
-BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-        new ParameterizedTypeReference<List<ActorsFilmsRecord>>() { });
+List<ActorsFilms> actorsFilms = ChatClient.create(chatModel).prompt()
+        .user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+        .call()
+        .entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+        });
+----
+
+or using the low-level, ChatModel API directly:
+
+[source,java]
+----
+BeanOutputConverter<List<ActorsFilms>> outputConverter = new BeanOutputConverter<>(
+        new ParameterizedTypeReference<List<ActorsFilms>>() { });
 
 String format = outputConverter.getFormat();
 String template = """
@@ -149,12 +171,24 @@ Prompt prompt = new Prompt(new PromptTemplate(template, Map.of("format", format)
 
 Generation generation = chatModel.call(prompt).getResult();
 
-List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+List<ActorsFilms> actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 ----
 
 === Map Output Converter
 
 Following sniped shows how to use `MapOutputConverter` to generate a list of numbers.
+
+[source,java]
+----
+Map<String, Object> result = ChatClient.create(chatModel).prompt()
+        .user(u -> u.text("Provide me a List of {subject}")
+                        .param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
+        .call()
+        .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+        });
+----
+
+or using the low-level, ChatModel API directly:
 
 [source,java]
 ----
@@ -176,6 +210,17 @@ Map<String, Object> result = mapOutputConverter.convert(generation.getOutput().g
 === List Output Converter
 
 Following snippet shows how to use `ListOutputConverter` to generate a list of ice cream flavors.
+
+[source,java]
+----
+List<String> flavors = ChatClient.create(chatModel).prompt()
+                .user(u -> u.text("List five {subject}")
+                .param("subject", "ice cream flavors"))
+                .call()
+                .entity(new ListOutputConverter(new DefaultConversionService()));
+----
+
+or using the low-level, ChatModel API directly:
 
 [source,java]
 ----

@@ -24,7 +24,7 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "gpt-3.5-turbo";
+	public static final String DEFAULT_CHAT_MODEL = "gpt-4o";
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 

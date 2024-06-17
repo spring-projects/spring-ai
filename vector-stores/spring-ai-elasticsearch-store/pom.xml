@@ -35,6 +35,7 @@
 		<dependency>
 			<groupId>co.elastic.clients</groupId>
 			<artifactId>elasticsearch-java</artifactId>
+			<version>${elasticsearch-java.version}</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -44,7 +45,6 @@
 			<version>${parent.version}</version>
 			<scope>test</scope>
 		</dependency>
-
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

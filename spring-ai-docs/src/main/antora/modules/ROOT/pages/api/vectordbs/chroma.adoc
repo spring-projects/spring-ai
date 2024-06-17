@@ -205,19 +205,20 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Sample Code
 
-Create a `RestTemplate` instance with proper ChromaDB authorization configurations and Use it to create a `ChromaApi` instance:
+Create a `RestClient.Builder` instance with proper ChromaDB authorization configurations and Use it to create a `ChromaApi` instance:
 
 [source,java]
 ----
 @Bean
-public RestTemplate restTemplate() {
-   return new RestTemplate();
+public RestClient.Builder builder() {
+    return RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory());
 }
 
+
 @Bean
-public ChromaApi chromaApi(RestTemplate restTemplate) {
+public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
    String chromaUrl = "http://localhost:8000";
-   ChromaApi chromaApi = new ChromaApi(chromaUrl, restTemplate);
+   ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
    return chromaApi;
 }
 ----

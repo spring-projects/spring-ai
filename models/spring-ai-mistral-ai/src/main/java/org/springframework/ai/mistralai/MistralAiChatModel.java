@@ -53,6 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Grogdunn
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public class MistralAiChatModel extends
@@ -79,7 +80,7 @@ public class MistralAiChatModel extends
 					.withTemperature(0.7f)
 					.withTopP(1f)
 					.withSafePrompt(false)
-					.withModel(MistralAiApi.ChatModel.TINY.getValue())
+					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 					.build());
 	}
 

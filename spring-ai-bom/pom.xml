@@ -164,6 +164,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-oracle-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-pgvector-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -216,6 +222,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-opensearch-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Utilities -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -262,6 +274,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-huggingface-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -286,7 +304,19 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-opensearch-store-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-oracle-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -311,6 +341,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-zhipuai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-typesense-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -379,9 +415,16 @@
                 <artifactId>spring-ai-mongodb-atlas-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-typesense-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

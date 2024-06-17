@@ -16,21 +16,18 @@
 
 package org.springframework.ai.vertexai.gemini.function;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
@@ -46,10 +43,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
+import com.google.cloud.vertexai.Transport;
+import com.google.cloud.vertexai.VertexAI;
+
+import reactor.core.publisher.Flux;
+
 /**
  * @author Christian Tzolov
  */
-@Disabled("Vertex AI Gemini function calling is very unstable.")
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
@@ -90,41 +91,46 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 	@Test
 	public void paymentStatuses() {
-		String content = this.chatClient.prompt().advisors(new LoggingAdvisor()).functions("paymentStatus").user("""
+		// @formatter:off
+		String content = this.chatClient.prompt()
+				.advisors(new LoggingAdvisor())
+				.functions("paymentStatus")
+				.user("""
 				What is the status of my payment transactions 001, 002 and 003?
-
-				To answer this question invoke the 'paymentStatus' function per transaction.
+				If requred invoke the function per transaction.
 				""").call().content();
 
 		logger.info("" + content);
+
+		assertThat(content).contains("001", "002", "003");
+		assertThat(content).contains("pending", "approved", "rejected");
 	}
 
-	@RepeatedTest(10)
+	@RepeatedTest(5)
 	public void streamingPaymentStatuses() {
 
 		Flux<String> streamContent = this.chatClient.prompt()
-			.advisors(new LoggingAdvisor())
-			.functions("paymentStatus")
-			// .functions("paymentStatuses")
-			.user("""
-					What is the status of my payment transactions 001, 002 and 003?
-					To answer this question invoke the paymentStatus function per transaction.
-					Return the transaction id and the transaction status for each transaction.
-					""")
-			.stream()
-			.content();
+				.advisors(new LoggingAdvisor())
+				.functions("paymentStatus")
+				// .functions("paymentStatuses")
+				.user("""
+						What is the status of my payment transactions 001, 002 and 003?
+						If requred invoke the function per transaction.
+						""")
+				.stream()
+				.content();
 
 		String content = streamContent.collectList().block().stream().collect(Collectors.joining());
 
 		logger.info(content);
 
+		assertThat(content).contains("001", "002", "003");
+		assertThat(content).contains("pending", "approved", "rejected");
+
 		// Quota rate
 		try {
-			Thread.sleep(20000);
-		}
-		catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
 		}
 	}
 
@@ -176,10 +182,10 @@ public class VertexAiGeminiPaymentTransactionIT {
 			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
 
 			return new VertexAI.Builder().setLocation(location)
-				.setProjectId(projectId)
-				.setTransport(Transport.REST)
-				// .setTransport(Transport.GRPC)
-				.build();
+					.setProjectId(projectId)
+					.setTransport(Transport.REST)
+					// .setTransport(Transport.GRPC)
+					.build();
 		}
 
 		@Bean
@@ -189,16 +195,15 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_FLASH)
-						// .withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO)
-						.withTemperature(0.1f)
-						// .withResponseMimeType(ResponseMimeType.JSON)
-						.build(),
+							.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+							.withTemperature(0.1f)
+							.build(),
 					functionCallbackContext);
 		}
 
 		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance must
+		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackContext instance
+		 * must
 		 * different from the other JSON schema types.
 		 */
 		private FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {

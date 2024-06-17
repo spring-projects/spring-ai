@@ -19,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -41,8 +41,8 @@ import java.util.function.Predicate;
 
 // @formatter:off
 /**
- * Single class implementation of the MiniMax Chat Completion API: https://www.minimaxi.com/document/guides/chat-model/V2 and
- * MiniMax Embedding API: https://www.minimaxi.com/document/guides/Embeddings.
+ * Single class implementation of the <a href="https://www.minimaxi.com/document/guides/chat-model/V2">MiniMax Chat Completion API</a> and
+ * <a href="https://www.minimaxi.com/document/guides/Embeddings">MiniMax Embedding API</a>.
  *
  * @author Geng Rong
  * @since 1.0.0 M1
@@ -63,7 +63,7 @@ public class MiniMaxApi {
 	 * @param miniMaxToken MiniMax apiKey.
 	 */
 	public MiniMaxApi(String miniMaxToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, miniMaxToken);
+		this(MiniMaxApiConstants.DEFAULT_BASE_URL, miniMaxToken);
 	}
 
 	/**

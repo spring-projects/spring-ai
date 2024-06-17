@@ -15,6 +15,11 @@ link:https://docs.vmware.com/en/VMware-GemFire-VectorDB/1.0/gemfire-vectordb/ove
 
 == Dependencies
 
+Add these dependencies to your project:
+
+- Embedding Model boot starter, required for calculating embeddings
+- Transformers Embedding (Local) and follow the ONNX Transformers Embedding instructions
+
 === Maven
 
 To use just the `GemFireVectorStore`, add the following dependency to your project’s Maven `pom.xml`:

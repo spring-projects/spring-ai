@@ -34,7 +34,7 @@ public class BedrockCohereEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.cohere.embedding";
 
 	/**
-	 * Enable Bedrock Cohere Embedding Client. False by default.
+	 * Enable Bedrock Cohere Embedding Model. False by default.
 	 */
 	private boolean enabled = false;
 

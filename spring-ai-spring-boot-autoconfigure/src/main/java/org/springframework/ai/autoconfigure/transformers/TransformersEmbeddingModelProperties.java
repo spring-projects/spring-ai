@@ -43,7 +43,7 @@ public class TransformersEmbeddingModelProperties {
 		.getAbsolutePath();
 
 	/**
-	 * Enable the Transformer Embedding client.
+	 * Enable the Transformer Embedding model.
 	 */
 	private boolean enabled = true;
 

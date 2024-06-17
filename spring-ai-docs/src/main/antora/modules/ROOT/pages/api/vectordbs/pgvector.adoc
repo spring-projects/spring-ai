@@ -8,9 +8,9 @@ link:https://github.com/pgvector/pgvector[PGvector] is an open-source extension 
 
 First you need access to PostgreSQL instance with enabled `vector`, `hstore` and `uuid-ossp` extensions.
 
-TIP: The <<Run Postgres & PGVector DB locally,setup local Postgres/PGVector>> appendix shows how to set up a DB locally with a Docker container.
+TIP: You can run a PGvector database as a Spring Boot dev service via xref:api/docker-compose.adoc[Docker Compose] or xref:api/testcontainers.adoc[Testcontainers]. In alternative, the <<Run Postgres & PGVector DB locally,setup local Postgres/PGVector>> appendix shows how to set up a DB locally with a Docker container.
 
-On startup, the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with an index.
+On startup, the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with an index if not existing.
 
 Optionally, you can do this manually like so:
 
@@ -30,9 +30,9 @@ CREATE TABLE IF NOT EXISTS vector_store (
 CREATE INDEX ON vector_store USING HNSW (embedding vector_cosine_ops);
 ----
 
-TIP: replace the `1536` with the actual embedding dimension if you are using a different dimension.
+TIP: replace the `1536` with the actual embedding dimension if you are using a different dimension. PGvector supports at most 2000 dimensions for HNSW indexes.
 
-Next if required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `PgVectorStore`.
+Next, if required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `PgVectorStore`.
 
 == Auto-Configuration
 
@@ -55,15 +55,14 @@ dependencies {
 }
 ----
 
-The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+The vector store implementation can initialize the required schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
-NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+NOTE: This is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
 
-
-The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
+The Vector Store also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
 You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
 
-For example to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel] add the following dependency to your project:
+For example, to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel], add the following dependency to your project:
 
 [source,xml]
 ----
@@ -86,7 +85,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 To connect to and configure the `PgVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's `application.yml`
+A simple configuration can be provided via Spring Boot's `application.yml`.
 
 [yml]
 ----
@@ -103,9 +102,13 @@ spring:
 		dimensions: 1536
 ----
 
+TIP: If you run PGvector as a Spring Boot dev service via link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.docker-compose[Docker Compose]
+or link:https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.testcontainers[Testcontainers],
+you don't need to configure URL, username and password since they are autoconfigured by Spring Boot.
+
 TIP: Check the list of xref:#pgvector-properties[configuration parameters] to learn about the default values and configuration options.
 
-Now you can Auto-wire the PgVector Store in your application and use it
+Now you can auto-wire the `PgVectorStore` in your application and use it
 
 [source,java]
 ----
@@ -113,13 +116,13 @@ Now you can Auto-wire the PgVector Store in your application and use it
 
 // ...
 
-List <Document> documents = List.of(
+List<Document> documents = List.of(
     new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
     new Document("The World is Big and Salvation Lurks Around the Corner"),
     new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
 
 // Add the documents to PGVector
-vectorStore.add(List.of(document));
+vectorStore.add(documents);
 
 // Retrieve documents similar to a query
 List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
@@ -214,7 +217,7 @@ public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddi
 == Run Postgres & PGVector DB locally
 
 ----
-docker run -it --rm --name postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres ankane/pgvector
+docker run -it --rm --name postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres pgvector/pgvector
 ----
 
 You can connect to this server like this:
@@ -222,5 +225,3 @@ You can connect to this server like this:
 ----
 psql -U postgres -h localhost -p 5432
 ----
-
-
