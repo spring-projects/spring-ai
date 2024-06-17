@@ -34,6 +34,14 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-elasticsearch-store-spring-boot-starter'
 }
 ----
+NOTE: For spring-boot versions pre 3.3.0 it's necessary to explicitly add the elasticsearch-java dependency with version > 8.13.3, otherwise the older version used will be incompatible with the queries performed:
+```
+<dependency>
+    <groupId>co.elastic.clients</groupId>
+    <artifactId>elasticsearch-java</artifactId>
+    <version>8.13.3</version>
+</dependency>
+```
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -194,7 +202,7 @@ is converted into the proprietary Elasticsearch filter format:
 
 == Manual Configuration
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. \For this you need to add the `spring-ai-elasticsearch-store` to your project:
+Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. For this you need to add the `spring-ai-elasticsearch-store` to your project:
 
 [source,xml]
 ----

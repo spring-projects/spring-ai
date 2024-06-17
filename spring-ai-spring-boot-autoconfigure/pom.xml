@@ -327,14 +327,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Elastic Search vector store -->
-		<dependency>
-			<groupId>co.elastic.clients</groupId>
-			<artifactId>elasticsearch-java</artifactId>
-			<version>${elasticsearch-java.version}</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- test dependencies -->
 
 		<dependency>
