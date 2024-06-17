@@ -241,14 +241,14 @@ public class TypesenseVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(Client client, EmbeddingModel embeddingClient) {
+		public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel) {
 
 			TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
 				.withCollectionName("test_vector_store")
-				.withEmbeddingDimension(embeddingClient.dimensions())
+				.withEmbeddingDimension(embeddingModel.dimensions())
 				.build();
 
-			return new TypesenseVectorStore(client, embeddingClient, config);
+			return new TypesenseVectorStore(client, embeddingModel, config);
 		}
 
 		@Bean
@@ -262,7 +262,7 @@ public class TypesenseVectorStoreIT {
 		}
 
 		@Bean
-		public EmbeddingModel embeddingClient() {
+		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
 		}
 

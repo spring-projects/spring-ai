@@ -34,7 +34,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public VectorStore vectorStore(Client typesenseClient, EmbeddingModel embeddingClient,
+	public TypesenseVectorStore vectorStore(Client typesenseClient, EmbeddingModel embeddingModel,
 			TypesenseVectorStoreProperties properties) {
 
 		TypesenseVectorStoreConfig config = TypesenseVectorStoreConfig.builder()
@@ -42,7 +42,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new TypesenseVectorStore(typesenseClient, embeddingClient, config);
+		return new TypesenseVectorStore(typesenseClient, embeddingModel, config);
 	}
 
 	@Bean

@@ -280,7 +280,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		this.initializeSchema = initializeSchema;
 
 		Assert.notNull(driver, "Neo4j driver must not be null");
-		Assert.notNull(embeddingModel, "Embedding client must not be null");
+		Assert.notNull(embeddingModel, "Embedding model must not be null");
 
 		this.driver = driver;
 		this.embeddingModel = embeddingModel;

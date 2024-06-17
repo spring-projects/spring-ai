@@ -36,3 +36,4 @@ org.springframework.ai.autoconfigure.vectorstore.cassandra.CassandraVectorStoreA
 org.springframework.ai.autoconfigure.zhipuai.ZhiPuAiAutoConfiguration
 org.springframework.ai.autoconfigure.chat.client.ChatClientAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreAutoConfiguration

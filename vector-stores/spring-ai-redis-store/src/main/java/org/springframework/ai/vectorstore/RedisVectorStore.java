@@ -290,7 +290,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema) {
 
 		Assert.notNull(config, "Config must not be null");
-		Assert.notNull(embeddingModel, "Embedding client must not be null");
+		Assert.notNull(embeddingModel, "Embedding model must not be null");
 		this.initializeSchema = initializeSchema;
 
 		this.jedis = new JedisPooled(config.uri);

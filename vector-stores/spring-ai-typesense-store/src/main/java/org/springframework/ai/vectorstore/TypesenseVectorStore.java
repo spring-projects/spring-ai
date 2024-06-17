@@ -50,7 +50,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	private final Client client;
 
-	private final EmbeddingModel embeddingClient;
+	private final EmbeddingModel embeddingModel;
 
 	private final TypesenseVectorStoreConfig config;
 
@@ -126,16 +126,16 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public TypesenseVectorStore(Client client, EmbeddingModel embeddingClient) {
-		this(client, embeddingClient, TypesenseVectorStoreConfig.defaultConfig());
+	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel) {
+		this(client, embeddingModel, TypesenseVectorStoreConfig.defaultConfig());
 	}
 
-	public TypesenseVectorStore(Client client, EmbeddingModel embeddingClient, TypesenseVectorStoreConfig config) {
+	public TypesenseVectorStore(Client client, EmbeddingModel embeddingModel, TypesenseVectorStoreConfig config) {
 		Assert.notNull(client, "Typesense must not be null");
-		Assert.notNull(embeddingClient, "EmbeddingClient must not be null");
+		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
 		this.client = client;
-		this.embeddingClient = embeddingClient;
+		this.embeddingModel = embeddingModel;
 		this.config = config;
 	}
 
@@ -148,7 +148,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			List<Double> embedding = this.embeddingClient.embed(document.getContent());
+			List<Double> embedding = this.embeddingModel.embed(document.getContent());
 			typesenseDoc.put(EMBEDDING_FIELD_NAME, embedding);
 
 			return typesenseDoc;
@@ -201,7 +201,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 		logger.info("Filter expression: {}", nativeFilterExpressions);
 
-		List<Double> embedding = this.embeddingClient.embed(request.getQuery());
+		List<Double> embedding = this.embeddingModel.embed(request.getQuery());
 
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
 		multiSearchCollectionParameters.collection(this.config.collectionName);
@@ -249,13 +249,13 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			return this.config.embeddingDimension;
 		}
 		try {
-			int embeddingDimensions = this.embeddingClient.dimensions();
+			int embeddingDimensions = this.embeddingModel.dimensions();
 			if (embeddingDimensions > 0) {
 				return embeddingDimensions;
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding client and fall backs to default:"
+			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
 					+ this.config.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;

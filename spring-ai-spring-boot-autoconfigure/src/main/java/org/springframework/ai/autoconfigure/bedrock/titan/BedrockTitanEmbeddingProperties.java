@@ -31,7 +31,7 @@ public class BedrockTitanEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.titan.embedding";
 
 	/**
-	 * Enable Bedrock Titan Embedding Client. False by default.
+	 * Enable Bedrock Titan Embedding Model. False by default.
 	 */
 	private boolean enabled = false;
 
