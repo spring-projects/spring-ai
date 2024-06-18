@@ -183,8 +183,6 @@ After specifying the `stream` method on `ChatClient`, there are a few options fo
 Creating a ChatClient with default system text in an `@Configuration` class simplifies runtime code.
 By setting defaults, you only need to specify user text when calling `ChatClient`, eliminating the need to set system text for each request in your runtime code path.
 
-
-
 === Default System Text
 
 In the following example, we will configure the system text to always reply in a pirate's voice.
@@ -345,6 +343,27 @@ ChatResponse response = ChatClient.builder(chatModel)
 
 Is this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
 To restrict the types of documents that are searched, the `SearchRequest` takes a SQL like filter expression that is portable across all `VectorStores`.
+
+==== Rutntime filter expressions
+
+You can update the default `SearchRequest` filter expression at run time using the `FILTER_EXRESSION` advisor context parameter:
+
+[source,java]
+----
+var chatClient = ChatClient.builder(chatModel)
+    .defaultSystem("Default system text.")
+    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore,
+				SearchRequest.defaults().withSimilarityThreshold(0.99d).withTopK(6)))
+    .build();
+
+// and at runtime use the `FILTER_EXRESSION` advisor context parameter to update the filter expression
+
+var content = chatClient.prompt()
+    .user("Please answer my question XYZ")
+    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXRESSION, "type == 'Spring'"))
+    .call()
+    .content();
+----
 
 === Chat Memory
 
