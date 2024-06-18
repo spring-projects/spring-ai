@@ -37,6 +37,9 @@ The following service connection factories are provided in the `spring-ai-spring
 | `OllamaConnectionDetails`
 | Containers named `ollama/ollama`
 
+| `OpenSearchConnectionDetails`
+| Containers named `opensearchproject/opensearch`
+
 | `QdrantConnectionDetails`
 | Containers named `qdrant/qdrant`
 
