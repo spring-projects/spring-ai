@@ -169,8 +169,8 @@
 		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
 		<azure-search.version>11.6.1</azure-search.version>
-		<weaviate-client.version>4.7.0</weaviate-client.version>
-		<qdrant.version>1.7.1</qdrant.version>
+		<weaviate-client.version>4.5.1</weaviate-client.version>
+		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
 
