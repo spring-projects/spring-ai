@@ -25,18 +25,18 @@ public class QueryTransformerQuestionAnswerAdvisor extends QuestionAnswerAdvisor
 			Without enumerations, hyphens, or any additional formatting!
 			""";
 
-	private static final String QUERY_REQUIREMENT = "query_requirement";
+	public static final String QUERY_REQUIREMENT = "query_requirement";
 
 	protected ChatModel chatModel;
 
-	protected String queryPrompt;
+	protected String clientQueryPrompt;
 
 	public QueryTransformerQuestionAnswerAdvisor(VectorStore vectorStore, ChatModel chatModel,
 			String queryRequirement) {
 		super(vectorStore);
 		this.chatModel = chatModel;
 		if (StringUtils.hasLength(queryRequirement)) {
-			this.queryPrompt = new PromptTemplate(QUERY_TRANSFER).render(Map.of(QUERY_REQUIREMENT, queryRequirement));
+			this.clientQueryPrompt = new PromptTemplate(QUERY_TRANSFER).render(Map.of(QUERY_REQUIREMENT, queryRequirement));
 		}
 	}
 
@@ -45,7 +45,7 @@ public class QueryTransformerQuestionAnswerAdvisor extends QuestionAnswerAdvisor
 		super(vectorStore, searchRequest);
 		this.chatModel = chatModel;
 		if (StringUtils.hasLength(queryRequirement)) {
-			this.queryPrompt = new PromptTemplate(QUERY_TRANSFER).render(Map.of(QUERY_REQUIREMENT, queryRequirement));
+			this.clientQueryPrompt = new PromptTemplate(QUERY_TRANSFER).render(Map.of(QUERY_REQUIREMENT, queryRequirement));
 		}
 	}
 
@@ -54,12 +54,13 @@ public class QueryTransformerQuestionAnswerAdvisor extends QuestionAnswerAdvisor
 		super(vectorStore, searchRequest, userTextAdvise);
 		this.chatModel = chatModel;
 		if (StringUtils.hasLength(queryRequirement)) {
-			this.queryPrompt = new PromptTemplate(QUERY_TRANSFER).render(Map.of(QUERY_REQUIREMENT, queryRequirement));
+			this.clientQueryPrompt = new PromptTemplate(QUERY_TRANSFER).render(Map.of(QUERY_REQUIREMENT, queryRequirement));
 		}
 	}
 
 	@Override
 	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+		String queryPrompt = clientQueryPrompt;
 		String originalUserText = request.userText();
 		String queryRequirement = (String) context.get(QUERY_REQUIREMENT);
 		if (StringUtils.hasLength(queryRequirement)) {

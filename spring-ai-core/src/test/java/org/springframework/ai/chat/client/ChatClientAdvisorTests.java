@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 
 /**
  * @author Christian Tzolov
@@ -308,6 +310,20 @@ public class ChatClientAdvisorTests {
 				.call().content();
 
 		assertThat(content).isEqualTo("Hello John");
+
+		when(chatModel.call(userInputCaptor.capture())).thenReturn("Hello2");
+		when(vectorStore.similaritySearch(queryCaptor.capture())).thenReturn(List.of(new Document("Hello2")));;
+		when(chatModel.call(promptCaptor.capture()))
+				.thenReturn(new ChatResponse(List.of(new Generation("Hello John2"))));
+
+		Consumer<ChatClient.AdvisorSpec> advisorSpecConsumer = advisorSpec -> {
+			advisorSpec.param(QueryTransformerQuestionAnswerAdvisor.QUERY_REQUIREMENT, "query must be in English");
+		};
+		content = chatClient.prompt()
+				.user("Bonjour").advisors(advisorSpecConsumer)
+				.call().content();
+
+		assertThat(content).isEqualTo("Hello John2");
 	}
 
 }
