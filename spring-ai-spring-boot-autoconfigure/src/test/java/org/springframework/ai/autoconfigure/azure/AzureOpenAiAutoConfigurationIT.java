@@ -92,7 +92,7 @@ public class AzureOpenAiAutoConfigurationIT {
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage, systemMessage)));
 
 			List<ChatResponse> responses = response.collectList().block();
-			assertThat(responses.size()).isGreaterThan(1);
+			assertThat(responses.size()).isGreaterThan(10);
 
 			String stitchedResponseContent = responses.stream()
 				.map(ChatResponse::getResults)
