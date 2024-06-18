@@ -344,26 +344,25 @@ ChatResponse response = ChatClient.builder(chatModel)
 Is this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
 To restrict the types of documents that are searched, the `SearchRequest` takes a SQL like filter expression that is portable across all `VectorStores`.
 
-==== Rutntime filter expressions
+==== Dynamic Filter Expressions
 
-You can update the default `SearchRequest` filter expression at run time using the `FILTER_EXRESSION` advisor context parameter:
+Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRESSION` advisor context parameter:
 
 [source,java]
 ----
-var chatClient = ChatClient.builder(chatModel)
-    .defaultSystem("Default system text.")
-    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore,
-				SearchRequest.defaults().withSimilarityThreshold(0.99d).withTopK(6)))
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
     .build();
 
-// and at runtime use the `FILTER_EXRESSION` advisor context parameter to update the filter expression
-
-var content = chatClient.prompt()
+// Update filter expression at runtime
+String content = chatClient.prompt()
     .user("Please answer my question XYZ")
-    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXRESSION, "type == 'Spring'"))
+    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
     .call()
     .content();
 ----
+
+The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
 
 === Chat Memory
 
