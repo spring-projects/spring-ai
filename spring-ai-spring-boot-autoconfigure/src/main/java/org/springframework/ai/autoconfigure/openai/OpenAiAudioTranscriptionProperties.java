@@ -31,6 +31,11 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
 
+	/**
+	 * Enable OpenAI audio transcription model.
+	 */
+	private boolean enabled = true;
+
 	@NestedConfigurationProperty
 	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 		.withModel(DEFAULT_TRANSCRIPTION_MODEL)
@@ -44,6 +49,14 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiAudioTranscriptionOptions options) {
 		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

@@ -20,9 +20,16 @@ import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinition;
+import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
+import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsToolCall;
 import com.azure.ai.openai.models.ChatCompletionsToolDefinition;
+import com.azure.ai.openai.models.ChatMessageContentItem;
+import com.azure.ai.openai.models.ChatMessageImageContentItem;
+import com.azure.ai.openai.models.ChatMessageImageUrl;
+import com.azure.ai.openai.models.ChatMessageTextContentItem;
 import com.azure.ai.openai.models.ChatRequestAssistantMessage;
 import com.azure.ai.openai.models.ChatRequestMessage;
 import com.azure.ai.openai.models.ChatRequestSystemMessage;
@@ -32,23 +39,19 @@ import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.FunctionCall;
 import com.azure.ai.openai.models.FunctionDefinition;
-import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
 import com.azure.core.util.BinaryData;
 import com.azure.core.util.IterableStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -58,6 +61,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +78,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author John Blum
  * @author Christian Tzolov
  * @author Grogdunn
+ * @author Benoit Moussaud
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  */
@@ -88,14 +93,14 @@ public class AzureOpenAiChatModel
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
-	 * The configuration information for a chat completions request.
-	 */
-	private AzureOpenAiChatOptions defaultOptions;
-
-	/**
 	 * The {@link OpenAIClient} used to interact with the Azure OpenAI service.
 	 */
 	private final OpenAIClient openAIClient;
+
+	/**
+	 * The configuration information for a chat completions request.
+	 */
+	private AzureOpenAiChatOptions defaultOptions;
 
 	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient) {
 		this(microsoftOpenAiClient,
@@ -277,7 +282,17 @@ public class AzureOpenAiChatModel
 
 		switch (message.getMessageType()) {
 			case USER:
-				return new ChatRequestUserMessage(message.getContent());
+				// https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/README.md#text-completions-with-images
+				List<ChatMessageContentItem> items = new ArrayList<>();
+				items.add(new ChatMessageTextContentItem(message.getContent()));
+				if (!CollectionUtils.isEmpty(message.getMedia())) {
+					items.addAll(message.getMedia()
+						.stream()
+						.map(media -> new ChatMessageImageContentItem(
+								new ChatMessageImageUrl(media.getData().toString())))
+						.toList());
+				}
+				return new ChatRequestUserMessage(items);
 			case SYSTEM:
 				return new ChatRequestSystemMessage(message.getContent());
 			case ASSISTANT:

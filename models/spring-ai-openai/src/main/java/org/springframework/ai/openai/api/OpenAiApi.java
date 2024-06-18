@@ -28,7 +28,9 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +64,7 @@ public class OpenAiApi {
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken);
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken);
 	}
 
 	/**
@@ -280,7 +282,7 @@ public class OpenAiApi {
 		}
 	}
 
-        /**
+	/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -393,7 +395,7 @@ public class OpenAiApi {
 					tools, toolChoice, null);
 		}
 
-				/**
+		/**
 		 * Shortcut constructor for a chat completion request with the given messages for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.

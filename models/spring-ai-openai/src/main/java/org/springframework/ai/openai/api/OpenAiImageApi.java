@@ -20,7 +20,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -38,11 +40,11 @@ public class OpenAiImageApi {
 	private final RestClient restClient;
 
 	/**
-	 * Create a new OpenAI Image api with base URL set to https://api.openai.com
+	 * Create a new OpenAI Image api with base URL set to {@code https://api.openai.com}.
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiImageApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
 	}
 
 	/**

@@ -35,14 +35,9 @@ public class ElasticsearchVectorStoreOptions {
 	private int dimensions = 1536;
 
 	/**
-	 * Whether to use dense vector indexing.
-	 */
-	private boolean denseVectorIndexing = true;
-
-	/**
 	 * The similarity function to use.
 	 */
-	private String similarity = "cosine";
+	private SimilarityFunction similarity = SimilarityFunction.cosine;
 
 	public String getIndexName() {
 		return indexName;
@@ -60,19 +55,11 @@ public class ElasticsearchVectorStoreOptions {
 		this.dimensions = dims;
 	}
 
-	public boolean isDenseVectorIndexing() {
-		return denseVectorIndexing;
-	}
-
-	public void setDenseVectorIndexing(boolean denseVectorIndexing) {
-		this.denseVectorIndexing = denseVectorIndexing;
-	}
-
-	public String getSimilarity() {
+	public SimilarityFunction getSimilarity() {
 		return similarity;
 	}
 
-	public void setSimilarity(String similarity) {
+	public void setSimilarity(SimilarityFunction similarity) {
 		this.similarity = similarity;
 	}
 
