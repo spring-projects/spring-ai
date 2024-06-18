@@ -16,8 +16,7 @@
 package org.springframework.ai.vectorstore;
 
 import com.zaxxer.hikari.HikariDataSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -55,7 +54,7 @@ public class PgVectorStoreCustomNamesIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues(
+		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
 
 				// JdbcTemplate configuration
 				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
@@ -63,55 +62,70 @@ public class PgVectorStoreCustomNamesIT {
 				"app.datasource.username=postgres", "app.datasource.password=postgres",
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
-	private static boolean isTableExists(ApplicationContext context, String tableName) {
-		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
-		return jdbcTemplate.queryForObject(
-				"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '" + tableName + "')",
-				Boolean.class);
-	}
+	private final ApplicationContextRunner customContextRunner = new ApplicationContextRunner()
 
-	private static boolean isIndexExists(ApplicationContext context, String indexName) {
-		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
-		// Query to check if the specified index exists in the database
-		return jdbcTemplate.queryForObject(
-				"SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = '" + indexName + "')", Boolean.class);
-	}
+		.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
+
+				// JdbcTemplate configuration
+				String.format("app.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
+						postgresContainer.getMappedPort(5432), "postgres"),
+				"app.datasource.username=postgres", "app.datasource.password=postgres",
+				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	private static void dropTableByName(ApplicationContext context, String name) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + name);
 	}
 
-	@ParameterizedTest(name = "{0} - Verifies creation of specified table and index names")
-	@CsvSource({
-			// Passing empty string for both tableName and indexName
-			"'','',vector_store,spring_ai_vector_index",
-			// Passing valid tableName and empty string for indexName
-			"customvectortable_no_index,'',customvectortable_no_index,customvectortable_no_index_index",
-			// Passing valid values for both tableName and indexName
-			"customvectortable,customvectortableindex,customvectortable,customvectortableindex" })
-	public void testCustomTableNameAndIndexCreation(String tableName, String indexName, String expectedTable,
-			String expectedIndex) {
+	@Test
+	public void testShouldSucceedWhenCustomTableExists() {
 
-		contextRunner
+		String tableName = "customvectortable";
+
+		customContextRunner.withUserConfiguration(TestApplication.class)
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
-					"test.spring.ai.vectorstore.pgvector.vectorIndexName=" + indexName)
+					"test.spring.ai.vectorstore.pgvector.createTables=true")
 			.run(context -> {
 
-				System.out.println(" table name: " + tableName);
-				System.out.println(" indexName name: " + tableName);
-				boolean tableExists = isTableExists(context, expectedTable);
-				boolean indexExists = isIndexExists(context, expectedIndex);
+				assertThat(context).hasNotFailed();
+				dropTableByName(context, tableName);
 
-				System.out.println("Table '" + expectedTable + "' exists: " + tableExists);
-				System.out.println("Index '" + expectedIndex + "' exists: " + indexExists);
-
-				assertThat(tableExists).withFailMessage("Expected table '" + expectedTable + "' to exist.").isTrue();
-				assertThat(indexExists).withFailMessage("Expected index '" + expectedIndex + "' to exist.").isTrue();
-
-				// Clean up by dropping the created table
-				dropTableByName(context, expectedTable);
 			});
+
+	}
+
+	@Test
+	public void testShouldFailWhenCustomTableDoesNotExist() {
+
+		String tableName = "customvectortable";
+
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName)
+
+			.run(context -> {
+
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalStateException.class)
+					.hasMessageContaining(tableName + " does not exist");
+
+			});
+
+	}
+
+	@Test
+	public void testShouldFailOnSQLInjectionInTableName() {
+
+		String tableName = "users; DROP TABLE users;";
+
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName)
+
+			.run(context -> {
+
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalArgumentException.class)
+					.hasMessageContaining("Table name should only contain alphanumeric characters and underscores");
+
+			});
+
 	}
 
 	@SpringBootConfiguration
@@ -121,19 +135,57 @@ public class PgVectorStoreCustomNamesIT {
 		@Value("${test.spring.ai.vectorstore.pgvector.vectorTableName}")
 		String vectorTableName;
 
-		@Value("${test.spring.ai.vectorstore.pgvector.vectorIndexName}")
-		String vectorIndexName;
+		@Value("${test.spring.ai.vectorstore.pgvector.createTables:false}")
+		Boolean createTables;
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return new PgVectorStore(vectorTableName, vectorIndexName, jdbcTemplate, embeddingModel,
+			return new PgVectorStore(vectorTableName, jdbcTemplate, embeddingModel,
 					PgVectorStore.INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE, true,
 					PgIndexType.HNSW, true);
 		}
 
+		private void createCustomTable(JdbcTemplate jdbcTemplate) {
+			int dimensions = 768;
+
+			if (null == vectorTableName || vectorTableName.isEmpty()) {
+				System.out.println("Table name is not provided");
+				return;
+			}
+			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
+			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
+			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+
+			jdbcTemplate.execute("DROP TABLE IF EXISTS " + vectorTableName);
+
+			jdbcTemplate.execute(String.format("""
+					CREATE TABLE IF NOT EXISTS %s (
+						id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+						content text,
+						metadata json,
+						embedding vector(%d)
+					)
+					""", vectorTableName, dimensions));
+			System.out.println("Table created: " + vectorTableName);
+			String vectorIndexName = vectorTableName + "_index";
+
+			PgVectorStore.PgDistanceType distanceType = PgVectorStore.PgDistanceType.COSINE_DISTANCE;
+
+			PgIndexType createIndexMethod = PgIndexType.HNSW;
+
+			jdbcTemplate.execute(String.format("""
+					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
+					""", vectorIndexName, vectorTableName, createIndexMethod, distanceType.index));
+			System.out.println("Index created: " + vectorTableName);
+			System.out.println("Completed: " + vectorTableName);
+		}
+
 		@Bean
 		public JdbcTemplate myJdbcTemplate(DataSource dataSource) {
-			return new JdbcTemplate(dataSource);
+			JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+			if (createTables)
+				createCustomTable(jdbcTemplate);
+			return jdbcTemplate;
 		}
 
 		@Bean

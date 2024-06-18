@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.ArrayList;
 import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,6 +36,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -59,8 +61,6 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	private final String vectorTableName;
-
-	private final String vectorIndexName;
 
 	public final static String DEFAULT_VECTOR_TABLE_NAME = "vector_store";
 
@@ -204,41 +204,28 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE,
-				false, PgIndexType.NONE, false);
+		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgDistanceType.COSINE_DISTANCE, false,
+				PgIndexType.NONE, false);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions) {
-		this(jdbcTemplate, embeddingModel, dimensions, PgVectorStore.PgDistanceType.COSINE_DISTANCE, false,
-				PgIndexType.NONE, false);
+		this(jdbcTemplate, embeddingModel, dimensions, PgDistanceType.COSINE_DISTANCE, false, PgIndexType.NONE, false);
 	}
 
 	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions,
 			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod,
 			boolean initializeSchema) {
 
-		this(DEFAULT_VECTOR_TABLE_NAME, DEFAULT_VECTOR_INDEX_NAME, jdbcTemplate, embeddingModel, dimensions,
-				distanceType, removeExistingVectorStoreTable, createIndexMethod, initializeSchema);
+		this(DEFAULT_VECTOR_TABLE_NAME, jdbcTemplate, embeddingModel, dimensions, distanceType,
+				removeExistingVectorStoreTable, createIndexMethod, initializeSchema);
 	}
 
-	public PgVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		this(vectorTableName, vectorTableName + "_index", jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION,
-				PgVectorStore.PgDistanceType.COSINE_DISTANCE, false, PgIndexType.NONE, false);
-	}
-
-	public PgVectorStore(String vectorTableName, String vectorIndexName, JdbcTemplate jdbcTemplate,
-			EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
-			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema) {
+	public PgVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+			int dimensions, PgDistanceType distanceType, boolean removeExistingVectorStoreTable,
+			PgIndexType createIndexMethod, boolean initializeSchema) {
 
 		this.vectorTableName = (null == vectorTableName || vectorTableName.isEmpty()) ? DEFAULT_VECTOR_TABLE_NAME
 				: vectorTableName.trim();
-
-		// Assign a default name to vectorIndexName if it's unset, appending "_index" to
-		// vectorTableName when it differs from the default.
-		this.vectorIndexName = (vectorIndexName == null || vectorIndexName.isEmpty())
-				? (this.vectorTableName.equals(DEFAULT_VECTOR_TABLE_NAME) ? DEFAULT_VECTOR_INDEX_NAME
-						: this.vectorTableName + "_index")
-				: vectorIndexName.trim();
 
 		this.jdbcTemplate = jdbcTemplate;
 		this.embeddingModel = embeddingModel;
@@ -361,13 +348,106 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		return this.getDistanceType().operator;
 	}
 
+	static boolean isValidTableName(String tableName) {
+
+		if (tableName == null) {
+			return false;
+		}
+
+		// Check if the table Only alphanumeric characters and underscores and should be
+		// less than 64 characters
+		if (!tableName.matches("^[a-zA-Z0-9_]{1,64}$")) {
+			return false;
+		}
+
+		// Check to ensure the table name is not purely numeric
+		if (tableName.matches("^[0-9]+$")) {
+			return false;
+		}
+
+		return true;
+
+	}
+
+	void validateTableSchema() {
+
+		String tableName = getVectorTableName();
+
+		if (isValidTableName(tableName) == false) {
+			throw new IllegalArgumentException(
+					"Table name should only contain alphanumeric characters and underscores");
+		}
+
+		try {
+			logger.info("Validating PGVectorStore schema");
+
+			List<String> expectedColumns = new ArrayList<>();
+			expectedColumns.add("id");
+			expectedColumns.add("content");
+			expectedColumns.add("metadata");
+			expectedColumns.add("embedding");
+
+			// Query to check if the table exists with the required fields and types
+			List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+					"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ?",
+					new Object[] { tableName });
+
+			if (columns.isEmpty()) {
+				throw new IllegalStateException(
+						"Error while validating table schema, Table " + tableName + " does not exist");
+
+			}
+
+			// Check each column against expected fields
+			List<String> availableColumns = new ArrayList<>();
+			for (Map<String, Object> column : columns) {
+				String columnName = (String) column.get("column_name");
+				availableColumns.add(columnName);
+
+			}
+
+			expectedColumns.removeAll(availableColumns);
+
+			if (expectedColumns.isEmpty()) {
+				logger.info("PG VectorStore schema validation successful");
+			}
+			else {
+				throw new IllegalStateException("Missing fields " + expectedColumns);
+			}
+
+		}
+		catch (DataAccessException | IllegalStateException e) {
+			logger.error("Error while validating table schema" + e.getMessage());
+			logger
+				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
+						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"
+						+ "   CREATE EXTENSION IF NOT EXISTS vector;\n" + "   CREATE EXTENSION IF NOT EXISTS hstore;\n"
+						+ "   CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\n"
+						+ "2. Verify that the table exists with the appropriate structure. If it does not exist, create it using a SQL command similar to the following, replacing 'embedding_dimensions' with the appropriate size based on your vector embeddings:\n"
+						+ String.format("   CREATE TABLE IF NOT EXISTS %s (\n"
+								+ "       id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,\n" + "       content text,\n"
+								+ "       metadata json,\n"
+								+ "       embedding vector(embedding_dimensions)  // Replace 'embedding_dimensions' with your specific value\n"
+								+ "   );\n", tableName)
+						+ "3. Create an appropriate index for the vector embedding to optimize performance. Adjust the index type and options based on your usage. Example SQL for creating an index:\n"
+						+ String.format("   CREATE INDEX ON %s USING HNSW (embedding vector_cosine_ops);\n", tableName)
+						+ "\nPlease adjust these commands based on your specific configuration and the capabilities of your vector database system.");
+			throw new IllegalStateException(e);
+
+		}
+	}
+
 	// ---------------------------------------------------------------------------------
 	// Initialize
 	// ---------------------------------------------------------------------------------
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		if (!this.initializeSchema) {
+		if (!this.initializeSchema || !this.getVectorTableName().equalsIgnoreCase(DEFAULT_VECTOR_TABLE_NAME)) {
+
+			logger.debug("Skipping the schema initialization for the table: " + this.getVectorTableName());
+
+			validateTableSchema();
 			return;
 		}
 
@@ -378,7 +458,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		// Remove existing VectorStoreTable
 		if (this.removeExistingVectorStoreTable) {
-			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + getVectorTableName());
+			this.jdbcTemplate.execute("DROP TABLE IF EXISTS " + DEFAULT_VECTOR_TABLE_NAME);
 		}
 
 		this.jdbcTemplate.execute(String.format("""
@@ -388,18 +468,14 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 					metadata json,
 					embedding vector(%d)
 				)
-				""", getVectorTableName(), this.embeddingDimensions()));
+				""", DEFAULT_VECTOR_TABLE_NAME, this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
 					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
-					""", getVectorIndexName(), getVectorTableName(), this.createIndexMethod,
+					""", DEFAULT_VECTOR_INDEX_NAME, DEFAULT_VECTOR_TABLE_NAME, this.createIndexMethod,
 					this.getDistanceType().index));
 		}
-	}
-
-	private String getVectorIndexName() {
-		return this.vectorIndexName;
 	}
 
 	private String getVectorTableName() {
