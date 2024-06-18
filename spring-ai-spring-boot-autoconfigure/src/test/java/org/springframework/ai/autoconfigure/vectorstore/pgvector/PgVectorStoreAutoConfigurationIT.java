@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PgVectorStoreAutoConfigurationIT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector:v0.5.1")
+	static GenericContainer<?> postgresContainer = new GenericContainer<>("pgvector/pgvector:0.7.2-pg16")
 		.withEnv("POSTGRES_USER", "postgres")
 		.withEnv("POSTGRES_PASSWORD", "postgres")
 		.withExposedPorts(5432);

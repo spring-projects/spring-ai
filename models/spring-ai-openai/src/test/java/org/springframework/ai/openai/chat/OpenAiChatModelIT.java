@@ -219,7 +219,7 @@ class OpenAiChatModelIT extends AbstractIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
+			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")

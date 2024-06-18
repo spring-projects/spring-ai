@@ -15,26 +15,25 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.chromadb.ChromaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.chroma.ChromaApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.client.RestTemplate;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+import org.testcontainers.chromadb.ChromaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ChromaDB with static API Token Authentication:
@@ -57,7 +56,7 @@ public class TokenSecuredChromaWhereIT {
 	 * https://docs.trychroma.com/usage-guide#static-api-token-authentication
 	 */
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.22")
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0")
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
 		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
 				"chromadb.auth.token.TokenConfigServerAuthCredentialsProvider")
@@ -127,13 +126,13 @@ public class TokenSecuredChromaWhereIT {
 	public static class TestApplication {
 
 		@Bean
-		public RestTemplate restTemplate() {
-			return new RestTemplate();
+		public RestClient.Builder builder() {
+			return RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory());
 		}
 
 		@Bean
-		public ChromaApi chromaApi(RestTemplate restTemplate) {
-			var chromaApi = new ChromaApi(chromaContainer.getEndpoint(), restTemplate);
+		public ChromaApi chromaApi(RestClient.Builder builder) {
+			var chromaApi = new ChromaApi(chromaContainer.getEndpoint(), builder);
 			chromaApi.withKeyToken(CHROMA_SERVER_AUTH_CREDENTIALS);
 			return chromaApi;
 		}

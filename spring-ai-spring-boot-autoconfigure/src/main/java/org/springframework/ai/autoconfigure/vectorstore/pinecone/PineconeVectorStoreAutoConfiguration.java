@@ -42,6 +42,8 @@ public class PineconeVectorStoreAutoConfiguration {
 			.withProjectId(properties.getProjectId())
 			.withIndexName(properties.getIndexName())
 			.withNamespace(properties.getNamespace())
+			.withContentFieldName(properties.getContentFieldName())
+			.withDistanceMetadataFieldName(properties.getDistanceMetadataFieldName())
 			.withServerSideTimeout(properties.getServerSideTimeout())
 			.build();
 

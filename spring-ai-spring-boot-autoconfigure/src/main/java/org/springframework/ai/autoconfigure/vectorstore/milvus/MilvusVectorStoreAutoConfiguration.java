@@ -113,8 +113,7 @@ public class MilvusVectorStoreAutoConfiguration {
 		return new MilvusServiceClient(builder.build());
 	}
 
-	private static class PropertiesMilvusServiceClientConnectionDetails
-			implements MilvusServiceClientConnectionDetails {
+	static class PropertiesMilvusServiceClientConnectionDetails implements MilvusServiceClientConnectionDetails {
 
 		private final MilvusServiceClientProperties properties;
 

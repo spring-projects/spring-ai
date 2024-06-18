@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -25,19 +27,14 @@ import java.util.UUID;
 
 import javax.sql.DataSource;
 
-import com.zaxxer.hikari.HikariDataSource;
 import org.junit.Assert;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,8 +50,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
  * @author Christian Tzolov
@@ -64,10 +64,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PgVectorStoreIT {
 
 	@Container
-	static GenericContainer<?> postgresContainer = new GenericContainer<>("ankane/pgvector:v0.5.1")
-		.withEnv("POSTGRES_USER", "postgres")
-		.withEnv("POSTGRES_PASSWORD", "postgres")
-		.withExposedPorts(5432);
+	@SuppressWarnings("resource")
+	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+		.withUsername("postgres")
+		.withPassword("postgres");
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),

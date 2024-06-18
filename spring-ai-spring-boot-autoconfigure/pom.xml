@@ -76,7 +76,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Transformers Embedding Client -->
+		<!-- Transformers Embedding Model -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-transformers</artifactId>
@@ -107,6 +107,35 @@
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
+
+		<!-- Oracle AI Vector Search Store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-oracle-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- TEMP: Workaround until Spring Boot updates its Oracle version -->
+		<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc11</artifactId>
+			<version>${oracle.version}</version>
+			<optional>true</optional>
+		</dependency>
+			<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ucp</artifactId>
+			<version>${oracle.version}</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>com.oracle.database.ha</groupId>
+			<artifactId>simplefan</artifactId>
+			<version>${oracle.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 
 		<!-- PG Vector Store-->
 		<dependency>
@@ -267,6 +296,7 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Elasticsearch Vector Store-->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-elasticsearch-store</artifactId>
@@ -284,6 +314,22 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-zhipuai</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Typesense vector store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-typesense-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- OpenSearch vector store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-opensearch-store</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -351,6 +397,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>oracle-free</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>
 			<version>2.2.0</version>
@@ -371,6 +423,18 @@
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
+			<artifactId>chromadb</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>milvus</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
 			<artifactId>qdrant</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -378,6 +442,19 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>elasticsearch</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>weaviate</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opensearch</groupId>
+			<artifactId>opensearch-testcontainers</artifactId>
+			<version>2.0.1</version>
 			<scope>test</scope>
 		</dependency>
 

@@ -45,7 +45,7 @@ class MyController {
 ----
 
 In this simple example, the user input sets the contents of the user message.
-The call method sends a request to the AI model, and the context method returns the AI model's response as a String.
+The call method sends a request to the AI model, and the content method returns the AI model's response as a String.
 
 === Create a ChatClient programmatically
 

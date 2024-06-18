@@ -15,14 +15,24 @@
  */
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -45,17 +55,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import reactor.core.publisher.Flux;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -69,6 +70,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Jemin Huh
  * @author Grogdunn
  * @author Hyunjoon Choi
+ * @author Mariusz Bernacki
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -253,18 +255,23 @@ public class OpenAiChatModel extends
 		Set<String> functionsForThisRequest = new HashSet<>();
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
-			// Add text content.
-			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
-			if (!CollectionUtils.isEmpty(m.getMedia())) {
-				// Add media content.
-				contents.addAll(m.getMedia()
+			Object content;
+			if (CollectionUtils.isEmpty(m.getMedia())) {
+				content = m.getContent();
+			}
+			else {
+				List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(m.getContent())));
+
+				contentList.addAll(m.getMedia()
 					.stream()
 					.map(media -> new MediaContent(
 							new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
 					.toList());
+
+				content = contentList;
 			}
 
-			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+			return new ChatCompletionMessage(content, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
 		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);

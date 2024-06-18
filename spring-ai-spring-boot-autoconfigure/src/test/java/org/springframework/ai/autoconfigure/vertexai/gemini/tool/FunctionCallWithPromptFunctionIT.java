@@ -51,18 +51,21 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
 
-				var systemMessage = new SystemMessage("""
-						Use Multi-turn function calling.
-						Answer for all listed locations.
-						If the information was not fetched call the function again. Repeat at most 3 times.
+				// var systemMessage = new SystemMessage("""
+				// Use Multi-turn function calling.
+				// Answer for all listed locations.
+				// If the information was not fetched call the function again. Repeat at
+				// most 3 times.
+				// """);
+				var userMessage = new UserMessage("""
+						What's the weather like in San Francisco, Paris and in Tokyo?
+						Return the temperature in Celsius.
 						""");
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris and in Tokyo?");
 
 				var promptOptions = VertexAiGeminiChatOptions.builder()
 					.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
@@ -72,7 +75,7 @@ public class FunctionCallWithPromptFunctionIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage), promptOptions));
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
 				logger.info("Response: {}", response);
 
@@ -80,7 +83,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				// Verify that no function call is made.
 				response = chatModel
-					.call(new Prompt(List.of(systemMessage, userMessage), VertexAiGeminiChatOptions.builder().build()));
+					.call(new Prompt(List.of(userMessage), VertexAiGeminiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);
 

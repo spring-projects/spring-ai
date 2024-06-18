@@ -23,7 +23,7 @@ import org.testcontainers.weaviate.WeaviateContainer;
 /**
  * @author Eddú Meléndez
  */
-public class WeaviateContainerConnectionDetailsFactory
+class WeaviateContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<WeaviateContainer, WeaviateConnectionDetails> {
 
 	@Override

@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -22,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import io.weaviate.client.Config;
-import io.weaviate.client.WeaviateClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -39,14 +39,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.weaviate.WeaviateContainer;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import io.weaviate.client.Config;
+import io.weaviate.client.WeaviateClient;
 
 /**
  * @author Christian Tzolov
@@ -56,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class WeaviateVectorStoreIT {
 
 	@Container
-	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.22.4");
+	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.25.4");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
