@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class WeaviateVectorStoreAutoConfigurationTests {
 
 	@Container
-	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.22.4");
+	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.25.4");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(WeaviateVectorStoreAutoConfiguration.class))

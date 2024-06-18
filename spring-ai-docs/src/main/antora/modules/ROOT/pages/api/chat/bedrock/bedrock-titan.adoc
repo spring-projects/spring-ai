@@ -71,7 +71,7 @@ The prefix `spring.ai.bedrock.titan.chat` is the property prefix that configures
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.titan.chat.enable | Enable Bedrock Titan chat model. Disabled by default | false
+| spring.ai.bedrock.titan.chat.enabled | Enable Bedrock Titan chat model. Disabled by default | false
 | spring.ai.bedrock.titan.chat.model  | The model id to use. See the link:https://github.com/spring-projects/spring-ai/blob/4839a6175cd1ec89498b97d3efb6647022c3c7cb/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/api/TitanChatBedrockApi.java#L220[TitanChatBedrockApi#TitanChatModel] for the supported models.  | amazon.titan-text-lite-v1
 | spring.ai.bedrock.titan.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | 0.7
 | spring.ai.bedrock.titan.chat.options.topP  | The maximum cumulative probability of tokens to consider when sampling.  | AWS Bedrock default

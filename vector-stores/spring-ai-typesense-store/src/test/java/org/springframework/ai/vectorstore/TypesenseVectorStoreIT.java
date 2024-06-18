@@ -1,10 +1,24 @@
 package org.springframework.ai.vectorstore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -16,19 +30,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.typesense.api.Client;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.*;
-
-import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
 import org.typesense.api.Configuration;
 import org.typesense.resources.Node;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Pablo Sanchidrian Herrera

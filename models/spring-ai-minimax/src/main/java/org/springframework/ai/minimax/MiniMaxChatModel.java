@@ -25,9 +25,14 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.minimax.api.MiniMaxApi.*;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionFinishReason;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
+import org.springframework.ai.minimax.api.MiniMaxApi.FunctionTool;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -38,7 +43,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
