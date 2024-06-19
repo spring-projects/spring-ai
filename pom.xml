@@ -38,11 +38,6 @@
 						<option>--stacktrace</option>
 						<option>--fetch</option>
 					</options>
-					<environment>
-						<ALGOLIA_API_KEY>042f6aaab6ce998d2ea29e60167e1660</ALGOLIA_API_KEY>
-						<ALGOLIA_APP_ID>WB1FQYI187</ALGOLIA_APP_ID>
-						<ALGOLIA_INDEX_NAME>springdocs</ALGOLIA_INDEX_NAME>
-					</environment>
 					<packages>
 						<package>@antora/atlas-extension@1.0.0-alpha.1</package>
 						<package>@antora/collector-extension@1.0.0-alpha.3</package>
