@@ -23,7 +23,7 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-public class QdrantDockerComposeConnectionDetailsFactory
+class QdrantDockerComposeConnectionDetailsFactory
 		extends DockerComposeConnectionDetailsFactory<QdrantConnectionDetails> {
 
 	private static final int QDRANT_GRPC_PORT = 6334;
