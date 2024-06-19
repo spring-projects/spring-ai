@@ -23,8 +23,7 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-public class RedisDockerComposeConnectionDetailsFactory
-		extends DockerComposeConnectionDetailsFactory<RedisConnectionDetails> {
+class RedisDockerComposeConnectionDetailsFactory extends DockerComposeConnectionDetailsFactory<RedisConnectionDetails> {
 
 	private static final String[] REDIS_IMAGE_NAMES = { "redis/redis-stack", "redis/redis-stack-server" };
 
