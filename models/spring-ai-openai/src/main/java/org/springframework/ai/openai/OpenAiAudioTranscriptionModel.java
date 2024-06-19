@@ -38,9 +38,9 @@ import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.model.Model;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
-import org.springframework.ai.openai.audio.transcription.AudioTranscription;
-import org.springframework.ai.openai.audio.transcription.AudioTranscriptionPrompt;
-import org.springframework.ai.openai.audio.transcription.AudioTranscriptionResponse;
+import org.springframework.ai.audio.transcription.AudioTranscription;
+import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
+import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
@@ -185,7 +185,7 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			}
 		}
 
-		OpenAiAudioApi.TranscriptionRequest audioTranscriptionRequest = OpenAiAudioApi.TranscriptionRequest.builder()
+		return OpenAiAudioApi.TranscriptionRequest.builder()
 			.withFile(toBytes(request.getInstructions()))
 			.withResponseFormat(options.getResponseFormat())
 			.withPrompt(options.getPrompt())
@@ -194,8 +194,6 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			.withModel(options.getModel())
 			.withGranularityType(options.getGranularityType())
 			.build();
-
-		return audioTranscriptionRequest;
 	}
 
 	private byte[] toBytes(Resource resource) {

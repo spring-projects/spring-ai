@@ -15,13 +15,11 @@
  */
 package org.springframework.ai.autoconfigure.azure.openai;
 
-import java.util.List;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
-
+import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
@@ -37,10 +35,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
+import java.util.List;
+
+/**
+ * @author Piotr Olaszewski
+ */
 @AutoConfiguration
 @ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
 @EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
-		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class })
+		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class,
+		AzureOpenAiAudioTranscriptionProperties.class })
 public class AzureOpenAiAutoConfiguration {
 
 	@Bean
@@ -67,10 +71,7 @@ public class AzureOpenAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		AzureOpenAiChatModel azureOpenAiChatModel = new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(),
-				functionCallbackContext);
-
-		return azureOpenAiChatModel;
+		return new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext);
 	}
 
 	@Bean
@@ -97,6 +98,14 @@ public class AzureOpenAiAutoConfiguration {
 			AzureOpenAiImageOptionsProperties imageProperties) {
 
 		return new AzureOpenAiImageModel(openAIClient, imageProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = AzureOpenAiAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public AzureOpenAiAudioTranscriptionModel azureOpenAiAudioTranscriptionModel(OpenAIClient openAIClient,
+			AzureOpenAiAudioTranscriptionProperties audioProperties) {
+		return new AzureOpenAiAudioTranscriptionModel(openAIClient, audioProperties.getOptions());
 	}
 
 }
