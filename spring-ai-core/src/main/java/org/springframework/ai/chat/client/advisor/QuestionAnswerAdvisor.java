@@ -28,7 +28,11 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
 import reactor.core.publisher.Flux;
 
 /**
@@ -36,7 +40,7 @@ import reactor.core.publisher.Flux;
  * user text.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
@@ -56,7 +60,9 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	private final SearchRequest searchRequest;
 
-	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+
+	public static final String FILTER_EXRESSION = "qa_filter_expression";
 
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
 		this(vectorStore, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE);
@@ -93,8 +99,12 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		// 1. Advise the system text.
 		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
 
+		var searchRequestToUse = SearchRequest.from(this.searchRequest)
+			.withQuery(request.userText())
+			.withFilterExpression(doGetFilterExpression(context));
+
 		// 2. Search for similar documents in the vector store.
-		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(request.userText()));
+		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
@@ -127,6 +137,15 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 			cr.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
 			return cr;
 		});
+	}
+
+	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
+
+		if (!context.containsKey(FILTER_EXRESSION) || !StringUtils.hasText(context.get(FILTER_EXRESSION).toString())) {
+			return this.searchRequest.getFilterExpression();
+		}
+		return new FilterExpressionTextParser().parse(context.get(FILTER_EXRESSION).toString());
+
 	}
 
 }
