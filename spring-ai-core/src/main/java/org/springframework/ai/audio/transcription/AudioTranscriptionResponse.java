@@ -13,30 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.audio.transcription;
+package org.springframework.ai.audio.transcription;
 
 import org.springframework.ai.model.ModelResponse;
-import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * @author Michael Lavelle
+ * @author Piotr Olaszewski
  * @since 0.8.1
  */
 public class AudioTranscriptionResponse implements ModelResponse<AudioTranscription> {
 
-	private AudioTranscription transcript;
+	private final AudioTranscription transcript;
 
-	private OpenAiAudioTranscriptionResponseMetadata transcriptionResponseMetadata;
+	private final AudioTranscriptionResponseMetadata transcriptionResponseMetadata;
 
 	public AudioTranscriptionResponse(AudioTranscription transcript) {
-		this(transcript, OpenAiAudioTranscriptionResponseMetadata.NULL);
+		this(transcript, AudioTranscriptionResponseMetadata.NULL);
 	}
 
 	public AudioTranscriptionResponse(AudioTranscription transcript,
-			OpenAiAudioTranscriptionResponseMetadata transcriptionResponseMetadata) {
+			AudioTranscriptionResponseMetadata transcriptionResponseMetadata) {
 		this.transcript = transcript;
 		this.transcriptionResponseMetadata = transcriptionResponseMetadata;
 	}
@@ -48,11 +47,11 @@ public class AudioTranscriptionResponse implements ModelResponse<AudioTranscript
 
 	@Override
 	public List<AudioTranscription> getResults() {
-		return Arrays.asList(transcript);
+		return List.of(transcript);
 	}
 
 	@Override
-	public OpenAiAudioTranscriptionResponseMetadata getMetadata() {
+	public AudioTranscriptionResponseMetadata getMetadata() {
 		return transcriptionResponseMetadata;
 	}
 

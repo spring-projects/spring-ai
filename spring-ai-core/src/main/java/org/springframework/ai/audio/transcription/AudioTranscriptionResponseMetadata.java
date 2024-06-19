@@ -13,25 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.ai.audio.transcription;
+
+import org.springframework.ai.model.ResponseMetadata;
+
+import java.util.HashMap;
+
 /**
-* @author Michael Lavelle
-* @since 0.8.1
-*/
-package org.springframework.ai.openai.metadata.audio;
+ * @author Piotr Olaszewski
+ */
+public interface AudioTranscriptionResponseMetadata extends ResponseMetadata {
 
-import org.springframework.ai.model.ResultMetadata;
+	class DefaultAudioTranscriptionResponseMetadata extends HashMap<String, Object>
+			implements AudioTranscriptionResponseMetadata {
 
-public interface OpenAiAudioTranscriptionMetadata extends ResultMetadata {
-
-	OpenAiAudioTranscriptionMetadata NULL = OpenAiAudioTranscriptionMetadata.create();
-
-	/**
-	 * Factory method used to construct a new {@link OpenAiAudioTranscriptionMetadata}
-	 * @return a new {@link OpenAiAudioTranscriptionMetadata}
-	 */
-	static OpenAiAudioTranscriptionMetadata create() {
-		return new OpenAiAudioTranscriptionMetadata() {
-		};
 	}
+
+	AudioTranscriptionResponseMetadata NULL = new AudioTranscriptionResponseMetadata.DefaultAudioTranscriptionResponseMetadata();
 
 }

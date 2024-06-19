@@ -240,7 +240,7 @@ class AzureOpenAiChatModelMetadataTests {
 								"completion_tokens":68,
 								"total_tokens":126
 							},
-							"prompt_annotations" : [{
+							"prompt_filter_results" : [{
 								"prompt_index" : 0,
 								"content_filter_results" : {
 										"error" : null,

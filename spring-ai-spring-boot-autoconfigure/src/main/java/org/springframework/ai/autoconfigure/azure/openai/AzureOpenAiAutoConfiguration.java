@@ -15,16 +15,19 @@
  */
 package org.springframework.ai.autoconfigure.azure.openai;
 
-import java.util.List;
-
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.credential.KeyCredential;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.util.ClientOptions;
+import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,17 +38,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.credential.KeyCredential;
-import com.azure.core.credential.TokenCredential;
-import com.azure.core.util.ClientOptions;
+import java.util.List;
 
+/**
+ * @author Piotr Olaszewski
+ */
 @AutoConfiguration
-@ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
-@EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
-		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class })
+@ConditionalOnClass({OpenAIClientBuilder.class, AzureOpenAiChatModel.class})
+@EnableConfigurationProperties({AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
+		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class,
+		AzureOpenAiAudioTranscriptionProperties.class })
 public class AzureOpenAiAutoConfiguration {
 
 	private final static String APPLICATION_ID = "spring-ai";
@@ -88,31 +90,28 @@ public class AzureOpenAiAutoConfiguration {
 		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 			.credential(tokenCredential)
 			.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
-			.buildClient();
+				.buildClient();
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
-			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext) {
+													 AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
+													 FunctionCallbackContext functionCallbackContext) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		AzureOpenAiChatModel azureOpenAiChatModel = new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(),
-				functionCallbackContext);
-
-		return azureOpenAiChatModel;
+		return new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext);
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient,
-			AzureOpenAiEmbeddingProperties embeddingProperties) {
+															   AzureOpenAiEmbeddingProperties embeddingProperties) {
 		return new AzureOpenAiEmbeddingModel(openAIClient, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions());
 	}
@@ -129,9 +128,17 @@ public class AzureOpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = AzureOpenAiImageOptionsProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClient openAIClient,
-			AzureOpenAiImageOptionsProperties imageProperties) {
+														AzureOpenAiImageOptionsProperties imageProperties) {
 
 		return new AzureOpenAiImageModel(openAIClient, imageProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = AzureOpenAiAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public AzureOpenAiAudioTranscriptionModel azureOpenAiAudioTranscriptionModel(OpenAIClient openAIClient,
+																				 AzureOpenAiAudioTranscriptionProperties audioProperties) {
+		return new AzureOpenAiAudioTranscriptionModel(openAIClient, audioProperties.getOptions());
 	}
 
 }

@@ -150,7 +150,7 @@
 		<azure-open-ai-client.version>1.0.0-beta.10</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>
-		
+
 		<!-- NOTE: keep them align -->
 		<bedrockruntime.version>2.26.7</bedrockruntime.version>
 		<awssdk.version>2.26.7</awssdk.version>
@@ -186,7 +186,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
-		
+
 
 		<!-- testing dependencies -->
 		<httpclient5.version>5.3.1</httpclient5.version>
