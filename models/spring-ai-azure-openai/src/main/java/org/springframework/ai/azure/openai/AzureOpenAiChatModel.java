@@ -89,7 +89,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class AzureOpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-35-turbo";
+	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
 	private static final Float DEFAULT_TEMPERATURE = 0.7f;
 

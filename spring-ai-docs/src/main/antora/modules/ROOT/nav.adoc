@@ -60,6 +60,7 @@
 *** xref:api/image/qianfan-image.adoc[QianFan]
 ** xref:api/audio[Audio Model API]
 *** xref:api/audio/transcriptions.adoc[]
+**** xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI]
 **** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 *** xref:api/audio/speech.adoc[]
 **** xref:api/audio/speech/openai-speech.adoc[OpenAI]
