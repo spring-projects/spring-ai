@@ -1,7 +1,20 @@
+/*
+ * Copyright 2023 - 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
@@ -13,52 +26,33 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.FileSystemUtils;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Pablo Sanchidrian Herrera
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class TypesenseVectorStoreAutoConfigurationIT {
 
-	private static GenericContainer<?> typesenseContainer;
-
-	private static final File TEMP_FOLDER = new File("target/test-" + UUID.randomUUID().toString());
+	@Container
+	private static final GenericContainer<?> typesenseContainer = new GenericContainer<>("typesense/typesense:26.0")
+		.withExposedPorts(8108)
+		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors")
+		.withStartupTimeout(Duration.ofSeconds(100));
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
 			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
-
-	@BeforeAll
-	public static void beforeAll() {
-		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
-		TEMP_FOLDER.mkdirs();
-
-		typesenseContainer = new GenericContainer<>("typesense/typesense:26.0").withExposedPorts(8108)
-			.withCommand("--data-dir", "/data", "--api-key=xyz", "--enable-cors")
-			.withFileSystemBind(TEMP_FOLDER.getAbsolutePath(), "/data", BindMode.READ_WRITE)
-			.withStartupTimeout(Duration.ofSeconds(100));
-
-		typesenseContainer.start();
-	}
-
-	@AfterAll
-	public static void afterAll() {
-		typesenseContainer.stop();
-		FileSystemUtils.deleteRecursively(TEMP_FOLDER);
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(TypesenseVectorStoreAutoConfiguration.class))

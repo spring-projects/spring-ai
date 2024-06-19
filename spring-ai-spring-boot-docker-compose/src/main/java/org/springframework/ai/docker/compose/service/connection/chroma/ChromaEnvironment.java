@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.autoconfigure.vectorstore.chroma;
+package org.springframework.ai.docker.compose.service.connection.chroma;
 
-import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
+import java.util.Map;
 
-/**
- * @author Eddú Meléndez
- */
-public interface ChromaConnectionDetails extends ConnectionDetails {
+class ChromaEnvironment {
 
-	String getHost();
+	private final String keyToken;
 
-	int getPort();
+	ChromaEnvironment(Map<String, String> env) {
+		this.keyToken = env.get("CHROMA_SERVER_AUTHN_CREDENTIALS");
+	}
 
-	String getKeyToken();
+	public String getKeyToken() {
+		return this.keyToken;
+	}
 
 }

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.docker.compose.service.connection.qdrant;
+package org.springframework.ai.docker.compose.service.connection.typesense;
 
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
+import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;
@@ -23,42 +23,48 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-class QdrantDockerComposeConnectionDetailsFactory
-		extends DockerComposeConnectionDetailsFactory<QdrantConnectionDetails> {
+public class TypesenseDockerComposeConnectionDetailsFactory
+		extends DockerComposeConnectionDetailsFactory<TypesenseConnectionDetails> {
 
-	private static final int QDRANT_GRPC_PORT = 6334;
+	private static final int TYPESENSE_PORT = 8108;
 
-	protected QdrantDockerComposeConnectionDetailsFactory() {
-		super("qdrant/qdrant");
+	protected TypesenseDockerComposeConnectionDetailsFactory() {
+		super("typesense/typesense");
 	}
 
 	@Override
-	protected QdrantConnectionDetails getDockerComposeConnectionDetails(DockerComposeConnectionSource source) {
-		return new QdrantDockerComposeConnectionDetails(source.getRunningService());
+	protected TypesenseConnectionDetails getDockerComposeConnectionDetails(DockerComposeConnectionSource source) {
+		return new TypesenseComposeConnectionDetails(source.getRunningService());
 	}
 
 	/**
-	 * {@link QdrantConnectionDetails} backed by a {@code Qdrant} {@link RunningService}.
+	 * {@link TypesenseConnectionDetails} backed by a {@code Typesense}
+	 * {@link RunningService}.
 	 */
-	static class QdrantDockerComposeConnectionDetails extends DockerComposeConnectionDetails
-			implements QdrantConnectionDetails {
+	static class TypesenseComposeConnectionDetails extends DockerComposeConnectionDetails
+			implements TypesenseConnectionDetails {
 
-		private final QdrantEnvironment environment;
+		private final TypesenseEnvironment environment;
 
 		private final String host;
 
 		private final int port;
 
-		QdrantDockerComposeConnectionDetails(RunningService service) {
+		TypesenseComposeConnectionDetails(RunningService service) {
 			super(service);
-			this.environment = new QdrantEnvironment(service.env());
+			this.environment = new TypesenseEnvironment(service.env());
 			this.host = service.host();
-			this.port = service.ports().get(QDRANT_GRPC_PORT);
+			this.port = service.ports().get(TYPESENSE_PORT);
 		}
 
 		@Override
 		public String getHost() {
 			return this.host;
+		}
+
+		@Override
+		public String getProtocol() {
+			return "http";
 		}
 
 		@Override
