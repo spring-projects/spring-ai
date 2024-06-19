@@ -55,10 +55,8 @@ public class BasicAuthChromaWhereIT {
 	 */
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0")
-		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_FILE", "/chroma/server.htpasswd")
-		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
-				"chromadb.auth.providers.HtpasswdFileServerAuthCredentialsProvider")
-		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.basic.BasicAuthServerProvider")
+		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS_FILE", "/chroma/server.htpasswd")
+		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.basic_authn.BasicAuthenticationServerProvider")
 		.withCopyToContainer(MountableFile.forClasspathResource("server.htpasswd"), "/chroma/server.htpasswd");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
