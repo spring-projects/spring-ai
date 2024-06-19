@@ -51,6 +51,11 @@ class ChromaContainerConnectionDetailsFactory
 			return getContainer().getMappedPort(8000);
 		}
 
+		@Override
+		public String getKeyToken() {
+			return getContainer().getEnvMap().get("CHROMA_SERVER_AUTHN_CREDENTIALS");
+		}
+
 	}
 
 }
