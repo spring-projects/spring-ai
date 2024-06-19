@@ -1,10 +1,10 @@
 antora:
   extensions:
+  - '@antora/collector-extension'
+  - '@antora/atlas-extension'
   - '@springio/antora-extensions/partial-build-extension'
   - require: '@springio/antora-extensions/latest-version-extension'
   - require: '@springio/antora-extensions/inject-collector-cache-config-extension'
-  - '@antora/collector-extension'
-  - '@antora/atlas-extension'
   - require: '@springio/antora-extensions/root-component-extension'
     root_component_name: 'ai'
 site:
