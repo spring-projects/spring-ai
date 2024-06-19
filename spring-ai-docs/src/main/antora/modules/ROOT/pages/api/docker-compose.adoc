@@ -43,6 +43,9 @@ The following service connection factories are provided in the `spring-ai-spring
 | `RedisConnectionDetails`
 | Containers named `redis/redis-stack-server`
 
+| `TypesenseConnectionDetails`
+| Containers named `typesense/typesense`
+
 | `WeaviateConnectionDetails`
 | Containers named `semitechnologies/weaviate`, `cr.weaviate.io/semitechnologies/weaviate`
 |====

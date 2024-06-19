@@ -4,4 +4,5 @@ org.springframework.ai.testcontainers.service.connection.milvus.MilvusContainerC
 org.springframework.ai.testcontainers.service.connection.ollama.OllamaContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.qdrant.QdrantContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.redis.RedisContainerConnectionDetailsFactory,\
+org.springframework.ai.testcontainers.service.connection.typesense.TypesenseContainerConnectionDetailsFactory,\
 org.springframework.ai.testcontainers.service.connection.weaviate.WeaviateContainerConnectionDetailsFactory
