@@ -14,7 +14,7 @@ public class TypesenseServiceClientProperties {
 
 	private String host = "localhost";
 
-	private String port = "8108";
+	private int port = 8108;
 
 	/**
 	 * Typesense API key. This is the default api key when the user follows the Typesense
@@ -38,11 +38,11 @@ public class TypesenseServiceClientProperties {
 		this.host = host;
 	}
 
-	public String getPort() {
+	public int getPort() {
 		return port;
 	}
 
-	public void setPort(String port) {
+	public void setPort(int port) {
 		this.port = port;
 	}
 
