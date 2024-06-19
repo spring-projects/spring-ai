@@ -51,6 +51,11 @@ class QdrantContainerConnectionDetailsFactory
 			return getContainer().getMappedPort(6334);
 		}
 
+		@Override
+		public String getApiKey() {
+			return getContainer().getEnvMap().get("QDRANT__SERVICE__API_KEY");
+		}
+
 	}
 
 }

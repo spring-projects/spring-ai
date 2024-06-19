@@ -33,6 +33,7 @@ class QdrantDockerComposeConnectionDetailsFactoryTests extends AbstractDockerCom
 		QdrantConnectionDetails connectionDetails = run(QdrantConnectionDetails.class);
 		assertThat(connectionDetails.getHost()).isNotNull();
 		assertThat(connectionDetails.getPort()).isGreaterThan(0);
+		assertThat(connectionDetails.getApiKey()).isEqualTo("springai");
 	}
 
 }

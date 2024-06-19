@@ -43,12 +43,15 @@ public class QdrantDockerComposeConnectionDetailsFactory
 	static class QdrantDockerComposeConnectionDetails extends DockerComposeConnectionDetails
 			implements QdrantConnectionDetails {
 
+		private final QdrantEnvironment environment;
+
 		private final String host;
 
 		private final int port;
 
 		QdrantDockerComposeConnectionDetails(RunningService service) {
 			super(service);
+			this.environment = new QdrantEnvironment(service.env());
 			this.host = service.host();
 			this.port = service.ports().get(QDRANT_GRPC_PORT);
 		}
@@ -61,6 +64,11 @@ public class QdrantDockerComposeConnectionDetailsFactory
 		@Override
 		public int getPort() {
 			return this.port;
+		}
+
+		@Override
+		public String getApiKey() {
+			return this.environment.getApiKey();
 		}
 
 	}
