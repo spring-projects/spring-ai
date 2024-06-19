@@ -22,10 +22,10 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RedisDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class RedisStackDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
 
-	RedisDockerComposeConnectionDetailsFactoryTests() {
-		super("redis-compose.yaml", DockerImageName.parse("redis/redis-stack-server"));
+	RedisStackDockerComposeConnectionDetailsFactoryTests() {
+		super("redis-compose.yaml", DockerImageName.parse("redis/redis-stack"));
 	}
 
 	@Test
