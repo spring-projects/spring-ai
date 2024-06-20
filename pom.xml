@@ -75,6 +75,7 @@
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
