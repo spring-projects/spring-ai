@@ -24,7 +24,7 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Client.
+Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Mpdel.
 To enable it add the following dependency to your Maven `pom.xml` file:
 
 [source,xml]
@@ -125,7 +125,8 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.create()
-            .withModel("Different-Embedding-Model-Deployment-Name"));
+            .withModel("Different-Embedding-Model-Deployment-Name"))
+);
 ----
 
 == Sample Controller

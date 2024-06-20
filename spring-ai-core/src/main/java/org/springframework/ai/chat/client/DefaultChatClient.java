@@ -145,8 +145,7 @@ public class DefaultChatClient implements ChatClient {
 			return this.params;
 		}
 
-		@Override
-		public List<Media> media() {
+		protected List<Media> media() {
 			return this.media;
 		}
 
@@ -447,7 +446,7 @@ public class DefaultChatClient implements ChatClient {
 					return "";
 				}
 				return r.getResult().getOutput().getContent();
-			}).filter(v -> StringUtils.hasText(v));
+			}).filter(v -> StringUtils.hasLength(v));
 		}
 
 	}
@@ -822,17 +821,6 @@ public class DefaultChatClient implements ChatClient {
 			return new DefaultStreamPromptResponseSpec((StreamingChatModel) this.chatModel, this.prompt);
 		}
 
-	}
-
-	/**
-	 * use the new fluid DSL starting in {@link #prompt()}
-	 * @param prompt the {@link Prompt prompt} object
-	 * @return a {@link ChatResponse chat response}
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0 M1")
-	@Override
-	public ChatResponse call(Prompt prompt) {
-		return this.chatModel.call(prompt);
 	}
 
 }

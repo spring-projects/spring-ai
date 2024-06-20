@@ -26,4 +26,6 @@ public interface ChromaConnectionDetails extends ConnectionDetails {
 
 	int getPort();
 
+	String getKeyToken();
+
 }

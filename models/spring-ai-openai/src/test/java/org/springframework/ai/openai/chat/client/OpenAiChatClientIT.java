@@ -280,7 +280,6 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				// OpenAiChatOptions.builder().withModel(modelName).build()
 				.options(OpenAiChatOptions.builder().withModel(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()

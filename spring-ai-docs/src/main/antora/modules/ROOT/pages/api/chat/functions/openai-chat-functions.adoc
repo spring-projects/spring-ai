@@ -127,10 +127,10 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-		return new FunctionCallbackWrapper<>("CurrentWeather", // (1) function name
-				"Get the weather in location", // (2) function description
-				(response) -> "" + response.temp() + response.unit(), // (3) Response Converter
-				new MockWeatherService()); // function code
+    return FunctionCallbackWrapper.builder(new MockWeatherService())
+        .withName("CurrentWeather") // (1) function name
+        .withDescription("Get the weather in location") // (2) function description
+        .build();
 	}
 	...
 }

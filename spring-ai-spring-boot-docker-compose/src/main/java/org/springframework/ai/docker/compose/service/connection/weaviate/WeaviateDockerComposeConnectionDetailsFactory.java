@@ -23,7 +23,7 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-public class WeaviateDockerComposeConnectionDetailsFactory
+class WeaviateDockerComposeConnectionDetailsFactory
 		extends DockerComposeConnectionDetailsFactory<WeaviateConnectionDetails> {
 
 	private static final String[] WEAVIATE_IMAGE_NAMES = { "semitechnologies/weaviate",

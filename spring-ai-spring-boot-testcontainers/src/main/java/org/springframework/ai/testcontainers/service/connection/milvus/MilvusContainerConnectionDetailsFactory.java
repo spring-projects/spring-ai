@@ -23,7 +23,7 @@ import org.testcontainers.milvus.MilvusContainer;
 /**
  * @author Eddú Meléndez
  */
-public class MilvusContainerConnectionDetailsFactory
+class MilvusContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<MilvusContainer, MilvusServiceClientConnectionDetails> {
 
 	@Override

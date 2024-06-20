@@ -29,10 +29,9 @@ public class HuggingfaceTestConfiguration {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name HUGGINGFACE_API_KEY");
 		}
-		// Created aws-mistral-7b-instruct-v0-1-805 via
-		// https://ui.endpoints.huggingface.co/
+		// Created aws-mistral-7b-instruct and update the HUGGINGFACE_CHAT_URL
 		HuggingfaceChatModel huggingfaceChatModel = new HuggingfaceChatModel(apiKey,
-				"https://f6hg7b3cvlmntp5i.us-east-1.aws.endpoints.huggingface.cloud");
+				System.getenv("HUGGINGFACE_CHAT_URL"));
 		return huggingfaceChatModel;
 	}
 

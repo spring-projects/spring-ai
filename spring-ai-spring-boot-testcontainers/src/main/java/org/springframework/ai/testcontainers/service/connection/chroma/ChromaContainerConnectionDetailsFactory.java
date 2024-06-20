@@ -23,7 +23,7 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 /**
  * @author Eddú Meléndez
  */
-public class ChromaContainerConnectionDetailsFactory
+class ChromaContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<ChromaDBContainer, ChromaConnectionDetails> {
 
 	@Override
@@ -49,6 +49,11 @@ public class ChromaContainerConnectionDetailsFactory
 		@Override
 		public int getPort() {
 			return getContainer().getMappedPort(8000);
+		}
+
+		@Override
+		public String getKeyToken() {
+			return getContainer().getEnvMap().get("CHROMA_SERVER_AUTHN_CREDENTIALS");
 		}
 
 	}

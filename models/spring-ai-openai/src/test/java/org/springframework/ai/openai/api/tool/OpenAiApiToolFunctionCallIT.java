@@ -63,9 +63,8 @@ public class OpenAiApiToolFunctionCallIT {
 				Role.USER);
 
 		var functionTool = new OpenAiApi.FunctionTool(Type.FUNCTION,
-				new OpenAiApi.FunctionTool.Function(
-						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
-						ModelOptionsUtils.jsonToMap("""
+				new OpenAiApi.FunctionTool.Function("Get the weather in location. Return temperature in Celsius.",
+						"getCurrentWeather", ModelOptionsUtils.jsonToMap("""
 								{
 									"type": "object",
 									"properties": {
@@ -92,7 +91,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
-		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview",
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4o",
 				List.of(functionTool), ToolChoiceBuilder.AUTO);
 		// List.of(functionTool), ToolChoiceBuilder.FUNCTION("getCurrentWeather"));
 
@@ -127,7 +126,7 @@ public class OpenAiApiToolFunctionCallIT {
 				}
 			}
 
-			var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4-turbo-preview", 0.8f);
+			var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4o", 0.5f);
 
 			ResponseEntity<ChatCompletion> chatCompletion2 = completionApi
 				.chatCompletionEntity(functionResponseRequest);

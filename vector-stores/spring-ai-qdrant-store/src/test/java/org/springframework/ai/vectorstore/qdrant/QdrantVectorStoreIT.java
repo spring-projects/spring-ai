@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Anush Shetty
  * @author Josh Long
+ * @author Eddú Meléndez
  * @since 0.8.1
  */
 @Testcontainers
@@ -59,8 +60,6 @@ public class QdrantVectorStoreIT {
 	private static final String COLLECTION_NAME = "test_collection";
 
 	private static final int EMBEDDING_DIMENSION = 1536;
-
-	private static final int QDRANT_GRPC_PORT = 6334;
 
 	@Container
 	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
@@ -81,7 +80,7 @@ public class QdrantVectorStoreIT {
 	static void setup() throws InterruptedException, ExecutionException {
 
 		String host = qdrantContainer.getHost();
-		int port = qdrantContainer.getMappedPort(QDRANT_GRPC_PORT);
+		int port = qdrantContainer.getGrpcPort();
 		QdrantClient client = new QdrantClient(QdrantGrpcClient.newBuilder(host, port, false).build());
 
 		client
@@ -245,7 +244,7 @@ public class QdrantVectorStoreIT {
 		@Bean
 		public QdrantClient qdrantClient() {
 			String host = qdrantContainer.getHost();
-			int port = qdrantContainer.getMappedPort(QDRANT_GRPC_PORT);
+			int port = qdrantContainer.getGrpcPort();
 			QdrantClient qdrantClient = new QdrantClient(QdrantGrpcClient.newBuilder(host, port, false).build());
 			return qdrantClient;
 		}

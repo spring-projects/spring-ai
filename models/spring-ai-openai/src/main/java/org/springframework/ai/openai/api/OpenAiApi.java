@@ -28,7 +28,9 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -40,15 +42,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 // @formatter:off
 /**
- * Single class implementation of the OpenAI Chat Completion API: https://platform.openai.com/docs/api-reference/chat and
- * OpenAI Embedding API: https://platform.openai.com/docs/api-reference/embeddings.
+ * Single class implementation of the <a href="https://platform.openai.com/docs/api-reference/chat">OpenAI Chat
+ * Completion API</a> and <a href="https://platform.openai.com/docs/api-reference/embeddings">OpenAI Embedding API</a>.
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
  */
 public class OpenAiApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_3_5_TURBO.getValue();
+	public static final OpenAiApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.GPT_4_O;
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -57,12 +59,12 @@ public class OpenAiApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create an new chat completion api with base URL set to https://api.openai.com
+	 * Create a new chat completion api with base URL set to https://api.openai.com
 	 *
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken);
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken);
 	}
 
 	/**
@@ -280,7 +282,7 @@ public class OpenAiApi {
 		}
 	}
 
-        /**
+	/**
 	 * Creates a model response for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
@@ -300,7 +302,7 @@ public class OpenAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 * @param n How many chat completion choices to generate for each input message. Note that you will be charged based
-	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
+	 * on the number of generated tokens across all the choices. Keep n as 1 to minimize costs.
 	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 * @param responseFormat An object specifying the format that the model must output. Setting to { "type":
@@ -350,7 +352,7 @@ public class OpenAiApi {
 			@JsonProperty("user") String user) {
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages and model.
+		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param model ID of the model to use.
@@ -363,7 +365,7 @@ public class OpenAiApi {
 		}
 
 		/**
-		 * Shortcut constructor for a chat completion request with the given messages, model and control for streaming.
+		 * Shortcut constructor for a chat completion request with the given messages, model, temperature and control for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param model ID of the model to use.
@@ -393,9 +395,8 @@ public class OpenAiApi {
 					tools, toolChoice, null);
 		}
 
-				/**
-		 * Shortcut constructor for a chat completion request with the given messages, model, tools and tool choice.
-		 * Streaming is set to false, temperature to 0.8 and all other parameters are null.
+		/**
+		 * Shortcut constructor for a chat completion request with the given messages for streaming.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events

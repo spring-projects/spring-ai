@@ -113,7 +113,9 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
-		assertThat(counter.get()).isGreaterThan(2);
+
+		assertThat(counter.get()).isGreaterThan(30).as("The response should be chunked in more than 30 messages");
+
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
 		assertThat(content).containsAnyOf("15.0", "15");

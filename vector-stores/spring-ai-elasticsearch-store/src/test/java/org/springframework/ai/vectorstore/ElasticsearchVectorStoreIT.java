@@ -25,6 +25,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
@@ -36,7 +42,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -59,14 +64,10 @@ class ElasticsearchVectorStoreIT {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
-			"docker.elastic.co/elasticsearch/elasticsearch:8.12.2")
+			"docker.elastic.co/elasticsearch/elasticsearch:8.13.3")
 		.withEnv("xpack.security.enabled", "false");
 
-	private static final String DEFAULT = "default cosine similarity";
-
-	protected final ObjectMapper objectMapper = new ObjectMapper();
-
-	private List<Document> documents = List.of(
+	private final List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
 			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
@@ -95,35 +96,33 @@ class ElasticsearchVectorStoreIT {
 	@BeforeEach
 	void cleanDatabase() {
 		getContextRunner().run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-			vectorStore.delete(List.of("_all"));
+			// deleting indices and data before following tests
+			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
+			List indices = elasticsearchClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+			if (!indices.isEmpty()) {
+				elasticsearchClient.indices().delete(del -> del.index(indices));
+			}
 		});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
 	public void addAndSearchTest(String similarityFunction) {
 
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
 
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+					ElasticsearchVectorStore.class);
 
 			vectorStore.add(documents);
 
 			Awaitility.await()
 				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThresholdAll()),
 						hasSize(1));
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
+				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThresholdAll());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -138,25 +137,18 @@ class ElasticsearchVectorStoreIT {
 
 			Awaitility.await()
 				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThresholdAll()),
 						hasSize(0));
 		});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
 	public void searchWithFilters(String similarityFunction) {
 
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
-
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+					ElasticsearchVectorStore.class);
 
 			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
@@ -168,7 +160,9 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5)), hasSize(3));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.query("The World").withTopK(5).withSimilarityThresholdAll()),
+						hasSize(3));
 
 			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
 				.withTopK(5)
@@ -246,18 +240,12 @@ class ElasticsearchVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
 	public void documentUpdateTest(String similarityFunction) {
 
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+					ElasticsearchVectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 					Map.of("meta1", "meta1"));
@@ -265,11 +253,11 @@ class ElasticsearchVectorStoreIT {
 
 			Awaitility.await()
 				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Spring").withSimilarityThreshold(0).withTopK(5)),
+					.similaritySearch(SearchRequest.query("Spring").withSimilarityThresholdAll().withTopK(5)),
 						hasSize(1));
 
 			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.query("Spring").withSimilarityThreshold(0).withTopK(5));
+				.similaritySearch(SearchRequest.query("Spring").withSimilarityThresholdAll().withTopK(5));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -282,7 +270,7 @@ class ElasticsearchVectorStoreIT {
 					"The World is Big and Salvation Lurks Around the Corner", Map.of("meta2", "meta2"));
 
 			vectorStore.add(List.of(sameIdDocument));
-			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
+			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5).withSimilarityThresholdAll();
 
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
@@ -306,24 +294,15 @@ class ElasticsearchVectorStoreIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { DEFAULT, """
-			  double value = dotProduct(params.query_vector, 'embedding');
-			  return sigmoid(1, Math.E, -value);
-			""", "1 / (1 + l1norm(params.query_vector, 'embedding'))",
-			"1 / (1 + l2norm(params.query_vector, 'embedding'))" })
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
 	public void searchThresholdTest(String similarityFunction) {
-
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
-			if (!DEFAULT.equals(similarityFunction)) {
-				vectorStore.withSimilarityFunction(similarityFunction);
-			}
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+					ElasticsearchVectorStore.class);
 
 			vectorStore.add(documents);
 
-			SearchRequest query = SearchRequest.query("Great Depression")
-				.withTopK(50)
-				.withSimilarityThreshold(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
+			SearchRequest query = SearchRequest.query("Great Depression").withTopK(50).withSimilarityThresholdAll();
 
 			Awaitility.await().until(() -> vectorStore.similaritySearch(query), hasSize(3));
 
@@ -333,10 +312,10 @@ class ElasticsearchVectorStoreIT {
 
 			assertThat(distances).hasSize(3);
 
-			float threshold = (distances.get(0) + distances.get(1)) / 2;
+			float thresholdResult = (distances.get(0) + distances.get(1)) / 2;
 
 			List<Document> results = vectorStore.similaritySearch(
-					SearchRequest.query("Great Depression").withTopK(50).withSimilarityThreshold(1 - threshold));
+					SearchRequest.query("Great Depression").withTopK(50).withSimilarityThreshold(thresholdResult));
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -349,9 +328,8 @@ class ElasticsearchVectorStoreIT {
 			vectorStore.delete(documents.stream().map(Document::getId).toList());
 
 			Awaitility.await()
-				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(50).withSimilarityThreshold(0)),
-						hasSize(0));
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.query("Great Depression").withTopK(50).withSimilarityThresholdAll()), hasSize(0));
 		});
 	}
 
@@ -359,16 +337,41 @@ class ElasticsearchVectorStoreIT {
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
-		@Bean
-		public ElasticsearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			return new ElasticsearchVectorStore(
-					RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build(),
-					embeddingModel, true);
+		@Bean("vectorStore_cosine")
+		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient) {
+			return new ElasticsearchVectorStore(restClient, embeddingModel, true);
+		}
+
+		@Bean("vectorStore_l2_norm")
+		public ElasticsearchVectorStore vectorStoreL2(EmbeddingModel embeddingModel, RestClient restClient) {
+			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+			options.setIndexName("index_l2");
+			options.setSimilarity(SimilarityFunction.l2_norm);
+			return new ElasticsearchVectorStore(options, restClient, embeddingModel, true);
+		}
+
+		@Bean("vectorStore_dot_product")
+		public ElasticsearchVectorStore vectorStoreDotProduct(EmbeddingModel embeddingModel, RestClient restClient) {
+			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+			options.setIndexName("index_dot_product");
+			options.setSimilarity(SimilarityFunction.dot_product);
+			return new ElasticsearchVectorStore(options, restClient, embeddingModel, true);
 		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+		}
+
+		@Bean
+		RestClient restClient() {
+			return RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build();
+		}
+
+		@Bean
+		ElasticsearchClient elasticsearchClient(RestClient restClient) {
+			return new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
+					new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
 		}
 
 	}

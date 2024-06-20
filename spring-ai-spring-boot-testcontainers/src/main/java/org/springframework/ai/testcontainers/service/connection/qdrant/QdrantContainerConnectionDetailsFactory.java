@@ -23,7 +23,7 @@ import org.testcontainers.qdrant.QdrantContainer;
 /**
  * @author Eddú Meléndez
  */
-public class QdrantContainerConnectionDetailsFactory
+class QdrantContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<QdrantContainer, QdrantConnectionDetails> {
 
 	@Override
@@ -49,6 +49,11 @@ public class QdrantContainerConnectionDetailsFactory
 		@Override
 		public int getPort() {
 			return getContainer().getMappedPort(6334);
+		}
+
+		@Override
+		public String getApiKey() {
+			return getContainer().getEnvMap().get("QDRANT__SERVICE__API_KEY");
 		}
 
 	}
