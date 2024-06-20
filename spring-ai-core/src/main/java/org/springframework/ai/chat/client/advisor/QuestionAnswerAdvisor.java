@@ -62,7 +62,7 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
 
-	public static final String FILTER_EXRESSION = "qa_filter_expression";
+	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
 		this(vectorStore, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE);
@@ -141,10 +141,10 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
 
-		if (!context.containsKey(FILTER_EXRESSION) || !StringUtils.hasText(context.get(FILTER_EXRESSION).toString())) {
+		if (!context.containsKey(FILTER_EXPRESSION) || !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
 			return this.searchRequest.getFilterExpression();
 		}
-		return new FilterExpressionTextParser().parse(context.get(FILTER_EXRESSION).toString());
+		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
 
 	}
 
