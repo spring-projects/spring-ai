@@ -77,7 +77,7 @@ public class QuestionAnswerAdvisorTests {
 		// @formatter:off
 		var content = chatClient.prompt()
 			.user("Please answer my question XYZ")
-			.advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXRESSION, "type == 'Spring'"))
+			.advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
 			.call()
 			.content();
 		//formatter:on
