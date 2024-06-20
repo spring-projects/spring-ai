@@ -48,8 +48,8 @@ public class QdrantVectorStoreAutoConfiguration {
 		QdrantGrpcClient.Builder grpcClientBuilder = QdrantGrpcClient.newBuilder(connectionDetails.getHost(),
 				connectionDetails.getPort(), properties.isUseTls());
 
-		if (properties.getApiKey() != null) {
-			grpcClientBuilder.withApiKey(properties.getApiKey());
+		if (connectionDetails.getApiKey() != null) {
+			grpcClientBuilder.withApiKey(connectionDetails.getApiKey());
 		}
 		return new QdrantClient(grpcClientBuilder.build());
 	}
@@ -78,6 +78,11 @@ public class QdrantVectorStoreAutoConfiguration {
 		@Override
 		public int getPort() {
 			return this.properties.getPort();
+		}
+
+		@Override
+		public String getApiKey() {
+			return this.properties.getApiKey();
 		}
 
 	}

@@ -3,3 +3,5 @@ services:
     image: '{imageName}'
     ports:
       - '6334'
+    environment:
+      - QDRANT__SERVICE__API_KEY=springai

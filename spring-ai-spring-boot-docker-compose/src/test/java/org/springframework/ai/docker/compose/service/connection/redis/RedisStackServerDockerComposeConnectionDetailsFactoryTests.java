@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.docker.compose.service.connection.qdrant;
+package org.springframework.ai.docker.compose.service.connection.redis;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
+import org.springframework.ai.autoconfigure.vectorstore.redis.RedisConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class QdrantDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class RedisStackServerDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
 
-	QdrantDockerComposeConnectionDetailsFactoryTests() {
-		super("qdrant-compose.yaml", DockerImageName.parse("qdrant/qdrant"));
+	RedisStackServerDockerComposeConnectionDetailsFactoryTests() {
+		super("redis-compose.yaml", DockerImageName.parse("redis/redis-stack-server"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		QdrantConnectionDetails connectionDetails = run(QdrantConnectionDetails.class);
-		assertThat(connectionDetails.getHost()).isNotNull();
-		assertThat(connectionDetails.getPort()).isGreaterThan(0);
-		assertThat(connectionDetails.getApiKey()).isEqualTo("springai");
+		RedisConnectionDetails connectionDetails = run(RedisConnectionDetails.class);
+		assertThat(connectionDetails.getUri()).startsWith("redis://");
 	}
 
 }

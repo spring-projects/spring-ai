@@ -59,8 +59,8 @@ public class ChromaVectorStoreAutoConfiguration {
 
 		var chromaApi = new ChromaApi(chromaUrl, restClientBuilder, new ObjectMapper());
 
-		if (StringUtils.hasText(apiProperties.getKeyToken())) {
-			chromaApi.withKeyToken(apiProperties.getKeyToken());
+		if (StringUtils.hasText(connectionDetails.getKeyToken())) {
+			chromaApi.withKeyToken(connectionDetails.getKeyToken());
 		}
 		else if (StringUtils.hasText(apiProperties.getUsername()) && StringUtils.hasText(apiProperties.getPassword())) {
 			chromaApi.withBasicAuthCredentials(apiProperties.getUsername(), apiProperties.getPassword());
@@ -93,6 +93,11 @@ public class ChromaVectorStoreAutoConfiguration {
 		@Override
 		public int getPort() {
 			return this.properties.getPort();
+		}
+
+		@Override
+		public String getKeyToken() {
+			return this.properties.getKeyToken();
 		}
 
 	}

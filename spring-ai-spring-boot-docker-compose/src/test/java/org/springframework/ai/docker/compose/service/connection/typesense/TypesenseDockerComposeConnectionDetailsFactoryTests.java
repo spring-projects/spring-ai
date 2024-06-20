@@ -13,27 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.docker.compose.service.connection.qdrant;
+package org.springframework.ai.docker.compose.service.connection.typesense;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
+import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class QdrantDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class TypesenseDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
 
-	QdrantDockerComposeConnectionDetailsFactoryTests() {
-		super("qdrant-compose.yaml", DockerImageName.parse("qdrant/qdrant"));
+	TypesenseDockerComposeConnectionDetailsFactoryTests() {
+		super("typesense-compose.yaml", DockerImageName.parse("typesense/typesense:26.0"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		QdrantConnectionDetails connectionDetails = run(QdrantConnectionDetails.class);
+		TypesenseConnectionDetails connectionDetails = run(TypesenseConnectionDetails.class);
 		assertThat(connectionDetails.getHost()).isNotNull();
 		assertThat(connectionDetails.getPort()).isGreaterThan(0);
-		assertThat(connectionDetails.getApiKey()).isEqualTo("springai");
+		assertThat(connectionDetails.getProtocol()).isEqualTo("http");
+		assertThat(connectionDetails.getApiKey()).isEqualTo("secret");
 	}
 
 }

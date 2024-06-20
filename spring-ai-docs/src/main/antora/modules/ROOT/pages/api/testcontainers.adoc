@@ -46,6 +46,9 @@ The following service connection factories are provided in the `spring-ai-spring
 | `RedisConnectionDetails`
 | Containers of type `RedisStackContainer`
 
+| `TypesenseConnectionDetails`
+| Containers named "typesense/typesense"
+
 | `WeaviateConnectionDetails`
 | Containers of type `WeaviateContainer`
 |====

@@ -43,7 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ChromaApiIT {
 
 	@Container
-	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.12");
+	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0");
 
 	@Autowired
 	ChromaApi chroma;
