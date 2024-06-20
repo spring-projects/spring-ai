@@ -37,7 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ChromaDB with static API Token Authentication:
- * https://docs.trychroma.com/usage-guide#static-api-token-authentication
+ * https://docs.trychroma.com/deployment/auth
  *
  * Test cases are based on the Chroma:
  * https://docs.trychroma.com/usage-guide#using-where-filters and the related
@@ -53,14 +53,12 @@ public class TokenSecuredChromaWhereIT {
 
 	/**
 	 * ChromaDB with static API Token Authentication:
-	 * https://docs.trychroma.com/usage-guide#static-api-token-authentication
+	 * https://docs.trychroma.com/deployment/auth
 	 */
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0")
-		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
-		.withEnv("CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER",
-				"chromadb.auth.token.TokenConfigServerAuthCredentialsProvider")
-		.withEnv("CHROMA_SERVER_AUTH_PROVIDER", "chromadb.auth.token.TokenAuthServerProvider");
+		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS", CHROMA_SERVER_AUTH_CREDENTIALS)
+		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.token_authn.TokenAuthenticationServerProvider");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)

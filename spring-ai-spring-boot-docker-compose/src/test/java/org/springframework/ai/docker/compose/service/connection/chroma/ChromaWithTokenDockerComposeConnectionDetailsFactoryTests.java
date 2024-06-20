@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.docker.compose.service.connection.redis;
+package org.springframework.ai.docker.compose.service.connection.chroma;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.autoconfigure.vectorstore.redis.RedisConnectionDetails;
+import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIntegrationTests;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RedisDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
+class ChromaWithTokenDockerComposeConnectionDetailsFactoryTests extends AbstractDockerComposeIntegrationTests {
 
-	RedisDockerComposeConnectionDetailsFactoryTests() {
-		super("redis-compose.yaml", DockerImageName.parse("redis/redis-stack-server"));
+	ChromaWithTokenDockerComposeConnectionDetailsFactoryTests() {
+		super("chroma-with-token-compose.yaml", DockerImageName.parse("chromadb/chroma"));
 	}
 
 	@Test
 	void runCreatesConnectionDetails() {
-		RedisConnectionDetails connectionDetails = run(RedisConnectionDetails.class);
-		assertThat(connectionDetails.getUri()).startsWith("redis://");
+		ChromaConnectionDetails connectionDetails = run(ChromaConnectionDetails.class);
+		assertThat(connectionDetails.getHost()).isNotNull();
+		assertThat(connectionDetails.getPort()).isGreaterThan(0);
+		assertThat(connectionDetails.getKeyToken()).isEqualTo("secret");
 	}
 
 }

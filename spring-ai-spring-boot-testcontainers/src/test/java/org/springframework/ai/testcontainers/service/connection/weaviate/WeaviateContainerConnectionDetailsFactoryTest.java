@@ -50,7 +50,7 @@ class WeaviateContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.22.4");
+	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.25.4");
 
 	@Autowired
 	private WeaviateVectorStoreProperties properties;

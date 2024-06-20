@@ -20,7 +20,6 @@ import javax.sql.DataSource;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.OracleVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
@@ -30,11 +29,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * @author Loïc Lefèvre
+ * @author Eddú Meléndez
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ OracleVectorStore.class, DataSource.class, JdbcTemplate.class })
 @EnableConfigurationProperties(OracleVectorStoreProperties.class)
-@ImportAutoConfiguration(classes = JdbcTemplateAutoConfiguration.class)
 public class OracleVectorStoreAutoConfiguration {
 
 	@Bean

@@ -1,57 +1,45 @@
 package org.springframework.ai.vectorstore;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.typesense.api.Client;
+import org.typesense.api.Configuration;
+import org.typesense.resources.Node;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
-import java.util.*;
-
-import org.springframework.ai.vectorstore.TypesenseVectorStore.TypesenseVectorStoreConfig;
-import org.typesense.api.Configuration;
-import org.typesense.resources.Node;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Pablo Sanchidrian Herrera
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class TypesenseVectorStoreIT {
 
-	private static Path tempDirectory;
-
-	static {
-		try {
-			tempDirectory = Files.createTempDirectory("typesense-test");
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	@Container
 	private static GenericContainer<?> typesenseContainer = new GenericContainer<>("typesense/typesense:26.0")
 		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/data", "--api-key=xyz", "--enable-cors")
-		.withFileSystemBind(tempDirectory.toString(), "/data", BindMode.READ_WRITE);
+		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -266,17 +254,6 @@ public class TypesenseVectorStoreIT {
 			return new TransformersEmbeddingModel();
 		}
 
-	}
-
-	@AfterAll
-	static void deleteContainer() {
-		if (typesenseContainer != null) {
-			typesenseContainer.stop();
-		}
-
-		if (tempDirectory != null) {
-			tempDirectory.toFile().delete();
-		}
 	}
 
 }

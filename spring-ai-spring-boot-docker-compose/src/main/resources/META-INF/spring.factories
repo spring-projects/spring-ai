@@ -3,4 +3,5 @@ org.springframework.ai.docker.compose.service.connection.chroma.ChromaDockerComp
 org.springframework.ai.docker.compose.service.connection.ollama.OllamaDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.qdrant.QdrantDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.redis.RedisDockerComposeConnectionDetailsFactory,\
+org.springframework.ai.docker.compose.service.connection.typesense.TypesenseDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.weaviate.WeaviateDockerComposeConnectionDetailsFactory
