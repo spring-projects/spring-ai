@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat.client;
+package org.springframework.ai.anthropic.client;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.net.URL;
@@ -22,24 +24,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.AnthropicTestConfiguration;
+import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.api.tool.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
@@ -49,14 +51,17 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
-@SpringBootTest(classes = OpenAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
-class OpenAiChatClientIT extends AbstractIT {
+class AnthropicChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatClientIT.class);
+
+	@Autowired
+	ChatModel chatModel;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -207,7 +212,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.create(chatModel).prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius."))
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.call()
 				.content();
@@ -215,9 +220,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response).containsAnyOf("30.0", "30");
-		assertThat(response).containsAnyOf("10.0", "10");
-		assertThat(response).containsAnyOf("15.0", "15");
+		assertThat(response).contains("30", "10", "15");
 	}
 
 	@Test
@@ -226,18 +229,17 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.builder(chatModel)
 				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius."))
 			.build()
 			.prompt().call().content();
 		// @formatter:on
 
 		logger.info("Response: {}", response);
 
-		assertThat(response).containsAnyOf("30.0", "30");
-		assertThat(response).containsAnyOf("10.0", "10");
-		assertThat(response).containsAnyOf("15.0", "15");
+		assertThat(response).contains("30", "10", "15");
 	}
 
+	@Disabled("SpringAI has not implemented streaming for function calls for Anthropic yet.")
 	@Test
 	void streamFunctionCallTest() {
 
@@ -252,18 +254,16 @@ class OpenAiChatClientIT extends AbstractIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).containsAnyOf("30.0", "30");
-		assertThat(content).containsAnyOf("10.0", "10");
-		assertThat(content).containsAnyOf("15.0", "15");
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
 		String response = ChatClient.create(chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.options(AnthropicChatOptions.builder().withModel(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -275,8 +275,9 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(response).containsAnyOf("bowl", "basket");
 	}
 
+	@Disabled("Currently Anthropic API does not support external image URLs")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
@@ -285,7 +286,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.options(AnthropicChatOptions.builder().withModel(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -297,17 +298,14 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@Test
-	void streamingMultiModalityImageUrl() throws IOException {
-
-		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+	void streamingMultiModality() throws IOException {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+				.options(AnthropicChatOptions.builder().withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
-						.media(MimeTypeUtils.IMAGE_PNG, url))
+						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.stream()
 				.content();
 		// @formatter:on
