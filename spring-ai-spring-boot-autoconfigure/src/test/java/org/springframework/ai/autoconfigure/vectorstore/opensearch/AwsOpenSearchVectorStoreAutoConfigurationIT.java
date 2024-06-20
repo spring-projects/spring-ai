@@ -15,9 +15,11 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
+import com.jayway.jsonpath.JsonPath;
+import net.minidev.json.JSONArray;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -25,31 +27,32 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
-import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.hasSize;
 
 @Testcontainers
-class OpenSearchVectorStoreAutoConfigurationIT {
+class AwsOpenSearchVectorStoreAutoConfigurationIT {
 
 	@Container
-	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
-			DockerImageName.parse("opensearchproject/opensearch:2.12.0"));
+	private static final LocalStackContainer localstack = new LocalStackContainer(
+			DockerImageName.parse("localstack/localstack:3.5.0"))
+		.withEnv("LOCALSTACK_HOST", "localhost.localstack.cloud");
 
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
@@ -61,10 +64,15 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class))
-		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues(
-				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".uris=" + opensearchContainer.getHttpHostAddress(),
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.host="
+						+ String.format("testcontainers-domain.%s.opensearch.localhost.localstack.cloud:%s",
+								localstack.getRegion(), localstack.getMappedPort(4566)),
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.service-name=opensearch",
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.region=" + localstack.getRegion(),
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.access-key=" + localstack.getAccessKey(),
+				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.secret-key=" + localstack.getSecretKey(),
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=" + DOCUMENT_INDEX,
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
 						{
@@ -76,6 +84,23 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 						   }
 						}
 						""");
+
+	@BeforeAll
+	static void beforeAll() throws IOException, InterruptedException {
+		String[] createDomainCmd = { "awslocal", "opensearch", "create-domain", "--domain-name",
+				"testcontainers-domain", "--region", localstack.getRegion() };
+		localstack.execInContainer(createDomainCmd);
+
+		String[] describeDomainCmd = { "awslocal", "opensearch", "describe-domain", "--domain-name",
+				"testcontainers-domain", "--region", localstack.getRegion() };
+		await().pollInterval(Duration.ofSeconds(30)).atMost(Duration.ofSeconds(300)).untilAsserted(() -> {
+			org.testcontainers.containers.Container.ExecResult execResult = localstack
+				.execInContainer(describeDomainCmd);
+			String response = execResult.getStdout();
+			JSONArray processed = JsonPath.read(response, "$.DomainStatus[?(@.Processing == false)]");
+			assertThat(processed).isNotEmpty();
+		});
+	}
 
 	@Test
 	public void addAndSearchTest() {

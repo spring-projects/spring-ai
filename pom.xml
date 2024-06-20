@@ -77,6 +77,7 @@
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
@@ -177,6 +178,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
+		<awssdk.version>2.20.161</awssdk.version>
 
 		<!-- testing dependencies -->
 		<httpclient5.version>5.3.1</httpclient5.version>
