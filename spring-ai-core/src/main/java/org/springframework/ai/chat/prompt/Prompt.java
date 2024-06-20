@@ -25,7 +25,6 @@ import org.springframework.ai.chat.messages.FunctionMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
 
 public class Prompt implements ModelRequest<List<Message>> {
@@ -68,7 +67,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
-	public ModelOptions getOptions() {
+	public ChatOptions getOptions() {
 		return this.modelOptions;
 	}
 

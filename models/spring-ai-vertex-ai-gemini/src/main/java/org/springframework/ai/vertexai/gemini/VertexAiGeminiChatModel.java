@@ -163,7 +163,7 @@ public class VertexAiGeminiChatModel
 			.map(candidate -> candidate.getContent().getPartsList())
 			.flatMap(List::stream)
 			.map(Part::getText)
-			.map(t -> new Generation(t.toString()))
+			.map(t -> new Generation(t))
 			.toList();
 
 		return new ChatResponse(generations, toChatResponseMetadata(response));
@@ -186,7 +186,7 @@ public class VertexAiGeminiChatModel
 						.map(candidate -> candidate.getContent().getPartsList())
 						.flatMap(List::stream)
 						.map(Part::getText)
-						.map(t -> new Generation(t.toString()))
+						.map(t -> new Generation(t))
 						.toList();
 
 					return new ChatResponse(generations, toChatResponseMetadata(response));
@@ -217,17 +217,11 @@ public class VertexAiGeminiChatModel
 		VertexAiGeminiChatOptions updatedRuntimeOptions = null;
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ChatOptions.class,
-						VertexAiGeminiChatOptions.class);
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					VertexAiGeminiChatOptions.class);
 
-				functionsForThisRequest
-					.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			functionsForThisRequest
+				.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
 		}
 
 		if (this.defaultOptions != null) {
