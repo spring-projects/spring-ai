@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -54,18 +53,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Christian Tzolov
  * @author Grogdunn
  * @author Thomas Vitale
+ * @author luocongqiu
  * @since 0.8.1
  */
 public class MistralAiChatModel extends
 		AbstractFunctionCallSupport<MistralAiApi.ChatCompletionMessage, MistralAiApi.ChatCompletionRequest, ResponseEntity<MistralAiApi.ChatCompletion>>
-		implements ChatModel, StreamingChatModel {
+		implements ChatModel {
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private MistralAiChatOptions defaultOptions;
+	private final MistralAiChatOptions defaultOptions;
 
 	/**
 	 * Low-level access to the OpenAI API.
@@ -209,21 +209,14 @@ public class MistralAiChatModel extends
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ChatOptions.class,
-						MistralAiChatOptions.class);
+			var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					MistralAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+					IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
 
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request,
-						MistralAiApi.ChatCompletionRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, MistralAiApi.ChatCompletionRequest.class);
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.

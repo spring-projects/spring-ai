@@ -24,7 +24,6 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -50,9 +49,10 @@ import org.springframework.util.StringUtils;
  * most up-to-date information on available models.
  *
  * @author Christian Tzolov
+ * @author luocongqiu
  * @since 0.8.0
  */
-public class OllamaChatModel implements ChatModel, StreamingChatModel {
+public class OllamaChatModel implements ChatModel {
 
 	/**
 	 * Low-level Ollama API library.
@@ -144,14 +144,8 @@ public class OllamaChatModel implements ChatModel, StreamingChatModel {
 		// runtime options
 		OllamaOptions runtimeOptions = null;
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(runtimeChatOptions, ChatOptions.class,
-						OllamaOptions.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					OllamaOptions.class);
 		}
 
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);

@@ -100,16 +100,10 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockTitanChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockTitanChatOptions.class);
+			BedrockTitanChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, BedrockTitanChatOptions.class);
 
-				requestBuilder = update(requestBuilder, updatedRuntimeOptions);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			requestBuilder = update(requestBuilder, updatedRuntimeOptions);
 		}
 
 		return requestBuilder.build();
