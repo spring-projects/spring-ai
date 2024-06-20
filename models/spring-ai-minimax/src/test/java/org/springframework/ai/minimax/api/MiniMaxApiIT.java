@@ -17,7 +17,6 @@ package org.springframework.ai.minimax.api;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
@@ -43,8 +42,8 @@ public class MiniMaxApiIT {
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = miniMaxApi.chatCompletionEntity(
-				new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, false));
+		ResponseEntity<ChatCompletion> response = miniMaxApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "abab6.5g", 0.7f, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -54,7 +53,7 @@ public class MiniMaxApiIT {
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = miniMaxApi
-			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, true));
+			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "abab6.5g", 0.7f, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
