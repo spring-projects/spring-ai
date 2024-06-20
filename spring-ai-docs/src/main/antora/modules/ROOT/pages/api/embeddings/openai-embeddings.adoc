@@ -75,7 +75,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.base-url   | The URL to connect to |  +https://api.openai.com+
 | spring.ai.openai.api-key    | The API Key           |  -
 |====
 
