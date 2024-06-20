@@ -40,6 +40,10 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 	// Dynamically generate table name in PgVectorStore to allow backward compatibility
 	private String vectorTableName = "";
 
+	private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
+
+	private boolean vectorTableValidationsEnabled = PgVectorStore.DEFAULT_VECTOR_TABLE_VALIDATIONS_ENABLED;
+
 	public int getDimensions() {
 		return dimensions;
 	}
@@ -78,6 +82,22 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setVectorTableName(String vectorTableName) {
 		this.vectorTableName = vectorTableName;
+	}
+
+	public String getSchemaName() {
+		return schemaName;
+	}
+
+	public void setSchemaName(String schemaName) {
+		this.schemaName = schemaName;
+	}
+
+	public boolean isVectorTableValidationsEnabled() {
+		return vectorTableValidationsEnabled;
+	}
+
+	public void setVectorTableValidationsEnabled(boolean vectorTableValidationsEnabled) {
+		this.vectorTableValidationsEnabled = vectorTableValidationsEnabled;
 	}
 
 }

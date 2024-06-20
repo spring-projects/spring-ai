@@ -37,6 +37,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.sql.DataSource;
+import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,29 +78,58 @@ public class PgVectorStoreCustomNamesIT {
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + name);
 	}
 
-	@Test
-	public void testShouldSucceedWhenCustomTableExists() {
+	private static boolean isIndexExists(ApplicationContext context, String schemaName, String tableName,
+			String indexName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		String sql = "SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = ? AND tablename = ? AND indexname = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName, tableName, indexName);
+	}
 
-		String tableName = "customvectortable";
+	private static boolean isTableExists(ApplicationContext context, String tableName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		return jdbcTemplate.queryForObject(
+				"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '" + tableName + "')",
+				Boolean.class);
+	}
 
-		customContextRunner.withUserConfiguration(TestApplication.class)
-			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
-					"test.spring.ai.vectorstore.pgvector.createTables=true")
-			.run(context -> {
-
-				assertThat(context).hasNotFailed();
-				dropTableByName(context, tableName);
-
-			});
-
+	private static boolean isSchemaExists(ApplicationContext context, String schemaName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		String sql = "SELECT EXISTS (SELECT FROM information_schema.schemata WHERE schema_name = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName);
 	}
 
 	@Test
-	public void testShouldFailWhenCustomTableDoesNotExist() {
+	public void shouldCreateDefaultTableAndIndexIfNotPresentInConfig() {
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableValidationsEnabled=false")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(isTableExists(context, "vector_store")).isTrue();
+				assertThat(isSchemaExists(context, "public")).isTrue();
+				dropTableByName(context, "vector_store");
+
+			});
+	}
+
+	@Test
+	public void shouldCreateTableAndIndexIfNotPresentInDatabase() {
+		String tableName = "new_vector_table";
+		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName)
+			.run(context -> {
+				assertThat(isTableExists(context, tableName)).isTrue();
+				assertThat(isIndexExists(context, "public", tableName, tableName + "_index")).isTrue();
+				assertThat(isTableExists(context, "vector_store")).isFalse();
+				dropTableByName(context, tableName);
+			});
+	}
+
+	@Test
+	public void shouldFailWhenCustomTableIsAbsentAndValidationEnabled() {
 
 		String tableName = "customvectortable";
 
-		contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName)
+		contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
+					"test.spring.ai.vectorstore.pgvector.vectorTableValidationsEnabled=true")
 
 			.run(context -> {
 
@@ -112,7 +142,7 @@ public class PgVectorStoreCustomNamesIT {
 	}
 
 	@Test
-	public void testShouldFailOnSQLInjectionInTableName() {
+	public void shouldFailOnSQLInjectionAttemptInTableName() {
 
 		String tableName = "users; DROP TABLE users;";
 
@@ -128,63 +158,74 @@ public class PgVectorStoreCustomNamesIT {
 
 	}
 
+	@Test
+	public void shouldFailOnSQLInjectionAttemptInSchemaName() {
+
+		String schemaName = "public; DROP TABLE users;";
+		String tableName = "customvectortable";
+
+		contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.vectorTableName=" + tableName,
+					"test.spring.ai.vectorstore.pgvector.schemaName=" + schemaName)
+
+			.run(context -> {
+
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalArgumentException.class)
+					.hasMessageContaining("Schema name should only contain alphanumeric characters and underscores");
+
+			});
+
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
-		@Value("${test.spring.ai.vectorstore.pgvector.vectorTableName}")
+		@Value("${test.spring.ai.vectorstore.pgvector.vectorTableName:}")
 		String vectorTableName;
 
-		@Value("${test.spring.ai.vectorstore.pgvector.createTables:false}")
-		Boolean createTables;
+		@Value("${test.spring.ai.vectorstore.pgvector.schemaName:public}")
+		String schemaName;
+
+		@Value("${test.spring.ai.vectorstore.pgvector.vectorTableValidationsEnabled:false}")
+		boolean vectorTableValidationsEnabled;
+
+		int dimensions = 768;
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return new PgVectorStore(vectorTableName, jdbcTemplate, embeddingModel,
-					PgVectorStore.INVALID_EMBEDDING_DIMENSION, PgVectorStore.PgDistanceType.COSINE_DISTANCE, true,
-					PgIndexType.HNSW, true);
+			return new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(schemaName)
+				.withVectorTableName(vectorTableName)
+				.withVectorTableValidationsEnabled(vectorTableValidationsEnabled)
+				.withDimensions(dimensions)
+				.withDistanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+				.withRemoveExistingVectorStoreTable(true)
+				.withIndexType(PgIndexType.HNSW)
+				.withInitializeSchema(true)
+				.build();
 		}
 
-		private void createCustomTable(JdbcTemplate jdbcTemplate) {
-			int dimensions = 768;
+		public Float[] generateFloatArray(int size, float min, float max) {
+			float[] result = new float[size];
+			Random random = new Random();
 
-			if (null == vectorTableName || vectorTableName.isEmpty()) {
-				System.out.println("Table name is not provided");
-				return;
+			for (int i = 0; i < size; i++) {
+				result[i] = min + random.nextFloat() * (max - min);
 			}
-			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
-			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
-			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+			Float[] embeddingObjects = new Float[result.length];
+			for (int i = 0; i < result.length; i++) {
+				embeddingObjects[i] = result[i]; // Auto-boxing float to Float
+			}
 
-			jdbcTemplate.execute("DROP TABLE IF EXISTS " + vectorTableName);
-
-			jdbcTemplate.execute(String.format("""
-					CREATE TABLE IF NOT EXISTS %s (
-						id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-						content text,
-						metadata json,
-						embedding vector(%d)
-					)
-					""", vectorTableName, dimensions));
-			System.out.println("Table created: " + vectorTableName);
-			String vectorIndexName = vectorTableName + "_index";
-
-			PgVectorStore.PgDistanceType distanceType = PgVectorStore.PgDistanceType.COSINE_DISTANCE;
-
-			PgIndexType createIndexMethod = PgIndexType.HNSW;
-
-			jdbcTemplate.execute(String.format("""
-					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
-					""", vectorIndexName, vectorTableName, createIndexMethod, distanceType.index));
-			System.out.println("Index created: " + vectorTableName);
-			System.out.println("Completed: " + vectorTableName);
+			return embeddingObjects;
 		}
 
+		//
 		@Bean
 		public JdbcTemplate myJdbcTemplate(DataSource dataSource) {
 			JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-			if (createTables)
-				createCustomTable(jdbcTemplate);
+
 			return jdbcTemplate;
 		}
 

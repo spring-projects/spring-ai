@@ -39,7 +39,7 @@ public class PgVectorStoreTests {
 			"customvectorstore--, false", // SQL comment appended
 			"drop table users;, false", // SQL command as a name
 			"customvectorstore;drop table users;, false", // Valid name followed by
-															// command
+			// command
 			"customvectorstore#, false", // Hash character included
 			"customvectorstore$, false", // Dollar sign included
 			"1, false", // Numeric only
@@ -49,12 +49,12 @@ public class PgVectorStoreTests {
 			"'customvectorstore\u0000', false", // Null byte included
 			"'customvectorstore\n', false", // Newline character
 			"12345678901234567890123456789012345678901234567890123456789012345, false" // More
-																						// than
-																						// 64
-																						// characters
+	// than
+	// 64
+	// characters
 	})
 	public void isValidTable(String tableName, Boolean expected) {
-		assertThat(PgVectorStore.isValidTableName(tableName)).isEqualTo(expected);
+		assertThat(PgVectorStore.isValidNameForDatabaseObject(tableName)).isEqualTo(expected);
 	}
 
 }

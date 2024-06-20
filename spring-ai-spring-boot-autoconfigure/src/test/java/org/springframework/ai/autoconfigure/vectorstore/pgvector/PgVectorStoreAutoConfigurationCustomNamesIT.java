@@ -15,12 +15,13 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.PgVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -35,13 +36,14 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import javax.sql.DataSource;
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Random;
+import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -88,6 +90,19 @@ public class PgVectorStoreAutoConfigurationCustomNamesIT {
 				Boolean.class);
 	}
 
+	private static boolean isSchemaExists(ApplicationContext context, String schemaName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		String sql = "SELECT EXISTS (SELECT FROM information_schema.schemata WHERE schema_name = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName);
+	}
+
+	private static boolean isFullyQualifiedTableExists(ApplicationContext context, String schemaName,
+			String tableName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		String sql = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = ? AND table_name = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, schemaName, tableName);
+	}
+
 	private static void dropTableByName(ApplicationContext context, String name) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + name);
@@ -104,7 +119,7 @@ public class PgVectorStoreAutoConfigurationCustomNamesIT {
 	}
 
 	@Test
-	public void testShouldCreateDefaultTableWhenVectorTableNameIsNotSet() {
+	public void shouldCreateDefaultTableWhenNoTableNameSpecified() {
 
 		String expectedTable = PgVectorStore.DEFAULT_VECTOR_TABLE_NAME;
 
@@ -118,26 +133,32 @@ public class PgVectorStoreAutoConfigurationCustomNamesIT {
 		});
 	}
 
+	// should not override existing table , if table already exists
 	@Test
-	public void testShouldFailWhenSpecifiedTableDoesNotExistInDatabase() {
+	public void shouldPreserveExistingTable() {
 
 		List<String> items = new ArrayList<>();
 		String tableName = "customvectortable";
+		int existingRowCount = 5;
 		items.add("spring.ai.vectorstore.pgvector.vectorTableName=" + tableName);
 
+		items.add("test.spring.ai.vectorstore.pgvector.createTables=true");
+		items.add("test.spring.ai.vectorstore.pgvector.insertCount=" + existingRowCount);
 		contextRunner.withPropertyValues(items.toArray(new String[0]))
 
 			.run(context -> {
+				assertThat(context).hasNotFailed();
+				VectorStore vectorStore = context.getBean(VectorStore.class);
 
-				assertThat(context).hasFailed();
-				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalStateException.class)
-					.hasMessageContaining(tableName + " does not exist");
+				vectorStore.add(documents);
+				int count = getRowCount(context, tableName);
+				assertThat(count).isEqualTo(documents.size() + existingRowCount);
 
 			});
 	}
 
 	@Test
-	public void testShouldInsertDocumentsSuccessfullyWhenTableIsSpecified() {
+	public void shouldInsertDocumentsIntoSpecifiedTable() {
 
 		List<String> items = new ArrayList<>();
 		String tableName = "customvectortable";
@@ -164,19 +185,63 @@ public class PgVectorStoreAutoConfigurationCustomNamesIT {
 		@Value("${spring.ai.vectorstore.pgvector.vectorTableName:#{null}}")
 		String vectorTableName;
 
+		@Value("${spring.ai.vectorstore.pgvector.schemaName:public}")
+		String schemaName;
+
 		@Value("${test.spring.ai.vectorstore.pgvector.createTables:false}")
 		Boolean createTables;
 
+		@Value("${test.spring.ai.vectorstore.pgvector.insertCount:0}")
+		Integer insertCount;
+
+		@Autowired
+		JdbcTemplate jdbcTemplate;
+
+		int dimensions = 384;
+
+		@PostConstruct
+		public void init() {
+			if (createTables) {
+				createCustomTable(jdbcTemplate);
+				for (int i = 0; i < insertCount; i++) {
+					insertRandomData(jdbcTemplate);
+				}
+			}
+		}
+
+		public void insertRandomData(JdbcTemplate jdbcTemplate) {
+			// Generate UUID
+			UUID id = UUID.randomUUID();
+
+			// Generate random content
+			String content = "RandomContent_" + UUID.randomUUID().toString().substring(0, 8); // Short
+			// random
+			// string
+
+			// Generate random array of floats
+			Random random = new Random();
+			StringBuilder embeddingBuilder = new StringBuilder("[");
+			for (int i = 0; i < dimensions; i++) {
+				if (i > 0) {
+					embeddingBuilder.append(",");
+				}
+				float randomFloat = -1.0f + 2.0f * random.nextFloat(); // Generates a
+				// float between
+				// -1.0 and 1.0
+				embeddingBuilder.append(String.format("%.9f", randomFloat));
+			}
+			embeddingBuilder.append("]");
+
+			String sql = String.format(
+					"INSERT INTO %s.%s (id, content, metadata, embedding) " + "VALUES ('%s', '%s', '{}', '%s')",
+					schemaName, vectorTableName, id, content, embeddingBuilder.toString());
+
+			int rowsAffected = jdbcTemplate.update(sql);
+			System.out.println("Inserted " + rowsAffected + " row(s).");
+		}
+
 		private void createCustomTable(JdbcTemplate jdbcTemplate) {
 
-			int dimensions = 768;
-
-			if (null == vectorTableName || vectorTableName.isEmpty()) {
-				System.out.println("Table name is not provided");
-				return;
-			}
-
-			// Enable the PGVector, JSONB and UUID support.
 			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
 			jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
@@ -191,7 +256,7 @@ public class PgVectorStoreAutoConfigurationCustomNamesIT {
 						embedding vector(%d)
 					)
 					""", vectorTableName, dimensions));
-
+			// System.out.println("Table created: " + vectorTableName);
 			String vectorIndexName = vectorTableName + "_index";
 
 			PgVectorStore.PgDistanceType distanceType = PgVectorStore.PgDistanceType.COSINE_DISTANCE;
@@ -202,15 +267,6 @@ public class PgVectorStoreAutoConfigurationCustomNamesIT {
 					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
 					""", vectorIndexName, vectorTableName, createIndexMethod, distanceType.index));
 
-			System.out.println("Completed: " + vectorTableName);
-		}
-
-		@Bean
-		public JdbcTemplate myJdbcTemplate(DataSource dataSource) {
-			JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-			if (createTables)
-				createCustomTable(jdbcTemplate);
-			return jdbcTemplate;
 		}
 
 		@Bean
