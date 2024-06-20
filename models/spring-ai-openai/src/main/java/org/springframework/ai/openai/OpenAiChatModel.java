@@ -71,20 +71,21 @@ import reactor.core.publisher.Flux;
  * @author Grogdunn
  * @author Hyunjoon Choi
  * @author Mariusz Bernacki
+ * @author luocongqiu
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
  */
 public class OpenAiChatModel extends
 		AbstractFunctionCallSupport<ChatCompletionMessage, OpenAiApi.ChatCompletionRequest, ResponseEntity<ChatCompletion>>
-		implements ChatModel, StreamingChatModel {
+		implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private OpenAiChatOptions defaultOptions;
+	private final OpenAiChatOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the OpenAI API calls.
@@ -277,20 +278,14 @@ public class OpenAiChatModel extends
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, OpenAiChatOptions.class);
+			OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, OpenAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+					IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
 
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 
 		if (this.defaultOptions != null) {

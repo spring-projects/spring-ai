@@ -40,12 +40,19 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Optional;
 
 @AutoConfiguration
 @ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingModel.class, OpenSearchClient.class })
 @EnableConfigurationProperties(OpenSearchVectorStoreProperties.class)
-class OpenSearchVectorStoreAutoConfiguration {
+public class OpenSearchVectorStoreAutoConfiguration {
+
+	@Bean
+	@ConditionalOnMissingBean(OpenSearchConnectionDetails.class)
+	PropertiesOpenSearchConnectionDetails openSearchConnectionDetails(OpenSearchVectorStoreProperties properties) {
+		return new PropertiesOpenSearchConnectionDetails(properties);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -64,12 +71,15 @@ class OpenSearchVectorStoreAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties) {
-			HttpHost[] httpHosts = properties.getUris().stream().map(s -> createHttpHost(s)).toArray(HttpHost[]::new);
+		OpenSearchClient openSearchClient(OpenSearchConnectionDetails connectionDetails) {
+			HttpHost[] httpHosts = connectionDetails.getUris()
+				.stream()
+				.map(s -> createHttpHost(s))
+				.toArray(HttpHost[]::new);
 			ApacheHttpClient5TransportBuilder transportBuilder = ApacheHttpClient5TransportBuilder.builder(httpHosts);
-
-			Optional.ofNullable(properties.getUsername())
-				.map(username -> createBasicCredentialsProvider(httpHosts[0], username, properties.getPassword()))
+			Optional.ofNullable(connectionDetails.getUsername())
+				.map(username -> createBasicCredentialsProvider(httpHosts[0], username,
+						connectionDetails.getPassword()))
 				.ifPresent(basicCredentialsProvider -> transportBuilder
 					.setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder
 						.setDefaultCredentialsProvider(basicCredentialsProvider)));
@@ -119,6 +129,31 @@ class OpenSearchVectorStoreAutoConfiguration {
 				.setCredentials(StaticCredentialsProvider
 					.create(AwsBasicCredentials.create(aws.getAccessKey(), aws.getSecretKey())))
 				.build();
+		}
+
+	}
+
+	static class PropertiesOpenSearchConnectionDetails implements OpenSearchConnectionDetails {
+
+		private final OpenSearchVectorStoreProperties properties;
+
+		PropertiesOpenSearchConnectionDetails(OpenSearchVectorStoreProperties properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public List<String> getUris() {
+			return this.properties.getUris();
+		}
+
+		@Override
+		public String getUsername() {
+			return this.properties.getUsername();
+		}
+
+		@Override
+		public String getPassword() {
+			return this.properties.getPassword();
 		}
 
 	}
