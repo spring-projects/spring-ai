@@ -34,6 +34,14 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-elasticsearch-store-spring-boot-starter'
 }
 ----
+NOTE: For spring-boot versions pre 3.3.0 it's necessary to explicitly add the elasticsearch-java dependency with version > 8.13.3, otherwise the older version used will be incompatible with the queries performed:
+```
+<dependency>
+    <groupId>co.elastic.clients</groupId>
+    <artifactId>elasticsearch-java</artifactId>
+    <version>8.13.3</version>
+</dependency>
+```
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
@@ -134,10 +142,17 @@ Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are 
 
 |`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors. | spring-ai-document-index
 |`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector. | 1536
-|`spring.ai.vectorstore.elasticsearch.dense-vector-indexing` | Whether to use dense vector indexing. | true
 |`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`
 |`spring.ai.vectorstore.elasticsearch.initialize-schema`| whether to initialize the required schema  | `false`
 |===
+
+The following similarity functions are available:
+
+* cosine
+* l2_norm
+* dot_product
+
+More details about each in the https://www.elastic.co/guide/en/elasticsearch/reference/master/dense-vector.html#dense-vector-params[Elasticsearch Documentation] on dense vectors.
 
 == Metadata Filtering
 
@@ -187,7 +202,7 @@ is converted into the proprietary Elasticsearch filter format:
 
 == Manual Configuration
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. \For this you need to add the `spring-ai-elasticsearch-store` to your project:
+Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. For this you need to add the `spring-ai-elasticsearch-store` to your project:
 
 [source,xml]
 ----
@@ -214,10 +229,11 @@ Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-clie
 ----
 @Bean
 public RestClient restClient() {
-    RestClientBuilder builder = RestClient.builder(new HttpHost("<host>", 9200, "http"));
-    Header[] defaultHeaders = new Header[] { new BasicHeader("Authorization", "Basic <encoded username and password>") };
-    builder.setDefaultHeaders(defaultHeaders);
-    return builder.build();
+    RestClient.builder(new HttpHost("<host>", 9200, "http"))
+        .setDefaultHeaders(new Header[]{
+            new BasicHeader("Authorization", "Basic <encoded username and password>")
+        })
+        .build();
 }
 ----
 

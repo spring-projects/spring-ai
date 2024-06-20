@@ -89,7 +89,7 @@ Spring AI supports many AI models.  For an overview see here.  Specific models c
 * OpenAI
 * Azure OpenAI
 * Amazon Bedrock (Anthropic, Llama, Cohere, Titan, Jurassic2, Mistral)
-* HuggingFace
+* Hugging Face
 * Google VertexAI (PaLM2, Gemini)
 * Mistral AI
 * Stability AI
@@ -163,7 +163,7 @@ Though the `DocumentWriter` interface isn't exclusively for Vector Database writ
 
 **Vector Stores:**  Vector Databases are instrumental in incorporating your data with AI models.
 They ascertain which document sections the AI should use for generating responses.
-Examples of Vector Databases include Chroma, Postgres, Pinecone, Qdrant, Weaviate, Mongo Atlas, and Redis. Spring AI's `VectorStore` abstraction permits effortless transitions between database implementations.
+Examples of Vector Databases include Chroma, Oracle, Postgres, Pinecone, Qdrant, Weaviate, Mongo Atlas, and Redis. Spring AI's `VectorStore` abstraction permits effortless transitions between database implementations.
 
 
 

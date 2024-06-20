@@ -79,8 +79,7 @@ The prefix `spring.ai.bedrock.anthropic.chat` is the property prefix that config
 [cols="2,5,1"]
 |====
 | Property | Description | Default
-
-| spring.ai.bedrock.anthropic.chat.enable | Enable Bedrock Anthropic chat model. Disabled by default | false
+| spring.ai.bedrock.anthropic.chat.enabled | Enable Bedrock Anthropic chat model. Disabled by default | false
 | spring.ai.bedrock.anthropic.chat.model  | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatModel.java[AnthropicChatModel] for the supported models.  | `anthropic.claude-v2`
 | spring.ai.bedrock.anthropic.chat.options.temperature  | Controls the randomness of the output. Values can range over [0.0,1.0]  | AWS Bedrock default
 | spring.ai.bedrock.anthropic.chat.options.maxTokens  | Specify the maximum number of tokens to use in the generated response. Note that the models may stop before reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate. We recommend a limit of 4,000 tokens for optimal performance. | AWS Bedrock default

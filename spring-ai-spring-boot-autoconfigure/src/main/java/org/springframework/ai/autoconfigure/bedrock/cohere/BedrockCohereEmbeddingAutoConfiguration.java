@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.retry.support.RetryTemplate;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Client.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Model.
  *
  * @author Christian Tzolov
  * @author Wei Jiang

@@ -202,10 +202,11 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
-				.withDescription("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.withDescription(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.build()))
 			.build();
 
@@ -214,9 +215,7 @@ class AnthropicChatModelIT {
 		logger.info("Response: {}", response);
 
 		Generation generation = response.getResult();
-		assertThat(generation.getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(generation.getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(generation.getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(generation.getOutput().getContent()).contains("30", "10", "15");
 	}
 
 }

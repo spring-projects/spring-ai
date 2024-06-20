@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -40,8 +41,8 @@ import java.util.function.Predicate;
 
 // @formatter:off
 /**
- * Single class implementation of the ZhiPuAI Chat Completion API: https://open.bigmodel.cn/dev/api#http and
- * ZhiPuAI Embedding API: https://open.bigmodel.cn/dev/api#text_embedding.
+ * Single class implementation of the <a href="https://open.bigmodel.cn/dev/api#http">ZhiPuAI Chat Completion API</a> and
+ * <a href="https://open.bigmodel.cn/dev/api#text_embedding">ZhiPuAI Embedding API</a>.
  *
  * @author Geng Rong
  * @since 1.0.0 M1
@@ -62,7 +63,7 @@ public class ZhiPuAiApi {
 	 * @param zhiPuAiToken ZhiPuAI apiKey.
 	 */
 	public ZhiPuAiApi(String zhiPuAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, zhiPuAiToken);
+		this(ZhiPuApiConstants.DEFAULT_BASE_URL, zhiPuAiToken);
 	}
 
 	/**

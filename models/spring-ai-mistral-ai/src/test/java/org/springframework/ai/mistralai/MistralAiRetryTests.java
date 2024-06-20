@@ -52,12 +52,13 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
 public class MistralAiRetryTests {
 
-	private class TestRetryListener implements RetryListener {
+	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;
 
@@ -97,7 +98,7 @@ public class MistralAiRetryTests {
 					.withTemperature(0.7f)
 					.withTopP(1f)
 					.withSafePrompt(false)
-					.withModel(MistralAiApi.ChatModel.TINY.getValue())
+					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
 					.build(),
 				null, retryTemplate);
 		embeddingModel = new MistralAiEmbeddingModel(mistralAiApi, MetadataMode.EMBED,

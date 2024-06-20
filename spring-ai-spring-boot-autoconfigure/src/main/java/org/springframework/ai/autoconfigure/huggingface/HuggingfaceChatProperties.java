@@ -17,17 +17,29 @@ package org.springframework.ai.autoconfigure.huggingface;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * @author Christian Tzolov
+ * @author Josh Long
+ * @author Mark Pollack
+ * @author Thomas Vitale
+ */
 @ConfigurationProperties(HuggingfaceChatProperties.CONFIG_PREFIX)
 public class HuggingfaceChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.huggingface.chat";
 
+	/**
+	 * API Key to authenticate with the Inference Endpoint.
+	 */
 	private String apiKey;
 
+	/**
+	 * URL of the Inference Endpoint.
+	 */
 	private String url;
 
 	/**
-	 * Enable Huggingface chat model.
+	 * Enable Hugging Face chat model.
 	 */
 	private boolean enabled = true;
 

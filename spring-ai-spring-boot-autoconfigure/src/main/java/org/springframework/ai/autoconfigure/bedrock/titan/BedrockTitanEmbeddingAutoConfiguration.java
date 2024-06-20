@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.retry.support.RetryTemplate;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Client.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Model.
  *
  * @author Christian Tzolov
  * @author Wei Jiang

@@ -144,7 +144,7 @@ Each of the following sections in the documentation shows which dependencies you
 ** xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming and function-calling support)
 ** xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming and function-calling support)
 ** xref:api/chat/ollama-chat.adoc[Ollama Chat Completion]
-** xref:api/chat/huggingface.adoc[HuggingFace Chat Completion] (no streaming support)
+** xref:api/chat/huggingface.adoc[Hugging Face Chat Completion] (no streaming support)
 ** xref:api/chat/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
 ** xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 ** xref:api/bedrock.adoc[Amazon Bedrock]

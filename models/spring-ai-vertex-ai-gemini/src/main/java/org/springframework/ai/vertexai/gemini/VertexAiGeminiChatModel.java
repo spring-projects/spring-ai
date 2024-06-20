@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
+import com.google.cloud.vertexai.api.Content.Builder;
 import com.google.cloud.vertexai.api.FunctionCall;
 import com.google.cloud.vertexai.api.FunctionDeclaration;
 import com.google.cloud.vertexai.api.FunctionResponse;
@@ -27,6 +28,7 @@ import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
+import com.google.cloud.vertexai.generativeai.ContentMaker;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
@@ -35,7 +37,6 @@ import com.google.protobuf.util.JsonFormat;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -64,11 +65,12 @@ import java.util.stream.Collectors;
 /**
  * @author Christian Tzolov
  * @author Grogdunn
+ * @author luocongqiu
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel
 		extends AbstractFunctionCallSupport<Content, VertexAiGeminiChatModel.GeminiRequest, GenerateContentResponse>
-		implements ChatModel, StreamingChatModel, DisposableBean {
+		implements ChatModel, DisposableBean {
 
 	private final static boolean IS_RUNTIME_CALL = true;
 
@@ -102,9 +104,9 @@ public class VertexAiGeminiChatModel
 
 		GEMINI_PRO("gemini-pro"),
 
-		GEMINI_PRO_1_5_PRO("gemini-1.5-pro-preview-0514"),
+		GEMINI_1_5_PRO("gemini-1.5-pro-001"),
 
-		GEMINI_PRO_1_5_FLASH("gemini-1.5-flash-preview-0514");
+		GEMINI_1_5_FLASH("gemini-1.5-flash-001");
 
 		ChatModel(String value) {
 			this.value = value;
@@ -162,7 +164,7 @@ public class VertexAiGeminiChatModel
 			.map(candidate -> candidate.getContent().getPartsList())
 			.flatMap(List::stream)
 			.map(Part::getText)
-			.map(t -> new Generation(t.toString()))
+			.map(t -> new Generation(t))
 			.toList();
 
 		return new ChatResponse(generations, toChatResponseMetadata(response));
@@ -185,7 +187,7 @@ public class VertexAiGeminiChatModel
 						.map(candidate -> candidate.getContent().getPartsList())
 						.flatMap(List::stream)
 						.map(Part::getText)
-						.map(t -> new Generation(t.toString()))
+						.map(t -> new Generation(t))
 						.toList();
 
 					return new ChatResponse(generations, toChatResponseMetadata(response));
@@ -216,17 +218,11 @@ public class VertexAiGeminiChatModel
 		VertexAiGeminiChatOptions updatedRuntimeOptions = null;
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ChatOptions.class,
-						VertexAiGeminiChatOptions.class);
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					VertexAiGeminiChatOptions.class);
 
-				functionsForThisRequest
-					.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			functionsForThisRequest
+				.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
 		}
 
 		if (this.defaultOptions != null) {
@@ -263,6 +259,16 @@ public class VertexAiGeminiChatModel
 
 		GenerativeModel generativeModel = generativeModelBuilder.build();
 
+		String systemContext = prompt.getInstructions()
+			.stream()
+			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
+			.map(m -> m.getContent())
+			.collect(Collectors.joining(System.lineSeparator()));
+
+		if (StringUtils.hasText(systemContext)) {
+			generativeModel.withSystemInstruction(ContentMaker.fromString(systemContext));
+		}
+
 		return new GeminiRequest(toGeminiContent(prompt), generativeModel);
 	}
 
@@ -294,18 +300,12 @@ public class VertexAiGeminiChatModel
 
 	private List<Content> toGeminiContent(Prompt prompt) {
 
-		String systemContext = prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getContent())
-			.collect(Collectors.joining(System.lineSeparator()));
-
 		List<Content> contents = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
-				.addAllParts(messageToGeminiParts(message, systemContext))
+				.addAllParts(messageToGeminiParts(message))
 				.build())
 			.toList();
 
@@ -326,14 +326,11 @@ public class VertexAiGeminiChatModel
 		}
 	}
 
-	static List<Part> messageToGeminiParts(Message message, String systemContext) {
+	static List<Part> messageToGeminiParts(Message message) {
 
 		if (message instanceof UserMessage userMessage) {
 
 			String messageTextContent = (userMessage.getContent() == null) ? "null" : userMessage.getContent();
-			if (StringUtils.hasText(systemContext)) {
-				messageTextContent = systemContext + "\n\n" + messageTextContent;
-			}
 			Part textPart = Part.newBuilder().setText(messageTextContent).build();
 
 			List<Part> parts = new ArrayList<>(List.of(textPart));
@@ -416,27 +413,31 @@ public class VertexAiGeminiChatModel
 	protected GeminiRequest doCreateToolResponseRequest(GeminiRequest previousRequest, Content responseMessage,
 			List<Content> conversationHistory) {
 
-		FunctionCall functionCall = responseMessage.getPartsList().iterator().next().getFunctionCall();
+		var iterator = responseMessage.getPartsList().iterator();
 
-		var functionName = functionCall.getName();
-		String functionArguments = structToJson(functionCall.getArgs());
+		Builder builder = Content.newBuilder();
+		while (iterator.hasNext()) {
 
-		if (!this.functionCallbackRegister.containsKey(functionName)) {
-			throw new IllegalStateException("No function callback found for function name: " + functionName);
-		}
+			FunctionCall functionCall = iterator.next().getFunctionCall();
 
-		String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+			var functionName = functionCall.getName();
+			String functionArguments = structToJson(functionCall.getArgs());
 
-		Content contentFnResp = Content.newBuilder()
-			.addParts(Part.newBuilder()
+			if (!this.functionCallbackRegister.containsKey(functionName)) {
+				throw new IllegalStateException("No function callback found for function name: " + functionName);
+			}
+
+			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
+
+			builder.addParts(Part.newBuilder()
 				.setFunctionResponse(FunctionResponse.newBuilder()
 					.setName(functionCall.getName())
 					.setResponse(jsonToStruct(functionResponse))
 					.build())
-				.build())
-			.build();
+				.build());
 
-		conversationHistory.add(contentFnResp);
+		}
+		conversationHistory.add(builder.build());
 
 		return new GeminiRequest(conversationHistory, previousRequest.model());
 	}

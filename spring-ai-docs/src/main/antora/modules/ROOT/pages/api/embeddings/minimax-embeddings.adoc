@@ -26,7 +26,7 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Azure MiniMax Embedding Client.
+Spring AI provides Spring Boot auto-configuration for the Azure MiniMax Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -52,7 +52,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 ==== Retry Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the MiniMax Embedding client.
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the MiniMax Embedding model.
 
 [cols="3,5,1"]
 |====
@@ -153,7 +153,7 @@ public class EmbeddingController {
 
 == Manual Configuration
 
-If you are not using Spring Boot, you can manually configure the MiniMax Embedding Client.
+If you are not using Spring Boot, you can manually configure the MiniMax Embedding Model.
 For this add the `spring-ai-minimax` dependency to your project's Maven `pom.xml` file:
 [source, xml]
 ----

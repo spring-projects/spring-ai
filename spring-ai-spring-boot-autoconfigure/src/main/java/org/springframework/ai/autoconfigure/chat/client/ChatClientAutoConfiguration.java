@@ -40,7 +40,7 @@ import org.springframework.context.annotation.Scope;
  * @author Mark Pollack
  * @author Josh Long
  * @author Arjen Poutsma
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 @AutoConfiguration
 @ConditionalOnClass(ChatClient.class)
@@ -59,7 +59,6 @@ public class ChatClientAutoConfiguration {
 
 	@Bean
 	@Scope("prototype")
-	@ConditionalOnMissingBean
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel);
 		return chatClientBuilderConfigurer.configure(builder);
