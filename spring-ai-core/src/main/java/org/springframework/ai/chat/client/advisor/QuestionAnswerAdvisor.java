@@ -141,7 +141,8 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
 
-		if (!context.containsKey(FILTER_EXPRESSION) || !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
+		if (!context.containsKey(FILTER_EXPRESSION)
+				|| !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
 			return this.searchRequest.getFilterExpression();
 		}
 		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
