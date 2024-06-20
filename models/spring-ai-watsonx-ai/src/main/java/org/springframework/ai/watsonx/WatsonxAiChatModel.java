@@ -118,15 +118,11 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 			if (prompt.getOptions() instanceof WatsonxAiChatOptions runtimeOptions) {
 				options = ModelOptionsUtils.merge(runtimeOptions, options, WatsonxAiChatOptions.class);
 			}
-			else if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ChatOptions.class,
+			else {
+				var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 						WatsonxAiChatOptions.class);
 
 				options = ModelOptionsUtils.merge(updatedRuntimeOptions, options, WatsonxAiChatOptions.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
 			}
 		}
 

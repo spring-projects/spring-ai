@@ -36,7 +36,6 @@ import com.google.protobuf.util.JsonFormat;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -65,11 +64,12 @@ import java.util.stream.Collectors;
 /**
  * @author Christian Tzolov
  * @author Grogdunn
+ * @author luocongqiu
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel
 		extends AbstractFunctionCallSupport<Content, VertexAiGeminiChatModel.GeminiRequest, GenerateContentResponse>
-		implements ChatModel, StreamingChatModel, DisposableBean {
+		implements ChatModel, DisposableBean {
 
 	private final static boolean IS_RUNTIME_CALL = true;
 
@@ -163,7 +163,7 @@ public class VertexAiGeminiChatModel
 			.map(candidate -> candidate.getContent().getPartsList())
 			.flatMap(List::stream)
 			.map(Part::getText)
-			.map(t -> new Generation(t.toString()))
+			.map(t -> new Generation(t))
 			.toList();
 
 		return new ChatResponse(generations, toChatResponseMetadata(response));
@@ -186,7 +186,7 @@ public class VertexAiGeminiChatModel
 						.map(candidate -> candidate.getContent().getPartsList())
 						.flatMap(List::stream)
 						.map(Part::getText)
-						.map(t -> new Generation(t.toString()))
+						.map(t -> new Generation(t))
 						.toList();
 
 					return new ChatResponse(generations, toChatResponseMetadata(response));
@@ -217,17 +217,11 @@ public class VertexAiGeminiChatModel
 		VertexAiGeminiChatOptions updatedRuntimeOptions = null;
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ChatOptions.class,
-						VertexAiGeminiChatOptions.class);
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					VertexAiGeminiChatOptions.class);
 
-				functionsForThisRequest
-					.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			functionsForThisRequest
+				.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
 		}
 
 		if (this.defaultOptions != null) {
