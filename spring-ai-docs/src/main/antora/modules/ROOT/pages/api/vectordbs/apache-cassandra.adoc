@@ -78,6 +78,24 @@ Add these dependencies to your project:
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
+== Configuration Properties
+
+You can use the following properties in your Spring Boot configuration to customize the Apache Cassandra vector store.
+
+|===
+|Property|Default value
+
+|`spring.ai.vectorstore.cassandra.keyspace`|springframework
+|`spring.ai.vectorstore.cassandra.table`|ai_vector_store
+|`spring.ai.vectorstore.cassandra.initialze-schema`|false
+|`spring.ai.vectorstore.cassandra.index-name`|
+|`spring.ai.vectorstore.cassandra.content-column-name`|content
+|`spring.ai.vectorstore.cassandra.embedding-column-name`|embedding
+|`spring.ai.vectorstore.cassandra.return-embeddings`|false
+|`spring.ai.vectorstore.cassandra.fixed-thread-pool-executor-size`|16
+|===
+
+
 
 == Usage
 

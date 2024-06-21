@@ -46,7 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = { "spring.ai.vectorstore.weaviate.filter-field.country=TEXT",
 		"spring.ai.vectorstore.weaviate.filter-field.year=NUMBER",
 		"spring.ai.vectorstore.weaviate.filter-field.active=BOOLEAN",
-		"spring.ai.vectorstore.weaviate.filter-field.price=NUMBER" })
+		"spring.ai.vectorstore.weaviate.filter-field.price=NUMBER",
+		"spring.ai.vectorstore.weaviate.initialize-schema=true" })
 class WeaviateContainerConnectionDetailsFactoryTest {
 
 	@Container

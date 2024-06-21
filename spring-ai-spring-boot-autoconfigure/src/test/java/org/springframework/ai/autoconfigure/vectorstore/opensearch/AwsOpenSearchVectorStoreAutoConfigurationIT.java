@@ -47,7 +47,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.hasSize;
 
 @Testcontainers
-class AwsOpenSearchVectorStoreAutoConfigurationIT {
+class a {
 
 	@Container
 	private static final LocalStackContainer localstack = new LocalStackContainer(
@@ -65,6 +65,7 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true")
 		.withPropertyValues(
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.host="
 						+ String.format("testcontainers-domain.%s.opensearch.localhost.localstack.cloud:%s",

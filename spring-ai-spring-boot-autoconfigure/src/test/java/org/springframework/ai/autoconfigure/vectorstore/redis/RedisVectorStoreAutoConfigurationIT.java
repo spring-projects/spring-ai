@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.redis.testcontainers.RedisStackContainer;
 /**
  * @author Julien Ruaux
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -56,8 +57,10 @@ class RedisVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class, RedisVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI(),
-				"spring.ai.vectorstore.redis.index=myIdx", "spring.ai.vectorstore.redis.prefix=doc:");
+		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI())
+		.withPropertyValues("spring.ai.vectorstore.redis.initialize-schema=true")
+		.withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
+		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
 
 	@Test
 	void addAndSearch() {

@@ -45,7 +45,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @TestPropertySource(properties = { "spring.ai.vectorstore.milvus.metricType=COSINE",
 		"spring.ai.vectorstore.milvus.indexType=IVF_FLAT", "spring.ai.vectorstore.milvus.embeddingDimension=384",
-		"spring.ai.vectorstore.milvus.collectionName=myTestCollection" })
+		"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
+		"spring.ai.vectorstore.milvus.initialize-schema=true" })
 class MilvusContainerConnectionDetailsFactoryTest {
 
 	@Container

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,15 +40,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
-public class WeaviateVectorStoreAutoConfigurationTests {
+public class WeaviateVectorStoreAutoConfigurationIT {
 
 	@Container
 	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
-
-	;
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(WeaviateVectorStoreAutoConfiguration.class))

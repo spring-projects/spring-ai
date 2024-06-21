@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  * @since 0.8.1
  */
 @Testcontainers
@@ -58,6 +59,7 @@ public class QdrantVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(QdrantVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.qdrant.port=" + qdrantContainer.getGrpcPort(),
+				"spring.ai.vectorstore.qdrant.initialize-schema=true",
 				"spring.ai.vectorstore.qdrant.host=" + qdrantContainer.getHost());
 
 	@Test
