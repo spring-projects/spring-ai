@@ -17,14 +17,8 @@ package org.springframework.ai.zhipuai.api;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionChunk;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.*;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.Embedding;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.EmbeddingList;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 
@@ -46,6 +40,17 @@ public class ZhiPuAiApiIT {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = zhiPuAiApi.chatCompletionEntity(
 				new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7f, false));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+	}
+
+	@Test
+	void chatCompletionEntityWithMoreParams() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ResponseEntity<ChatCompletion> response = zhiPuAiApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 1024, null,
+					false, 0.95f, 0.7f, null, null, null, "test_request_id", false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
