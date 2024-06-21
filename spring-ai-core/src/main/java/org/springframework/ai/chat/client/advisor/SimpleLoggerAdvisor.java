@@ -30,7 +30,7 @@ import reactor.core.publisher.Flux;
 
 /**
  * A simple logger advisor that logs the request and response messages.
- * 
+ *
  * @author Christian Tzolov
  */
 public class SimpleLoggerAdvisor implements RequestResponseAdvisor {
