@@ -74,7 +74,7 @@ spring.ai.vectorstore.chroma.client.username=<your username (if configure)>
 spring.ai.vectorstore.chroma.client.password=<your password (if configure)>
 
 # Chroma Vector Store collection properties
-spring.ai.vectorstore.chroma.store.collection-name=<your collection name>
+spring.ai.vectorstore.chroma.collection-name=<your collection name>
 
 # Chroma Vector Store configuration properties
 
@@ -116,7 +116,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.chroma.client.key-token`| Access token (if configured) | -
 |`spring.ai.vectorstore.chroma.client.username`| Access username (if configured) | -
 |`spring.ai.vectorstore.chroma.client.password`| Access password (if configured) | -
-|`spring.ai.vectorstore.chroma.store.collection-name`| Collection name | `SpringAiCollection`
+|`spring.ai.vectorstore.chroma.collection-name`| Collection name | `SpringAiCollection`
 |===
 
 [NOTE]

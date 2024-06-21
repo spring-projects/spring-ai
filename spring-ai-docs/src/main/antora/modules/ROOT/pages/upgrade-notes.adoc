@@ -1,6 +1,10 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
+== Upgrading to 1.0.0.M2
+
+* The configuration prefix for the Chroma Vector Store has been changes from `spring.ai.vectorstore.chroma.store` to `spring.ai.vectorstore.chroma` in order to align with the naming conventions of other vector stores.
+
 == Upgrading to 1.0.0.M1
 
 On our march to release 1.0.0 M1 we have made several breaking changes.  Apologies, it is for the best!
