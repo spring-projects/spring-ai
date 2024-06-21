@@ -16,14 +16,16 @@
 package org.springframework.ai.autoconfigure.bedrock.llama;
 
 import org.springframework.ai.bedrock.llama.BedrockLlamaChatOptions;
-import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
+import org.springframework.ai.bedrock.llama.BedrockLlamaChatModel.LlamaChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * Configuration properties for Bedrock Llama.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockLlamaChatProperties.CONFIG_PREFIX)
@@ -42,10 +44,7 @@ public class BedrockLlamaChatProperties {
 	private String model = LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id();
 
 	@NestedConfigurationProperty
-	private BedrockLlamaChatOptions options = BedrockLlamaChatOptions.builder()
-		.withTemperature(0.7f)
-		.withMaxGenLen(300)
-		.build();
+	private BedrockLlamaChatOptions options = BedrockLlamaChatOptions.builder().build();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -68,6 +67,8 @@ public class BedrockLlamaChatProperties {
 	}
 
 	public void setOptions(BedrockLlamaChatOptions options) {
+		Assert.notNull(options, "BedrockLlamaChatOptions must not be null");
+
 		this.options = options;
 	}
 

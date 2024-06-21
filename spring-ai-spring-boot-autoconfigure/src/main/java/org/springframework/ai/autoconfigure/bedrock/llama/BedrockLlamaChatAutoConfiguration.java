@@ -15,18 +15,16 @@
  */
 package org.springframework.ai.autoconfigure.bedrock.llama;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
 import org.springframework.ai.bedrock.llama.BedrockLlamaChatModel;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -41,27 +39,18 @@ import org.springframework.context.annotation.Import;
  * @author Wei Jiang
  * @since 0.8.0
  */
-@AutoConfiguration
-@ConditionalOnClass(LlamaChatBedrockApi.class)
+@AutoConfiguration(after = BedrockConverseApiAutoConfiguration.class)
+@ConditionalOnClass(BedrockConverseApi.class)
 @EnableConfigurationProperties({ BedrockLlamaChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockLlamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockLlamaChatAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public LlamaChatBedrockApi llamaApi(AwsCredentialsProvider credentialsProvider, AwsRegionProvider regionProvider,
-			BedrockLlamaChatProperties properties, BedrockAwsConnectionProperties awsProperties) {
-		return new LlamaChatBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
-	}
+	@ConditionalOnBean(BedrockConverseApi.class)
+	public BedrockLlamaChatModel llamaChatModel(BedrockConverseApi converseApi, BedrockLlamaChatProperties properties) {
 
-	@Bean
-	@ConditionalOnBean(LlamaChatBedrockApi.class)
-	public BedrockLlamaChatModel llamaChatModel(LlamaChatBedrockApi llamaApi, BedrockLlamaChatProperties properties) {
-
-		return new BedrockLlamaChatModel(llamaApi, properties.getOptions());
+		return new BedrockLlamaChatModel(properties.getModel(), converseApi, properties.getOptions());
 	}
 
 }

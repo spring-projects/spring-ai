@@ -31,6 +31,8 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 /**
  * @author Wei Jiang
@@ -87,6 +89,39 @@ public class BedrockAwsConnectionConfigurationIT {
 			});
 	}
 
+	@Test
+	public void autoConfigureBedrockClients() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
+					"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
+					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id())
+			.withConfiguration(AutoConfigurations.of(TestAutoConfiguration.class))
+			.run((context) -> {
+				var bedrockRuntimeClient = context.getBean(BedrockRuntimeClient.class);
+				var bedrockRuntimeAsyncClient = context.getBean(BedrockRuntimeAsyncClient.class);
+
+				assertThat(bedrockRuntimeClient).isNotNull();
+				assertThat(bedrockRuntimeAsyncClient).isNotNull();
+			});
+	}
+
+	@Test
+	public void autoConfigureWithCustomBedrockClients() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
+					"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
+					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id())
+			.withConfiguration(AutoConfigurations.of(TestAutoConfiguration.class,
+					CustomBedrockRuntimeClientAutoConfiguration.class))
+			.run((context) -> {
+				var bedrockRuntimeClient = context.getBean(BedrockRuntimeClient.class);
+				var bedrockRuntimeAsyncClient = context.getBean(BedrockRuntimeAsyncClient.class);
+
+				assertThat(bedrockRuntimeClient).isNotNull();
+				assertThat(bedrockRuntimeAsyncClient).isNotNull();
+			});
+	}
+
 	@EnableConfigurationProperties({ BedrockAwsConnectionProperties.class })
 	@Import(BedrockAwsConnectionConfiguration.class)
 	static class TestAutoConfiguration {
@@ -132,6 +167,31 @@ public class BedrockAwsConnectionConfigurationIT {
 				}
 
 			};
+		}
+
+	}
+
+	@AutoConfiguration
+	static class CustomBedrockRuntimeClientAutoConfiguration {
+
+		@Bean
+		public BedrockRuntimeClient bedrockRuntimeClient(AwsCredentialsProvider credentialsProvider,
+				AwsRegionProvider regionProvider) {
+
+			return BedrockRuntimeClient.builder()
+				.region(regionProvider.getRegion())
+				.credentialsProvider(credentialsProvider)
+				.build();
+		}
+
+		@Bean
+		public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient(AwsCredentialsProvider credentialsProvider,
+				AwsRegionProvider regionProvider) {
+
+			return BedrockRuntimeAsyncClient.builder()
+				.region(regionProvider.getRegion())
+				.credentialsProvider(credentialsProvider)
+				.build();
 		}
 
 	}

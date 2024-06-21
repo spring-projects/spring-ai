@@ -21,8 +21,8 @@ Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` bu
 [source,xml]
 ----
 <dependency>
- <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
- <groupId>org.springframework.ai</groupId>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -83,15 +83,13 @@ Here are the supported `<model>` and `<chat|embedding>` combinations:
 
 [cols="|,|,|,|"]
 |====
-| Model      | Chat | Chat Streaming | Embedding
-
-| llama     | Yes  | Yes            | No
-| jurassic2  | Yes  | No             | No
-| cohere     | Yes  | Yes            | Yes
+| Model       | Chat | Chat Streaming | Embedding
 | anthropic 2 | Yes  | Yes            | No
-| anthropic 3  | Yes  | Yes            | No
-| jurassic2 (WIP)  | Yes  | No             | No
-| titan      | Yes  | Yes            | Yes (however, no batch support)
+| anthropic 3 | Yes  | Yes            | No
+| cohere      | Yes  | Yes            | Yes
+| jurassic2   | Yes  | No             | No
+| llama       | Yes  | Yes            | No
+| titan       | Yes  | Yes            | Yes (however, no batch support)
 |====
 
 For example, to enable the Bedrock Llama chat model, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
@@ -104,7 +102,9 @@ For more information, refer to the documentation below for each supported model.
 * xref:api/chat/bedrock/bedrock-anthropic3.adoc[Spring AI Bedrock Anthropic 3 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-llama.adoc[Spring AI Bedrock Llama Chat]: `spring.ai.bedrock.llama.chat.enabled=true`
 * xref:api/chat/bedrock/bedrock-cohere.adoc[Spring AI Bedrock Cohere Chat]: `spring.ai.bedrock.cohere.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-coherecommandr.adoc[Spring AI Bedrock Cohere Command R Chat]: `spring.ai.bedrock.coherecommandr.chat.enabled=true`
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-titan.adoc[Spring AI Bedrock Titan Chat]: `spring.ai.bedrock.titan.chat.enabled=true`
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
 * xref:api/chat/bedrock/bedrock-jurassic2.adoc[Spring AI Bedrock Ai21 Jurassic2 Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`
+* xref:api/chat/bedrock/bedrock-mistral.adoc[Spring AI Bedrock Mistral Chat]: `spring.ai.bedrock.mistral.chat.enabled=true`

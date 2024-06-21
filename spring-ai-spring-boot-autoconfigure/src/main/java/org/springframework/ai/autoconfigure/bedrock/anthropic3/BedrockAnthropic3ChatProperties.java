@@ -15,9 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.bedrock.anthropic3;
 
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
 import org.springframework.ai.bedrock.anthropic3.Anthropic3ChatOptions;
-import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatModel;
+import org.springframework.ai.bedrock.anthropic3.BedrockAnthropic3ChatModel.Anthropic3ChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -26,6 +25,7 @@ import org.springframework.util.Assert;
  * Configuration properties for Bedrock Anthropic Claude 3.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 1.0.0
  */
 @ConfigurationProperties(BedrockAnthropic3ChatProperties.CONFIG_PREFIX)
@@ -39,19 +39,13 @@ public class BedrockAnthropic3ChatProperties {
 	private boolean enabled = false;
 
 	/**
-	 * The generative id to use. See the {@link AnthropicChatModel} for the supported
+	 * The generative id to use. See the {@link Anthropic3ChatModel} for the supported
 	 * models.
 	 */
-	private String model = AnthropicChatModel.CLAUDE_V3_SONNET.id();
+	private String model = Anthropic3ChatModel.CLAUDE_V3_SONNET.id();
 
 	@NestedConfigurationProperty
-	private Anthropic3ChatOptions options = Anthropic3ChatOptions.builder()
-		.withTemperature(0.7f)
-		.withMaxTokens(300)
-		.withTopK(10)
-		.withAnthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
-		// .withStopSequences(List.of("\n\nHuman:"))
-		.build();
+	private Anthropic3ChatOptions options = Anthropic3ChatOptions.builder().build();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -74,8 +68,7 @@ public class BedrockAnthropic3ChatProperties {
 	}
 
 	public void setOptions(Anthropic3ChatOptions options) {
-		Assert.notNull(options, "AnthropicChatOptions must not be null");
-		Assert.notNull(options.getTemperature(), "AnthropicChatOptions.temperature must not be null");
+		Assert.notNull(options, "Anthropic3ChatOptions must not be null");
 
 		this.options = options;
 	}

@@ -22,13 +22,15 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.bedrock.llama.BedrockLlamaChatModel;
+import org.springframework.ai.bedrock.llama.BedrockLlamaChatModel.LlamaChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
-import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatModel;
+import org.springframework.ai.autoconfigure.bedrock.api.BedrockConverseApiAutoConfiguration;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -56,7 +58,8 @@ public class BedrockLlamaChatAutoConfigurationIT {
 				"spring.ai.bedrock.llama.chat.model=" + LlamaChatModel.LLAMA3_70B_INSTRUCT_V1.id(),
 				"spring.ai.bedrock.llama.chat.options.temperature=0.5",
 				"spring.ai.bedrock.llama.chat.options.maxGenLen=500")
-		.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				BedrockConverseApiAutoConfiguration.class, BedrockLlamaChatAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
@@ -109,7 +112,8 @@ public class BedrockLlamaChatAutoConfigurationIT {
 					"spring.ai.bedrock.aws.region=" + Region.EU_CENTRAL_1.id(),
 					"spring.ai.bedrock.llama.chat.options.temperature=0.55",
 					"spring.ai.bedrock.llama.chat.options.maxGenLen=123")
-			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				var llamaChatProperties = context.getBean(BedrockLlamaChatProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -130,7 +134,9 @@ public class BedrockLlamaChatAutoConfigurationIT {
 	public void chatCompletionDisabled() {
 
 		// It is disabled by default
-		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockLlamaChatModel.class)).isEmpty();
@@ -138,7 +144,8 @@ public class BedrockLlamaChatAutoConfigurationIT {
 
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama.chat.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockLlamaChatModel.class)).isNotEmpty();
@@ -146,7 +153,8 @@ public class BedrockLlamaChatAutoConfigurationIT {
 
 		// Explicitly disable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.llama.chat.enabled=false")
-			.withConfiguration(AutoConfigurations.of(BedrockLlamaChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockConverseApiAutoConfiguration.class, BedrockLlamaChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockLlamaChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockLlamaChatModel.class)).isEmpty();

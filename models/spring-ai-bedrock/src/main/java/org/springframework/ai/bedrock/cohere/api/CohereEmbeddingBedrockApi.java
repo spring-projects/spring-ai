@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
@@ -107,6 +109,19 @@ public class CohereEmbeddingBedrockApi extends
 	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new CohereEmbeddingBedrockApi instance using the provided AWS Bedrock clients, region and object mapper.
+	 *
+	 * @param modelId The model id to use.
+	 * @param bedrockRuntimeClient The AWS BedrockRuntimeClient instance.
+	 * @param bedrockRuntimeAsyncClient The AWS BedrockRuntimeAsyncClient instance.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 */
+	public CohereEmbeddingBedrockApi(String model, BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ObjectMapper objectMapper) {
+		super(model, bedrockRuntimeClient, bedrockRuntimeAsyncClient, objectMapper);
 	}
 
 	/**

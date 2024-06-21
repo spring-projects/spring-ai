@@ -23,7 +23,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
+ * Java {@link ChatOptions} for the Bedrock Cohere Command chat generative model chat
+ * options.
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
+ *
  * @author Christian Tzolov
+ * @author Wei Jiang
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockLlamaChatOptions implements ChatOptions {

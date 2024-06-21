@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.bedrock.cohere;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
@@ -47,7 +48,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
 				"spring.ai.bedrock.cohere.embedding.options.inputType=SEARCH_DOCUMENT",
 				"spring.ai.bedrock.cohere.embedding.options.truncate=NONE")
-		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				BedrockCohereEmbeddingAutoConfiguration.class));
 
 	@Test
 	public void singleEmbedding() {
@@ -91,7 +93,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 					"spring.ai.bedrock.cohere.embedding.model=MODEL_XYZ",
 					"spring.ai.bedrock.cohere.embedding.options.inputType=CLASSIFICATION",
 					"spring.ai.bedrock.cohere.embedding.options.truncate=START")
-			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var properties = context.getBean(BedrockCohereEmbeddingProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
@@ -113,7 +116,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 
 		// It is disabled by default
 		new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isEmpty();
@@ -121,7 +125,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 
 		// Explicitly enable the embedding auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true")
-			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isNotEmpty();
@@ -129,7 +134,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 
 		// Explicitly disable the embedding auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=false")
-			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isEmpty();

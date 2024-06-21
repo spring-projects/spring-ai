@@ -16,11 +16,12 @@
 package org.springframework.ai.autoconfigure.bedrock.titan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -31,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Model.
@@ -39,7 +41,7 @@ import org.springframework.context.annotation.Import;
  * @author Wei Jiang
  * @since 0.8.0
  */
-@AutoConfiguration
+@AutoConfiguration(after = SpringAiRetryAutoConfiguration.class)
 @ConditionalOnClass(TitanEmbeddingBedrockApi.class)
 @EnableConfigurationProperties({ BedrockTitanEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockTitanEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
@@ -48,21 +50,21 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
-			AwsRegionProvider regionProvider, BedrockTitanEmbeddingProperties properties,
-			BedrockAwsConnectionProperties awsProperties) {
-		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				new ObjectMapper(), awsProperties.getTimeout());
+	@ConditionalOnBean({ BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
+	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(BedrockTitanEmbeddingProperties properties,
+			BedrockRuntimeClient bedrockRuntimeClient, BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
+		return new TitanEmbeddingBedrockApi(properties.getModel(), bedrockRuntimeClient, bedrockRuntimeAsyncClient,
+				new ObjectMapper());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(TitanEmbeddingBedrockApi.class)
 	public BedrockTitanEmbeddingModel titanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingApi,
-			BedrockTitanEmbeddingProperties properties) {
+			BedrockTitanEmbeddingProperties properties, RetryTemplate retryTemplate) {
 
-		return new BedrockTitanEmbeddingModel(titanEmbeddingApi).withInputType(properties.getInputType());
+		return new BedrockTitanEmbeddingModel(titanEmbeddingApi, retryTemplate)
+			.withInputType(properties.getInputType());
 	}
 
 }

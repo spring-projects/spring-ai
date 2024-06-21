@@ -16,14 +16,16 @@
 package org.springframework.ai.autoconfigure.bedrock.titan;
 
 import org.springframework.ai.bedrock.titan.BedrockTitanChatOptions;
-import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
+import org.springframework.ai.bedrock.titan.BedrockTitanChatModel.TitanChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * Bedrock Titan Chat autoconfiguration properties.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockTitanChatProperties.CONFIG_PREFIX)
@@ -42,7 +44,7 @@ public class BedrockTitanChatProperties {
 	private String model = TitanChatModel.TITAN_TEXT_EXPRESS_V1.id();
 
 	@NestedConfigurationProperty
-	private BedrockTitanChatOptions options = BedrockTitanChatOptions.builder().withTemperature(0.7f).build();
+	private BedrockTitanChatOptions options = BedrockTitanChatOptions.builder().build();
 
 	public boolean isEnabled() {
 		return enabled;
@@ -65,6 +67,8 @@ public class BedrockTitanChatProperties {
 	}
 
 	public void setOptions(BedrockTitanChatOptions options) {
+		Assert.notNull(options, "BedrockTitanChatOptions must not be null");
+
 		this.options = options;
 	}
 

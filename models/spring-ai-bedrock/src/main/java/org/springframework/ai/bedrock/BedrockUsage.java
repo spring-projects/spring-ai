@@ -19,42 +19,49 @@ import org.springframework.ai.bedrock.api.AbstractBedrockApi.AmazonBedrockInvoca
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
+
 /**
  * {@link Usage} implementation for Bedrock API.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 public class BedrockUsage implements Usage {
 
 	public static BedrockUsage from(AmazonBedrockInvocationMetrics usage) {
-		return new BedrockUsage(usage);
+		return new BedrockUsage(usage.inputTokenCount().longValue(), usage.outputTokenCount().longValue());
 	}
 
-	private final AmazonBedrockInvocationMetrics usage;
+	public static BedrockUsage from(TokenUsage usage) {
+		Assert.notNull(usage, "'TokenUsage' must not be null.");
 
-	protected BedrockUsage(AmazonBedrockInvocationMetrics usage) {
-		Assert.notNull(usage, "OpenAI Usage must not be null");
-		this.usage = usage;
+		return new BedrockUsage(usage.inputTokens().longValue(), usage.outputTokens().longValue());
 	}
 
-	protected AmazonBedrockInvocationMetrics getUsage() {
-		return this.usage;
+	private final Long inputTokens;
+
+	private final Long outputTokens;
+
+	protected BedrockUsage(Long inputTokens, Long outputTokens) {
+		this.inputTokens = inputTokens;
+		this.outputTokens = outputTokens;
 	}
 
 	@Override
 	public Long getPromptTokens() {
-		return getUsage().inputTokenCount().longValue();
+		return inputTokens;
 	}
 
 	@Override
 	public Long getGenerationTokens() {
-		return getUsage().outputTokenCount().longValue();
+		return outputTokens;
 	}
 
 	@Override
 	public String toString() {
-		return getUsage().toString();
+		return "BedrockUsage [inputTokens=" + inputTokens + ", outputTokens=" + outputTokens + "]";
 	}
 
 }

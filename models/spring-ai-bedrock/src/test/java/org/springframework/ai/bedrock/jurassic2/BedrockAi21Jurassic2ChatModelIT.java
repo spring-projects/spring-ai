@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.ai.bedrock.jurassic2;
 
 import java.time.Duration;
@@ -21,18 +20,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.bedrock.api.BedrockConverseApi;
+import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatModel.Ai21Jurassic2ChatModel;
+import org.springframework.ai.bedrock.jurassic2.BedrockAi21Jurassic2ChatOptions.Penalty;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -61,10 +62,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Prompt prompt = new Prompt(List.of(userMessage));
 
 		ChatResponse response = chatModel.call(prompt);
 
@@ -130,34 +128,63 @@ class BedrockAi21Jurassic2ChatModelIT {
 	@Test
 	void simpleChatResponse() {
 		UserMessage userMessage = new UserMessage("Tell me a joke about AI.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Prompt prompt = new Prompt(List.of(userMessage));
 
 		ChatResponse response = chatModel.call(prompt);
 
 		assertThat(response.getResult().getOutput().getContent()).contains("AI");
 	}
 
+	@Test
+	void chatResponseUsage() {
+		Prompt prompt = new Prompt("Who are you?");
+
+		ChatResponse response = chatModel.call(prompt);
+
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage).isNotNull();
+		assertThat(usage.getPromptTokens()).isGreaterThan(1);
+		assertThat(usage.getGenerationTokens()).isGreaterThan(1);
+	}
+
+	@Test
+	void chatOptions() {
+		BedrockAi21Jurassic2ChatOptions options = BedrockAi21Jurassic2ChatOptions.builder()
+			.withNumResults(1)
+			.withMaxTokens(100)
+			.withMinTokens(1)
+			.withTemperature(0.5F)
+			.withTopP(0.5F)
+			.withTopK(20)
+			.withStopSequences(List.of("stop sequences"))
+			.withFrequencyPenalty(Penalty.builder().scale(1F).build())
+			.withPresencePenalty(Penalty.builder().scale(1F).build())
+			.withCountPenalty(Penalty.builder().scale(1F).build())
+			.build();
+
+		Prompt prompt = new Prompt("Who are you?", options);
+		ChatResponse response = chatModel.call(prompt);
+		String content = response.getResult().getOutput().getContent();
+
+		assertThat(content).isNotNull();
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
 		@Bean
-		public Ai21Jurassic2ChatBedrockApi jurassic2ChatBedrockApi() {
-			return new Ai21Jurassic2ChatBedrockApi(
-					Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+		public BedrockConverseApi converseApi() {
+			return new BedrockConverseApi(EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(),
 					Duration.ofMinutes(2));
 		}
 
 		@Bean
-		public BedrockAi21Jurassic2ChatModel bedrockAi21Jurassic2ChatModel(
-				Ai21Jurassic2ChatBedrockApi jurassic2ChatBedrockApi) {
-			return new BedrockAi21Jurassic2ChatModel(jurassic2ChatBedrockApi,
+		public BedrockAi21Jurassic2ChatModel bedrockAi21Jurassic2ChatModel(BedrockConverseApi converseApi) {
+			return new BedrockAi21Jurassic2ChatModel(Ai21Jurassic2ChatModel.AI21_J2_MID_V1.id(), converseApi,
 					BedrockAi21Jurassic2ChatOptions.builder()
 						.withTemperature(0.5f)
-						.withMaxTokens(100)
+						.withMaxTokens(500)
 						.withTopP(0.9f)
 						.build());
 		}

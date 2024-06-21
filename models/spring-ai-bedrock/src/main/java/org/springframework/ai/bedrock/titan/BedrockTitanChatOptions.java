@@ -17,6 +17,7 @@ package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -25,33 +26,47 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * Java {@link ChatOptions} for the Bedrock Titan chat generative model chat options.
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-titan-text.html
+ *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockTitanChatOptions implements ChatOptions {
 
-	// @formatter:off
 	/**
-	 * The temperature value controls the randomness of the generated text.
+	 * The Titan chat model text generation config.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	private @JsonProperty("textGenerationConfig") TextGenerationConfig textGenerationConfig = new TextGenerationConfig();
 
-	/**
-	 * The topP value controls the diversity of the generated text. Use a lower value to ignore less probable options.
-	 */
-	private @JsonProperty("topP") Float topP;
+	@JsonInclude(Include.NON_NULL)
+	public static class TextGenerationConfig {
 
-	/**
-	 * Maximum number of tokens to generate.
-	 */
-	private @JsonProperty("maxTokenCount") Integer maxTokenCount;
+		// @formatter:off
+		/**
+		 * The temperature value controls the randomness of the generated text.
+		 */
+		private @JsonProperty(value = "temperature") Float temperature;
 
-	/**
-	 * A list of tokens that the model should stop generating after.
-	 */
-	private @JsonProperty("stopSequences") List<String> stopSequences;
-	// @formatter:on
+		/**
+		 * The topP value controls the diversity of the generated text. Use a lower value to ignore less probable options.
+		 */
+		private @JsonProperty("topP") Float topP;
+
+		/**
+		 * Maximum number of tokens to generate.
+		 */
+		private @JsonProperty("maxTokenCount") Integer maxTokenCount;
+
+		/**
+		 * A list of tokens that the model should stop generating after.
+		 */
+		private @JsonProperty("stopSequences") List<String> stopSequences;
+		// @formatter:on
+
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -62,22 +77,22 @@ public class BedrockTitanChatOptions implements ChatOptions {
 		private BedrockTitanChatOptions options = new BedrockTitanChatOptions();
 
 		public Builder withTemperature(Float temperature) {
-			this.options.temperature = temperature;
+			this.options.textGenerationConfig.temperature = temperature;
 			return this;
 		}
 
 		public Builder withTopP(Float topP) {
-			this.options.topP = topP;
+			this.options.textGenerationConfig.topP = topP;
 			return this;
 		}
 
 		public Builder withMaxTokenCount(Integer maxTokenCount) {
-			this.options.maxTokenCount = maxTokenCount;
+			this.options.textGenerationConfig.maxTokenCount = maxTokenCount;
 			return this;
 		}
 
 		public Builder withStopSequences(List<String> stopSequences) {
-			this.options.stopSequences = stopSequences;
+			this.options.textGenerationConfig.stopSequences = stopSequences;
 			return this;
 		}
 
@@ -87,39 +102,44 @@ public class BedrockTitanChatOptions implements ChatOptions {
 
 	}
 
+	@JsonIgnore
 	public Float getTemperature() {
-		return temperature;
+		return this.textGenerationConfig.temperature;
 	}
 
 	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
+		this.textGenerationConfig.temperature = temperature;
 	}
 
+	@JsonIgnore
 	public Float getTopP() {
-		return topP;
+		return this.textGenerationConfig.topP;
 	}
 
 	public void setTopP(Float topP) {
-		this.topP = topP;
+		this.textGenerationConfig.topP = topP;
 	}
 
 	public Integer getMaxTokenCount() {
-		return maxTokenCount;
+		return this.textGenerationConfig.maxTokenCount;
 	}
 
+	@JsonIgnore
 	public void setMaxTokenCount(Integer maxTokenCount) {
-		this.maxTokenCount = maxTokenCount;
+		this.textGenerationConfig.maxTokenCount = maxTokenCount;
 	}
 
+	@JsonIgnore
 	public List<String> getStopSequences() {
-		return stopSequences;
+		return this.textGenerationConfig.stopSequences;
 	}
 
 	public void setStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
+		this.textGenerationConfig.stopSequences = stopSequences;
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getTopK() {
 		throw new UnsupportedOperationException("Bedrock Titan Chat does not support the 'TopK' option.");
 	}

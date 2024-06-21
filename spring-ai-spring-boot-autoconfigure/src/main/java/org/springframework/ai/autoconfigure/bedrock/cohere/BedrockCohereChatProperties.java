@@ -16,14 +16,16 @@
 package org.springframework.ai.autoconfigure.bedrock.cohere;
 
 import org.springframework.ai.bedrock.cohere.BedrockCohereChatOptions;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
+import org.springframework.ai.bedrock.cohere.BedrockCohereChatModel.CohereChatModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 
 /**
  * Bedrock Cohere Chat autoconfiguration properties.
  *
  * @author Christian Tzolov
+ * @author Wei Jiang
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockCohereChatProperties.CONFIG_PREFIX)
@@ -39,7 +41,7 @@ public class BedrockCohereChatProperties {
 	/**
 	 * Bedrock Cohere Chat generative name. Defaults to 'cohere-command-v14'.
 	 */
-	private String model = CohereChatBedrockApi.CohereChatModel.COHERE_COMMAND_V14.id();
+	private String model = CohereChatModel.COHERE_COMMAND_V14.id();
 
 	@NestedConfigurationProperty
 	private BedrockCohereChatOptions options = BedrockCohereChatOptions.builder().build();
@@ -65,6 +67,8 @@ public class BedrockCohereChatProperties {
 	}
 
 	public void setOptions(BedrockCohereChatOptions options) {
+		Assert.notNull(options, "BedrockCohereChatOptions must not be null");
+
 		this.options = options;
 	}
 
