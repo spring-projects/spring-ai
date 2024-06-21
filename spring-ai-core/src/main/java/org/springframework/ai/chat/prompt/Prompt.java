@@ -28,6 +28,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelRequest;
 
 /**
+ * The Prompt class represents a prompt used in AI model requests. A prompt consists of
+ * one or more messages and additional chat options.
+ *
  * @author Mark Pollack
  * @author luocongqiu
  */
@@ -35,7 +38,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	private ChatOptions modelOptions;
+	private ChatOptions chatOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -49,17 +52,17 @@ public class Prompt implements ModelRequest<List<Message>> {
 		this.messages = messages;
 	}
 
-	public Prompt(String contents, ChatOptions modelOptions) {
-		this(new UserMessage(contents), modelOptions);
+	public Prompt(String contents, ChatOptions chatOptions) {
+		this(new UserMessage(contents), chatOptions);
 	}
 
-	public Prompt(Message message, ChatOptions modelOptions) {
-		this(Collections.singletonList(message), modelOptions);
+	public Prompt(Message message, ChatOptions chatOptions) {
+		this(Collections.singletonList(message), chatOptions);
 	}
 
-	public Prompt(List<Message> messages, ChatOptions modelOptions) {
+	public Prompt(List<Message> messages, ChatOptions chatOptions) {
 		this.messages = messages;
-		this.modelOptions = modelOptions;
+		this.chatOptions = chatOptions;
 	}
 
 	public String getContents() {
@@ -72,7 +75,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	@Override
 	public ChatOptions getOptions() {
-		return this.modelOptions;
+		return this.chatOptions;
 	}
 
 	@Override
@@ -82,7 +85,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	@Override
 	public String toString() {
-		return "Prompt{" + "messages=" + this.messages + ", modelOptions=" + this.modelOptions + '}';
+		return "Prompt{" + "messages=" + this.messages + ", modelOptions=" + this.chatOptions + '}';
 	}
 
 	@Override
@@ -91,16 +94,16 @@ public class Prompt implements ModelRequest<List<Message>> {
 			return true;
 		if (!(o instanceof Prompt prompt))
 			return false;
-		return Objects.equals(this.messages, prompt.messages) && Objects.equals(this.modelOptions, prompt.modelOptions);
+		return Objects.equals(this.messages, prompt.messages) && Objects.equals(this.chatOptions, prompt.chatOptions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.messages, this.modelOptions);
+		return Objects.hash(this.messages, this.chatOptions);
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), this.modelOptions);
+		return new Prompt(instructionsCopy(), this.chatOptions);
 	}
 
 	private List<Message> instructionsCopy() {

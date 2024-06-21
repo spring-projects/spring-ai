@@ -253,9 +253,12 @@ public class MoonshotApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param content The contents of the message.
-	 * @param role The role of the messages author. Could be one of the {@link Role}
+	 * @param rawContent The raw contents of the message.
+	 * @param role The role of the message's author. Could be one of the {@link Role}
 	 * types.
+	 * @param name The name of the message's author.
+	 * @param toolCallId The ID of the tool call associated with the message.
+	 * @param toolCalls The list of tool calls associated with the message.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionMessage(

@@ -75,6 +75,8 @@ public class Filter {
 	/**
 	 * String identifier representing an expression key. (e.g. the country in the country
 	 * == "NL" expression).
+	 *
+	 * @param key expression key
 	 */
 	public record Key(String key) implements Operand {
 	}
@@ -82,6 +84,8 @@ public class Filter {
 	/**
 	 * Represents expression value constant or constant array. Support Numeric, Boolean
 	 * and String data types.
+	 *
+	 * @param value value constant or constant array
 	 */
 	public record Value(Object value) implements Operand {
 	}

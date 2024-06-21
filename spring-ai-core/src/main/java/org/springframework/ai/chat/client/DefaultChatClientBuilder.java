@@ -32,12 +32,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
+ * DefaultChatClientBuilder is a builder class for creating a ChatClient.
+ *
+ * It provides methods to set default values for various properties of the ChatClient.
+ *
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
  * @since 1.0.0
- *
  */
 public class DefaultChatClientBuilder implements Builder {
 
