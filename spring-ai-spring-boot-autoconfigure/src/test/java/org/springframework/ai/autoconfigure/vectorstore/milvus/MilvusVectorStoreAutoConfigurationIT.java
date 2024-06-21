@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
 public class MilvusVectorStoreAutoConfigurationIT {
@@ -62,7 +63,7 @@ public class MilvusVectorStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
 					"spring.ai.vectorstore.milvus.embeddingDimension=384",
 					"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
-
+					"spring.ai.vectorstore.milvus.initializeSchema=true",
 					"spring.ai.vectorstore.milvus.client.host=" + milvus.getHost(),
 					"spring.ai.vectorstore.milvus.client.port=" + milvus.getMappedPort(19530))
 			.run(context -> {
