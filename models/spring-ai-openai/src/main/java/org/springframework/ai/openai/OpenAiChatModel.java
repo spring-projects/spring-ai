@@ -408,4 +408,9 @@ public class OpenAiChatModel extends
 		return OpenAiChatOptions.fromOptions(this.defaultOptions);
 	}
 
+	@Override
+	public String toString() {
+		return "OpenAiChatModel [defaultOptions=" + defaultOptions + "]";
+	}
+
 }
