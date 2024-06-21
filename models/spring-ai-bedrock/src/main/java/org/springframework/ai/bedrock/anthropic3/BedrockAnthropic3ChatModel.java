@@ -263,7 +263,11 @@ public class BedrockAnthropic3ChatModel
 		/**
 		 * anthropic.claude-3-opus-20240229-v1:0
 		 */
-		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0");
+		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0"),
+		/**
+		 * anthropic.claude-3-5-sonnet-20240620-v1:0
+		 */
+		CLAUDE_V3_5_SONNET("anthropic.claude-3-5-sonnet-20240620-v1:0");
 
 		private final String id;
 
