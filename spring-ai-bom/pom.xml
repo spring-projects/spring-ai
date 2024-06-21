@@ -346,6 +346,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-deepseek</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-typesense-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -457,6 +463,12 @@
                 <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-deepseek-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
         </dependencies>
     </dependencyManagement>
 
