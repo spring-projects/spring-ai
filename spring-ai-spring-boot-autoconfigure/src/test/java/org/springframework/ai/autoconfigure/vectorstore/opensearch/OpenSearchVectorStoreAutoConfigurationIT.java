@@ -49,7 +49,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 
 	@Container
 	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
-			DockerImageName.parse("opensearchproject/opensearch:2.12.0"));
+			DockerImageName.parse("opensearchproject/opensearch:2.13.0"));
 
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
