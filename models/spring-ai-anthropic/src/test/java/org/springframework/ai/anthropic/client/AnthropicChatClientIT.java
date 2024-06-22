@@ -230,8 +230,10 @@ class AnthropicChatClientIT {
 		String response = ChatClient.builder(chatModel)
 				.defaultFunction("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius."))
-			.build()
-			.prompt().call().content();
+				.build()
+			.prompt()
+			.call()
+			.content();
 		// @formatter:on
 
 		logger.info("Response: {}", response);
@@ -304,7 +306,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.options(AnthropicChatOptions.builder().withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.options(AnthropicChatOptions.builder().withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))

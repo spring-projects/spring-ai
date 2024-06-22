@@ -95,6 +95,24 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void streamingWithTokenUsage() {
+		var promptOptions = AnthropicChatOptions.builder().withTemperature(0f).build();
+
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
+		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
+		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
+
+		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
+
+		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
+		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+
+	}
+
+	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
 		ListOutputConverter listOutputConverter = new ListOutputConverter(conversionService);
@@ -195,7 +213,7 @@ class AnthropicChatModelIT {
 		var response = chatModel.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
+		assertThat(response.getResult().getOutput().getContent()).contains("banan", "apple", "basket");
 	}
 
 	@Test

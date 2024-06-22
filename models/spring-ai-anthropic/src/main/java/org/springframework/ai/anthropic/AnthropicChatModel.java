@@ -59,6 +59,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  * @author luocongqiu
+ * @author Mariusz Bernacki
  * @since 1.0.0
  */
 public class AnthropicChatModel extends
@@ -192,6 +193,11 @@ public class AnthropicChatModel extends
 				ChatCompletion delta = ModelOptionsUtils.mapToClass(chunk.delta(), ChatCompletion.class);
 
 				chatCompletionReference.get().withType(chunk.type());
+				if (chunk.usage() != null) {
+					var totalUsage = new Usage(chatCompletionReference.get().usage.inputTokens(),
+							chunk.usage().outputTokens());
+					chatCompletionReference.get().withUsage(totalUsage);
+				}
 				if (delta.id() != null) {
 					chatCompletionReference.get().withId(delta.id());
 				}
@@ -200,9 +206,6 @@ public class AnthropicChatModel extends
 				}
 				if (delta.model() != null) {
 					chatCompletionReference.get().withModel(delta.model());
-				}
-				if (delta.usage() != null) {
-					chatCompletionReference.get().withUsage(delta.usage());
 				}
 				if (delta.content() != null) {
 					chatCompletionReference.get().withContent(delta.content());
