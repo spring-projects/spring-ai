@@ -31,7 +31,13 @@ class ChromaEnvironmentTests {
 	}
 
 	@Test
-	void getKeyTokenWhenHasCredential() {
+	void getKeyTokenFromAuthCredentialsWhenHasCredential() {
+		ChromaEnvironment environment = new ChromaEnvironment(Map.of("CHROMA_SERVER_AUTH_CREDENTIALS", "secret"));
+		assertThat(environment.getKeyToken()).isEqualTo("secret");
+	}
+
+	@Test
+	void getKeyTokenFromAuthnCredentialsWhenHasCredential() {
 		ChromaEnvironment environment = new ChromaEnvironment(Map.of("CHROMA_SERVER_AUTHN_CREDENTIALS", "secret"));
 		assertThat(environment.getKeyToken()).isEqualTo("secret");
 	}
