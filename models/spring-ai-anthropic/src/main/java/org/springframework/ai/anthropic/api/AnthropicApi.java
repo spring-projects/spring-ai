@@ -522,6 +522,17 @@ public class AnthropicApi {
 	}
 
 	/**
+	 * Usage statistics with output only tokens for streamed completions.
+	 *
+	 * @param outputTokens The number of output tokens which were used in a completion.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record OutputUsage( // @formatter:off
+		@JsonProperty("output_tokens") Integer outputTokens) {
+		// @formatter:off
+	}
+
+	/**
 	 * The role of the author of this message.
 	 */
 	public enum Role { // @formatter:off
@@ -557,7 +568,8 @@ public class AnthropicApi {
 		@JsonProperty("index") Integer index,
 		@JsonProperty("message") ChatCompletion message,
 		@JsonProperty("content_block") MediaContent contentBlock,
-		@JsonProperty("delta") Map<String, Object> delta) {
+		@JsonProperty("delta") Map<String, Object> delta,
+		@JsonProperty("usage") OutputUsage usage) {
 		// @formatter:on
 	}
 
