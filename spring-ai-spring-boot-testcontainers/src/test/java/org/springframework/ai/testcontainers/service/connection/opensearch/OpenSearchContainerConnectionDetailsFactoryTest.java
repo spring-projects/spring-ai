@@ -52,7 +52,7 @@ class OpenSearchContainerConnectionDetailsFactoryTest {
 	@Container
 	@ServiceConnection
 	private static final OpensearchContainer<?> opensearch = new OpensearchContainer<>(
-			"opensearchproject/opensearch:2.12.0");
+			"opensearchproject/opensearch:2.13.0");
 
 	static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
