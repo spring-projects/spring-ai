@@ -71,12 +71,15 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties) {
-			HttpHost[] httpHosts = properties.getUris().stream().map(s -> createHttpHost(s)).toArray(HttpHost[]::new);
+		OpenSearchClient openSearchClient(OpenSearchConnectionDetails connectionDetails) {
+			HttpHost[] httpHosts = connectionDetails.getUris()
+				.stream()
+				.map(s -> createHttpHost(s))
+				.toArray(HttpHost[]::new);
 			ApacheHttpClient5TransportBuilder transportBuilder = ApacheHttpClient5TransportBuilder.builder(httpHosts);
-
-			Optional.ofNullable(properties.getUsername())
-				.map(username -> createBasicCredentialsProvider(httpHosts[0], username, properties.getPassword()))
+			Optional.ofNullable(connectionDetails.getUsername())
+				.map(username -> createBasicCredentialsProvider(httpHosts[0], username,
+						connectionDetails.getPassword()))
 				.ifPresent(basicCredentialsProvider -> transportBuilder
 					.setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder
 						.setDefaultCredentialsProvider(basicCredentialsProvider)));

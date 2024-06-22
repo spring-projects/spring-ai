@@ -27,7 +27,7 @@ public class OpenSearchVectorStoreProperties {
 	/**
 	 * Comma-separated list of the OpenSearch instances to use.
 	 */
-	private List<String> uris;
+	private List<String> uris = List.of();
 
 	private String indexName;
 
