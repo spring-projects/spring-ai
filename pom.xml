@@ -29,6 +29,7 @@
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
+		<module>vector-stores/spring-ai-couchbase-store</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 
 		<module>vector-stores/spring-ai-gemfire-store</module>
@@ -47,6 +48,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-couchbase-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
@@ -184,7 +186,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
-		
+		<couchbase.version>3.6.1</couchbase.version>
 
 		<!-- testing dependencies -->
 		<httpclient5.version>5.3.1</httpclient5.version>
