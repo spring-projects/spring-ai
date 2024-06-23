@@ -30,6 +30,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
+import org.springframework.ai.mistralai.metadata.MistralAiChatResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -119,7 +120,7 @@ public class MistralAiChatModel extends
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
 				.toList();
 
-			return new ChatResponse(generations);
+			return new ChatResponse(generations, MistralAiChatResponseMetadata.from(chatCompletion));
 		});
 	}
 

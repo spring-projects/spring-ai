@@ -72,6 +72,7 @@ import reactor.core.publisher.Flux;
  * @author Hyunjoon Choi
  * @author Mariusz Bernacki
  * @author luocongqiu
+ * @author Thomas Vitale
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
