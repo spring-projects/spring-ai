@@ -30,6 +30,7 @@ import java.util.HashMap;
  * {@link ChatResponseMetadata} implementation for {@literal AnthropicApi}.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @see ChatResponseMetadata
  * @see RateLimit
  * @see Usage
@@ -37,33 +38,43 @@ import java.util.HashMap;
  */
 public class AnthropicChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
-	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, usage: %3$s, rateLimit: %4$s }";
+	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, model: %3$s, usage: %4$s, rateLimit: %5$s }";
 
 	public static AnthropicChatResponseMetadata from(AnthropicApi.ChatCompletion result) {
 		Assert.notNull(result, "Anthropic ChatCompletionResult must not be null");
 		AnthropicUsage usage = AnthropicUsage.from(result.usage());
-		return new AnthropicChatResponseMetadata(result.id(), usage);
+		return new AnthropicChatResponseMetadata(result.id(), result.model(), usage);
 	}
 
 	private final String id;
+
+	private final String model;
 
 	@Nullable
 	private RateLimit rateLimit;
 
 	private final Usage usage;
 
-	protected AnthropicChatResponseMetadata(String id, AnthropicUsage usage) {
-		this(id, usage, null);
+	protected AnthropicChatResponseMetadata(String id, String model, AnthropicUsage usage) {
+		this(id, model, usage, null);
 	}
 
-	protected AnthropicChatResponseMetadata(String id, AnthropicUsage usage, @Nullable AnthropicRateLimit rateLimit) {
+	protected AnthropicChatResponseMetadata(String id, String model, AnthropicUsage usage,
+			@Nullable AnthropicRateLimit rateLimit) {
 		this.id = id;
+		this.model = model;
 		this.usage = usage;
 		this.rateLimit = rateLimit;
 	}
 
+	@Override
 	public String getId() {
 		return this.id;
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
 	}
 
 	@Override
@@ -86,7 +97,7 @@ public class AnthropicChatResponseMetadata extends HashMap<String, Object> imple
 
 	@Override
 	public String toString() {
-		return AI_METADATA_STRING.formatted(getClass().getName(), getId(), getUsage(), getRateLimit());
+		return AI_METADATA_STRING.formatted(getClass().getName(), getId(), getModel(), getUsage(), getRateLimit());
 	}
 
 }
