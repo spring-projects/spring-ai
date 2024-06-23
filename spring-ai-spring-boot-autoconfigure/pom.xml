@@ -427,6 +427,13 @@
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
+		<!-- Couchbase Vector Search Store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-couchbase-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
 
 		<!-- test dependencies -->
 
