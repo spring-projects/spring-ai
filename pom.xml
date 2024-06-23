@@ -56,6 +56,7 @@
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
 		<module>vector-stores/spring-ai-coherence-store</module>
+		<module>vector-stores/spring-ai-couchbase-store</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>vector-stores/spring-ai-gemfire-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
@@ -78,6 +79,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-coherence-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-couchbase-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
@@ -235,6 +237,7 @@
 		<mariadb.version>3.5.1</mariadb.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
+		<couchbase.version>3.7.8</couchbase.version>
 
 		<!-- testing dependencies -->
 		<okhttp3.version>4.12.0</okhttp3.version>
