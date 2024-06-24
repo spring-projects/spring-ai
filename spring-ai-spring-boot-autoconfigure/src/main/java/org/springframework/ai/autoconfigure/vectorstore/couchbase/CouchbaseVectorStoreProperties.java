@@ -24,8 +24,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Laurent Doguin
  * @since 1.0.0
  */
-@ConfigurationProperties(prefix = "spring.ai.vectorstore.couchbase")
+@ConfigurationProperties(prefix = CouchbaseVectorStoreProperties.CONFIG_PREFIX)
 public class CouchbaseVectorStoreProperties extends CommonVectorStoreProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.couchbase";
 
 	/**
 	 * The name of the index to store the vectors.
