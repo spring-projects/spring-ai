@@ -18,6 +18,10 @@ package org.springframework.ai.vectorstore.testcontainer;
 import org.testcontainers.couchbase.BucketDefinition;
 import org.testcontainers.utility.DockerImageName;
 
+/**
+ * @author Laurent Doguin
+ * @since 1.0.0
+ */
 public class CouchbaseContainerMetadata {
 
 	public static final String BUCKET_NAME = "default";

@@ -20,6 +20,10 @@ import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
+/**
+ * @author Laurent Doguin
+ * @since 1.0.0
+ */
 public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	public CouchbaseAiSearchFilterExpressionConverter() {

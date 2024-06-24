@@ -46,6 +46,10 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.testcontainer.CouchbaseContainerMetadata.*;
 
+/**
+ * @author Laurent Doguin
+ * @since 1.0.0
+ */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class CouchabaseVectorStoreIT {

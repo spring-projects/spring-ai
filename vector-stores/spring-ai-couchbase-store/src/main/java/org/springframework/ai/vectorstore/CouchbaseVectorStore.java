@@ -32,8 +32,15 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
+/**
+ * @author Laurent Doguin
+ * @since 1.0.0
+ */
 public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(CouchbaseVectorStore.class);
