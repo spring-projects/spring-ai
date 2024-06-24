@@ -144,7 +144,7 @@
 		<spring-cloud-function-context.version>4.1.1</spring-cloud-function-context.version>
 		<spring-boot.version>3.3.0</spring-boot.version>
 		<spring-framework.version>6.1.4</spring-framework.version>
-		<stringtemplate.version>4.0.2</stringtemplate.version>
+		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.8</azure-open-ai-client.version>
 		<jtokkit.version>1.0.0</jtokkit.version>
 		<victools.version>4.31.1</victools.version>

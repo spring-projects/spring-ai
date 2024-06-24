@@ -46,8 +46,8 @@
 		<!-- production dependencies -->
 		<dependency>
 			<groupId>org.antlr</groupId>
-			<artifactId>stringtemplate</artifactId>
-			<version>${stringtemplate.version}</version>
+			<artifactId>ST4</artifactId>
+			<version>${ST4.version}</version>
 		</dependency>
 
 		<dependency>
