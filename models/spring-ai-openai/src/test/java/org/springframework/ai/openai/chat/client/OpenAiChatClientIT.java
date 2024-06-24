@@ -258,7 +258,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -276,7 +276,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
@@ -304,7 +304,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, url))

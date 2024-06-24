@@ -24,15 +24,32 @@ import java.util.HashMap;
  * response.
  *
  * @author John Blum
+ * @author Thomas Vitale
  * @since 0.7.0
  */
 public interface ChatResponseMetadata extends ResponseMetadata {
 
-	static class DefaultChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
+	class DefaultChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 
 	}
 
 	ChatResponseMetadata NULL = new DefaultChatResponseMetadata();
+
+	/**
+	 * A unique identifier for the chat completion operation.
+	 * @return unique operation identifier.
+	 */
+	default String getId() {
+		return "";
+	}
+
+	/**
+	 * The model that handled the request.
+	 * @return the model that handled the request.
+	 */
+	default String getModel() {
+		return "";
+	}
 
 	/**
 	 * Returns AI provider specific metadata on rate limits.

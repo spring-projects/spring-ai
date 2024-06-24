@@ -249,4 +249,23 @@ class MistralAiChatClientIT {
 		assertThat(content).containsAnyOf("15.0", "15");
 	}
 
+	@Test
+	void validateCallResponseMetadata() {
+		String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getModelName();
+		// @formatter:off
+		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.options(MistralAiChatOptions.builder().withModel(model).build())
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		logger.info(response.toString());
+		assertThat(response.getMetadata().getId()).isNotEmpty();
+		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
 }

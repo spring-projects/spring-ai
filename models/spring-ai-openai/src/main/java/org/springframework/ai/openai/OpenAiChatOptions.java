@@ -41,6 +41,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * @author Christian Tzolov
  * @author Mariusz Bernacki
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -66,8 +67,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	private @JsonProperty("logit_bias") Map<String, Integer> logitBias;
 	/**
 	 * Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities
-	 * of each output token returned in the 'content' of 'message'. This option is currently not available
-	 * on the 'gpt-4-vision-preview' model.
+	 * of each output token returned in the 'content' of 'message'.
 	 */
 	private @JsonProperty("logprobs") Boolean logprobs;
 	/**

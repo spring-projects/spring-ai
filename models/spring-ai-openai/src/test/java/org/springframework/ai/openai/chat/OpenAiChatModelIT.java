@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
@@ -288,7 +289,7 @@ class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		var imageData = new ClassPathResource("/test.png");
@@ -305,7 +306,7 @@ class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?", List
@@ -328,7 +329,7 @@ class OpenAiChatModelIT extends AbstractIT {
 					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
 
 		Flux<ChatResponse> response = streamingChatModel.stream(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue()).build()));
+				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 
 		String content = response.collectList()
 			.block()
@@ -341,6 +342,25 @@ class OpenAiChatModelIT extends AbstractIT {
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
+	}
+
+	@Test
+	void validateCallResponseMetadata() {
+		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getModelName();
+		// @formatter:off
+		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.options(OpenAiChatOptions.builder().withModel(model).build())
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		logger.info(response.toString());
+		assertThat(response.getMetadata().getId()).isNotEmpty();
+		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
 }

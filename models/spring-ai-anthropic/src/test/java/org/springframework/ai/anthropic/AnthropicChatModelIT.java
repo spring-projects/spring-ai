@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -239,6 +240,45 @@ class AnthropicChatModelIT {
 
 		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getContent()).contains("30", "10", "15");
+	}
+
+	@Test
+	void validateCallResponseMetadata() {
+		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getModelName();
+		// @formatter:off
+		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.options(AnthropicChatOptions.builder().withModel(model).build())
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		logger.info(response.toString());
+		validateChatResponseMetadata(response, model);
+	}
+
+	@Test
+	void validateStreamCallResponseMetadata() {
+		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getModelName();
+		// @formatter:off
+		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.options(AnthropicChatOptions.builder().withModel(model).build())
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.stream()
+				.chatResponse()
+				.blockLast();
+		// @formatter:on
+
+		logger.info(response.toString());
+		validateChatResponseMetadata(response, model);
+	}
+
+	private static void validateChatResponseMetadata(ChatResponse response, String model) {
+		assertThat(response.getMetadata().getId()).isNotEmpty();
+		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
 }

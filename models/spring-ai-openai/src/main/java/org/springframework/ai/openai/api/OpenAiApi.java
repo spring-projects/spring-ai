@@ -48,6 +48,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Michael Lavelle
  * @author Mariusz Bernacki
+ * @author Thomas Vitale
  */
 public class OpenAiApi {
 
@@ -124,7 +125,6 @@ public class OpenAiApi {
 		 */
 		GPT_4_O("gpt-4o"),
 
-
 		/**
 		 * GPT-4 Turbo with Vision
 		 * The latest GPT-4 Turbo model with vision capabilities.
@@ -134,7 +134,7 @@ public class OpenAiApi {
 		GPT_4_TURBO("gpt-4-turbo"),
 
 		/**
-		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling
+		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling.
 		 */
 		GPT_4_TURBO_2204_04_09("gpt-4-turbo-2024-04-09"),
 
@@ -162,6 +162,7 @@ public class OpenAiApi {
 		 * Returns a maximum of 4,096 output tokens
 		 * Context window: 128k tokens
 		 */
+		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by GPT_4_O
 		GPT_4_VISION_PREVIEW("gpt-4-vision-preview"),
 
 		/**
@@ -178,6 +179,7 @@ public class OpenAiApi {
 		 * function calling support.
 		 * Context window: 32k tokens
 		 */
+		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by GPT_4_O
 		GPT_4_32K("gpt-4-32k"),
 
 		/**
@@ -296,8 +298,7 @@ public class OpenAiApi {
 	 * vary per model, but values between -1 and 1 should decrease or increase likelihood of selection; values like -100
 	 * or 100 should result in a ban or exclusive selection of the relevant token.
 	 * @param logprobs Whether to return log probabilities of the output tokens or not. If true, returns the log
-	 * probabilities of each output token returned in the 'content' of 'message'. This option is currently not available
-	 * on the 'gpt-4-vision-preview' model.
+	 * probabilities of each output token returned in the 'content' of 'message'.
 	 * @param topLogprobs An integer between 0 and 5 specifying the number of most likely tokens to return at each token
 	 * position, each with an associated log probability. 'logprobs' must be set to 'true' if this parameter is used.
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input

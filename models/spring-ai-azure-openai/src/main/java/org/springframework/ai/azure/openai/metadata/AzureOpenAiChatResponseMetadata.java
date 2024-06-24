@@ -29,6 +29,7 @@ import java.util.HashMap;
  * {@literal Microsoft Azure OpenAI Service}.
  *
  * @author John Blum
+ * @author Thomas Vitale
  * @see ChatResponseMetadata
  * @since 0.7.1
  */
@@ -59,6 +60,7 @@ public class AzureOpenAiChatResponseMetadata extends HashMap<String, Object> imp
 		this.promptMetadata = promptMetadata;
 	}
 
+	@Override
 	public String getId() {
 		return this.id;
 	}

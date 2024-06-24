@@ -78,7 +78,8 @@ public class OpenAiAudioApiIT {
 					StructuredResponse.class)
 			.getBody();
 
-		assertThat(transcriptionDutch.text()).isEqualTo("Hallo, mijn naam is Chris en ik hou van Spring AI.");
+		assertThat(transcriptionDutch.text()).containsAnyOf("Hallo, mijn naam is Chris en ik hou van Spring AI.",
+				"Hallo, mijn naam is Chris en ik houd van Spring AI.");
 	}
 
 }

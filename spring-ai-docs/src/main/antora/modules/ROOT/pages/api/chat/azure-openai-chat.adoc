@@ -127,7 +127,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AzureOpenAiChatOptions.builder()
-            .withModel("gpt-4-32k")
+            .withModel("gpt-4-o")
             .withTemperature(0.4)
         .build()
     ));
