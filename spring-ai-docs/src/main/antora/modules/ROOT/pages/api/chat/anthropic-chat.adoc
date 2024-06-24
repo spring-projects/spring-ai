@@ -277,7 +277,7 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anth
 
 Following class diagram illustrates the `AnthropicApi` chat interfaces and building blocks:
 
-image::anthropic-claude3-class-diagram.jpg[AnthropicApi Chat API Diagram, 800, 600, align="center"]
+image::anthropic-claude3-class-diagram.jpg[AnthropicApi Chat API Diagram, width=1000, align="center"]
 
 Here is a simple snippet how to use the api programmatically:
 
