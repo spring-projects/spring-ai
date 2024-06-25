@@ -30,7 +30,6 @@ import org.springframework.util.StringUtils;
  * @author Laurent Doguin
  * @since 1.0.0
  */
-
 @AutoConfiguration(after = CouchbaseAutoConfiguration.class)
 @ConditionalOnClass({ CouchbaseVectorStore.class, EmbeddingModel.class, Cluster.class })
 @EnableConfigurationProperties(CouchbaseVectorStoreProperties.class)
