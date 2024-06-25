@@ -273,7 +273,7 @@ var openAiChatOptions = OpenAiChatOptions.builder()
             .withTemperature(0.4)
             .withMaxTokens(200)
         .build();
-var chatModel = new OpenAiChatModel(openAiApi, openAiChatOptions)
+var chatModel = new OpenAiChatModel(openAiApi, openAiChatOptions);
 
 
 ChatResponse response = chatModel.call(
