@@ -15,8 +15,7 @@ import static org.springframework.ai.wenxin.metadata.support.WenxinApiResponseHe
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:00
- * @description:
+ * @since 1.0.0
  */
 public class WenxinResponseHeaderExtractor {
 

@@ -57,10 +57,6 @@ class MilvusContainerConnectionDetailsFactoryTest {
 			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MilvusVectorStoreAutoConfiguration.class))
-		.withUserConfiguration(Config.class);
-
 	@Autowired
 	private VectorStore vectorStore;
 

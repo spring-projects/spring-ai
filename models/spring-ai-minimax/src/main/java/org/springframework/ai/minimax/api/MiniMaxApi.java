@@ -49,7 +49,7 @@ import java.util.function.Predicate;
  */
 public class MiniMaxApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.ABAB_5_5_Chat.getValue();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.ABAB_6_5_G_Chat.getValue();
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.Embo_01.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -114,9 +114,15 @@ public class MiniMaxApi {
 	 * <a href="https://www.minimaxi.com/document/algorithm-concept">MiniMax Model</a>.
 	 */
 	public enum ChatModel implements ModelDescription {
-		ABAB_6_Chat("abab6-chat"),
+		ABAB_6_5_Chat("abab6.5-chat"),
+		ABAB_6_5_S_Chat("abab6.5s-chat"),
+		ABAB_6_5_T_Chat("abab6.5t-chat"),
+		ABAB_6_5_G_Chat("abab6.5g-chat"),
 		ABAB_5_5_Chat("abab5.5-chat"),
-		ABAB_5_5_S_Chat("abab5.5s-chat");
+		ABAB_5_5_S_Chat("abab5.5s-chat"),
+
+		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by ABAB_6_5_S_Chat
+		ABAB_6_Chat("abab6-chat");
 
 		public final String  value;
 
@@ -408,8 +414,7 @@ public class MiniMaxApi {
 		 * @param type Content  type, each can be of type text or image_url.
 		 * @param text The text content of the message.
 		 * @param imageUrl The image content of the message. You can pass multiple
-		 * images by adding multiple image_url content parts. Image input is only
-		 * supported when using the glm-4v model.
+		 * images by adding multiple image_url content parts.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record MediaContent(

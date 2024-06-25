@@ -5,8 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:54
- * @description:
+ * @since 1.0.0
  */
 @ConfigurationProperties(WenxinChatProperties.CONFIG_PREFIX)
 public class WenxinChatProperties extends WenxinParentProperties {

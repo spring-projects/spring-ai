@@ -13,8 +13,7 @@ import java.util.HashMap;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:02
- * @description:
+ * @since 1.0.0
  */
 public class WenxinChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
 

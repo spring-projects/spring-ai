@@ -6,8 +6,7 @@ import java.time.Duration;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:04
- * @description:
+ * @since 1.0.0
  */
 public class WenxinRateLimit implements RateLimit {
 

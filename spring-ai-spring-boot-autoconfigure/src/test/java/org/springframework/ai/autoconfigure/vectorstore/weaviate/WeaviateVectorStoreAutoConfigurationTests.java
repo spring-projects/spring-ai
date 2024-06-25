@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -44,7 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class WeaviateVectorStoreAutoConfigurationTests {
 
 	@Container
-	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.25.4");
+	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
+		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
+
+	;
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(WeaviateVectorStoreAutoConfiguration.class))

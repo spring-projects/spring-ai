@@ -51,7 +51,6 @@ import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -79,12 +78,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Christian Tzolov
  * @author Grogdunn
  * @author Benoit Moussaud
+ * @author luocongqiu
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  */
-public class AzureOpenAiChatModel
-		extends AbstractFunctionCallSupport<ChatRequestMessage, ChatCompletionsOptions, ChatCompletions>
-		implements ChatModel, StreamingChatModel {
+public class AzureOpenAiChatModel extends
+		AbstractFunctionCallSupport<ChatRequestMessage, ChatCompletionsOptions, ChatCompletions> implements ChatModel {
 
 	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-35-turbo";
 
@@ -233,24 +232,17 @@ public class AzureOpenAiChatModel
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				AzureOpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, AzureOpenAiChatOptions.class);
-				// JSON merge doesn't due to Azure OpenAI service bug:
-				// https://github.com/Azure/azure-sdk-for-java/issues/38183
-				// options = ModelOptionsUtils.merge(runtimeOptions, options,
-				// ChatCompletionsOptions.class);
-				options = merge(updatedRuntimeOptions, options);
+			AzureOpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, AzureOpenAiChatOptions.class);
+			// JSON merge doesn't due to Azure OpenAI service bug:
+			// https://github.com/Azure/azure-sdk-for-java/issues/38183
+			// options = ModelOptionsUtils.merge(runtimeOptions, options,
+			// ChatCompletionsOptions.class);
+			options = merge(updatedRuntimeOptions, options);
 
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
-
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionsOptions:"
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+					IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.

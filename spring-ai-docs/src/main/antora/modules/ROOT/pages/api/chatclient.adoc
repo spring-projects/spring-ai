@@ -425,5 +425,54 @@ public Flux<String> chat(String chatId, String userMessageContent) {
             .stream().content();
     }
 }
+----
+
+=== Logging
+
+The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the ChatClient. 
+This can be useful for debugging and monitoring your AI interactions.
+
+To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient. 
+It's recommended to add it toward the end of the chain:
+
+[source,java]
+----
+ChatResponse response = ChatClient.create(chatModel).prompt()
+        .advisors(new SimpleLoggerAdvisor())
+        .user("Tell me a joke?")
+        .call()
+        .chatResponse();
+----
+
+To see the logs, set the logging level for the advisor package to `DEBUG`:
 
 ----
+logging.level.org.springframework.ai.chat.client.advisor=DEBUG
+----
+
+Add this to your `application.properties` or `application.yaml` file.
+
+
+You can customize what data from AdvisedRequest and ChatResponse is logged by using the following constructor:
+
+[source,java]
+----
+SimpleLoggerAdvisor(
+    Function<AdvisedRequest, String> requestToString,
+    Function<ChatResponse, String> responseToString
+)
+----
+
+Example usage:
+
+[source,java]
+----
+javaCopySimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
+    request -> "Custom request: " + request.userText,
+    response -> "Custom response: " + response.getResult()
+);
+----
+
+This allows you to tailor the logged information to your specific needs.
+
+TIP: Be cautious about logging sensitive information in production environments.

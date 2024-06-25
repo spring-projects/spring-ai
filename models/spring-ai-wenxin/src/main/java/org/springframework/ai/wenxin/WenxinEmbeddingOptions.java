@@ -5,8 +5,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:28
- * @description:
+ * @since 1.0.0
  */
 public class WenxinEmbeddingOptions implements EmbeddingOptions {
 

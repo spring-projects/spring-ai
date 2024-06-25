@@ -25,6 +25,7 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,8 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -46,7 +49,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 
 	@Container
 	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
-			DockerImageName.parse("opensearchproject/opensearch:2.12.0"));
+			DockerImageName.parse("opensearchproject/opensearch:2.13.0"));
 
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
@@ -58,6 +61,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class))
+		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues(
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".uris=" + opensearchContainer.getHttpHostAddress(),

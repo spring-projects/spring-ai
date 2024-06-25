@@ -22,12 +22,14 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatModel;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatRequest;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
+import org.springframework.ai.model.ModelOptionsUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TitanChatBedrockApiIT {
 
 	TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatModel.TITAN_TEXT_EXPRESS_V1.id(),
-			Region.EU_CENTRAL_1.id(), Duration.ofMinutes(2));
+			EnvironmentVariableCredentialsProvider.create(), Region.EU_CENTRAL_1.id(), ModelOptionsUtils.OBJECT_MAPPER,
+			Duration.ofMinutes(2));
 
 	TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
 		.withTemperature(0.5f)

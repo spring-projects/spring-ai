@@ -23,8 +23,7 @@ import java.util.function.Predicate;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午4:51
- * @description:
+ * @since 1.0.0
  */
 public class WenxinApi {
 
@@ -57,7 +56,6 @@ public class WenxinApi {
 			String accessKey, String secretKey) {
 		this(baseUrl, restClientBuilder, webClientBuilder,
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER,
-				//new CustomResponseErrorHandler(),
 				accessKey,
 				secretKey);
 	}

@@ -2,8 +2,7 @@ package org.springframework.ai.wenxin.api.common;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午2:43
- * @description:
+ * @since 1.0.0
  */
 public class WenxinApiException extends RuntimeException {
 

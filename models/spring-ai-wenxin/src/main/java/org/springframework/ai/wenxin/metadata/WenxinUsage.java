@@ -6,8 +6,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:05
- * @description:
+ * @since 1.0.0
  */
 public class WenxinUsage implements Usage {
 

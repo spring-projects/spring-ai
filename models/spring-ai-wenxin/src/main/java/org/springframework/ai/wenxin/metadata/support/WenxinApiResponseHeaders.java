@@ -2,8 +2,7 @@ package org.springframework.ai.wenxin.metadata.support;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午4:59
- * @description:
+ * @since 1.0.0
  */
 public enum WenxinApiResponseHeaders {
 

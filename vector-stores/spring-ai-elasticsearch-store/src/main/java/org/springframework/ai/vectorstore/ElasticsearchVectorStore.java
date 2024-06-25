@@ -46,6 +46,14 @@ import static java.lang.Math.sqrt;
 import static org.springframework.ai.vectorstore.SimilarityFunction.l2_norm;
 
 /**
+ * The ElasticsearchVectorStore class implements the VectorStore interface and provides
+ * functionality for managing and querying documents in Elasticsearch. It uses an
+ * embedding model to generate vector representations of the documents and performs
+ * similarity searches based on these vectors.
+ *
+ * The ElasticsearchVectorStore class requires a RestClient and an EmbeddingModel to be
+ * instantiated. It also supports optional initialization of the Elasticsearch schema.
+ *
  * @author Jemin Huh
  * @author Wei Jiang
  * @author Laura Trotta

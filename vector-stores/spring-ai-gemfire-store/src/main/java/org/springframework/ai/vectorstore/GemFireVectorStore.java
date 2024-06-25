@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -48,13 +49,11 @@ import reactor.util.annotation.NonNull;
  *
  * @author Geet Rawat
  */
-public class GemFireVectorStore implements VectorStore {
-
-	public static final String QUERY = "/query";
+public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
 
-	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
+	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
 
 	private static final String EMBEDDINGS = "/embeddings";
 
@@ -62,179 +61,135 @@ public class GemFireVectorStore implements VectorStore {
 
 	private final EmbeddingModel embeddingModel;
 
-	private final int topKPerBucket;
+	private static final String DOCUMENT_FIELD = "document";
 
-	private final int topK;
+	// Create Index Parameters
 
-	private final String documentField;
+	private String indexName;
 
-	public static final class GemFireVectorStoreConfig {
+	public String getIndexName() {
+		return indexName;
+	}
 
-		private final WebClient client;
+	private int beamWidth;
 
-		private final String index;
+	public int getBeamWidth() {
+		return beamWidth;
+	}
 
-		private final int topKPerBucket;
+	private int maxConnections;
 
-		public final int topK;
+	public int getMaxConnections() {
+		return maxConnections;
+	}
 
-		private final String documentField;
+	private int buckets;
 
-		public static Builder builder() {
-			return new Builder();
+	public int getBuckets() {
+		return buckets;
+	}
+
+	private String vectorSimilarityFunction;
+
+	public String getVectorSimilarityFunction() {
+		return vectorSimilarityFunction;
+	}
+
+	private String[] fields;
+
+	public String[] getFields() {
+		return fields;
+	}
+
+	// Query Defaults
+	private static final String QUERY = "/query";
+
+	private static final String DISTANCE_METADATA_FIELD_NAME = "distance";
+
+	/**
+	 * Initializes the GemFireVectorStore after properties are set. This method is called
+	 * after all bean properties have been set and allows the bean to perform any
+	 * initialization it requires.
+	 */
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		if (indexExists()) {
+			deleteIndex();
 		}
-
-		private GemFireVectorStoreConfig(Builder builder) {
-			String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
-				.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
-				.toString();
-			this.index = builder.index;
-			this.client = WebClient.create(base);
-			this.topKPerBucket = builder.topKPerBucket;
-			this.topK = builder.topK;
-			this.documentField = builder.documentField;
-		}
-
-		public static class Builder {
-
-			private String host;
-
-			private int port = DEFAULT_PORT;
-
-			private boolean sslEnabled;
-
-			private long connectionTimeout;
-
-			private long requestTimeout;
-
-			private String index;
-
-			private int topKPerBucket = DEFAULT_TOP_K_PER_BUCKET;
-
-			private int topK = DEFAULT_TOP_K;
-
-			private String documentField = DEFAULT_DOCUMENT_FIELD;
-
-			public Builder withHost(String host) {
-				Assert.hasText(host, "host must have a value");
-				this.host = host;
-				return this;
-			}
-
-			public Builder withPort(int port) {
-				Assert.isTrue(port > 0, "port must be positive");
-				this.port = port;
-				return this;
-			}
-
-			public Builder withSslEnabled(boolean sslEnabled) {
-				this.sslEnabled = sslEnabled;
-				return this;
-			}
-
-			public Builder withConnectionTimeout(long timeout) {
-				Assert.isTrue(timeout >= 0, "timeout must be >= 0");
-				this.connectionTimeout = timeout;
-				return this;
-			}
-
-			public Builder withRequestTimeout(long timeout) {
-				Assert.isTrue(timeout >= 0, "timeout must be >= 0");
-				this.requestTimeout = timeout;
-				return this;
-			}
-
-			public Builder withIndex(String index) {
-				Assert.hasText(index, "index must have a value");
-				this.index = index;
-				return this;
-			}
-
-			public Builder withTopKPerBucket(int topKPerBucket) {
-				Assert.isTrue(topKPerBucket > 0, "topKPerBucket must be positive");
-				this.topKPerBucket = topKPerBucket;
-				return this;
-			}
-
-			public Builder withTopK(int topK) {
-				Assert.isTrue(topK > 0, "topK must be positive");
-				this.topK = topK;
-				return this;
-			}
-
-			public Builder withDocumentField(String documentField) {
-				Assert.hasText(documentField, "documentField must have a value");
-				this.documentField = documentField;
-				return this;
-			}
-
-			public GemFireVectorStoreConfig build() {
-				return new GemFireVectorStoreConfig(this);
-			}
-
-		}
+		createIndex();
 
 	}
 
-	private static final int DEFAULT_PORT = 9090;
-
-	public static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
-
-	private static final int DEFAULT_TOP_K_PER_BUCKET = 10;
-
-	private static final int DEFAULT_TOP_K = 10;
-
-	private static final String DEFAULT_DOCUMENT_FIELD = "document";
-
-	public String indexName;
-
-	public void setIndexName(String indexName) {
-		this.indexName = indexName;
+	/**
+	 * Checks if the index exists in the GemFireVectorStore.
+	 * @return {@code true} if the index exists, {@code false} otherwise
+	 */
+	public boolean indexExists() {
+		String indexResponse = getIndex();
+		return !indexResponse.isEmpty();
 	}
 
-	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embedding) {
+	public String getIndex() {
+		return client.get().uri("/" + indexName).retrieve().bodyToMono(String.class).onErrorReturn("").block();
+	}
+
+	/**
+	 * Configures and initializes a GemFireVectorStore instance based on the provided
+	 * configuration.
+	 * @param config the configuration for the GemFireVectorStore
+	 * @param embeddingModel the embedding client used for generating embeddings
+	 */
+
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
 		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
-		Assert.notNull(embedding, "EmbeddingModel must not be null");
-		this.client = config.client;
-		this.embeddingModel = embedding;
-		this.topKPerBucket = config.topKPerBucket;
-		this.topK = config.topK;
-		this.documentField = config.documentField;
+		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+		this.indexName = config.indexName;
+		this.embeddingModel = embeddingModel;
+		this.beamWidth = config.beamWidth;
+		this.maxConnections = config.maxConnections;
+		this.buckets = config.buckets;
+		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
+		this.fields = config.fields;
+
+		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
+			.build(config.sslEnabled ? "s" : "", config.host, config.port)
+			.toString();
+		this.client = WebClient.create(base);
 	}
 
-	private static final class CreateRequest {
+	public static class CreateRequest {
 
 		@JsonProperty("name")
-		private String name;
+		private String indexName;
 
 		@JsonProperty("beam-width")
-		private int beamWidth = 100;
+		private int beamWidth;
 
 		@JsonProperty("max-connections")
-		private int maxConnections = 16;
+		private int maxConnections;
 
 		@JsonProperty("vector-similarity-function")
-		private String vectorSimilarityFunction = "COSINE";
+		private String vectorSimilarityFunction;
 
 		@JsonProperty("fields")
-		private String[] fields = new String[] { "vector" };
+		private String[] fields;
 
 		@JsonProperty("buckets")
-		private int buckets = 0;
+		private int buckets;
 
 		public CreateRequest() {
 		}
 
-		public CreateRequest(String name) {
-			this.name = name;
+		public CreateRequest(String indexName) {
+			this.indexName = indexName;
 		}
 
-		public String getName() {
-			return name;
+		public String getIndexName() {
+			return indexName;
 		}
 
-		public void setName(String name) {
-			this.name = name;
+		public void setIndexName(String indexName) {
+			this.indexName = indexName;
 		}
 
 		public int getBeamWidth() {
@@ -419,7 +374,7 @@ public class GemFireVectorStore implements VectorStore {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingModel.embed(document));
 			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
-			return new UploadRequest.Embedding(document.getId(), floatVector, documentField, document.getContent(),
+			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
 					document.getMetadata());
 		}).toList());
 
@@ -454,7 +409,7 @@ public class GemFireVectorStore implements VectorStore {
 				.block();
 		}
 		catch (Exception e) {
-			logger.warn("Error removing embedding: " + e);
+			logger.warn("Error removing embedding: {}", e.getMessage(), e);
 			return Optional.of(false);
 		}
 		return Optional.of(true);
@@ -463,22 +418,26 @@ public class GemFireVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 		if (request.hasFilterExpression()) {
-			throw new UnsupportedOperationException("Gemfire does not support metadata filter expressions yet.");
+			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
 		}
 		List<Double> vector = this.embeddingModel.embed(request.getQuery());
 		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
-
 		return client.post()
 			.uri("/" + indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)
-			.bodyValue(new QueryRequest(floatVector, request.getTopK(), topKPerBucket, true))
+			.bodyValue(new QueryRequest(floatVector, request.getTopK(), request.getTopK(), // TopKPerBucket
+					true))
 			.retrieve()
 			.bodyToFlux(QueryResponse.class)
 			.filter(r -> r.score >= request.getSimilarityThreshold())
 			.map(r -> {
 				Map<String, Object> metadata = r.metadata;
+				if (r.metadata == null) {
+					metadata = new HashMap<>();
+					metadata.put(DOCUMENT_FIELD, "--Deleted--");
+				}
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - r.score);
-				String content = (String) metadata.remove(documentField);
+				String content = (String) metadata.remove(DOCUMENT_FIELD);
 				return new Document(r.key, content, metadata);
 			})
 			.collectList()
@@ -486,10 +445,22 @@ public class GemFireVectorStore implements VectorStore {
 			.block();
 	}
 
-	public void createIndex(String indexName) throws JsonProcessingException {
+	/**
+	 * Creates a new index in the GemFireVectorStore using specified parameters. This
+	 * method is invoked during initialization.
+	 * @throws JsonProcessingException if an error occurs during JSON processing
+	 */
+	public void createIndex() throws JsonProcessingException {
 		CreateRequest createRequest = new CreateRequest(indexName);
+		createRequest.setBeamWidth(beamWidth);
+		createRequest.setMaxConnections(maxConnections);
+		createRequest.setBuckets(buckets);
+		createRequest.setVectorSimilarityFunction(vectorSimilarityFunction);
+		createRequest.setFields(fields);
+
 		ObjectMapper objectMapper = new ObjectMapper();
 		String index = objectMapper.writeValueAsString(createRequest);
+
 		client.post()
 			.contentType(MediaType.APPLICATION_JSON)
 			.bodyValue(index)
@@ -499,9 +470,8 @@ public class GemFireVectorStore implements VectorStore {
 			.block();
 	}
 
-	public void deleteIndex(String indexName) {
+	public void deleteIndex() {
 		DeleteRequest deleteRequest = new DeleteRequest();
-		deleteRequest.setDeleteData(true);
 		client.method(HttpMethod.DELETE)
 			.uri("/" + indexName)
 			.body(BodyInserters.fromValue(deleteRequest))
@@ -511,6 +481,12 @@ public class GemFireVectorStore implements VectorStore {
 			.block();
 	}
 
+	/**
+	 * Handles exceptions that occur during HTTP client operations and maps them to
+	 * appropriate runtime exceptions.
+	 * @param ex the exception that occurred during HTTP client operation
+	 * @return a mapped runtime exception corresponding to the HTTP client exception
+	 */
 	private Throwable handleHttpClientException(Throwable ex) {
 		if (!(ex instanceof WebClientResponseException clientException)) {
 			throw new RuntimeException(String.format("Got an unexpected error: %s", ex));

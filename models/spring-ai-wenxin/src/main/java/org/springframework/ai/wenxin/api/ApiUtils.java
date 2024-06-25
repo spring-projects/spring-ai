@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 /**
  * @author lvchzh
- * @date 2024年05月22日 下午2:45
+ * @since 1.0.0
  * @description: ApiUtils
  */
 public class ApiUtils {

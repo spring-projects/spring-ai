@@ -20,8 +20,7 @@ import java.util.List;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:27
- * @description:
+ * @since 1.0.0
  */
 public class WenxinEmbeddingModel extends AbstractEmbeddingModel {
 

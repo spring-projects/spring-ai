@@ -47,6 +47,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
+ * @author Mariusz Bernacki
+ * @author Thomas Vitale
  */
 public class OpenAiApi {
 
@@ -123,7 +125,6 @@ public class OpenAiApi {
 		 */
 		GPT_4_O("gpt-4o"),
 
-
 		/**
 		 * GPT-4 Turbo with Vision
 		 * The latest GPT-4 Turbo model with vision capabilities.
@@ -133,7 +134,7 @@ public class OpenAiApi {
 		GPT_4_TURBO("gpt-4-turbo"),
 
 		/**
-		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling
+		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling.
 		 */
 		GPT_4_TURBO_2204_04_09("gpt-4-turbo-2024-04-09"),
 
@@ -161,6 +162,7 @@ public class OpenAiApi {
 		 * Returns a maximum of 4,096 output tokens
 		 * Context window: 128k tokens
 		 */
+		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by GPT_4_O
 		GPT_4_VISION_PREVIEW("gpt-4-vision-preview"),
 
 		/**
@@ -177,6 +179,7 @@ public class OpenAiApi {
 		 * function calling support.
 		 * Context window: 32k tokens
 		 */
+		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by GPT_4_O
 		GPT_4_32K("gpt-4-32k"),
 
 		/**
@@ -295,8 +298,7 @@ public class OpenAiApi {
 	 * vary per model, but values between -1 and 1 should decrease or increase likelihood of selection; values like -100
 	 * or 100 should result in a ban or exclusive selection of the relevant token.
 	 * @param logprobs Whether to return log probabilities of the output tokens or not. If true, returns the log
-	 * probabilities of each output token returned in the 'content' of 'message'. This option is currently not available
-	 * on the 'gpt-4-vision-preview' model.
+	 * probabilities of each output token returned in the 'content' of 'message'.
 	 * @param topLogprobs An integer between 0 and 5 specifying the number of most likely tokens to return at each token
 	 * position, each with an associated log probability. 'logprobs' must be set to 'true' if this parameter is used.
 	 * @param maxTokens The maximum number of tokens to generate in the chat completion. The total length of input
@@ -314,6 +316,7 @@ public class OpenAiApi {
 	 * @param stop Up to 4 sequences where the API will stop generating further tokens.
 	 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events as
 	 * they become available, with the stream terminated by a data: [DONE] message.
+	 * @param streamOptions Options for streaming response. Only set this when you set.
 	 * @param temperature What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
@@ -345,6 +348,7 @@ public class OpenAiApi {
 			@JsonProperty("seed") Integer seed,
 			@JsonProperty("stop") List<String> stop,
 			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("stream_options") StreamOptions streamOptions,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
@@ -360,7 +364,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, temperature, null,
+					null, null, null, false, null, temperature, null,
 					null, null, null);
 		}
 
@@ -375,7 +379,7 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, stream, temperature, null,
+					null, null, null, stream, null, temperature, null,
 					null, null, null);
 		}
 
@@ -391,7 +395,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null,
-					null, null, null, false, 0.8f, null,
+					null, null, null, false, null, 0.8f, null,
 					tools, toolChoice, null);
 		}
 
@@ -404,8 +408,20 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null,
-					null, null, null, stream, null, null,
+					null, null, null, stream, null, null, null,
 					null, null, null);
+		}
+
+		/**
+		 * Sets the {@link StreamOptions} for this request.
+		 *
+		 * @param streamOptions The new stream options to use.
+		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
+		 */
+		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
+			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, presencePenalty,
+					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
+					tools, toolChoice, user);
 		}
 
 		/**
@@ -436,6 +452,20 @@ public class OpenAiApi {
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
 				@JsonProperty("type") String type) {
+		}
+
+		/**
+		 * @param includeUsage If set, an additional chunk will be streamed 
+		 * before the data: [DONE] message. The usage field on this chunk 
+		 * shows the token usage statistics for the entire request, and 
+		 * the choices field will always be an empty array. All other chunks
+		 * will also include a usage field, but with a null value.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record StreamOptions(
+				@JsonProperty("include_usage") Boolean includeUsage) {
+
+			public static StreamOptions INCLUDE_USAGE = new StreamOptions(true);
 		}
 	}
 
@@ -742,7 +772,8 @@ public class OpenAiApi {
 			@JsonProperty("created") Long created,
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) {
+			@JsonProperty("object") String object,
+			@JsonProperty("usage") Usage usage) {
 
 		/**
 		 * Chat completion choice.
@@ -825,7 +856,7 @@ public class OpenAiApi {
 				// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 				.concatMapIterable(window -> {
 					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
+							new ChatCompletionChunk(null, null, null, null, null, null, null),
 							(previous, current) -> this.chunkMerger.merge(previous, current));
 					return List.of(monoChunk);
 				})

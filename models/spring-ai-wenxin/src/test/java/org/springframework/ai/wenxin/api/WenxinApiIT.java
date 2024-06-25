@@ -11,14 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author lvchzh
- * @date 2024年05月22日 下午6:50
- * @description:
+ * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "ACCESS_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "SECRET_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "WENXIN_ACCESS_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "WENXIN_SECRET_KEY", matches = ".+")
 public class WenxinApiIT {
 
-	WenxinApi wenxinApi = new WenxinApi(System.getenv("ACCESS_KEY"), System.getenv("SECRET_KEY"));
+	WenxinApi wenxinApi = new WenxinApi(System.getenv("WENXIN_ACCESS_KEY"), System.getenv("WENXIN_SECRET_KEY"));
 
 	@Test
 	void chatCompletionEntity() {
@@ -40,6 +39,16 @@ public class WenxinApiIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
+	}
+
+	@Test
+	void embeddings() {
+		ResponseEntity<WenxinApi.EmbeddingList<WenxinApi.Embedding>> response = wenxinApi
+			.embeddings(new WenxinApi.EmbeddingRequest<>(List.of("Hello world")));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody().data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).embedding()).hasSize(384);
 	}
 
 }

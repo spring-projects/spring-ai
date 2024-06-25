@@ -71,20 +71,22 @@ import reactor.core.publisher.Flux;
  * @author Grogdunn
  * @author Hyunjoon Choi
  * @author Mariusz Bernacki
+ * @author luocongqiu
+ * @author Thomas Vitale
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
  */
 public class OpenAiChatModel extends
 		AbstractFunctionCallSupport<ChatCompletionMessage, OpenAiApi.ChatCompletionRequest, ResponseEntity<ChatCompletion>>
-		implements ChatModel, StreamingChatModel {
+		implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private OpenAiChatOptions defaultOptions;
+	private final OpenAiChatOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the OpenAI API calls.
@@ -221,7 +223,12 @@ public class OpenAiChatModel extends
 							return generation;
 						}).toList();
 
-						return new ChatResponse(generations);
+						if (chatCompletion.usage() != null) {
+							return new ChatResponse(generations, OpenAiChatResponseMetadata.from(chatCompletion));
+						}
+						else {
+							return new ChatResponse(generations);
+						}
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -244,7 +251,7 @@ public class OpenAiChatModel extends
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
-				chunk.systemFingerprint(), "chat.completion", null);
+				chunk.systemFingerprint(), "chat.completion", chunk.usage());
 	}
 
 	/**
@@ -277,20 +284,14 @@ public class OpenAiChatModel extends
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, OpenAiChatOptions.class);
+			OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, OpenAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+					IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
 
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 
 		if (this.defaultOptions != null) {
@@ -309,6 +310,12 @@ public class OpenAiChatModel extends
 			request = ModelOptionsUtils.merge(
 					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
+		}
+
+		// Remove `streamOptions` from the request if it is not a streaming request
+		if (request.streamOptions() != null && !stream) {
+			logger.warn("Removing streamOptions from the request as it is not a streaming request!");
+			request = request.withStreamOptions(null);
 		}
 
 		return request;
@@ -411,6 +418,11 @@ public class OpenAiChatModel extends
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return OpenAiChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	@Override
+	public String toString() {
+		return "OpenAiChatModel [defaultOptions=" + defaultOptions + "]";
 	}
 
 }

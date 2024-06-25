@@ -10,9 +10,9 @@ Additionally, Spring AI provides Spring Auto-Configurations and Boot Starters fo
 
 There are a few steps to get started
 
-* *Add Boot Starter*:  Add the Spring Boot starter for Bedrock to your project.
-* *Obtain AWS credentials*: If you don't have an AWS account and AWS CLI configured yet, this video guide can help you configure it: link:https://youtu.be/gswVHTrRX8I?si=buaY7aeI0l3-bBVb[AWS CLI & SDK Setup in Less Than 4 Minutes!]. You should be able to obtain your access and security keys.
-* *Enable Bedrock models to use*:  Go to link:https://us-east-1.console.aws.amazon.com/bedrock/home[Amazon Bedrock] and from the link:https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess[Model Access] menu on the left, configure access to the models you are going to use.
+* Add the Spring Boot starter for Bedrock to your project.
+* Obtain AWS credentials: If you don't have an AWS account and AWS CLI configured yet, this video guide can help you configure it: link:https://youtu.be/gswVHTrRX8I?si=buaY7aeI0l3-bBVb[AWS CLI & SDK Setup in Less Than 4 Minutes!]. You should be able to obtain your access and security keys.
+* Enable the Models to use: Go to link:https://us-east-1.console.aws.amazon.com/bedrock/home[Amazon Bedrock] and from the link:https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess[Model Access] menu on the left, configure access to the models you are going to use.
 
 === Project Dependencies
 

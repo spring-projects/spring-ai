@@ -115,16 +115,10 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockLlamaChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockLlamaChatOptions.class);
+			BedrockLlamaChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, BedrockLlamaChatOptions.class);
 
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, LlamaChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, LlamaChatRequest.class);
 		}
 
 		return request;

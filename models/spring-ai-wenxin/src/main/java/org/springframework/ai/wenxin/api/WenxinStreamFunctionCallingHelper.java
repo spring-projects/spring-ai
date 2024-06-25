@@ -1,15 +1,13 @@
 package org.springframework.ai.wenxin.api;
 
 import org.springframework.ai.wenxin.api.WenxinApi.ChatCompletionChunk;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午4:52
- * @description:
+ * @since 1.0.0
  */
 public class WenxinStreamFunctionCallingHelper {
 

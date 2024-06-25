@@ -2,8 +2,7 @@ package org.springframework.ai.autoconfigure.wenxin;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:57
- * @description:
+ * @since 1.0.0
  */
 public class WenxinParentProperties {
 

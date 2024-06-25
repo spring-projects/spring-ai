@@ -1,8 +1,6 @@
 package org.springframework.ai.wenxin.aot;
 
 import org.springframework.ai.wenxin.api.WenxinApi;
-import org.springframework.ai.wenxin.api.WenxinAudioApi;
-import org.springframework.ai.wenxin.api.WenxinImageApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -13,8 +11,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午4:50
- * @description:
+ * @since 1.0.0
  */
 public class WenxinRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -22,12 +19,6 @@ public class WenxinRuntimeHints implements RuntimeHintsRegistrar {
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 		for (var tr : findJsonAnnotatedClassesInPackage(WenxinApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(WenxinAudioApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(WenxinImageApi.class)) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

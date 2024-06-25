@@ -6,8 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:56
- * @description:
+ * @since 1.0.0
  */
 @ConfigurationProperties(WenxinEmbeddingProperties.CONFIG_PREFIX)
 public class WenxinEmbeddingProperties extends WenxinParentProperties {

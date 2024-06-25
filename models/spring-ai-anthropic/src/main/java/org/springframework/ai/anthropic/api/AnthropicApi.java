@@ -40,6 +40,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Christian Tzolov
+ * @author Mariusz Bernacki
  * @since 1.0.0
  */
 public class AnthropicApi {
@@ -120,6 +121,8 @@ public class AnthropicApi {
 	public enum ChatModel implements ModelDescription {
 
 		// @formatter:off
+		CLAUDE_3_5_SONNET("claude-3-5-sonnet-20240620"),
+
 		CLAUDE_3_OPUS("claude-3-opus-20240229"),
 		CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
 		CLAUDE_3_HAIKU("claude-3-haiku-20240307"),
@@ -520,6 +523,17 @@ public class AnthropicApi {
 	}
 
 	/**
+	 * Usage statistics with output only tokens for streamed completions.
+	 *
+	 * @param outputTokens The number of output tokens which were used in a completion.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record OutputUsage( // @formatter:off
+		@JsonProperty("output_tokens") Integer outputTokens) {
+		// @formatter:off
+	}
+
+	/**
 	 * The role of the author of this message.
 	 */
 	public enum Role { // @formatter:off
@@ -555,7 +569,8 @@ public class AnthropicApi {
 		@JsonProperty("index") Integer index,
 		@JsonProperty("message") ChatCompletion message,
 		@JsonProperty("content_block") MediaContent contentBlock,
-		@JsonProperty("delta") Map<String, Object> delta) {
+		@JsonProperty("delta") Map<String, Object> delta,
+		@JsonProperty("usage") OutputUsage usage) {
 		// @formatter:on
 	}
 

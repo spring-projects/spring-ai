@@ -164,7 +164,7 @@ This is the reason to use a vector database. It is very good at finding similar 
 
 image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 
-* The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from the data sources and stor it in a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
+* The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from the data sources and store it in a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
 * The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability to your application.
 
 [[concept-fc]]

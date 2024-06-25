@@ -97,15 +97,9 @@ public class VertexAiPaLm2ChatModel implements ChatModel {
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				VertexAiPaLm2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, VertexAiPaLm2ChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, GenerateMessageRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			VertexAiPaLm2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, VertexAiPaLm2ChatOptions.class);
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, GenerateMessageRequest.class);
 		}
 
 		return request;

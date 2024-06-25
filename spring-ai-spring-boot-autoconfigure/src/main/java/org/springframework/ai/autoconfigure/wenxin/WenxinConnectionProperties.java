@@ -4,8 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:55
- * @description:
+ * @since 1.0.0
  */
 @ConfigurationProperties(WenxinConnectionProperties.CONFIG_PREFIX)
 public class WenxinConnectionProperties extends WenxinParentProperties {

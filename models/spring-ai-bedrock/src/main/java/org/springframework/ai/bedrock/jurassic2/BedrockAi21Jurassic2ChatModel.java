@@ -76,15 +76,9 @@ public class BedrockAi21Jurassic2ChatModel implements ChatModel {
 		Ai21Jurassic2ChatRequest request = Ai21Jurassic2ChatRequest.builder(promptValue).build();
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockAi21Jurassic2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockAi21Jurassic2ChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, Ai21Jurassic2ChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			BedrockAi21Jurassic2ChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, BedrockAi21Jurassic2ChatOptions.class);
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, Ai21Jurassic2ChatRequest.class);
 		}
 
 		if (this.defaultOptions != null) {

@@ -27,7 +27,7 @@ public class OpenSearchVectorStoreProperties {
 	/**
 	 * Comma-separated list of the OpenSearch instances to use.
 	 */
-	private List<String> uris;
+	private List<String> uris = List.of();
 
 	private String indexName;
 
@@ -36,6 +36,8 @@ public class OpenSearchVectorStoreProperties {
 	private String password;
 
 	private String mappingJson;
+
+	private Aws aws = new Aws();
 
 	public List<String> getUris() {
 		return uris;
@@ -75,6 +77,68 @@ public class OpenSearchVectorStoreProperties {
 
 	public void setMappingJson(String mappingJson) {
 		this.mappingJson = mappingJson;
+	}
+
+	public Aws getAws() {
+		return this.aws;
+	}
+
+	public void setAws(Aws aws) {
+		this.aws = aws;
+	}
+
+	static class Aws {
+
+		private String host;
+
+		private String serviceName;
+
+		private String accessKey;
+
+		private String secretKey;
+
+		private String region;
+
+		public String getHost() {
+			return this.host;
+		}
+
+		public void setHost(String host) {
+			this.host = host;
+		}
+
+		public String getServiceName() {
+			return this.serviceName;
+		}
+
+		public void setServiceName(String serviceName) {
+			this.serviceName = serviceName;
+		}
+
+		public String getAccessKey() {
+			return this.accessKey;
+		}
+
+		public void setAccessKey(String accessKey) {
+			this.accessKey = accessKey;
+		}
+
+		public String getSecretKey() {
+			return this.secretKey;
+		}
+
+		public void setSecretKey(String secretKey) {
+			this.secretKey = secretKey;
+		}
+
+		public String getRegion() {
+			return this.region;
+		}
+
+		public void setRegion(String region) {
+			this.region = region;
+		}
+
 	}
 
 }

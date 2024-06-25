@@ -17,8 +17,7 @@ import java.util.Set;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:26
- * @description:
+ * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WenxinChatOptions implements FunctionCallingOptions, ChatOptions {

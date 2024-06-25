@@ -32,8 +32,7 @@ import java.util.Set;
 
 /**
  * @author lvchzh
- * @date 2024年05月14日 下午5:26
- * @description:
+ * @since 1.0.0
  */
 public class WenxinChatModel extends
 		AbstractFunctionCallSupport<WenxinApi.ChatCompletionMessage, WenxinApi.ChatCompletionRequest, ResponseEntity<WenxinApi.ChatCompletion>>
@@ -157,8 +156,8 @@ public class WenxinChatModel extends
 		WenxinApi.ChatCompletionRequest request = new WenxinApi.ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				WenxinChatOptions updateRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
+
+				WenxinChatOptions updateRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 						ChatOptions.class, WenxinChatOptions.class);
 
 				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updateRuntimeOptions,
@@ -168,10 +167,9 @@ public class WenxinChatModel extends
 
 				request = ModelOptionsUtils.merge(updateRuntimeOptions, request,
 						WenxinApi.ChatCompletionRequest.class);
-			} else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: " +
-						prompt.getOptions().getClass().getSimpleName());
-			}
+		} else {
+			throw new IllegalArgumentException("Prompt options are not of type ChatOptions: " +
+					prompt.getOptions().getClass().getSimpleName());
 		}
 
 		if (this.defaultOptions != null) {
