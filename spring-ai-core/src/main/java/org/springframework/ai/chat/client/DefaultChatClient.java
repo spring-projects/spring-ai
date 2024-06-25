@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -35,6 +36,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
+
+import static java.util.Optional.empty;
 
 /**
  * The default implementation of {@link ChatClient} as created by the
@@ -311,36 +314,10 @@ public class DefaultChatClient implements ChatClient {
 				userParams.put("spring_ai_soc_format", formatParam);
 			}
 
-			var messages = new ArrayList<Message>(advisedRequest.getMessages());
-			var textsAreValid = (StringUtils.hasText(processedUserText)
-					|| StringUtils.hasText(advisedRequest.getSystemText()));
-			if (textsAreValid) {
-				if (StringUtils.hasText(advisedRequest.getSystemText())
-						|| !advisedRequest.getSystemParams().isEmpty()) {
-					var systemMessage = new SystemMessage(
-							new PromptTemplate(advisedRequest.getSystemText(), advisedRequest.getSystemParams())
-								.render());
-					messages.add(systemMessage);
-				}
-				UserMessage userMessage = null;
-				if (!CollectionUtils.isEmpty(userParams)) {
-					userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
-							advisedRequest.getMedia());
-				}
-				else {
-					userMessage = new UserMessage(processedUserText, advisedRequest.getMedia());
-				}
-				messages.add(userMessage);
-			}
+			var messages = createMessages(advisedRequest, processedUserText, userParams);
 
-			if (advisedRequest.getChatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				if (!advisedRequest.getFunctionNames().isEmpty()) {
-					functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
-				}
-				if (!advisedRequest.getFunctionCallbacks().isEmpty()) {
-					functionCallingOptions.setFunctionCallbacks(advisedRequest.getFunctionCallbacks());
-				}
-			}
+			setFunctionCallingOptions(advisedRequest);
+
 			var prompt = new Prompt(messages, advisedRequest.getChatOptions());
 			var chatResponse = this.chatModel.call(prompt);
 
@@ -387,44 +364,17 @@ public class DefaultChatClient implements ChatClient {
 			String processedUserText = advisedRequest.getUserText();
 			Map<String, Object> userParams = new HashMap<>(advisedRequest.getUserParams());
 
-			var messages = new ArrayList<Message>(advisedRequest.getMessages());
-			var textsAreValid = (StringUtils.hasText(processedUserText)
-					|| StringUtils.hasText(advisedRequest.getSystemText()));
-			if (textsAreValid) {
-				UserMessage userMessage = null;
-				if (!CollectionUtils.isEmpty(userParams)) {
-					userMessage = new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
-							advisedRequest.getMedia());
-				}
-				else {
-					userMessage = new UserMessage(processedUserText, advisedRequest.getMedia());
-				}
-				if (StringUtils.hasText(advisedRequest.getSystemText())
-						|| !advisedRequest.getSystemParams().isEmpty()) {
-					var systemMessage = new SystemMessage(
-							new PromptTemplate(advisedRequest.getSystemText(), advisedRequest.getSystemParams())
-								.render());
-					messages.add(systemMessage);
-				}
-				messages.add(userMessage);
-			}
+			var messages = createMessages(advisedRequest, processedUserText, userParams);
 
-			if (advisedRequest.getChatOptions() instanceof
+			setFunctionCallingOptions(advisedRequest);
 
-			FunctionCallingOptions functionCallingOptions) {
-				if (!advisedRequest.getFunctionNames().isEmpty()) {
-					functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
-				}
-				if (!advisedRequest.getFunctionCallbacks().isEmpty()) {
-					functionCallingOptions.setFunctionCallbacks(advisedRequest.getFunctionCallbacks());
-				}
-			}
 			var prompt = new Prompt(messages, advisedRequest.getChatOptions());
 
 			var fluxChatResponse = this.chatModel.stream(prompt);
 
 			Flux<ChatResponse> advisedResponse = fluxChatResponse;
 			// apply the advisors on response
+
 			if (!CollectionUtils.isEmpty(inputRequest.getAdvisors())) {
 				var currentAdvisors = new ArrayList<>(inputRequest.getAdvisors());
 				for (RequestResponseAdvisor advisor : currentAdvisors) {
@@ -821,6 +771,51 @@ public class DefaultChatClient implements ChatClient {
 			return new DefaultStreamPromptResponseSpec((StreamingChatModel) this.chatModel, this.prompt);
 		}
 
+	}
+
+	static void setFunctionCallingOptions(DefaultChatClient.DefaultChatClientRequestSpec advisedRequest) {
+		if (advisedRequest.getChatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+			if (!advisedRequest.getFunctionNames().isEmpty()) {
+				functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
+			}
+			if (!advisedRequest.getFunctionCallbacks().isEmpty()) {
+				functionCallingOptions.setFunctionCallbacks(advisedRequest.getFunctionCallbacks());
+			}
+		}
+	}
+
+	static ArrayList<Message> createMessages(DefaultChatClientRequestSpec advisedRequest, String processedUserText,
+			Map<String, Object> userParams) {
+		var messages = new ArrayList<>(advisedRequest.getMessages());
+
+		if (atLeastOneHasText(processedUserText, advisedRequest.getSystemText())) {
+			createSystemMessage(advisedRequest).ifPresent(messages::add);
+			messages.add(createUserMessage(advisedRequest, processedUserText, userParams));
+		}
+
+		return messages;
+	}
+
+	static UserMessage createUserMessage(DefaultChatClientRequestSpec advisedRequest, String processedUserText,
+			Map<String, Object> userParams) {
+		if (!CollectionUtils.isEmpty(userParams)) {
+			return new UserMessage(new PromptTemplate(processedUserText, userParams).render(),
+					advisedRequest.getMedia());
+		}
+
+		return new UserMessage(processedUserText, advisedRequest.getMedia());
+	}
+
+	static Optional<SystemMessage> createSystemMessage(DefaultChatClient.DefaultChatClientRequestSpec advisedRequest) {
+		if (StringUtils.hasText(advisedRequest.getSystemText()) || !advisedRequest.getSystemParams().isEmpty()) {
+			return Optional.of(new SystemMessage(
+					new PromptTemplate(advisedRequest.getSystemText(), advisedRequest.getSystemParams()).render()));
+		}
+		return empty();
+	}
+
+	static boolean atLeastOneHasText(String text, String systemText) {
+		return StringUtils.hasText(text) || StringUtils.hasText(systemText);
 	}
 
 }
