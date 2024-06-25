@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -33,8 +35,13 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.observation.ChatObservationDataExtractor;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.micrometer.model.DefaultModelObservationConvention;
+import org.springframework.ai.micrometer.model.ModelObservation;
+import org.springframework.ai.micrometer.model.ModelObservationContext;
+import org.springframework.ai.micrometer.model.ModelObservationConvention;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -49,6 +56,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCal
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.metadata.OpenAiChatResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
+import org.springframework.ai.openai.observation.OpenAiObservationDataExtractor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -83,6 +91,8 @@ public class OpenAiChatModel extends
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
+	private static final ModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultModelObservationConvention();
+
 	/**
 	 * The default options used for the chat completion requests.
 	 */
@@ -97,6 +107,16 @@ public class OpenAiChatModel extends
 	 * Low-level access to the OpenAI API.
 	 */
 	private final OpenAiApi openAiApi;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private ModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Creates an instance of the OpenAiChatModel.
@@ -129,6 +149,21 @@ public class OpenAiChatModel extends
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
+		this(openAiApi, options, functionCallbackContext, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Initializes a new instance of the OpenAiChatModel.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat model.
+	 * @param functionCallbackContext The function callback context.
+	 * @param retryTemplate The retry template.
+	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 */
+	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		super(functionCallbackContext);
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
@@ -136,6 +171,7 @@ public class OpenAiChatModel extends
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -143,31 +179,44 @@ public class OpenAiChatModel extends
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		return this.retryTemplate.execute(ctx -> {
+		var observationContext = new ModelObservationContext(OpenAiObservationDataExtractor
+			.extractChatRequestData(request, prompt, getSystem(), getOperationName()));
 
-			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+		Observation observation = ModelObservation.MODEL_CALL.observation(this.observationConvention,
+				DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
 
-			var chatCompletion = completionEntity.getBody();
-			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+		return observation.observe(() -> {
 
-			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+			ChatResponse response = this.retryTemplate.execute(ctx -> {
 
-			List<Choice> choices = chatCompletion.choices();
-			if (choices == null) {
-				logger.warn("No choices returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+				ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
 
-			List<Generation> generations = choices.stream().map(choice -> {
-				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
-					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
-			}).toList();
+				var chatCompletion = completionEntity.getBody();
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-			return new ChatResponse(generations,
-					OpenAiChatResponseMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
+				RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+
+				List<Choice> choices = chatCompletion.choices();
+				if (choices == null) {
+					logger.warn("No choices returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
+
+				List<Generation> generations = choices.stream().map(choice -> {
+					return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
+						.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
+				}).toList();
+
+				return new ChatResponse(generations,
+						OpenAiChatResponseMetadata.from(completionEntity.getBody()).withRateLimit(rateLimits));
+			});
+
+			observationContext.setModelResponseContext(ChatObservationDataExtractor.extractResponseData(response));
+
+			return response;
 		});
 	}
 
@@ -420,9 +469,30 @@ public class OpenAiChatModel extends
 		return OpenAiChatOptions.fromOptions(this.defaultOptions);
 	}
 
+	// TODO: This could be defined in the upper interface.
+	// Only "chat" might not be specific enough, based on the vendor.
+	// Example: audio.transcription and audio.generation.
+	public String getOperationName() {
+		return "chat.completion";
+	}
+
+	// TODO: This could also be defined in the upper interface.
+	public String getSystem() {
+		return "openai";
+	}
+
 	@Override
 	public String toString() {
 		return "OpenAiChatModel [defaultOptions=" + defaultOptions + "]";
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }
