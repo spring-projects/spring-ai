@@ -25,7 +25,8 @@ import java.util.List;
 /**
  * Helper class to support streaming function calling.
  * <p>
- * It can merge the streamed {@link StreamResponse} chunks in case of function calling message.
+ * It can merge the streamed {@link StreamResponse} chunks in case of function calling
+ * message.
  *
  * @author Mariusz Bernacki
  * @since 1.0.0
