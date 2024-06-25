@@ -159,7 +159,7 @@ The following index optimizations are available:
 * recall
 * latency
 
-More details about each in the https://docs.couchbase.com/server/current/search/child-field-options-reference.html[Couchbase Documentation] on vector searchs.
+More details about each in the https://docs.couchbase.com/server/current/search/child-field-options-reference.html[Couchbase Documentation] on vector searches.
 
 == Metadata Filtering
 
@@ -195,7 +195,7 @@ NOTE: These filter expressions are converted into the equivalent Couchbase SQL++
 
 == Manual Configuration
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. For this you need to add the `spring-ai-couchbase-store` to your project:
+Instead of using the Spring Boot auto-configuration, you can manually configure the Couchbase vector store. For this you need to add the `spring-ai-couchbase-store` to your project:
 
 [source,xml]
 ----
