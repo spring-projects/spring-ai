@@ -17,17 +17,14 @@ package org.springframework.ai.autoconfigure.azure.openai;
 
 import java.util.List;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.util.ClientOptions;
-
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,6 +33,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.credential.KeyCredential;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.util.ClientOptions;
 
 @AutoConfiguration
 @ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
@@ -43,16 +48,46 @@ import org.springframework.util.CollectionUtils;
 		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class })
 public class AzureOpenAiAutoConfiguration {
 
+	private final static String APPLICATION_ID = "spring-ai";
+
 	@Bean
-	@ConditionalOnMissingBean
+	@ConditionalOnMissingBean({ OpenAIClient.class, TokenCredential.class })
 	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
 
-		Assert.hasText(connectionProperties.getApiKey(), "API key must not be empty");
+		if (StringUtils.hasText(connectionProperties.getApiKey())) {
+
+			Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
+
+			return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
+				.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
+				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
+				.buildClient();
+		}
+
+		// Connect to OpenAI (e.g. not the Azure OpenAI). The deploymentName property is
+		// used as OpenAI model name.
+		if (StringUtils.hasText(connectionProperties.getOpenAiApiKey())) {
+			return new OpenAIClientBuilder().endpoint("https://api.openai.com/v1")
+				.credential(new KeyCredential(connectionProperties.getOpenAiApiKey()))
+				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
+				.buildClient();
+		}
+
+		throw new IllegalArgumentException("Either API key or OpenAI API key must not be empty");
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean(TokenCredential.class)
+	public OpenAIClient openAIClientWithTokenCredential(AzureOpenAiConnectionProperties connectionProperties,
+			TokenCredential tokenCredential) {
+
+		Assert.notNull(tokenCredential, "TokenCredential must not be null");
 		Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
 
 		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
-			.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
-			.clientOptions(new ClientOptions().setApplicationId("spring-ai"))
+			.credential(tokenCredential)
+			.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
 			.buildClient();
 	}
 
