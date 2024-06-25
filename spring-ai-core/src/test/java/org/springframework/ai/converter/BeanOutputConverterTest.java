@@ -221,7 +221,7 @@ class BeanOutputConverterTest {
 			String formatOutput = converter.getFormat();
 
 			// validate that output contains \n line endings
-			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+			assertThat(formatOutput).contains("\n").doesNotContain("\r\n").doesNotContain("\r");
 		}
 
 		@Test
@@ -232,7 +232,7 @@ class BeanOutputConverterTest {
 			String formatOutput = converter.getFormat();
 
 			// validate that output contains \n line endings
-			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+			assertThat(formatOutput).contains("\n").doesNotContain("\r\n").doesNotContain("\r");
 		}
 
 	}
