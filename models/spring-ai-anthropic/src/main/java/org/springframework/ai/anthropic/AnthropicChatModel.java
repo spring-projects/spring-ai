@@ -20,15 +20,13 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ChatModel;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
@@ -39,6 +37,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.StreamResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
 import org.springframework.ai.anthropic.metadata.AnthropicChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.MessageType;
@@ -53,6 +52,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+
+import reactor.core.publisher.Flux;
 
 /**
  * The {@link ChatModel} implementation for the Anthropic service.
@@ -160,69 +161,86 @@ public class AnthropicChatModel extends
 
 		ChatCompletionRequest request = createRequest(prompt, true);
 
-		Flux<StreamResponse> response = this.anthropicApi.chatCompletionStream(request);
+		return this.retryTemplate.execute(ctx -> {
 
-		AtomicReference<ChatCompletionBuilder> chatCompletionReference = new AtomicReference<>();
+			Flux<StreamResponse> response = this.anthropicApi.chatCompletionStream(request);
+
+			AtomicReference<ChatCompletionBuilder> chatCompletionReference = new AtomicReference<>();
+
+			return response.map(chunk -> chunkToChatCompletion(chunk, chatCompletionReference))
+				.switchMap(
+						cc -> handleFunctionCallOrReturnStream(request, Flux.just(ResponseEntity.of(Optional.of(cc)))))
+				.map(ResponseEntity::getBody)
+				.map(this::toChatResponse);
+		});
+	}
+
+	private ChatCompletion chunkToChatCompletion(StreamResponse chunk,
+			AtomicReference<ChatCompletionBuilder> chatCompletionReference) {
 
 		// https://docs.anthropic.com/claude/reference/messages-streaming
 
-		return response.map(chunk -> {
+		if (chunk.type().equals("message_start")) {
+			chatCompletionReference.set(new ChatCompletionBuilder());
+			chatCompletionReference.get()
+				.withType(chunk.type())
+				.withId(chunk.message().id())
+				.withRole(chunk.message().role())
+				.withModel(chunk.message().model())
+				.withUsage(chunk.message().usage())
+				.withContent(new ArrayList<>());
+		}
+		else if (chunk.type().equals("content_block_start")) {
+			var content = new MediaContent(chunk.contentBlock().type(), null, chunk.contentBlock().text(),
+					chunk.index());
+			chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
+		}
+		else if (chunk.type().equals("content_block_delta")) {
+			var content = new MediaContent(Type.TEXT_DELTA, null, (String) chunk.delta().get("text"), chunk.index());
+			chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
+		}
+		else if (chunk.type().equals("message_delta")) {
 
-			if (chunk.type().equals("message_start")) {
-				chatCompletionReference.set(new ChatCompletionBuilder());
-				chatCompletionReference.get()
-					.withType(chunk.type())
-					.withId(chunk.message().id())
-					.withRole(chunk.message().role())
-					.withModel(chunk.message().model())
-					.withUsage(chunk.message().usage())
-					.withContent(new ArrayList<>());
-			}
-			else if (chunk.type().equals("content_block_start")) {
-				var content = new MediaContent(chunk.contentBlock().type(), null, chunk.contentBlock().text(),
-						chunk.index());
-				chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
-			}
-			else if (chunk.type().equals("content_block_delta")) {
-				var content = new MediaContent(Type.TEXT_DELTA, null, (String) chunk.delta().get("text"),
-						chunk.index());
-				chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
-			}
-			else if (chunk.type().equals("message_delta")) {
+			ChatCompletion delta = ModelOptionsUtils.mapToClass(chunk.delta(), ChatCompletion.class);
 
-				ChatCompletion delta = ModelOptionsUtils.mapToClass(chunk.delta(), ChatCompletion.class);
-
-				chatCompletionReference.get().withType(chunk.type());
-				if (chunk.usage() != null) {
-					var totalUsage = new Usage(chatCompletionReference.get().usage.inputTokens(),
-							chunk.usage().outputTokens());
-					chatCompletionReference.get().withUsage(totalUsage);
-				}
-				if (delta.id() != null) {
-					chatCompletionReference.get().withId(delta.id());
-				}
-				if (delta.role() != null) {
-					chatCompletionReference.get().withRole(delta.role());
-				}
-				if (delta.model() != null) {
-					chatCompletionReference.get().withModel(delta.model());
-				}
-				if (delta.content() != null) {
-					chatCompletionReference.get().withContent(delta.content());
-				}
-				if (delta.stopReason() != null) {
-					chatCompletionReference.get().withStopReason(delta.stopReason());
-				}
-				if (delta.stopSequence() != null) {
-					chatCompletionReference.get().withStopSequence(delta.stopSequence());
-				}
+			chatCompletionReference.get().withType(chunk.type());
+			if (chunk.usage() != null) {
+				var totalUsage = new Usage(chatCompletionReference.get().usage.inputTokens(),
+						chunk.usage().outputTokens());
+				chatCompletionReference.get().withUsage(totalUsage);
 			}
-			else {
-				chatCompletionReference.get().withType(chunk.type()).withContent(List.of());
+			if (chunk.mergedToolUses() != null) {
+				chatCompletionReference.get().withToolUses(chunk.mergedToolUses());
 			}
-			return chatCompletionReference.get().build();
+			if (delta.id() != null) {
+				chatCompletionReference.get().withId(delta.id());
+			}
+			if (delta.role() != null) {
+				chatCompletionReference.get().withRole(delta.role());
+			}
+			if (delta.model() != null) {
+				chatCompletionReference.get().withModel(delta.model());
+			}
+			if (delta.content() != null) {
+				chatCompletionReference.get().withContent(delta.content());
+			}
+			if (delta.stopReason() != null) {
+				chatCompletionReference.get().withStopReason(delta.stopReason());
+			}
+			if (delta.stopSequence() != null) {
+				chatCompletionReference.get().withStopSequence(delta.stopSequence());
+			}
+		}
+		else if (chunk.type().equals("message_stop")) {
+			if (chatCompletionReference.get().toolUses != null) {
+				chatCompletionReference.get().withContent(chatCompletionReference.get().toolUses);
+			}
+		}
+		else {
+			chatCompletionReference.get().withType(chunk.type()).withContent(List.of());
+		}
 
-		}).map(this::toChatResponse);
+		return chatCompletionReference.get().build();
 	}
 
 	private ChatResponse toChatResponse(ChatCompletion chatCompletion) {
@@ -338,6 +356,8 @@ public class AnthropicChatModel extends
 
 		private Usage usage;
 
+		private List<MediaContent> toolUses;
+
 		public ChatCompletionBuilder() {
 		}
 
@@ -378,6 +398,11 @@ public class AnthropicChatModel extends
 
 		public ChatCompletionBuilder withUsage(Usage usage) {
 			this.usage = usage;
+			return this;
+		}
+
+		public ChatCompletionBuilder withToolUses(List<MediaContent> toolUses) {
+			this.toolUses = toolUses;
 			return this;
 		}
 
@@ -449,9 +474,13 @@ public class AnthropicChatModel extends
 
 	@Override
 	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
-		// https://docs.anthropic.com/en/docs/tool-use
-		throw new UnsupportedOperationException(
-				"Streaming (stream=true) is not yet supported. We plan to add streaming support in a future beta version.");
+
+		AtomicReference<ChatCompletionBuilder> chatCompletionReference = new AtomicReference<>();
+
+		return this.anthropicApi.chatCompletionStream(request)
+			.map(chunk -> this.chunkToChatCompletion(chunk, chatCompletionReference))
+			.map(Optional::ofNullable)
+			.map(ResponseEntity::of);
 	}
 
 	@Override

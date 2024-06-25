@@ -241,13 +241,12 @@ class AnthropicChatClientIT {
 		assertThat(response).contains("30", "10", "15");
 	}
 
-	@Disabled("SpringAI has not implemented streaming for function calls for Anthropic yet.")
 	@Test
 	void streamFunctionCallTest() {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
 				.function("getCurrentWeather", "Get the weather in location", new MockWeatherService())
 				.stream()
 				.content();
