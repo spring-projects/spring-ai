@@ -10,17 +10,38 @@ The Azure OpenAI embeddings rely on `cosine similarity` to compute similarity be
 
 == Prerequisites
 
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
+The Azure OpenAI client offers 3 options to connect: Using Azure Api Key, using OpenAI Key, and Microsoft Entra ID.
 
+=== Api Key & Endpoint
+
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
 Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
 There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
-
 Exporting environment variables is one way to set these configuration properties:
+
 [source,shell]
 ----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT AZURE KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
+
+
+=== OpenAI Key
+
+You can authenticate with the OpenAI service, instead of Azure OpenAI, by providing a, non Azure, OpenAI API key. 
+This automatically sets the endpoint to https://api.openai.com/v1. 
+With this configuraiton the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.
+
+[source,shell]
+----
+export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
+----
+
+=== Microsoft Entra ID
+
+Authenticate with Microsoft Entra ID (formerly Azure Active Directory) credentials.
+If the `TokenCredential` Bean if configured, then the a `OpenAIClient` instance will be created using the token credentials.
+Furthermore if the environment variables: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET` are set then a `DefaultAzureCredential` instance will be provisioned by the auto-configuration.
 
 === Add Repositories and BOM
 
@@ -63,6 +84,9 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 
 | spring.ai.azure.openai.api-key |  The Key from Azure AI OpenAI `Keys and Endpoint` section under `Resource Management`  | -
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
+| spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
+This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
+With this configuraiton the `spring.ai.azure.openai.embedding.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 |====
 
 
