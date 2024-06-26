@@ -235,7 +235,7 @@ If all goes well, you should retrieve the document containing the text "Spring A
 
 [NOTE]
 ====
-If you are not retrieveing the documents in the expected order or the search results are not as expected, check the embedding model you are using.
+If you are not retrieving the documents in the expected order or the search results are not as expected, check the embedding model you are using.
 
 Embedding models can have a significant impact on the search results (i.e. make sure if your data is in Spanish to use a Spanish or multilingual embedding model).
 ====
