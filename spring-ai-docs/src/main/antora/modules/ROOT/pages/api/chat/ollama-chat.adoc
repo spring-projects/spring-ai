@@ -241,7 +241,7 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 TIP: The `spring-ai-ollama` dependency provides access also to the `OllamaEmbeddingModel`.
-For more information about the `OllamaEmbeddingModel` refer to the link:../embeddings/ollama-embeddings.html[Ollama Embedding MOdel] section.
+For more information about the `OllamaEmbeddingModel` refer to the link:../embeddings/ollama-embeddings.html[Ollama Embedding Model] section.
 
 Next, create an `OllamaChatModel` instance and use it to text generations requests:
 
