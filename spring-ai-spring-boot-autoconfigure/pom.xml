@@ -613,6 +613,12 @@
 			<scope>test</scope>
 		</dependency>
 
-	</dependencies>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>couchbase</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+    </dependencies>
 
 </project>
