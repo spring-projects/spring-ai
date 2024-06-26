@@ -17,7 +17,6 @@ package org.springframework.ai.mistralai;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,6 +57,25 @@ public class MistralAiChatCompletionRequestTest {
 		assertThat(request.topP()).isEqualTo(0.8f);
 		assertThat(request.temperature()).isEqualTo(0.5f);
 		assertThat(request.stream()).isTrue();
+	}
+
+	@Test
+	void buildCorrectRequestFromChatModelWithOptions() {
+
+		var options = MistralAiChatOptions.builder()
+			.withModel(MistralAiApi.ChatModel.SMALL.getValue())
+			.withTemperature(0.0f)
+			.withTopP(0.0f)
+			.withMaxTokens(1)
+			.build();
+
+		var chatModelWithOptions = new MistralAiChatModel(new MistralAiApi("test"), options);
+
+		var request = chatModelWithOptions.createRequest(new Prompt("test content"), false);
+
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.topP()).isEqualTo(options.getTopP());
+		assertThat(request.temperature()).isEqualTo(options.getTemperature());
 	}
 
 }
