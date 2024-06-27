@@ -28,7 +28,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-redis-store-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -37,7 +37,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-transformers-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
 }
 ----
 
