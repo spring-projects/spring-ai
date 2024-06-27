@@ -15,11 +15,15 @@
  */
 package org.springframework.ai.vectorstore;
 
+import com.couchbase.client.core.util.ConsistencyUtil;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.Scope;
 import com.couchbase.client.java.manager.bucket.BucketSettings;
+import com.couchbase.client.java.manager.collection.CollectionSpec;
+import com.couchbase.client.java.manager.collection.ScopeSpec;
+import com.couchbase.client.java.manager.query.CreatePrimaryQueryIndexOptions;
 import com.couchbase.client.java.manager.search.SearchIndex;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
@@ -31,7 +35,10 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.RetrySpec;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -159,18 +166,39 @@ public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 		if (bs == null) {
 			cluster.buckets().createBucket(BucketSettings.create(this.config.bucketName));
 		}
-		String fullyQualifieScopeName = String.format("`%s`.`%s`", this.config.bucketName, this.config.scopeName);
-		String fullyQualifiedCollectionName = String.format("`%s`.`%s`.`%s`", this.config.bucketName,
-				this.config.scopeName, this.config.collectionName);
 		Bucket b = cluster.bucket(this.config.bucketName);
-		Scope s = b.defaultScope();
-		s.query("CREATE SCOPE " + fullyQualifieScopeName + " IF NOT EXISTS;");
-		Thread.sleep(100);
-		s.query("CREATE COLLECTION " + fullyQualifiedCollectionName + " IF NOT EXISTS;");
-		Thread.sleep(100);
-		s.query("CREATE PRIMARY INDEX IF NOT EXISTS ON " + fullyQualifiedCollectionName);
-		Thread.sleep(100);
-		s = b.scope(this.config.scopeName);
+		b.waitUntilReady(Duration.ofSeconds(1));
+		boolean scopeExist = b.collections()
+			.getAllScopes()
+			.stream()
+			.anyMatch(sc -> sc.name().equals(this.config.scopeName));
+		if (!scopeExist) {
+			b.collections().createScope(this.config.scopeName);
+		}
+		ConsistencyUtil.waitUntilScopePresent(cluster.core(), this.config.bucketName, this.config.scopeName);
+		Scope s = b.scope(this.config.scopeName);
+		boolean collectionExist = bucket.collections()
+			.getAllScopes()
+			.stream()
+			.map(ScopeSpec::collections)
+			.flatMap(java.util.Collection::stream)
+			.filter(it -> it.scopeName().equals(this.config.scopeName))
+			.map(CollectionSpec::name)
+			.anyMatch(this.config.collectionName::equals);
+		if (!collectionExist) {
+			b.collections().createCollection(this.config.scopeName, this.config.collectionName);
+			ConsistencyUtil.waitUntilCollectionPresent(cluster.core(), this.config.bucketName, this.config.scopeName,
+					this.config.collectionName);
+			Collection c = s.collection(this.config.collectionName);
+			Mono.empty()
+				.then(Mono.fromRunnable(
+						() -> c.async()
+							.queryIndexes()
+							.createPrimaryIndex(CreatePrimaryQueryIndexOptions.createPrimaryQueryIndexOptions()
+								.ignoreIfExists(true))))
+				.retryWhen(RetrySpec.backoff(3, Duration.ofMillis(1000)));
+		}
+
 		boolean indexExist = s.searchIndexes()
 			.getAllIndexes()
 			.stream()
