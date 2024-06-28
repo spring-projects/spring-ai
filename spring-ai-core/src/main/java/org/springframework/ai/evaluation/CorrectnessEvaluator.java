@@ -33,9 +33,6 @@ public class CorrectnessEvaluator implements Evaluator {
 
 			    Your job is to judge the relevance and correctness of the generated answer.
 			    Output a single score that represents a holistic evaluation.
-			    You must return your response in a line with only the score.
-			    Do not return answers in any other format.
-			    On a separate line provide your reasoning for the score as well.
 
 			    Follow these guidelines for scoring:
 			    - Your score has to be between 1 and 5, where 1 is the worst and 5 is the best.
