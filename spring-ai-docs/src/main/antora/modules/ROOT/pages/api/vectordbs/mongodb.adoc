@@ -1,8 +1,14 @@
 = MongoDB Atlas
 
-WIP: Please consider contributing docs:  https://github.com/spring-projects/spring-ai/issues/456[Add documentation for the MongoDB Atlas Vector Store]
+This section walks you through setting up MongoDB Atlas as a vector store with Spring AI.
 
-https://www.mongodb.com/basics/vector-databases[MongoDB Atlas Vector Search] is a fully managed cloud database service that provides the easiest way to deploy, operate, and scale a MongoDB database in the cloud.
+== What is MongoDB Atlas?
+
+https://www.mongodb.com/products/platform/atlas-database[MongoDB Atlas] is a fully-managed cloud database available in AWS, Azure, and GCP.
+It supports native Vector Search and full text search (`BM25`) on your MongoDB document data.
+
+https://www.mongodb.com/products/platform/atlas-vector-search[MongoDB Atlas Vector Search] allows to store your embeddings in MongoDB documents, create a vector search index, and perform KNN search with an approximate nearest neighbor algorithm (Hierarchical Navigable Small Worlds).
+It uses the `$vectorSearch` aggregation stage.
 
 == Prerequisites
 
