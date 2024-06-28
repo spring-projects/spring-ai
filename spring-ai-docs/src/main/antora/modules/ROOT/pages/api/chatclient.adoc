@@ -115,7 +115,7 @@ There is also an overloaded `entity` method with the signature `entity(Parameter
 List<ActorFilms> actorFilms = chatClient.prompt()
     .user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
     .call()
-    .entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+    .entity(new ParameterizedTypeReference<List<ActorFilms>>() {
     });
 ----
 
