@@ -188,11 +188,7 @@ public class AzureOpenAiChatModel extends
 				}
 				return !isFunctionCall.get();
 			})
-			.concatMapIterable(window -> {
-				final var reduce = window.reduce(MergeUtils.emptyChatCompletions(), MergeUtils::mergeChatCompletions);
-				return List.of(reduce);
-			})
-			.flatMap(mono -> mono);
+			.flatMap(window -> window);
 		return accessibleChatCompletionsFlux
 			.switchMap(accessibleChatCompletions -> handleFunctionCallOrReturnStream(options,
 					Flux.just(accessibleChatCompletions)))
