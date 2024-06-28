@@ -115,7 +115,7 @@ There is also an overloaded `entity` method with the signature `entity(Parameter
 List<ActorFilms> actorFilms = chatClient.prompt()
     .user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
     .call()
-    .entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+    .entity(new ParameterizedTypeReference<List<ActorFilms>>() {
     });
 ----
 
@@ -216,7 +216,7 @@ class AIController {
 
 	@GetMapping("/ai/simple")
 	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of("completion", chatClient.prompt().user(message).call().content());
+		return Map.of("completion", chatClient.prompt().user(message).call().content();
 	}
 }
 ----
