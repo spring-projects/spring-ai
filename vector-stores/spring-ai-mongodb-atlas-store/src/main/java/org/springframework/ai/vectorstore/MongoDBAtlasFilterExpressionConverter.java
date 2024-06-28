@@ -22,7 +22,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AN
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
 /**
- * Converts {@link Filter.Expression} into MongDB Atlas metadata filter expression format.
+ * Converts {@link Filter.Expression} into MongoDB Atlas metadata filter expression format.
  * (https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/#std-label-vectorSearch-agg-pipeline-filter)
  *
  * @author Chris Smith
