@@ -22,30 +22,30 @@ package org.springframework.ai.chat.messages;
 public enum MessageType {
 
 	/**
-	 * A message of the type 'user' passed as input Messages with the user role are from the
-	 * end-user or developer.
+	 * A message of the type 'user' passed as input Messages with the user role are from
+	 * the end-user or developer.
 	 * @see UserMessage
 	 */
 	USER("user"),
 
 	/**
-	 * A message of the type 'assistant' passed as input Messages with the message is generated
-	 * as a response to the user.
+	 * A message of the type 'assistant' passed as input Messages with the message is
+	 * generated as a response to the user.
 	 * @see AssistantMessage
 	 */
 	ASSISTANT("assistant"),
 
 	/**
-	 * A message of the type 'system' passed as input Messages with high level instructions
-	 * for the conversation, such as behave like a certain character or provide answers in a
-	 * specific format.
+	 * A message of the type 'system' passed as input Messages with high level
+	 * instructions for the conversation, such as behave like a certain character or
+	 * provide answers in a specific format.
 	 * @see SystemMessage
 	 */
 	SYSTEM("system"),
 
 	/**
-	 * A message of the type 'function' passed as input Messages with a function content in a chat
-	 * application.
+	 * A message of the type 'function' passed as input Messages with a function content
+	 * in a chat application.
 	 * @see FunctionMessage
 	 */
 	FUNCTION("function");
