@@ -215,7 +215,7 @@ public class OpenAiChatModel extends
 							}
 							String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
 							var generation = new Generation(choice.message().content(),
-									Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
+									Map.of("id", id, "role", roleMap.getOrDefault(id, ""), "finishReason", finish));
 							if (choice.finishReason() != null) {
 								generation = generation.withGenerationMetadata(
 										ChatGenerationMetadata.from(choice.finishReason().name(), null));
