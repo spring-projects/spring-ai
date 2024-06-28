@@ -92,8 +92,8 @@ public class Document implements Content {
 	}
 
 	public Document(String id, String content, List<Media> media, Map<String, Object> metadata) {
-		Assert.hasText(id, "id must not be null");
-		Assert.hasText(content, "content must not be null");
+		Assert.hasText(id, "id must not be null or empty");
+		Assert.hasText(content, "content must not be null or empty");
 		Assert.notNull(metadata, "metadata must not be null");
 
 		this.id = id;
