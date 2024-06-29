@@ -48,7 +48,7 @@ public interface PromptMetadata extends Iterable<PromptMetadata.PromptFilterMeta
 	 * @return a new {@link PromptMetadata} composed of an array of
 	 * {@link PromptFilterMetadata}.
 	 */
-	static <T> PromptMetadata of(PromptFilterMetadata... array) {
+	static PromptMetadata of(PromptFilterMetadata... array) {
 		return of(Arrays.asList(array));
 	}
 

@@ -25,6 +25,10 @@ import org.springframework.core.io.DefaultResourceLoader;
  */
 public class ResourceUtils {
 
+	private ResourceUtils() {
+
+	}
+
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
 		try {

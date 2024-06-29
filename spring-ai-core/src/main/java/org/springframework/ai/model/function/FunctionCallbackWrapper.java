@@ -81,7 +81,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 		}
 
 		// By default the response is converted to a JSON string.
-		private Function<O, String> responseConverter = (response) -> ModelOptionsUtils.toJsonString(response);
+		private Function<O, String> responseConverter = ModelOptionsUtils::toJsonString;
 
 		private String inputTypeSchema;
 

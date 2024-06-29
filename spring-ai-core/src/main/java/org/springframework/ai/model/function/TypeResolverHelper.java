@@ -29,6 +29,10 @@ import org.springframework.cloud.function.context.catalog.FunctionTypeUtils;
  */
 public class TypeResolverHelper {
 
+	private TypeResolverHelper() {
+
+	}
+
 	public static Class<?> getFunctionInputClass(Class<? extends Function<?, ?>> functionClass) {
 		return getFunctionArgumentClass(functionClass, 0);
 	}
