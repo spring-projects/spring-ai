@@ -62,8 +62,10 @@ public class OpenSearchVectorStoreAutoConfiguration {
 		OpenSearchVectorStoreOptions openSearchVectorStoreOptions = new OpenSearchVectorStoreOptions();
 		Optional.ofNullable(properties.getIndexName()).ifPresent(openSearchVectorStoreOptions::setIndexName);
 		Optional.ofNullable(properties.getMappingJson()).ifPresent(openSearchVectorStoreOptions::setMappingJson);
-		Optional.ofNullable(properties.getUseApproximateKnn()).ifPresent(openSearchVectorStoreOptions::setUseApproximateKnn);
-		return new OpenSearchVectorStore(openSearchClient, embeddingModel, openSearchVectorStoreOptions, properties.isInitializeSchema());
+		Optional.ofNullable(properties.getUseApproximateKnn())
+			.ifPresent(openSearchVectorStoreOptions::setUseApproximateKnn);
+		return new OpenSearchVectorStore(openSearchClient, embeddingModel, openSearchVectorStoreOptions,
+				properties.isInitializeSchema());
 	}
 
 	@Configuration(proxyBeanMethods = false)

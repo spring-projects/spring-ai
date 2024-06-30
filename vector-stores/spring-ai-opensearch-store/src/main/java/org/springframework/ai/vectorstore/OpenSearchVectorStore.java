@@ -112,7 +112,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
 			bulkRequestBuilder
-					.operations(op -> op.index(idx -> idx.index(this.index).id(document.getId()).document(document)));
+				.operations(op -> op.index(idx -> idx.index(this.index).id(document.getId()).document(document)));
 		}
 		bulkRequest(bulkRequestBuilder.build());
 	}
@@ -146,41 +146,47 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		float[] floatEmbedding = new float[embedding.size()];
 		for (int i = 0; i < embedding.size(); i++)
 			floatEmbedding[i] = embedding.get(i).floatValue();
-		return similaritySearch(isUseApproximateKnn ? buildApproximateQuery(topK, similarityThreshold, filterExpression,
-				floatEmbedding) : buildExactQuery(embedding, topK, similarityThreshold, filterExpression));
+		return similaritySearch(
+				isUseApproximateKnn ? buildApproximateQuery(topK, similarityThreshold, filterExpression, floatEmbedding)
+						: buildExactQuery(embedding, topK, similarityThreshold, filterExpression));
 	}
 
 	private org.opensearch.client.opensearch.core.SearchRequest buildApproximateQuery(int topK,
-			double similarityThreshold,
-			Filter.Expression filterExpression, float[] floatEmbedding) {
+			double similarityThreshold, Filter.Expression filterExpression, float[] floatEmbedding) {
 		return new org.opensearch.client.opensearch.core.SearchRequest.Builder()
-				.query(Query.of(builder -> builder.knn(KnnQueryBuilder -> KnnQueryBuilder.filter(Query.of(
-								queryBuilder -> queryBuilder.queryString(
-										queryStringQuerybuilder -> queryStringQuerybuilder.query(
-												getOpenSearchQueryString(filterExpression)))))
-						.field("embedding").k(topK).vector(floatEmbedding))))
-				.minScore(similarityThreshold).build();
+			.query(Query.of(builder -> builder.knn(KnnQueryBuilder -> KnnQueryBuilder
+				.filter(Query
+					.of(queryBuilder -> queryBuilder.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
+						.query(getOpenSearchQueryString(filterExpression)))))
+				.field("embedding")
+				.k(topK)
+				.vector(floatEmbedding))))
+			.minScore(similarityThreshold)
+			.build();
 	}
 
 	private org.opensearch.client.opensearch.core.SearchRequest buildExactQuery(List<Double> embedding, int topK,
 			double similarityThreshold, Filter.Expression filterExpression) {
-		return new org.opensearch.client.opensearch.core.SearchRequest.Builder().query(
-						buildExactQuery(embedding, filterExpression)).sort(sortOptionsBuilder -> sortOptionsBuilder.score(
-						scoreSortBuilder -> scoreSortBuilder.order(SortOrder.Desc))).size(topK).minScore(similarityThreshold)
-				.build();
+		return new org.opensearch.client.opensearch.core.SearchRequest.Builder()
+			.query(buildExactQuery(embedding, filterExpression))
+			.sort(sortOptionsBuilder -> sortOptionsBuilder
+				.score(scoreSortBuilder -> scoreSortBuilder.order(SortOrder.Desc)))
+			.size(topK)
+			.minScore(similarityThreshold)
+			.build();
 	}
 
 	private Query buildExactQuery(List<Double> embedding, Filter.Expression filterExpression) {
 		return Query.of(queryBuilder -> queryBuilder.scriptScore(scriptScoreQueryBuilder -> {
 			scriptScoreQueryBuilder
-					.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
-							.query(getOpenSearchQueryString(filterExpression))))
-					.script(scriptBuilder -> scriptBuilder
-							.inline(inlineScriptBuilder -> inlineScriptBuilder.source("knn_score")
-									.lang("knn")
-									.params("field", JsonData.of("embedding"))
-									.params("query_value", JsonData.of(embedding))
-									.params("space_type", JsonData.of(this.similarityFunction))));
+				.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
+					.query(getOpenSearchQueryString(filterExpression))))
+				.script(scriptBuilder -> scriptBuilder
+					.inline(inlineScriptBuilder -> inlineScriptBuilder.source("knn_score")
+						.lang("knn")
+						.params("field", JsonData.of("embedding"))
+						.params("query_value", JsonData.of(embedding))
+						.params("space_type", JsonData.of(this.similarityFunction))));
 			// https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script
 			// k-NN ensures non-negative scores by adding 1 to cosine similarity,
 			// extending OpenSearch scores to 0-2.
@@ -199,12 +205,13 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	private List<Document> similaritySearch(org.opensearch.client.opensearch.core.SearchRequest searchRequest) {
 		try {
 			return this.openSearchClient.search(searchRequest, Document.class)
-					.hits()
-					.hits()
-					.stream()
-					.map(this::toDocument)
-					.collect(Collectors.toList());
-		} catch (IOException e) {
+				.hits()
+				.hits()
+				.stream()
+				.map(this::toDocument)
+				.collect(Collectors.toList());
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -218,9 +225,10 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	public boolean exists(String targetIndex) {
 		try {
 			BooleanResponse response = this.openSearchClient.indices()
-					.exists(existRequestBuilder -> existRequestBuilder.index(targetIndex));
+				.exists(existRequestBuilder -> existRequestBuilder.index(targetIndex));
 			return response.value();
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -229,13 +237,13 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		JsonpMapper jsonpMapper = openSearchClient._transport().jsonpMapper();
 		try {
 			return this.openSearchClient.indices()
-					.create(new CreateIndexRequest.Builder().index(this.index)
-							.settings(settingsBuilder -> settingsBuilder.knn(true))
-							.mappings(TypeMapping._DESERIALIZER.deserialize(
-									jsonpMapper.jsonProvider().createParser(new StringReader(mappingJson)),
-									jsonpMapper))
-							.build());
-		} catch (IOException e) {
+				.create(new CreateIndexRequest.Builder().index(this.index)
+					.settings(settingsBuilder -> settingsBuilder.knn(true))
+					.mappings(TypeMapping._DESERIALIZER.deserialize(
+							jsonpMapper.jsonProvider().createParser(new StringReader(mappingJson)), jsonpMapper))
+					.build());
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -247,13 +255,14 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		}
 
 		/**
-		 * Generates a JSON string for the k-NN vector mapping configuration.
-		 * The knn_vector field allows k-NN vectors ingestion into OpenSearch and supports various k-NN searches.
+		 * Generates a JSON string for the k-NN vector mapping configuration. The
+		 * knn_vector field allows k-NN vectors ingestion into OpenSearch and supports
+		 * various k-NN searches.
 		 * https://opensearch.org/docs/latest/search-plugins/knn/knn-index#method-definitions
 		 */
 		if (!exists(this.index)) {
-			createIndexMapping(Objects.requireNonNullElseGet(openSearchVectorStoreOptions.getMappingJson(), () ->
-					this.isUseApproximateKnn ? """
+			createIndexMapping(Objects.requireNonNullElseGet(openSearchVectorStoreOptions.getMappingJson(),
+					() -> this.isUseApproximateKnn ? """
 							   {
 							       "properties": {
 							           "embedding": {
@@ -267,8 +276,8 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 							           }
 							       }
 							   }
-							""".formatted(this.openSearchVectorStoreOptions.getDimensions(),
-							this.similarityFunction) : DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536));
+							""".formatted(this.openSearchVectorStoreOptions.getDimensions(), this.similarityFunction)
+							: DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536));
 		}
 	}
 

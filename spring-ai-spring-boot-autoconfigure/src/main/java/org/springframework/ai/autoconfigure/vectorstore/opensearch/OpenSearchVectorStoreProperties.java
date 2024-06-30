@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 @ConfigurationProperties(prefix = OpenSearchVectorStoreProperties.CONFIG_PREFIX)
-public class OpenSearchVectorStoreProperties  extends CommonVectorStoreProperties {
+public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.opensearch";
 
