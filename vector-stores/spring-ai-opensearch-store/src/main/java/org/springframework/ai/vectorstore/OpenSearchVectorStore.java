@@ -205,8 +205,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 					.stream()
 					.map(this::toDocument)
 					.collect(Collectors.toList());
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -222,7 +221,8 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 			BooleanResponse response = this.openSearchClient.indices()
 					.exists(existRequestBuilder -> existRequestBuilder.index(targetIndex));
 			return response.value();
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -250,8 +250,8 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		 * https://opensearch.org/docs/latest/search-plugins/knn/knn-index#method-definitions
 		 */
 		if (this.initializeSchema && !exists(this.index)) {
-			createIndexMapping(Objects.requireNonNullElseGet(openSearchVectorStoreOptions.getMappingJson(), () ->
-					this.isUseApproximateKnn ? """
+			createIndexMapping(Objects.requireNonNullElseGet(openSearchVectorStoreOptions.getMappingJson(),
+					() -> this.isUseApproximateKnn ? """
 							   {
 							       "properties": {
 							           "embedding": {
