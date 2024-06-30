@@ -26,6 +26,7 @@ import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.OpenSearchVectorStore;
+import org.springframework.ai.vectorstore.OpenSearchVectorStoreOptions;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -58,10 +59,12 @@ public class OpenSearchVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, OpenSearchClient openSearchClient,
 			EmbeddingModel embeddingModel) {
-		var indexName = Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME);
-		var mappingJson = Optional.ofNullable(properties.getMappingJson())
-			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
-		return new OpenSearchVectorStore(indexName, openSearchClient, embeddingModel, mappingJson,
+		OpenSearchVectorStoreOptions openSearchVectorStoreOptions = new OpenSearchVectorStoreOptions();
+		Optional.ofNullable(properties.getIndexName()).ifPresent(openSearchVectorStoreOptions::setIndexName);
+		Optional.ofNullable(properties.getMappingJson()).ifPresent(openSearchVectorStoreOptions::setMappingJson);
+		Optional.ofNullable(properties.getUseApproximateKnn())
+			.ifPresent(openSearchVectorStoreOptions::setUseApproximateKnn);
+		return new OpenSearchVectorStore(openSearchClient, embeddingModel, openSearchVectorStoreOptions,
 				properties.isInitializeSchema());
 	}
 

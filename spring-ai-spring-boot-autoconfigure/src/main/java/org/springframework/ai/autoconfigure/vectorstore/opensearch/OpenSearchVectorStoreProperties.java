@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
-import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
@@ -37,6 +37,8 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	private String password;
 
 	private String mappingJson;
+
+	private Boolean useApproximateKnn;
 
 	private Aws aws = new Aws();
 
@@ -74,6 +76,14 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	public String getMappingJson() {
 		return mappingJson;
+	}
+
+	public Boolean getUseApproximateKnn() {
+		return useApproximateKnn;
+	}
+
+	public void setUseApproximateKnn(Boolean useApproximateKnn) {
+		this.useApproximateKnn = useApproximateKnn;
 	}
 
 	public void setMappingJson(String mappingJson) {
