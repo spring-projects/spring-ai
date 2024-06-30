@@ -32,16 +32,17 @@ public class OpenSearchVectorStoreOptions {
 	private int dimensions = 1536;
 
 	/**
-	 * The similarity function to use. the potential functions for vector fields at
+	 * The similarity function to use.
+	 * the potential functions for vector fields at
 	 * https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 	 */
 	private String similarity = "cosinesimil";
 
 	/**
-	 * Indicates whether to use approximate kNN. If true, the approximate kNN method is
-	 * used for faster searches and maintains good performance even at large scales.
-	 * https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/ If false,
-	 * the exact brute-force kNN method is used for precise and highly accurate searches.
+	 * Indicates whether to use approximate kNN.
+	 * If true, the approximate kNN method is used for faster searches and maintains good performance even at large scales.
+	 * https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/
+	 * If false, the exact brute-force kNN method is used for precise and highly accurate searches.
 	 * https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script/
 	 */
 	private boolean useApproximateKnn = false;
