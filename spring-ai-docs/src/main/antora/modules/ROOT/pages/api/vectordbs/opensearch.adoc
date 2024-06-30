@@ -43,14 +43,15 @@ A simple configuration can either be provided via Spring Boot's `application.yml
 [source,yaml]
 ----
 spring:
-  opensearch:
-    uris: <opensearch instance URIs>
-    username: <opensearch username>
-    password: <opensearch password>
-    indexName: <opensearch index name>
-    mappingJson: <JSON mapping for opensearch index>
 # API key if needed, e.g. OpenAI
   ai:
+    vectorstore:
+      opensearch:
+        uris: <opensearch instance URIs>
+        username: <opensearch username>
+        password: <opensearch password>
+        indexName: <opensearch index name>
+        mappingJson: <JSON mapping for opensearch index>
     openai:
       api:
         key: <api-key>

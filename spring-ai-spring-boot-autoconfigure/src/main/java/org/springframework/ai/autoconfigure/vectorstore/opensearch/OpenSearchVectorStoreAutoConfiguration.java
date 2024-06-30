@@ -44,6 +44,10 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * @author Jemin Huh
+ * @since 1.0.0
+ */
 @AutoConfiguration
 @ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingModel.class, OpenSearchClient.class })
 @EnableConfigurationProperties(OpenSearchVectorStoreProperties.class)
