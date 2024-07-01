@@ -8,7 +8,7 @@ import org.springframework.ai.model.Content;
  * Represents an evaluation request for correctness evaluation.
  *
  * @author Craig Walls
- * @since 1.0.0 M1
+ * @since 1.0.0 M2
  */
 public class CorrectnessEvaluationRequest extends EvaluationRequest {
 
