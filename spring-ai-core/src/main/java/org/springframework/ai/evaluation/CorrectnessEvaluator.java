@@ -16,7 +16,7 @@ import org.springframework.ai.chat.client.ChatClient;
  * Passing is determined by the score being greater than or equal to a threshold.
  *
  * @author Craig Walls
- * @since 1.0.0 M1
+ * @since 1.0.0 M2
  */
 public class CorrectnessEvaluator implements Evaluator {
 
