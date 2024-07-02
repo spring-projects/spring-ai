@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.audio.transcription;
+package org.springframework.ai.audio.transcription;
 
-import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
 import org.springframework.core.io.Resource;
 
@@ -25,13 +24,14 @@ import org.springframework.core.io.Resource;
  * interact with an AI model, including the audio resource and model options.
  *
  * @author Michael Lavelle
+ * @author Piotr Olaszewski
  * @since 0.8.1
  */
 public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 
-	private Resource audioResource;
+	private final Resource audioResource;
 
-	private ModelOptions modelOptions;
+	private AudioTranscriptionOptions modelOptions;
 
 	/**
 	 * Construct a new AudioTranscriptionPrompt given the resource representing the audio
@@ -50,7 +50,7 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	 * @param audioResource resource of the audio file.
 	 * @param modelOptions
 	 */
-	public AudioTranscriptionPrompt(Resource audioResource, ModelOptions modelOptions) {
+	public AudioTranscriptionPrompt(Resource audioResource, AudioTranscriptionOptions modelOptions) {
 		this.audioResource = audioResource;
 		this.modelOptions = modelOptions;
 	}
@@ -61,7 +61,7 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	}
 
 	@Override
-	public ModelOptions getOptions() {
+	public AudioTranscriptionOptions getOptions() {
 		return modelOptions;
 	}
 
