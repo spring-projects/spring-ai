@@ -206,7 +206,7 @@ public class MistralAiChatModel extends
 
 			functionsForThisRequest.addAll(defaultEnabledFunctions);
 
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, MistralAiApi.ChatCompletionRequest.class);
+			request = ModelOptionsUtils.merge(this.defaultOptions, request, MistralAiApi.ChatCompletionRequest.class);
 		}
 
 		if (prompt.getOptions() != null) {
