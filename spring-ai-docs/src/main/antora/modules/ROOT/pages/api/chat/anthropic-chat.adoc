@@ -279,6 +279,8 @@ Following class diagram illustrates the `AnthropicApi` chat interfaces and build
 
 image::anthropic-claude3-class-diagram.jpg[AnthropicApi Chat API Diagram, width=1000, align="center"]
 
+image::anthropic-claude3-events-model.jpg[AnthropicApi Event Model, width=1000, align="center"]
+
 Here is a simple snippet how to use the api programmatically:
 
 [source,java]
@@ -286,11 +288,11 @@ Here is a simple snippet how to use the api programmatically:
 AnthropicApi anthropicApi =
     new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 
-RequestMessage chatCompletionMessage = new RequestMessage(
-        List.of(new MediaContent("Tell me a Joke?")), Role.USER);
+AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+        List.of(new ContentBlock("Tell me a Joke?")), Role.USER);
 
 // Sync request
-ResponseEntity<ChatCompletion> response = anthropicApi
+ResponseEntity<ChatCompletionResponse> response = anthropicApi
     .chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
             List.of(chatCompletionMessage), null, 100, 0.8f, false));
 
