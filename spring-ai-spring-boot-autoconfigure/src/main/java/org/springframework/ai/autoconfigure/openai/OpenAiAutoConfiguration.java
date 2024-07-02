@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -28,6 +29,7 @@ import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -49,6 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * @author Christian Tzolov
  * @author Stefan Vassilev
+ * @author Thomas Vitale
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
@@ -68,7 +71,7 @@ public class OpenAiAutoConfiguration {
 			OpenAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry) {
 
 		var openAiApi = openAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, webClientBuilder,
@@ -78,7 +81,8 @@ public class OpenAiAutoConfiguration {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
-		return new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+		return new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 	}
 
 	@Bean
