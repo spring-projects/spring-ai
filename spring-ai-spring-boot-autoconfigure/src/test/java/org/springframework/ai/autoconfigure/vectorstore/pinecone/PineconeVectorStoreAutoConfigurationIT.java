@@ -66,7 +66,6 @@ public class PineconeVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(PineconeVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.pinecone.apiKey=" + System.getenv("PINECONE_API_KEY"),
-				"spring.ai.vectorstore.pinecone.initializeSchema=true",
 				"spring.ai.vectorstore.pinecone.environment=gcp-starter",
 				"spring.ai.vectorstore.pinecone.projectId=814621f",
 				"spring.ai.vectorstore.pinecone.indexName=spring-ai-test-index",
