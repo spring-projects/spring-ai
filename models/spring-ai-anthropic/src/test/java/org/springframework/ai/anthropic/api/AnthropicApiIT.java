@@ -15,21 +15,20 @@
  */
 package org.springframework.ai.anthropic.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
-import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
+import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.api.AnthropicApi.StreamResponse;
 import org.springframework.http.ResponseEntity;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Christian Tzolov
@@ -42,9 +41,9 @@ public class AnthropicApiIT {
 	@Test
 	void chatCompletionEntity() {
 
-		RequestMessage chatCompletionMessage = new RequestMessage(List.of(new MediaContent("Tell me a Joke?")),
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
 				Role.USER);
-		ResponseEntity<ChatCompletion> response = anthropicApi
+		ResponseEntity<ChatCompletionResponse> response = anthropicApi
 			.chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
 					List.of(chatCompletionMessage), null, 100, 0.8f, false));
 
@@ -56,16 +55,16 @@ public class AnthropicApiIT {
 	@Test
 	void chatCompletionStream() {
 
-		RequestMessage chatCompletionMessage = new RequestMessage(List.of(new MediaContent("Tell me a Joke?")),
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
 				Role.USER);
 
-		Flux<StreamResponse> response = anthropicApi
+		Flux<ChatCompletionResponse> response = anthropicApi
 			.chatCompletionStream(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
 					List.of(chatCompletionMessage), null, 100, 0.8f, true));
 
 		assertThat(response).isNotNull();
 
-		List<StreamResponse> bla = response.collectList().block();
+		List<ChatCompletionResponse> bla = response.collectList().block();
 		assertThat(bla).isNotNull();
 
 		bla.stream().forEach(r -> System.out.println(r));

@@ -26,11 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent.Type;
-import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.ContentBlockType;
+import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.Tool;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -84,15 +84,15 @@ public class AnthropicApiToolIT {
 	@Test
 	void toolCalls() {
 
-		List<RequestMessage> messageConversation = new ArrayList<>();
+		List<AnthropicMessage> messageConversation = new ArrayList<>();
 
-		RequestMessage chatCompletionMessage = new RequestMessage(List.of(new MediaContent(
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Show the temperature in Celsius.")),
 				Role.USER);
 
 		messageConversation.add(chatCompletionMessage);
 
-		ResponseEntity<ChatCompletion> chatCompletion = doCall(messageConversation);
+		ResponseEntity<ChatCompletionResponse> chatCompletion = doCall(messageConversation);
 
 		var responseText = chatCompletion.getBody().content().get(0).text();
 		logger.info("FINAL RESPONSE: " + responseText);
@@ -102,7 +102,7 @@ public class AnthropicApiToolIT {
 		assertThat(responseText).contains("30");
 	}
 
-	private ResponseEntity<ChatCompletion> doCall(List<RequestMessage> messageConversation) {
+	private ResponseEntity<ChatCompletionResponse> doCall(List<AnthropicMessage> messageConversation) {
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
 			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
@@ -112,23 +112,23 @@ public class AnthropicApiToolIT {
 			.withTools(tools)
 			.build();
 
-		ResponseEntity<ChatCompletion> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletionResponse> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
 
-		List<MediaContent> toolToUseList = response.getBody()
+		List<ContentBlock> toolToUseList = response.getBody()
 			.content()
 			.stream()
-			.filter(c -> c.type() == MediaContent.Type.TOOL_USE)
+			.filter(c -> c.type() == ContentBlock.ContentBlockType.TOOL_USE)
 			.toList();
 
 		if (CollectionUtils.isEmpty(toolToUseList)) {
 			return response;
 		}
 		// Add use tool message to the conversation history
-		messageConversation.add(new RequestMessage(response.getBody().content(), Role.ASSISTANT));
+		messageConversation.add(new AnthropicMessage(response.getBody().content(), Role.ASSISTANT));
 
-		List<MediaContent> toolResults = new ArrayList<>();
+		List<ContentBlock> toolResults = new ArrayList<>();
 
-		for (MediaContent toolToUse : toolToUseList) {
+		for (ContentBlock toolToUse : toolToUseList) {
 
 			var id = toolToUse.id();
 			var name = toolToUse.name();
@@ -146,11 +146,11 @@ public class AnthropicApiToolIT {
 
 			logger.info("Function response : " + content);
 
-			toolResults.add(new MediaContent(Type.TOOL_RESULT, id, content));
+			toolResults.add(new ContentBlock(ContentBlockType.TOOL_RESULT, id, content));
 		}
 
 		// Add function response message to the conversation history
-		messageConversation.add(new RequestMessage(toolResults, Role.USER));
+		messageConversation.add(new AnthropicMessage(toolResults, Role.USER));
 
 		return doCall(messageConversation);
 	}
