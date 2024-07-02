@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.anthropic;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,18 +30,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -49,15 +50,18 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StringUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
-@SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
+@SpringBootTest(classes = AnthropicChatModelIT.Config.class, properties = "spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatModelIT {
 
@@ -226,7 +230,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getModelName())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription(
@@ -240,6 +244,38 @@ class AnthropicChatModelIT {
 
 		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getContent()).contains("30", "10", "15");
+	}
+
+	@Test
+	void streamFunctionCallTest() {
+
+		UserMessage userMessage = new UserMessage(
+				// "What's the weather like in San Francisco? Return the result in
+				// Celsius.");
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getModelName())
+			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+				.withName("getCurrentWeather")
+				.withDescription(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
+
+		String content = response.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+
+		logger.info("Response: {}", content);
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@Test
@@ -279,6 +315,30 @@ class AnthropicChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	@SpringBootConfiguration
+	public static class Config {
+
+		@Bean
+		public AnthropicApi anthropicApi() {
+			return new AnthropicApi(getApiKey());
+		}
+
+		private String getApiKey() {
+			String apiKey = System.getenv("ANTHROPIC_API_KEY");
+			if (!StringUtils.hasText(apiKey)) {
+				throw new IllegalArgumentException(
+						"You must provide an API key.  Put it in an environment variable under the name ANTHROPIC_API_KEY");
+			}
+			return apiKey;
+		}
+
+		@Bean
+		public AnthropicChatModel openAiChatModel(AnthropicApi api) {
+			return new AnthropicChatModel(api);
+		}
+
 	}
 
 }

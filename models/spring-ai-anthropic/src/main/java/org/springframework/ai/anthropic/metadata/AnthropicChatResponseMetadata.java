@@ -40,7 +40,7 @@ public class AnthropicChatResponseMetadata extends HashMap<String, Object> imple
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, id: %2$s, model: %3$s, usage: %4$s, rateLimit: %5$s }";
 
-	public static AnthropicChatResponseMetadata from(AnthropicApi.ChatCompletion result) {
+	public static AnthropicChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
 		Assert.notNull(result, "Anthropic ChatCompletionResult must not be null");
 		AnthropicUsage usage = AnthropicUsage.from(result.usage());
 		return new AnthropicChatResponseMetadata(result.id(), result.model(), usage);

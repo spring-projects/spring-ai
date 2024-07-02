@@ -25,10 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
-import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
+import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.tool.XmlHelper.FunctionCalls;
 import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools;
@@ -100,8 +100,8 @@ public class AnthropicApiLegacyToolIT {
 
 		String systemPrompt = String.format(TOO_SYSTEM_PROMPT_TEMPLATE, toolDescription);
 
-		RequestMessage chatCompletionMessage = new RequestMessage(
-				List.of(new MediaContent("What's the weather like in Paris? Show the temperature in Celsius.")),
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock("What's the weather like in Paris? Show the temperature in Celsius.")),
 				// "What's the weather like in San Francisco, Tokyo, and Paris? Show the
 				// temperature in Celsius.")),
 				Role.USER);
@@ -110,7 +110,7 @@ public class AnthropicApiLegacyToolIT {
 				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), systemPrompt, 500,
 				0.8f, false);
 
-		ResponseEntity<ChatCompletion> chatCompletion = doCall(chatCompletionRequest);
+		ResponseEntity<ChatCompletionResponse> chatCompletion = doCall(chatCompletionRequest);
 
 		var responseText = chatCompletion.getBody().content().get(0).text();
 		logger.info("FINAL RESPONSE: " + responseText);
@@ -118,9 +118,9 @@ public class AnthropicApiLegacyToolIT {
 		assertThat(responseText).contains("15");
 	}
 
-	private ResponseEntity<ChatCompletion> doCall(ChatCompletionRequest chatCompletionRequest) {
+	private ResponseEntity<ChatCompletionResponse> doCall(ChatCompletionRequest chatCompletionRequest) {
 
-		ResponseEntity<ChatCompletion> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<ChatCompletionResponse> response = anthropicApi.chatCompletionEntity(chatCompletionRequest);
 
 		FunctionCalls functionCalls = XmlHelper.extractFunctionCalls(response.getBody().content().get(0).text());
 
@@ -144,7 +144,7 @@ public class AnthropicApiLegacyToolIT {
 
 		logger.info("Function response XML : " + content);
 
-		RequestMessage chatCompletionMessage2 = new RequestMessage(List.of(new MediaContent(content)), Role.USER);
+		AnthropicMessage chatCompletionMessage2 = new AnthropicMessage(List.of(new ContentBlock(content)), Role.USER);
 
 		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
 				List.of(chatCompletionMessage2), null, 500, 0.8f, false));
