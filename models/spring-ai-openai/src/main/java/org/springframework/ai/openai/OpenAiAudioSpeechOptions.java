@@ -26,6 +26,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
  * Options for OpenAI text to audio - speech synthesis.
  *
  * @author Ahmed Yousri
+ * @author Hyunjoon Choi
  * @since 1.0.0-M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -53,7 +54,7 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 
 	/**
 	 * The format of the audio output. Supported formats are mp3, opus, aac, and flac.
-	 * Defaults to mp3. Defaults to mp3
+	 * Defaults to mp3.
 	 */
 	@JsonProperty("response_format")
 	private AudioResponseFormat responseFormat;
