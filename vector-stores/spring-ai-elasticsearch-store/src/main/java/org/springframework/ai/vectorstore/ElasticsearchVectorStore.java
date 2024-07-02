@@ -99,10 +99,11 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
 			// We call operations on BulkRequest.Builder only if the index exists.
-			// For the index to be present, either it must be pre-created or set the initializeSchema to true.
+			// For the index to be present, either it must be pre-created or set the
+			// initializeSchema to true.
 			if (indexExists()) {
 				bulkRequestBuilder.operations(op -> op
-						.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+					.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
 			}
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
@@ -120,7 +121,8 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	public Optional<Boolean> delete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		// We call operations on BulkRequest.Builder only if the index exists.
-		// For the index to be present, either it must be pre-created or set the initializeSchema to true.
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
 		if (indexExists()) {
 			for (String id : idList) {
 				bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));

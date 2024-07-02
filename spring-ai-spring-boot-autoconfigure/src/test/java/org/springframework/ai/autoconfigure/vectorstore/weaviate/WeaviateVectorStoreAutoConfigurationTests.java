@@ -48,8 +48,6 @@ public class WeaviateVectorStoreAutoConfigurationTests {
 	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
-	;
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(WeaviateVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
