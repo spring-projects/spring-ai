@@ -173,8 +173,18 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	@Override
+	public Prompt create(ChatOptions modelOptions) {
+		return new Prompt(render(new HashMap<>()), modelOptions);
+	}
+
+	@Override
 	public Prompt create(Map<String, Object> model) {
 		return new Prompt(render(model));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model, ChatOptions modelOptions) {
+		return new Prompt(render(model), modelOptions);
 	}
 
 	public Set<String> getInputVariables() {
