@@ -17,6 +17,7 @@ package org.springframework.ai.prompt;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.assertj.TextBlockAssertion;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.InputStreamResource;
@@ -45,7 +46,7 @@ public class PromptTemplateTest {
 
 		String expected = "The items are:\n" + "- apple\n" + "- banana\n" + "- cherry\n";
 
-		assertEquals(expected, message.getContent());
+		TextBlockAssertion.assertThat(message.getContent()).isEqualTo(expected);
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)

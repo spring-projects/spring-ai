@@ -18,6 +18,7 @@ package org.springframework.ai.document;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.assertj.TextBlockAssertion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,13 +46,14 @@ public class ContentFormatterTests {
 
 		DefaultContentFormatter defaultConfigFormatter = DefaultContentFormatter.defaultConfig();
 
-		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL)).isEqualTo("""
-				llmKey2: value4
-				embedKey1: value1
-				embedKey2: value2
-				embedKey3: value3
+		TextBlockAssertion.assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
+			.isEqualTo("""
+					llmKey2: value4
+					embedKey1: value1
+					embedKey2: value2
+					embedKey3: value3
 
-				The World is Big and Salvation Lurks Around the Corner""");
+					The World is Big and Salvation Lurks Around the Corner""");
 
 		assertThat(document.getFormattedContent(defaultConfigFormatter, MetadataMode.ALL))
 			.isEqualTo(document.getFormattedContent());
@@ -70,7 +72,7 @@ public class ContentFormatterTests {
 			.withMetadataTemplate("Key/Value {key}={value}")
 			.build();
 
-		assertThat(document.getFormattedContent(textFormatter, MetadataMode.EMBED)).isEqualTo("""
+		TextBlockAssertion.assertThat(document.getFormattedContent(textFormatter, MetadataMode.EMBED)).isEqualTo("""
 				Metadata:
 				Key/Value llmKey2=value4
 				Key/Value embedKey1=value1
