@@ -272,7 +272,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		for (Document document : documents) {
 			List<Double> embedding = this.embeddingModel.embed(document);
-
+			document.setEmbedding(embedding);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
