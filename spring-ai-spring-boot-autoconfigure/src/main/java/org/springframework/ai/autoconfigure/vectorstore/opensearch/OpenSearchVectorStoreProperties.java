@@ -36,9 +36,9 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	private String password;
 
-	private String mappingJson;
-
 	private Boolean useApproximateKnn;
+
+	private String mappingJson;
 
 	private Aws aws = new Aws();
 
@@ -74,16 +74,16 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 		this.password = password;
 	}
 
-	public String getMappingJson() {
-		return mappingJson;
-	}
-
 	public Boolean getUseApproximateKnn() {
 		return useApproximateKnn;
 	}
 
 	public void setUseApproximateKnn(Boolean useApproximateKnn) {
 		this.useApproximateKnn = useApproximateKnn;
+	}
+
+	public String getMappingJson() {
+		return mappingJson;
 	}
 
 	public void setMappingJson(String mappingJson) {
