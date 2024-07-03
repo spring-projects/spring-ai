@@ -116,7 +116,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 	public void add(List<Document> documents) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
+			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
@@ -150,7 +150,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 				searchRequest.getSimilarityThreshold(), searchRequest.getFilterExpression());
 	}
 
-	public List<Document> similaritySearch(List<Double> embedding, int topK, double similarityThreshold,
+	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
 			Filter.Expression filterExpression) {
 		return similaritySearch(new org.opensearch.client.opensearch.core.SearchRequest.Builder()
 			.query(getOpenSearchSimilarityQuery(embedding, filterExpression))
@@ -161,7 +161,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 			.build());
 	}
 
-	private Query getOpenSearchSimilarityQuery(List<Double> embedding, Filter.Expression filterExpression) {
+	private Query getOpenSearchSimilarityQuery(float[] embedding, Filter.Expression filterExpression) {
 		return Query.of(queryBuilder -> queryBuilder.scriptScore(scriptScoreQueryBuilder -> {
 			scriptScoreQueryBuilder
 				.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder

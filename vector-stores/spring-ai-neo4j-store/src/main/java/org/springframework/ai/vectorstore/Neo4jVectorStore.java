@@ -15,6 +15,12 @@
  */
 package org.springframework.ai.vectorstore;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
@@ -24,12 +30,6 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * @author Gerrit Meier
@@ -332,7 +332,7 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
-		var embedding = Values.value(toFloatArray(this.embeddingModel.embed(request.getQuery())));
+		var embedding = Values.value(this.embeddingModel.embed(request.getQuery()));
 		try (var session = this.driver.session(this.config.sessionConfig)) {
 			StringBuilder condition = new StringBuilder("score >= $threshold");
 			if (request.hasFilterExpression()) {
@@ -393,17 +393,8 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
 
-		row.put(this.config.embeddingProperty, Values.value(toFloatArray(embedding)));
+		row.put(this.config.embeddingProperty, Values.value(embedding));
 		return row;
-	}
-
-	private static float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
-		int i = 0;
-		for (Double d : embeddingDouble) {
-			embeddingFloat[i++] = d.floatValue();
-		}
-		return embeddingFloat;
 	}
 
 	private Document recordToDocument(org.neo4j.driver.Record neoRecord) {

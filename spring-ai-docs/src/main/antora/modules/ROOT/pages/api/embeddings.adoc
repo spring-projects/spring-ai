@@ -50,14 +50,14 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param document the document to embed.
 	 * @return the embedded vector.
 	 */
-	List<Double> embed(Document document);
+	float[] embed(Document document);
 
 	/**
 	 * Embeds the given text into a vector.
 	 * @param text the text to embed.
 	 * @return the embedded vector.
 	 */
-	default List<Double> embed(String text) {
+	default float[] embed(String text) {
 		Assert.notNull(text, "Text must not be null");
 		return this.embed(List.of(text)).iterator().next();
 	}
@@ -67,7 +67,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param texts list of texts to embed.
 	 * @return list of list of embedded vectors.
 	 */
-	default List<List<Double>> embed(List<String> texts) {
+	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
 		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()
@@ -102,7 +102,7 @@ The embed methods offer various options for converting text into embeddings, acc
 Multiple shortcut methods are provided for embedding text, including the `embed(String text)` method, which takes a single string and returns the corresponding embedding vector.
 All shortcuts are implemented around the `call` method, which is the primary method for invoking the embedding model.
 
-Typically the embedding returns a lists of doubles, representing the embeddings in a numerical vector format.
+Typically the embedding returns a lists of floats, representing the embeddings in a numerical vector format.
 
 The `embedForResponse` method provides a more comprehensive output, potentially including additional information about the embeddings.
 
@@ -146,8 +146,8 @@ The `Embedding` represents a single embedding vector.
 
 [source,java]
 ----
-public class Embedding implements ModelResult<List<Double>> {
-	private List<Double> embedding;
+public class Embedding implements ModelResult<float[]> {
+	private float[] embedding;
 	private Integer index;
 	private EmbeddingResultMetadata metadata;
 	// other methods omitted

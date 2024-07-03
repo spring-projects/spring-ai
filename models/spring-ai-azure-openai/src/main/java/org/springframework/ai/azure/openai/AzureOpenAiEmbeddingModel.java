@@ -29,11 +29,21 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Azure Open AI Embedding Model implementation.
+ *
+ * @author Mark Pollack
+ * @author Christian Tzolov
+ * @author Thomas Vitale
+ * @since 1.0.0
+ */
 public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiEmbeddingModel.class);
@@ -64,13 +74,17 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		logger.debug("Retrieving embeddings");
 
 		EmbeddingResponse response = this
 			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
 		logger.debug("Embeddings retrieved");
-		return response.getResults().stream().map(embedding -> embedding.getOutput()).flatMap(List::stream).toList();
+
+		if (CollectionUtils.isEmpty(response.getResults())) {
+			return new float[0];
+		}
+		return response.getResults().get(0).getOutput();
 	}
 
 	@Override
@@ -108,8 +122,7 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		for (EmbeddingItem nativeDatum : nativeData) {
 			List<Float> nativeDatumEmbedding = nativeDatum.getEmbedding();
 			int nativeIndex = nativeDatum.getPromptIndex();
-			Embedding embedding = new Embedding(nativeDatumEmbedding.stream().map(f -> f.doubleValue()).toList(),
-					nativeIndex);
+			Embedding embedding = new Embedding(EmbeddingUtils.toPrimitive(nativeDatumEmbedding), nativeIndex);
 			data.add(embedding);
 		}
 		return data;

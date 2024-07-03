@@ -15,11 +15,24 @@
  */
 package org.springframework.ai.vectorstore.qdrant;
 
+import static io.qdrant.client.PointIdFactory.id;
+import static io.qdrant.client.ValueFactory.value;
+import static io.qdrant.client.VectorsFactory.vectors;
+import static io.qdrant.client.WithPayloadSelectorFactory.enable;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.grpc.Collections.Distance;
@@ -31,17 +44,6 @@ import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.ValueFactory.value;
-import static io.qdrant.client.VectorsFactory.vectors;
-import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 
 /**
  * Qdrant vectorStore implementation. This store supports creating, updating, deleting,
@@ -176,7 +178,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 				return PointStruct.newBuilder()
 					.setId(id(UUID.fromString(document.getId())))
-					.setVectors(vectors(toFloatList(document.getEmbedding())))
+					.setVectors(vectors(document.getEmbedding()))
 					.putAllPayload(toPayload(document))
 					.build();
 			}).toList();
@@ -220,13 +222,13 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 					? this.filterExpressionConverter.convertExpression(request.getFilterExpression())
 					: Filter.getDefaultInstance();
 
-			List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
+			float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 			var searchPoints = SearchPoints.newBuilder()
 				.setCollectionName(this.collectionName)
 				.setLimit(request.getTopK())
 				.setWithPayload(enable(true))
-				.addAllVector(toFloatList(queryEmbedding))
+				.addAllVector(EmbeddingUtils.toList(queryEmbedding))
 				.setFilter(filter)
 				.setScoreThreshold((float) request.getSimilarityThreshold())
 				.build();
@@ -278,15 +280,6 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Converts a list of doubles to a list of floats.
-	 * @param doubleList The list of doubles.
-	 * @return The converted list of floats.
-	 */
-	private List<Float> toFloatList(List<Double> doubleList) {
-		return doubleList.stream().map(d -> d.floatValue()).toList();
 	}
 
 	@Override

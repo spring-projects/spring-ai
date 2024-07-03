@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
@@ -94,7 +95,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
+			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().length == 0) {
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
@@ -150,14 +151,11 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 				threshold = 1 - threshold;
 			}
 			final float finalThreshold = threshold;
-			List<Float> vectors = this.embeddingModel.embed(searchRequest.getQuery())
-				.stream()
-				.map(Double::floatValue)
-				.toList();
+			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
 			SearchResponse<Document> res = elasticsearchClient.search(
 					sr -> sr.index(options.getIndexName())
-						.knn(knn -> knn.queryVector(vectors)
+						.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 							.similarity(finalThreshold)
 							.k((long) searchRequest.getTopK())
 							.field("embedding")

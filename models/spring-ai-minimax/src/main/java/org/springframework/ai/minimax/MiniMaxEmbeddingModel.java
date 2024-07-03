@@ -105,7 +105,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
@@ -137,7 +137,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 			List<Embedding> embeddings = new ArrayList<>();
 			for (int i = 0; i < apiEmbeddingResponse.vectors().size(); i++) {
-				List<Double> vector = apiEmbeddingResponse.vectors().get(i);
+				float[] vector = apiEmbeddingResponse.vectors().get(i);
 				embeddings.add(new Embedding(vector, i));
 			}
 			return new EmbeddingResponse(embeddings, metadata);

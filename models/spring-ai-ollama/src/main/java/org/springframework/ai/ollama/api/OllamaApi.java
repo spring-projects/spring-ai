@@ -751,7 +751,7 @@ public class OllamaApi {
 	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingResponse(
-			@JsonProperty("embedding") List<Double> embedding) {
+			@JsonProperty("embedding") List<Float> embedding) {
 	}
 
 
@@ -764,7 +764,7 @@ public class OllamaApi {
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingsResponse(
 			@JsonProperty("model") String model,
-			@JsonProperty("embeddings") List<List<Double>> embeddings) {
+			@JsonProperty("embeddings") List<float[]> embeddings) {
 	}
 
 	/**

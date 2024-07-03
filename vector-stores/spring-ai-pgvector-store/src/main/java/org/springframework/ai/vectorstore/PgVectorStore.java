@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -168,7 +167,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 						var json = toJson(document.getMetadata());
 						var embedding = embeddingModel.embed(document);
 						document.setEmbedding(embedding);
-						var pGvector = new PGvector(toFloatArray(embedding));
+						var pGvector = new PGvector(embedding);
 
 						StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
 								UUID.fromString(document.getId()));
@@ -196,10 +195,10 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		}
 	}
 
-	private float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
+	private float[] toFloatArray(List<Float> embedding) {
+		float[] embeddingFloat = new float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;
@@ -253,8 +252,8 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	private PGvector getQueryEmbedding(String query) {
-		List<Double> embedding = this.embeddingModel.embed(query);
-		return new PGvector(toFloatArray(embedding));
+		float[] embedding = this.embeddingModel.embed(query);
+		return new PGvector(embedding);
 	}
 
 	private String comparisonOperator() {
@@ -441,14 +440,13 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			metadata.put(COLUMN_DISTANCE, distance);
 
 			Document document = new Document(id, content, metadata);
-			document.setEmbedding(toDoubleList(embedding));
+			document.setEmbedding(toFloatArray(embedding));
 
 			return document;
 		}
 
-		private List<Double> toDoubleList(PGobject embedding) throws SQLException {
-			float[] floatArray = new PGvector(embedding.getValue()).toArray();
-			return IntStream.range(0, floatArray.length).mapToDouble(i -> floatArray[i]).boxed().toList();
+		private float[] toFloatArray(PGobject embedding) throws SQLException {
+			return new PGvector(embedding.getValue()).toArray();
 		}
 
 		private Map<String, Object> toMap(PGobject pgObject) {

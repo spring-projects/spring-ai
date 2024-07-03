@@ -197,7 +197,7 @@ public class OpenAiRetryTests {
 	public void openAiEmbeddingTransientError() {
 
 		EmbeddingList<Embedding> expectedEmbeddings = new EmbeddingList<>("list",
-				List.of(new Embedding(0, List.of(9.9, 8.8))), "model", new OpenAiApi.Usage(10, 10, 10));
+				List.of(new Embedding(0, new float[] { 9.9f, 8.8f })), "model", new OpenAiApi.Usage(10, 10, 10));
 
 		when(openAiApi.embeddings(isA(EmbeddingRequest.class))).thenThrow(new TransientAiException("Transient Error 1"))
 			.thenThrow(new TransientAiException("Transient Error 2"))
@@ -207,7 +207,7 @@ public class OpenAiRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput()).isEqualTo(List.of(9.9, 8.8));
+		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
 		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
 	}
