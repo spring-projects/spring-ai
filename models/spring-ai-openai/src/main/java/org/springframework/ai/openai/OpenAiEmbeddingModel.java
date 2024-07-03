@@ -37,7 +37,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Open AI Embedding Client implementation.
+ * Open AI Embedding Model implementation.
  *
  * @author Christian Tzolov
  */

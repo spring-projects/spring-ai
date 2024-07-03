@@ -162,7 +162,7 @@ public class MyPagePdfDocumentReader {
 
 	List<Document> getDocsFromPdfwithCatalog() {
 
-        new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
+        ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
                 PdfDocumentReaderConfig.builder()
                     .withPageTopMargin(0)
                     .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
@@ -171,7 +171,7 @@ public class MyPagePdfDocumentReader {
                     .withPagesPerDocument(1)
                     .build());
 
-		return pdfReader.read();
+	return pdfReader.read();
     }
 }
 ----

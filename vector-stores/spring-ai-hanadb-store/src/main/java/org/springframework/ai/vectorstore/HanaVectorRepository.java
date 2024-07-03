@@ -18,6 +18,12 @@ package org.springframework.ai.vectorstore;
 import java.util.List;
 
 /**
+ * The {@code HanaVectorRepository} interface provides methods for interacting with a HANA
+ * vector repository, which allows storing and querying vector embeddings. The repository
+ * is generic and can work with any entity that extends the {@link HanaVectorEntity}
+ * class.
+ *
+ * @param <T> The type of entity that extends {@link HanaVectorEntity}.
  * @author Rahul Mittal
  * @since 1.0.0
  */

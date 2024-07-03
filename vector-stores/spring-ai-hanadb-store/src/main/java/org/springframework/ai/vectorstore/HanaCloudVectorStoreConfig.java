@@ -16,6 +16,10 @@
 package org.springframework.ai.vectorstore;
 
 /**
+ * The {@code HanaCloudVectorStoreConfig} class represents the configuration for the
+ * HanaCloudVectorStore. It provides methods to retrieve the table name and the topK
+ * value.
+ *
  * @author Rahul Mittal
  * @since 1.0.0
  */

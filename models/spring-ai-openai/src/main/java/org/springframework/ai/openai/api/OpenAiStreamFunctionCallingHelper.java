@@ -28,6 +28,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoi
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.openai.api.OpenAiApi.Usage;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -58,13 +59,14 @@ public class OpenAiStreamFunctionCallingHelper {
 		String systemFingerprint = (current.systemFingerprint() != null ? current.systemFingerprint()
 				: previous.systemFingerprint());
 		String object = (current.object() != null ? current.object() : previous.object());
+		Usage usage = (current.usage() != null ? current.usage() : previous.usage());
 
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object);
+		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object, usage);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {

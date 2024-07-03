@@ -20,10 +20,12 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
 import org.testcontainers.chromadb.ChromaDBContainer;
 
+import java.util.Map;
+
 /**
  * @author Eddú Meléndez
  */
-public class ChromaContainerConnectionDetailsFactory
+class ChromaContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<ChromaDBContainer, ChromaConnectionDetails> {
 
 	@Override
@@ -37,6 +39,12 @@ public class ChromaContainerConnectionDetailsFactory
 	private static final class ChromaDBContainerConnectionDetails extends ContainerConnectionDetails<ChromaDBContainer>
 			implements ChromaConnectionDetails {
 
+		// Chroma version <= 0.4.x
+		private static final String CHROMA_SERVER_AUTH_CREDENTIALS = "CHROMA_SERVER_AUTH_CREDENTIALS";
+
+		// Chroma version >= 0.5.x
+		private static final String CHROMA_SERVER_AUTHN_CREDENTIALS = "CHROMA_SERVER_AUTHN_CREDENTIALS";
+
 		private ChromaDBContainerConnectionDetails(ContainerConnectionSource<ChromaDBContainer> source) {
 			super(source);
 		}
@@ -49,6 +57,15 @@ public class ChromaContainerConnectionDetailsFactory
 		@Override
 		public int getPort() {
 			return getContainer().getMappedPort(8000);
+		}
+
+		@Override
+		public String getKeyToken() {
+			Map<String, String> envVars = getContainer().getEnvMap();
+			if (envVars.containsKey(CHROMA_SERVER_AUTH_CREDENTIALS)) {
+				return envVars.get(CHROMA_SERVER_AUTH_CREDENTIALS);
+			}
+			return envVars.get(CHROMA_SERVER_AUTHN_CREDENTIALS);
 		}
 
 	}

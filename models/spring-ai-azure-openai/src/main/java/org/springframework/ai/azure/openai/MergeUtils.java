@@ -24,10 +24,12 @@ import java.util.Objects;
 
 import com.azure.ai.openai.models.AzureChatExtensionsMessageContext;
 import com.azure.ai.openai.models.ChatChoice;
+import com.azure.ai.openai.models.ChatChoiceLogProbabilityInfo;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
 import com.azure.ai.openai.models.ChatCompletionsToolCall;
 import com.azure.ai.openai.models.ChatResponseMessage;
+import com.azure.ai.openai.models.ChatRole;
 import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.CompletionsUsage;
 import com.azure.ai.openai.models.ContentFilterResultsForChoice;
@@ -48,30 +50,19 @@ import org.springframework.util.CollectionUtils;
 public class MergeUtils {
 
 	/**
-	 * Create a new instance of the given class. Can be used to create instances with
-	 * private constructors.
-	 * @param <T> the type of the class to be created.
-	 * @param clazz the class to create an instance of.
-	 * @param args the arguments to pass to the constructor.
-	 * @return a new instance of the given class.
-	 */
-	private static <T> T newInstance(Class<T> clazz, Object... args) {
-		return newInstance(0, clazz, args);
-	}
-
-	/**
 	 * Create a new instance of the given class using the constructor at the given index.
 	 * Can be used to create instances with private constructors.
 	 * @param <T> the type of the class to be created.
-	 * @param index the index of the constructor to use.
+	 * @param argumentTypes the list of constructor argument types. Used to select the
+	 * right constructor.
 	 * @param clazz the class to create an instance of.
 	 * @param args the arguments to pass to the constructor.
 	 * @return a new instance of the given class.
 	 */
-	private static <T> T newInstance(int index, Class<T> clazz, Object... args) {
+	private static <T> T newInstance(Class<?>[] argumentTypes, Class<T> clazz, Object... args) {
 		try {
 			@SuppressWarnings("unchecked")
-			Constructor<T> constructor = (Constructor<T>) clazz.getDeclaredConstructors()[index];
+			Constructor<T> constructor = (Constructor<T>) clazz.getDeclaredConstructor(argumentTypes);
 			constructor.setAccessible(true);
 			return constructor.newInstance(args);
 		}
@@ -97,6 +88,9 @@ public class MergeUtils {
 		}
 	}
 
+	private static final Class<?>[] chatCompletionsConstructorArgumentTypes = new Class<?>[] { String.class, long.class,
+			List.class, CompletionsUsage.class };
+
 	/**
 	 * @return an empty ChatCompletions instance.
 	 */
@@ -105,7 +99,8 @@ public class MergeUtils {
 		List<ChatChoice> choices = new ArrayList<>();
 		CompletionsUsage usage = null;
 		long createdAt = 0;
-		ChatCompletions chatCompletionsInstance = newInstance(ChatCompletions.class, id, createdAt, choices, usage);
+		ChatCompletions chatCompletionsInstance = newInstance(chatCompletionsConstructorArgumentTypes,
+				ChatCompletions.class, id, createdAt, choices, usage);
 		List<ContentFilterResultsForPrompt> promptFilterResults = new ArrayList<>();
 		setField(chatCompletionsInstance, "promptFilterResults", promptFilterResults);
 		String systemFingerprint = null;
@@ -113,6 +108,9 @@ public class MergeUtils {
 
 		return chatCompletionsInstance;
 	}
+
+	private static final Class<?>[] chatCompletionsConstructorArgumentTypes0 = new Class<?>[] { String.class,
+			OffsetDateTime.class, List.class, CompletionsUsage.class };
 
 	/**
 	 * Merge two ChatCompletions instances into a single ChatCompletions instance.
@@ -150,7 +148,8 @@ public class MergeUtils {
 		OffsetDateTime createdAt = left.getCreatedAt().isAfter(right.getCreatedAt()) ? left.getCreatedAt()
 				: right.getCreatedAt();
 
-		ChatCompletions instance = newInstance(1, ChatCompletions.class, id, createdAt, choices, usage);
+		ChatCompletions instance = newInstance(chatCompletionsConstructorArgumentTypes0, ChatCompletions.class, id,
+				createdAt, choices, usage);
 
 		List<ContentFilterResultsForPrompt> promptFilterResults = right.getPromptFilterResults() == null
 				? left.getPromptFilterResults() : right.getPromptFilterResults();
@@ -161,6 +160,9 @@ public class MergeUtils {
 		setField(instance, "systemFingerprint", systemFingerprint);
 		return instance;
 	}
+
+	private static final Class<?>[] chatChoiceConstructorArgumentTypes = new Class<?>[] {
+			ChatChoiceLogProbabilityInfo.class, int.class, CompletionsFinishReason.class };
 
 	/**
 	 * Merge two ChatChoice instances into a single ChatChoice instance.
@@ -177,7 +179,8 @@ public class MergeUtils {
 
 		var logprobs = left.getLogprobs() != null ? left.getLogprobs() : right.getLogprobs();
 
-		final ChatChoice instance = newInstance(ChatChoice.class, logprobs, index, finishReason);
+		final ChatChoice instance = newInstance(chatChoiceConstructorArgumentTypes, ChatChoice.class, logprobs, index,
+				finishReason);
 
 		ChatResponseMessage message = null;
 		if (left.getMessage() == null) {
@@ -211,6 +214,9 @@ public class MergeUtils {
 		return instance;
 	}
 
+	private static final Class<?>[] chatResponseMessageConstructorArgumentTypes = new Class<?>[] { ChatRole.class,
+			String.class };
+
 	/**
 	 * Merge two ChatResponseMessage instances into a single ChatResponseMessage instance.
 	 * @param left the left ChatResponseMessage instance to merge.
@@ -231,7 +237,8 @@ public class MergeUtils {
 			content = left.getContent();
 		}
 
-		ChatResponseMessage instance = newInstance(ChatResponseMessage.class, role, content);
+		ChatResponseMessage instance = newInstance(chatResponseMessageConstructorArgumentTypes,
+				ChatResponseMessage.class, role, content);
 
 		List<ChatCompletionsToolCall> toolCalls = new ArrayList<>();
 		if (left.getToolCalls() == null) {

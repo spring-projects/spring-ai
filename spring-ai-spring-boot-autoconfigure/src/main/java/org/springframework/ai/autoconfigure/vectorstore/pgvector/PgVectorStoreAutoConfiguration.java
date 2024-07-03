@@ -19,7 +19,6 @@ import javax.sql.DataSource;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.PgVectorStore;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -42,8 +41,16 @@ public class PgVectorStoreAutoConfiguration {
 	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			PgVectorStoreProperties properties) {
 		var initializeSchema = properties.isInitializeSchema();
-		return new PgVectorStore(jdbcTemplate, embeddingModel, properties.getDimensions(), properties.getDistanceType(),
-				properties.isRemoveExistingVectorStoreTable(), properties.getIndexType(), initializeSchema);
+
+		return new PgVectorStore.Builder(jdbcTemplate, embeddingModel).withSchemaName(properties.getSchemaName())
+			.withVectorTableName(properties.getTableName())
+			.withVectorTableValidationsEnabled(properties.isSchemaValidation())
+			.withDimensions(properties.getDimensions())
+			.withDistanceType(properties.getDistanceType())
+			.withRemoveExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
+			.withIndexType(properties.getIndexType())
+			.withInitializeSchema(initializeSchema)
+			.build();
 	}
 
 }

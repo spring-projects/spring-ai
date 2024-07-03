@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Client.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Model.
  *
  * @author Christian Tzolov
  * @author Wei Jiang

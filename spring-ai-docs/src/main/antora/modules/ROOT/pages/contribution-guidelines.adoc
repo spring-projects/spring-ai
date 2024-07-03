@@ -1,6 +1,16 @@
 [[contribution-guidelines]]
 = Contribution Guidelines
 
+== Code Formatting and Javadoc
+
+Before submitting a PR, please run the following commands to ensure proper formatting and Javadoc processing
+
+```
+./mvnw spring-javaformat:apply javadoc:javadoc -Pjavadoc
+```
+
+The `-Pjavadoc` is a profile that enables Javadoc processing so as to avoid a long build time when developing.
+
 == Contributing a New AI Model Implementation
 
 This section outlines the steps for contributing a new AI model implementation.

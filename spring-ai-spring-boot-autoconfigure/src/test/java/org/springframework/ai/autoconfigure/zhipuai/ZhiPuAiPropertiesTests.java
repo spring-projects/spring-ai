@@ -217,7 +217,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.chat.options.topP=0.56",
 
 				// "spring.ai.zhipuai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.zhipuai.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(ZhiPuAiApi.ChatCompletionRequest.ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName")),
+				"spring.ai.zhipuai.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(ZhiPuAiApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
 				"spring.ai.zhipuai.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.zhipuai.chat.options.tools[0].function.description=function description",

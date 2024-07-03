@@ -15,6 +15,7 @@ org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanChatAutoConfigura
 org.springframework.ai.autoconfigure.bedrock.titan.BedrockTitanEmbeddingAutoConfiguration
 org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.oracle.OracleVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.pinecone.PineconeVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoConfiguration
@@ -31,6 +32,12 @@ org.springframework.ai.autoconfigure.vectorstore.mongo.MongoDBAtlasVectorStoreAu
 org.springframework.ai.autoconfigure.anthropic.AnthropicAutoConfiguration
 org.springframework.ai.autoconfigure.watsonxai.WatsonxAiAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.elasticsearch.ElasticsearchVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.gemfire.GemFireVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.cassandra.CassandraVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.zhipuai.ZhiPuAiAutoConfiguration
 org.springframework.ai.autoconfigure.chat.client.ChatClientAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreAutoConfiguration
+org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration
+org.springframework.ai.autoconfigure.qianfan.QianFanAutoConfiguration
+org.springframework.ai.autoconfigure.minimax.MiniMaxAutoConfiguration

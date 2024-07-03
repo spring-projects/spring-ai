@@ -15,14 +15,24 @@
  */
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -45,17 +55,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import reactor.core.publisher.Flux;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -69,20 +70,23 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Jemin Huh
  * @author Grogdunn
  * @author Hyunjoon Choi
+ * @author Mariusz Bernacki
+ * @author luocongqiu
+ * @author Thomas Vitale
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
  */
 public class OpenAiChatModel extends
 		AbstractFunctionCallSupport<ChatCompletionMessage, OpenAiApi.ChatCompletionRequest, ResponseEntity<ChatCompletion>>
-		implements ChatModel, StreamingChatModel {
+		implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private OpenAiChatOptions defaultOptions;
+	private final OpenAiChatOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the OpenAI API calls.
@@ -211,7 +215,7 @@ public class OpenAiChatModel extends
 							}
 							String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
 							var generation = new Generation(choice.message().content(),
-									Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
+									Map.of("id", id, "role", roleMap.getOrDefault(id, ""), "finishReason", finish));
 							if (choice.finishReason() != null) {
 								generation = generation.withGenerationMetadata(
 										ChatGenerationMetadata.from(choice.finishReason().name(), null));
@@ -219,7 +223,12 @@ public class OpenAiChatModel extends
 							return generation;
 						}).toList();
 
-						return new ChatResponse(generations);
+						if (chatCompletion.usage() != null) {
+							return new ChatResponse(generations, OpenAiChatResponseMetadata.from(chatCompletion));
+						}
+						else {
+							return new ChatResponse(generations);
+						}
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -242,7 +251,7 @@ public class OpenAiChatModel extends
 			.toList();
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
-				chunk.systemFingerprint(), "chat.completion", null);
+				chunk.systemFingerprint(), "chat.completion", chunk.usage());
 	}
 
 	/**
@@ -253,37 +262,36 @@ public class OpenAiChatModel extends
 		Set<String> functionsForThisRequest = new HashSet<>();
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
-			// Add text content.
-			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
-			if (!CollectionUtils.isEmpty(m.getMedia())) {
-				// Add media content.
-				contents.addAll(m.getMedia()
+			Object content;
+			if (CollectionUtils.isEmpty(m.getMedia())) {
+				content = m.getContent();
+			}
+			else {
+				List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(m.getContent())));
+
+				contentList.addAll(m.getMedia()
 					.stream()
 					.map(media -> new MediaContent(
 							new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
 					.toList());
+
+				content = contentList;
 			}
 
-			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+			return new ChatCompletionMessage(content, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
 		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, OpenAiChatOptions.class);
+			OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, OpenAiChatOptions.class);
 
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
+			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
+					IS_RUNTIME_CALL);
+			functionsForThisRequest.addAll(promptEnabledFunctions);
 
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 
 		if (this.defaultOptions != null) {
@@ -302,6 +310,12 @@ public class OpenAiChatModel extends
 			request = ModelOptionsUtils.merge(
 					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
 					request, ChatCompletionRequest.class);
+		}
+
+		// Remove `streamOptions` from the request if it is not a streaming request
+		if (request.streamOptions() != null && !stream) {
+			logger.warn("Removing streamOptions from the request as it is not a streaming request!");
+			request = request.withStreamOptions(null);
 		}
 
 		return request;
@@ -404,6 +418,11 @@ public class OpenAiChatModel extends
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return OpenAiChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	@Override
+	public String toString() {
+		return "OpenAiChatModel [defaultOptions=" + defaultOptions + "]";
 	}
 
 }

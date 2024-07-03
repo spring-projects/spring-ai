@@ -28,6 +28,10 @@ import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 /**
+ * ElasticsearchAiSearchFilterExpressionConverter is a class that converts
+ * Filter.Expression objects into Elasticsearch query string representation. It extends
+ * the AbstractFilter ExpressionConverter class.
+ *
  * @author Jemin Huh
  * @since 1.0.0
  */

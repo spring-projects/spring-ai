@@ -92,8 +92,8 @@ public class Document implements Content {
 	}
 
 	public Document(String id, String content, List<Media> media, Map<String, Object> metadata) {
-		Assert.hasText(id, "id must not be null");
-		Assert.hasText(content, "content must not be null");
+		Assert.hasText(id, "id must not be null or empty");
+		Assert.hasText(content, "content must not be null or empty");
 		Assert.notNull(metadata, "metadata must not be null");
 
 		this.id = id;
@@ -203,8 +203,8 @@ public class Document implements Content {
 
 	@Override
 	public String toString() {
-		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", content='" + new String(content) + '\''
-				+ '}';
+		return "Document{" + "id='" + id + '\'' + ", metadata=" + metadata + ", content='" + content + '\'' + ", media="
+				+ media + '}';
 	}
 
 }

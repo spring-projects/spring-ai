@@ -130,8 +130,19 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-moonshot</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <!-- Vector Databses -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-qianfan</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Vector Databases -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-azure-store</artifactId>
@@ -159,6 +170,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-neo4j-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-oracle-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -216,6 +233,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-opensearch-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Utilities -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -262,6 +285,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-huggingface-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -284,9 +313,27 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-opensearch-store-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-oracle-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -311,6 +358,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-zhipuai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-typesense-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -379,9 +432,16 @@
                 <artifactId>spring-ai-mongodb-atlas-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-typesense-store-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -405,9 +465,28 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-gemfire-store-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-moonshot-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

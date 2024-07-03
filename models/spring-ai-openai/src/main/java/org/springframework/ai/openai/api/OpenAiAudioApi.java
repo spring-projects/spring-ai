@@ -21,7 +21,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -49,11 +51,11 @@ public class OpenAiAudioApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create an new audio api.
+	 * Create a new audio api.
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiAudioApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 

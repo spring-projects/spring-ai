@@ -39,6 +39,13 @@
 
         <!-- TESTING -->
         <dependency>
+            <groupId>dev.gemfire</groupId>
+            <artifactId>gemfire-testcontainers</artifactId>
+            <version>${gemfire.testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-openai</artifactId>
             <version>${parent.version}</version>
@@ -70,10 +77,6 @@
             <artifactId>awaitility</artifactId>
             <version>3.0.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
         </dependency>
 
     </dependencies>

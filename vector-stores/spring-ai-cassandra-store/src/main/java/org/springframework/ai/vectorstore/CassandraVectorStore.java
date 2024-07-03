@@ -127,7 +127,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 	public CassandraVectorStore(CassandraVectorStoreConfig conf, EmbeddingModel embeddingModel) {
 
 		Preconditions.checkArgument(null != conf, "Config must not be null");
-		Preconditions.checkArgument(null != embeddingModel, "Embedding client must not be null");
+		Preconditions.checkArgument(null != embeddingModel, "Embedding model must not be null");
 
 		this.conf = conf;
 		this.embeddingModel = embeddingModel;

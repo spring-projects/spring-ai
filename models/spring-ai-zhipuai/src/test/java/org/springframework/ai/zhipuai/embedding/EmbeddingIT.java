@@ -17,7 +17,6 @@ package org.springframework.ai.zhipuai.embedding;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;

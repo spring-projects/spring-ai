@@ -167,7 +167,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666l, "model", null,
-				null);
+				null, null);
 
 		when(openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))

@@ -90,7 +90,7 @@ The prefix `spring.ai.minimax.chat` is the property prefix that lets you configu
 | spring.ai.minimax.chat.enabled | Enable MiniMax chat model.  | true
 | spring.ai.minimax.chat.base-url | Optional overrides the spring.ai.minimax.base-url to provide chat specific url |  https://api.minimax.chat
 | spring.ai.minimax.chat.api-key | Optional overrides the spring.ai.minimax.api-key to provide chat specific api-key |  -
-| spring.ai.minimax.chat.options.model | This is the MiniMax Chat model to use | `abab5.5-chat` (the `abab5.5s-chat`, `abab5.5-chat`, and `abab6-chat` point to the latest model versions)
+| spring.ai.minimax.chat.options.model | This is the MiniMax Chat model to use | `abab6.5g-chat` (the `abab5.5-chat`, `abab5.5s-chat`, `abab6.5-chat`, `abab6.5g-chat`, `abab6.5t-chat` and `abab6.5s-chat` point to the latest model versions)
 | spring.ai.minimax.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.minimax.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 | spring.ai.minimax.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 1.0
@@ -121,7 +121,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MiniMaxChatOptions.builder()
-            .withModel(MiniMaxApi.ChatModel.GLM_3_Turbo.getValue())
+            .withModel(MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue())
             .withTemperature(0.5f)
         .build()
     ));
@@ -138,7 +138,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.minimax.api-key=YOUR_API_KEY
-spring.ai.minimax.chat.options.model=glm-3-turbo
+spring.ai.minimax.chat.options.model=abab6.5g-chat
 spring.ai.minimax.chat.options.temperature=0.7
 ----
 
@@ -204,7 +204,7 @@ Next, create a `MiniMaxChatModel` and use it for text generations:
 var miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
 var chatModel = new MiniMaxChatModel(miniMaxApi, MiniMaxChatOptions.builder()
-                .withModel(MiniMaxApi.ChatModel.GLM_3_Turbo.getValue())
+                .withModel(MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue())
                 .withTemperature(0.4f)
                 .withMaxTokens(200)
                 .build());
@@ -236,11 +236,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = miniMaxApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.GLM_3_Turbo.getValue(), 0.7f, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue(), 0.7f, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = miniMaxApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.GLM_3_Turbo.getValue(), 0.7f, true));
+        new ChatCompletionRequest(List.of(chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_5_5_Chat.getValue(), 0.7f, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi.java]'s JavaDoc for further information.

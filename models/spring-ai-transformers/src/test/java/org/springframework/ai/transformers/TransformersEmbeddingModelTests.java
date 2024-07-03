@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TransformersEmbeddingModelTests {
 
-	private static DecimalFormat DF = new DecimalFormat("#.######");
+	private static DecimalFormat DF = new DecimalFormat("#.#####");
 
 	@Test
 	void embed() throws Exception {

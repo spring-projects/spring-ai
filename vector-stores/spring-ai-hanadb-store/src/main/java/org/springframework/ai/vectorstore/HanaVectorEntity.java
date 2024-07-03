@@ -22,6 +22,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 
 /**
+ * The {@code HanaVectorEntity} is an abstract class that represents a mapped superclass
+ * for entities that have a vector representation stored in a HANA vector repository. It
+ * provides methods for converting the entity to JSON format and retrieving the unique
+ * identifier of the entity.
+ *
  * @author Rahul Mittal
  * @since 1.0.0
  */

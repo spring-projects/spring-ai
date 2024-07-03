@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Christian Tzolov
+ * @author Muthukumaran Navaneethakrishnan
  */
 @ConfigurationProperties(PgVectorStoreProperties.CONFIG_PREFIX)
 public class PgVectorStoreProperties extends CommonVectorStoreProperties {
@@ -36,6 +37,13 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 	private PgDistanceType distanceType = PgDistanceType.COSINE_DISTANCE;
 
 	private boolean removeExistingVectorStoreTable = false;
+
+	// Dynamically generate table name in PgVectorStore to allow backward compatibility
+	private String tableName = PgVectorStore.DEFAULT_TABLE_NAME;
+
+	private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
+
+	private boolean schemaValidation = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
 
 	public int getDimensions() {
 		return dimensions;
@@ -62,11 +70,35 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public boolean isRemoveExistingVectorStoreTable() {
-		return removeExistingVectorStoreTable;
+		return this.removeExistingVectorStoreTable;
 	}
 
 	public void setRemoveExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
 		this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
+	}
+
+	public String getTableName() {
+		return this.tableName;
+	}
+
+	public void setTableName(String vectorTableName) {
+		this.tableName = vectorTableName;
+	}
+
+	public String getSchemaName() {
+		return this.schemaName;
+	}
+
+	public void setSchemaName(String schemaName) {
+		this.schemaName = schemaName;
+	}
+
+	public boolean isSchemaValidation() {
+		return this.schemaValidation;
+	}
+
+	public void setSchemaValidation(boolean schemaValidation) {
+		this.schemaValidation = schemaValidation;
 	}
 
 }

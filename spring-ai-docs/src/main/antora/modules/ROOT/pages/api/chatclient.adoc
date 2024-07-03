@@ -11,7 +11,7 @@ The AI model processes two main types of messages: user messages, which are dire
 
 These messages often contain placeholders that are substituted at runtime based on user input to customize the response of the AI model to the user input.
 
-There are also Prompt options that can be specified., such as the name of the AI Model to use and the temperature setting that controls the randomness or creativity of the generated output.
+There are also Prompt options that can be specified, such as the name of the AI Model to use and the temperature setting that controls the randomness or creativity of the generated output.
 
 == Creating a ChatClient
 
@@ -45,7 +45,7 @@ class MyController {
 ----
 
 In this simple example, the user input sets the contents of the user message.
-The call method sends a request to the AI model, and the context method returns the AI model's response as a String.
+The call method sends a request to the AI model, and the content method returns the AI model's response as a String.
 
 === Create a ChatClient programmatically
 
@@ -115,7 +115,7 @@ There is also an overloaded `entity` method with the signature `entity(Parameter
 List<ActorFilms> actorFilms = chatClient.prompt()
     .user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
     .call()
-    .entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+    .entity(new ParameterizedTypeReference<List<ActorFilms>>() {
     });
 ----
 
@@ -182,8 +182,6 @@ After specifying the `stream` method on `ChatClient`, there are a few options fo
 
 Creating a ChatClient with default system text in an `@Configuration` class simplifies runtime code.
 By setting defaults, you only need to specify user text when calling `ChatClient`, eliminating the need to set system text for each request in your runtime code path.
-
-
 
 === Default System Text
 
@@ -346,6 +344,26 @@ ChatResponse response = ChatClient.builder(chatModel)
 Is this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
 To restrict the types of documents that are searched, the `SearchRequest` takes a SQL like filter expression that is portable across all `VectorStores`.
 
+==== Dynamic Filter Expressions
+
+Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRESSION` advisor context parameter:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+    .build();
+
+// Update filter expression at runtime
+String content = chatClient.prompt()
+    .user("Please answer my question XYZ")
+    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
+    .call()
+    .content();
+----
+
+The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
+
 === Chat Memory
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a
@@ -361,7 +379,7 @@ Two advisor implementations use the `ChatMemory` interface to advice the prompt 
 
 * `VectorStoreChatMemoryAdvisor`  : The construtor ` VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize)` lets you specify the VectorStore to retrieve the chat history from, the unqiue conversation ID, the size of the chat history to be retreived in token size.
 
-A sample `@Service` implementaiton that uses several advisors is shown below
+A sample `@Service` implementation that uses several advisors is shown below
 
 [source,java]
 ----
@@ -376,7 +394,7 @@ public class CustomerSupportAssistant {
 
     public CustomerSupportAssistant(ChatClient.Builder builder, VectorStore vectorStore, ChatMemory chatMemory) {
 
-    this.chatClient = builderh
+    this.chatClient = builder
             .defaultSystem("""
                     You are a customer chat support agent of an airline named "Funnair".", Respond in a friendly,
                     helpful, and joyful manner.
@@ -407,5 +425,54 @@ public Flux<String> chat(String chatId, String userMessageContent) {
             .stream().content();
     }
 }
+----
+
+=== Logging
+
+The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the ChatClient. 
+This can be useful for debugging and monitoring your AI interactions.
+
+To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient. 
+It's recommended to add it toward the end of the chain:
+
+[source,java]
+----
+ChatResponse response = ChatClient.create(chatModel).prompt()
+        .advisors(new SimpleLoggerAdvisor())
+        .user("Tell me a joke?")
+        .call()
+        .chatResponse();
+----
+
+To see the logs, set the logging level for the advisor package to `DEBUG`:
 
 ----
+logging.level.org.springframework.ai.chat.client.advisor=DEBUG
+----
+
+Add this to your `application.properties` or `application.yaml` file.
+
+
+You can customize what data from AdvisedRequest and ChatResponse is logged by using the following constructor:
+
+[source,java]
+----
+SimpleLoggerAdvisor(
+    Function<AdvisedRequest, String> requestToString,
+    Function<ChatResponse, String> responseToString
+)
+----
+
+Example usage:
+
+[source,java]
+----
+javaCopySimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
+    request -> "Custom request: " + request.userText,
+    response -> "Custom response: " + response.getResult()
+);
+----
+
+This allows you to tailor the logged information to your specific needs.
+
+TIP: Be cautious about logging sensitive information in production environments.

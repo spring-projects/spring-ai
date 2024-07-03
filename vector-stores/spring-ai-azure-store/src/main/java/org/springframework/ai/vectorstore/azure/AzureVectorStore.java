@@ -332,8 +332,10 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		if (!this.initializeSchema)
+		if (!this.initializeSchema) {
+			this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 			return;
+		}
 
 		int dimensions = this.embeddingModel.dimensions();
 

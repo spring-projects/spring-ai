@@ -1,5 +1,10 @@
 = VertexAI PaLM2 Chat
 
+WARNING:
+
+> https://ai.google.dev/palm_docs/deprecation[As of February 15, 2024, the PaLM2 API for use with Google AI services and tooling is deprecated].
+In 6 months, the PaLM API will be decommissioned, meaning that users won't be able to use a PaLM model in a prompt, tune a new PaLM model, or run inference on PaLM-tuned models.
+
 The link:https://developers.generativeai.google/api/rest/generativelanguage[Generative Language] PaLM API allows developers to build generative AI applications using the PaLM model. Large Language Models (LLMs) are a powerful, versatile type of machine learning model that enables computers to comprehend and generate natural language through a series of prompts. The PaLM API is based on Google's next generation LLM, PaLM. It excels at a variety of different tasks like code generation, reasoning, and writing. You can use the PaLM API to build generative AI applications for use cases like content generation, dialogue agents, summarization and classification systems, and more.
 
 Based on the link:https://developers.generativeai.google/api/rest/generativelanguage/models[Models REST API].

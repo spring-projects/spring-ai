@@ -60,6 +60,8 @@ public class PineconeVectorStoreIT {
 	// NOTE: Leave it empty as for free tier as later doesn't support namespaces.
 	private static final String PINECONE_NAMESPACE = "";
 
+	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
+
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
 			new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
@@ -283,6 +285,7 @@ public class PineconeVectorStoreIT {
 				.withProjectId(PINECONE_PROJECT_ID)
 				.withIndexName(PINECONE_INDEX_NAME)
 				.withNamespace(PINECONE_NAMESPACE)
+				.withContentFieldName(CUSTOM_CONTENT_FIELD_NAME)
 				.build();
 		}
 

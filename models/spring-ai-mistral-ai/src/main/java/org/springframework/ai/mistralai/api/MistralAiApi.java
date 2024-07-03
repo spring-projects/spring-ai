@@ -54,6 +54,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Ricken Bazolo
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public class MistralAiApi {
@@ -696,23 +697,22 @@ public class MistralAiApi {
 	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
 	 *
 	 * <p>
-	 * Mistral AI provides five API endpoints featuring five leading Large Language
-	 * Models:
-	 * </p>
-	 * <ul>
-	 * <li><b>TINY</b> - open-mistral-7b (aka mistral-tiny-2312)</li>
-	 * <li><b>MIXTRAL</b> - open-mixtral-8x7b (aka mistral-small-2312)</li>
-	 * <li><b>SMALL_LATEST</b> - mistral-small-latest (aka mistral-small-2402)</li>
-	 * <li><b>MEDIUM</b> - mistral-medium-latest (aka mistral-medium-2312)</li>
-	 * <li><b>LARGE</b> - mistral-large-latest (aka mistral-large-2402)</li>
-	 * </ul>
+	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
+	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
+	 * Medium, Mistral Large, and Mistral Embeddings).
 	 */
 	public enum ChatModel implements ModelDescription {
 
 		// @formatter:off
+		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
 		 TINY("open-mistral-7b"),
+		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MIXTRAL_7B
 		 MIXTRAL("open-mixtral-8x7b"),
+		 OPEN_MISTRAL_7B("open-mistral-7b"),
+		 OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
+		 OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
 		 SMALL("mistral-small-latest"),
+		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral is removing this model
 		 MEDIUM("mistral-medium-latest"),
 		 LARGE("mistral-large-latest");
 		 // @formatter:on
@@ -741,7 +741,7 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		 @JsonProperty("mistral-embed") EMBED("mistral-embed");
+		 EMBED("mistral-embed");
 		 // @formatter:on
 
 		private final String value;

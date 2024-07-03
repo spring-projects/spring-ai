@@ -18,10 +18,10 @@ package org.springframework.ai.zhipuai.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.model.ModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -40,15 +40,15 @@ import java.util.function.Predicate;
 
 // @formatter:off
 /**
- * Single class implementation of the ZhiPuAI Chat Completion API: https://open.bigmodel.cn/dev/api#http and
- * ZhiPuAI Embedding API: https://open.bigmodel.cn/dev/api#text_embedding.
+ * Single class implementation of the <a href="https://open.bigmodel.cn/dev/api#http">ZhiPuAI Chat Completion API</a> and
+ * <a href="https://open.bigmodel.cn/dev/api#text_embedding">ZhiPuAI Embedding API</a>.
  *
  * @author Geng Rong
  * @since 1.0.0 M1
  */
 public class ZhiPuAiApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GLM_3_Turbo.getValue();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.GLM_4_Air.getValue();
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.Embedding_2.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -62,7 +62,7 @@ public class ZhiPuAiApi {
 	 * @param zhiPuAiToken ZhiPuAI apiKey.
 	 */
 	public ZhiPuAiApi(String zhiPuAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, zhiPuAiToken);
+		this(ZhiPuApiConstants.DEFAULT_BASE_URL, zhiPuAiToken);
 	}
 
 	/**
@@ -114,6 +114,10 @@ public class ZhiPuAiApi {
 	 */
 	public enum ChatModel implements ModelDescription {
 		GLM_4("GLM-4"),
+		GLM_4V("glm-4v"),
+		GLM_4_Air("glm-4-air"),
+		GLM_4_AirX("glm-4-airx"),
+		GLM_4_Flash("glm-4-flash"),
 		GLM_3_Turbo("GLM-3-Turbo");
 
 		public final String  value;
@@ -321,7 +325,7 @@ public class ZhiPuAiApi {
 			/**
 			 * Specifying a particular function forces the model to call that function.
 			 */
-			public static Object FUNCTION(String functionName) {
+			public static Object function(String functionName) {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 		}

@@ -23,7 +23,7 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
 /**
  * @author Eddú Meléndez
  */
-public class RedisContainerConnectionDetailsFactory
+class RedisContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<RedisStackContainer, RedisConnectionDetails> {
 
 	@Override

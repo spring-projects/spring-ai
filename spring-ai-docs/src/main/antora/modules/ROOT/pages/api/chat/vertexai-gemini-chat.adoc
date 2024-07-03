@@ -10,13 +10,14 @@ link:https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemin
 
 == Prerequisites
 
-Set up your Java Development Environment.
-Authenticate by running the following command. Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, apropriate for you OS.
+- Authenticate by running the following command. 
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
 
 [source]
 ----
-gcloud config set project PROJECT_ID &&
-gcloud auth application-default login ACCOUNT
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
 ----
 
 == Auto-configuration

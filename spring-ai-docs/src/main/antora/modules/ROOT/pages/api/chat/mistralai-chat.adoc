@@ -215,7 +215,7 @@ var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 var chatModel = new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder()
                 .withModel(MistralAiApi.ChatModel.LARGE.getValue())
                 .withTemperature(0.4f)
-                .withMaxToken(200)
+                .withMaxTokens(200)
                 .build());
 
 ChatResponse response = chatModel.call(
