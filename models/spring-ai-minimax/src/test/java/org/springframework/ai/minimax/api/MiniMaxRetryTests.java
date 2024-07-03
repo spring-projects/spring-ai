@@ -157,7 +157,7 @@ public class MiniMaxRetryTests {
 	@Test
 	public void miniMaxEmbeddingTransientError() {
 
-		EmbeddingList expectedEmbeddings = new EmbeddingList(List.of(List.of(9.9, 8.8)), "model", 10);
+		EmbeddingList expectedEmbeddings = new EmbeddingList(List.of(List.of(9.9f, 8.8f)), "model", 10);
 
 		when(miniMaxApi.embeddings(isA(EmbeddingRequest.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))

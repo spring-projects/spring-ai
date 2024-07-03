@@ -397,10 +397,10 @@ public class Neo4jVectorStore implements VectorStore, InitializingBean {
 		return row;
 	}
 
-	private static float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
+	private static float[] toFloatArray(List<Float> embedding) {
+		float[] embeddingFloat = new float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;

@@ -75,7 +75,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public List<Float> embed(Document document) {
 		return embed(document.getContent());
 	}
 
@@ -87,7 +87,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 		}
 
-		List<List<Double>> embeddingList = new ArrayList<>();
+		List<List<Float>> embeddingList = new ArrayList<>();
 		for (String inputContent : request.getInstructions()) {
 			var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
 			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);

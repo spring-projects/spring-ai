@@ -157,7 +157,7 @@ public class QianFanRetryTests {
 
 	@Test
 	public void qianFanEmbeddingTransientError() {
-		QianFanApi.Embedding embedding = new QianFanApi.Embedding(1, List.of(9.9, 8.8));
+		QianFanApi.Embedding embedding = new QianFanApi.Embedding(1, List.of(9.9f, 8.8f));
 		EmbeddingList expectedEmbeddings = new EmbeddingList("embedding_list", List.of(embedding), "model", null, null,
 				new Usage(10, 10));
 

@@ -275,7 +275,7 @@ public class PineconeVectorStore implements VectorStore {
 
 			return Vector.newBuilder()
 				.setId(document.getId())
-				.addAllValues(toFloatList(document.getEmbedding()))
+				.addAllValues(document.getEmbedding())
 				.setMetadata(metadataToStruct(document))
 				.build();
 		}).toList();
@@ -360,10 +360,10 @@ public class PineconeVectorStore implements VectorStore {
 		String nativeExpressionFilters = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
+		List<Float> queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 		var queryRequestBuilder = QueryRequest.newBuilder()
-			.addAllVector(toFloatList(queryEmbedding))
+			.addAllVector(queryEmbedding)
 			.setTopK(request.getTopK())
 			.setIncludeMetadata(true)
 			.setNamespace(namespace);
@@ -421,15 +421,6 @@ public class PineconeVectorStore implements VectorStore {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Converts a list of doubles to a list of floats.
-	 * @param doubleList The list of doubles.
-	 * @return The converted list of floats.
-	 */
-	private List<Float> toFloatList(List<Double> doubleList) {
-		return doubleList.stream().map(d -> d.floatValue()).toList();
 	}
 
 }

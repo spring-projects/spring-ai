@@ -57,22 +57,22 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 
 		PG_ARRAY("", null, (rs, i) -> {
 			Array embedding = rs.getArray("embedding");
-			return Arrays.stream((Float[]) embedding.getArray()).map(Float::doubleValue).toList();
+			return Arrays.stream((Float[]) embedding.getArray()).toList();
 		}),
 
 		PG_VECTOR("::vector", "vector", (rs, i) -> {
 			String embedding = rs.getString("embedding");
 			return Arrays.stream((embedding.substring(1, embedding.length() - 1)
-				/* remove leading '[' and trailing ']' */.split(","))).map(Double::parseDouble).toList();
+				/* remove leading '[' and trailing ']' */.split(","))).map(Float::parseFloat).toList();
 		});
 
 		private final String cast;
 
 		private final String extensionName;
 
-		private final RowMapper<List<Double>> rowMapper;
+		private final RowMapper<List<Float>> rowMapper;
 
-		VectorType(String cast, String extensionName, RowMapper<List<Double>> rowMapper) {
+		VectorType(String cast, String extensionName, RowMapper<List<Float>> rowMapper) {
 			this.cast = cast;
 			this.extensionName = extensionName;
 			this.rowMapper = rowMapper;
@@ -156,7 +156,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 
 	@SuppressWarnings("null")
 	@Override
-	public List<Double> embed(String text) {
+	public List<Float> embed(String text) {
 		return this.jdbcTemplate.queryForObject(
 				"SELECT pgml.embed(?, ?, ?::JSONB)" + this.defaultOptions.getVectorType().cast + " AS embedding",
 				this.defaultOptions.getVectorType().rowMapper, this.defaultOptions.getTransformer(), text,
@@ -164,7 +164,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public List<Float> embed(Document document) {
 		return this.embed(document.getFormattedContent(this.defaultOptions.getMetadataMode()));
 	}
 
@@ -175,7 +175,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		final PostgresMlEmbeddingOptions optionsToUse = this.mergeOptions(request.getOptions());
 
 		List<Embedding> data = new ArrayList<>();
-		List<List<Double>> embed = List.of();
+		List<List<Float>> embed = List.of();
 
 		List<String> texts = request.getInstructions();
 		if (!CollectionUtils.isEmpty(texts)) {
@@ -187,7 +187,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 				preparedStatement.setArray(3, connection.createArrayOf("TEXT", texts.toArray(Object[]::new)));
 				return preparedStatement;
 			}, rs -> {
-				List<List<Double>> result = new ArrayList<>();
+				List<List<Float>> result = new ArrayList<>();
 				while (rs.next()) {
 					result.add(optionsToUse.getVectorType().rowMapper.mapRow(rs, -1));
 				}

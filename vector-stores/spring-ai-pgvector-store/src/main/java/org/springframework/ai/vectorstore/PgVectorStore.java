@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -196,10 +197,10 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 		}
 	}
 
-	private float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
+	private float[] toFloatArray(List<Float> embedding) {
+		float[] embeddingFloat = new float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;
@@ -253,7 +254,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	private PGvector getQueryEmbedding(String query) {
-		List<Double> embedding = this.embeddingModel.embed(query);
+		List<Float> embedding = this.embeddingModel.embed(query);
 		return new PGvector(toFloatArray(embedding));
 	}
 
@@ -441,14 +442,14 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			metadata.put(COLUMN_DISTANCE, distance);
 
 			Document document = new Document(id, content, metadata);
-			document.setEmbedding(toDoubleList(embedding));
+			document.setEmbedding(toFloatList(embedding));
 
 			return document;
 		}
 
-		private List<Double> toDoubleList(PGobject embedding) throws SQLException {
+		private List<Float> toFloatList(PGobject embedding) throws SQLException {
 			float[] floatArray = new PGvector(embedding.getValue()).toArray();
-			return IntStream.range(0, floatArray.length).mapToDouble(i -> floatArray[i]).boxed().toList();
+			return IntStream.range(0, floatArray.length).mapToObj(i -> floatArray[i]).toList();
 		}
 
 		private Map<String, Object> toMap(PGobject pgObject) {

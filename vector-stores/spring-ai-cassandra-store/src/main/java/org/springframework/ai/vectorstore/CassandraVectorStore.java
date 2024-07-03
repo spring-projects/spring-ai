@@ -174,9 +174,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 				}
 
 				builder = builder.setString(this.conf.schema.content(), d.getContent())
-					.setVector(this.conf.schema.embedding(),
-							CqlVector.newInstance(d.getEmbedding().stream().map(Double::floatValue).toList()),
-							Float.class);
+					.setVector(this.conf.schema.embedding(), CqlVector.newInstance(d.getEmbedding()), Float.class);
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
@@ -241,10 +239,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 			Document doc = new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields);
 
 			if (this.conf.returnEmbeddings) {
-				doc.setEmbedding(row.getVector(this.conf.schema.embedding(), Float.class)
-					.stream()
-					.map(Float::doubleValue)
-					.toList());
+				doc.setEmbedding(row.getVector(this.conf.schema.embedding(), Float.class).stream().toList());
 			}
 			documents.add(doc);
 		}
@@ -359,10 +354,10 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 		return this.conf.primaryKeyTranslator.apply(primaryKeyValues);
 	}
 
-	private static Float[] toFloatArray(List<Double> embeddingDouble) {
-		Float[] embeddingFloat = new Float[embeddingDouble.size()];
+	private static Float[] toFloatArray(List<Float> embedding) {
+		Float[] embeddingFloat = new Float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;

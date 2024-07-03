@@ -37,7 +37,7 @@ public class VertexAiPaLm2EmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public List<Float> embed(Document document) {
 		return embed(document.getContent());
 	}
 

@@ -38,7 +38,7 @@ public class TransformersEmbeddingModelTests {
 
 		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
 		embeddingModel.afterPropertiesSet();
-		List<Double> embed = embeddingModel.embed("Hello world");
+		List<Float> embed = embeddingModel.embed("Hello world");
 		assertThat(embed).hasSize(384);
 		assertThat(DF.format(embed.get(0))).isEqualTo(DF.format(-0.19744634628295898));
 		assertThat(DF.format(embed.get(383))).isEqualTo(DF.format(0.17298996448516846));
@@ -48,7 +48,7 @@ public class TransformersEmbeddingModelTests {
 	void embedDocument() throws Exception {
 		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
 		embeddingModel.afterPropertiesSet();
-		List<Double> embed = embeddingModel.embed(new Document("Hello world"));
+		List<Float> embed = embeddingModel.embed(new Document("Hello world"));
 		assertThat(embed).hasSize(384);
 		assertThat(DF.format(embed.get(0))).isEqualTo(DF.format(-0.19744634628295898));
 		assertThat(DF.format(embed.get(383))).isEqualTo(DF.format(0.17298996448516846));
@@ -58,7 +58,7 @@ public class TransformersEmbeddingModelTests {
 	void embedList() throws Exception {
 		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
 		embeddingModel.afterPropertiesSet();
-		List<List<Double>> embed = embeddingModel.embed(List.of("Hello world", "World is big"));
+		List<List<Float>> embed = embeddingModel.embed(List.of("Hello world", "World is big"));
 		assertThat(embed).hasSize(2);
 		assertThat(embed.get(0)).hasSize(384);
 		assertThat(DF.format(embed.get(0).get(0))).isEqualTo(DF.format(-0.19744634628295898));

@@ -362,7 +362,7 @@ public class WeaviateVectorStore implements VectorStore {
 	private WeaviateObject toWeaviateObject(Document document) {
 
 		if (CollectionUtils.isEmpty(document.getEmbedding())) {
-			List<Double> embedding = this.embeddingModel.embed(document);
+			List<Float> embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 		}
 
@@ -492,7 +492,7 @@ public class WeaviateVectorStore implements VectorStore {
 		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
 		double certainty = (Double) additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME);
 		String id = (String) additional.get(ADDITIONAL_ID_FIELD_NAME);
-		List<Double> embedding = ((List<Double>) additional.get(ADDITIONAL_VECTOR_FIELD_NAME)).stream().toList();
+		List<Float> embedding = ((List<Float>) additional.get(ADDITIONAL_VECTOR_FIELD_NAME)).stream().toList();
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
@@ -518,12 +518,12 @@ public class WeaviateVectorStore implements VectorStore {
 	}
 
 	/**
-	 * Converts a list of doubles to an array of floats.
-	 * @param doubleList The list of doubles.
+	 * Converts a list of floats to an array of floats.
+	 * @param floatList The list of floats.
 	 * @return The converted array of floats.
 	 */
-	private Float[] toFloatArray(List<Double> doubleList) {
-		return doubleList.stream().map(Number::floatValue).toList().toArray(new Float[0]);
+	private Float[] toFloatArray(List<Float> floatList) {
+		return floatList.toArray(new Float[0]);
 	}
 
 }

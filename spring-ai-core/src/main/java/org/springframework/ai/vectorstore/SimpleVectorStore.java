@@ -72,7 +72,7 @@ public class SimpleVectorStore implements VectorStore {
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
-			List<Double> embedding = this.embeddingModel.embed(document);
+			List<Float> embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.store.put(document.getId(), document);
 		}
@@ -93,7 +93,7 @@ public class SimpleVectorStore implements VectorStore {
 					"The [" + this.getClass() + "] doesn't support metadata filtering!");
 		}
 
-		List<Double> userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
+		List<Float> userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
 			.map(entry -> new Similarity(entry.getId(),
@@ -186,7 +186,7 @@ public class SimpleVectorStore implements VectorStore {
 		return json;
 	}
 
-	private List<Double> getUserQueryEmbedding(String query) {
+	private List<Float> getUserQueryEmbedding(String query) {
 		return this.embeddingModel.embed(query);
 	}
 
@@ -209,7 +209,7 @@ public class SimpleVectorStore implements VectorStore {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
 		}
 
-		public static double cosineSimilarity(List<Double> vectorX, List<Double> vectorY) {
+		public static double cosineSimilarity(List<Float> vectorX, List<Float> vectorY) {
 			if (vectorX == null || vectorY == null) {
 				throw new RuntimeException("Vectors must not be null");
 			}
@@ -228,12 +228,12 @@ public class SimpleVectorStore implements VectorStore {
 			return dotProduct / (Math.sqrt(normX) * Math.sqrt(normY));
 		}
 
-		public static double dotProduct(List<Double> vectorX, List<Double> vectorY) {
+		public static float dotProduct(List<Float> vectorX, List<Float> vectorY) {
 			if (vectorX.size() != vectorY.size()) {
 				throw new IllegalArgumentException("Vectors lengths must be equal");
 			}
 
-			double result = 0;
+			float result = 0;
 			for (int i = 0; i < vectorX.size(); ++i) {
 				result += vectorX.get(i) * vectorY.get(i);
 			}
@@ -241,7 +241,7 @@ public class SimpleVectorStore implements VectorStore {
 			return result;
 		}
 
-		public static double norm(List<Double> vector) {
+		public static float norm(List<Float> vector) {
 			return dotProduct(vector, vector);
 		}
 

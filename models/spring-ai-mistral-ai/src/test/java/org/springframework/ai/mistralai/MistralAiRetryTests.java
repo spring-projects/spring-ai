@@ -166,7 +166,7 @@ public class MistralAiRetryTests {
 	public void mistralAiEmbeddingTransientError() {
 
 		EmbeddingList<Embedding> expectedEmbeddings = new EmbeddingList<>("list",
-				List.of(new Embedding(0, List.of(9.9, 8.8))), "model", new MistralAiApi.Usage(10, 10, 10));
+				List.of(new Embedding(0, List.of(9.9f, 8.8f))), "model", new MistralAiApi.Usage(10, 10, 10));
 
 		when(mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))

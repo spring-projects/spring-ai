@@ -210,19 +210,19 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	@Override
-	public List<Double> embed(String text) {
+	public List<Float> embed(String text) {
 		return embed(List.of(text)).get(0);
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public List<Float> embed(Document document) {
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 	@Override
 	public EmbeddingResponse embedForResponse(List<String> texts) {
 		List<Embedding> data = new ArrayList<>();
-		List<List<Double>> embed = this.embed(texts);
+		List<List<Float>> embed = this.embed(texts);
 		for (int i = 0; i < embed.size(); i++) {
 			data.add(new Embedding(embed.get(i), i));
 		}
@@ -230,7 +230,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	@Override
-	public List<List<Double>> embed(List<String> texts) {
+	public List<List<Float>> embed(List<String> texts) {
 		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()
 			.stream()
@@ -241,7 +241,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
-		List<List<Double>> resultEmbeddings = new ArrayList<>();
+		List<List<Float>> resultEmbeddings = new ArrayList<>();
 
 		try {
 
@@ -286,7 +286,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 					NDArray embedding = meanPooling(ndTokenEmbeddings, ndAttentionMask);
 
 					for (int i = 0; i < embedding.size(0); i++) {
-						resultEmbeddings.add(toDoubleList(embedding.get(i).toFloatArray()));
+						resultEmbeddings.add(toFloatList(embedding.get(i).toFloatArray()));
 					}
 				}
 			}
@@ -343,11 +343,11 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		return sumEmbeddings.div(sumMask);
 	}
 
-	private List<Double> toDoubleList(float[] floats) {
-		List<Double> result = new ArrayList<>();
+	private List<Float> toFloatList(float[] floats) {
+		List<Float> result = new ArrayList<>();
 		if (floats != null && floats.length > 0) {
 			for (int i = 0; i < floats.length; i++) {
-				result.add((double) floats[i]);
+				result.add(floats[i]);
 			}
 		}
 		return result;

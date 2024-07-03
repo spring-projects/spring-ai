@@ -34,7 +34,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param text the text to embed.
 	 * @return the embedded vector.
 	 */
-	default List<Double> embed(String text) {
+	default List<Float> embed(String text) {
 		Assert.notNull(text, "Text must not be null");
 		return this.embed(List.of(text)).iterator().next();
 	}
@@ -44,14 +44,14 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param document the document to embed.
 	 * @return the embedded vector.
 	 */
-	List<Double> embed(Document document);
+	List<Float> embed(Document document);
 
 	/**
 	 * Embeds a batch of texts into vectors.
 	 * @param texts list of texts to embed.
 	 * @return list of list of embedded vectors.
 	 */
-	default List<List<Double>> embed(List<String> texts) {
+	default List<List<Float>> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
 		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.EMPTY))
 			.getResults()

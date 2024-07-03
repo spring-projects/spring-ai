@@ -65,7 +65,7 @@ public class Document implements MediaContent {
 	 * Embedding of the document. Note: ephemeral field.
 	 */
 	@JsonProperty(index = 100)
-	private List<Double> embedding = new ArrayList<>();
+	private List<Float> embedding = new ArrayList<>();
 
 	/**
 	 * Mutable, ephemeral, content to text formatter. Defaults to Document text.
@@ -206,7 +206,7 @@ public class Document implements MediaContent {
 		return formatter.format(this, metadataMode);
 	}
 
-	public void setEmbedding(List<Double> embedding) {
+	public void setEmbedding(List<Float> embedding) {
 		Assert.notNull(embedding, "embedding must not be null");
 		this.embedding = embedding;
 	}
@@ -224,7 +224,7 @@ public class Document implements MediaContent {
 		return this.metadata;
 	}
 
-	public List<Double> getEmbedding() {
+	public List<Float> getEmbedding() {
 		return this.embedding;
 	}
 

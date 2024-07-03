@@ -150,10 +150,7 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 				threshold = 1 - threshold;
 			}
 			final float finalThreshold = threshold;
-			List<Float> vectors = this.embeddingModel.embed(searchRequest.getQuery())
-				.stream()
-				.map(Double::floatValue)
-				.toList();
+			List<Float> vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
 			SearchResponse<Document> res = elasticsearchClient.search(
 					sr -> sr.index(options.getIndexName())

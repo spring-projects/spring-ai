@@ -378,7 +378,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		UploadRequest upload = new UploadRequest(documents.stream().map(document -> {
 			// Compute and assign an embedding to the document.
 			document.setEmbedding(this.embeddingModel.embed(document));
-			List<Float> floatVector = document.getEmbedding().stream().map(Double::floatValue).toList();
+			List<Float> floatVector = document.getEmbedding();
 			return new UploadRequest.Embedding(document.getId(), floatVector, DOCUMENT_FIELD, document.getContent(),
 					document.getMetadata());
 		}).toList());
@@ -425,8 +425,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
 		}
-		List<Double> vector = this.embeddingModel.embed(request.getQuery());
-		List<Float> floatVector = vector.stream().map(Double::floatValue).toList();
+		List<Float> floatVector = this.embeddingModel.embed(request.getQuery());
 		return client.post()
 			.uri("/" + indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)

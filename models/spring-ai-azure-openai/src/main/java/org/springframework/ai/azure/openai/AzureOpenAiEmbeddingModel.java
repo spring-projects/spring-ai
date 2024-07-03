@@ -64,7 +64,7 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public List<Float> embed(Document document) {
 		logger.debug("Retrieving embeddings");
 
 		EmbeddingResponse response = this
@@ -108,8 +108,7 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		for (EmbeddingItem nativeDatum : nativeData) {
 			List<Float> nativeDatumEmbedding = nativeDatum.getEmbedding();
 			int nativeIndex = nativeDatum.getPromptIndex();
-			Embedding embedding = new Embedding(nativeDatumEmbedding.stream().map(f -> f.doubleValue()).toList(),
-					nativeIndex);
+			Embedding embedding = new Embedding(nativeDatumEmbedding.stream().toList(), nativeIndex);
 			data.add(embedding);
 		}
 		return data;

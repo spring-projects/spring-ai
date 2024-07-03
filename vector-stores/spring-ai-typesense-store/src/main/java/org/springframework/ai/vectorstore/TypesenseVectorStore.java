@@ -169,7 +169,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			List<Double> embedding = this.embeddingModel.embed(document.getContent());
+			List<Float> embedding = this.embeddingModel.embed(document.getContent());
 			typesenseDoc.put(EMBEDDING_FIELD_NAME, embedding);
 
 			return typesenseDoc;
@@ -222,7 +222,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 		logger.info("Filter expression: {}", nativeFilterExpressions);
 
-		List<Double> embedding = this.embeddingModel.embed(request.getQuery());
+		List<Float> embedding = this.embeddingModel.embed(request.getQuery());
 
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
 		multiSearchCollectionParameters.collection(this.config.collectionName);

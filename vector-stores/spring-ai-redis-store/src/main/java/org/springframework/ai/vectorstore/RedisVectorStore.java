@@ -457,10 +457,10 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		return JSON_PATH_PREFIX + field;
 	}
 
-	private static float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
+	private static float[] toFloatArray(List<Float> embedding) {
+		float[] embeddingFloat = new float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;

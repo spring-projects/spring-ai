@@ -281,7 +281,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 
 		Assert.notNull(request, "The search request must not be null.");
 
-		var searchEmbedding = toFloatList(embeddingModel.embed(request.getQuery()));
+		var searchEmbedding = embeddingModel.embed(request.getQuery());
 
 		final var vectorQuery = new VectorizedQuery(searchEmbedding).setKNearestNeighborsCount(request.getTopK())
 			// Set the fields to compare the vector against. This is a comma-delimited
@@ -319,14 +319,10 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 			.collect(Collectors.toList());
 	}
 
-	private List<Float> toFloatList(List<Double> doubleList) {
-		return doubleList.stream().map(Double::floatValue).toList();
-	}
-
 	/**
 	 * Internal data structure for retrieving and storing documents.
 	 */
-	private record AzureSearchDocument(String id, String content, List<Double> embedding, String metadata) {
+	private record AzureSearchDocument(String id, String content, List<Float> embedding, String metadata) {
 	}
 
 	@Override

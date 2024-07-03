@@ -146,8 +146,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		String id = mongoDocument.getString(ID_FIELD_NAME);
 		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
 		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
-		List<Double> embedding = mongoDocument.getList(this.config.pathName, Double.class);
-
+		List<Float> embedding = mongoDocument.getList(this.config.pathName, Float.class);
 		Document document = new Document(id, content, metadata);
 		document.setEmbedding(embedding);
 
@@ -157,7 +156,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingModel.embed(document);
+			List<Float> embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.mongoTemplate.save(document, this.config.collectionName);
 		}
@@ -184,7 +183,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
+		List<Float> queryEmbedding = this.embeddingModel.embed(request.getQuery());
 		var vectorSearch = new VectorSearchAggregation(queryEmbedding, this.config.pathName, this.config.numCandidates,
 				this.config.vectorIndexName, request.getTopK(), nativeFilterExpressions);
 

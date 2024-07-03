@@ -176,7 +176,7 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 
 				return PointStruct.newBuilder()
 					.setId(id(UUID.fromString(document.getId())))
-					.setVectors(vectors(toFloatList(document.getEmbedding())))
+					.setVectors(vectors(document.getEmbedding()))
 					.putAllPayload(toPayload(document))
 					.build();
 			}).toList();
@@ -220,13 +220,13 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 					? this.filterExpressionConverter.convertExpression(request.getFilterExpression())
 					: Filter.getDefaultInstance();
 
-			List<Double> queryEmbedding = this.embeddingModel.embed(request.getQuery());
+			List<Float> queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 			var searchPoints = SearchPoints.newBuilder()
 				.setCollectionName(this.collectionName)
 				.setLimit(request.getTopK())
 				.setWithPayload(enable(true))
-				.addAllVector(toFloatList(queryEmbedding))
+				.addAllVector(queryEmbedding)
 				.setFilter(filter)
 				.setScoreThreshold((float) request.getSimilarityThreshold())
 				.build();
@@ -278,15 +278,6 @@ public class QdrantVectorStore implements VectorStore, InitializingBean {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Converts a list of doubles to a list of floats.
-	 * @param doubleList The list of doubles.
-	 * @return The converted list of floats.
-	 */
-	private List<Float> toFloatList(List<Double> doubleList) {
-		return doubleList.stream().map(d -> d.floatValue()).toList();
 	}
 
 	@Override

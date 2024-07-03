@@ -364,7 +364,7 @@ public class VertexAiPaLm2Api {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(
-			@JsonProperty("value") List<Double> value) {
+			@JsonProperty("value") List<Float> value) {
 
 	}
 

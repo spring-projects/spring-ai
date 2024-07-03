@@ -23,9 +23,9 @@ import org.springframework.ai.model.ModelResult;
 /**
  * Represents a single embedding vector.
  */
-public class Embedding implements ModelResult<List<Double>> {
+public class Embedding implements ModelResult<List<Float>> {
 
-	private List<Double> embedding;
+	private List<Float> embedding;
 
 	private Integer index;
 
@@ -36,7 +36,7 @@ public class Embedding implements ModelResult<List<Double>> {
 	 * @param embedding the embedding vector values.
 	 * @param index the embedding index in a list of embeddings.
 	 */
-	public Embedding(List<Double> embedding, Integer index) {
+	public Embedding(List<Float> embedding, Integer index) {
 		this(embedding, index, EmbeddingResultMetadata.EMPTY);
 	}
 
@@ -46,7 +46,7 @@ public class Embedding implements ModelResult<List<Double>> {
 	 * @param index the embedding index in a list of embeddings.
 	 * @param metadata the metadata associated with the embedding.
 	 */
-	public Embedding(List<Double> embedding, Integer index, EmbeddingResultMetadata metadata) {
+	public Embedding(List<Float> embedding, Integer index, EmbeddingResultMetadata metadata) {
 		this.embedding = embedding;
 		this.index = index;
 		this.metadata = metadata;
@@ -56,8 +56,8 @@ public class Embedding implements ModelResult<List<Double>> {
 	 * @return Get the embedding vector values.
 	 */
 	@Override
-	public List<Double> getOutput() {
-		return this.embedding;
+	public List<Float> getOutput() {
+		return embedding;
 	}
 
 	/**

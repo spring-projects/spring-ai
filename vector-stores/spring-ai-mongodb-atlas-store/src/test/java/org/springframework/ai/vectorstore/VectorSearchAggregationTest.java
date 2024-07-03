@@ -27,7 +27,7 @@ class VectorSearchAggregationTest {
 
 	@Test
 	void toDocumentNoFilter() {
-		var vectorSearchAggregation = new VectorSearchAggregation(List.of(1.0, 2.0, 3.0), "embedding", 10,
+		var vectorSearchAggregation = new VectorSearchAggregation(List.of(1.0f, 2.0f, 3.0f), "embedding", 10,
 				"vector_store", 10, "");
 		var aggregation = Aggregation.newAggregation(vectorSearchAggregation);
 		var document = aggregation.toDocument("vector_store", Aggregation.DEFAULT_CONTEXT);
@@ -44,7 +44,7 @@ class VectorSearchAggregationTest {
 
 	@Test
 	void toDocumentWithFilter() {
-		var vectorSearchAggregation = new VectorSearchAggregation(List.of(1.0, 2.0, 3.0), "embedding", 10,
+		var vectorSearchAggregation = new VectorSearchAggregation(List.of(1.0f, 2.0f, 3.0f), "embedding", 10,
 				"vector_store", 10, "{\"metadata.country\":{$eq:\"BG\"}}");
 		var aggregation = Aggregation.newAggregation(vectorSearchAggregation);
 		var document = aggregation.toDocument("vector_store", Aggregation.DEFAULT_CONTEXT);

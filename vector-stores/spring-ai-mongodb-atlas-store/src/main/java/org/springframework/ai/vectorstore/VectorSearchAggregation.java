@@ -22,7 +22,7 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
-record VectorSearchAggregation(List<Double> embeddings, String path, int numCandidates, String index, int count,
+record VectorSearchAggregation(List<Float> embeddings, String path, int numCandidates, String index, int count,
 		String filter) implements AggregationOperation {
 
 	@SuppressWarnings("null")
