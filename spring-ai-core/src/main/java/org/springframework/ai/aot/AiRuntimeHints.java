@@ -32,16 +32,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Native runtime hints. See other modules for their respective native runtime hints.
+ * Utility methods for creating native runtime hints. See other modules for their
+ * respective native runtime hints.
  *
  * @author Josh Long
  * @author Christian Tzolov
  * @author Mark Pollack
  */
-public class AiRuntimeHints {
+public abstract class AiRuntimeHints {
 
 	private static final Logger log = LoggerFactory.getLogger(AiRuntimeHints.class);
 
+	/**
+	 * Finds classes in a package that are annotated with JsonInclude or have Jackson
+	 * annotations.
+	 * @param packageName The name of the package to search for annotated classes.
+	 * @return A set of TypeReference objects representing the annotated classes found.
+	 */
 	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(String packageName) {
 		var annotationTypeFilter = new AnnotationTypeFilter(JsonInclude.class);
 		TypeFilter typeFilter = (metadataReader, metadataReaderFactory) -> {
@@ -58,10 +65,22 @@ public class AiRuntimeHints {
 		return findClassesInPackage(packageName, typeFilter);
 	}
 
+	/**
+	 * Finds classes in a package that are annotated with JsonInclude or have Jackson
+	 * annotations.
+	 * @param packageClass The class in the package to search for annotated classes.
+	 * @return A set of TypeReference objects representing the annotated classes found.
+	 */
 	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(Class<?> packageClass) {
 		return findJsonAnnotatedClassesInPackage(packageClass.getPackageName());
 	}
 
+	/**
+	 * Finds all classes in the specified package that match the given type filter.
+	 * @param packageName The name of the package to scan for classes.
+	 * @param typeFilter The type filter used to filter the scanned classes.
+	 * @return A set of TypeReference objects representing the found classes.
+	 */
 	public static Set<TypeReference> findClassesInPackage(String packageName, TypeFilter typeFilter) {
 		var classPathScanningCandidateComponentProvider = new ClassPathScanningCandidateComponentProvider(false);
 		classPathScanningCandidateComponentProvider.addIncludeFilter(typeFilter);

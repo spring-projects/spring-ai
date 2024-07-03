@@ -26,21 +26,21 @@ public class EvaluationRequest {
 
 	private final List<Content> dataList;
 
-	private final ChatResponse chatResponse;
+	private final String responseContent;
 
-	public EvaluationRequest(String userText, List<Content> dataList, ChatResponse chatResponse) {
+	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
 		this.userText = userText;
 		this.dataList = dataList;
-		this.chatResponse = chatResponse;
+		this.responseContent = responseContent;
 	}
 
   ...
 }
 ----
 
-* `userText`: The raw input from the user.
+* `userText`: The raw input from the user as a `String`
 * `dataList`: Contextual data, such as from Retrieval Augmented Generation, appended to the raw input.
-* `chatResponse`: The AI model's response.
+* `responseContent`: The AI model's response content as a `String`
 
 == RelevancyEvaluator
 
@@ -73,17 +73,17 @@ void testEvaluation() {
 
     String userText = "What is the purpose of Carina?";
 
-    ChatResponse response = ChatClient.builder(chatModel)
+    String responseContent = ChatClient.builder(chatModel)
             .build().prompt()
             .advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
             .user(userText)
             .call()
-            .chatResponse();
+            .content();
 
     var relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
 
     EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
-            (List<Content>) response.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS), response);
+            (List<Content>) response.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS), responseContent);
 
     EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
 

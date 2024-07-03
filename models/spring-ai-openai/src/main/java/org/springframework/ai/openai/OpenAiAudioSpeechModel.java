@@ -41,6 +41,7 @@ import java.time.Duration;
  * OpenAI audio speech client implementation for backed by {@link OpenAiAudioApi}.
  *
  * @author Ahmed Yousri
+ * @author Hyunjoon Choi
  * @see OpenAiAudioApi
  * @since 1.0.0-M1
  */
@@ -48,16 +49,29 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	/**
+	 * The default options used for the audio completion requests.
+	 */
 	private final OpenAiAudioSpeechOptions defaultOptions;
 
+	/**
+	 * The speed of the default voice synthesis.
+	 * @see OpenAiAudioSpeechOptions
+	 */
 	private static final Float SPEED = 1.0f;
 
+	/**
+	 * The retry template used to retry the OpenAI Audio API calls.
+	 */
 	public final RetryTemplate retryTemplate = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(OpenAiApiException.class)
 		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
 		.build();
 
+	/**
+	 * Low-level access to the OpenAI Audio API.
+	 */
 	private final OpenAiAudioApi audioApi;
 
 	/**

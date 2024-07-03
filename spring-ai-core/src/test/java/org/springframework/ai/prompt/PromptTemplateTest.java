@@ -43,9 +43,13 @@ public class PromptTemplateTest {
 		PromptTemplate promptTemplate = new PromptTemplate(templateString);
 		Message message = promptTemplate.createMessage(Map.of("items", itemList));
 
-		String expected = "The items are:\n" + "- apple\n" + "- banana\n" + "- cherry\n";
+		String expected = "The items are:\n- apple\n- banana\n- cherry\n";
 
-		assertEquals(expected, message.getContent());
+		// After upgrading StringTemplate4 to 4.3.4, this test will fail on windows if we
+		// don't normalize EOLs.
+		// It should be fine on Unix systems. In addition, Git will replace CRLF by LF by
+		// default.
+		assertEqualsWithNormalizedEOLs(expected, message.getContent());
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
@@ -71,6 +75,18 @@ public class PromptTemplateTest {
 		model.put("key3", 200);
 		expected = "This is a value1, it is true, and it costs 200";
 		result = promptTemplate.render(model);
+		assertEquals(expected, result);
+	}
+
+	@Test
+	public void testRenderWithHyphen() {
+		Map<String, Object> model = Map.of("key-1", "value1");
+		String template = "This is a {key-1}";
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+
+		String expected = "This is a value1";
+		String result = promptTemplate.render();
+
 		assertEquals(expected, result);
 	}
 
@@ -129,6 +145,11 @@ public class PromptTemplateTest {
 
 		// Rendering the template with a missing key should throw an exception
 		assertThrows(IllegalStateException.class, promptTemplate::render);
+	}
+
+	private static void assertEqualsWithNormalizedEOLs(String expected, String actual) {
+		assertEquals(expected.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()),
+				actual.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()));
 	}
 
 }

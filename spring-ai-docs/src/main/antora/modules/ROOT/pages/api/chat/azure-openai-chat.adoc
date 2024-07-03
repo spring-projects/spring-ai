@@ -6,35 +6,57 @@ Azure offers Java developers the opportunity to leverage AI's full potential by 
 
 == Prerequisites
 
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
-Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
-There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
-Exporting environment variables is one way to set these configuration properties:
+The Azure OpenAI client offers three options to connect: using an Azure API key or using an OpenAI API Key, or using Microsoft Entra ID.
+
+=== Azure API Key & Endpoint
+
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the https://portal.azure.com[Azure Portal].
+
+Spring AI defines two configuration properties:
+
+
+1. `spring.ai.azure.openai.api-key`: Set this to the value of the `API Key` obtained from Azure.
+2. `spring.ai.azure.openai.endpoint`: Set this to the endpoint URL obtained when provisioning your model in Azure.
+
+You can set these configuration properties by exporting environment variables:
 
 [source,shell]
 ----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
+export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT AZURE KEY HERE>
 export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
 ----
 
+
+=== OpenAI Key
+
+To authenticate with the OpenAI service (not Azure), provide an OpenAI API key. This will automatically set the endpoint to https://api.openai.com/v1.
+
+When using this approach, set the `spring.ai.azure.openai.chat.options.deployment-name` property to the name of the https://platform.openai.com/docs/models[OpenAI model] you wish to use.
+
+[source,shell]
+----
+export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
+----
+
+=== Microsoft Entra ID
+
+To authenticate using Microsoft Entra ID (formerly Azure Active Directory), create a `TokenCredential` bean in your configuration.
+If this bean is available, an `OpenAIClient` instance will be created using the token credentials.
+bd
 === Deployment Name
 
-To use run Azure AI applications, create an Azure AI Deployment through the [Azure AI Portal](https://oai.azure.com/portal).
-
+To use Azure AI applications, you need to create an Azure AI Deployment through the link:https://oai.azure.com/portal[Azure AI Portal].
 In Azure, each client must specify a `Deployment Name` to connect to the Azure OpenAI service.
+It's important to note that the `Deployment Name` is different from the model you choose to deploy.
+For example, a deployment named 'MyAiDeployment' could be configured to use either the GPT 3.5 Turbo model or the GPT 4.0 model.
 
-It's essential to understand that the `Deployment Name` is different from the model you choose to deploy
+To get started, follow these steps to create a deployment with the default settings:
 
-For instance, a deployment named 'MyAiDeployment' could be configured to use either the GPT 3.5 Turbo model or the GPT 4.0 model.
+   Deployment Name: `gpt-35-turbo`
+   Model Name: `gpt-35-turbo`
 
-For now, to keep things simple, you can create a deployment using the following settings:
-
-Deployment Name: `gpt-35-turbo`
-Model Name: `gpt-35-turbo`
-
-This Azure configuration will align with the default configurations of the Spring Boot Azure AI Starter and its Autoconfiguration feature.
-
-If you use a different Deployment Name, update the configuration property accordingly:
+This Azure configuration aligns with the default configurations of the Spring Boot Azure AI Starter and its Autoconfiguration feature.
+If you use a different Deployment Name, make sure to update the configuration property accordingly:
 
 ```
 spring.ai.azure.openai.chat.options.deployment-name=<my deployment name>
@@ -44,6 +66,14 @@ The different deployment structures of Azure OpenAI and OpenAI leads to a proper
 This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 
 NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
+
+NOTE: If you decide to connect to `OpenAI` instead of `Azure OpeanAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
+then the `spring.ai.azure.openai.chat.options.deployment-name` is treathed as an link:https://platform.openai.com/docs/models[OpenAI model] name.
+
+==== Access the OpenAI Model
+
+You can configure the client to use directly `OpenAI` instead of the `Azure OpenAI` deployed models. 
+For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` instead of `spring.ai.azure.openai.api-key=<Yur Azure OpenAi Key>`.
 
 === Add Repositories and BOM
 
@@ -86,6 +116,9 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 
 | spring.ai.azure.openai.api-key |  The Key from Azure AI OpenAI `Keys and Endpoint` section under `Resource Management`  | -
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
+| spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
+This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
+With this configuraiton the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 |====
 
 The prefix `spring.ai.azure.openai.chat` is the property prefix that configures the `ChatModel` implementation for Azure OpenAI.
@@ -95,9 +128,11 @@ The prefix `spring.ai.azure.openai.chat` is the property prefix that configures 
 | Property | Description | Default
 
 | spring.ai.azure.openai.chat.enabled | Enable Azure OpenAI chat model.  | true
-| spring.ai.azure.openai.chat.options.deployment-name | 	 * In use with Azure, this refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal. It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly.
-Deployments model name to provide as part of this completions request.
- | gpt-35-turbo
+| spring.ai.azure.openai.chat.options.deployment-name | In use with Azure, this refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal. 
+It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. 
+The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. 
+The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly.
+Deployments model name to provide as part of this completions request. | gpt-35-turbo
 | spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate. | -
 | spring.ai.azure.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 | spring.ai.azure.openai.chat.options.topP | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. | -

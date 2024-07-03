@@ -20,29 +20,25 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.model.ChatModel;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletion;
+import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent;
-import org.springframework.ai.anthropic.api.AnthropicApi.MediaContent.Type;
-import org.springframework.ai.anthropic.api.AnthropicApi.RequestMessage;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.ContentBlockType;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.api.AnthropicApi.StreamResponse;
-import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
 import org.springframework.ai.anthropic.metadata.AnthropicChatResponseMetadata;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -54,6 +50,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
+import reactor.core.publisher.Flux;
+
 /**
  * The {@link ChatModel} implementation for the Anthropic service.
  *
@@ -63,7 +61,7 @@ import org.springframework.util.CollectionUtils;
  * @since 1.0.0
  */
 public class AnthropicChatModel extends
-		AbstractFunctionCallSupport<AnthropicApi.RequestMessage, AnthropicApi.ChatCompletionRequest, ResponseEntity<AnthropicApi.ChatCompletion>>
+		AbstractFunctionCallSupport<AnthropicApi.AnthropicMessage, AnthropicApi.ChatCompletionRequest, ResponseEntity<AnthropicApi.ChatCompletionResponse>>
 		implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
@@ -150,7 +148,7 @@ public class AnthropicChatModel extends
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		return this.retryTemplate.execute(ctx -> {
-			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+			ResponseEntity<ChatCompletionResponse> completionEntity = this.callWithFunctionSupport(request);
 			return toChatResponse(completionEntity.getBody());
 		});
 	}
@@ -160,72 +158,19 @@ public class AnthropicChatModel extends
 
 		ChatCompletionRequest request = createRequest(prompt, true);
 
-		Flux<StreamResponse> response = this.anthropicApi.chatCompletionStream(request);
+		return this.retryTemplate.execute(ctx -> {
 
-		AtomicReference<ChatCompletionBuilder> chatCompletionReference = new AtomicReference<>();
+			Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(request);
 
-		// https://docs.anthropic.com/claude/reference/messages-streaming
-
-		return response.map(chunk -> {
-
-			if (chunk.type().equals("message_start")) {
-				chatCompletionReference.set(new ChatCompletionBuilder());
-				chatCompletionReference.get()
-					.withType(chunk.type())
-					.withId(chunk.message().id())
-					.withRole(chunk.message().role())
-					.withModel(chunk.message().model())
-					.withUsage(chunk.message().usage())
-					.withContent(new ArrayList<>());
-			}
-			else if (chunk.type().equals("content_block_start")) {
-				var content = new MediaContent(chunk.contentBlock().type(), null, chunk.contentBlock().text(),
-						chunk.index());
-				chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
-			}
-			else if (chunk.type().equals("content_block_delta")) {
-				var content = new MediaContent(Type.TEXT_DELTA, null, (String) chunk.delta().get("text"),
-						chunk.index());
-				chatCompletionReference.get().withType(chunk.type()).withContent(List.of(content));
-			}
-			else if (chunk.type().equals("message_delta")) {
-
-				ChatCompletion delta = ModelOptionsUtils.mapToClass(chunk.delta(), ChatCompletion.class);
-
-				chatCompletionReference.get().withType(chunk.type());
-				if (chunk.usage() != null) {
-					var totalUsage = new Usage(chatCompletionReference.get().usage.inputTokens(),
-							chunk.usage().outputTokens());
-					chatCompletionReference.get().withUsage(totalUsage);
-				}
-				if (delta.id() != null) {
-					chatCompletionReference.get().withId(delta.id());
-				}
-				if (delta.role() != null) {
-					chatCompletionReference.get().withRole(delta.role());
-				}
-				if (delta.model() != null) {
-					chatCompletionReference.get().withModel(delta.model());
-				}
-				if (delta.content() != null) {
-					chatCompletionReference.get().withContent(delta.content());
-				}
-				if (delta.stopReason() != null) {
-					chatCompletionReference.get().withStopReason(delta.stopReason());
-				}
-				if (delta.stopSequence() != null) {
-					chatCompletionReference.get().withStopSequence(delta.stopSequence());
-				}
-			}
-			else {
-				chatCompletionReference.get().withType(chunk.type()).withContent(List.of());
-			}
-			return chatCompletionReference.get().build();
-
-		}).map(this::toChatResponse);
+			return response
+				.switchMap(chatCompletionResponse -> handleFunctionCallOrReturnStream(request,
+						Flux.just(ResponseEntity.of(Optional.of(chatCompletionResponse)))))
+				.map(ResponseEntity::getBody)
+				.map(this::toChatResponse);
+		});
 	}
 
-	private ChatResponse toChatResponse(ChatCompletion chatCompletion) {
+	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion) {
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
 			return new ChatResponse(List.of());
@@ -256,20 +201,20 @@ public class AnthropicChatModel extends
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
-		List<RequestMessage> userMessages = prompt.getInstructions()
+		List<AnthropicMessage> userMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() != MessageType.SYSTEM)
 			.map(m -> {
-				List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
+				List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(m.getContent())));
 				if (!CollectionUtils.isEmpty(m.getMedia())) {
-					List<MediaContent> mediaContent = m.getMedia()
+					List<ContentBlock> mediaContent = m.getMedia()
 						.stream()
-						.map(media -> new MediaContent(media.getMimeType().toString(),
+						.map(media -> new ContentBlock(media.getMimeType().toString(),
 								this.fromMediaData(media.getData())))
 						.toList();
 					contents.addAll(mediaContent);
 				}
-				return new RequestMessage(contents, Role.valueOf(m.getMessageType().name()));
+				return new AnthropicMessage(contents, Role.valueOf(m.getMessageType().name()));
 			})
 			.toList();
 
@@ -320,86 +265,18 @@ public class AnthropicChatModel extends
 		}).toList();
 	}
 
-	private static class ChatCompletionBuilder {
-
-		private String type;
-
-		private String id;
-
-		private Role role;
-
-		private List<MediaContent> content;
-
-		private String model;
-
-		private String stopReason;
-
-		private String stopSequence;
-
-		private Usage usage;
-
-		public ChatCompletionBuilder() {
-		}
-
-		public ChatCompletionBuilder withType(String type) {
-			this.type = type;
-			return this;
-		}
-
-		public ChatCompletionBuilder withId(String id) {
-			this.id = id;
-			return this;
-		}
-
-		public ChatCompletionBuilder withRole(Role role) {
-			this.role = role;
-			return this;
-		}
-
-		public ChatCompletionBuilder withContent(List<MediaContent> content) {
-			this.content = content;
-			return this;
-		}
-
-		public ChatCompletionBuilder withModel(String model) {
-			this.model = model;
-			return this;
-		}
-
-		public ChatCompletionBuilder withStopReason(String stopReason) {
-			this.stopReason = stopReason;
-			return this;
-		}
-
-		public ChatCompletionBuilder withStopSequence(String stopSequence) {
-			this.stopSequence = stopSequence;
-			return this;
-		}
-
-		public ChatCompletionBuilder withUsage(Usage usage) {
-			this.usage = usage;
-			return this;
-		}
-
-		public ChatCompletion build() {
-			return new ChatCompletion(this.id, this.type, this.role, this.content, this.model, this.stopReason,
-					this.stopSequence, this.usage);
-		}
-
-	}
-
 	@Override
 	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
-			RequestMessage responseMessage, List<RequestMessage> conversationHistory) {
+			AnthropicMessage responseMessage, List<AnthropicMessage> conversationHistory) {
 
-		List<MediaContent> toolToUseList = responseMessage.content()
+		List<ContentBlock> toolToUseList = responseMessage.content()
 			.stream()
-			.filter(c -> c.type() == MediaContent.Type.TOOL_USE)
+			.filter(c -> c.type() == ContentBlock.ContentBlockType.TOOL_USE)
 			.toList();
 
-		List<MediaContent> toolResults = new ArrayList<>();
+		List<ContentBlock> toolResults = new ArrayList<>();
 
-		for (MediaContent toolToUse : toolToUseList) {
+		for (ContentBlock toolToUse : toolToUseList) {
 
 			var functionCallId = toolToUse.id();
 			var functionName = toolToUse.name();
@@ -412,11 +289,11 @@ public class AnthropicChatModel extends
 			String functionResponse = this.functionCallbackRegister.get(functionName)
 				.call(ModelOptionsUtils.toJsonString(functionArguments));
 
-			toolResults.add(new MediaContent(Type.TOOL_RESULT, functionCallId, functionResponse));
+			toolResults.add(new ContentBlock(ContentBlockType.TOOL_RESULT, functionCallId, functionResponse));
 		}
 
 		// Add the function response to the conversation.
-		conversationHistory.add(new RequestMessage(toolResults, Role.USER));
+		conversationHistory.add(new AnthropicMessage(toolResults, Role.USER));
 
 		// Recursively call chatCompletionWithTools until the model doesn't call a
 		// functions anymore.
@@ -424,34 +301,36 @@ public class AnthropicChatModel extends
 	}
 
 	@Override
-	protected List<RequestMessage> doGetUserMessages(ChatCompletionRequest request) {
+	protected List<AnthropicMessage> doGetUserMessages(ChatCompletionRequest request) {
 		return request.messages();
 	}
 
 	@Override
-	protected RequestMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> response) {
-		return new RequestMessage(response.getBody().content(), Role.ASSISTANT);
+	protected AnthropicMessage doGetToolResponseMessage(ResponseEntity<ChatCompletionResponse> response) {
+		return new AnthropicMessage(response.getBody().content(), Role.ASSISTANT);
 	}
 
 	@Override
-	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
+	protected ResponseEntity<ChatCompletionResponse> doChatCompletion(ChatCompletionRequest request) {
 		return this.anthropicApi.chatCompletionEntity(request);
 	}
 
 	@SuppressWarnings("null")
 	@Override
-	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletion> response) {
+	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletionResponse> response) {
 		if (response == null || response.getBody() == null || CollectionUtils.isEmpty(response.getBody().content())) {
 			return false;
 		}
-		return response.getBody().content().stream().anyMatch(content -> content.type() == MediaContent.Type.TOOL_USE);
+		return response.getBody()
+			.content()
+			.stream()
+			.anyMatch(content -> content.type() == ContentBlock.ContentBlockType.TOOL_USE);
 	}
 
 	@Override
-	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
-		// https://docs.anthropic.com/en/docs/tool-use
-		throw new UnsupportedOperationException(
-				"Streaming (stream=true) is not yet supported. We plan to add streaming support in a future beta version.");
+	protected Flux<ResponseEntity<ChatCompletionResponse>> doChatCompletionStream(ChatCompletionRequest request) {
+
+		return this.anthropicApi.chatCompletionStream(request).map(Optional::ofNullable).map(ResponseEntity::of);
 	}
 
 	@Override

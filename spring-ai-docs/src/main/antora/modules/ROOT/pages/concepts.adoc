@@ -187,8 +187,8 @@ image::function-calling-basic-flow.jpg[Function calling, width=700, align="cente
 Later provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
 * (2) when the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
 * (3) Spring AI handles this conversation for you.
-It dispatches the function call to the appropriate function and returns the result to the model (4).
-Model can perform multiple function calls to retrieve all the information it needs.
+It dispatches the function call to the appropriate function and returns the result to the model.
+* (4) Model can perform multiple function calls to retrieve all the information it needs.
 * (5) once all information needed is acquired, the Model will generate a response.
 
 Follow the xref::api/functions.adoc[Function Calling] documentation for further information on how to use this feature with different AI models.
