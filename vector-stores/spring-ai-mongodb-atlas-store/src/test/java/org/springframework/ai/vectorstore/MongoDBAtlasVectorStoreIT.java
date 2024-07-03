@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -44,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Chris Smith
  */
 @Testcontainers
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container
