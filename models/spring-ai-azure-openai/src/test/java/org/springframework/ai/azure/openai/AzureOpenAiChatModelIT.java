@@ -15,16 +15,11 @@
  */
 package org.springframework.ai.azure.openai;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.ai.openai.OpenAIServiceVersion;
+import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -48,9 +43,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.util.MimeTypeUtils;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
@@ -216,14 +218,16 @@ class AzureOpenAiChatModelIT {
 		@Bean
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
+					.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
+					.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS))
+					.buildClient();
 		}
 
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiChatModel(openAIClient,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-35-turbo").withMaxTokens(1000).build());
+					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
 
 		}
 

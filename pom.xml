@@ -187,7 +187,6 @@
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
 
-
 		<!-- testing dependencies -->
 		<httpclient5.version>5.3.1</httpclient5.version>
 
