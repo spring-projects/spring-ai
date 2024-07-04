@@ -41,3 +41,4 @@ org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStor
 org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration
 org.springframework.ai.autoconfigure.qianfan.QianFanAutoConfiguration
 org.springframework.ai.autoconfigure.minimax.MiniMaxAutoConfiguration
+org.springframework.ai.autoconfigure.vertexai.embedding.VertexAiEmbeddingAutoConfiguration

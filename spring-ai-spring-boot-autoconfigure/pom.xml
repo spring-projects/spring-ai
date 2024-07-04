@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
@@ -116,7 +117,7 @@
 			<version>${oracle.version}</version>
 			<optional>true</optional>
 		</dependency>
-			<dependency>
+		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ucp</artifactId>
 			<version>${oracle.version}</version>
@@ -210,6 +211,14 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vertex-ai-palm2</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Vertex AI Embedding -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai-embedding</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -500,6 +509,6 @@
 			<scope>test</scope>
 		</dependency>
 
-    </dependencies>
+	</dependencies>
 
 </project>
