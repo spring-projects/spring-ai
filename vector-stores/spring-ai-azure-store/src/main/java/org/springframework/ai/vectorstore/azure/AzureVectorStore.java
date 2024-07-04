@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.vectorstore.azure;
 
-import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
 import com.azure.core.util.Context;
 import com.azure.search.documents.SearchClient;
 import com.azure.search.documents.SearchDocument;
@@ -34,6 +32,9 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -89,6 +90,11 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	private static final Double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
+
+	private static final TypeToken<Map<String, Object>> MAP_TYPE = new TypeToken<>() {
+	};
+
+	private final Gson gson = new GsonBuilder().create();
 
 	private final SearchIndexClient searchIndexClient;
 
@@ -220,7 +226,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 			searchDocument.put(ID_FIELD_NAME, document.getId());
 			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings);
 			searchDocument.put(CONTENT_FIELD_NAME, document.getContent());
-			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
+			searchDocument.put(METADATA_FIELD_NAME, gson.toJson(document.getMetadata()));
 
 			// Add the filterable metadata fields as top level fields, allowing filler
 			// expressions on them.
@@ -305,8 +311,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
 
 				Map<String, Object> metadata = (StringUtils.hasText(entry.metadata()))
-						? JSONObject.parseObject(entry.metadata(), new TypeReference<Map<String, Object>>() {
-						}) : Map.of();
+						? gson.fromJson(entry.metadata(), MAP_TYPE) : Map.of();
 
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - (float) result.getScore());
 

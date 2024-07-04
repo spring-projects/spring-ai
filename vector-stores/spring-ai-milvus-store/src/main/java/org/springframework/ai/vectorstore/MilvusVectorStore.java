@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -64,6 +67,8 @@ import io.milvus.response.SearchResultsWrapper;
 public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
+
+	private final Gson gson = new Gson();
 
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
 
@@ -267,7 +272,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
-		List<JSONObject> metadataArray = new ArrayList<>();
+		List<JsonObject> metadataArray = new ArrayList<>();
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		for (Document document : documents) {
@@ -277,7 +282,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getContent());
-			metadataArray.add(new JSONObject(document.getMetadata()));
+			metadataArray.add(gson.toJsonTree(document.getMetadata()).getAsJsonObject());
 			embeddingArray.add(toFloatList(embedding));
 		}
 
