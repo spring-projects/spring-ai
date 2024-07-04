@@ -21,7 +21,7 @@ package org.springframework.ai.model;
  */
 public interface ModelDescription {
 
-	String getModelName();
+	String getTextName();
 
 	default String getDescription() {
 		return "";
@@ -29,10 +29,6 @@ public interface ModelDescription {
 
 	default String getVersion() {
 		return "";
-	}
-
-	default int getContextLength() {
-		return -1;
 	}
 
 }

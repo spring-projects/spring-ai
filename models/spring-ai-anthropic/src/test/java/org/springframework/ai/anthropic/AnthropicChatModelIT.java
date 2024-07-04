@@ -230,7 +230,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getModelName())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getTextName())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription(
@@ -257,7 +257,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getModelName())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getTextName())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription(
@@ -280,7 +280,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getModelName();
+		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getTextName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(AnthropicChatOptions.builder().withModel(model).build())
@@ -295,7 +295,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getModelName();
+		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getTextName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(AnthropicChatOptions.builder().withModel(model).build())

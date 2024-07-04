@@ -346,7 +346,7 @@ class OpenAiChatModelIT extends AbstractIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getModelName();
+		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getTextName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(OpenAiChatOptions.builder().withModel(model).build())
