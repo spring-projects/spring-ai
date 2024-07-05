@@ -51,8 +51,8 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chroma.getHost(),
 				"spring.ai.vectorstore.chroma.client.port=" + chroma.getMappedPort(8000),
-				"spring.ai.vectorstore.chroma.store.initializeSchema=true",
-				"spring.ai.vectorstore.chroma.store.collectionName=TestCollection");
+				"spring.ai.vectorstore.chroma.initializeSchema=true",
+				"spring.ai.vectorstore.chroma.collectionName=TestCollection");
 
 	@Test
 	public void addAndSearchWithFilters() {
