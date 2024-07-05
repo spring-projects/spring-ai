@@ -90,14 +90,15 @@ public class MilvusEmbeddingDimensionsTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {0, 32769})
+	@ValueSource(ints = { 0, 32769 })
 	public void invalidDimensionsThrowException(final int explicitDimensions) {
 		// when
-		ThrowableAssert.ThrowingCallable actual = () ->  MilvusVectorStoreConfig.builder()
-				.withEmbeddingDimension(explicitDimensions)
-				.build();
+		ThrowableAssert.ThrowingCallable actual = () -> MilvusVectorStoreConfig.builder()
+			.withEmbeddingDimension(explicitDimensions)
+			.build();
 
 		// then
 		assertThatThrownBy(actual).isInstanceOf(IllegalArgumentException.class);
 	}
+
 }
