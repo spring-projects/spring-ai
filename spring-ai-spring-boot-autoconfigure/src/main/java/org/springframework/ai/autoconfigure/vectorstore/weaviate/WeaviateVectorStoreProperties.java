@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Christian Tzolov
  */
 @ConfigurationProperties(WeaviateVectorStoreProperties.CONFIG_PREFIX)
-public class WeaviateVectorStoreProperties extends CommonVectorStoreProperties {
+public class WeaviateVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.weaviate";
 

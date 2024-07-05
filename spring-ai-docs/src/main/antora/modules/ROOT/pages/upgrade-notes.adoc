@@ -9,6 +9,13 @@
 This implies that the applications now need to explicitly opt-in for schema initialization on supported vector stores, if the schema is expected to be created at application startup.
 Not all vector stores support this property.
 See the corresponding vector store documentation for more details.
+The following are the vector stores that currently don't support the `initialize-schema` property.
+
+1. Cassandra
+2. Gemfire
+3. Hana
+4. Pinecone
+5. Weaviate
 
 == Upgrading to 1.0.0.M1
 
