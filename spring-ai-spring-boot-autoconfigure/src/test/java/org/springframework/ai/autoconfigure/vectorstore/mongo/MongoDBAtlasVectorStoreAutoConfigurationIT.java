@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
@@ -43,11 +42,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Eddú Meléndez
  */
 @Testcontainers
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
 class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Container
-	static GenericContainer<?> mongo = new GenericContainer<>("mongodb/atlas:v1.15.1").withPrivilegedMode(true)
+	static GenericContainer<?> mongo = new GenericContainer<>("mongodb/atlas:v1.24.0").withPrivilegedMode(true)
 		.withCommand("/bin/bash", "-c",
 				"atlas deployments setup local-test --type local --port 27778 --bindIpAll --username root --password root --force && tail -f /dev/null")
 		.withExposedPorts(27778)

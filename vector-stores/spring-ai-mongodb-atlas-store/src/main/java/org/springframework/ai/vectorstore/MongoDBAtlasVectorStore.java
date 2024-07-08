@@ -23,9 +23,11 @@ import java.util.Optional;
 
 import com.mongodb.BasicDBObject;
 
+import com.mongodb.MongoCommandException;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -55,6 +57,10 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	private static final String DEFAULT_PATH_NAME = "embedding";
 
 	private static final int DEFAULT_NUM_CANDIDATES = 200;
+
+	private static final int INDEX_ALREADY_EXISTS_ERROR_CODE = 68;
+
+	private static final String INDEX_ALREADY_EXISTS_ERROR_CODE_NAME = "IndexAlreadyExists";
 
 	private final MongoTemplate mongoTemplate;
 
@@ -90,14 +96,31 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		if (!mongoTemplate.collectionExists(this.config.collectionName)) {
 			mongoTemplate.createCollection(this.config.collectionName);
 		}
-		// Create search index, command doesn't do anything if already existing
-		mongoTemplate.executeCommand(createSearchIndex());
+		// Create search index
+		createSearchIndex();
+	}
+
+	private void createSearchIndex() {
+		try {
+			mongoTemplate.executeCommand(createSearchIndexDefinition());
+		}
+		catch (UncategorizedMongoDbException e) {
+			Throwable cause = e.getCause();
+			if (cause instanceof MongoCommandException commandException) {
+				// Ignore any IndexAlreadyExists errors
+				if (INDEX_ALREADY_EXISTS_ERROR_CODE == commandException.getCode()
+						|| INDEX_ALREADY_EXISTS_ERROR_CODE_NAME.equals(commandException.getErrorCodeName())) {
+					return;
+				}
+			}
+			throw e;
+		}
 	}
 
 	/**
 	 * Provides the Definition for the search index
 	 */
-	private org.bson.Document createSearchIndex() {
+	private org.bson.Document createSearchIndexDefinition() {
 		List<org.bson.Document> vectorFields = new ArrayList<>();
 
 		vectorFields.add(new org.bson.Document().append("type", "vector")

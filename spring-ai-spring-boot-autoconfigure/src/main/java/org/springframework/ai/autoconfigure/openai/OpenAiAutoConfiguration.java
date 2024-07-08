@@ -72,7 +72,7 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = openAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+				responseErrorHandler, "chat");
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -92,7 +92,7 @@ public class OpenAiAutoConfiguration {
 
 		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+				responseErrorHandler, "embedding");
 
 		return new OpenAiEmbeddingModel(openAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
@@ -100,13 +100,17 @@ public class OpenAiAutoConfiguration {
 
 	private OpenAiApi openAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler, String modelType) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-		Assert.hasText(resolvedBaseUrl, "OpenAI base URL must be set");
+		Assert.hasText(resolvedBaseUrl,
+				"OpenAI base URL must be set.  Use the connection property: spring.ai.openai.base-url or spring.ai.openai."
+						+ modelType + ".base-url property.");
 
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		Assert.hasText(resolvedApiKey, "OpenAI API key must be set");
+		Assert.hasText(resolvedApiKey,
+				"OpenAI API key must be set. Use the connection property: spring.ai.openai.api-key or spring.ai.openai."
+						+ modelType + ".api-key property.");
 
 		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
@@ -126,8 +130,10 @@ public class OpenAiAutoConfiguration {
 		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
 				: commonProperties.getBaseUrl();
 
-		Assert.hasText(apiKey, "OpenAI API key must be set.  Use the property: spring.ai.openai.base-url");
-		Assert.hasText(baseUrl, "OpenAI base URL must be set.  Use the property: spring.ai.openai.api-key");
+		Assert.hasText(apiKey,
+				"OpenAI API key must be set.  Use the property: spring.ai.openai.api-key or spring.ai.openai.image.api-key property.");
+		Assert.hasText(baseUrl,
+				"OpenAI base URL must be set.  Use the property: spring.ai.openai.base-url or spring.ai.openai.image.base-url property.");
 
 		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
 
@@ -149,8 +155,10 @@ public class OpenAiAutoConfiguration {
 		String baseUrl = StringUtils.hasText(transcriptionProperties.getBaseUrl())
 				? transcriptionProperties.getBaseUrl() : commonProperties.getBaseUrl();
 
-		Assert.hasText(apiKey, "OpenAI API key must be set");
-		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+		Assert.hasText(apiKey,
+				"OpenAI API key must be set.  Use the property: spring.ai.openai.api-key or spring.ai.openai.audio.transcription.api-key property.");
+		Assert.hasText(baseUrl,
+				"OpenAI base URL must be set.  Use the property: spring.ai.openai.base-url or spring.ai.openai.audio.transcription.base-url property.");
 
 		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
@@ -175,8 +183,10 @@ public class OpenAiAutoConfiguration {
 		String baseUrl = StringUtils.hasText(speechProperties.getBaseUrl()) ? speechProperties.getBaseUrl()
 				: commonProperties.getBaseUrl();
 
-		Assert.hasText(apiKey, "OpenAI API key must be set");
-		Assert.hasText(baseUrl, "OpenAI base URL must be set");
+		Assert.hasText(apiKey,
+				"OpenAI API key must be set.  Use the property: spring.ai.openai.api-key or spring.ai.openai.audio.speech.api-key property.");
+		Assert.hasText(baseUrl,
+				"OpenAI base URL must be set.  Use the property: spring.ai.openai.base-url or spring.ai.openai.audio.speech.base-url property.");
 
 		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
