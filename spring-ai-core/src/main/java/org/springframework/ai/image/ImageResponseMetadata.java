@@ -15,14 +15,22 @@
  */
 package org.springframework.ai.image;
 
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
 import java.util.HashMap;
 
+/**
+ * Represents metadata associated with an image response. It provides additional
+ * information about the generative response from an AI model, including the creation
+ * timestamp of the generated image.
+ *
+ * @author Mark Pollack
+ * @author Thomas Vitale
+ * @since 1.0.0
+ */
 public interface ImageResponseMetadata extends ResponseMetadata {
 
-	static class DefaultImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
+	class DefaultImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
 
 	}
 

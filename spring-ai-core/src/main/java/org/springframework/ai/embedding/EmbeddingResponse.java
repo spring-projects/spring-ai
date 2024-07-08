@@ -29,12 +29,12 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 	/**
 	 * Embedding data.
 	 */
-	private List<Embedding> embeddings;
+	private final List<Embedding> embeddings;
 
 	/**
 	 * Embedding metadata.
 	 */
-	private EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+	private final EmbeddingResponseMetadata metadata;
 
 	/**
 	 * Creates a new {@link EmbeddingResponse} instance with empty metadata.
