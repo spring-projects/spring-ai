@@ -29,6 +29,7 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
@@ -36,6 +37,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Ricken Bazolo
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -100,7 +102,8 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 				return new EmbeddingResponse(List.of());
 			}
 
-			var metadata = generateResponseMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
+			var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
+					MistralAiUsage.from(apiEmbeddingResponse.usage()));
 
 			var embeddings = apiEmbeddingResponse.data()
 				.stream()
@@ -116,14 +119,6 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	public List<Double> embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
-	}
-
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, MistralAiApi.Usage usage) {
-		var metadata = new EmbeddingResponseMetadata();
-		metadata.put("model", model);
-		metadata.put("prompt-tokens", usage.promptTokens());
-		metadata.put("total-tokens", usage.totalTokens());
-		return metadata;
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,38 +15,31 @@
  */
 package org.springframework.ai.azure.openai.metadata;
 
-import com.azure.ai.openai.models.ChatCompletions;
-import com.azure.ai.openai.models.CompletionsUsage;
-
+import com.azure.ai.openai.models.EmbeddingsUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**
- * {@link Usage} implementation for {@literal Microsoft Azure OpenAI Service} chat.
+ * {@link Usage} implementation for {@literal Microsoft Azure OpenAI Service} embedding.
  *
- * @author John Blum
- * @see com.azure.ai.openai.models.CompletionsUsage
- * @since 0.7.0
+ * @author Thomas Vitale
+ * @see EmbeddingsUsage
  */
-public class AzureOpenAiUsage implements Usage {
+public class AzureOpenAiEmbeddingUsage implements Usage {
 
-	public static AzureOpenAiUsage from(ChatCompletions chatCompletions) {
-		Assert.notNull(chatCompletions, "ChatCompletions must not be null");
-		return from(chatCompletions.getUsage());
+	public static AzureOpenAiEmbeddingUsage from(EmbeddingsUsage usage) {
+		Assert.notNull(usage, "EmbeddingsUsage must not be null");
+		return new AzureOpenAiEmbeddingUsage(usage);
 	}
 
-	public static AzureOpenAiUsage from(CompletionsUsage usage) {
-		return new AzureOpenAiUsage(usage);
-	}
+	private final EmbeddingsUsage usage;
 
-	private final CompletionsUsage usage;
-
-	public AzureOpenAiUsage(CompletionsUsage usage) {
-		Assert.notNull(usage, "CompletionsUsage must not be null");
+	public AzureOpenAiEmbeddingUsage(EmbeddingsUsage usage) {
+		Assert.notNull(usage, "EmbeddingsUsage must not be null");
 		this.usage = usage;
 	}
 
-	protected CompletionsUsage getUsage() {
+	protected EmbeddingsUsage getUsage() {
 		return this.usage;
 	}
 
@@ -57,7 +50,7 @@ public class AzureOpenAiUsage implements Usage {
 
 	@Override
 	public Long getGenerationTokens() {
-		return (long) getUsage().getCompletionTokens();
+		return 0L;
 	}
 
 	@Override

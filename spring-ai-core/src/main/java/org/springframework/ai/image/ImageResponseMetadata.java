@@ -15,14 +15,13 @@
  */
 package org.springframework.ai.image;
 
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
 import java.util.HashMap;
 
 public interface ImageResponseMetadata extends ResponseMetadata {
 
-	static class DefaultImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
+	class DefaultImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
 
 	}
 
