@@ -200,7 +200,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 				Here is the JSON Schema instance your output must adhere to:
 				```%s```
 				""";
-		return String.format(template, this.jsonSchema).replaceAll("\r\n", "\n");
+		return String.format(template, this.jsonSchema);
 	}
 
 }

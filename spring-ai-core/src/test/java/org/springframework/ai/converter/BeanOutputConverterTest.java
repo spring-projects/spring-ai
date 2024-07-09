@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.assertj.TextBlockAssertion;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -111,78 +112,81 @@ class BeanOutputConverterTest {
 		@Test
 		public void formatClassType() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
-			assertThat(converter.getFormat()).isEqualTo(
-					"""
-							Your response should be in JSON format.
-							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
-							Do not include markdown code blocks in your response.
-							Remove the ```json markdown from the output.
-							Here is the JSON Schema instance your output must adhere to:
-							```{
-							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-							  "type" : "object",
-							  "properties" : {
-							    "someString" : {
-							      "type" : "string"
-							    }
-							  }
-							}```
-							""");
+			TextBlockAssertion.assertThat(converter.getFormat())
+				.isEqualTo(
+						"""
+								Your response should be in JSON format.
+								Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+								Do not include markdown code blocks in your response.
+								Remove the ```json markdown from the output.
+								Here is the JSON Schema instance your output must adhere to:
+								```{
+								  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+								  "type" : "object",
+								  "properties" : {
+								    "someString" : {
+								      "type" : "string"
+								    }
+								  }
+								}```
+								""");
 		}
 
 		@Test
 		public void formatTypeReference() {
 			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
 			});
-			assertThat(converter.getFormat()).isEqualTo(
-					"""
-							Your response should be in JSON format.
-							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
-							Do not include markdown code blocks in your response.
-							Remove the ```json markdown from the output.
-							Here is the JSON Schema instance your output must adhere to:
-							```{
-							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-							  "type" : "object",
-							  "properties" : {
-							    "someString" : {
-							      "type" : "string"
-							    }
-							  }
-							}```
-							""");
+			TextBlockAssertion.assertThat(converter.getFormat())
+				.isEqualTo(
+						"""
+								Your response should be in JSON format.
+								Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+								Do not include markdown code blocks in your response.
+								Remove the ```json markdown from the output.
+								Here is the JSON Schema instance your output must adhere to:
+								```{
+								  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+								  "type" : "object",
+								  "properties" : {
+								    "someString" : {
+								      "type" : "string"
+								    }
+								  }
+								}```
+								""");
 		}
 
 		@Test
 		public void formatTypeReferenceArray() {
 			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
 			});
-			assertThat(converter.getFormat()).isEqualTo(
-					"""
-							Your response should be in JSON format.
-							Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
-							Do not include markdown code blocks in your response.
-							Remove the ```json markdown from the output.
-							Here is the JSON Schema instance your output must adhere to:
-							```{
-							  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-							  "type" : "array",
-							  "items" : {
-							    "type" : "object",
-							    "properties" : {
-							      "someString" : {
-							        "type" : "string"
-							      }
-							    }
-							  }
-							}```
-							""");
+			TextBlockAssertion.assertThat(converter.getFormat())
+				.isEqualTo(
+						"""
+								Your response should be in JSON format.
+								Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+								Do not include markdown code blocks in your response.
+								Remove the ```json markdown from the output.
+								Here is the JSON Schema instance your output must adhere to:
+								```{
+								  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+								  "type" : "array",
+								  "items" : {
+								    "type" : "object",
+								    "properties" : {
+								      "someString" : {
+								        "type" : "string"
+								      }
+								    }
+								  }
+								}```
+								""");
 		}
 
 		@Test
 		public void formatClassTypeWithAnnotations() {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonAnnotations.class);
-			assertThat(converter.getFormat()).contains("""
+			TextBlockAssertion.assertThat(converter.getFormat()).contains("""
 					```{
 					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
 					  "type" : "object",
@@ -200,7 +204,7 @@ class BeanOutputConverterTest {
 		public void formatTypeReferenceWithAnnotations() {
 			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClassWithJsonAnnotations>() {
 			});
-			assertThat(converter.getFormat()).contains("""
+			TextBlockAssertion.assertThat(converter.getFormat()).contains("""
 					```{
 					  "$schema" : "https://json-schema.org/draft/2020-12/schema",
 					  "type" : "object",
@@ -221,7 +225,7 @@ class BeanOutputConverterTest {
 			String formatOutput = converter.getFormat();
 
 			// validate that output contains \n line endings
-			assertThat(formatOutput).contains("\n").doesNotContain("\r\n").doesNotContain("\r");
+			TextBlockAssertion.assertThat(formatOutput).contains(System.lineSeparator());
 		}
 
 		@Test
@@ -232,7 +236,7 @@ class BeanOutputConverterTest {
 			String formatOutput = converter.getFormat();
 
 			// validate that output contains \n line endings
-			assertThat(formatOutput).contains("\n").doesNotContain("\r\n").doesNotContain("\r");
+			TextBlockAssertion.assertThat(formatOutput).contains(System.lineSeparator());
 		}
 
 	}

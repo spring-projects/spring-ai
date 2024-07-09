@@ -17,6 +17,7 @@ package org.springframework.ai.prompt;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.assertj.TextBlockAssertion;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.InputStreamResource;
@@ -49,7 +50,7 @@ public class PromptTemplateTest {
 		// don't normalize EOLs.
 		// It should be fine on Unix systems. In addition, Git will replace CRLF by LF by
 		// default.
-		assertEqualsWithNormalizedEOLs(expected, message.getContent());
+		TextBlockAssertion.assertThat(expected).isEqualTo(message.getContent());
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
@@ -145,11 +146,6 @@ public class PromptTemplateTest {
 
 		// Rendering the template with a missing key should throw an exception
 		assertThrows(IllegalStateException.class, promptTemplate::render);
-	}
-
-	private static void assertEqualsWithNormalizedEOLs(String expected, String actual) {
-		assertEquals(expected.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()),
-				actual.replaceAll("\\r\\n|\\r|\\n", System.lineSeparator()));
 	}
 
 }
