@@ -343,6 +343,28 @@ public class VertextAiEmbeddingUtility {
 			return this;
 		}
 
+		public VideoBuilder withStartOffsetSec(Integer startOffsetSec) {
+			if (startOffsetSec != null) {
+				this.startOffsetSec = startOffsetSec;
+			}
+			return this;
+		}
+
+		public VideoBuilder withEndOffsetSec(Integer endOffsetSec) {
+			if (endOffsetSec != null) {
+				this.endOffsetSec = endOffsetSec;
+			}
+			return this;
+
+		}
+
+		public VideoBuilder withIntervalSec(Integer intervalSec) {
+			if (intervalSec != null) {
+				this.intervalSec = intervalSec;
+			}
+			return this;
+		}
+
 		public Struct build() {
 
 			Struct.Builder videoBuilder = Struct.newBuilder();

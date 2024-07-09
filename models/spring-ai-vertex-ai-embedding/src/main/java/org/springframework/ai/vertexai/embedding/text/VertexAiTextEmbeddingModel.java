@@ -91,7 +91,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			PredictRequest.Builder predictRequestBuilder = PredictRequest.newBuilder()
 				.setEndpoint(endpointName.toString());
 
-			TextParametersBuilder parametersBuilder = TextParametersBuilder.of().withAutoTruncate(true);
+			TextParametersBuilder parametersBuilder = TextParametersBuilder.of();
+
+			if (finalOptions.getAutoTruncate() != null) {
+				parametersBuilder.withAutoTruncate(finalOptions.getAutoTruncate());
+			}
 
 			if (finalOptions.getDimensions() != null) {
 				parametersBuilder.withOutputDimensionality(finalOptions.getDimensions());

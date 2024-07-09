@@ -96,6 +96,14 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private @JsonProperty("title") String title;
 
+
+	/**
+	 * When set to true, input text will be truncated. When set to false, an error is returned
+	 * if the input text is longer than the maximum length supported by the model. Defaults to true.
+	 */
+	private @JsonProperty("autoTruncate") Boolean autoTruncate;
+
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -151,6 +159,11 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
+		public Builder withAutoTruncate(Boolean autoTruncate) {
+			this.options.setAutoTruncate(autoTruncate);
+			return this;
+		}
+
 		public VertexAiTextEmbeddingOptions build() {
 			return this.options;
 		}
@@ -200,6 +213,14 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public void setTitle(String user) {
 		this.title = user;
+	}
+
+	public Boolean getAutoTruncate() {
+		return this.autoTruncate;
+	}
+
+	public void setAutoTruncate(Boolean autoTruncate) {
+		this.autoTruncate = autoTruncate;
 	}
 
 }

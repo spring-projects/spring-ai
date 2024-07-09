@@ -66,6 +66,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private @JsonProperty("videoIntervalSec") Integer videoIntervalSec;
 
+
 	// @formatter:on
 	public static Builder builder() {
 		return new Builder();

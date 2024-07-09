@@ -168,8 +168,12 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 					}
 				}
 				else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
-					instanceBuilder
-						.withVideo(VideoBuilder.of(media.getMimeType()).withVideoData(media.getData()).build());
+					instanceBuilder.withVideo(VideoBuilder.of(media.getMimeType())
+						.withVideoData(media.getData())
+						.withStartOffsetSec(mergedOptions.getVideoStartOffsetSec())
+						.withEndOffsetSec(mergedOptions.getVideoEndOffsetSec())
+						.withIntervalSec(mergedOptions.getVideoIntervalSec())
+						.build());
 					documentMetadata.put(ModalityType.VIDEO,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
