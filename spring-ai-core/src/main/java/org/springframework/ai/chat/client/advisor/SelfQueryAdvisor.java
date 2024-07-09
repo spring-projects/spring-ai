@@ -1,6 +1,8 @@
 package org.springframework.ai.chat.client.advisor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -14,22 +16,27 @@ import java.util.Map;
 /**
  * Advisor that structures the user's query to match the request schema provided below.
  * Inspired from the langchain SelfQueryRetriever.
+ *
+ * @author Florin Duroiu
+ * @since 1.0.0
  */
 public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 
+	private static final Logger logger = LoggerFactory.getLogger(SelfQueryAdvisor.class);
+
 	private static final String STRUCTURED_REQUEST_PROMPT = """
 			Your goal is to structure the user's query to match the request schema provided below.\s
-			
+
 			  {schema}
 			<< Structured Request Schema >>
 			When responding use directly parsable JSON object formatted in the following schema:
-			
+
 			{{"query": "string", "filter": "string"}}
-			
+
 			The response JSON object should have the fields "query" and "filter"."query" is a text string to compare to document contents. "filter" is a logical condition statement for filtering documents. Any conditions in the "filter" should not be mentioned in the "query" as well.
-			
+
 			A logical condition statement is composed of one or more comparison and logical operation statements.
-			
+
 			A comparison statement takes the form: `attr comp val`:
 			- `comp` ({allowed_comparators}): comparator
 			- `attr` (string):  name of attribute to apply the comparison to
@@ -38,30 +45,36 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 			A logical operation statement takes the form `statement1 op statement2 op ...`:
 			- `op` ({allowed_operators}): logical operator
 			- `statement1`, `statement2`, ... (comparison statements or logical operation statements): one or more statements to apply the operation to
-			
+
 			Make sure that you only use the comparators and logical operators listed above and no others.
 			Make sure that filters only refer to attributes that exist in the data source.
 			Make sure that filters only use the attributed names with its function names if there are functions applied on them.
 			Make sure that filters only use format `YYYY-MM-DD` when handling date data typed values.
 			Make sure that filters take into account the descriptions of attributes and only make comparisons that are feasible given the type of data being stored.
 			Make sure that filters are only used as needed. If there are no filters that should be applied return "NO_FILTER" for the filter value.
-			
+
 			User query: {query}
 			""";
 
 	private final String metadataFieldInfoAsJson;
+
 	private final SearchRequest searchRequest;
+
 	private final ChatModel chatModel;
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
+
 	private static final List<String> allowedComparators = List.of("==", "!=", ">", ">=", "<", "<=", "-", "+");
+
 	private static final List<String> allowedOperators = List.of("AND", "OR", "IN", "NIN", "NOT");
 
-	public SelfQueryAdvisor(List<AttributeInfo> metadataFieldInfo, VectorStore vectorStore, SearchRequest searchRequest, ChatModel chatModel) {
+	public SelfQueryAdvisor(List<AttributeInfo> metadataFieldInfo, VectorStore vectorStore, SearchRequest searchRequest,
+			ChatModel chatModel) {
 		super(vectorStore, searchRequest);
 		try {
 			this.metadataFieldInfoAsJson = objectMapper.writeValueAsString(metadataFieldInfo);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException("Failed to serialize metadata field info", e);
 		}
 		this.searchRequest = searchRequest;
@@ -73,39 +86,48 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 		String userQuery = request.userText();
 		QueryFilter queryFilter = extractQueryFilter(userQuery);
 		if (queryFilter.isFilterFound()) {
-			searchRequest
-					.withQuery(queryFilter.getQuery())
-					.withFilterExpression(queryFilter.getFilter());
+			searchRequest.withQuery(queryFilter.getQuery()).withFilterExpression(queryFilter.getFilter());
 		}
 		var fromAdvisedRequestWithSummaryQuery = AdvisedRequest.from(request).withUserText(queryFilter.query).build();
 		return super.adviseRequest(fromAdvisedRequestWithSummaryQuery, context);
 	}
 
 	private QueryFilter extractQueryFilter(String userQuery) {
-		String queryExtractionResult = chatModel.call(queryExtractionPrompt(userQuery)).getResult().getOutput().getContent();
+		String queryExtractionResult = chatModel.call(queryExtractionPrompt(userQuery))
+			.getResult()
+			.getOutput()
+			.getContent();
 		try {
 			return objectMapper.readValue(queryExtractionResult, QueryFilter.class);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse query filter from response", e);
+		}
+		catch (Exception e) {
+			logger.warn("Failed to serialize metadata field info. Returning original query with NO_FILTER. Reason:", e);
+			return new QueryFilter(userQuery, QueryFilter.NO_FILTER);
 		}
 	}
 
 	private Prompt queryExtractionPrompt(String query) {
-		PromptTemplate promptTemplate = new PromptTemplate(
-				STRUCTURED_REQUEST_PROMPT,
-				Map.of(
-						"allowed_comparators", String.join(",", allowedComparators),
-						"allowed_operators", String.join(",", allowedOperators),
-						"schema", metadataFieldInfoAsJson,
-						"query", query
-				)
-		);
+		PromptTemplate promptTemplate = new PromptTemplate(STRUCTURED_REQUEST_PROMPT,
+				Map.of("allowed_comparators", String.join(",", allowedComparators), "allowed_operators",
+						String.join(",", allowedOperators), "schema", metadataFieldInfoAsJson, "query", query));
 		return new Prompt(promptTemplate.createMessage());
 	}
 
-	private static class QueryFilter {
+	public static class QueryFilter {
+
+		public static final String NO_FILTER = "NO_FILTER";
+
 		private String query;
+
 		private String filter;
+
+		public QueryFilter() {
+		}
+
+		public QueryFilter(String query, String filter) {
+			this.query = query;
+			this.filter = filter;
+		}
 
 		public String getQuery() {
 			return query;
@@ -124,13 +146,17 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 		}
 
 		public boolean isFilterFound() {
-			return !"NO_FILTER".equals(filter);
+			return !NO_FILTER.equals(filter);
 		}
+
 	}
 
 	public static class AttributeInfo {
+
 		private String name;
+
 		private String type;
+
 		private String description;
 
 		public AttributeInfo() {
@@ -165,5 +191,7 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 		public void setDescription(String description) {
 			this.description = description;
 		}
+
 	}
+
 }
