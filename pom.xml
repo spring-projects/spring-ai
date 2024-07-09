@@ -155,7 +155,7 @@
 
 		<jackson.version>2.16.1</jackson.version>
 		<djl.version>0.28.0</djl.version>
-		<onnxruntime.version>1.17.0</onnxruntime.version>
+		<onnxruntime.version>1.18.0</onnxruntime.version>
 		<com.google.cloud.version>26.41.0</com.google.cloud.version>
 		<qdrant.version>1.9.1</qdrant.version>
 		<spring-retry.version>2.0.5</spring-retry.version>
