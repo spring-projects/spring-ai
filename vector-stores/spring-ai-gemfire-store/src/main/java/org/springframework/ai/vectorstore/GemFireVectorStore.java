@@ -63,6 +63,8 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 	private static final String DOCUMENT_FIELD = "document";
 
+	private final boolean initializeSchema;
+
 	// Create Index Parameters
 
 	private String indexName;
@@ -113,11 +115,12 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		if (indexExists()) {
-			deleteIndex();
+		if (!this.initializeSchema) {
+			return;
 		}
-		createIndex();
-
+		if (!indexExists()) {
+			createIndex();
+		}
 	}
 
 	/**
@@ -140,7 +143,8 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	 * @param embeddingModel the embedding client used for generating embeddings
 	 */
 
-	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
 		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 		this.indexName = config.indexName;
@@ -150,6 +154,7 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 		this.buckets = config.buckets;
 		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
 		this.fields = config.fields;
+		this.initializeSchema = initializeSchema;
 
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
 			.build(config.sslEnabled ? "s" : "", config.host, config.port)
