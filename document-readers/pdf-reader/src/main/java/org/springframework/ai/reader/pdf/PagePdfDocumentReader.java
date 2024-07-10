@@ -17,8 +17,7 @@ package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
@@ -56,6 +55,8 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 	public static final String METADATA_FILE_NAME = "file_name";
 
+	private final Map<String, Object> customMetadata = new HashMap<>();
+
 	private final PDDocument document;
 
 	private PdfDocumentReaderConfig config;
@@ -88,6 +89,14 @@ public class PagePdfDocumentReader implements DocumentReader {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * Metadata associated with all documents created by the loader.
+	 * @return Metadata to be assigned to the output Documents.
+	 */
+	public Map<String, Object> getCustomMetadata() {
+		return this.customMetadata;
 	}
 
 	@Override
@@ -170,6 +179,8 @@ public class PagePdfDocumentReader implements DocumentReader {
 			doc.getMetadata().put(METADATA_END_PAGE_NUMBER, endPageNumber);
 		}
 		doc.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+
+		doc.getMetadata().putAll(customMetadata);
 
 		return doc;
 	}

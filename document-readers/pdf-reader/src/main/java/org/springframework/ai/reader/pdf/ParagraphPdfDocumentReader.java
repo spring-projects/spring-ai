@@ -16,9 +16,7 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -60,6 +58,8 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 	private static final String METADATA_LEVEL = "level";
 
 	private static final String METADATA_FILE_NAME = "file_name";
+
+	private final Map<String, Object> customMetadata = new HashMap<>();
 
 	private final ParagraphManager paragraphTextExtractor;
 
@@ -121,6 +121,14 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 	}
 
 	/**
+	 * Metadata associated with all documents created by the loader.
+	 * @return Metadata to be assigned to the output Documents.
+	 */
+	public Map<String, Object> getCustomMetadata() {
+		return this.customMetadata;
+	}
+
+	/**
 	 * Reads and processes the PDF document to extract paragraphs.
 	 * @return A list of {@link Document} objects representing paragraphs.
 	 */
@@ -169,6 +177,8 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		document.getMetadata().put(METADATA_END_PAGE, to.startPageNumber());
 		document.getMetadata().put(METADATA_LEVEL, from.level());
 		document.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+
+		document.getMetadata().putAll(customMetadata);
 
 		return document;
 	}
