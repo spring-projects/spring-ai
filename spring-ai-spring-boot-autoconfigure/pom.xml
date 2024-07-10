@@ -26,6 +26,7 @@
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
 			<version>${protobuf-java.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- production dependencies -->
@@ -92,6 +93,7 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-codec-http2</artifactId>
 			<version>4.1.100.Final</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- Milvus Vector Store -->
@@ -205,6 +207,7 @@
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
 			<version>5.1.0</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- Vertex AI PaLM2 -->
@@ -379,15 +382,10 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>${postgresql.version}</version>
 			<scope>test</scope>
 		</dependency>
 
