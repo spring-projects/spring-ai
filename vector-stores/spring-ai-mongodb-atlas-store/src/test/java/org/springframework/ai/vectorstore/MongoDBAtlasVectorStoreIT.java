@@ -15,20 +15,21 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.convert.MimeTypeConverters;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -42,9 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Chris Smith
+ * @author Ross Lawley
  */
 @Testcontainers
-@Disabled("Disabled due to https://github.com/spring-projects/spring-ai/issues/698")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class MongoDBAtlasVectorStoreIT {
 
 	@Container
@@ -191,6 +193,17 @@ class MongoDBAtlasVectorStoreIT {
 	@EnableAutoConfiguration
 	public static class TestApplication {
 
+		@Value("${spring.data.mongodb.uri}")
+		String mongoUri;
+
+		@Value("${spring.data.mongodb.database}")
+		String databaseName;
+
+		@Bean
+		public MongoCustomConversions customConversions() {
+			return new MongoCustomConversions(MimeTypeConverters.getConvertersToRegister());
+		}
+
 		@Bean
 		public VectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
 			return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel,
@@ -198,11 +211,6 @@ class MongoDBAtlasVectorStoreIT {
 						.withMetadataFieldsToFilter(List.of("country", "year"))
 						.build(),
 					true);
-		}
-
-		@Bean
-		public MongoTemplate mongoTemplate(MongoClient mongoClient) {
-			return new MongoTemplate(mongoClient, "springaisample");
 		}
 
 		@Bean

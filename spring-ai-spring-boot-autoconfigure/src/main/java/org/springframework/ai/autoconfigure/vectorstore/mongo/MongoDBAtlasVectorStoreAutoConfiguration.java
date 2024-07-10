@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.MongoDBAtlasVectorStore;
+import org.springframework.ai.vectorstore.convert.MimeTypeConverters;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -25,13 +26,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
-
-import java.util.Arrays;
 
 /**
  * @author Eddú Meléndez
@@ -65,33 +62,12 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	public Converter<MimeType, String> mimeTypeToStringConverter() {
-		return new Converter<MimeType, String>() {
-			@Override
-			public String convert(MimeType source) {
-				return source.toString();
-			}
-		};
-	}
-
-	@Bean
-	public Converter<String, MimeType> stringToMimeTypeConverter() {
-		return new Converter<String, MimeType>() {
-			@Override
-			public MimeType convert(String source) {
-				return MimeType.valueOf(source);
-			}
-		};
-	}
-
-	@Bean
 	public BeanPostProcessor mongoCustomConversionsPostProcessor() {
 		return new BeanPostProcessor() {
 			@Override
 			public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 				if (bean instanceof MongoCustomConversions) {
-					return new MongoCustomConversions(
-							Arrays.asList(mimeTypeToStringConverter(), stringToMimeTypeConverter()));
+					return new MongoCustomConversions(MimeTypeConverters.getConvertersToRegister());
 				}
 				return bean;
 			}
