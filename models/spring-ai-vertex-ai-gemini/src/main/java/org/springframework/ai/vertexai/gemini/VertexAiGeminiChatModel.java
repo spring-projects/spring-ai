@@ -266,7 +266,7 @@ public class VertexAiGeminiChatModel
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		if (StringUtils.hasText(systemContext)) {
-			generativeModel.withSystemInstruction(ContentMaker.fromString(systemContext));
+			generativeModel = generativeModel.withSystemInstruction(ContentMaker.fromString(systemContext));
 		}
 
 		return new GeminiRequest(toGeminiContent(prompt), generativeModel);
