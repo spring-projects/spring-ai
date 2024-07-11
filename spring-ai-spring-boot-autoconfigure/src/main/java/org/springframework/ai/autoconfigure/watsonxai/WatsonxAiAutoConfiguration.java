@@ -45,7 +45,8 @@ public class WatsonxAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public WatsonxAiApi watsonxApi(WatsonxAiConnectionProperties properties, RestClient.Builder restClientBuilder) {
 		return new WatsonxAiApi(properties.getBaseUrl(), properties.getStreamEndpoint(), properties.getTextEndpoint(),
-				properties.getProjectId(), properties.getIAMToken(), restClientBuilder);
+				properties.getEmbeddingEndpoint(), properties.getProjectId(), properties.getIAMToken(),
+				restClientBuilder);
 	}
 
 	@Bean

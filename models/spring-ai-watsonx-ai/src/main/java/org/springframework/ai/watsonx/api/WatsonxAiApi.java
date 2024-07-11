@@ -52,6 +52,7 @@ public class WatsonxAiApi {
     private final IamAuthenticator iamAuthenticator;
     private final String streamEndpoint;
     private final String textEndpoint;
+	private final String embeddingEndpoint;
     private final String projectId;
     private IamToken token;
 
@@ -60,6 +61,7 @@ public class WatsonxAiApi {
      * @param baseUrl api base URL.
      * @param streamEndpoint streaming generation.
      * @param textEndpoint text generation.
+	 * @param embeddingEndpoint embedding generation
      * @param projectId watsonx.ai project identifier.
      * @param IAMToken IBM Cloud IAM token.
      * @param restClientBuilder rest client builder.
@@ -68,12 +70,14 @@ public class WatsonxAiApi {
             String baseUrl,
             String streamEndpoint,
             String textEndpoint,
+			String embeddingEndpoint,
             String projectId,
             String IAMToken,
             RestClient.Builder restClientBuilder
     ) {
         this.streamEndpoint = streamEndpoint;
         this.textEndpoint = textEndpoint;
+		this.embeddingEndpoint = embeddingEndpoint;
         this.projectId = projectId;
         this.iamAuthenticator = IamAuthenticator.fromConfiguration(Map.of("APIKEY", IAMToken));
         this.token = this.iamAuthenticator.requestToken();
