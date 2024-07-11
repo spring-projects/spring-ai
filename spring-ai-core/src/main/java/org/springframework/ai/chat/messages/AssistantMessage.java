@@ -15,7 +15,11 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import org.springframework.util.Assert;
 
 /**
  * Lets the generative know the content was generated as a response to the user. This role
@@ -25,18 +29,46 @@ import java.util.Map;
  */
 public class AssistantMessage extends AbstractMessage {
 
+	public record ToolCall(String id, String type, String name, String arguments) {
+	}
+
+	private final List<ToolCall> toolCalls;
+
 	public AssistantMessage(String content) {
-		super(MessageType.ASSISTANT, content);
+		this(content, Map.of());
 	}
 
 	public AssistantMessage(String content, Map<String, Object> properties) {
+		this(content, properties, List.of());
+	}
+
+	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
 		super(MessageType.ASSISTANT, content, properties);
+		Assert.notNull(toolCalls, "Tool calls must not be null");
+		this.toolCalls = toolCalls;
+	}
+
+	public List<ToolCall> getToolCalls() {
+		return this.toolCalls;
 	}
 
 	@Override
-	public String toString() {
-		return "AssistantMessage{" + "content='" + getContent() + '\'' + ", properties=" + metadata + ", messageType="
-				+ messageType + '}';
+	public int hashCode() {
+		return Objects.hash(this.messageType, this.getContent(), this.metadata, this.toolCalls);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		AssistantMessage other = (AssistantMessage) obj;
+		return this.messageType == other.messageType && Objects.equals(this.getContent(), other.getContent())
+				&& Objects.equals(this.getMetadata(), other.getMetadata())
+				&& Objects.equals(this.getToolCalls(), other.getToolCalls());
 	}
 
 }

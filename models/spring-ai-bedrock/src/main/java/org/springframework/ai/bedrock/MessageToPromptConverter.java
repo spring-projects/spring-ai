@@ -89,7 +89,7 @@ public class MessageToPromptConverter {
 				return humanPrompt + " " + message.getContent();
 			case ASSISTANT:
 				return assistantPrompt + " " + message.getContent();
-			case FUNCTION:
+			case TOOL:
 				throw new IllegalArgumentException("Tool execution results are not supported for Bedrock models");
 		}
 
