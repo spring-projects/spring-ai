@@ -16,6 +16,7 @@
 package org.springframework.ai.autoconfigure.watsonxai;
 
 import org.springframework.ai.watsonx.WatsonxAiChatModel;
+import org.springframework.ai.watsonx.WatsonxAiEmbeddingModel;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -36,7 +37,8 @@ import org.springframework.web.client.RestClient;
  */
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(WatsonxAiApi.class)
-@EnableConfigurationProperties({ WatsonxAiConnectionProperties.class, WatsonxAiChatProperties.class })
+@EnableConfigurationProperties({ WatsonxAiConnectionProperties.class, WatsonxAiChatProperties.class,
+		WatsonxAiEmbeddingProperties.class })
 @ConditionalOnProperty(prefix = WatsonxAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class WatsonxAiAutoConfiguration {
@@ -45,13 +47,25 @@ public class WatsonxAiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public WatsonxAiApi watsonxApi(WatsonxAiConnectionProperties properties, RestClient.Builder restClientBuilder) {
 		return new WatsonxAiApi(properties.getBaseUrl(), properties.getStreamEndpoint(), properties.getTextEndpoint(),
-				properties.getProjectId(), properties.getIAMToken(), restClientBuilder);
+				properties.getEmbeddingEndpoint(), properties.getProjectId(), properties.getIAMToken(),
+				restClientBuilder);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = WatsonxAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public WatsonxAiChatModel watsonxChatModel(WatsonxAiApi watsonxApi, WatsonxAiChatProperties chatProperties) {
 		return new WatsonxAiChatModel(watsonxApi, chatProperties.getOptions());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = WatsonxAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public WatsonxAiEmbeddingModel watsonxAiEmbeddingModel(WatsonxAiApi watsonxApi,
+			WatsonxAiEmbeddingProperties properties) {
+		return new WatsonxAiEmbeddingModel(watsonxApi, properties.getOptions());
 	}
 
 }

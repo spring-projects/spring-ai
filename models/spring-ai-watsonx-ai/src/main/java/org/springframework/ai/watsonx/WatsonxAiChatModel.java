@@ -18,6 +18,7 @@ package org.springframework.ai.watsonx;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import reactor.core.publisher.Flux;
 
@@ -29,17 +30,18 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
-import org.springframework.ai.watsonx.api.WatsonxAiRequest;
-import org.springframework.ai.watsonx.api.WatsonxAiResponse;
+import org.springframework.ai.watsonx.api.WatsonxAiChatRequest;
+import org.springframework.ai.watsonx.api.WatsonxAiChatResponse;
 import org.springframework.ai.watsonx.utils.MessageToPromptConverter;
 import org.springframework.util.Assert;
 
 /**
  * {@link ChatModel} implementation for {@literal watsonx.ai}.
- *
+ * <p>
  * watsonx.ai allows developers to use large language models within a SaaS service. It
- * supports multiple open-source models as well as IBM created models
- * [watsonx.ai](https://www.ibm.com/products/watsonx-ai). Please refer to the <a href=
+ * supports multiple open-source models as well as IBM created models.
+ * <p>
+ * Please refer to the <a href=
  * "https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx">watsonx.ai
  * models</a> for the most up-to-date information about the available models.
  *
@@ -78,35 +80,37 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 
-		WatsonxAiRequest request = request(prompt);
+		WatsonxAiChatRequest request = request(prompt);
 
-		WatsonxAiResponse response = this.watsonxAiApi.generate(request).getBody();
-		var generator = new Generation(response.results().get(0).generatedText());
-
-		generator = generator.withGenerationMetadata(
+		WatsonxAiChatResponse response = this.watsonxAiApi.generate(request).getBody();
+		var generation = new Generation(new AssistantMessage(response.results().get(0).generatedText()),
 				ChatGenerationMetadata.from(response.results().get(0).stopReason(), response.system()));
 
-		return new ChatResponse(List.of(generator));
+		return new ChatResponse(List.of(generation));
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		WatsonxAiRequest request = request(prompt);
+		WatsonxAiChatRequest request = request(prompt);
 
-		Flux<WatsonxAiResponse> response = this.watsonxAiApi.generateStreaming(request);
+		Flux<WatsonxAiChatResponse> response = this.watsonxAiApi.generateStreaming(request);
 
 		return response.map(chunk -> {
-			Generation generation = new Generation(chunk.results().get(0).generatedText());
+			String generatedText = chunk.results().get(0).generatedText();
+			AssistantMessage assistantMessage = new AssistantMessage(generatedText);
+
+			ChatGenerationMetadata metadata = ChatGenerationMetadata.NULL;
 			if (chunk.system() != null) {
-				generation = generation.withGenerationMetadata(
-						ChatGenerationMetadata.from(chunk.results().get(0).stopReason(), chunk.system()));
+				metadata = ChatGenerationMetadata.from(chunk.results().get(0).stopReason(), chunk.system());
 			}
+
+			Generation generation = new Generation(assistantMessage, metadata);
 			return new ChatResponse(List.of(generation));
 		});
 	}
 
-	public WatsonxAiRequest request(Prompt prompt) {
+	public WatsonxAiChatRequest request(Prompt prompt) {
 
 		WatsonxAiChatOptions options = WatsonxAiChatOptions.builder().build();
 
@@ -133,7 +137,7 @@ public class WatsonxAiChatModel implements ChatModel, StreamingChatModel {
 			.withHumanPrompt("")
 			.toPrompt(prompt.getInstructions());
 
-		return WatsonxAiRequest.builder(convertedPrompt).withParameters(parameters).build();
+		return WatsonxAiChatRequest.builder(convertedPrompt).withParameters(parameters).build();
 	}
 
 	@Override

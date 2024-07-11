@@ -123,7 +123,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     private Map<String, Object> additional = new HashMap<>();
 
     @JsonIgnore
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
 	@Override
     public Double getTemperature() {
@@ -343,7 +343,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     }
 
     /**
-     * Filter out the non supported fields from the options.
+     * Filter out the non-supported fields from the options.
      * @param options The options to filter.
      * @return The filtered options.
      */
