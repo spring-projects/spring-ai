@@ -233,9 +233,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 
 		public Builder withStreamUsage(boolean enableStreamUsage) {
-			if (enableStreamUsage) {
-				this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
-			}
+			this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
 			return this;
 		}
 
