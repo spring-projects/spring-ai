@@ -16,15 +16,17 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -56,7 +58,6 @@ import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
-import com.google.cloud.vertexai.generativeai.ContentMaker;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
@@ -70,6 +71,7 @@ import reactor.core.publisher.Mono;
  * @author Christian Tzolov
  * @author Grogdunn
  * @author luocongqiu
+ * @author Chris Turchin
  * @since 0.8.1
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateContentResponse>
@@ -103,6 +105,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 
 	public enum ChatModel implements ChatModelDescription {
 
+		/**
+		 * Deprecated by Goolgle in favor of 1.5 pro and flash models.
+		 */
 		GEMINI_PRO_VISION("gemini-pro-vision"),
 
 		GEMINI_PRO("gemini-pro"),
@@ -130,10 +135,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI) {
 		this(vertexAI,
-				VertexAiGeminiChatOptions.builder()
-					.withModel(ChatModel.GEMINI_PRO_VISION)
-					.withTemperature(0.8f)
-					.build());
+				VertexAiGeminiChatOptions.builder().withModel(ChatModel.GEMINI_1_5_PRO).withTemperature(0.8f).build());
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
@@ -161,8 +163,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 		var geminiRequest = createGeminiRequest(prompt);
 
 		GenerateContentResponse response = this.getContentResponse(geminiRequest);
-
-		// GenerateContentResponse response = this.callWithFunctionSupport(geminiRequest);
 
 		if (this.isToolFunctionCall(response)) {
 			List<Message> toolCallMessageConversation = this.handleToolCallRequests(prompt.getInstructions(), response);
@@ -252,7 +252,10 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 	public record GeminiRequest(List<Content> contents, GenerativeModel model) {
 	}
 
-	private GeminiRequest createGeminiRequest(Prompt prompt) {
+	/**
+	 * Tests access to the {@link #createGeminiRequest(Prompt)} method.
+	 */
+	GeminiRequest createGeminiRequest(Prompt prompt) {
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
@@ -305,17 +308,17 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 
 		GenerativeModel generativeModel = generativeModelBuilder.build();
 
-		String systemContext = prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getContent())
-			.collect(Collectors.joining(System.lineSeparator()));
+		List<Content> contents = toGeminiContent(
+				prompt.getInstructions().stream().filter(m -> m.getMessageType() == MessageType.SYSTEM).toList());
 
-		if (StringUtils.hasText(systemContext)) {
-			generativeModel.withSystemInstruction(ContentMaker.fromString(systemContext));
+		if (!CollectionUtils.isEmpty(contents)) {
+			Assert.isTrue(contents.size() <= 1, "Only one system message is allowed in the prompt");
+			generativeModel = generativeModel.withSystemInstruction(contents.get(0));
 		}
 
-		return new GeminiRequest(toGeminiContent(prompt), generativeModel);
+		return new GeminiRequest(toGeminiContent(
+				prompt.getInstructions().stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).toList()),
+				generativeModel);
 	}
 
 	private GenerationConfig toGenerationConfig(VertexAiGeminiChatOptions options) {
@@ -344,12 +347,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 		return generationConfigBuilder.build();
 	}
 
-	private List<Content> toGeminiContent(Prompt prompt) {
+	private List<Content> toGeminiContent(List<Message> instrucitons) {
 
-		List<Content> contents = prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT
-					|| m.getMessageType() == MessageType.TOOL)
+		List<Content> contents = instrucitons.stream()
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
 				.addAllParts(messageToGeminiParts(message))
@@ -364,6 +364,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 		Assert.notNull(type, "Message type must not be null");
 
 		switch (type) {
+			case SYSTEM:
 			case USER:
 			case TOOL:
 				return GeminiMessageType.USER;
@@ -376,22 +377,26 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 
 	static List<Part> messageToGeminiParts(Message message) {
 
-		if (message instanceof UserMessage userMessage) {
+		if (message instanceof SystemMessage systemMessage) {
 
-			String messageTextContent = (userMessage.getContent() == null) ? "null" : userMessage.getContent();
-			Part textPart = Part.newBuilder().setText(messageTextContent).build();
+			List<Part> parts = new ArrayList<>();
 
-			List<Part> parts = new ArrayList<>(List.of(textPart));
-
-			List<Part> mediaParts = userMessage.getMedia()
-				.stream()
-				.map(mediaData -> PartMaker.fromMimeTypeAndData(mediaData.getMimeType().toString(),
-						mediaData.getData()))
-				.toList();
-
-			if (!CollectionUtils.isEmpty(mediaParts)) {
-				parts.addAll(mediaParts);
+			if (systemMessage.getContent() != null) {
+				parts.add(Part.newBuilder().setText(systemMessage.getContent()).build());
 			}
+
+			// NOTE: For Gemine the system messages do not support media attachments.
+			parts.addAll(mediaToParts(systemMessage.getMedia()));
+
+			return parts;
+		}
+		else if (message instanceof UserMessage userMessage) {
+			List<Part> parts = new ArrayList<>();
+			if (userMessage.getContent() != null) {
+				parts.add(Part.newBuilder().setText(userMessage.getContent()).build());
+			}
+
+			parts.addAll(mediaToParts(userMessage.getMedia()));
 
 			return parts;
 		}
@@ -428,6 +433,20 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 		else {
 			throw new IllegalArgumentException("Gemini doesn't support message type: " + message.getClass());
 		}
+	}
+
+	private static List<Part> mediaToParts(Collection<Media> media) {
+		List<Part> parts = new ArrayList<>();
+
+		List<Part> mediaParts = media.stream()
+			.map(mediaData -> PartMaker.fromMimeTypeAndData(mediaData.getMimeType().toString(), mediaData.getData()))
+			.toList();
+
+		if (!CollectionUtils.isEmpty(mediaParts)) {
+			parts.addAll(mediaParts);
+		}
+
+		return parts;
 	}
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {
