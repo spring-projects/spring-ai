@@ -39,7 +39,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractFunctionCallSupport2;
+import org.springframework.ai.model.function.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -81,7 +81,7 @@ import reactor.core.publisher.Mono;
  * @see StreamingChatModel
  * @see OpenAiApi
  */
-public class OpenAiChatModel extends AbstractFunctionCallSupport2<ChatCompletion> implements ChatModel {
+public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
@@ -161,6 +161,7 @@ public class OpenAiChatModel extends AbstractFunctionCallSupport2<ChatCompletion
 						chatCompletion);
 				// Recursively call the call method with the tool call message
 				// conversation that contains the call responses.
+
 				return this.call(new Prompt(toolCallMessageConversation, prompt.getOptions()));
 			}
 

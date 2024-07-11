@@ -30,7 +30,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @author Grogdunn
  */
-public abstract class AbstractFunctionCallSupport2<Resp> {
+public abstract class AbstractToolCallSupport<Resp> {
 
 	protected final static boolean IS_RUNTIME_CALL = true;
 
@@ -46,7 +46,7 @@ public abstract class AbstractFunctionCallSupport2<Resp> {
 	 */
 	protected final FunctionCallbackContext functionCallbackContext;
 
-	protected AbstractFunctionCallSupport2(FunctionCallbackContext functionCallbackContext) {
+	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext) {
 		this.functionCallbackContext = functionCallbackContext;
 	}
 
