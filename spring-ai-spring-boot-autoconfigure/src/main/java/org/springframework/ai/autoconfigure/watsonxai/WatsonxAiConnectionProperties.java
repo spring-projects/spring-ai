@@ -31,9 +31,9 @@ public class WatsonxAiConnectionProperties {
 
 	private String baseUrl = "https://us-south.ml.cloud.ibm.com/";
 
-	private String streamEndpoint = "generation/stream?version=2023-05-29";
+	private String streamEndpoint = "ml/v1/text/generation_stream?version=2023-05-29";
 
-	private String textEndpoint = "generation/text?version=2023-05-29";
+	private String textEndpoint = "ml/v1/text/generation?version=2023-05-29";
 
 	private String projectId;
 
