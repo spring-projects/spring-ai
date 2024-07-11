@@ -65,6 +65,14 @@ public class WatsonxAiConnectionProperties {
 		this.textEndpoint = textEndpoint;
 	}
 
+	public String getEmbeddingEndpoint() {
+		return embeddingEndpoint;
+	}
+
+	public void setEmbeddingEndpoint(String embeddingEndpoint) {
+		this.embeddingEndpoint = embeddingEndpoint;
+	}
+
 	public String getProjectId() {
 		return projectId;
 	}
