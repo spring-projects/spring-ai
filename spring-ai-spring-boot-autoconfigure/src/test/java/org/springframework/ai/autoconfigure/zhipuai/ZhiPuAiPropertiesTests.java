@@ -215,7 +215,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.chat.options.stop=boza,koza",
 				"spring.ai.zhipuai.chat.options.temperature=0.55",
 				"spring.ai.zhipuai.chat.options.topP=0.56",
-				"spring.ai.zhipuai.chat.options.getRequestId=RequestId",
+				"spring.ai.zhipuai.chat.options.requestId=RequestId",
 				"spring.ai.zhipuai.chat.options.doSample=true",
 
 				// "spring.ai.zhipuai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
