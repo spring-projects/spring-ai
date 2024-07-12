@@ -17,6 +17,7 @@ package org.springframework.ai.azure.openai.function;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -68,13 +69,13 @@ class AzureOpenAiChatModelFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
 
 		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
 
@@ -94,13 +95,13 @@ class AzureOpenAiChatModelFunctionCallIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
 
 		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
 
@@ -112,32 +113,70 @@ class AzureOpenAiChatModelFunctionCallIT {
 	}
 
 	@Test
+	void functionCallSequentialAndStreamTest() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco? If the weather is above 25 degrees, please check the weather in Tokyo and Paris.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AzureOpenAiChatOptions.builder()
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
+
+		var response = chatModel.stream(new Prompt(messages, promptOptions));
+
+		final var counter = new AtomicInteger();
+		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
+				.collectList()
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.filter(Objects::nonNull)
+				.collect(Collectors.joining());
+
+		logger.info("Response: {}", response);
+
+		assertThat(content).containsAnyOf("30.0", "30");
+		assertThat(content).containsAnyOf("10.0", "10");
+		assertThat(content).containsAnyOf("15.0", "15");
+	}
+
+	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AzureOpenAiChatOptions.builder()
-			.withDeploymentName(selectedModel)
-			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
-				.withName("getCurrentWeather")
-				.withDescription("Get the current weather in a given location")
-				.withResponseConverter((response) -> "" + response.temp() + response.unit())
-				.build()))
-			.build();
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
 
 		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
 
 		final var counter = new AtomicInteger();
 		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
-			.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
-			.collect(Collectors.joining());
+				.collectList()
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(counter.get()).isGreaterThan(30).as("The response should be chunked in more than 30 messages");
@@ -153,8 +192,8 @@ class AzureOpenAiChatModelFunctionCallIT {
 		@Bean
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
+					.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.buildClient();
 		}
 
 		@Bean
