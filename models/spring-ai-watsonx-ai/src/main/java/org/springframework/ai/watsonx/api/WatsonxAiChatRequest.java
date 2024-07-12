@@ -25,7 +25,7 @@ import org.springframework.util.Assert;
 
 // @formatter:off
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class WatsonxAiRequest {
+public class WatsonxAiChatRequest {
 
     @JsonProperty("input")
     private String input;
@@ -36,19 +36,19 @@ public class WatsonxAiRequest {
     @JsonProperty("project_id")
     private String projectId = "";
 
-    private WatsonxAiRequest(String input, Map<String, Object> parameters, String modelId, String projectId) {
+    private WatsonxAiChatRequest(String input, Map<String, Object> parameters, String modelId, String projectId) {
         this.input = input;
         this.parameters = parameters;
         this.modelId = modelId;
         this.projectId = projectId;
     }
 
-    public WatsonxAiRequest withModelId(String modelId) {
+    public WatsonxAiChatRequest withModelId(String modelId) {
         this.modelId = modelId;
         return this;
     }
 
-    public WatsonxAiRequest withProjectId(String projectId) {
+    public WatsonxAiChatRequest withProjectId(String projectId) {
         this.projectId = projectId;
         return this;
     }
@@ -79,8 +79,8 @@ public class WatsonxAiRequest {
             return this;
         }
 
-        public WatsonxAiRequest build() {
-            return new WatsonxAiRequest(input, parameters, model, "");
+        public WatsonxAiChatRequest build() {
+            return new WatsonxAiChatRequest(input, parameters, model, "");
         }
 
     }

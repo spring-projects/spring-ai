@@ -24,9 +24,9 @@ import java.util.Map;
 
 // @formatter:off
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record WatsonxAiResponse(
+public record WatsonxAiChatResponse(
         @JsonProperty("model_id") String modelId,
         @JsonProperty("created_at") Date createdAt,
-        @JsonProperty("results") List<WatsonxAiResults> results,
+        @JsonProperty("results") List<WatsonxAiChatResults> results,
         @JsonProperty("system") Map<String, Object> system
 ) {}

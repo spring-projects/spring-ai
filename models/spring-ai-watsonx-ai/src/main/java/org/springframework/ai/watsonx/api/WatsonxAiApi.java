@@ -98,8 +98,8 @@ public class WatsonxAiApi {
     }
 
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
-    public ResponseEntity<WatsonxAiResponse> generate(WatsonxAiRequest watsonxAiRequest) {
-        Assert.notNull(watsonxAiRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
+    public ResponseEntity<WatsonxAiChatResponse> generate(WatsonxAiChatRequest watsonxAiChatRequest) {
+        Assert.notNull(watsonxAiChatRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
 
         if(this.token.needsRefresh()) {
             this.token = this.iamAuthenticator.requestToken();
@@ -108,14 +108,14 @@ public class WatsonxAiApi {
         return this.restClient.post()
                 .uri(this.textEndpoint)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
-                .body(watsonxAiRequest.withProjectId(projectId))
+                .body(watsonxAiChatRequest.withProjectId(projectId))
                 .retrieve()
-                .toEntity(WatsonxAiResponse.class);
+                .toEntity(WatsonxAiChatResponse.class);
     }
 
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
-    public Flux<WatsonxAiResponse> generateStreaming(WatsonxAiRequest watsonxAiRequest) {
-        Assert.notNull(watsonxAiRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
+    public Flux<WatsonxAiChatResponse> generateStreaming(WatsonxAiChatRequest watsonxAiChatRequest) {
+        Assert.notNull(watsonxAiChatRequest, WATSONX_REQUEST_CANNOT_BE_NULL);
 
         if(this.token.needsRefresh()) {
             this.token = this.iamAuthenticator.requestToken();
@@ -124,9 +124,9 @@ public class WatsonxAiApi {
         return this.webClient.post()
                 .uri(this.streamEndpoint)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
-                .bodyValue(watsonxAiRequest.withProjectId(this.projectId))
+                .bodyValue(watsonxAiChatRequest.withProjectId(this.projectId))
                 .retrieve()
-                .bodyToFlux(WatsonxAiResponse.class)
+                .bodyToFlux(WatsonxAiChatResponse.class)
                 .handle((data, sink) -> {
                     if (logger.isTraceEnabled()) {
                         logger.trace(data);
