@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.*;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingRequest;
 import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingResponse;
