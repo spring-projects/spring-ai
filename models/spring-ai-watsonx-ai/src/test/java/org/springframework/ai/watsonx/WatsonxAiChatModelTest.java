@@ -166,7 +166,8 @@ public class WatsonxAiChatModelTest {
 
 		WatsonxAiChatResults fakeResults = new WatsonxAiChatResults("LLM response", 4, 3, "max_tokens");
 
-		WatsonxAiChatResponse fakeResponse = new WatsonxAiChatResponse("google/flan-ul2", new Date(), List.of(fakeResults),
+		WatsonxAiChatResponse fakeResponse = new WatsonxAiChatResponse("google/flan-ul2", new Date(),
+				List.of(fakeResults),
 				Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))));
 
 		when(mockChatApi.generate(any(WatsonxAiChatRequest.class)))
