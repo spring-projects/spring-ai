@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(WatsonxAiEmbeddingProperties.CONFIG_PREFIX)
 public class WatsonxAiEmbeddingProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.watsonx.embedding";
+	public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai.embedding";
 
 	/**
 	 * Enable Watsonx.ai embedding model.
