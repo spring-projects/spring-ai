@@ -64,7 +64,7 @@ import java.util.stream.Collectors;
  * @author Mariusz Bernacki
  * @since 1.0.0
  */
-public class AnthropicChatModel extends AbstractToolCallSupport<ChatCompletionResponse> implements ChatModel {
+public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
 
@@ -353,7 +353,6 @@ public class AnthropicChatModel extends AbstractToolCallSupport<ChatCompletionRe
 	}
 
 	@SuppressWarnings("null")
-	@Override
 	protected boolean isToolFunctionCall(ChatCompletionResponse response) {
 		if (response == null || CollectionUtils.isEmpty(response.content())) {
 			return false;

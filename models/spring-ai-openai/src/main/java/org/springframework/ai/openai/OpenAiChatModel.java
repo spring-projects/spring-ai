@@ -36,7 +36,6 @@ import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionFinishReason;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.MediaContent;
@@ -80,7 +79,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see StreamingChatModel
  * @see OpenAiApi
  */
-public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> implements ChatModel {
+public class OpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
@@ -144,50 +143,45 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		return this.retryTemplate.execute(ctx -> {
+		ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+			.execute(ctx -> this.openAiApi.chatCompletionEntity(request));
 
-			ResponseEntity<ChatCompletion> completionEntity = this.openAiApi.chatCompletionEntity(request);
+		var chatCompletion = completionEntity.getBody();
 
-			var chatCompletion = completionEntity.getBody();
+		if (chatCompletion == null) {
+			logger.warn("No chat completion returned for prompt: {}", prompt);
+			return new ChatResponse(List.of());
+		}
 
-			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+		List<Choice> choices = chatCompletion.choices();
+		if (choices == null) {
+			logger.warn("No choices returned for prompt: {}", prompt);
+			return new ChatResponse(List.of());
+		}
 
-			if (isToolFunctionCall(chatCompletion)) {
-				List<Message> toolCallMessageConversation = this.handleToolCallRequests(prompt.getInstructions(),
-						chatCompletion);
-				// Recursively call the call method with the tool call message
-				// conversation that contains the call responses.
+		List<Generation> generations = choices.stream().map(choice -> {
+			// @formatter:off
+			Map<String, Object> metadata = Map.of(
+					"id", chatCompletion.id(),
+					"role", choice.message().role() != null ? choice.message().role().name() : "",
+					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+			// @formatter:on
+			return buildGeneration(choice, metadata);
+		}).toList();
 
-				return this.call(new Prompt(toolCallMessageConversation, prompt.getOptions()));
-			}
+		// Non function calling.
+		RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
-			// Non function calling.
-			RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
 
-			List<Choice> choices = chatCompletion.choices();
-			if (choices == null) {
-				logger.warn("No choices returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+		if (isToolCall(chatResponse, OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name())) {
+			var toolCallConversation = handleToolCalls(prompt, chatResponse);
+			// Recursively call the call method with the tool call message
+			// conversation that contains the call responses.
+			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+		}
 
-			List<Generation> generations = choices.stream().map(choice -> {
-				Map<String, Object> metadata = Map.of("id", chatCompletion.id(), "role",
-						choice.message().role() != null ? choice.message().role().name() : "", "finishReason",
-						choice.finishReason() != null ? choice.finishReason().name() : "");
-				var generation = new Generation(choice.message().content(), metadata);
-				if (choice.finishReason() != null) {
-					generation = generation
-						.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
-				}
-				return generation;
-
-			}).toList();
-
-			return new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
-		});
+		return chatResponse;
 	}
 
 	public static ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit) {
@@ -207,60 +201,58 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 
 		ChatCompletionRequest request = createRequest(prompt, true);
 
-		return this.retryTemplate.execute(ctx -> {
+		Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.retryTemplate
+			.execute(ctx -> this.openAiApi.chatCompletionStream(request));
 
-			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request);
+		// For chunked responses, only the first chunk contains the choice role.
+		// The rest of the chunks with same ID share the same role.
+		ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			// For chunked responses, only the first chunk contains the choice role.
-			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+		// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+		// the function call handling logic.
+		Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
+			.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				try {
+					@SuppressWarnings("null")
+					String id = chatCompletion2.id();
 
-			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
-			// the function call handling logic.
-			return completionChunks.map(this::chunkToChatCompletion).switchMap(chatCompletion -> {
+			// @formatter:off
+					List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
+						if (choice.message().role() != null) {
+							roleMap.putIfAbsent(id, choice.message().role().name());
+						}
+						Map<String, Object> metadata = Map.of(
+								"id", chatCompletion2.id(),
+								"role", roleMap.getOrDefault(id, ""),
+								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+								return buildGeneration(choice, metadata);
+						}).toList();
+					// @formatter:on
 
-				if (this.isToolFunctionCall(chatCompletion)) {
-					var toolCallMessageConversation = this.handleToolCallRequests(prompt.getInstructions(),
-							chatCompletion);
-					// Recursively call the stream method with the tool call message
-					// conversation that contains the call responses.
-					return this.stream(new Prompt(toolCallMessageConversation, prompt.getOptions()));
+					if (chatCompletion2.usage() != null) {
+						return new ChatResponse(generations, from(chatCompletion2));
+					}
+					else {
+						return new ChatResponse(generations);
+					}
+				}
+				catch (Exception e) {
+					logger.error("Error processing chat completion", e);
+					return new ChatResponse(List.of());
 				}
 
-				// Non function calling.
-				return Mono.just(chatCompletion).map(chatCompletion2 -> {
-					try {
-						@SuppressWarnings("null")
-						String id = chatCompletion2.id();
+			}));
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-							if (choice.message().role() != null) {
-								roleMap.putIfAbsent(id, choice.message().role().name());
-							}
-							String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-							var generation = new Generation(choice.message().content(),
-									Map.of("id", id, "role", roleMap.getOrDefault(id, ""), "finishReason", finish));
-							if (choice.finishReason() != null) {
-								generation = generation.withGenerationMetadata(
-										ChatGenerationMetadata.from(choice.finishReason().name(), null));
-							}
-							return generation;
-						}).toList();
-
-						if (chatCompletion2.usage() != null) {
-							return new ChatResponse(generations, from(chatCompletion2));
-						}
-						else {
-							return new ChatResponse(generations);
-						}
-					}
-					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
-						return new ChatResponse(List.of());
-					}
-
-				});
-			});
+		return chatResponse.flatMap(response -> {
+			if (isToolCall(response, OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name())) {
+				var toolCallConversation = handleToolCalls(prompt, response);
+				// Recursively call the stream method with the tool call message
+				// conversation that contains the call responses.
+				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+			}
+			else {
+				return Flux.just(response);
+			}
 		});
 	}
 
@@ -275,26 +267,33 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 			.build();
 	}
 
-	private List<Message> handleToolCallRequests(List<Message> previousMessages, ChatCompletion chatCompletion) {
+	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
+				: choice.message()
+					.toolCalls()
+					.stream()
+					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+							toolCall.function().name(), toolCall.function().arguments()))
+					.toList();
 
-		ChatCompletionMessage nativeAssistantMessage = this.extractAssistantMessage(chatCompletion);
+		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		var generationMetadata = ChatGenerationMetadata.from(choice.finishReason().name(), null);
+		var generation = new Generation(assistantMessage, generationMetadata);
 
-		List<AssistantMessage.ToolCall> assistantToolCalls = nativeAssistantMessage.toolCalls()
-			.stream()
-			.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function", toolCall.function().name(),
-					toolCall.function().arguments()))
-			.toList();
+		return generation;
+	}
 
-		AssistantMessage assistantMessage = new AssistantMessage(nativeAssistantMessage.content(), Map.of(),
-				assistantToolCalls);
+	private List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		ToolResponseMessage toolMessageResponse = this.executeFuncitons(assistantMessage);
+		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
+	}
 
-		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
-
-		// History
+	private List<Message> buildToolCallConversation(List<Message> previousMessages, AssistantMessage assistantMessage,
+			ToolResponseMessage toolResponseMessage) {
 		List<Message> messages = new ArrayList<>(previousMessages);
 		messages.add(assistantMessage);
 		messages.add(toolResponseMessage);
-
 		return messages;
 	}
 
@@ -312,10 +311,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
 				chunk.systemFingerprint(), "chat.completion", chunk.usage());
-	}
-
-	private ChatCompletionMessage extractAssistantMessage(ChatCompletion chatCompletion) {
-		return chatCompletion.choices().iterator().next().message();
 	}
 
 	/**
@@ -439,22 +434,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 					functionCallback.getName(), functionCallback.getInputTypeSchema());
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
-	}
-
-	@Override
-	protected boolean isToolFunctionCall(ChatCompletion chatCompletion) {
-		if (chatCompletion == null) {
-			return false;
-		}
-
-		var choices = chatCompletion.choices();
-		if (CollectionUtils.isEmpty(choices)) {
-			return false;
-		}
-
-		var choice = choices.get(0);
-		return !CollectionUtils.isEmpty(choice.message().toolCalls())
-				&& choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
 	@Override

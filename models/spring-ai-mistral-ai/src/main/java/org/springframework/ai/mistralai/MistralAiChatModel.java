@@ -65,7 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author luocongqiu
  * @since 0.8.1
  */
-public class MistralAiChatModel extends AbstractToolCallSupport<ChatCompletion> implements ChatModel {
+public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -358,7 +358,6 @@ public class MistralAiChatModel extends AbstractToolCallSupport<ChatCompletion> 
 		}).toList();
 	}
 
-	@Override
 	protected boolean isToolFunctionCall(ChatCompletion chatCompletion) {
 
 		var body = chatCompletion;

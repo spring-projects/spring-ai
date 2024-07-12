@@ -72,8 +72,7 @@ import java.util.Set;
  * @author Chris Turchin
  * @since 0.8.1
  */
-public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateContentResponse>
-		implements ChatModel, DisposableBean {
+public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
 
 	private final static boolean IS_RUNTIME_CALL = true;
 
@@ -503,7 +502,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 		}
 	}
 
-	@Override
 	protected boolean isToolFunctionCall(GenerateContentResponse response) {
 		if (response == null || CollectionUtils.isEmpty(response.getCandidatesList())
 				|| response.getCandidatesList().get(0).getContent() == null

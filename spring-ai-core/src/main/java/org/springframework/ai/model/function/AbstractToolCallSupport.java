@@ -24,18 +24,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
  * Abstract base class for tool call support. Provides functionality for handling function
  * callbacks and executing functions.
  *
- * @param <TRes> The response type of the tool call.
  * @author Christian Tzolov
  * @author Grogdunn
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public abstract class AbstractToolCallSupport<TRes> {
+public abstract class AbstractToolCallSupport {
 
 	protected final static boolean IS_RUNTIME_CALL = true;
 
@@ -148,6 +150,21 @@ public abstract class AbstractToolCallSupport<TRes> {
 		return new ToolResponseMessage(toolResponses, Map.of());
 	}
 
-	abstract protected boolean isToolFunctionCall(TRes response);
+	protected boolean isToolCall(ChatResponse chatResponse, String toolCallFinishReason) {
+		Assert.hasText(toolCallFinishReason, "toolCallFinishReason cannot be null or empty");
+
+		if (chatResponse == null) {
+			return false;
+		}
+
+		var generations = chatResponse.getResults();
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+
+		var generation = generations.get(0);
+		return !CollectionUtils.isEmpty(generation.getOutput().getToolCalls())
+				&& toolCallFinishReason.equalsIgnoreCase(generation.getMetadata().getFinishReason());
+	}
 
 }

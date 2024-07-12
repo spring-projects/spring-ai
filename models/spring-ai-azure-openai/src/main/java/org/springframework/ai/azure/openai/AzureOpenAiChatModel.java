@@ -86,7 +86,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  */
-public class AzureOpenAiChatModel extends AbstractToolCallSupport<ChatCompletions> implements ChatModel {
+public class AzureOpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
 	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-35-turbo";
 
@@ -557,7 +557,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport<ChatCompletion
 		return copyOptions;
 	}
 
-	@Override
 	protected boolean isToolFunctionCall(ChatCompletions chatCompletions) {
 
 		if (chatCompletions == null || CollectionUtils.isEmpty(chatCompletions.getChoices())) {
