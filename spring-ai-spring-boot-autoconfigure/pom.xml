@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>${revision}</version>
 	</parent>
 	<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 	<packaging>jar</packaging>
@@ -274,6 +274,14 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-mistral-ai</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- DeepSeek -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-deepseek</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>

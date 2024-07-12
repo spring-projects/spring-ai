@@ -22,16 +22,16 @@ For further information go to our [Spring AI reference documentation](https://do
 ## Educational Resources
 
 - Follow the [Workshop material for Azure OpenAI](https://github.com/Azure-Samples/spring-ai-azure-workshop)
-  - The workshop contains step-by-step examples from 'hello world' to 'retrieval augmented generation'
+    - The workshop contains step-by-step examples from 'hello world' to 'retrieval augmented generation'
 
 Some selected videos.  Search YouTube! for more.
 
 - Spring Tips: Spring AI
-<br>[![Watch Spring Tips video](https://img.youtube.com/vi/aNKDoiOUo9M/default.jpg)](https://www.youtube.com/watch?v=aNKDoiOUo9M)
+  <br>[![Watch Spring Tips video](https://img.youtube.com/vi/aNKDoiOUo9M/default.jpg)](https://www.youtube.com/watch?v=aNKDoiOUo9M)
 * Overview of Spring AI @ Devoxx 2023
-<br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
+  <br>[![Watch the Devoxx 2023 video](https://img.youtube.com/vi/7OY9fKVxAFQ/default.jpg)](https://www.youtube.com/watch?v=7OY9fKVxAFQ)
 * Introducing Spring AI - Add Generative AI to your Spring Applications
-<br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
+  <br>[![Watch the video](https://img.youtube.com/vi/1g_wuincUdU/default.jpg)](https://www.youtube.com/watch?v=1g_wuincUdU)
 
 ## Getting Started
 
@@ -99,6 +99,7 @@ Spring AI supports many AI models.  For an overview see here.  Specific models c
 * Anthropic Claude3
 * MiniMax
 * Moonshot
+* DeepSeek
 
 
 **Prompts:** Central to AI model interaction is the Prompt, which provides specific instructions for the AI to act upon.

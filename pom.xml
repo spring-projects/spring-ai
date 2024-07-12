@@ -4,7 +4,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>${revision}</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
@@ -79,6 +79,7 @@
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
+		<module>models/spring-ai-deepseek</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
@@ -98,6 +99,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-deepseek</module>
 		<module>vector-stores/spring-ai-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
 	</modules>
@@ -120,13 +122,11 @@
 		<url>https://github.com/spring-projects/spring-ai/actions</url>
 	</ciManagement>
 	<distributionManagement>
-		<snapshotRepository>
-			<id>spring-snapshots</id>
-			<url>https://repo.spring.io/libs-snapshot-local</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</snapshotRepository>
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/explyt/spring-ai</url>
+		</repository>
 	</distributionManagement>
 	<licenses>
 		<license>
@@ -137,6 +137,7 @@
 	</licenses>
 
 	<properties>
+		<revision>1.0.0-SNAPSHOT</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>17</java.version>
@@ -495,30 +496,30 @@
 				</plugins>
 			</build>
 		</profile>
-		<profile>
-			<id>artifactory-staging</id>
-			<distributionManagement>
-				<repository>
-					<id>spring-staging</id>
-					<url>https://repo.spring.io/libs-staging-local</url>
-					<snapshots>
-						<enabled>false</enabled>
-					</snapshots>
-				</repository>
-			</distributionManagement>
-		</profile>
-		<profile>
-			<id>artifactory-milestone</id>
-			<distributionManagement>
-				<repository>
-					<id>spring-milestones</id>
-					<url>https://repo.spring.io/libs-milestone-local</url>
-					<snapshots>
-						<enabled>false</enabled>
-					</snapshots>
-				</repository>
-			</distributionManagement>
-		</profile>
+		<!--		<profile>-->
+		<!--			<id>artifactory-staging</id>-->
+		<!--			<distributionManagement>-->
+		<!--				<repository>-->
+		<!--					<id>spring-staging</id>-->
+		<!--					<url>https://repo.spring.io/libs-staging-local</url>-->
+		<!--					<snapshots>-->
+		<!--						<enabled>false</enabled>-->
+		<!--					</snapshots>-->
+		<!--				</repository>-->
+		<!--			</distributionManagement>-->
+		<!--		</profile>-->
+		<!--		<profile>-->
+		<!--			<id>artifactory-milestone</id>-->
+		<!--			<distributionManagement>-->
+		<!--				<repository>-->
+		<!--					<id>spring-milestones</id>-->
+		<!--					<url>https://repo.spring.io/libs-milestone-local</url>-->
+		<!--					<snapshots>-->
+		<!--						<enabled>false</enabled>-->
+		<!--					</snapshots>-->
+		<!--				</repository>-->
+		<!--			</distributionManagement>-->
+		<!--		</profile>-->
 	</profiles>
 
 	<dependencyManagement>
@@ -534,14 +535,14 @@
 	</dependencyManagement>
 
 	<repositories>
-		<repository>
+			<repository>
 			<id>maven-central</id>
 			<url>https://repo.maven.apache.org/maven2/</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
 			<releases>
-				<enabled>true</enabled>
+				<enabled>false</enabled>
 			</releases>
 		</repository>
 		<repository>
@@ -549,7 +550,7 @@
 			<name>Spring Snapshots</name>
 			<url>https://repo.spring.io/snapshot</url>
 			<snapshots>
-				<enabled>true</enabled>
+				<enabled>false</enabled>
 			</snapshots>
 			<releases>
 				<enabled>false</enabled>
@@ -562,6 +563,9 @@
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
 		</repository>
 	</repositories>
 

@@ -62,7 +62,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class MistralAiApi {
 
-	private static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
+	public static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
 
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
