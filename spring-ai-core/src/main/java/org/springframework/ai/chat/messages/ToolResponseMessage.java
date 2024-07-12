@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,31 +29,27 @@ import java.util.Objects;
  */
 public class ToolResponseMessage extends AbstractMessage {
 
-	private final String id;
+	public record ToolResponse(String id, String name, String respoinse) {
+	};
 
-	private final String name;
+	private List<ToolResponse> responses = new ArrayList<>();
 
-	public ToolResponseMessage(String id, String name, String content) {
-		this(id, name, content, Map.of());
+	public ToolResponseMessage(List<ToolResponse> responses) {
+		this(responses, Map.of());
 	}
 
-	public ToolResponseMessage(String id, String name, String content, Map<String, Object> metadata) {
-		super(MessageType.TOOL, content, metadata);
-		this.id = id;
-		this.name = name;
+	public ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
+		super(MessageType.TOOL, "", metadata);
+		this.responses = responses;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public String getName() {
-		return name;
+	public List<ToolResponse> getResponses() {
+		return this.responses;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.id, this.name, getContent(), this.metadata, this.messageType);
+		return Objects.hash(this.responses, getContent(), this.metadata, this.messageType);
 	}
 
 	@Override
@@ -63,15 +61,14 @@ public class ToolResponseMessage extends AbstractMessage {
 			return false;
 		}
 		ToolResponseMessage other = (ToolResponseMessage) obj;
-		return Objects.equals(id, other.id) && Objects.equals(this.name, other.name)
-				&& Objects.equals(getContent(), other.getContent()) && Objects.equals(this.metadata, other.metadata)
-				&& this.messageType == other.messageType;
+		return Objects.equals(this.responses, other.responses) && Objects.equals(getContent(), other.getContent())
+				&& Objects.equals(this.metadata, other.metadata) && this.messageType == other.messageType;
 	}
 
 	@Override
 	public String toString() {
-		return "FunctionMessage [id=" + id + ", name=" + name + ", messageType=" + messageType + ", textContent="
-				+ textContent + "]";
+		return "ToolResponseMessage [responses=" + responses + ", messageType=" + messageType + ", metadata=" + metadata
+				+ "]";
 	}
 
 }
