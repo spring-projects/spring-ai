@@ -23,6 +23,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.watsonx.WatsonxAiChatOptions;
 import org.springframework.util.Assert;
 
+/**
+ * Java class for Watsonx.ai Chat Request object.
+ *
+ * @author Pablo Sanchidrian Herrera
+ * @since 1.0.0
+ */
 // @formatter:off
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WatsonxAiChatRequest {

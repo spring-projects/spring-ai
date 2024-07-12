@@ -6,6 +6,12 @@ import org.springframework.ai.watsonx.WatsonxAiEmbeddingOptions;
 
 import java.util.List;
 
+/**
+ * Java class for Watsonx.ai Embedding Request object.
+ *
+ * @author Pablo Sanchidrian Herrera
+ * @since 1.0.0
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WatsonxAiEmbeddingRequest {
 

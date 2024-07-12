@@ -22,6 +22,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Java class for Watsonx.ai Chat Response object.
+ *
+ * @author Pablo Sanchidrian Herrera
+ * @since 1.0.0
+ */
 // @formatter:off
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record WatsonxAiChatResponse(
