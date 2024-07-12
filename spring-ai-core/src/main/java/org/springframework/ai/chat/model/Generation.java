@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.chat.model;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,6 +23,7 @@ import org.springframework.ai.model.ModelResult;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Represents a response returned by the AI.
@@ -37,7 +39,14 @@ public class Generation implements ModelResult<AssistantMessage> {
 	}
 
 	public Generation(String text, Map<String, Object> properties) {
-		this.assistantMessage = new AssistantMessage(text, properties);
+		this(text, properties, List.of());
+	}
+
+	public Generation(String text, Map<String, Object> properties, List<AssistantMessage.ToolCall> toolCalls) {
+		if (CollectionUtils.isEmpty(toolCalls)) {
+			this.assistantMessage = new AssistantMessage(text, properties);
+		}
+		this.assistantMessage = new AssistantMessage(text, properties, toolCalls);
 	}
 
 	@Override

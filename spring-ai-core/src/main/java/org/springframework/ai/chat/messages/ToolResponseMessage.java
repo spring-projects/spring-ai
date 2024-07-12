@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The FunctionMessage class represents a message with a function content in a chat
+ * The ToolResponseMessage class represents a message with a function content in a chat
  * application.
  *
  * @author Christian Tzolov
@@ -70,7 +70,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "FunctionMessage [id=" + id + ", name=" + name + ", messageType=" + messageType + ", textContent="
+		return "ToolResponseMessage [id=" + id + ", name=" + name + ", messageType=" + messageType + ", textContent="
 				+ textContent + "]";
 	}
 
