@@ -135,4 +135,21 @@ public class WatsonxAiApi {
                 });
     }
 
+	@Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(random = true, delay = 1200, maxDelay = 7000, multiplier = 2.5))
+	public ResponseEntity<WatsonxAiEmbeddingResponse> embeddings(WatsonxAiEmbeddingRequest request) {
+		Assert.notNull(request, WATSONX_REQUEST_CANNOT_BE_NULL);
+
+        if(this.token.needsRefresh()) {
+			this.token = this.iamAuthenticator.requestToken();
+		}
+
+        return this.restClient.post()
+				.uri(this.embeddingEndpoint)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token.getAccessToken())
+				.body(request.withProjectId(projectId))
+				.retrieve()
+				.toEntity(WatsonxAiEmbeddingResponse.class);
+	}
+
+
 }
