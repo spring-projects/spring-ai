@@ -43,11 +43,6 @@ public class WatsonxAiChatRequest {
         this.projectId = projectId;
     }
 
-    public WatsonxAiChatRequest withModelId(String modelId) {
-        this.modelId = modelId;
-        return this;
-    }
-
     public WatsonxAiChatRequest withProjectId(String projectId) {
         this.projectId = projectId;
         return this;
