@@ -486,6 +486,9 @@ public class AzureOpenAiChatModel extends
 		if (fromOptions.getResponseFormat() != null) {
 			mergedOptions.setResponseFormat(fromOptions.getResponseFormat());
 		}
+		if (fromOptions.getTools() != null) {
+			mergedOptions.setTools(fromOptions.getTools());
+		}
 
 		return mergedOptions;
 	}

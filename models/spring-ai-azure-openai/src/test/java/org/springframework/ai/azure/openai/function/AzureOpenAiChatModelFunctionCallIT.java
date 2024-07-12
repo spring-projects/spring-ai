@@ -85,6 +85,32 @@ class AzureOpenAiChatModelFunctionCallIT {
 		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
 	}
 
+
+	@Test
+	void functionCallSequentialTest() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco? If the weather is above 25 degrees, please check the weather in Tokyo and Paris.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AzureOpenAiChatOptions.builder()
+				.withDeploymentName(selectedModel)
+				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withName("getCurrentWeather")
+						.withDescription("Get the current weather in a given location")
+						.withResponseConverter((response) -> "" + response.temp() + response.unit())
+						.build()))
+				.build();
+
+		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+	}
+
 	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
