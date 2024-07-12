@@ -17,6 +17,7 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -120,8 +121,8 @@ public class Prompt implements ModelRequest<List<Message>> {
 						assistantMessage.getToolCalls()));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
-				messagesCopy.add(new ToolResponseMessage(toolResponseMessage.getId(), toolResponseMessage.getName(),
-						toolResponseMessage.getContent(), toolResponseMessage.getMetadata()));
+				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
+						new HashMap<>(toolResponseMessage.getMetadata())));
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getClass().getName());

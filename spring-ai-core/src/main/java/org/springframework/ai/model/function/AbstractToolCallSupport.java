@@ -127,9 +127,11 @@ public abstract class AbstractToolCallSupport<TRes> {
 		return retrievedFunctionCallbacks;
 	}
 
-	protected List<ToolResponseMessage> executeFuncitons(AssistantMessage assistantMessage) {
+	protected List<ToolResponseMessage> executeFuncitons(AssistantMessage assistantMessage, boolean signelResponse) {
 
 		List<ToolResponseMessage> toolResponseMessages = new ArrayList<>();
+
+		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
@@ -142,11 +144,18 @@ public abstract class AbstractToolCallSupport<TRes> {
 
 			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
 
-			toolResponseMessages.add(new ToolResponseMessage(toolCall.id(), functionName, functionResponse));
+			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, functionResponse));
 		}
 
+		if (signelResponse) {
+			toolResponseMessages.add(new ToolResponseMessage(toolResponses, Map.of()));
+		}
+		else {
+			for (ToolResponseMessage.ToolResponse toolResponse : toolResponses) {
+				toolResponseMessages.add(new ToolResponseMessage(List.of(toolResponse)));
+			}
+		}
 		return toolResponseMessages;
-
 	}
 
 	abstract protected boolean isToolFunctionCall(TRes response);

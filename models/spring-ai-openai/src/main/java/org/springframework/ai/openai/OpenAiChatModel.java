@@ -21,6 +21,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatModel;
@@ -265,7 +266,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 		AssistantMessage assistantMessage = new AssistantMessage(nativeAssistantMessage.content(), Map.of(),
 				assistantToolCalls);
 
-		List<ToolResponseMessage> toolResponseMessages = this.executeFuncitons(assistantMessage);
+		List<ToolResponseMessage> toolResponseMessages = this.executeFuncitons(assistantMessage, false);
 
 		// History
 		List<Message> messages = new ArrayList<>(previousMessages);
@@ -337,8 +338,11 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
-				return new ChatCompletionMessage(toolMessage.getContent(), ChatCompletionMessage.Role.TOOL,
-						toolMessage.getName(), toolMessage.getId(), null);
+				Assert.isTrue(toolMessage.getResponses().size() == 1,
+						"ToolResponseMessage must have exactly one response");
+				ToolResponse response = toolMessage.getResponses().get(0);
+				return new ChatCompletionMessage(response.respoinse(), ChatCompletionMessage.Role.TOOL, response.name(),
+						response.id(), null);
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());

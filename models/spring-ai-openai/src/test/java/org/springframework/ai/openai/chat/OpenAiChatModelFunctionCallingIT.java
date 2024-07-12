@@ -43,11 +43,11 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = OpenAiChatModel3IT.Config.class)
+@SpringBootTest(classes = OpenAiChatModelFunctionCallingIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class OpenAiChatModel3IT {
+class OpenAiChatModelFunctionCallingIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel3IT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelFunctionCallingIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -72,9 +72,7 @@ class OpenAiChatModel3IT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -105,9 +103,7 @@ class OpenAiChatModel3IT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).containsAnyOf("30.0", "30");
-		assertThat(content).containsAnyOf("10.0", "10");
-		assertThat(content).containsAnyOf("15.0", "15");
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@SpringBootConfiguration
