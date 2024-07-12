@@ -44,8 +44,6 @@ import reactor.core.publisher.Flux;
  */
 public class MessageAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
-
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
 
@@ -145,8 +143,6 @@ public class MessageAggregator {
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
-		}).doOnError(e -> {
-			logger.error("Aggregation Error", e);
 		});
 	}
 

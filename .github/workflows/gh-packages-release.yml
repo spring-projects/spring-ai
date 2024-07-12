@@ -1,16 +1,16 @@
-name: Publish package to the Maven Central Repository and GitHub Packages
+name: Publish package to GitHub Packages
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (the same as last release version)'
+        description: 'Version'
         required: true
         type: string
   workflow_call:
     inputs:
       version:
-        description: 'Version (the same as last release version)'
+        description: 'Version'
         required: true
         type: string
 
@@ -31,6 +31,6 @@ jobs:
           java-version: 17
           distribution: corretto
       - name: Publish to GitHub Packages
-        run: mvn -Drevision=env.RELEASE_VERSION --batch-mode deploy
+        run: mvn -X -Drevision=${RELEASE_VERSION} --batch-mode deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
