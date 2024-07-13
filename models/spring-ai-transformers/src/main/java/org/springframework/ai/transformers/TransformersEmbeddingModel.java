@@ -200,7 +200,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		logger.info("Model output names: " + onnxModelOutputs.stream().collect(Collectors.joining(", ")));
 
 		Assert.isTrue(onnxModelOutputs.contains(this.modelOutputName),
-				"The generative output names doesn't contain expected: " + this.modelOutputName
+				"The generative output names don't contain expected: " + this.modelOutputName
 						+ ". Consider one of the available model outputs: "
 						+ onnxModelOutputs.stream().collect(Collectors.joining(", ")));
 	}
