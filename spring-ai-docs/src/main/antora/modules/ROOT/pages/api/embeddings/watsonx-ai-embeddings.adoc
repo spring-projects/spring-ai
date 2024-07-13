@@ -68,8 +68,8 @@ The prefix `spring.ai.watsonx.embedding.options` is the property prefix that con
 |====
 | Property | Description | Default
 
-| spring.ai.watsonx.embedding.enabled       | Enable Watsonx.ai embedding model | true
-| spring.ai.watsonx.embedding.options.model | The embedding model to be used    | ibm/slate-30m-english-rtrvr
+| spring.ai.watsonx.ai.embedding.enabled       | Enable Watsonx.ai embedding model | true
+| spring.ai.watsonx.ai.embedding.options.model | The embedding model to be used    | ibm/slate-30m-english-rtrvr
 |====
 
 
