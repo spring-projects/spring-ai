@@ -35,7 +35,7 @@ public class WatsonxAiConnectionProperties {
 
 	private String textEndpoint = "ml/v1/text/generation?version=2023-05-29";
 
-	private String embeddingEndpoint = "ml/v1/embeddings?version=2023-05-29";
+	private String embeddingEndpoint = "ml/v1/text/embeddings?version=2023-05-29";
 
 	private String projectId;
 
