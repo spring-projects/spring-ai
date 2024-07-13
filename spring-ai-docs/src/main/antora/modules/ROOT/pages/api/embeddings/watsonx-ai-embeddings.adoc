@@ -107,10 +107,9 @@ public class EmbeddingController {
     }
 
     @GetMapping("/ai/embedding")
-    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
-        return Map.of("embedding", embeddingResponse);
+    public ResponseEntity<Embedding> embedding(@RequestParam String text) {
+        EmbeddingResponse response = this.embedding.embedForResponse(List.of(text));
+        return ResponseEntity.ok(response.getResult());
     }
 }
 ----
-
