@@ -15,13 +15,20 @@
  */
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatModel;
@@ -50,16 +57,9 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -266,12 +266,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 		AssistantMessage assistantMessage = new AssistantMessage(nativeAssistantMessage.content(), Map.of(),
 				assistantToolCalls);
 
-		List<ToolResponseMessage> toolResponseMessages = this.executeFuncitons(assistantMessage, false);
+		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
 
 		// History
 		List<Message> messages = new ArrayList<>(previousMessages);
 		messages.add(assistantMessage);
-		messages.addAll(toolResponseMessages);
+		messages.add(toolResponseMessage);
 
 		return messages;
 	}
@@ -321,8 +321,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 					content = contentList;
 				}
 
-				return new ChatCompletionMessage(content,
-						ChatCompletionMessage.Role.valueOf(message.getMessageType().name()));
+				return List.of(new ChatCompletionMessage(content,
+						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				var assistantMessage = (AssistantMessage) message;
@@ -333,21 +333,27 @@ public class OpenAiChatModel extends AbstractToolCallSupport<ChatCompletion> imp
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return new ChatCompletionMessage(assistantMessage.getContent(), ChatCompletionMessage.Role.ASSISTANT,
-						null, null, toolCalls);
+				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
-				Assert.isTrue(toolMessage.getResponses().size() == 1,
-						"ToolResponseMessage must have exactly one response");
-				ToolResponse response = toolMessage.getResponses().get(0);
-				return new ChatCompletionMessage(response.respoinse(), ChatCompletionMessage.Role.TOOL, response.name(),
-						response.id(), null);
+
+				toolMessage.getResponses().forEach(response -> {
+					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
+					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
+				});
+
+				return toolMessage.getResponses()
+					.stream()
+					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+							tr.id(), null))
+					.toList();
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			}
-		}).toList();
+		}).flatMap(List::stream).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
