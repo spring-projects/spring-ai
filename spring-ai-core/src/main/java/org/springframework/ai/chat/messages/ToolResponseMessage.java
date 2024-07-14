@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public class ToolResponseMessage extends AbstractMessage {
 
-	public record ToolResponse(String id, String name, String respoinse) {
+	public record ToolResponse(String id, String name, String responseData) {
 	};
 
 	private List<ToolResponse> responses = new ArrayList<>();

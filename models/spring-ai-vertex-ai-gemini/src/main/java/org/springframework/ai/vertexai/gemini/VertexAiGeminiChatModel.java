@@ -198,12 +198,12 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 
 		AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), assistantToolCalls);
 
-		List<ToolResponseMessage> toolResponseMessages = this.executeFuncitons(assistantMessage, true);
+		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
 
 		// History
 		List<Message> toolCallMessageConversation = new ArrayList<>(previousMessages);
 		toolCallMessageConversation.add(assistantMessage);
-		toolCallMessageConversation.addAll(toolResponseMessages);
+		toolCallMessageConversation.add(toolResponseMessage);
 		return toolCallMessageConversation;
 	}
 
@@ -420,7 +420,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 				.map(response -> Part.newBuilder()
 					.setFunctionResponse(FunctionResponse.newBuilder()
 						.setName(response.name())
-						.setResponse(jsonToStruct(response.respoinse()))
+						.setResponse(jsonToStruct(response.responseData()))
 						.build())
 					.build())
 				.toList();

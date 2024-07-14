@@ -127,9 +127,7 @@ public abstract class AbstractToolCallSupport<TRes> {
 		return retrievedFunctionCallbacks;
 	}
 
-	protected List<ToolResponseMessage> executeFuncitons(AssistantMessage assistantMessage, boolean signelResponse) {
-
-		List<ToolResponseMessage> toolResponseMessages = new ArrayList<>();
+	protected ToolResponseMessage executeFuncitons(AssistantMessage assistantMessage) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
@@ -147,15 +145,7 @@ public abstract class AbstractToolCallSupport<TRes> {
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), functionName, functionResponse));
 		}
 
-		if (signelResponse) {
-			toolResponseMessages.add(new ToolResponseMessage(toolResponses, Map.of()));
-		}
-		else {
-			for (ToolResponseMessage.ToolResponse toolResponse : toolResponses) {
-				toolResponseMessages.add(new ToolResponseMessage(List.of(toolResponse)));
-			}
-		}
-		return toolResponseMessages;
+		return new ToolResponseMessage(toolResponses, Map.of());
 	}
 
 	abstract protected boolean isToolFunctionCall(TRes response);
