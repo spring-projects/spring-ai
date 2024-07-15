@@ -121,6 +121,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		this.observationRegistry = observationRegistry;
 	}
 
+	public record ModelInformation(String modelName, Integer contextLength) {
+	}
+
+	private ModelInformation getModelInformation(String modelName) {
+		var modelInfo = this.chatApi.show(new OllamaApi.ShowRequest(modelName, false)).modelInfo();
+		return new ModelInformation(modelName, modelInfo.contextLength());
+	}
+
+	public List<ModelInformation> collectModelInformation() {
+		return this.chatApi.tags().models().stream().map(model -> getModelInformation(model.name())).toList();
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		OllamaApi.ChatRequest request = ollamaChatRequest(prompt, false);
