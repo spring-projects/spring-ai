@@ -53,8 +53,12 @@ class VertexAiTextEmbeddingModelIT {
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(768);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).hasSize(768);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", modelName);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 5);
+		assertThat(embeddingResponse.getMetadata().getModel()).as("Model name in metadata should match expected model")
+			.isEqualTo(modelName);
+
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens())
+			.as("Total tokens in metadata should be 5")
+			.isEqualTo(5L);
 
 		assertThat(embeddingModel.dimensions()).isEqualTo(768);
 	}

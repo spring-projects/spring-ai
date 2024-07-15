@@ -112,8 +112,8 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 				.isEqualTo(EmbeddingResultMetadata.ModalityType.TEXT);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1408);
 
-			assertThat(embeddingResponse.getMetadata()).containsEntry("model", "multimodalembedding@001");
-			assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 0);
+			assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
+			assertThat(embeddingResponse.getMetadata().getUsage()).isEqualTo(0);
 
 			assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 

@@ -15,13 +15,12 @@
  */
 package org.springframework.ai.embedding;
 
-import java.io.Serial;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
+
+import java.util.Map;
 
 /**
  * Common AI provider metadata returned in an embedding response.
@@ -29,10 +28,7 @@ import org.springframework.ai.model.ResponseMetadata;
  * @author Christian Tzolov
  * @author Thomas Vitale
  */
-public class EmbeddingResponseMetadata extends HashMap<String, Object> implements ResponseMetadata {
-
-	@Serial
-	private static final long serialVersionUID = 1L;
+public class EmbeddingResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
 	private String model;
 
@@ -42,12 +38,15 @@ public class EmbeddingResponseMetadata extends HashMap<String, Object> implement
 	}
 
 	public EmbeddingResponseMetadata(String model, Usage usage) {
-		this.model = model;
-		this.usage = usage;
+		this(model, usage, Map.of());
 	}
 
-	public EmbeddingResponseMetadata(Map<String, ?> metadata) {
-		super(metadata);
+	public EmbeddingResponseMetadata(String model, Usage usage, Map<String, Object> metadata) {
+		this.model = model;
+		this.usage = usage;
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			this.map.put(entry.getKey(), entry.getValue());
+		}
 	}
 
 	/**

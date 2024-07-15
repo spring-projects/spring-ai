@@ -18,24 +18,25 @@ package org.springframework.ai.ollama;
 import java.util.Base64;
 import java.util.List;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.ollama.metadata.OllamaChatResponseMetadata;
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.metadata.OllamaUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import reactor.core.publisher.Flux;
 
 /**
  * {@link ChatModel} implementation for {@literal Ollama}.
@@ -102,7 +103,23 @@ public class OllamaChatModel implements ChatModel {
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
 			generator = generator.withGenerationMetadata(ChatGenerationMetadata.from("unknown", null));
 		}
-		return new ChatResponse(List.of(generator), OllamaChatResponseMetadata.from(response));
+		return new ChatResponse(List.of(generator), from(response));
+	}
+
+	public static ChatResponseMetadata from(OllamaApi.ChatResponse response) {
+		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
+		return ChatResponseMetadata.builder()
+			.withUsage(OllamaUsage.from(response))
+			.withModel(response.model())
+			.withKeyValue("created-at", response.createdAt())
+			.withKeyValue("eval-duration", response.evalDuration())
+			.withKeyValue("eval-count", response.evalCount())
+			.withKeyValue("load-duration", response.loadDuration())
+			.withKeyValue("eval-duration", response.promptEvalDuration())
+			.withKeyValue("eval-count", response.promptEvalCount())
+			.withKeyValue("total-duration", response.totalDuration())
+			.withKeyValue("done", response.done())
+			.build();
 	}
 
 	@Override
@@ -116,7 +133,7 @@ public class OllamaChatModel implements ChatModel {
 			if (Boolean.TRUE.equals(chunk.done())) {
 				generation = generation.withGenerationMetadata(ChatGenerationMetadata.from("unknown", null));
 			}
-			return new ChatResponse(List.of(generation), OllamaChatResponseMetadata.from(chunk));
+			return new ChatResponse(List.of(generation), from(chunk));
 		});
 	}
 

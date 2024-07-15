@@ -1,5 +1,5 @@
 package org.springframework.ai.openai;
 
-public class ImageResponseMetadata {
+public interface ImageResponseMetadata {
 
 }
