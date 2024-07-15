@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
@@ -181,9 +182,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @return Configured object mapper.
 	 */
 	protected ObjectMapper getObjectMapper() {
-		ObjectMapper mapper = new ObjectMapper();
+		ObjectMapper mapper = JsonMapper.builder().findAndAddModules().build();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.registerModule(new JavaTimeModule());
 		return mapper;
 	}
 
