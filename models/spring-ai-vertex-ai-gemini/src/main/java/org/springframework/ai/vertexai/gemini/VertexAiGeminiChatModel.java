@@ -15,37 +15,6 @@
  */
 package org.springframework.ai.vertexai.gemini;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractToolCallSupport;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.vertexai.gemini.metadata.VertexAiChatResponseMetadata;
-import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.lang.NonNull;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.cloud.vertexai.VertexAI;
@@ -63,9 +32,38 @@ import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
 import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
-
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ChatModelDescription;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.AbstractToolCallSupport;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.lang.NonNull;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Christian Tzolov
@@ -244,8 +242,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateCon
 		}
 	}
 
-	private VertexAiChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
-		return new VertexAiChatResponseMetadata(new VertexAiUsage(response.getUsageMetadata()));
+	private ChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
+		return ChatResponseMetadata.builder().withUsage(new VertexAiUsage(response.getUsageMetadata())).build();
 	}
 
 	@JsonInclude(Include.NON_NULL)

@@ -15,14 +15,6 @@
  */
 package org.springframework.ai.mistralai;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -31,6 +23,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -44,7 +37,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
-import org.springframework.ai.mistralai.metadata.MistralAiChatResponseMetadata;
+import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -53,9 +46,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Ricken Bazolo
@@ -134,8 +134,19 @@ public class MistralAiChatModel extends AbstractToolCallSupport<ChatCompletion> 
 					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null)))
 				.toList();
 
-			return new ChatResponse(generations, MistralAiChatResponseMetadata.from(chatCompletion));
+			return new ChatResponse(generations, from(chatCompletion));
 		});
+	}
+
+	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
+		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
+		MistralAiUsage usage = MistralAiUsage.from(result.usage());
+		return ChatResponseMetadata.builder()
+			.withId(result.id())
+			.withModel(result.model())
+			.withUsage(usage)
+			.withKeyValue("created", result.created())
+			.build();
 	}
 
 	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {

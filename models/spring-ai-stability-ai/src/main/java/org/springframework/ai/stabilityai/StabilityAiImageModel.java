@@ -119,7 +119,7 @@ public class StabilityAiImageModel implements ImageModel {
 					new StabilityAiImageGenerationMetadata(entry.finishReason(), entry.seed()));
 		}).toList();
 
-		return new ImageResponse(imageGenerationList, ImageResponseMetadata.NULL);
+		return new ImageResponse(imageGenerationList, new ImageResponseMetadata());
 	}
 
 	private StabilityAiImageOptions convertOptions(ImageOptions runtimeOptions) {

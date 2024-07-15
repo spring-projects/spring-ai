@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.Image;
@@ -29,11 +27,12 @@ import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
-import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+
+import java.util.List;
 
 /**
  * OpenAiImageModel is a class that implements the ImageModel interface. It provides a
@@ -130,7 +129,7 @@ public class OpenAiImageModel implements ImageModel {
 					new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
 		}).toList();
 
-		ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(imageApiResponse);
+		ImageResponseMetadata openAiImageResponseMetadata = new ImageResponseMetadata(imageApiResponse.created());
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
 	}
 
