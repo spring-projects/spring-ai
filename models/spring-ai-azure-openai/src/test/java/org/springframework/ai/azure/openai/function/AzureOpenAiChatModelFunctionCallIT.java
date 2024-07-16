@@ -131,23 +131,19 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		var response = chatModel.stream(new Prompt(messages, promptOptions));
 
-		final var counter = new AtomicInteger();
-		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
-			.collectList()
-			.block()
-			.stream()
+		List<ChatResponse> responses = response.collectList().block();
+		String stitchedResponseContent = responses.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getContent)
-			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
 		logger.info("Response: {}", response);
 
-		assertThat(content).containsAnyOf("30.0", "30");
-		assertThat(content).containsAnyOf("10.0", "10");
-		assertThat(content).containsAnyOf("15.0", "15");
+		assertThat(stitchedResponseContent).containsAnyOf("30.0", "30");
+		assertThat(stitchedResponseContent).containsAnyOf("10.0", "10");
+		assertThat(stitchedResponseContent).containsAnyOf("15.0", "15");
 	}
 
 	@Test
