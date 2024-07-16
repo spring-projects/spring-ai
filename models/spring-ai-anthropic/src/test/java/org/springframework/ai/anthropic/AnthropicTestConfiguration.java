@@ -38,7 +38,7 @@ public class AnthropicTestConfiguration {
 	}
 
 	@Bean
-	public AnthropicChatModel anthropicChatChatModel(AnthropicApi api) {
+	public AnthropicChatModel anthropicChatModel(AnthropicApi api) {
 		AnthropicChatModel anthropicChatModel = new AnthropicChatModel(api);
 		return anthropicChatModel;
 	}
