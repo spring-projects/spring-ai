@@ -623,6 +623,12 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
+		public <I, O> ChatClientRequestSpec function(FunctionCallbackWrapper<I, O> functionCallbackWrapper) {
+			this.functionCallbacks.add(functionCallbackWrapper);
+			return this;
+		}
+
 		public ChatClientRequestSpec functions(String... functionBeanNames) {
 			Assert.notNull(functionBeanNames, "the functionBeanNames must be non-null");
 			this.functionNames.addAll(List.of(functionBeanNames));

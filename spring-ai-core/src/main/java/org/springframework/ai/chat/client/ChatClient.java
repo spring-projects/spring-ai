@@ -17,7 +17,6 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -26,12 +25,12 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -189,7 +188,9 @@ public interface ChatClient {
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
 		<I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.Function<I, O> function);
+											  java.util.function.Function<I, O> function);
+		
+		<I, O> ChatClientRequestSpec function(FunctionCallbackWrapper<I,O> functionCallbackWrapper);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
