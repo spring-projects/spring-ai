@@ -218,10 +218,10 @@ class AzureOpenAiChatModelIT {
 		@Bean
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-					.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-					.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-					.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS))
-					.buildClient();
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
+				.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS))
+				.buildClient();
 		}
 
 		@Bean

@@ -39,6 +39,10 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * AzureOpenAI audio transcription client implementation for backed by
+ * {@link OpenAIClient}. You provide as input the audio file you want to transcribe and
+ * the desired output file format of the transcription of the audio.
+ *
  * @author Piotr Olaszewski
  */
 public class AzureOpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPrompt, AudioTranscriptionResponse> {

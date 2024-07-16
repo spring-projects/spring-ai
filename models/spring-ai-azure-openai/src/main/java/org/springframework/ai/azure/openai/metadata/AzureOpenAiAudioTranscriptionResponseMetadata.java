@@ -22,6 +22,8 @@ import org.springframework.util.Assert;
 import java.util.HashMap;
 
 /**
+ * Audio transcription metadata implementation for {@literal AzureOpenAI}.
+ *
  * @author Piotr Olaszewski
  */
 public class AzureOpenAiAudioTranscriptionResponseMetadata extends HashMap<String, Object>
