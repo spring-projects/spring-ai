@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.azure.openai;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
@@ -38,22 +39,22 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiEmbeddingModel.class);
 
-	private final OpenAIClient azureOpenAiClient;
+	private final OpenAIAsyncClient azureOpenAiClient;
 
 	private final AzureOpenAiEmbeddingOptions defaultOptions;
 
 	private final MetadataMode metadataMode;
 
-	public AzureOpenAiEmbeddingModel(OpenAIClient azureOpenAiClient) {
+	public AzureOpenAiEmbeddingModel(OpenAIAsyncClient azureOpenAiClient) {
 		this(azureOpenAiClient, MetadataMode.EMBED);
 	}
 
-	public AzureOpenAiEmbeddingModel(OpenAIClient azureOpenAiClient, MetadataMode metadataMode) {
+	public AzureOpenAiEmbeddingModel(OpenAIAsyncClient azureOpenAiClient, MetadataMode metadataMode) {
 		this(azureOpenAiClient, metadataMode,
 				AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build());
 	}
 
-	public AzureOpenAiEmbeddingModel(OpenAIClient azureOpenAiClient, MetadataMode metadataMode,
+	public AzureOpenAiEmbeddingModel(OpenAIAsyncClient azureOpenAiClient, MetadataMode metadataMode,
 			AzureOpenAiEmbeddingOptions options) {
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(metadataMode, "Metadata mode must not be null");
@@ -78,7 +79,7 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		logger.debug("Retrieving embeddings");
 
 		EmbeddingsOptions azureOptions = toEmbeddingOptions(embeddingRequest);
-		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(azureOptions.getModel(), azureOptions);
+		Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(azureOptions.getModel(), azureOptions).block();
 
 		logger.debug("Embeddings retrieved");
 		return generateEmbeddingResponse(embeddings);

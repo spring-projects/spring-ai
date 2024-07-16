@@ -17,6 +17,7 @@ package org.springframework.ai.azure.openai;
 
 import java.util.List;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -35,7 +36,7 @@ public class AzureEmbeddingsOptionsTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		OpenAIClient mockClient = Mockito.mock(OpenAIClient.class);
+		OpenAIAsyncClient mockClient = Mockito.mock(OpenAIAsyncClient.class);
 		var client = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.EMBED,
 				AzureOpenAiEmbeddingOptions.builder()
 					.withDeploymentName("DEFAULT_MODEL")

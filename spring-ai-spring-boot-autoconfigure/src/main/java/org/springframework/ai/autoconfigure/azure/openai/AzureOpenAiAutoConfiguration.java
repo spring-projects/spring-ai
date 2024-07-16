@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.azure.openai;
 
 import java.util.List;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
@@ -51,8 +52,8 @@ public class AzureOpenAiAutoConfiguration {
 	private final static String APPLICATION_ID = "spring-ai";
 
 	@Bean
-	@ConditionalOnMissingBean({ OpenAIClient.class, TokenCredential.class })
-	public OpenAIClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
+	@ConditionalOnMissingBean({ OpenAIAsyncClient.class, TokenCredential.class })
+	public OpenAIAsyncClient openAIClient(AzureOpenAiConnectionProperties connectionProperties) {
 
 		if (StringUtils.hasText(connectionProperties.getApiKey())) {
 
@@ -61,7 +62,7 @@ public class AzureOpenAiAutoConfiguration {
 			return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 				.credential(new AzureKeyCredential(connectionProperties.getApiKey()))
 				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
-				.buildClient();
+				.buildAsyncClient();
 		}
 
 		// Connect to OpenAI (e.g. not the Azure OpenAI). The deploymentName property is
@@ -70,7 +71,7 @@ public class AzureOpenAiAutoConfiguration {
 			return new OpenAIClientBuilder().endpoint("https://api.openai.com/v1")
 				.credential(new KeyCredential(connectionProperties.getOpenAiApiKey()))
 				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
-				.buildClient();
+				.buildAsyncClient();
 		}
 
 		throw new IllegalArgumentException("Either API key or OpenAI API key must not be empty");
@@ -79,7 +80,7 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(TokenCredential.class)
-	public OpenAIClient openAIClientWithTokenCredential(AzureOpenAiConnectionProperties connectionProperties,
+	public OpenAIAsyncClient openAIClientWithTokenCredential(AzureOpenAiConnectionProperties connectionProperties,
 			TokenCredential tokenCredential) {
 
 		Assert.notNull(tokenCredential, "TokenCredential must not be null");
@@ -88,13 +89,13 @@ public class AzureOpenAiAutoConfiguration {
 		return new OpenAIClientBuilder().endpoint(connectionProperties.getEndpoint())
 			.credential(tokenCredential)
 			.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID))
-			.buildClient();
+			.buildAsyncClient();
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
+	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIAsyncClient openAIClient,
 			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext) {
 
@@ -111,7 +112,7 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient,
+	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIAsyncClient openAIClient,
 			AzureOpenAiEmbeddingProperties embeddingProperties) {
 		return new AzureOpenAiEmbeddingModel(openAIClient, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions());
@@ -128,7 +129,7 @@ public class AzureOpenAiAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = AzureOpenAiImageOptionsProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClient openAIClient,
+	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIAsyncClient openAIClient,
 			AzureOpenAiImageOptionsProperties imageProperties) {
 
 		return new AzureOpenAiImageModel(openAIClient, imageProperties.getOptions());

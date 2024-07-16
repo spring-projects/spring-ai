@@ -1,5 +1,6 @@
 package org.springframework.ai.azure.openai.image;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
@@ -65,14 +66,14 @@ public class AzureOpenAiImageModelIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
+		public OpenAIAsyncClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
+				.buildAsyncClient();
 		}
 
 		@Bean
-		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
+		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIAsyncClient openAIClient) {
 			return new AzureOpenAiImageModel(openAIClient,
 					AzureOpenAiImageOptions.builder().withDeploymentName("Dalle3").build());
 

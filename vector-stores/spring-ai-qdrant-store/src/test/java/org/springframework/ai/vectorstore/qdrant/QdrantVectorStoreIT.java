@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
@@ -255,14 +256,14 @@ public class QdrantVectorStoreIT {
 		}
 
 		@Bean
-		public OpenAIClient openAIClient() {
+		public OpenAIAsyncClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
+				.buildAsyncClient();
 		}
 
 		@Bean
-		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient) {
+		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIAsyncClient openAIClient) {
 			return new AzureOpenAiEmbeddingModel(openAIClient);
 		}
 

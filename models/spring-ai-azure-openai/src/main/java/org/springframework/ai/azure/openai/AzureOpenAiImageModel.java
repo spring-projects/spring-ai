@@ -1,5 +1,6 @@
 package org.springframework.ai.azure.openai;
 
+import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ImageGenerationOptions;
 import com.azure.ai.openai.models.ImageGenerationQuality;
@@ -45,15 +46,15 @@ public class AzureOpenAiImageModel implements ImageModel {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	private final OpenAIClient openAIClient;
+	private final OpenAIAsyncClient openAIClient;
 
 	private final AzureOpenAiImageOptions defaultOptions;
 
-	public AzureOpenAiImageModel(OpenAIClient openAIClient) {
+	public AzureOpenAiImageModel(OpenAIAsyncClient openAIClient) {
 		this(openAIClient, AzureOpenAiImageOptions.builder().withDeploymentName(DEFAULT_DEPLOYMENT_NAME).build());
 	}
 
-	public AzureOpenAiImageModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiImageOptions options) {
+	public AzureOpenAiImageModel(OpenAIAsyncClient microsoftOpenAiClient, AzureOpenAiImageOptions options) {
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
@@ -73,7 +74,7 @@ public class AzureOpenAiImageModel implements ImageModel {
 					toPrettyJson(imageGenerationOptions));
 		}
 
-		var images = openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions);
+		var images = openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions).block();
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
