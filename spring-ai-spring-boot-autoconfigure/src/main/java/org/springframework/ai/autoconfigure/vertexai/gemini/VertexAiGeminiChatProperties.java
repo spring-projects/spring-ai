@@ -30,7 +30,7 @@ public class VertexAiGeminiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.gemini.chat";
 
-	public static final String DEFAULT_MODEL = VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_VISION.getValue();
+	public static final String DEFAULT_MODEL = VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue();
 
 	/**
 	 * Vertex AI Gemini API generative options.
