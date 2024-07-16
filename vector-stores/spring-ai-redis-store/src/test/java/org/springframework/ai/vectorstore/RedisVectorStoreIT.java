@@ -78,10 +78,8 @@ class RedisVectorStoreIT {
 	@Test
 	void ensureIndexGetsCreated() {
 		this.contextRunner.run(context -> {
-			assertThat(context.getBean(RedisVectorStore.class)
-				.getJedis()
-				.ftList()
-				.contains(RedisVectorStore.DEFAULT_INDEX_NAME));
+			assertThat(context.getBean(RedisVectorStore.class).getJedis().ftList())
+				.contains(RedisVectorStore.DEFAULT_INDEX_NAME);
 		});
 	}
 
