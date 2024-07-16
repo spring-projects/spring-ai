@@ -12,6 +12,6 @@ Spring AI currently supports Function invocation for the following AI Models
 * Google VertexAI Gemini: Refer to the xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini function invocation docs].
 * Groq: Refer to the xref:api/chat/groq-chat.adoc#_function_calling[Groq function invocation docs].
 * Mistral AI: Refer to the xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI function invocation docs].
-* MiniMax : Refer to the xref:api/chat/functions/minimax-chat-functions.adoc[MiniMax function invocation docs].
+// * MiniMax : Refer to the xref:api/chat/functions/minimax-chat-functions.adoc[MiniMax function invocation docs].
 * OpenAI: Refer to the xref:api/chat/functions/openai-chat-functions.adoc[Open AI function invocation docs].
-* ZhiPu AI : Refer to the xref:api/chat/functions/zhipuai-chat-functions.adoc[ZhiPu AI function invocation docs].
+// * ZhiPu AI : Refer to the xref:api/chat/functions/zhipuai-chat-functions.adoc[ZhiPu AI function invocation docs].
