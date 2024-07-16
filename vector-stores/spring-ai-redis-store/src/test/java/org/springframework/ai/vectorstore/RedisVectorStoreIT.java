@@ -32,18 +32,23 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.RedisVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.RedisVectorStore.RedisVectorStoreConfig;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.redis.testcontainers.RedisStackContainer;
+import redis.clients.jedis.JedisPooled;
 
 /**
  * @author Julien Ruaux
+ * @author Eddú Meléndez
  */
 @Testcontainers
 class RedisVectorStoreIT {
@@ -53,7 +58,9 @@ class RedisVectorStoreIT {
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class);
+		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class))
+		.withUserConfiguration(TestApplication.class)
+		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI());
 
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -243,12 +250,15 @@ class RedisVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			return new RedisVectorStore(RedisVectorStoreConfig.builder()
-				.withURI(redisContainer.getRedisURI())
-				.withMetadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"),
-						MetadataField.tag("country"), MetadataField.numeric("year"))
-				.build(), embeddingModel, true);
+		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel,
+				JedisConnectionFactory jedisConnectionFactory) {
+			return new RedisVectorStore(
+					RedisVectorStoreConfig.builder()
+						.withMetadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"),
+								MetadataField.tag("country"), MetadataField.numeric("year"))
+						.build(),
+					embeddingModel,
+					new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()), true);
 		}
 
 		@Bean
