@@ -103,7 +103,7 @@ class SimpleAiController {
     private final ChatClient chatClient;
 
     SimpleAiController(ChatClient.Builder builder) {
-      this.builder = builder.build();
+      this.chatClient = builder.build();
     }
 
     @GetMapping("/ai/simple")

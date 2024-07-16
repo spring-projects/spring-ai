@@ -18,7 +18,7 @@ package org.springframework.ai.moonshot.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -479,7 +479,7 @@ public class MoonshotApi {
 	 * <li><b>MOONSHOT_V1_128K</b> - moonshot-v1-128k</li>
 	 * </ul>
 	 */
-	public enum ChatModel implements ModelDescription {
+	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
         MOONSHOT_V1_8K("moonshot-v1-8k"),
@@ -498,7 +498,7 @@ public class MoonshotApi {
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.value;
 		}
 

@@ -1,6 +1,14 @@
 [[EmbeddingModel]]
 = Embeddings Model API
 
+Embeddings are numerical representations of text, images, or videos that capture relationships between inputs. 
+
+Embeddings work by converting text, image, and video into arrays of floating point numbers, called vectors. 
+These vectors are designed to capture the meaning of the text, images, and videos. 
+The length of the embedding array is called the vector's dimensionality. 
+
+By calculating the numerical distance between the vector representations of two pieces of text, an application can determine the similarity between the objects used to generate the embedding vectors.
+
 The `EmbeddingModel` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
 These embeddings are crucial for various tasks such as semantic analysis and text classification.
@@ -157,5 +165,6 @@ Internally the various `EmbeddingModel` implementations use different low-level 
 * xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
-* xref:api/embeddings/vertexai-embeddings.adoc[Spring AI VertexAI PaLM2 Embeddings]
+* xref:api/embeddings/vertexai-embeddings-text.adoc[Spring AI VertexAI Embeddings]
+* xref:api/embeddings/vertexai-embeddings-palm2.adoc[Spring AI VertexAI PaLM2 Embeddings]
 * xref:api/embeddings/mistralai-embeddings.adoc[Spring AI Mistral AI Embeddings]

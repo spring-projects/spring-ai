@@ -15,37 +15,28 @@
  */
 package org.springframework.ai.vertexai.gemini;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.Content;
-import com.google.cloud.vertexai.api.Content.Builder;
-import com.google.cloud.vertexai.api.FunctionCall;
-import com.google.cloud.vertexai.api.FunctionDeclaration;
-import com.google.cloud.vertexai.api.FunctionResponse;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.api.GenerationConfig;
-import com.google.cloud.vertexai.api.Part;
-import com.google.cloud.vertexai.api.Schema;
-import com.google.cloud.vertexai.api.Tool;
-import com.google.cloud.vertexai.generativeai.ContentMaker;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import com.google.cloud.vertexai.generativeai.PartMaker;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
-import com.google.protobuf.Struct;
-import com.google.protobuf.util.JsonFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiChatResponseMetadata;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
@@ -54,22 +45,36 @@ import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.Content;
+import com.google.cloud.vertexai.api.FunctionCall;
+import com.google.cloud.vertexai.api.FunctionDeclaration;
+import com.google.cloud.vertexai.api.FunctionResponse;
+import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.api.Part;
+import com.google.cloud.vertexai.api.Schema;
+import com.google.cloud.vertexai.api.Tool;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.cloud.vertexai.generativeai.PartMaker;
+import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.protobuf.Struct;
+import com.google.protobuf.util.JsonFormat;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Christian Tzolov
  * @author Grogdunn
  * @author luocongqiu
+ * @author Chris Turchin
  * @since 0.8.1
  */
-public class VertexAiGeminiChatModel
-		extends AbstractFunctionCallSupport<Content, VertexAiGeminiChatModel.GeminiRequest, GenerateContentResponse>
+public class VertexAiGeminiChatModel extends AbstractToolCallSupport<GenerateContentResponse>
 		implements ChatModel, DisposableBean {
 
 	private final static boolean IS_RUNTIME_CALL = true;
@@ -98,8 +103,11 @@ public class VertexAiGeminiChatModel
 
 	}
 
-	public enum ChatModel implements ModelDescription {
+	public enum ChatModel implements ChatModelDescription {
 
+		/**
+		 * Deprecated by Goolgle in favor of 1.5 pro and flash models.
+		 */
 		GEMINI_PRO_VISION("gemini-pro-vision"),
 
 		GEMINI_PRO("gemini-pro"),
@@ -119,7 +127,7 @@ public class VertexAiGeminiChatModel
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.value;
 		}
 
@@ -127,10 +135,7 @@ public class VertexAiGeminiChatModel
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI) {
 		this(vertexAI,
-				VertexAiGeminiChatOptions.builder()
-					.withModel(ChatModel.GEMINI_PRO_VISION)
-					.withTemperature(0.8f)
-					.build());
+				VertexAiGeminiChatOptions.builder().withModel(ChatModel.GEMINI_1_5_PRO).withTemperature(0.8f).build());
 	}
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
@@ -157,7 +162,13 @@ public class VertexAiGeminiChatModel
 
 		var geminiRequest = createGeminiRequest(prompt);
 
-		GenerateContentResponse response = this.callWithFunctionSupport(geminiRequest);
+		GenerateContentResponse response = this.getContentResponse(geminiRequest);
+
+		if (this.isToolFunctionCall(response)) {
+			List<Message> toolCallMessageConversation = this.handleToolCallRequests(prompt.getInstructions(), response);
+			return this.call(new Prompt(toolCallMessageConversation, prompt.getOptions()));
+
+		}
 
 		List<Generation> generations = response.getCandidatesList()
 			.stream()
@@ -170,6 +181,32 @@ public class VertexAiGeminiChatModel
 		return new ChatResponse(generations, toChatResponseMetadata(response));
 	}
 
+	public List<Message> handleToolCallRequests(List<Message> previousMessages, GenerateContentResponse response) {
+
+		Content assistantContent = response.getCandidatesList().get(0).getContent();
+
+		List<AssistantMessage.ToolCall> assistantToolCalls = assistantContent.getPartsList()
+			.stream()
+			.filter(part -> part.hasFunctionCall())
+			.map(part -> {
+				FunctionCall functionCall = part.getFunctionCall();
+				var functionName = functionCall.getName();
+				String functionArguments = structToJson(functionCall.getArgs());
+				return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
+			})
+			.toList();
+
+		AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), assistantToolCalls);
+
+		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
+
+		// History
+		List<Message> toolCallMessageConversation = new ArrayList<>(previousMessages);
+		toolCallMessageConversation.add(assistantMessage);
+		toolCallMessageConversation.add(toolResponseMessage);
+		return toolCallMessageConversation;
+	}
+
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		try {
@@ -179,9 +216,16 @@ public class VertexAiGeminiChatModel
 			ResponseStream<GenerateContentResponse> responseStream = request.model
 				.generateContentStream(request.contents);
 
-			return Flux.fromStream(responseStream.stream())
-				.switchMap(r -> handleFunctionCallOrReturnStream(request, Flux.just(r)))
-				.map(response -> {
+			return Flux.fromStream(responseStream.stream()).switchMap(response -> {
+				if (this.isToolFunctionCall(response)) {
+					List<Message> toolCallMessageConversation = this.handleToolCallRequests(prompt.getInstructions(),
+							response);
+					// Recursively call the stream method with the tool call message
+					// conversation that contains the call responses.
+					return this.stream(new Prompt(toolCallMessageConversation, prompt.getOptions()));
+				}
+
+				return Mono.just(response).map(response2 -> {
 					List<Generation> generations = response.getCandidatesList()
 						.stream()
 						.map(candidate -> candidate.getContent().getPartsList())
@@ -191,7 +235,9 @@ public class VertexAiGeminiChatModel
 						.toList();
 
 					return new ChatResponse(generations, toChatResponseMetadata(response));
+
 				});
+			});
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);
@@ -206,7 +252,10 @@ public class VertexAiGeminiChatModel
 	public record GeminiRequest(List<Content> contents, GenerativeModel model) {
 	}
 
-	private GeminiRequest createGeminiRequest(Prompt prompt) {
+	/**
+	 * Tests access to the {@link #createGeminiRequest(Prompt)} method.
+	 */
+	GeminiRequest createGeminiRequest(Prompt prompt) {
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 
@@ -259,17 +308,17 @@ public class VertexAiGeminiChatModel
 
 		GenerativeModel generativeModel = generativeModelBuilder.build();
 
-		String systemContext = prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getContent())
-			.collect(Collectors.joining(System.lineSeparator()));
+		List<Content> contents = toGeminiContent(
+				prompt.getInstructions().stream().filter(m -> m.getMessageType() == MessageType.SYSTEM).toList());
 
-		if (StringUtils.hasText(systemContext)) {
-			generativeModel.withSystemInstruction(ContentMaker.fromString(systemContext));
+		if (!CollectionUtils.isEmpty(contents)) {
+			Assert.isTrue(contents.size() <= 1, "Only one system message is allowed in the prompt");
+			generativeModel = generativeModel.withSystemInstruction(contents.get(0));
 		}
 
-		return new GeminiRequest(toGeminiContent(prompt), generativeModel);
+		return new GeminiRequest(toGeminiContent(
+				prompt.getInstructions().stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).toList()),
+				generativeModel);
 	}
 
 	private GenerationConfig toGenerationConfig(VertexAiGeminiChatOptions options) {
@@ -298,11 +347,9 @@ public class VertexAiGeminiChatModel
 		return generationConfigBuilder.build();
 	}
 
-	private List<Content> toGeminiContent(Prompt prompt) {
+	private List<Content> toGeminiContent(List<Message> instrucitons) {
 
-		List<Content> contents = prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+		List<Content> contents = instrucitons.stream()
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
 				.addAllParts(messageToGeminiParts(message))
@@ -317,7 +364,9 @@ public class VertexAiGeminiChatModel
 		Assert.notNull(type, "Message type must not be null");
 
 		switch (type) {
+			case SYSTEM:
 			case USER:
+			case TOOL:
 				return GeminiMessageType.USER;
 			case ASSISTANT:
 				return GeminiMessageType.MODEL;
@@ -328,31 +377,76 @@ public class VertexAiGeminiChatModel
 
 	static List<Part> messageToGeminiParts(Message message) {
 
-		if (message instanceof UserMessage userMessage) {
+		if (message instanceof SystemMessage systemMessage) {
 
-			String messageTextContent = (userMessage.getContent() == null) ? "null" : userMessage.getContent();
-			Part textPart = Part.newBuilder().setText(messageTextContent).build();
+			List<Part> parts = new ArrayList<>();
 
-			List<Part> parts = new ArrayList<>(List.of(textPart));
-
-			List<Part> mediaParts = userMessage.getMedia()
-				.stream()
-				.map(mediaData -> PartMaker.fromMimeTypeAndData(mediaData.getMimeType().toString(),
-						mediaData.getData()))
-				.toList();
-
-			if (!CollectionUtils.isEmpty(mediaParts)) {
-				parts.addAll(mediaParts);
+			if (systemMessage.getContent() != null) {
+				parts.add(Part.newBuilder().setText(systemMessage.getContent()).build());
 			}
+
+			// NOTE: For Gemine the system messages do not support media attachments.
+			parts.addAll(mediaToParts(systemMessage.getMedia()));
+
+			return parts;
+		}
+		else if (message instanceof UserMessage userMessage) {
+			List<Part> parts = new ArrayList<>();
+			if (userMessage.getContent() != null) {
+				parts.add(Part.newBuilder().setText(userMessage.getContent()).build());
+			}
+
+			parts.addAll(mediaToParts(userMessage.getMedia()));
 
 			return parts;
 		}
 		else if (message instanceof AssistantMessage assistantMessage) {
-			return List.of(Part.newBuilder().setText(assistantMessage.getContent()).build());
+			List<Part> parts = new ArrayList<>();
+			if (StringUtils.hasText(assistantMessage.getContent())) {
+				List.of(Part.newBuilder().setText(assistantMessage.getContent()).build());
+			}
+			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+				parts.addAll(assistantMessage.getToolCalls()
+					.stream()
+					.map(toolCall -> Part.newBuilder()
+						.setFunctionCall(FunctionCall.newBuilder()
+							.setName(toolCall.name())
+							.setArgs(jsonToStruct(toolCall.arguments()))
+							.build())
+						.build())
+					.toList());
+			}
+			return parts;
+		}
+		else if (message instanceof ToolResponseMessage toolResponseMessage) {
+
+			return toolResponseMessage.getResponses()
+				.stream()
+				.map(response -> Part.newBuilder()
+					.setFunctionResponse(FunctionResponse.newBuilder()
+						.setName(response.name())
+						.setResponse(jsonToStruct(response.responseData()))
+						.build())
+					.build())
+				.toList();
 		}
 		else {
 			throw new IllegalArgumentException("Gemini doesn't support message type: " + message.getClass());
 		}
+	}
+
+	private static List<Part> mediaToParts(Collection<Media> media) {
+		List<Part> parts = new ArrayList<>();
+
+		List<Part> mediaParts = media.stream()
+			.map(mediaData -> PartMaker.fromMimeTypeAndData(mediaData.getMimeType().toString(), mediaData.getData()))
+			.toList();
+
+		if (!CollectionUtils.isEmpty(mediaParts)) {
+			parts.addAll(mediaParts);
+		}
+
+		return parts;
 	}
 
 	private List<Tool> getFunctionTools(Set<String> functionNames) {
@@ -402,73 +496,9 @@ public class VertexAiGeminiChatModel
 		}
 	}
 
-	@Override
-	public void destroy() throws Exception {
-		if (this.vertexAI != null) {
-			this.vertexAI.close();
-		}
-	}
-
-	@Override
-	protected GeminiRequest doCreateToolResponseRequest(GeminiRequest previousRequest, Content responseMessage,
-			List<Content> conversationHistory) {
-
-		var iterator = responseMessage.getPartsList().iterator();
-
-		Builder builder = Content.newBuilder();
-		while (iterator.hasNext()) {
-
-			FunctionCall functionCall = iterator.next().getFunctionCall();
-
-			var functionName = functionCall.getName();
-			String functionArguments = structToJson(functionCall.getArgs());
-
-			if (!this.functionCallbackRegister.containsKey(functionName)) {
-				throw new IllegalStateException("No function callback found for function name: " + functionName);
-			}
-
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-			builder.addParts(Part.newBuilder()
-				.setFunctionResponse(FunctionResponse.newBuilder()
-					.setName(functionCall.getName())
-					.setResponse(jsonToStruct(functionResponse))
-					.build())
-				.build());
-
-		}
-		conversationHistory.add(builder.build());
-
-		return new GeminiRequest(conversationHistory, previousRequest.model());
-	}
-
-	@Override
-	protected List<Content> doGetUserMessages(GeminiRequest request) {
-		return request.contents;
-	}
-
-	@Override
-	protected Content doGetToolResponseMessage(GenerateContentResponse response) {
-		return response.getCandidatesList().get(0).getContent();
-	}
-
-	@Override
-	protected GenerateContentResponse doChatCompletion(GeminiRequest request) {
+	private GenerateContentResponse getContentResponse(GeminiRequest request) {
 		try {
 			return request.model.generateContent(request.contents);
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to generate content", e);
-		}
-	}
-
-	@Override
-	protected Flux<GenerateContentResponse> doChatCompletionStream(GeminiRequest request) {
-		try {
-			ResponseStream<GenerateContentResponse> responseStream = request.model
-				.generateContentStream(request.contents);
-
-			return Flux.fromStream(responseStream.stream());
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);
@@ -488,6 +518,13 @@ public class VertexAiGeminiChatModel
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return VertexAiGeminiChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		if (this.vertexAI != null) {
+			this.vertexAI.close();
+		}
 	}
 
 }

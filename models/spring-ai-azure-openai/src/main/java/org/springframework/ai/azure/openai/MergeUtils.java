@@ -88,9 +88,6 @@ public class MergeUtils {
 		}
 	}
 
-	private static final Class<?>[] chatCompletionsConstructorArgumentTypes = new Class<?>[] { String.class, long.class,
-			List.class, CompletionsUsage.class };
-
 	/**
 	 * @return an empty ChatCompletions instance.
 	 */
@@ -98,8 +95,8 @@ public class MergeUtils {
 		String id = null;
 		List<ChatChoice> choices = new ArrayList<>();
 		CompletionsUsage usage = null;
-		long createdAt = 0;
-		ChatCompletions chatCompletionsInstance = newInstance(chatCompletionsConstructorArgumentTypes,
+		OffsetDateTime createdAt = OffsetDateTime.now();
+		ChatCompletions chatCompletionsInstance = newInstance(CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES,
 				ChatCompletions.class, id, createdAt, choices, usage);
 		List<ContentFilterResultsForPrompt> promptFilterResults = new ArrayList<>();
 		setField(chatCompletionsInstance, "promptFilterResults", promptFilterResults);
@@ -109,7 +106,7 @@ public class MergeUtils {
 		return chatCompletionsInstance;
 	}
 
-	private static final Class<?>[] chatCompletionsConstructorArgumentTypes0 = new Class<?>[] { String.class,
+	private static final Class<?>[] CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES = new Class<?>[] { String.class,
 			OffsetDateTime.class, List.class, CompletionsUsage.class };
 
 	/**
@@ -148,7 +145,7 @@ public class MergeUtils {
 		OffsetDateTime createdAt = left.getCreatedAt().isAfter(right.getCreatedAt()) ? left.getCreatedAt()
 				: right.getCreatedAt();
 
-		ChatCompletions instance = newInstance(chatCompletionsConstructorArgumentTypes0, ChatCompletions.class, id,
+		ChatCompletions instance = newInstance(CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES, ChatCompletions.class, id,
 				createdAt, choices, usage);
 
 		List<ContentFilterResultsForPrompt> promptFilterResults = right.getPromptFilterResults() == null

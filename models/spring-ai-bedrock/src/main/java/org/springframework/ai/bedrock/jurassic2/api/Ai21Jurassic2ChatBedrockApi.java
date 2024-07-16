@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatRequest;
 import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi.Ai21Jurassic2ChatResponse;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -372,7 +372,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 	/**
 	 * Ai21 Jurassic2 models version.
 	 */
-	public enum Ai21Jurassic2ChatModel implements ModelDescription {
+	public enum Ai21Jurassic2ChatModel implements ChatModelDescription {
 
 		/**
 		 * ai21.j2-mid-v1
@@ -398,7 +398,7 @@ public class Ai21Jurassic2ChatBedrockApi extends
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.id;
 		}
 	}

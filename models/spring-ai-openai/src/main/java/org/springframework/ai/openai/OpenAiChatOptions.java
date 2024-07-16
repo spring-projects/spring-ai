@@ -188,7 +188,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 
 		public Builder withModel(OpenAiApi.ChatModel openAiChatModel) {
-			this.options.model = openAiChatModel.getModelName();
+			this.options.model = openAiChatModel.getName();
 			return this;
 		}
 
@@ -233,9 +233,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 
 		public Builder withStreamUsage(boolean enableStreamUsage) {
-			if (enableStreamUsage) {
-				this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
-			}
+			this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
 			return this;
 		}
 
