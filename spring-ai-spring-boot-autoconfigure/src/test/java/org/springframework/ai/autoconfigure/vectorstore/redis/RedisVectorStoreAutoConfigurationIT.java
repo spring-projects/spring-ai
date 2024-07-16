@@ -28,6 +28,7 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,7 @@ import com.redis.testcontainers.RedisStackContainer;
 
 /**
  * @author Julien Ruaux
+ * @author Eddú Meléndez
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -52,32 +54,31 @@ class RedisVectorStoreAutoConfigurationIT {
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(RedisVectorStoreAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class, RedisVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
-		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
+		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI(),
+				"spring.ai.vectorstore.redis.index=myIdx", "spring.ai.vectorstore.redis.prefix=doc:");
 
 	@Test
 	void addAndSearch() {
-		contextRunner.withPropertyValues("spring.ai.vectorstore.redis.uri=" + redisContainer.getRedisURI())
-			.run(context -> {
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-				vectorStore.add(documents);
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			vectorStore.add(documents);
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
 
-				assertThat(results).hasSize(1);
-				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
-						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
+			assertThat(resultDoc.getContent()).contains(
+					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
-				// Remove all documents from the store
-				vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
+			// Remove all documents from the store
+			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
-				assertThat(results).isEmpty();
-			});
+			results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+			assertThat(results).isEmpty();
+		});
 	}
 
 	@Configuration(proxyBeanMethods = false)

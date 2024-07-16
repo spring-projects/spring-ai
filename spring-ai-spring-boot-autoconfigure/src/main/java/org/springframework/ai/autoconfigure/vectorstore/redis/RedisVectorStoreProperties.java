@@ -20,25 +20,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Julien Ruaux
+ * @author Eddú Meléndez
  */
 @ConfigurationProperties(RedisVectorStoreProperties.CONFIG_PREFIX)
 public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.redis";
 
-	private String uri = "redis://localhost:6379";
-
 	private String index = "default-index";
 
 	private String prefix = "default:";
-
-	public String getUri() {
-		return this.uri;
-	}
-
-	public void setUri(String uri) {
-		this.uri = uri;
-	}
 
 	public String getIndex() {
 		return this.index;
