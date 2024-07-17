@@ -17,29 +17,21 @@ package org.springframework.ai.openai.chat.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.MimeTypeUtils;
 
 import reactor.core.publisher.Flux;
 
