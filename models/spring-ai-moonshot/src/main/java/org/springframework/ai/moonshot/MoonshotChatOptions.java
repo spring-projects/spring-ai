@@ -304,6 +304,24 @@ public class MoonshotChatOptions implements ChatOptions {
 	}
 
 	@Override
+	public MoonshotChatOptions copy() {
+		return builder().withModel(this.model)
+			.withMaxTokens(this.maxTokens)
+			.withTemperature(this.temperature)
+			.withTopP(this.topP)
+			.withN(this.n)
+			.withPresencePenalty(this.presencePenalty)
+			.withFrequencyPenalty(this.frequencyPenalty)
+			.withStop(this.stop)
+			.withUser(this.user)
+			.withTools(this.tools)
+			.withToolChoice(this.toolChoice)
+			.withFunctionCallbacks(this.functionCallbacks)
+			.withFunctions(this.functions)
+			.build();
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;

@@ -229,6 +229,11 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		this.functions = functions;
 	}
 
+	@Override
+	public AnthropicChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
 		return builder().withModel(fromOptions.getModel())
 			.withMaxTokens(fromOptions.getMaxTokens())

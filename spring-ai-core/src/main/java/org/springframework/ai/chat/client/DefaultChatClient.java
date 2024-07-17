@@ -533,7 +533,7 @@ public class DefaultChatClient implements ChatClient {
 				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams) {
 
 			this.chatModel = chatModel;
-			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
+			this.chatOptions = chatOptions != null ? chatOptions.copy() : chatModel.getDefaultOptions().copy();
 
 			this.userText = userText;
 			this.userParams.putAll(userParams);
