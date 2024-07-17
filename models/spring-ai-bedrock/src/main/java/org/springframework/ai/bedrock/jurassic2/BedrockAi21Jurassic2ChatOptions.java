@@ -413,6 +413,11 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 		}
 	}
 
+	@Override
+	public BedrockAi21Jurassic2ChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static BedrockAi21Jurassic2ChatOptions fromOptions(BedrockAi21Jurassic2ChatOptions fromOptions) {
 		return builder().withPrompt(fromOptions.getPrompt())
 			.withNumResults(fromOptions.getNumResults())

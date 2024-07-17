@@ -609,6 +609,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
+	@Override
+	public OpenAiChatOptions copy() {
+		return OpenAiChatOptions.fromOptions(this);
+	}
+
 	public static OpenAiChatOptions fromOptions(OpenAiChatOptions fromOptions) {
 		return OpenAiChatOptions.builder()
 			.withModel(fromOptions.getModel())

@@ -52,6 +52,11 @@ public class ChatOptionsBuilder {
 			this.topK = topK;
 		}
 
+		@Override
+		public ChatOptions copy() {
+			return builder().withTemperature(this.temperature).withTopP(this.topP).withTopK(this.topK).build();
+		}
+
 	}
 
 	private final ChatOptionsImpl options = new ChatOptionsImpl();
