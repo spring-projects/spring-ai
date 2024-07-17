@@ -188,9 +188,9 @@ public interface ChatClient {
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
 		<I, O> ChatClientRequestSpec function(String name, String description,
-											  java.util.function.Function<I, O> function);
-		
-		<I, O> ChatClientRequestSpec function(FunctionCallbackWrapper<I,O> functionCallbackWrapper);
+				java.util.function.Function<I, O> function);
+
+		<I, O> ChatClientRequestSpec function(FunctionCallbackWrapper<I, O> functionCallbackWrapper);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
