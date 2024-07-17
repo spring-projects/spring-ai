@@ -28,6 +28,7 @@ import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatReq
 import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi.LlamaChatResponse;
 import org.springframework.ai.model.ChatModelDescription;
 
+import java.net.URI;
 import java.time.Duration;
 
 // @formatter:off
@@ -104,6 +105,21 @@ public class LlamaChatBedrockApi extends
 	public LlamaChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			ObjectMapper objectMapper, Duration timeout) {
 		super(modelId, credentialsProvider, region, objectMapper, timeout);
+	}
+
+	/**
+	 * Create a new LlamaChatBedrockApi instance using the provided credentials provider, region and object mapper.
+	 *
+	 * @param modelId The model id to use. See the {@link LlamaChatModel} for the supported models.
+	 * @param credentialsProvider The credentials provider to connect to AWS.
+	 * @param region The AWS region to use.
+	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param timeout The timeout to use.
+	 * @param endpointOverride The endpoint to use.
+	 */
+	public LlamaChatBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+							   ObjectMapper objectMapper, Duration timeout, URI endpointOverride) {
+		super(modelId, credentialsProvider, region, objectMapper, timeout, endpointOverride);
 	}
 
 	/**

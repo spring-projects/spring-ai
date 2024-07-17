@@ -17,6 +17,7 @@
 package org.springframework.ai.bedrock.api;
 
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -107,6 +108,11 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		this(modelId, credentialsProvider, region, objectMapper, Duration.ofMinutes(5));
 	}
 
+	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
+							  ObjectMapper objectMapper, Duration timeout) {
+		this(modelId, credentialsProvider, region, objectMapper, timeout, null);
+	}
+
 	/**
 	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and object mapper.
 	 *
@@ -120,7 +126,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
 			ObjectMapper objectMapper, Duration timeout) {
-		this(modelId, credentialsProvider, Region.of(region), objectMapper, timeout);
+		this(modelId, credentialsProvider, Region.of(region), objectMapper, timeout, null);
 	}
 
 	/**
@@ -135,7 +141,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * all HTTP requests including retries, unmarshalling, etc. This value should always be positive, if present.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
-			ObjectMapper objectMapper, Duration timeout) {
+			ObjectMapper objectMapper, Duration timeout, URI endpointOverride) {
 
 		Assert.hasText(modelId, "Model id must not be empty");
 		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
@@ -152,12 +158,14 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.region(this.region)
 				.credentialsProvider(credentialsProvider)
 				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+				.endpointOverride(endpointOverride)
 				.build();
 
 		this.clientStreaming = BedrockRuntimeAsyncClient.builder()
 				.region(this.region)
 				.credentialsProvider(credentialsProvider)
 				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+				.endpointOverride(endpointOverride)
 				.build();
 	}
 
