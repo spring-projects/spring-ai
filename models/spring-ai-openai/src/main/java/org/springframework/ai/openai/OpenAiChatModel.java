@@ -277,7 +277,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					.toList();
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
-		var generationMetadata = ChatGenerationMetadata.from(choice.finishReason().name(), null);
+		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
 		var generation = new Generation(assistantMessage, generationMetadata);
 
 		return generation;

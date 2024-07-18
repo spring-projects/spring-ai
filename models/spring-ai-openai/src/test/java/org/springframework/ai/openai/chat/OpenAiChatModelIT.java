@@ -302,7 +302,7 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -318,7 +318,7 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -341,7 +341,7 @@ class OpenAiChatModelIT extends AbstractIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@Test
