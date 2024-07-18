@@ -82,6 +82,7 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 |====
 | Property | Description | Default
 
+| spring.ai.retry.enabled   | Enable the retry. |  true
 | spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
 | spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
 | spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
