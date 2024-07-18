@@ -610,11 +610,6 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
-	public OpenAiChatOptions clone() {
-		return OpenAiChatOptions.fromOptions(this);
-	}
-
-	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
 	}
