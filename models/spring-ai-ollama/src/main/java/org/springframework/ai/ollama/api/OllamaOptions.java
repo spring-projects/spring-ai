@@ -714,6 +714,11 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
+	@Override
+	public OllamaOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
 		return new OllamaOptions()
 			.withModel(fromOptions.getModel())

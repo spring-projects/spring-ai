@@ -349,6 +349,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 				+ super.toString() + "]";
 	}
 
+	@Override
+	public VertexAiGeminiChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static VertexAiGeminiChatOptions fromOptions(VertexAiGeminiChatOptions fromOptions) {
 		VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
 		options.setStopSequences(fromOptions.getStopSequences());

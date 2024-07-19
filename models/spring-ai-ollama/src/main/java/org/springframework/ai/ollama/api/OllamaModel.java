@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.ollama.api;
 
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 
 /**
  * Helper class for common Ollama models.
@@ -23,7 +23,7 @@ import org.springframework.ai.model.ModelDescription;
  * @author Siarhei Blashuk
  * @since 0.8.1
  */
-public enum OllamaModel implements ModelDescription {
+public enum OllamaModel implements ChatModelDescription {
 
 	/**
 	 * Llama 2 is a collection of language models ranging from 7B to 70B parameters.
@@ -102,7 +102,7 @@ public enum OllamaModel implements ModelDescription {
 	}
 
 	@Override
-	public String getModelName() {
+	public String getName() {
 		return this.id;
 	}
 

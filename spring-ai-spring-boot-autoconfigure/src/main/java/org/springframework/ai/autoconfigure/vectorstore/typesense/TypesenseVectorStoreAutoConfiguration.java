@@ -57,7 +57,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new TypesenseVectorStore(typesenseClient, embeddingModel, config);
+		return new TypesenseVectorStore(typesenseClient, embeddingModel, config, properties.isInitializeSchema());
 	}
 
 	@Bean

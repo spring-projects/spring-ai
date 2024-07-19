@@ -137,6 +137,45 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 	}
 
 	@Test
+	public void functionCallTestInferredOpenApiSchema2() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = VertexAiGeminiChatOptions.builder()
+			.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+			.withFunctionCallbacks(List.of(
+					FunctionCallbackWrapper.builder(new MockWeatherService())
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+						.withName("get_current_weather")
+						.withDescription("Get the current weather in a given location.")
+						.build(),
+					FunctionCallbackWrapper.builder(new PaymentStatus())
+						.withSchemaType(SchemaType.OPEN_API_SCHEMA)
+						.withName("get_payment_status")
+						.withDescription(
+								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.build()))
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+
+		ChatResponse response2 = chatModel
+			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
+
+		logger.info("Response: {}", response2);
+
+		assertThat(response2.getResult().getOutput().getContent()).containsIgnoringCase("transaction 696 is PAYED");
+
+	}
+
+	@Test
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
 		UserMessage userMessage = new UserMessage(

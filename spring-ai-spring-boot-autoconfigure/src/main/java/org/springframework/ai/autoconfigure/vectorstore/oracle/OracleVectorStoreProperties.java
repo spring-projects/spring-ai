@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.oracle;
 
-import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.OracleVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

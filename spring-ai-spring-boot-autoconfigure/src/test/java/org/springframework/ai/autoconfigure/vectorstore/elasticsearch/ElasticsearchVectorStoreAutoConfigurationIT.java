@@ -60,6 +60,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 				ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
 		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
+				"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
 				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	// No parametrized test based on similarity function,

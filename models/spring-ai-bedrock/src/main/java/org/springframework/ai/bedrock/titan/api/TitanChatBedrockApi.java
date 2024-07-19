@@ -31,7 +31,7 @@ import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatReq
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponse.CompletionReason;
 import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi.TitanChatResponseChunk;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 
 /**
  * Java client for the Bedrock Titan chat model.
@@ -266,7 +266,7 @@ public class TitanChatBedrockApi extends
 	/**
 	 * Titan models version.
 	 */
-	public enum TitanChatModel implements ModelDescription {
+	public enum TitanChatModel implements ChatModelDescription {
 
 		/**
 		 * amazon.titan-text-lite-v1
@@ -297,7 +297,7 @@ public class TitanChatBedrockApi extends
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.id;
 		}
 	}

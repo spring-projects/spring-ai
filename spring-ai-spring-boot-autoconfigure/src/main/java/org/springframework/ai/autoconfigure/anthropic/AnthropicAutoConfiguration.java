@@ -56,7 +56,8 @@ public class AnthropicAutoConfiguration {
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		return new AnthropicApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				connectionProperties.getVersion(), restClientBuilder, responseErrorHandler);
+				connectionProperties.getVersion(), restClientBuilder, responseErrorHandler,
+				connectionProperties.getBetaVersion());
 	}
 
 	@Bean

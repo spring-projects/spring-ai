@@ -54,7 +54,7 @@ public class MapOutputConverter extends AbstractMessageOutputConverter<Map<Strin
 				Your response should be in JSON format.
 				The data structure for the JSON should match this Java class: %s
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
-				Remove the ```json markdown from the output.
+				Remove the ```json markdown surrounding the output including the trailing "```".
 				""";
 		return String.format(raw, HashMap.class.getName());
 	}

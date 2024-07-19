@@ -17,11 +17,15 @@
 package org.springframework.ai.model;
 
 /**
+ * Describes an AI model's basic characteristics. Provides methods to retrieve the model's
+ * name, description, and version.
+ *
  * @author Christian Tzolov
+ * @since 1.0.0
  */
 public interface ModelDescription {
 
-	String getModelName();
+	String getName();
 
 	default String getDescription() {
 		return "";
@@ -29,10 +33,6 @@ public interface ModelDescription {
 
 	default String getVersion() {
 		return "";
-	}
-
-	default int getContextLength() {
-		return -1;
 	}
 
 }

@@ -30,6 +30,7 @@ import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.model.Content;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * A document is a container for the content and metadata of a document. It also contains
@@ -39,6 +40,8 @@ import org.springframework.util.Assert;
 public class Document implements Content {
 
 	public final static ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
+
+	public final static String EMPTY_TEXT = "";
 
 	/**
 	 * Unique ID
@@ -93,13 +96,81 @@ public class Document implements Content {
 
 	public Document(String id, String content, List<Media> media, Map<String, Object> metadata) {
 		Assert.hasText(id, "id must not be null or empty");
-		Assert.hasText(content, "content must not be null or empty");
+		Assert.notNull(content, "content must not be null");
 		Assert.notNull(metadata, "metadata must not be null");
 
 		this.id = id;
 		this.content = content;
 		this.media = media;
 		this.metadata = metadata;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String id;
+
+		private String content = Document.EMPTY_TEXT;
+
+		private List<Media> media = new ArrayList<>();
+
+		private Map<String, Object> metadata = new HashMap<>();
+
+		private IdGenerator idGenerator = new RandomIdGenerator();
+
+		public Builder withIdGenerator(IdGenerator idGenerator) {
+			Assert.notNull(idGenerator, "idGenerator must not be null");
+			this.idGenerator = idGenerator;
+			return this;
+		}
+
+		public Builder withId(String id) {
+			Assert.hasText(id, "id must not be null or empty");
+			this.id = id;
+			return this;
+		}
+
+		public Builder withContent(String content) {
+			Assert.notNull(content, "content must not be null");
+			this.content = content;
+			return this;
+		}
+
+		public Builder withMedia(List<Media> media) {
+			Assert.notNull(media, "media must not be null");
+			this.media = media;
+			return this;
+		}
+
+		public Builder withMedia(Media media) {
+			Assert.notNull(media, "media must not be null");
+			this.media.add(media);
+			return this;
+		}
+
+		public Builder withMetadata(Map<String, Object> metadata) {
+			Assert.notNull(metadata, "metadata must not be null");
+			this.metadata = metadata;
+			return this;
+		}
+
+		public Builder withMetadata(String key, Object value) {
+			Assert.notNull(key, "key must not be null");
+			Assert.notNull(value, "value must not be null");
+			this.metadata.put(key, value);
+			return this;
+		}
+
+		public Document build() {
+			if (!StringUtils.hasText(this.id)) {
+				this.id = this.idGenerator.generateId(content, metadata);
+			}
+			return new Document(id, content, media, metadata);
+		}
+
 	}
 
 	public String getId() {

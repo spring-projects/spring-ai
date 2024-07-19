@@ -84,6 +84,8 @@ The prefix `spring.ai.anthropic` is used as the property prefix that lets you co
 | spring.ai.anthropic.base-url   | The URL to connect to |  https://api.anthropic.com
 | spring.ai.anthropic.version   | Anthropic API version |  2023-06-01
 | spring.ai.anthropic.api-key    | The API Key           |  -
+| spring.ai.anthropic.beta-version | Enables new/experimental features. If set to `max-tokens-3-5-sonnet-2024-07-15` 
+the output tokens limit is increased from `4096` to `8192` tokens (for claude-3-5-sonnet only). | `tools-2024-04-04`
 |====
 
 ==== Configuration Properties

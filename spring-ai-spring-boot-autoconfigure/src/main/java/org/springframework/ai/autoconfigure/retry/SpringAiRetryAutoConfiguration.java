@@ -53,7 +53,7 @@ public class SpringAiRetryAutoConfiguration {
 	public RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
 		return RetryTemplate.builder()
 			.maxAttempts(properties.getMaxAttempts())
-			.retryOn(NonTransientAiException.class)
+			.retryOn(TransientAiException.class)
 			.exponentialBackoff(properties.getBackoff().getInitialInterval(), properties.getBackoff().getMultiplier(),
 					properties.getBackoff().getMaxInterval())
 			.withListener(new RetryListener() {

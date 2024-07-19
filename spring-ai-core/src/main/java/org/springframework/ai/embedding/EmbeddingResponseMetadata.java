@@ -15,31 +15,61 @@
  */
 package org.springframework.ai.embedding;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
-/**
- * @author Christian Tzolov
- */
-public class EmbeddingResponseMetadata extends HashMap<String, Object> implements ResponseMetadata {
+import java.util.Map;
 
-	private static final long serialVersionUID = 1L;
+/**
+ * Common AI provider metadata returned in an embedding response.
+ *
+ * @author Christian Tzolov
+ * @author Thomas Vitale
+ */
+public class EmbeddingResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
+
+	private String model;
+
+	private Usage usage;
 
 	public EmbeddingResponseMetadata() {
 	}
 
-	public EmbeddingResponseMetadata(int initialCapacity) {
-		super(initialCapacity);
+	public EmbeddingResponseMetadata(String model, Usage usage) {
+		this(model, usage, Map.of());
 	}
 
-	public EmbeddingResponseMetadata(int initialCapacity, float loadFactor) {
-		super(initialCapacity, loadFactor);
+	public EmbeddingResponseMetadata(String model, Usage usage, Map<String, Object> metadata) {
+		this.model = model;
+		this.usage = usage;
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			this.map.put(entry.getKey(), entry.getValue());
+		}
 	}
 
-	public EmbeddingResponseMetadata(Map<String, ?> metadata) {
-		super(metadata);
+	/**
+	 * The model that handled the request.
+	 */
+	public String getModel() {
+		return this.model != null ? this.model : "";
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	/**
+	 * The AI provider specific metadata on API usage.
+	 * @see Usage
+	 */
+	public Usage getUsage() {
+		return this.usage != null ? this.usage : new EmptyUsage();
+	}
+
+	public void setUsage(Usage usage) {
+		this.usage = usage;
 	}
 
 }

@@ -31,7 +31,7 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
-import org.springframework.ai.openai.api.OpenAiApi.Usage;
+import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
  * Open AI Embedding Model implementation.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -134,7 +135,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 				return new EmbeddingResponse(List.of());
 			}
 
-			var metadata = generateResponseMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
+			var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
+					OpenAiUsage.from(apiEmbeddingResponse.usage()));
 
 			List<Embedding> embeddings = apiEmbeddingResponse.data()
 				.stream()
@@ -144,15 +146,6 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			return new EmbeddingResponse(embeddings, metadata);
 
 		});
-	}
-
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, Usage usage) {
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.put("model", model);
-		metadata.put("prompt-tokens", usage.promptTokens());
-		metadata.put("completion-tokens", usage.completionTokens());
-		metadata.put("total-tokens", usage.totalTokens());
-		return metadata;
 	}
 
 }

@@ -140,6 +140,7 @@ Properties starting with the `spring.ai.vectorstore.elasticsearch.*` prefix are 
 |===
 |Property | Description | Default Value
 
+|`spring.ai.vectorstore.elasticsearch.initialize-schema`| Whether to initialize the required schema  | `false`
 |`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors. | spring-ai-document-index
 |`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector. | 1536
 |`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use. | `cosine`

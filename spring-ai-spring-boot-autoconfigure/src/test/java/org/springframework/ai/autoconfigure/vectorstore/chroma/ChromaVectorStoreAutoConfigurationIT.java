@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
 public class ChromaVectorStoreAutoConfigurationIT {
@@ -50,6 +51,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chroma.getHost(),
 				"spring.ai.vectorstore.chroma.client.port=" + chroma.getMappedPort(8000),
+				"spring.ai.vectorstore.chroma.initializeSchema=true",
 				"spring.ai.vectorstore.chroma.collectionName=TestCollection");
 
 	@Test

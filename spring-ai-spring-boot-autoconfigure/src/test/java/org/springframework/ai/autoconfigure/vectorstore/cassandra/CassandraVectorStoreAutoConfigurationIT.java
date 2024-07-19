@@ -59,6 +59,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 		.withConfiguration(
 				AutoConfigurations.of(CassandraVectorStoreAutoConfiguration.class, CassandraAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
+		.withPropertyValues("spring.ai.vectorstore.cassandra.initialize-schema=true")
 		.withPropertyValues("spring.ai.vectorstore.cassandra.keyspace=test_autoconfigure")
 		.withPropertyValues("spring.ai.vectorstore.cassandra.contentColumnName=doc_chunk");
 

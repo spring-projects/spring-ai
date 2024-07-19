@@ -141,7 +141,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 		}
 
 		public Builder withModel(MistralAiApi.ChatModel chatModel) {
-			this.options.setModel(chatModel.getModelName());
+			this.options.setModel(chatModel.getName());
 			return this;
 		}
 
@@ -313,6 +313,11 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 	public void setFunctions(Set<String> functions) {
 		Assert.notNull(functions, "Function must not be null");
 		this.functions = functions;
+	}
+
+	@Override
+	public MistralAiChatOptions copy() {
+		return fromOptions(this);
 	}
 
 	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {

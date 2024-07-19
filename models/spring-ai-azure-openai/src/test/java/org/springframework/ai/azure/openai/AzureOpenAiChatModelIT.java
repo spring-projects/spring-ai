@@ -150,7 +150,7 @@ class AzureOpenAiChatModelIT {
 		Generation generation = chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -180,7 +180,7 @@ class AzureOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.convert(generationTextFromStream);
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -223,7 +223,7 @@ class AzureOpenAiChatModelIT {
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiChatModel(openAIClient,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-35-turbo").withMaxTokens(200).build());
+					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-35-turbo").withMaxTokens(1000).build());
 
 		}
 

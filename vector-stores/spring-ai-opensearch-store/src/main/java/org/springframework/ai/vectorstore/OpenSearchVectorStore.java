@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 /**
  * @author Jemin Huh
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class OpenSearchVectorStore implements VectorStore, InitializingBean {
@@ -78,16 +79,21 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
 	private String similarityFunction;
 
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
-		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
+	private final boolean initializeSchema;
+
+	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536,
+				initializeSchema);
 	}
 
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson) {
-		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson);
+	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
+			boolean initializeSchema) {
+		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson, initializeSchema);
 	}
 
 	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson) {
+			String mappingJson, boolean initializeSchema) {
 		Objects.requireNonNull(embeddingModel, "RestClient must not be null");
 		Objects.requireNonNull(embeddingModel, "EmbeddingModel must not be null");
 		this.openSearchClient = openSearchClient;
@@ -98,6 +104,7 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 		// the potential functions for vector fields at
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 		this.similarityFunction = COSINE_SIMILARITY_FUNCTION;
+		this.initializeSchema = initializeSchema;
 	}
 
 	public OpenSearchVectorStore withSimilarityFunction(String similarityFunction) {
@@ -228,8 +235,8 @@ public class OpenSearchVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
-		if (!exists(this.index)) {
-			createIndexMapping(this.index, mappingJson);
+		if (this.initializeSchema && !exists(this.index)) {
+			createIndexMapping(this.index, this.mappingJson);
 		}
 	}
 

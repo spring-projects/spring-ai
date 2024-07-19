@@ -43,7 +43,7 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	 * provider.
 	 */
 	public ImageResponse(List<ImageGeneration> generations) {
-		this(generations, ImageResponseMetadata.NULL);
+		this(generations, new ImageResponseMetadata());
 	}
 
 	/**

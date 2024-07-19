@@ -136,9 +136,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 		// The chat completion tool call requires the complete conversation
 		// history. Including the initial user message.
-		List<Msg> conversationHistory = new ArrayList<>();
-
-		conversationHistory.addAll(this.doGetUserMessages(request));
+		List<Msg> conversationHistory = new ArrayList<>(this.doGetUserMessages(request));
 
 		Msg responseMessage = this.doGetToolResponseMessage(response);
 
@@ -164,9 +162,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 			// The chat completion tool call requires the complete conversation
 			// history. Including the initial user message.
-			List<Msg> conversationHistory = new ArrayList<>();
-
-			conversationHistory.addAll(this.doGetUserMessages(request));
+			List<Msg> conversationHistory = new ArrayList<>(this.doGetUserMessages(request));
 
 			Msg responseMessage = this.doGetToolResponseMessage(resp);
 

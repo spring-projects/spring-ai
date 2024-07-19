@@ -30,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -66,19 +67,16 @@ public class ChatClientTest {
 	@Test
 	public void defaultSystemText() {
 
-		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		when(chatModel.stream(promptCaptor.capture()))
-				.thenReturn(
-						Flux.generate(() -> new ChatResponse(List.of(new Generation("response"))), (state, sink) -> {
-							sink.next(state);
-							sink.complete();
-							return state;
-						}));
+			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			}));
 
-		var chatClient = ChatClient.builder(chatModel)
-				.defaultSystem("Default system text").build();
+		var chatClient = ChatClient.builder(chatModel).defaultSystem("Default system text").build();
 
 		var content = chatClient.prompt().call().content();
 
@@ -97,9 +95,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Override the default system text with prompt system
-		content = chatClient.prompt()
-				.system("Override default system text")
-				.call().content();
+		content = chatClient.prompt().system("Override default system text").call().content();
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -107,9 +103,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Streaming
-		content = join(chatClient.prompt()
-				.system("Override default system text")
-				.stream().content());
+		content = join(chatClient.prompt().system("Override default system text").stream().content());
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -120,22 +114,20 @@ public class ChatClientTest {
 	@Test
 	public void defaultSystemTextLambda() {
 
-		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		when(chatModel.stream(promptCaptor.capture()))
-				.thenReturn(
-						Flux.generate(() -> new ChatResponse(List.of(new Generation("response"))), (state, sink) -> {
-							sink.next(state);
-							sink.complete();
-							return state;
-						}));
+			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			}));
 
 		var chatClient = ChatClient.builder(chatModel)
-				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
-						.param("param1", "value1")
-						.param("param2", "value2"))
-				.build();
+			.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
+				.param("param1", "value1")
+				.param("param2", "value2"))
+			.build();
 
 		var content = chatClient.prompt().call().content();
 
@@ -155,9 +147,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Override single default system parameter
-		content = chatClient.prompt()
-				.system(s -> s.param("param1", "value1New"))
-				.call().content();
+		content = chatClient.prompt().system(s -> s.param("param1", "value1New")).call().content();
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -165,9 +155,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// streaming
-		content = join(chatClient.prompt()
-				.system(s -> s.param("param1", "value1New"))
-				.stream().content());
+		content = join(chatClient.prompt().system(s -> s.param("param1", "value1New")).stream().content());
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -176,9 +164,9 @@ public class ChatClientTest {
 
 		// Override default system text
 		content = chatClient.prompt()
-				.system(s -> s.text("Override default system text {param3}")
-						.param("param3", "value3"))
-				.call().content();
+			.system(s -> s.text("Override default system text {param3}").param("param3", "value3"))
+			.call()
+			.content();
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -187,9 +175,9 @@ public class ChatClientTest {
 
 		// Streaming
 		content = join(chatClient.prompt()
-				.system(s -> s.text("Override default system text {param3}")
-						.param("param3", "value3"))
-				.stream().content());
+			.system(s -> s.text("Override default system text {param3}").param("param3", "value3"))
+			.stream()
+			.content());
 
 		assertThat(content).isEqualTo("response");
 		systemMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -210,14 +198,15 @@ public class ChatClientTest {
 		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
 		when(chatModel.getDefaultOptions()).thenReturn(options);
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation("response"))));
+		when(chatModel.call(promptCaptor.capture()))
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		when(chatModel.stream(promptCaptor.capture()))
-			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation("response"))), (state, sink) -> {
-				sink.next(state);
-				sink.complete();
-				return state;
-			}));
+		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+					sink.next(state);
+					sink.complete();
+					return state;
+				}));
 
 		// @formatter:off
 		var chatClient = ChatClient.builder(chatModel)
@@ -337,14 +326,15 @@ public class ChatClientTest {
 		PortableFunctionCallingOptions options = new FunctionCallingOptionsBuilder().build();
 		when(chatModel.getDefaultOptions()).thenReturn(options);
 
-		when(chatModel.call(promptCaptor.capture())).thenReturn(new ChatResponse(List.of(new Generation("response"))));
+		when(chatModel.call(promptCaptor.capture()))
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		when(chatModel.stream(promptCaptor.capture()))
-			.thenReturn(Flux.generate(() -> new ChatResponse(List.of(new Generation("response"))), (state, sink) -> {
-				sink.next(state);
-				sink.complete();
-				return state;
-			}));
+		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+					sink.next(state);
+					sink.complete();
+					return state;
+				}));
 		// @formatter:off
 		var chatClient = ChatClient.builder(chatModel)
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
@@ -424,10 +414,9 @@ public class ChatClientTest {
 	public void defaultUserText() {
 
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		var chatClient = ChatClient.builder(chatModel)
-				.defaultUser("Default user text").build();
+		var chatClient = ChatClient.builder(chatModel).defaultUser("Default user text").build();
 
 		var content = chatClient.prompt().call().content();
 
@@ -438,9 +427,7 @@ public class ChatClientTest {
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 
 		// Override the default system text with prompt system
-		content = chatClient.prompt()
-				.user("Override default user text")
-				.call().content();
+		content = chatClient.prompt().user("Override default user text").call().content();
 
 		assertThat(content).isEqualTo("response");
 		userMessage = promptCaptor.getValue().getInstructions().get(0);
@@ -451,10 +438,10 @@ public class ChatClientTest {
 	@Test
 	public void simpleUserPrompt() {
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		assertThat(ChatClient.builder(chatModel).build().prompt().user("User prompt").call().content())
-				.isEqualTo("response");
+			.isEqualTo("response");
 
 		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getContent()).isEqualTo("User prompt");
@@ -464,7 +451,7 @@ public class ChatClientTest {
 	@Test
 	public void simpleUserPromptObject() throws MalformedURLException {
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		UserMessage message = new UserMessage("User prompt");
 		Prompt prompt = new Prompt(message);
@@ -478,7 +465,7 @@ public class ChatClientTest {
 	@Test
 	public void simpleSystemPrompt() throws MalformedURLException {
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		String response = ChatClient.builder(chatModel).build().prompt().system("System prompt").call().content();
 
@@ -499,7 +486,7 @@ public class ChatClientTest {
 	@Test
 	public void complexCall() throws MalformedURLException {
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("response"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		var options = FunctionCallingOptions.builder().build();
 		when(chatModel.getDefaultOptions()).thenReturn(options);
@@ -531,9 +518,12 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
 		assertThat(userMessage.getMedia().iterator().next().getData())
-				.isEqualTo("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+			.isEqualTo("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png");
+		
+		FunctionCallingOptions runtieOptions = (FunctionCallingOptions) promptCaptor.getValue().getOptions();
 
-		assertThat(options.getFunctions()).containsExactly("function1");
+		assertThat(runtieOptions.getFunctions()).containsExactly("function1");
+		assertThat(options.getFunctions()).isEmpty();
 	}
 
 }

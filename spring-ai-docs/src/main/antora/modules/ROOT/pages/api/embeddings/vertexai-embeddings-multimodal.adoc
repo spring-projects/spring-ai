@@ -1,0 +1,147 @@
+= Google VertexAI Multimodal Embeddings
+
+NOTE: EXPERIMENTAL. Used for experimental purposes only. Not compatible yet with the `VectorStores`.
+
+Vertex AI supports two types of embeddings models, text and multimodal.
+This document describes how to create a multimodal embedding using the Vertex AI link:https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-multimodal-embeddings[Multimodal embeddings API].
+
+The multimodal embeddings model generates 1408-dimension vectors based on the input you provide, which can include a combination of image, text, and video data. 
+The embedding vectors can then be used for subsequent tasks like image classification or video content moderation.
+
+The image embedding vector and text embedding vector are in the same semantic space with the same dimensionality. 
+Consequently, these vectors can be used interchangeably for use cases like searching image by text, or searching video by image.
+
+NOTE: The VertexAI Multimodal API imposes the link:https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-multimodal-embeddings#api-limits[following limits].
+
+TIP: For text-only embedding use cases, we recommend using the xref:api/embeddings/vertexai-embeddings-text.adoc[Vertex AI text-embeddings model] instead. 
+
+== Prerequisites
+
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for you OS.
+- Authenticate by running the following command. 
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-embedding-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-embedding-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Embedding Properties
+
+The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that lets you connect to VertexAI Embedding API.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.embedding.project-id   |  Google Cloud Platform project ID |  -
+| spring.ai.vertex.ai.embedding.location   | Region |  -
+| spring.ai.vertex.ai.embedding.apiEndpoint   | Vertex AI Embedding API endpoint. |  -
+
+|====
+
+The prefix `spring.ai.vertex.ai.embedding.multimodal` is the property prefix that lets you configure the embedding model implementation for VertexAI Multimodal Embedding.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.embedding.multimodal.enabled | Enable Vertex AI Embedding API model. | true
+| spring.ai.vertex.ai.embedding.multimodal.options.model | You can get multimodal embeddings by using the following model: | multimodalembedding@001
+| spring.ai.vertex.ai.embedding.multimodal.options.dimensions | Specify lower-dimension embeddings. By default, an embedding request returns a 1408 float vector for a data type. You can also specify lower-dimension embeddings (128, 256, or 512 float vectors) for text and image data.  | 1408
+| spring.ai.vertex.ai.embedding.multimodal.options.video-start-offset-sec | The start offset of the video segment in seconds. If not specified, it's calculated with max(0, endOffsetSec - 120).  | -
+| spring.ai.vertex.ai.embedding.multimodal.options.video-end-offset-sec | The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120). If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).  | -
+| spring.ai.vertex.ai.embedding.multimodal.options.video-interval-sec | The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
+If the interval is less than 4, an InvalidArgumentError is returned. There are no limitations on the maximum value
+of the interval. However, if the interval is larger than min(video length, 120s), it impacts the quality of the generated embeddings. Default value: 16.  | -
+|====
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-embedding/src/main/java/org/springframework/ai/vertexai/embedding/VertexAiMultimodalEmbeddingModel.java[VertexAiMultimodalEmbeddingModel] implements the `DocumentEmbeddingModel`.
+
+Add the `spring-ai-vertex-ai-embedding` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-embedding</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-embedding'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `VertexAiMultimodalEmbeddingModel` and use it for embeddings generations:
+
+[source,java]
+----
+VertexAiEmbeddigConnectionDetails connectionDetails = 
+    VertexAiEmbeddigConnectionDetails.builder()
+        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .build();
+
+VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
+    .withModel(VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME)
+    .build();
+
+var embeddingModel = new VertexAiMultimodalEmbeddingModel(connectionDetails, options);
+
+Media imageMedial = new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png"));
+Media videoMedial = new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4"));
+
+var document = new Document("Explain what do you see on this video?", List.of(imageMedial, videoMedial), Map.of());
+
+EmbeddingResponse embeddingResponse = embeddingModel
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+
+DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
+        EmbeddingOptions.EMPTY);
+
+EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+
+assertThat(embeddingResponse.getResults()).hasSize(3);
+----
+

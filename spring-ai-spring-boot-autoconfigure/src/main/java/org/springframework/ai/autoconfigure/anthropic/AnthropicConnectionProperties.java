@@ -44,6 +44,12 @@ public class AnthropicConnectionProperties {
 	 */
 	private String version = AnthropicApi.DEFAULT_ANTHROPIC_VERSION;
 
+	/**
+	 * Beta features version. Such as tools-2024-04-04 or
+	 * max-tokens-3-5-sonnet-2024-07-15.
+	 */
+	private String betaVersion = AnthropicApi.DEFAULT_ANTHROPIC_BETA_VERSION;
+
 	public String getApiKey() {
 		return this.apiKey;
 	}
@@ -66,6 +72,14 @@ public class AnthropicConnectionProperties {
 
 	public void setVersion(String version) {
 		this.version = version;
+	}
+
+	public String getBetaVersion() {
+		return this.betaVersion;
+	}
+
+	public void setBetaVersion(String betaVersion) {
+		this.betaVersion = betaVersion;
 	}
 
 }

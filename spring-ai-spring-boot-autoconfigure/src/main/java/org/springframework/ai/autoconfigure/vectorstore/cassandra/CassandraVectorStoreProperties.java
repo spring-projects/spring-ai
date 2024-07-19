@@ -16,7 +16,10 @@
 package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 
 import com.google.api.client.util.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -25,9 +28,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 1.0.0
  */
 @ConfigurationProperties(CassandraVectorStoreProperties.CONFIG_PREFIX)
-public class CassandraVectorStoreProperties {
+public class CassandraVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.cassandra";
+
+	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreProperties.class);
 
 	private String keyspace = CassandraVectorStoreConfig.DEFAULT_KEYSPACE_NAME;
 
@@ -38,8 +43,6 @@ public class CassandraVectorStoreProperties {
 	private String contentColumnName = CassandraVectorStoreConfig.DEFAULT_CONTENT_COLUMN_NAME;
 
 	private String embeddingColumnName = CassandraVectorStoreConfig.DEFAULT_EMBEDDING_COLUMN_NAME;
-
-	private boolean disallowSchemaChanges = false;
 
 	private boolean returnEmbeddings = false;
 
@@ -85,12 +88,16 @@ public class CassandraVectorStoreProperties {
 		this.embeddingColumnName = embeddingColumnName;
 	}
 
+	@Deprecated
 	public boolean getDisallowSchemaCreation() {
-		return this.disallowSchemaChanges;
+		logger.warn("getDisallowSchemaCreation() is deprecated, use isInitializeSchema()");
+		return !super.isInitializeSchema();
 	}
 
+	@Deprecated
 	public void setDisallowSchemaCreation(boolean disallowSchemaCreation) {
-		this.disallowSchemaChanges = disallowSchemaCreation;
+		logger.warn("setDisallowSchemaCreation(boolean) is deprecated, use setInitializeSchema(boolean)");
+		super.setInitializeSchema(!disallowSchemaCreation);
 	}
 
 	public boolean getReturnEmbeddings() {

@@ -29,6 +29,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -57,7 +58,7 @@ public class SimpleLoggerAdvisorTests {
 	public void callLogging(CapturedOutput output) {
 
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("Your answer is ZXY"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))));
 
 		var loggerAdvisor = new SimpleLoggerAdvisor();
 
@@ -71,8 +72,9 @@ public class SimpleLoggerAdvisorTests {
 	@Test
 	public void streamLogging(CapturedOutput output) {
 
-		when(chatModel.stream(promptCaptor.capture())).thenReturn(
-				Flux.generate(() -> new ChatResponse(List.of(new Generation("Your answer is ZXY"))), (state, sink) -> {
+		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))),
+				(state, sink) -> {
 					sink.next(state);
 					sink.complete();
 					return state;

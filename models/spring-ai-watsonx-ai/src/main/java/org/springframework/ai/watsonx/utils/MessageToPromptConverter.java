@@ -71,7 +71,7 @@ public class MessageToPromptConverter {
                 return humanPrompt + message.getContent();
             case ASSISTANT:
                 return assistantPrompt + message.getContent();
-            case FUNCTION:
+            case TOOL:
                 throw new IllegalArgumentException(TOOL_EXECUTION_NOT_SUPPORTED_FOR_WAI_MODELS);
         }
 

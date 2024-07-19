@@ -2,6 +2,7 @@ package org.springframework.ai.azure.openai.metadata;
 
 import com.azure.ai.openai.models.ImageGenerations;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -15,7 +16,7 @@ import java.util.Objects;
  * @author Benoit Moussaud
  * @since 1.0.0 M1
  */
-public class AzureOpenAiImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
+public class AzureOpenAiImageResponseMetadata extends ImageResponseMetadata {
 
 	private final Long created;
 

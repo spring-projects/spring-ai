@@ -16,6 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.gemfire;
 
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.GemFireVectorStoreConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -23,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Geet Rawat
  */
 @ConfigurationProperties(GemFireVectorStoreProperties.CONFIG_PREFIX)
-public class GemFireVectorStoreProperties {
+public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 
 	/**
 	 * Configuration prefix for Spring AI VectorStore GemFire.

@@ -15,12 +15,13 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
 
 @ConfigurationProperties(prefix = OpenSearchVectorStoreProperties.CONFIG_PREFIX)
-public class OpenSearchVectorStoreProperties {
+public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.opensearch";
 
