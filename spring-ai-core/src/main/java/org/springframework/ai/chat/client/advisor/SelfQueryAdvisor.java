@@ -14,11 +14,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Advisor that structures the user's query to match the request schema provided below.
- * Inspired from the langchain SelfQueryRetriever.
+ * Advisor that that generates and executes structured queries over its own data source.
+ * Inspired by the langchain SelfQueryRetriever.
  *
  * @author Florin Duroiu
- * @since 1.0.0
  */
 public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 
@@ -29,7 +28,7 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 
 			  {schema}
 			<< Structured Request Schema >>
-			When responding use directly parsable JSON object formatted in the following schema:
+			When responding, please don't use markup or back-tics. Instead use a directly parsable JSON object formatted in the following schema:
 
 			{{"query": "string", "filter": "string"}}
 
@@ -56,7 +55,7 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 			User query: {query}
 			""";
 
-	private final String metadataFieldInfoAsJson;
+	private final String attributeInfosAsJson;
 
 	private final SearchRequest searchRequest;
 
@@ -64,15 +63,16 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	private static final List<String> allowedComparators = List.of("==", "!=", ">", ">=", "<", "<=", "-", "+");
+	private static final String allowedComparators = String.join(",",
+			List.of("==", "!=", ">", ">=", "<", "<=", "-", "+"));
 
-	private static final List<String> allowedOperators = List.of("AND", "OR", "IN", "NIN", "NOT");
+	private static final String allowedOperators = String.join(",", List.of("AND", "OR", "IN", "NIN", "NOT"));
 
-	public SelfQueryAdvisor(List<AttributeInfo> metadataFieldInfo, VectorStore vectorStore, SearchRequest searchRequest,
+	public SelfQueryAdvisor(List<AttributeInfo> attributeInfos, VectorStore vectorStore, SearchRequest searchRequest,
 			ChatModel chatModel) {
 		super(vectorStore, searchRequest);
 		try {
-			this.metadataFieldInfoAsJson = objectMapper.writeValueAsString(metadataFieldInfo);
+			this.attributeInfosAsJson = objectMapper.writeValueAsString(attributeInfos);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to serialize metadata field info", e);
@@ -108,8 +108,8 @@ public class SelfQueryAdvisor extends QuestionAnswerAdvisor {
 
 	private Prompt queryExtractionPrompt(String query) {
 		PromptTemplate promptTemplate = new PromptTemplate(STRUCTURED_REQUEST_PROMPT,
-				Map.of("allowed_comparators", String.join(",", allowedComparators), "allowed_operators",
-						String.join(",", allowedOperators), "schema", metadataFieldInfoAsJson, "query", query));
+				Map.of("allowed_comparators", allowedComparators, "allowed_operators", allowedOperators, "schema",
+						attributeInfosAsJson, "query", query));
 		return new Prompt(promptTemplate.createMessage());
 	}
 
