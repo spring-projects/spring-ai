@@ -167,6 +167,18 @@ public interface ChatClient {
 
 	}
 
+	interface FunctionSpec<I> {
+
+		String getName();
+
+		String getDescription();
+
+		Class<I> getInputType();
+
+		String getInputTypeSchema();
+
+	}
+
 	interface ChatClientRequestSpec {
 
 		/**
@@ -190,7 +202,8 @@ public interface ChatClient {
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
-		<I, O> ChatClientRequestSpec function(FunctionCallbackWrapper<I, O> functionCallbackWrapper);
+		<I2, I, O> ChatClientRequestSpec function(FunctionSpec<I2> functionSpec,
+				java.util.function.Function<I, O> function);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);
 

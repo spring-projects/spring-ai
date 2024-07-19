@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
 
@@ -609,23 +610,26 @@ public class DefaultChatClient implements ChatClient {
 
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
-
-			Assert.hasText(name, "the name must be non-null and non-empty");
-			Assert.hasText(description, "the description must be non-null and non-empty");
-			Assert.notNull(function, "the function must be non-null");
-
-			var fcw = FunctionCallbackWrapper.builder(function)
-				.withDescription(description)
-				.withName(name)
-				.withResponseConverter(Object::toString)
-				.build();
-			this.functionCallbacks.add(fcw);
-			return this;
+			var builder = new DefaultFunctionSpec.Builder<>();
+			var funcDesc = builder.withName(name).withDescription(description).build();
+			return function(funcDesc, function);
 		}
 
 		@Override
-		public <I, O> ChatClientRequestSpec function(FunctionCallbackWrapper<I, O> functionCallbackWrapper) {
-			this.functionCallbacks.add(functionCallbackWrapper);
+		public <I2, I, O> ChatClientRequestSpec function(FunctionSpec<I2> functionSpec, Function<I, O> function) {
+			var name = functionSpec.getName();
+			var description = functionSpec.getDescription();
+			Assert.hasText(name, "the name must be non-null and non-empty");
+			Assert.hasText(description, "the description must be non-null and non-empty");
+			Assert.notNull(function, "the function must be non-null");
+			var fcw = FunctionCallbackWrapper.builder(function)
+				.withDescription(description)
+				.withName(name)
+				.withInputType(functionSpec.getInputType())
+				.withInputTypeSchema(functionSpec.getInputTypeSchema())
+				.withResponseConverter(Object::toString)
+				.build();
+			this.functionCallbacks.add(fcw);
 			return this;
 		}
 
@@ -804,6 +808,79 @@ public class DefaultChatClient implements ChatClient {
 				}
 				return r.getResult().getOutput().getContent();
 			}).filter(v -> StringUtils.hasText(v));
+		}
+
+	}
+
+	public static class DefaultFunctionSpec<I> implements FunctionSpec<I> {
+
+		private String name;
+
+		private String description;
+
+		private Class<I> inputType;
+
+		private String inputTypeSchema;
+
+		@Override
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		public String getDescription() {
+			return this.description;
+		}
+
+		@Override
+		public Class<I> getInputType() {
+			return this.inputType;
+		}
+
+		@Override
+		public String getInputTypeSchema() {
+			return this.inputTypeSchema;
+		}
+
+		public static class Builder<I> {
+
+			private String name;
+
+			private String description;
+
+			private Class<I> inputType;
+
+			private String inputTypeSchema;
+
+			public Builder<I> withName(String name) {
+				this.name = name;
+				return this;
+			}
+
+			public Builder<I> withDescription(String description) {
+				this.description = description;
+				return this;
+			}
+
+			public Builder<I> withInputType(Class<I> inputType) {
+				this.inputType = inputType;
+				return this;
+			}
+
+			public Builder<I> withInputTypeSchema(String inputTypeSchema) {
+				this.inputTypeSchema = inputTypeSchema;
+				return this;
+			}
+
+			public DefaultFunctionSpec<I> build() {
+				DefaultFunctionSpec<I> spec = new DefaultFunctionSpec<>();
+				spec.name = this.name;
+				spec.description = this.description;
+				spec.inputType = this.inputType;
+				spec.inputTypeSchema = this.inputTypeSchema;
+				return spec;
+			}
+
 		}
 
 	}
