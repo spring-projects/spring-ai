@@ -15,17 +15,9 @@
  */
 package org.springframework.ai.openai.api;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
@@ -39,6 +31,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 // @formatter:off
 /**
@@ -55,6 +54,10 @@ public class OpenAiApi {
 	public static final OpenAiApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.GPT_4_O;
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
+
+	private final String completionsPath;
+
+	private final String embeddingsPath;
 
 	private final RestClient restClient;
 
@@ -99,7 +102,24 @@ public class OpenAiApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public OpenAiApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, openAiToken, "/v1/chat/completions", "/v1/embeddings",
+				restClientBuilder, webClientBuilder, responseErrorHandler);
+	}
 
+	/**
+	 * Create a new chat completion api.
+	 *
+	 * @param baseUrl api base URL.
+	 * @param openAiToken OpenAI apiKey.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiApi(String baseUrl, String openAiToken, String completionsPath, String embeddingsPath,
+					 RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		Assert.hasText(completionsPath, "Completions Path must not be null");
+		Assert.hasText(embeddingsPath, "Embeddings Path must not be null");
+		this.completionsPath = completionsPath;
+		this.embeddingsPath = embeddingsPath;
 		this.restClient = restClientBuilder
 				.baseUrl(baseUrl)
 				.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
@@ -812,7 +832,7 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the steam property to false.");
 
 		return this.restClient.post()
-				.uri("/v1/chat/completions")
+				.uri(this.completionsPath)
 				.body(chatRequest)
 				.retrieve()
 				.toEntity(ChatCompletion.class);
@@ -834,7 +854,7 @@ public class OpenAiApi {
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
 		return this.webClient.post()
-				.uri("/v1/chat/completions")
+				.uri(this.completionsPath)
 				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 				.retrieve()
 				.bodyToFlux(String.class)
@@ -1022,7 +1042,7 @@ public class OpenAiApi {
 		}
 
 		return this.restClient.post()
-				.uri("/v1/embeddings")
+				.uri(this.embeddingsPath)
 				.body(embeddingRequest)
 				.retrieve()
 				.toEntity(new ParameterizedTypeReference<>() {

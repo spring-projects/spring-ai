@@ -17,6 +17,7 @@ package org.springframework.ai.autoconfigure.openai;
 
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -71,8 +72,7 @@ public class OpenAiAutoConfiguration {
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
-		var openAiApi = openAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, webClientBuilder,
+		var openAiApi = openAiApi(chatProperties, commonProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler, "chat");
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
@@ -91,17 +91,39 @@ public class OpenAiAutoConfiguration {
 			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
-		var openAiApi = openAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, webClientBuilder,
+		var openAiApi = openAiApi(embeddingProperties, commonProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler, "embedding");
 
 		return new OpenAiEmbeddingModel(openAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
 	}
 
-	private OpenAiApi openAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
+	private OpenAiApi openAiApi(OpenAiChatProperties chatProperties, OpenAiConnectionProperties commonProperties,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String modelType) {
+		ResolvedBaseUrlAndApiKey result = getResolvedBaseUrlAndApiKey(chatProperties.getBaseUrl(),
+				chatProperties.getApiKey(), commonProperties, modelType);
+
+		return new OpenAiApi(result.resolvedBaseUrl(), result.resolvedApiKey(), chatProperties.getCompletionsPath(),
+				OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH, restClientBuilder, webClientBuilder,
+				responseErrorHandler);
+	}
+
+	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
+			OpenAiConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler, String modelType) {
+		ResolvedBaseUrlAndApiKey result = getResolvedBaseUrlAndApiKey(embeddingProperties.getBaseUrl(),
+				embeddingProperties.getApiKey(), commonProperties, modelType);
+
+		return new OpenAiApi(result.resolvedBaseUrl(), result.resolvedApiKey(),
+				OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH, embeddingProperties.getEmbeddingsPath(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
+	}
+
+	private static @NotNull ResolvedBaseUrlAndApiKey getResolvedBaseUrlAndApiKey(String baseUrl, String apiKey,
+			OpenAiConnectionProperties commonProperties, String modelType) {
+		var commonBaseUrl = commonProperties.getBaseUrl();
+		var commonApiKey = commonProperties.getApiKey();
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl,
@@ -112,9 +134,10 @@ public class OpenAiAutoConfiguration {
 		Assert.hasText(resolvedApiKey,
 				"OpenAI API key must be set. Use the connection property: spring.ai.openai.api-key or spring.ai.openai."
 						+ modelType + ".api-key property.");
+		return new ResolvedBaseUrlAndApiKey(resolvedBaseUrl, resolvedApiKey);
+	}
 
-		return new OpenAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+	private record ResolvedBaseUrlAndApiKey(String resolvedBaseUrl, String resolvedApiKey) {
 	}
 
 	@Bean
@@ -164,10 +187,8 @@ public class OpenAiAutoConfiguration {
 		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
-		OpenAiAudioTranscriptionModel openAiChatModel = new OpenAiAudioTranscriptionModel(openAiAudioApi,
-				transcriptionProperties.getOptions(), retryTemplate);
+		return new OpenAiAudioTranscriptionModel(openAiAudioApi, transcriptionProperties.getOptions(), retryTemplate);
 
-		return openAiChatModel;
 	}
 
 	@Bean
@@ -193,10 +214,7 @@ public class OpenAiAutoConfiguration {
 		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
-		OpenAiAudioSpeechModel openAiSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi,
-				speechProperties.getOptions(), retryTemplate);
-
-		return openAiSpeechModel;
+		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
 	}
 
 	@Bean
