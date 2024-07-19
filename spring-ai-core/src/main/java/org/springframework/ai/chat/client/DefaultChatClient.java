@@ -812,13 +812,13 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
-	public static class DefaultFunctionSpec<I> implements FunctionSpec<I> {
+	public static class DefaultFunctionSpec<T> implements FunctionSpec<T> {
 
 		private String name;
 
 		private String description;
 
-		private Class<I> inputType;
+		private Class<T> inputType;
 
 		private String inputTypeSchema;
 
@@ -833,7 +833,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public Class<I> getInputType() {
+		public Class<T> getInputType() {
 			return this.inputType;
 		}
 
