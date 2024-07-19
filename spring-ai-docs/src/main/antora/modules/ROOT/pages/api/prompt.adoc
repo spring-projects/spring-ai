@@ -26,20 +26,19 @@ OpenAI have introduced even more structure to prompts by categorizing multiple m
 
 It is common to use the `call` method of `ChatModel` that takes a `Prompt` instance and returns an `ChatResponse`.
 
-The Prompt class functions as a container for an organized series of Message objects, with each one forming a segment of the overall prompt.
+The Prompt class functions as a container for an organized series of `Message` objects and a request `ChatOptions`.
 Every Message embodies a unique role within the prompt, differing in its content and intent.
 These roles can encompass a variety of elements, from user inquiries to AI-generated responses or relevant background information.
 This arrangement enables intricate and detailed interactions with AI models, as the prompt is constructed from multiple messages, each assigned a specific role to play in the dialogue.
 
-
 Below is a truncated version of the Prompt class, with constructors and utility methods omitted for brevity:
 
 ```java
-public class Prompt {
+public class Prompt implements ModelRequest<List<Message>> {
 
     private final List<Message> messages;
 
-    // constructors and utility methods omitted
+    private ChatOptions chatOptions;
 }
 ```
 
@@ -48,27 +47,25 @@ public class Prompt {
 The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, a categorization known as `MessageType`, and a list of media objects for those models that are multimodal.
 The interface is defined as follows:
 
+image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
+
 ```java
-public interface Message extends Node<String> {
-
-	String getContent();
-
-	List<Media> getMedia();
+public interface Message extends Content {
 
 	MessageType getMessageType();
 
 }
 ```
 
-and the Node interface is
+and the Content interface is
 
 ```java
 
-public interface Node<T> {
+public interface Content {
 
-    T getContent();
+	String getContent();
 
-    Map<String, Object> getMetadata();
+	Map<String, Object> getMetadata();
 }
 ```
 
@@ -108,7 +105,7 @@ public enum MessageType {
 
 	SYSTEM("system"),
 
-	FUNCTION("function");
+	TOOL("tool");
 
 	private final String value;
 
