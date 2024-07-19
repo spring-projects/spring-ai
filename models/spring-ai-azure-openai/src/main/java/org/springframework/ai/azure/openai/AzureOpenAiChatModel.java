@@ -45,6 +45,7 @@ import org.springframework.ai.azure.openai.metadata.AzureOpenAiUsage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
@@ -55,7 +56,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -323,12 +324,14 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				// https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/README.md#text-completions-with-images
 				List<ChatMessageContentItem> items = new ArrayList<>();
 				items.add(new ChatMessageTextContentItem(message.getContent()));
-				if (!CollectionUtils.isEmpty(message.getMedia())) {
-					items.addAll(message.getMedia()
-						.stream()
-						.map(media -> new ChatMessageImageContentItem(
-								new ChatMessageImageUrl(media.getData().toString())))
-						.toList());
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						items.addAll(userMessage.getMedia()
+							.stream()
+							.map(media -> new ChatMessageImageContentItem(
+									new ChatMessageImageUrl(media.getData().toString())))
+							.toList());
+					}
 				}
 				return List.of(new ChatRequestUserMessage(items));
 			case SYSTEM:

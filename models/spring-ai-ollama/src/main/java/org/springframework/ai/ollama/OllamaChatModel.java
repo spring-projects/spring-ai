@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
@@ -149,10 +150,13 @@ public class OllamaChatModel implements ChatModel {
 					|| message.getMessageType() == MessageType.SYSTEM)
 			.map(m -> {
 				var messageBuilder = OllamaApi.Message.builder(toRole(m)).withContent(m.getContent());
-
-				if (!CollectionUtils.isEmpty(m.getMedia())) {
-					messageBuilder
-						.withImages(m.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
+				if (m instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						messageBuilder.withImages(userMessage.getMedia()
+							.stream()
+							.map(media -> this.fromMediaData(media.getData()))
+							.toList());
+					}
 				}
 				return messageBuilder.build();
 			})

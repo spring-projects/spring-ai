@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.model.function;
+package org.springframework.ai.chat.model;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 

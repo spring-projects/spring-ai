@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.chat.messages;
 
+import org.springframework.ai.model.Content;
 import org.springframework.util.Assert;
 
 import java.util.List;
@@ -52,27 +53,29 @@ public class AssistantMessage extends AbstractMessage {
 		this.toolCalls = toolCalls;
 	}
 
+	@Override
+	public String getContent() {
+		return this.textContent;
+	}
+
 	public List<ToolCall> getToolCalls() {
 		return this.toolCalls;
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(this.messageType, this.getContent(), this.metadata, this.toolCalls);
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof AssistantMessage that))
+			return false;
+		if (!super.equals(o))
+			return false;
+		return Objects.equals(toolCalls, that.toolCalls);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		AssistantMessage other = (AssistantMessage) obj;
-		return this.messageType == other.messageType && Objects.equals(this.getContent(), other.getContent())
-				&& Objects.equals(this.getMetadata(), other.getMetadata())
-				&& Objects.equals(this.getToolCalls(), other.getToolCalls());
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), toolCalls);
 	}
 
 }

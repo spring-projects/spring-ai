@@ -21,6 +21,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -31,7 +32,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -323,20 +324,20 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content;
-				if (CollectionUtils.isEmpty(message.getMedia())) {
-					content = message.getContent();
-				}
-				else {
-					List<MediaContent> contentList = new ArrayList<>(List.of(new MediaContent(message.getContent())));
+				Object content = message.getContent();
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						List<MediaContent> contentList = new ArrayList<>(
+								List.of(new MediaContent(message.getContent())));
 
-					contentList.addAll(message.getMedia()
-						.stream()
-						.map(media -> new MediaContent(
-								new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
-						.toList());
+						contentList.addAll(userMessage.getMedia()
+							.stream()
+							.map(media -> new MediaContent(new MediaContent.ImageUrl(
+									this.fromMediaData(media.getMimeType(), media.getData()))))
+							.toList());
 
-					content = contentList;
+						content = contentList;
+					}
 				}
 
 				return List.of(new ChatCompletionMessage(content,

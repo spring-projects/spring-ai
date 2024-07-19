@@ -16,6 +16,9 @@
 package org.springframework.ai.chat.messages;
 
 import org.springframework.ai.model.Content;
+import org.springframework.ai.model.Media;
+
+import java.util.Map;
 
 /**
  * The Message interface represents a message that can be sent or received in a chat
@@ -28,5 +31,7 @@ import org.springframework.ai.model.Content;
 public interface Message extends Content {
 
 	MessageType getMessageType();
+
+	Map<String, Object> getMetadata();
 
 }
