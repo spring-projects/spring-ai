@@ -17,16 +17,15 @@ package org.springframework.ai.azure.openai.metadata;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions;
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.util.Assert;
-
-import java.util.HashMap;
 
 /**
  * Audio transcription metadata implementation for {@literal AzureOpenAI}.
  *
  * @author Piotr Olaszewski
  */
-public class AzureOpenAiAudioTranscriptionResponseMetadata extends HashMap<String, Object>
+public class AzureOpenAiAudioTranscriptionResponseMetadata extends MutableResponseMetadata
 		implements AudioTranscriptionResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s }";
