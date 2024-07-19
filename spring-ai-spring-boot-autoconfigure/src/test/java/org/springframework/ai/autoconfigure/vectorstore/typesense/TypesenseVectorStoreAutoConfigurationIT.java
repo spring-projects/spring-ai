@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Pablo Sanchidrian Herrera
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
 public class TypesenseVectorStoreAutoConfigurationIT {
@@ -63,6 +64,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 		contextRunner
 			.withPropertyValues("spring.ai.vectorstore.typesense.embeddingDimension=384",
 					"spring.ai.vectorstore.typesense.collectionName=myTestCollection",
+					"spring.ai.vectorstore.typesense.initialize-schema=true",
 					"spring.ai.vectorstore.typesense.client.apiKey=xyz",
 					"spring.ai.vectorstore.typesense.client.protocol=http",
 					"spring.ai.vectorstore.typesense.client.host=" + typesenseContainer.getHost(),

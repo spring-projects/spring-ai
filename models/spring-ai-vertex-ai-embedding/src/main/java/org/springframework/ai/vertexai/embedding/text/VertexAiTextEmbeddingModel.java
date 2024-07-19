@@ -20,6 +20,7 @@ import com.google.cloud.aiplatform.v1.PredictRequest;
 import com.google.cloud.aiplatform.v1.PredictResponse;
 import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.Value;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
@@ -32,6 +33,7 @@ import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetai
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextParametersBuilder;
+import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -135,10 +137,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		}
 	}
 
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer tokenCount) {
+	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens) {
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.put("model", model);
-		metadata.put("total-tokens", tokenCount);
+		metadata.setModel(model);
+		Usage usage = new VertexAiEmbeddingUsage(totalTokens);
+		metadata.setUsage(usage);
 		return metadata;
 	}
 

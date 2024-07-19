@@ -16,7 +16,9 @@
 package org.springframework.ai.chat.model;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.CollectionUtils;
@@ -40,7 +42,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * provider.
 	 */
 	public ChatResponse(List<Generation> generations) {
-		this(generations, ChatResponseMetadata.NULL);
+		this(generations, new ChatResponseMetadata());
 	}
 
 	/**
@@ -105,6 +107,46 @@ public class ChatResponse implements ModelResponse<Generation> {
 	@Override
 	public int hashCode() {
 		return Objects.hash(chatResponseMetadata, generations);
+	}
+
+	public static ChatResponse.Builder builder() {
+		return new ChatResponse.Builder();
+	}
+
+	public static class Builder {
+
+		private List<Generation> generations;
+
+		private ChatResponseMetadata.Builder chatResponseMetadataBuilder;
+
+		private Builder() {
+			this.chatResponseMetadataBuilder = ChatResponseMetadata.builder();
+		}
+
+		public Builder from(ChatResponse other) {
+			this.generations = other.generations;
+			Set<Map.Entry<String, Object>> entries = other.chatResponseMetadata.entrySet();
+			for (Map.Entry<String, Object> entry : entries) {
+				this.chatResponseMetadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+			}
+			return this;
+		}
+
+		public Builder withMetadata(String key, Object value) {
+			this.chatResponseMetadataBuilder.withKeyValue(key, value);
+			return this;
+		}
+
+		public Builder withGenerations(List<Generation> generations) {
+			this.generations = generations;
+			return this;
+
+		}
+
+		public ChatResponse build() {
+			return new ChatResponse(generations, chatResponseMetadataBuilder.build());
+		}
+
 	}
 
 }

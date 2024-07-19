@@ -86,7 +86,7 @@ public class PdfDocumentReaderConfig {
 		 */
 		public PdfDocumentReaderConfig.Builder withPageExtractedTextFormatter(
 				ExtractedTextFormatter pageExtractedTextFormatter) {
-			Assert.notNull(pagesPerDocument >= 0, "PageExtractedTextFormatter must not be null.");
+			Assert.notNull(pageExtractedTextFormatter, "PageExtractedTextFormatter must not be null.");
 			this.pageExtractedTextFormatter = pageExtractedTextFormatter;
 			return this;
 		}

@@ -163,6 +163,11 @@ public class Anthropic3ChatOptions implements ChatOptions {
 		this.anthropicVersion = anthropicVersion;
 	}
 
+	@Override
+	public Anthropic3ChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static Anthropic3ChatOptions fromOptions(Anthropic3ChatOptions fromOptions) {
 		return builder().withTemperature(fromOptions.getTemperature())
 			.withMaxTokens(fromOptions.getMaxTokens())

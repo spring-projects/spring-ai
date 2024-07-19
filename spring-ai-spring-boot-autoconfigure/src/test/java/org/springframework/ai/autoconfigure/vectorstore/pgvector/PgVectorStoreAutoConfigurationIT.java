@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * @author Christian Tzolov
  * @author Muthukumaran Navaneethakrishnan
+ * @author Soby Chacko
  */
 @Testcontainers
 public class PgVectorStoreAutoConfigurationIT {
@@ -75,6 +76,7 @@ public class PgVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE",
 				"spring.ai.vectorstore.pgvector.initialize-schema=true",
+				// JdbcTemplate configuration
 				String.format("spring.datasource.url=jdbc:postgresql://%s:%d/%s", postgresContainer.getHost(),
 						postgresContainer.getMappedPort(5432), postgresContainer.getDatabaseName()),
 				"spring.datasource.username=" + postgresContainer.getUsername(),

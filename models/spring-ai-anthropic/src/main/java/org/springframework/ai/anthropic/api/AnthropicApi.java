@@ -65,6 +65,8 @@ public class AnthropicApi {
 
 	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04";
 
+	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
+
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
 	private final RestClient restClient;
@@ -98,11 +100,26 @@ public class AnthropicApi {
 	 */
 	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, anthropicApiKey, anthropicVersion, restClientBuilder, responseErrorHandler,
+				DEFAULT_ANTHROPIC_BETA_VERSION);
+	}
+
+	/**
+	 * Create a new client api.
+	 * @param baseUrl api base URL.
+	 * @param anthropicApiKey Anthropic api Key.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 * @param anthropicBetaFeatures Anthropic beta features.
+	 */
+	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler,
+			String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.add(HEADER_X_API_KEY, anthropicApiKey);
 			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
-			headers.add(HEADER_ANTHROPIC_BETA, DEFAULT_ANTHROPIC_BETA_VERSION);
+			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 

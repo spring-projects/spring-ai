@@ -108,7 +108,7 @@ You can use the following properties in your Spring Boot configuration to custom
 
 |`spring.ai.vectorstore.redis.uri`| Server connection URI | `redis://localhost:6379`
 |`spring.ai.vectorstore.redis.index`| Index name  | `default-index`
-|`spring.ai.vectorstore.redis.initialize-schema`| whether to initialize the required schema  | `false`
+|`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema  | `false`
 |`spring.ai.vectorstore.redis.prefix`| Prefix | `default:`
 
 |===

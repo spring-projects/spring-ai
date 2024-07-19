@@ -28,4 +28,6 @@ public interface ChatOptions extends ModelOptions {
 
 	Integer getTopK();
 
+	ChatOptions copy();
+
 }

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The FunctionMessage class represents a message with a function content in a chat
+ * The ToolResponseMessage class represents a message with a function content in a chat
  * application.
  *
  * @author Christian Tzolov

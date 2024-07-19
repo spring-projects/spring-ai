@@ -215,9 +215,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response).containsAnyOf("30.0", "30");
-		assertThat(response).containsAnyOf("10.0", "10");
-		assertThat(response).containsAnyOf("15.0", "15");
+		assertThat(response).contains("30", "10", "15");
 	}
 
 	@Test
@@ -233,9 +231,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response).containsAnyOf("30.0", "30");
-		assertThat(response).containsAnyOf("10.0", "10");
-		assertThat(response).containsAnyOf("15.0", "15");
+		assertThat(response).contains("30", "10", "15");
 	}
 
 	@Test
@@ -252,9 +248,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).containsAnyOf("30.0", "30");
-		assertThat(content).containsAnyOf("10.0", "10");
-		assertThat(content).containsAnyOf("15.0", "15");
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")

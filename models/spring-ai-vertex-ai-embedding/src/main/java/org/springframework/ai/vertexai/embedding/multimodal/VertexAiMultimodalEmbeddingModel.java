@@ -24,6 +24,7 @@ import com.google.protobuf.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
@@ -35,6 +36,7 @@ import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetails;
+import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
@@ -230,20 +232,18 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		String deploymentModelId = embeddingResponse.getDeployedModelId();
 
-		EmbeddingResponseMetadata responseMetadata = generateResponseMetadata(mergedOptions.getModel(), -1);
-
-		responseMetadata.put("deployment-model-id",
+		Map<String, Object> metadataToUse = Map.of("deployment-model-id",
 				StringUtils.hasText(deploymentModelId) ? deploymentModelId : "unknown");
-
-		return new EmbeddingResponse(embeddingList, generateResponseMetadata(mergedOptions.getModel(), 0));
+		EmbeddingResponseMetadata responseMetadata = generateResponseMetadata(mergedOptions.getModel(), 0,
+				metadataToUse);
+		return new EmbeddingResponse(embeddingList, responseMetadata);
 
 	}
 
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer tokenCount) {
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.put("model", model);
-		metadata.put("total-tokens", tokenCount);
-		return metadata;
+	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens,
+			Map<String, Object> metadataToUse) {
+		Usage usage = new VertexAiEmbeddingUsage(totalTokens);
+		return new EmbeddingResponseMetadata(model, usage, metadataToUse);
 	}
 
 	@Override

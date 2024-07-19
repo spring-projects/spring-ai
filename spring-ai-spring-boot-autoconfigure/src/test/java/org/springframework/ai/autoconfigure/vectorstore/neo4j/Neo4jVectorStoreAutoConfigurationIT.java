@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jingzhou Ou
+ * @author Soby Chacko
  */
 @Testcontainers
 public class Neo4jVectorStoreAutoConfigurationIT {
@@ -59,7 +60,7 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(Neo4jAutoConfiguration.class, Neo4jVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.neo4j.uri=" + neo4jContainer.getBoltUrl(),
-				"spring.neo4j.authentication.username=" + "neo4j",
+				"spring.ai.vectorstore.neo4j.initialize-schema=true", "spring.neo4j.authentication.username=" + "neo4j",
 				"spring.neo4j.authentication.password=" + neo4jContainer.getAdminPassword());
 
 	@Test

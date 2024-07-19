@@ -315,6 +315,11 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 		this.functions = functions;
 	}
 
+	@Override
+	public MistralAiChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {
 		return builder().withModel(fromOptions.getModel())
 			.withMaxTokens(fromOptions.getMaxTokens())

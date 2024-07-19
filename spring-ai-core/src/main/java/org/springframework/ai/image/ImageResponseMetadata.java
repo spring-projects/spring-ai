@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.image;
 
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
 import java.util.HashMap;
@@ -28,16 +29,20 @@ import java.util.HashMap;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface ImageResponseMetadata extends ResponseMetadata {
+public class ImageResponseMetadata extends MutableResponseMetadata {
 
-	class DefaultImageResponseMetadata extends HashMap<String, Object> implements ImageResponseMetadata {
+	private Long created;
 
+	public ImageResponseMetadata() {
+		this.created = System.currentTimeMillis();
 	}
 
-	ImageResponseMetadata NULL = new DefaultImageResponseMetadata();
+	public ImageResponseMetadata(Long created) {
+		this.created = created;
+	}
 
-	default Long getCreated() {
-		return System.currentTimeMillis();
+	public Long getCreated() {
+		return this.created;
 	}
 
 }

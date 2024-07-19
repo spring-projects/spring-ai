@@ -67,6 +67,7 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
  *
  * @author Julien Ruaux
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  * @see VectorStore
  * @see RedisVectorStoreConfig
  * @see EmbeddingModel
@@ -100,8 +101,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 	 */
 	public static final class RedisVectorStoreConfig {
 
-		private final String uri;
-
 		private final String indexName;
 
 		private final String prefix;
@@ -119,7 +118,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		}
 
 		private RedisVectorStoreConfig(Builder builder) {
-			this.uri = builder.uri;
 			this.indexName = builder.indexName;
 			this.prefix = builder.prefix;
 			this.contentFieldName = builder.contentFieldName;
@@ -147,8 +145,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 		public static class Builder {
 
-			private String uri = DEFAULT_URI;
-
 			private String indexName = DEFAULT_INDEX_NAME;
 
 			private String prefix = DEFAULT_PREFIX;
@@ -162,16 +158,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 			private List<MetadataField> metadataFields = new ArrayList<>();
 
 			private Builder() {
-			}
-
-			/**
-			 * Configures the Redis URI to use.
-			 * @param uri the Redis URI to use
-			 * @return this builder
-			 */
-			public Builder withURI(String uri) {
-				this.uri = uri;
-				return this;
 			}
 
 			/**
@@ -247,8 +233,6 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	private final boolean initializeSchema;
 
-	public static final String DEFAULT_URI = "redis://localhost:6379";
-
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-index";
 
 	public static final String DEFAULT_CONTENT_FIELD_NAME = "content";
@@ -287,13 +271,14 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 
 	private FilterExpressionConverter filterExpressionConverter;
 
-	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, boolean initializeSchema) {
+	public RedisVectorStore(RedisVectorStoreConfig config, EmbeddingModel embeddingModel, JedisPooled jedis,
+			boolean initializeSchema) {
 
 		Assert.notNull(config, "Config must not be null");
 		Assert.notNull(embeddingModel, "Embedding model must not be null");
 		this.initializeSchema = initializeSchema;
 
-		this.jedis = new JedisPooled(config.uri);
+		this.jedis = jedis;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.config.metadataFields);

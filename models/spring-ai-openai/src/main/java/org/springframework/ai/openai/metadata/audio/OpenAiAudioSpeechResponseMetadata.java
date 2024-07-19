@@ -18,6 +18,7 @@ package org.springframework.ai.openai.metadata.audio;
 
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.lang.Nullable;
@@ -31,7 +32,7 @@ import java.util.HashMap;
  * @author Ahmed Yousri
  * @see RateLimit
  */
-public class OpenAiAudioSpeechResponseMetadata extends HashMap<String, Object> implements ResponseMetadata {
+public class OpenAiAudioSpeechResponseMetadata extends MutableResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, requestsLimit: %2$s }";
 

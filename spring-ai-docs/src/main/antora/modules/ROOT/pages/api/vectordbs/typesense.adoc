@@ -103,8 +103,9 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.typesense.client.host`| Hostname | `localhost`
 |`spring.ai.vectorstore.typesense.client.port`| Port | `8108`
 |`spring.ai.vectorstore.typesense.client.apiKey`| ApiKey | `xyz`
-|`spring.ai.vectorstore.typesense.collectionName`| Collection Name | `vector_store`
-|`spring.ai.vectorstore.typesense.embeddingDimension`| Embedding Dimension | `1536`
+|`spring.ai.vectorstore.typesense.initialize-schema`| Whether to initialize the required schema  | `false`
+|`spring.ai.vectorstore.typesense.collection-name`| Collection Name | `vector_store`
+|`spring.ai.vectorstore.typesense.embedding-dimension`| Embedding Dimension | `1536`
 
 |===
 

@@ -75,7 +75,6 @@ public class MoonshotChatModelIT {
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
-		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
 	}
 
 	@Test
@@ -93,7 +92,7 @@ public class MoonshotChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.parse(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 
 	}
@@ -118,7 +117,7 @@ public class MoonshotChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.parse(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -137,7 +136,7 @@ public class MoonshotChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.parse(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 
 	}
 
@@ -165,7 +164,7 @@ public class MoonshotChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.parse(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -196,7 +195,7 @@ public class MoonshotChatModelIT {
 			.map(AssistantMessage::getContent)
 			.collect(Collectors.joining());
 
-		ActorsFilmsRecord actorsFilms = outputConverter.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);

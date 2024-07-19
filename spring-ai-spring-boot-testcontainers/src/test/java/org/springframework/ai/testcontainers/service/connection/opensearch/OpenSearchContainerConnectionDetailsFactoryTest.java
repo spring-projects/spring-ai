@@ -44,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(properties = {
 		"spring.ai.vectorstore.opensearch.index-name=" + OpenSearchContainerConnectionDetailsFactoryTest.DOCUMENT_INDEX,
+		"spring.ai.vectorstore.opensearch.initialize-schema=true",
 		"spring.ai.vectorstore.opensearch.mapping-json="
 				+ OpenSearchContainerConnectionDetailsFactoryTest.MAPPING_JSON })
 @Testcontainers

@@ -17,13 +17,11 @@ package org.springframework.ai.openai.metadata.audio;
 
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.HashMap;
 
 /**
  * Audio transcription metadata implementation for {@literal OpenAI}.
@@ -32,7 +30,7 @@ import java.util.HashMap;
  * @since 0.8.1
  * @see RateLimit
  */
-public class OpenAiAudioTranscriptionResponseMetadata extends HashMap<String, Object> implements ResponseMetadata {
+public class OpenAiAudioTranscriptionResponseMetadata extends MutableResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %4$s }";
 

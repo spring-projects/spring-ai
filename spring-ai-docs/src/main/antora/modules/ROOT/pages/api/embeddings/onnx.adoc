@@ -95,8 +95,8 @@ spring.ai.embedding.transformer.tokenizer.options.padding=true
 
 [NOTE]
 ====
-If you get an error like `The generative output names doesn't contain expected: last_hidden_state. Consider one of the available model outputs: token_embeddings, ....`, you need to set the model output name to a correct value per your models. 
-Cosider the names listed in the error message. 
+If you get an error like `The generative output names don't contain expected: last_hidden_state. Consider one of the available model outputs: token_embeddings, ....`, you need to set the model output name to a correct value per your models.
+Consider the names listed in the error message.
 For example:
 
 ----
