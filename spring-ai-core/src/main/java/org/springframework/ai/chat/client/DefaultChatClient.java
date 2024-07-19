@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
 
@@ -616,7 +615,8 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public <I2, I, O> ChatClientRequestSpec function(FunctionSpec<I2> functionSpec, Function<I, O> function) {
+		public <I2, I, O> ChatClientRequestSpec function(FunctionSpec<I2> functionSpec,
+				java.util.function.Function<I, O> function) {
 			var name = functionSpec.getName();
 			var description = functionSpec.getDescription();
 			Assert.hasText(name, "the name must be non-null and non-empty");
