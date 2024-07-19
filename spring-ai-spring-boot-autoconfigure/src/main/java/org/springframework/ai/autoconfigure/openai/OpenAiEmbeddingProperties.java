@@ -27,12 +27,16 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 
+	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
+
 	/**
 	 * Enable OpenAI embedding model.
 	 */
 	private boolean enabled = true;
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
+
+	private String embeddingsPath = DEFAULT_EMBEDDINGS_PATH;
 
 	@NestedConfigurationProperty
 	private OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
@@ -61,6 +65,14 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public String getEmbeddingsPath() {
+		return embeddingsPath;
+	}
+
+	public void setEmbeddingsPath(String embeddingsPath) {
+		this.embeddingsPath = embeddingsPath;
 	}
 
 }
