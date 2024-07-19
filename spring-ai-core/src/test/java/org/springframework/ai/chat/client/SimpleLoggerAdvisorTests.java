@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -92,7 +93,7 @@ public class SimpleLoggerAdvisorTests {
 	private void validate(String content, CapturedOutput output) {
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
+		UserMessage userMessage = (UserMessage) promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("Please answer my question XYZ");
 
 		assertThat(output.getOut()).contains("request: AdvisedRequest", "userText=Please answer my question XYZ");

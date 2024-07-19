@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;

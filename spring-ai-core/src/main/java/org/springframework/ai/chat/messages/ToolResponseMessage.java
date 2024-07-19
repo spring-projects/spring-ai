@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.chat.messages;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +31,7 @@ public class ToolResponseMessage extends AbstractMessage {
 	public record ToolResponse(String id, String name, String responseData) {
 	};
 
-	private List<ToolResponse> responses = new ArrayList<>();
+	protected final List<ToolResponse> responses;
 
 	public ToolResponseMessage(List<ToolResponse> responses) {
 		this(responses, Map.of());
@@ -48,27 +47,25 @@ public class ToolResponseMessage extends AbstractMessage {
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(this.responses, getContent(), this.metadata, this.messageType);
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof ToolResponseMessage that))
+			return false;
+		if (!super.equals(o))
+			return false;
+		return Objects.equals(responses, that.responses);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		ToolResponseMessage other = (ToolResponseMessage) obj;
-		return Objects.equals(this.responses, other.responses) && Objects.equals(getContent(), other.getContent())
-				&& Objects.equals(this.metadata, other.metadata) && this.messageType == other.messageType;
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), responses);
 	}
 
 	@Override
 	public String toString() {
-		return "ToolResponseMessage [responses=" + responses + ", messageType=" + messageType + ", metadata=" + metadata
-				+ "]";
+		return "ToolResponseMessage{" + "responses=" + responses + ", messageType=" + messageType + ", metadata="
+				+ metadata + '}';
 	}
 
 }

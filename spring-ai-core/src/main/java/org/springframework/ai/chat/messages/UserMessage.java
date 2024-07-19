@@ -15,30 +15,37 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.model.Media;
+import org.springframework.ai.model.MediaContent;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 
 /**
  * A message of the type 'user' passed as input Messages with the user role are from the
  * end-user or developer. They represent questions, prompts, or any input that you want
  * the generative to respond to.
  */
-public class UserMessage extends AbstractMessage {
+public class UserMessage extends AbstractMessage implements MediaContent {
 
-	public UserMessage(String message) {
-		super(MessageType.USER, message);
+	protected final List<Media> media;
+
+	public UserMessage(String textContent) {
+		this(MessageType.USER, textContent, new ArrayList<>(), Map.of());
 	}
 
 	public UserMessage(Resource resource) {
-		super(MessageType.USER, resource);
+		super(MessageType.USER, resource, Map.of());
+		this.media = new ArrayList<>();
 	}
 
-	public UserMessage(String textContent, List<Media> mediaList) {
-		super(MessageType.USER, textContent, mediaList);
+	public UserMessage(String textContent, List<Media> media) {
+		this(MessageType.USER, textContent, media, Map.of());
 	}
 
 	public UserMessage(String textContent, Media... media) {
@@ -46,13 +53,34 @@ public class UserMessage extends AbstractMessage {
 	}
 
 	public UserMessage(String textContent, Collection<Media> mediaList, Map<String, Object> metadata) {
-		super(MessageType.USER, textContent, mediaList, metadata);
+		this(MessageType.USER, textContent, mediaList, metadata);
+	}
+
+	public UserMessage(MessageType messageType, String textContent, Collection<Media> media,
+			Map<String, Object> metadata) {
+		super(messageType, textContent, metadata);
+		Assert.notNull(media, "media data must not be null");
+		this.media = new ArrayList<>(media);
+	}
+
+	public List<Media> getMedia(String... dummy) {
+		return this.media;
 	}
 
 	@Override
 	public String toString() {
 		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + metadata + ", messageType="
 				+ messageType + '}';
+	}
+
+	@Override
+	public Collection<Media> getMedia() {
+		return this.media;
+	}
+
+	@Override
+	public String getContent() {
+		return this.textContent;
 	}
 
 }

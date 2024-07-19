@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.chat.prompt;
 
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 
 import java.util.List;
