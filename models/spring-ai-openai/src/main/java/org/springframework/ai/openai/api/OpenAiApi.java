@@ -115,6 +115,7 @@ public class OpenAiApi {
 	/**
 	 * OpenAI Chat Completion Models:
 	 * - <a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a>
+	 * - <a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o mini</a>
 	 * - <a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4 and GPT-4 Turbo</a>
 	 * - <a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5 Turbo</a>.
 	 */
@@ -124,6 +125,13 @@ public class OpenAiApi {
 		 * Currently points to gpt-4o-2024-05-13.
 		 */
 		GPT_4_O("gpt-4o"),
+
+		/**
+		 * Affordable and intelligent small model for fast, lightweight tasks.
+		 * GPT-4o mini is cheaper and more capable than GPT-3.5 Turbo.
+		 * Currently points to gpt-4o-mini-2024-07-18.
+		 */
+		GPT_4_O_MINI("gpt-4o-mini"),
 
 		/**
 		 * GPT-4 Turbo with Vision
