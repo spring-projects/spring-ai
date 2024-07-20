@@ -63,7 +63,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/**
 	 * The target class type reference to which the output will be converted.
 	 */
-	@SuppressWarnings({ "FieldMayBeFinal"})
+	@SuppressWarnings({ "FieldMayBeFinal" })
 	private TypeReference<T> typeRef;
 
 	/** The object mapper used for deserialization and other JSON operations. */
