@@ -25,9 +25,9 @@ Multimodality refers to a model’s ability to simultaneously understand and pro
 
 The Spring AI Message API provides all necessary abstractions to support multimodal LLMs.
 
-image::spring-ai-message-api.jpg[Spring AI Message API, width=600, align="center"]
+image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
 
-The Message’s `content` field is used as primarily text inputs, while the, optional, `media` field allows adding one or more additional content of different modalities such as images, audio and video.
+The UserMessage’s `content` field is used as primarily text inputs, while the, optional, `media` field allows adding one or more additional content of different modalities such as images, audio and video.
 The `MimeType` specifies the modality type.
 Depending on the used LLMs the Media's data field can be either encoded raw media content or an URI to the content.
 
