@@ -48,7 +48,9 @@ public abstract class AbstractMessage implements Message {
 
 	protected AbstractMessage(MessageType messageType, String textContent, Map<String, Object> metadata) {
 		Assert.notNull(messageType, "Message type must not be null");
-		Assert.notNull(textContent, "Content must not be null");
+		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
+			Assert.notNull(textContent, "Content must not be null for SYSTEM or USER messages");
+		}
 		this.messageType = messageType;
 		this.textContent = textContent;
 		this.metadata = new HashMap<>(metadata);

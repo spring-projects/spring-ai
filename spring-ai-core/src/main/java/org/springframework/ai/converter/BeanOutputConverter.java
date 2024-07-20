@@ -15,7 +15,16 @@
  */
 package org.springframework.ai.converter;
 
+import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
+import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
+
+import java.lang.reflect.Type;
 import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.NonNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,21 +34,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.NonNull;
-import java.lang.reflect.Type;
-
-import static com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON;
-import static com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12;
 
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
@@ -64,7 +63,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/**
 	 * The target class type reference to which the output will be converted.
 	 */
-	@SuppressWarnings({ "FieldMayBeFinal", "rawtypes" })
+	@SuppressWarnings({ "FieldMayBeFinal"})
 	private TypeReference<T> typeRef;
 
 	/** The object mapper used for deserialization and other JSON operations. */
@@ -182,8 +181,9 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @return Configured object mapper.
 	 */
 	protected ObjectMapper getObjectMapper() {
-		ObjectMapper mapper = JsonMapper.builder().findAndAddModules().build();
+		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
 		return mapper;
 	}
 
