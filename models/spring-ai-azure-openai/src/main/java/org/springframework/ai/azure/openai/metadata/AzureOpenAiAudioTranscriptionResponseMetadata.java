@@ -17,7 +17,6 @@ package org.springframework.ai.azure.openai.metadata;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionOptions;
-import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.util.Assert;
 
 /**
@@ -25,8 +24,7 @@ import org.springframework.util.Assert;
  *
  * @author Piotr Olaszewski
  */
-public class AzureOpenAiAudioTranscriptionResponseMetadata extends MutableResponseMetadata
-		implements AudioTranscriptionResponseMetadata {
+public class AzureOpenAiAudioTranscriptionResponseMetadata extends AudioTranscriptionResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s }";
 

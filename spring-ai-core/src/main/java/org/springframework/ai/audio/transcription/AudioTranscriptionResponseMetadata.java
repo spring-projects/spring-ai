@@ -15,20 +15,11 @@
  */
 package org.springframework.ai.audio.transcription;
 
-import org.springframework.ai.model.ResponseMetadata;
-
-import java.util.HashMap;
+import org.springframework.ai.model.MutableResponseMetadata;
 
 /**
  * @author Piotr Olaszewski
  */
-public interface AudioTranscriptionResponseMetadata extends ResponseMetadata {
-
-	class DefaultAudioTranscriptionResponseMetadata extends HashMap<String, Object>
-			implements AudioTranscriptionResponseMetadata {
-
-	}
-
-	AudioTranscriptionResponseMetadata NULL = new AudioTranscriptionResponseMetadata.DefaultAudioTranscriptionResponseMetadata();
+public class AudioTranscriptionResponseMetadata extends MutableResponseMetadata {
 
 }

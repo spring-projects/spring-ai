@@ -32,8 +32,7 @@ import org.springframework.util.Assert;
  * @see RateLimit
  * @since 0.8.1
  */
-public class OpenAiAudioTranscriptionResponseMetadata extends MutableResponseMetadata
-		implements AudioTranscriptionResponseMetadata {
+public class OpenAiAudioTranscriptionResponseMetadata extends AudioTranscriptionResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %4$s }";
 
