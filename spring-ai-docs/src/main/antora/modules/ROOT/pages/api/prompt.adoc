@@ -44,55 +44,57 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 === Message
 
-The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, a categorization known as `MessageType`, and a list of media objects for those models that are multimodal.
+The `Message` interface encapsulates a Prompt textual content and a collection of metadata attributes and a categorization known as `MessageType`.
+
 The interface is defined as follows:
 
-image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
-
 ```java
-public interface Message extends Content {
-
-	MessageType getMessageType();
-
-}
-```
-
-and the Content interface is
-
-```java
-
 public interface Content {
 
 	String getContent();
 
 	Map<String, Object> getMetadata();
 }
+
+public interface Message extends Content {
+
+	MessageType getMessageType();
+}
 ```
 
-Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. Some models, like those from OpenAI, distinguish between message categories based on conversational roles. These roles are effectively mapped by the `MessageType`, as discussed below.
+The multimodal message types implement also the `MediaContent` interface providing a list of `Media` content objects.
 
+```java
+public interface MediaContent extends Content {
 
-== Roles
+	Collection<Media> getMedia();
 
-The evolution of prompts in AI has transitioned from basic, straightforward text to more organized and complex formats with specific roles and structures.
+}
+```
 
-Initially, prompts were simple strings – just lines of text.
-Over time, this evolved to include specific placeholders within these strings, like “USER:”, which the AI model could recognize and respond to accordingly.
-This was a step towards more structured prompts.
+Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. 
+The Models distinguish between message categories based on conversational roles. 
 
-OpenAI then introduced an even more organized approach.
-In their model, prompts are not merely single strings but a series of messages.
-Each message, while still in text form, is assigned a specific role.
+image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
+
+These roles are effectively mapped by the `MessageType`, as discussed below.
+
+==== Roles
+
+Each message is assigned a specific role.
 These roles categorize the messages, clarifying the context and purpose of each segment of the prompt for the AI model.
 This structured approach enhances the nuance and effectiveness of communication with the AI, as each part of the prompt plays a distinct and defined role in the interaction.
-
 
 The primary roles are:
 
 * System Role: Guides the AI's behavior and response style, setting parameters or rules for how the AI interprets and replies to the input. It's akin to providing instructions to the AI before initiating a conversation.
 * User Role: Represents the user's input – their questions, commands, or statements to the AI. This role is fundamental as it forms the basis of the AI's response.
-* Assistant Role: The AI's response to the user's input. More than just an answer or reaction, it's crucial for maintaining the flow of the conversation. By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
-* Function Role: This role deals with specific tasks or operations during the conversation. While the System Role sets the AI's overall behavior, the Function Role focuses on carrying out certain actions or commands the user asks for. It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking. This role allows the AI to offer practical help in addition to conversational responses.
+* Assistant Role: The AI's response to the user's input. 
+More than just an answer or reaction, it's crucial for maintaining the flow of the conversation. 
+By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
+The Assistant message may contain Function Tool Call request information as well.
+It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking.
+* Tool/Function Role: The Too/Function Role focuses on returning additional information in response to Tool Call Aisstnat Messages.
 
 Roles are represented as an enumeration in Spring AI as shown below
 
@@ -107,25 +109,7 @@ public enum MessageType {
 
 	TOOL("tool");
 
-	private final String value;
-
-	MessageType(String value) {
-		this.value = value;
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public static MessageType fromValue(String value) {
-		for (MessageType messageType : MessageType.values()) {
-			if (messageType.getValue().equals(value)) {
-				return messageType;
-			}
-		}
-		throw new IllegalArgumentException("Invalid MessageType value: " + value);
-	}
-
+    ...
 }
 ```
 
