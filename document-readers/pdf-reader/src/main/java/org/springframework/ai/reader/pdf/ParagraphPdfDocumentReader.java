@@ -63,11 +63,11 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	private final ParagraphManager paragraphTextExtractor;
 
-	private final PDDocument document;
+	protected final PDDocument document;
 
 	private PdfDocumentReaderConfig config;
 
-	private String resourceFileName;
+	protected String resourceFileName;
 
 	/**
 	 * Constructs a ParagraphPdfDocumentReader using a resource URL.
@@ -155,7 +155,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		return documents;
 	}
 
-	private Document toDocument(Paragraph from, Paragraph to) {
+	protected Document toDocument(Paragraph from, Paragraph to) {
 
 		String docText = this.getTextBetweenParagraphs(from, to);
 
@@ -164,13 +164,17 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		}
 
 		Document document = new Document(docText);
+		addMetadata(from, to, document);
+
+		return document;
+	}
+
+	protected void addMetadata(Paragraph from, Paragraph to, Document document) {
 		document.getMetadata().put(METADATA_TITLE, from.title());
 		document.getMetadata().put(METADATA_START_PAGE, from.startPageNumber());
 		document.getMetadata().put(METADATA_END_PAGE, to.startPageNumber());
 		document.getMetadata().put(METADATA_LEVEL, from.level());
 		document.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
-
-		return document;
 	}
 
 	public String getTextBetweenParagraphs(Paragraph fromParagraph, Paragraph toParagraph) {
