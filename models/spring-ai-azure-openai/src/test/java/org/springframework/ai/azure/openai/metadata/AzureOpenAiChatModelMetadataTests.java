@@ -188,7 +188,7 @@ class AzureOpenAiChatModelMetadataTests {
 	@SuppressWarnings("all")
 	static class SpringAzureOpenAiChatCompletionsController {
 
-		@PostMapping("/openai/deployments/gpt-35-turbo/chat/completions")
+		@PostMapping("/openai/deployments/gpt-4o/chat/completions")
 		ResponseEntity<?> chatCompletions(WebRequest request) {
 
 			String json = getJson();
@@ -207,7 +207,7 @@ class AzureOpenAiChatModelMetadataTests {
 							"id": "chatcmpl-6v7mkQj980V1yBec6ETrKPRqFjNw9",
 							"object": "chat.completion",
 							"created": 1679072642,
-							"model": "gpt-35-turbo",
+							"model": "gpt-4o",
 							"choices":[{
 								"index": 0,
 								"content_filter_results" : {

@@ -52,8 +52,8 @@ For example, a deployment named 'MyAiDeployment' could be configured to use eith
 
 To get started, follow these steps to create a deployment with the default settings:
 
-   Deployment Name: `gpt-35-turbo`
-   Model Name: `gpt-35-turbo`
+   Deployment Name: `gpt-4o`
+   Model Name: `gpt-4o`
 
 This Azure configuration aligns with the default configurations of the Spring Boot Azure AI Starter and its Autoconfiguration feature.
 If you use a different Deployment Name, make sure to update the configuration property accordingly:
@@ -132,7 +132,7 @@ The prefix `spring.ai.azure.openai.chat` is the property prefix that configures 
 It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. 
 The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. 
 The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly.
-Deployments model name to provide as part of this completions request. | gpt-35-turbo
+Deployments model name to provide as part of this completions request. | gpt-4o
 | spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate. | -
 | spring.ai.azure.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 | spring.ai.azure.openai.chat.options.topP | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. | -
@@ -225,7 +225,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 ----
 spring.ai.azure.openai.api-key=YOUR_API_KEY
 spring.ai.azure.openai.endpoint=YOUR_ENDPOINT
-spring.ai.azure.openai.chat.options.deployment-name=gpt-35-turbo
+spring.ai.azure.openai.chat.options.deployment-name=gpt-4o
 spring.ai.azure.openai.chat.options.temperature=0.7
 ----
 
@@ -296,7 +296,7 @@ var openAIClient = new OpenAIClientBuilder()
   .buildClient();
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
-  .withDeploymentName("gpt-35-turbo")
+  .withDeploymentName("gpt-4o")
   .withTemperature(0.4f)
   .withMaxTokens(200)
   .build();
@@ -312,5 +312,5 @@ Flux<ChatResponse> response = chatModel.stream(
 
 ----
 
-NOTE: the `gpt-35-turbo` is actually the `Deployment Name` as presented in the Azure AI Portal.
+NOTE: the `gpt-4o` is actually the `Deployment Name` as presented in the Azure AI Portal.
 
