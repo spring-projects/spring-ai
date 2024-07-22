@@ -44,6 +44,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author liuzhifei
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -622,14 +623,17 @@ public class DefaultChatClient implements ChatClient {
 			Assert.hasText(name, "the name must be non-null and non-empty");
 			Assert.hasText(description, "the description must be non-null and non-empty");
 			Assert.notNull(function, "the function must be non-null");
-			var fcw = FunctionCallbackWrapper.builder(function)
+			var fcwBuilder = FunctionCallbackWrapper.builder(function)
 				.withDescription(description)
 				.withName(name)
 				.withInputType(functionSpec.getInputType())
-				.withInputTypeSchema(functionSpec.getInputTypeSchema())
-				.withResponseConverter(Object::toString)
-				.build();
-			this.functionCallbacks.add(fcw);
+				.withResponseConverter(Object::toString);
+			String inputTypeSchema = functionSpec.getInputTypeSchema();
+			if (StringUtils.hasText(inputTypeSchema)) {
+				fcwBuilder.withInputTypeSchema(inputTypeSchema);
+			}
+
+			this.functionCallbacks.add(fcwBuilder.build());
 			return this;
 		}
 

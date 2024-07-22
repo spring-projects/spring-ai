@@ -43,6 +43,7 @@ import org.springframework.util.MimeType;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author liuzhifei
  * @since 1.0.0
  */
 public interface ChatClient {

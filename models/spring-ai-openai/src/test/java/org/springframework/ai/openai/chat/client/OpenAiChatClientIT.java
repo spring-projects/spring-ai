@@ -16,10 +16,12 @@
 package org.springframework.ai.openai.chat.client;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.DefaultChatClient;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -236,6 +239,50 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(response).containsAnyOf("30.0", "30");
 		assertThat(response).containsAnyOf("10.0", "10");
 		assertThat(response).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void clientFunctionCallAddTest() throws NoSuchMethodException {
+
+		var chatClient = ChatClient.builder(chatModel)
+			.defaultUser(u -> u.text("What's the weather like in Shanghai?"))
+			.build();
+		MyFunction myFunction = new MyFunction();
+		Method currentTemp = MyFunction.class.getMethod("getCurrentTemp", MyFunction.Req.class);
+		Function<Object, Object> function = createFunction(myFunction, currentTemp);
+		var builder = new DefaultChatClient.DefaultFunctionSpec.Builder<MyFunction.Req>();
+		DefaultChatClient.DefaultFunctionSpec<MyFunction.Req> defaultFunctionSpec = builder
+			.withDescription("get current temp")
+			.withName("currentTemp")
+			.withInputType(MyFunction.Req.class)
+			.build();
+		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+			.function(defaultFunctionSpec, function);
+		String content = chatClientRequestSpec.call().content();
+		assertThat(content).containsAnyOf("23.0", "23");
+	}
+
+	public static <T, R> Function<T, R> createFunction(Object obj, Method method) {
+		return (T t) -> {
+			try {
+				return (R) method.invoke(obj, t);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		};
+	}
+
+	public static class MyFunction {
+
+		public record Req(String city) {
+
+		}
+
+		public String getCurrentTemp(Req req) {
+			return "23";
+		}
+
 	}
 
 	@Test
