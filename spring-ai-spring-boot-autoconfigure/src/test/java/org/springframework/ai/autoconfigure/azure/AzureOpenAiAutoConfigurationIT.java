@@ -55,7 +55,7 @@ public class AzureOpenAiAutoConfigurationIT {
 	private static String EMBEDDING_MODEL_NAME = "text-embedding-ada-002";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
-			// @formatter:off
+	// @formatter:off
 			"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 			"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"),
 
@@ -98,11 +98,11 @@ public class AzureOpenAiAutoConfigurationIT {
 			assertThat(responses.size()).isGreaterThan(10);
 
 			String stitchedResponseContent = responses.stream()
-					.map(ChatResponse::getResults)
-					.flatMap(List::stream)
-					.map(Generation::getOutput)
-					.map(AssistantMessage::getContent)
-					.collect(Collectors.joining());
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getContent)
+				.collect(Collectors.joining());
 
 			assertThat(stitchedResponseContent).contains("Blackbeard");
 		});
@@ -114,7 +114,7 @@ public class AzureOpenAiAutoConfigurationIT {
 			AzureOpenAiEmbeddingModel embeddingModel = context.getBean(AzureOpenAiEmbeddingModel.class);
 
 			EmbeddingResponse embeddingResponse = embeddingModel
-					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 			assertThat(embeddingResponse.getResults()).hasSize(2);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
@@ -167,10 +167,11 @@ public class AzureOpenAiAutoConfigurationIT {
 	void transcribe() {
 		contextRunner.run(context -> {
 			AzureOpenAiAudioTranscriptionModel transcriptionModel = context
-					.getBean(AzureOpenAiAudioTranscriptionModel.class);
+				.getBean(AzureOpenAiAudioTranscriptionModel.class);
 			Resource audioFile = new ClassPathResource("/speech/jfk.flac");
 			String response = transcriptionModel.call(audioFile);
-			assertThat(response).isEqualTo("And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.");
+			assertThat(response).isEqualTo(
+					"And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.");
 		});
 	}
 

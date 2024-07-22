@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 class AzureOpenAiAudioTranscriptionModelIT {
+
 	@Value("classpath:/speech/jfk.flac")
 	private Resource audioFile;
 
@@ -33,9 +34,9 @@ class AzureOpenAiAudioTranscriptionModelIT {
 	@Test
 	void transcriptionTest() {
 		AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-				.withResponseFormat(AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.TEXT)
-				.withTemperature(0f)
-				.build();
+			.withResponseFormat(AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.TEXT)
+			.withTemperature(0f)
+			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
 		AudioTranscriptionResponse response = transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
@@ -47,11 +48,11 @@ class AzureOpenAiAudioTranscriptionModelIT {
 		AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat responseFormat = AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.VTT;
 
 		AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-				.withLanguage("en")
-				.withPrompt("Ask not this, but ask that")
-				.withTemperature(0f)
-				.withResponseFormat(responseFormat)
-				.build();
+			.withLanguage("en")
+			.withPrompt("Ask not this, but ask that")
+			.withTemperature(0f)
+			.withResponseFormat(responseFormat)
+			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
 		AudioTranscriptionResponse response = transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
@@ -64,18 +65,19 @@ class AzureOpenAiAudioTranscriptionModelIT {
 		@Bean
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-					.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-					.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-					.buildClient();
+				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
+				.buildClient();
 		}
 
 		@Bean
 		public AzureOpenAiAudioTranscriptionModel azureOpenAiChatModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiAudioTranscriptionModel(openAIClient,
 					AzureOpenAiAudioTranscriptionOptions.builder()
-							.withDeploymentName(System.getenv("AZURE_OPENAI_TRANSCRIPTION_DEPLOYMENT_NAME"))
-							.build());
+						.withDeploymentName(System.getenv("AZURE_OPENAI_TRANSCRIPTION_DEPLOYMENT_NAME"))
+						.build());
 		}
 
 	}
+
 }
