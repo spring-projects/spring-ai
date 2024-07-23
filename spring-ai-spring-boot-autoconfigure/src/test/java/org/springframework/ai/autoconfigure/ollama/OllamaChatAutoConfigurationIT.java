@@ -72,7 +72,7 @@ public class OllamaChatAutoConfigurationIT {
 		createImage(ollamaContainer, OLLAMA_WITH_MODEL);
 	}
 
-	static String baseUrl;
+	static String baseUrl = "http://localhost:11434";
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {

@@ -46,6 +46,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -134,7 +135,24 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
 			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext) {
 
-		super(functionCallbackContext);
+		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackContext, List.of());
+	}
+
+	/**
+	 * Construct a new {@link AnthropicChatModel} instance.
+	 * @param anthropicApi the lower-level API for the Anthropic service.
+	 * @param defaultOptions the default options used for the chat completion requests.
+	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
+	 * @param functionCallbackContext the function callback context used to store the
+	 * state of the function calls.
+	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
+	 * calls.
+	 */
+	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
+			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
+			List<FunctionCallback> toolFunctionCallbacks) {
+
+		super(functionCallbackContext, defaultOptions, toolFunctionCallbacks);
 
 		Assert.notNull(anthropicApi, "AnthropicApi must not be null");
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
@@ -318,20 +336,16 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, AnthropicChatOptions.class);
 
-			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-					IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(promptEnabledFunctions);
+			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 
-		if (this.defaultOptions != null) {
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
 		}
+
+		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
 

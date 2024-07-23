@@ -41,7 +41,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -75,11 +74,8 @@ public class OpenAiAutoConfiguration {
 		var openAiApi = openAiApi(chatProperties, commonProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler, "chat");
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
-		return new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+		return new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks, retryTemplate);
 	}
 
 	@Bean

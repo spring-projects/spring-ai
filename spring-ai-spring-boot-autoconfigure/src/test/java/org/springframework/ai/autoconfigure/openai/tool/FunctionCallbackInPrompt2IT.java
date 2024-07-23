@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -41,11 +42,12 @@ public class FunctionCallbackInPrompt2IT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			ChatClient chatClient = ChatClient.builder(chatModel).build();
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
 
 			// @formatter:off
 			chatClient.prompt()
@@ -58,19 +60,18 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("10.0", "10");
-			assertThat(content).containsAnyOf("15.0", "15");
-		});
+				assertThat(content).contains("30", "10", "15");
+			});
 	}
 
 	@Test
 	void functionCallTest2() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
@@ -84,18 +85,19 @@ public class FunctionCallbackInPrompt2IT {
 							})
 					.call().content();
 			// @formatter:on
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).contains("18");
-		});
+				assertThat(content).contains("18");
+			});
 	}
 
 	@Test
 	void streamingFunctionCallTest() {
 
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
@@ -105,12 +107,10 @@ public class FunctionCallbackInPrompt2IT {
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("10.0", "10");
-			assertThat(content).containsAnyOf("15.0", "15");
-		});
+				assertThat(content).contains("30", "10", "15");
+			});
 	}
 
 }

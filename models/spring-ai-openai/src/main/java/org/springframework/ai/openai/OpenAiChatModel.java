@@ -41,6 +41,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -131,10 +132,29 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		super(functionCallbackContext);
+		this(openAiApi, options, functionCallbackContext, List.of(), retryTemplate);
+	}
+
+	/**
+	 * Initializes a new instance of the OpenAiChatModel.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat model.
+	 * @param functionCallbackContext The function callback context.
+	 * @param toolFunctionCallbacks The tool function callbacks.
+	 * @param retryTemplate The retry template.
+	 */
+	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
+		super(functionCallbackContext, options, toolFunctionCallbacks);
+
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
+				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
+
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
@@ -302,8 +322,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		Set<String> functionsForThisRequest = new HashSet<>();
-
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
 				Object content = message.getContent();
@@ -358,33 +376,29 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
+		Set<String> enabledToolsToUse = new HashSet<>();
+
 		if (prompt.getOptions() != null) {
 			OpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, OpenAiChatOptions.class);
 
-			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-					IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(promptEnabledFunctions);
+			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 
-		if (this.defaultOptions != null) {
-
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			enabledToolsToUse.addAll(this.defaultOptions.getFunctions());
 		}
 
+		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+
 		// Add the enabled functions definitions to the request's tools parameter.
-		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
+		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
-					request, ChatCompletionRequest.class);
+					OpenAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					ChatCompletionRequest.class);
 		}
 
 		// Remove `streamOptions` from the request if it is not a streaming request

@@ -18,10 +18,6 @@ package org.springframework.ai.autoconfigure.vertexai.gemini;
 import java.io.IOException;
 import java.util.List;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.vertexai.VertexAI;
-
-import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiChatProperties;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
@@ -35,6 +31,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.vertexai.VertexAI;
 
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
@@ -84,11 +83,8 @@ public class VertexAiGeminiAutoConfiguration {
 
 		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
-		return new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(), functionCallbackContext);
+		return new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks);
 	}
 
 	/**

@@ -15,12 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.azure.openai;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.credential.KeyCredential;
-import com.azure.core.credential.TokenCredential;
-import com.azure.core.util.ClientOptions;
+import java.util.List;
+
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
@@ -36,10 +32,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.credential.KeyCredential;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.util.ClientOptions;
 
 /**
  * @author Piotr Olaszewski
@@ -103,11 +103,8 @@ public class AzureOpenAiAutoConfiguration {
 			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext) {
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
-		return new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext);
+		return new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks);
 	}
 
 	@Bean

@@ -42,6 +42,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -121,7 +122,12 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext) {
-		super(functionCallbackContext);
+		this(microsoftOpenAiClient, options, functionCallbackContext, List.of());
+	}
+
+	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
+		super(functionCallbackContext, options, toolFunctionCallbacks);
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
@@ -267,23 +273,17 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
 
-		if (this.defaultOptions != null) {
+		options = this.merge(options, this.defaultOptions);
 
-			options = this.merge(options, this.defaultOptions);
-
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-		}
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions()))
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
 
 		if (prompt.getOptions() != null) {
 			AzureOpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, AzureOpenAiChatOptions.class);
 			options = this.merge(updatedRuntimeOptions, options);
 
-			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-					IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(promptEnabledFunctions);
+			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.

@@ -39,6 +39,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
 import org.springframework.beans.factory.DisposableBean;
@@ -145,8 +146,13 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
 			FunctionCallbackContext functionCallbackContext) {
+		this(vertexAI, options, functionCallbackContext, List.of());
+	}
 
-		super(functionCallbackContext);
+	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
+
+		super(functionCallbackContext, options, toolFunctionCallbacks);
 
 		Assert.notNull(vertexAI, "VertexAI must not be null");
 		Assert.notNull(options, "VertexAiGeminiChatOptions must not be null");
@@ -281,28 +287,21 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		var generativeModelBuilder = new GenerativeModel.Builder().setModelName(this.defaultOptions.getModel())
 			.setVertexAi(this.vertexAI);
 
-		VertexAiGeminiChatOptions updatedRuntimeOptions = null;
+		VertexAiGeminiChatOptions updatedRuntimeOptions = VertexAiGeminiChatOptions.builder().build();
 
 		if (prompt.getOptions() != null) {
 			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 					VertexAiGeminiChatOptions.class);
 
-			functionsForThisRequest
-				.addAll(handleFunctionCallbackConfigurations(updatedRuntimeOptions, IS_RUNTIME_CALL));
+			functionsForThisRequest.addAll(runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 		}
 
-		if (this.defaultOptions != null) {
-
-			functionsForThisRequest.addAll(handleFunctionCallbackConfigurations(this.defaultOptions, !IS_RUNTIME_CALL));
-
-			if (updatedRuntimeOptions == null) {
-				updatedRuntimeOptions = VertexAiGeminiChatOptions.builder().build();
-			}
-
-			updatedRuntimeOptions = ModelOptionsUtils.merge(updatedRuntimeOptions, this.defaultOptions,
-					VertexAiGeminiChatOptions.class);
-
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
 		}
+
+		updatedRuntimeOptions = ModelOptionsUtils.merge(updatedRuntimeOptions, this.defaultOptions,
+				VertexAiGeminiChatOptions.class);
 
 		if (updatedRuntimeOptions != null) {
 

@@ -45,6 +45,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -95,7 +96,13 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		super(functionCallbackContext);
+		this(mistralAiApi, options, functionCallbackContext, List.of(), retryTemplate);
+	}
+
+	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
+		super(functionCallbackContext, options, toolFunctionCallbacks);
 		Assert.notNull(mistralAiApi, "MistralAiApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
@@ -292,22 +299,17 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		var request = new MistralAiApi.ChatCompletionRequest(chatCompletionMessages, stream);
 
-		if (this.defaultOptions != null) {
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, MistralAiApi.ChatCompletionRequest.class);
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
 		}
+
+		request = ModelOptionsUtils.merge(request, this.defaultOptions, MistralAiApi.ChatCompletionRequest.class);
 
 		if (prompt.getOptions() != null) {
 			var updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 					MistralAiChatOptions.class);
 
-			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-					IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(promptEnabledFunctions);
+			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, MistralAiApi.ChatCompletionRequest.class);
 		}
