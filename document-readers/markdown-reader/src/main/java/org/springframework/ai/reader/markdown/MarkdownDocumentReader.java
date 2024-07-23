@@ -92,17 +92,13 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		@Override
 		public void visit(SoftLineBreak softLineBreak) {
-			if (!currentParagraphs.isEmpty()) {
-				currentParagraphs.add(" ");
-			}
+			lineBreakToSpaceTranslate();
 			super.visit(softLineBreak);
 		}
 
 		@Override
 		public void visit(HardLineBreak hardLineBreak) {
-			if (!currentParagraphs.isEmpty()) {
-				currentParagraphs.add(" ");
-			}
+			lineBreakToSpaceTranslate();
 			super.visit(hardLineBreak);
 		}
 
@@ -135,6 +131,12 @@ public class MarkdownDocumentReader implements DocumentReader {
 				currentParagraphs.clear();
 			}
 			currentDocumentBuilder = Document.builder();
+		}
+
+		private void lineBreakToSpaceTranslate() {
+			if (!currentParagraphs.isEmpty()) {
+				currentParagraphs.add(" ");
+			}
 		}
 
 	}
