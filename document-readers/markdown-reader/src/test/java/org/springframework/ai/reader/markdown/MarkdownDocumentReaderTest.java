@@ -120,11 +120,11 @@ class MarkdownDocumentReaderTest {
 			assertThat(document.getMetadata()).isEqualTo(Map.of());
 			assertThat(document.getContent()).isEqualTo("This is a Java sample application:");
 		}, document -> {
-			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "code", "block"));
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "category", "code_block"));
 			assertThat(document.getContent()).startsWith("package com.example.demo;")
 				.contains("SpringApplication.run(DemoApplication.class, args);");
 		}, document -> {
-			assertThat(document.getMetadata()).isEqualTo(Map.of("code", "inline"));
+			assertThat(document.getMetadata()).isEqualTo(Map.of("category", "code_inline"));
 			assertThat(document.getContent()).isEqualTo(
 					"Markdown also provides the possibility to use inline code formatting throughout the entire sentence.");
 		}, document -> {
@@ -132,7 +132,7 @@ class MarkdownDocumentReaderTest {
 			assertThat(document.getContent())
 				.isEqualTo("Another possibility is to set block code without specific highlighting:");
 		}, document -> {
-			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "code", "block"));
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "category", "code_block"));
 			assertThat(document.getContent()).isEqualTo("./mvnw spring-javaformat:apply\n");
 		});
 	}
@@ -149,18 +149,50 @@ class MarkdownDocumentReaderTest {
 		List<Document> documents = reader.get();
 
 		assertThat(documents).satisfiesExactly(document -> {
-			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "code", "block"));
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "category", "code_block"));
 			assertThat(document.getContent()).startsWith("This is a Java sample application: package com.example.demo")
 				.contains("SpringApplication.run(DemoApplication.class, args);");
 		}, document -> {
-			assertThat(document.getMetadata()).isEqualTo(Map.of("code", "inline"));
+			assertThat(document.getMetadata()).isEqualTo(Map.of("category", "code_inline"));
 			assertThat(document.getContent()).isEqualTo(
 					"Markdown also provides the possibility to use inline code formatting throughout the entire sentence.");
 		}, document -> {
-			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "code", "block"));
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "category", "code_block"));
 			assertThat(document.getContent()).isEqualTo(
 					"Another possibility is to set block code without specific highlighting: ./mvnw spring-javaformat:apply\n");
 		});
+	}
+
+	@Test
+	void testBlockquote() {
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/blockquote.md");
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(2)
+			.extracting(Document::getMetadata, Document::getContent)
+			.containsOnly(tuple(Map.of(),
+					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue."),
+					tuple(Map.of("category", "blockquote"),
+							"Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget sapien odio. Maecenas urna lectus, pellentesque in accumsan aliquam, congue eu libero. Ut rhoncus nec justo a porttitor. Pellentesque auctor pharetra eros, viverra sodales lorem aliquet id. Curabitur semper nisi vel sem interdum suscipit."));
+	}
+
+	@Test
+	void testBlockquoteWhenBlockquoteShouldNotBeSeparatedDocument() {
+		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+			.withIncludeBlockquote(true)
+			.build();
+
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/blockquote.md", config);
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(1);
+
+		Document documentsFirst = documents.get(0);
+		assertThat(documentsFirst.getMetadata()).isEqualTo(Map.of("category", "blockquote"));
+		assertThat(documentsFirst.getContent()).isEqualTo(
+				"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue. Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget sapien odio. Maecenas urna lectus, pellentesque in accumsan aliquam, congue eu libero. Ut rhoncus nec justo a porttitor. Pellentesque auctor pharetra eros, viverra sodales lorem aliquet id. Curabitur semper nisi vel sem interdum suscipit.");
 	}
 
 }

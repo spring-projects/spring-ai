@@ -103,9 +103,20 @@ public class MarkdownDocumentReader implements DocumentReader {
 		}
 
 		@Override
+		public void visit(BlockQuote blockQuote) {
+			if (!config.includeBlockquote) {
+				buildAndFlush();
+			}
+
+			translateLineBreakToSpace();
+			currentDocumentBuilder.withMetadata("category", "blockquote");
+			super.visit(blockQuote);
+		}
+
+		@Override
 		public void visit(Code code) {
 			currentParagraphs.add(code.getLiteral());
-			currentDocumentBuilder.withMetadata("code", "inline");
+			currentDocumentBuilder.withMetadata("category", "code_inline");
 			super.visit(code);
 		}
 
@@ -117,7 +128,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 			translateLineBreakToSpace();
 			currentParagraphs.add(fencedCodeBlock.getLiteral());
-			currentDocumentBuilder.withMetadata("code", "block");
+			currentDocumentBuilder.withMetadata("category", "code_block");
 			currentDocumentBuilder.withMetadata("lang", fencedCodeBlock.getInfo());
 
 			buildAndFlush();
