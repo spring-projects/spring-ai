@@ -17,7 +17,9 @@ package org.springframework.ai.openai.chat.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
@@ -120,6 +123,49 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
+
+	}
+
+	@Test
+	void functionCallWithExplicitInputType() throws NoSuchMethodException {
+
+		var chatClient = ChatClient.create(chatModel);
+
+		Method currentTemp = MyFunction.class.getMethod("getCurrentTemp", MyFunction.Req.class);
+
+		// NOTE: Lambda functions do not retain the type information, so we need to
+		// provide the input type explicitly.
+		MyFunction myFunction = new MyFunction();
+		Function<MyFunction.Req, Object> function = createFunction(myFunction, currentTemp);
+
+		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+			.user("What's the weather like in Shanghai?")
+			.function("currentTemp", "get current temp", MyFunction.Req.class, function);
+
+		String content = chatClientRequestSpec.call().content();
+
+		assertThat(content).contains("23");
+	}
+
+	public static <T, R> Function<T, R> createFunction(Object obj, Method method) {
+		return (T t) -> {
+			try {
+				return (R) method.invoke(obj, t);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		};
+	}
+
+	public static class MyFunction {
+
+		public record Req(String city) {
+		}
+
+		public String getCurrentTemp(Req req) {
+			return "23";
+		}
 
 	}
 

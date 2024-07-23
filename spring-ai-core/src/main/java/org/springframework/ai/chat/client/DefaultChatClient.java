@@ -610,6 +610,11 @@ public class DefaultChatClient implements ChatClient {
 
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
+			return this.function(name, description, null, function);
+		}
+
+		public <I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
+				java.util.function.Function<I, O> function) {
 
 			Assert.hasText(name, "the name must be non-null and non-empty");
 			Assert.hasText(description, "the description must be non-null and non-empty");
@@ -618,6 +623,7 @@ public class DefaultChatClient implements ChatClient {
 			var fcw = FunctionCallbackWrapper.builder(function)
 				.withDescription(description)
 				.withName(name)
+				.withInputType(inputType)
 				.withResponseConverter(Object::toString)
 				.build();
 			this.functionCallbacks.add(fcw);

@@ -189,6 +189,9 @@ public interface ChatClient {
 		<I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function);
 
+		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
+				java.util.function.Function<I, O> function);
+
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
 		ChatClientRequestSpec system(String text);
