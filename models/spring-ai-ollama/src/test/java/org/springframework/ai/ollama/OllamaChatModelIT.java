@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
@@ -58,18 +59,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled("For manual smoke testing only.")
 class OllamaChatModelIT {
 
-	private static String MODEL = "mistral";
+	private static final String MODEL = OllamaModel.MISTRAL.getName();
 
 	private static final Log logger = LogFactory.getLog(OllamaChatModelIT.class);
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.2.8");
 
 	static String baseUrl;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
+		logger.info("Start pulling the '" + MODEL + " ' model ... can take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", MODEL);
 		logger.info(MODEL + " pulling competed!");
 

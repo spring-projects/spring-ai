@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -44,6 +46,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * Java Client for the Ollama API. https://ollama.ai/
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 // @formatter:off
@@ -122,59 +125,43 @@ public class OllamaApi {
 	/**
 	 * The request object sent to the /generate endpoint.
 	 *
-	 * @param model (required) The model to use for completion.
-	 * @param prompt (required) The prompt(s) to generate completions for.
-	 * @param format (optional) The format to return the response in. Currently the only
-	 * accepted value is "json".
-	 * @param options (optional) additional model parameters listed in the documentation
-	 * for the Modelfile such as temperature.
-	 * @param system (optional) system prompt to (overrides what is defined in the Modelfile).
-	 * @param template (optional) the full prompt or prompt template (overrides what is
-	 *  defined in the Modelfile).
-	 * @param context the context parameter returned from a previous request to /generate,
-	 * this can be used to keep a short conversational memory.
-	 * @param stream (optional) if false the response will be returned as a single
-	 * response object, rather than a stream of objects.
-	 * @param raw (optional) if true no formatting will be applied to the prompt and no
-	 * context will be returned. You may choose to use the raw parameter if you are
-	 * specifying a full templated prompt in your request to the API, and are managing
-	 * history yourself.
-	 * @param images (optional) a list of base64-encoded images (for multimodal models such as llava).
-	 * @param keepAlive (optional) controls how long the model will stay loaded into memory following the request (default: 5m).
+	 * @param model The model to use for completion. It should be a name familiar to Ollama from the <a href="https://ollama.com/library">Library</a>.
+	 * @param prompt The prompt(s) to generate completions for.
+	 * @param suffix The text that comes after the inserted text.
+	 * @param system Overrides the model's default system message/prompt.
+	 * @param template Overrides the model's default prompt template.
+	 * @param context The context parameter returned from a previous call to /generate. It can be used to keep a short conversational memory.
+	 * @param stream Specifies whether the response is streaming. If false the response will be returned as a single response object, rather than a stream of objects.
+	 * @param raw If set to true, it means that no formatting will be applied to the prompt. You may choose to use the raw parameter if you are specifying a full templated prompt in your request to the API.
+	 * @param format The format to return the response in. Currently, the only accepted value is "json".
+	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
+	 * @param images A list of base64-encoded images accompanying this request, for multimodal models such as "llava".
+	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
+	 *
+	 * @see <a href=
+	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion">Generation API</a>
+	 * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama
+	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("prompt") String prompt,
-			@JsonProperty("format") String format,
-			@JsonProperty("options") Map<String, Object> options,
+			@JsonProperty("suffix") String suffix,
 			@JsonProperty("system") String system,
 			@JsonProperty("template") String template,
 			@JsonProperty("context") List<Integer> context,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("raw") Boolean raw,
+			@JsonProperty("format") String format,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("images") List<String> images,
-			@JsonProperty("keep_alive") String keepAlive) {
+			@JsonProperty("options") Map<String, Object> options
+	) {
 
-		/**
-		 * Short cut constructor to create a CompletionRequest without options.
-		 * @param model The model used for completion.
-		 * @param prompt The prompt(s) to generate completions for.
-		 * @param stream Whether to stream the response.
-		 */
-		public GenerateRequest(String model, String prompt, Boolean stream) {
-			this(model, prompt, null, null, null, null, null, stream, null, null, null);
-		}
-
-		/**
-		 * Short cut constructor to create a CompletionRequest without options.
-		 * @param model The model used for completion.
-		 * @param prompt The prompt(s) to generate completions for.
-		 * @param enableJsonFormat Whether to return the response in json format.
-		 * @param stream Whether to stream the response.
-		 */
-		public GenerateRequest(String model, String prompt, boolean enableJsonFormat, Boolean stream) {
-			this(model, prompt, (enableJsonFormat) ? "json" : null, null, null, null, null, stream, null, null, null);
+		public GenerateRequest {
+			Assert.hasText(model, "model must not be null or empty");
+			Assert.hasText(prompt, "prompt must not be null or empty");
 		}
 
 		/**
@@ -186,18 +173,18 @@ public class OllamaApi {
 		}
 
 		public static class Builder {
-
 			private String model;
 			private final String prompt;
-			private String format;
-			private Map<String, Object> options;
+			private String suffix;
 			private String system;
 			private String template;
 			private List<Integer> context;
 			private Boolean stream;
 			private Boolean raw;
-			private List<String> images;
+			private String format;
 			private String keepAlive;
+			private List<String> images;
+			private Map<String, Object> options;
 
 			public Builder(String prompt) {
 				this.prompt = prompt;
@@ -208,18 +195,8 @@ public class OllamaApi {
 				return this;
 			}
 
-			public Builder withFormat(String format) {
-				this.format = format;
-				return this;
-			}
-
-			public Builder withOptions(Map<String, Object> options) {
-				this.options = options;
-				return this;
-			}
-
-			public Builder withOptions(OllamaOptions options) {
-				this.options = options.toMap();
+			public Builder withSuffix(String suffix) {
+				this.suffix = suffix;
 				return this;
 			}
 
@@ -248,8 +225,8 @@ public class OllamaApi {
 				return this;
 			}
 
-			public Builder withImages(List<String> images) {
-				this.images = images;
+			public Builder withFormat(String format) {
+				this.format = format;
 				return this;
 			}
 
@@ -258,8 +235,23 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withImages(List<String> images) {
+				this.images = images;
+				return this;
+			}
+
+			public Builder withOptions(Map<String, Object> options) {
+				this.options = options;
+				return this;
+			}
+
+			public Builder withOptions(OllamaOptions options) {
+				this.options = options.toMap();
+				return this;
+			}
+
 			public GenerateRequest build() {
-				return new GenerateRequest(model, prompt, format, options, system, template, context, stream, raw, images, keepAlive);
+				return new GenerateRequest(model, prompt, suffix, system, template, context, stream, raw, format, keepAlive, images, options);
 			}
 
 		}
@@ -270,13 +262,13 @@ public class OllamaApi {
 	 * response is generated in tokens per second (token/s), divide eval_count /
 	 * eval_duration.
 	 *
-	 * @param model The model used for completion.
-	 * @param createdAt When the request was made.
-	 * @param response The completion response. Empty if the response was streamed, if not
-	 * streamed, this will contain the full response
+	 * @param model The model used for generating the response.
+	 * @param createdAt The timestamp of the response generation.
+	 * @param response The textual response itself. Empty if the response was streamed. If not streamed, this will contain the full response.
 	 * @param done Whether this is the final response. If true, this response may be
 	 * followed by another response with the following, additional fields: context,
 	 * prompt_eval_count, prompt_eval_duration, eval_count, eval_duration.
+	 * @param doneReason The reason the model stopped generating text.
 	 * @param context Encoding of the conversation used in this response, this can be sent
 	 * in the next request to keep a conversational memory.
 	 * @param totalDuration Time spent generating the response.
@@ -285,6 +277,11 @@ public class OllamaApi {
 	 * @param promptEvalDuration Time spent evaluating the prompt.
 	 * @param evalCount Number of tokens in the response.
 	 * @param evalDuration Time spent generating the response.
+	 *
+	 * @see <a href=
+	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion">Generation API</a>
+	 * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama
+	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateResponse(
@@ -292,13 +289,15 @@ public class OllamaApi {
 			@JsonProperty("created_at") Instant createdAt,
 			@JsonProperty("response") String response,
 			@JsonProperty("done") Boolean done,
+			@JsonProperty("done_reason") String doneReason,
 			@JsonProperty("context") List<Integer> context,
 			@JsonProperty("total_duration") Duration totalDuration,
 			@JsonProperty("load_duration") Duration loadDuration,
 			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
 			@JsonProperty("prompt_eval_duration") Duration promptEvalDuration,
 			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Duration evalDuration) {
+			@JsonProperty("eval_duration") Duration evalDuration
+	) {
 	}
 
 	/**
@@ -356,13 +355,14 @@ public class OllamaApi {
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
-			@JsonProperty("images") List<String> images) {
+			@JsonProperty("images") List<String> images,
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls
+	) {
 
 		/**
 		 * The role of the message in the conversation.
 		 */
 		public enum Role {
-
 			/**
 			 * System message type used as instructions to the model.
 			 */
@@ -374,8 +374,33 @@ public class OllamaApi {
 			/**
 			 * Assistant message type. Usually the response from the model.
 			 */
-			@JsonProperty("assistant") ASSISTANT;
+			@JsonProperty("assistant") ASSISTANT,
+			/**
+			 * Tool message type.
+			 */
+			@JsonProperty("tool") TOOL;
+		}
 
+		/**
+		 * The relevant tool call.
+		 *
+		 * @param function The function definition.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCall(
+				@JsonProperty("function") ToolCallFunction function) {
+		}
+
+		/**
+		 * The function definition for a tool call.
+		 *
+		 * @param name The name of the function.
+		 * @param arguments The arguments that the model expects you to pass to the function.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCallFunction(
+				@JsonProperty("name") String name,
+				@JsonProperty("arguments") Map<String,Object> arguments) {
 		}
 
 		public static Builder builder(Role role) {
@@ -383,10 +408,10 @@ public class OllamaApi {
 		}
 
 		public static class Builder {
-
 			private final Role role;
 			private String content;
 			private List<String> images;
+			private List<ToolCall> toolCalls;
 
 			public Builder(Role role) {
 				this.role = role;
@@ -402,25 +427,94 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withToolCalls(List<ToolCall> toolCalls) {
+				this.toolCalls = toolCalls;
+				return this;
+			}
+
 			public Message build() {
-				return new Message(role, content, images);
+				return new Message(role, content, images, toolCalls);
 			}
 
 		}
 	}
 
 	/**
+	 * Represents a tool the model may call. Currently, only functions are supported as a tool.
+	 *
+	 * @param type The type of the tool. Currently, only 'function' is supported.
+	 * @param function The function definition.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record Tool(
+			@JsonProperty("type") Type type,
+			@JsonProperty("function") ToolFunction function
+	) {
+
+		/**
+		 * Create a tool of type 'function' and the given function definition.
+		 * @param function function definition.
+		 */
+		@ConstructorBinding
+		public Tool(ToolFunction function) {
+			this(Type.FUNCTION, function);
+		}
+
+		/**
+		 * Types of tools.
+		 */
+		public enum Type {
+			/**
+			 * Function tool type.
+			 */
+			@JsonProperty("function") FUNCTION
+		}
+
+		/**
+		 * Function definition.
+		 *
+		 * @param description A description of what the function does, used by the model to choose when and how to call
+		 * the function.
+		 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes,
+		 * with a maximum length of 64.
+		 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
+		 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+		 */
+		public record ToolFunction(
+				@JsonProperty("description") String description,
+				@JsonProperty("name") String name,
+				@JsonProperty("parameters") Map<String, Object> parameters) {
+
+			/**
+			 * Create tool function definition.
+			 *
+			 * @param description tool function description.
+			 * @param name tool function name.
+			 * @param jsonSchema tool function schema as json.
+			 */
+			@ConstructorBinding
+			public ToolFunction(String description, String name, String jsonSchema) {
+				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+			}
+		}
+	}
+
+	/**
 	 * Chat request object.
 	 *
-	 * @param model The model to use for completion.
-	 * @param messages The list of messages to chat with.
-	 * @param stream Whether to stream the response.
-	 * @param format The format to return the response in. Currently, the only accepted
-	 * value is "json".
-	 * @param keepAlive The duration to keep the model loaded in ollama while idle. https://pkg.go.dev/time#ParseDuration
-	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
-	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
-	 * map.
+	 * @param model The model to use for completion. It should be a name familiar to Ollama from the <a href="https://ollama.com/library">Library</a>.
+	 * @param messages The list of messages in the chat. This can be used to keep a chat memory.
+	 * @param stream Whether to stream the response. If false, the response will be returned as a single response object rather than a stream of objects.
+	 * @param format The format to return the response in. Currently, the only accepted value is "json".
+	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
+	 * @param tools List of tools the model has access to.
+	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it. You can use the {@link OllamaOptions} builder to create the options then {@link OllamaOptions#toMap()} to convert the options into a map.
+	 *
+	 * @see <a href=
+	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
+	 * Completion API</a>
+	 * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama
+	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatRequest(
@@ -429,7 +523,9 @@ public class OllamaApi {
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
 			@JsonProperty("keep_alive") String keepAlive,
-			@JsonProperty("options") Map<String, Object> options) {
+			@JsonProperty("tools") List<Tool> tools,
+			@JsonProperty("options") Map<String, Object> options
+	) {
 
 		public static Builder builder(String model) {
 			return new Builder(model);
@@ -442,6 +538,7 @@ public class OllamaApi {
 			private boolean stream = false;
 			private String format;
 			private String keepAlive;
+			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
 
 			public Builder(String model) {
@@ -469,6 +566,11 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withTools(List<Tool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
 			public Builder withOptions(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 
@@ -483,7 +585,7 @@ public class OllamaApi {
 			}
 
 			public ChatRequest build() {
-				return new ChatRequest(model, messages, stream, format, keepAlive, options);
+				return new ChatRequest(model, messages, stream, format, keepAlive, tools, options);
 			}
 		}
 	}
@@ -491,19 +593,18 @@ public class OllamaApi {
 	/**
 	 * Ollama chat response object.
 	 *
-	 * @param model The model name used for completion.
-	 * @param createdAt When the request was made.
+	 * @param model The model used for generating the response.
+	 * @param createdAt The timestamp of the response generation.
 	 * @param message The response {@link Message} with {@link Message.Role#ASSISTANT}.
-	 * @param done Whether this is the final response. For streaming response only the
-	 * last message is marked as done. If true, this response may be followed by another
-	 * response with the following, additional fields: context, prompt_eval_count,
-	 * prompt_eval_duration, eval_count, eval_duration.
+	 * @param doneReason The reason the model stopped generating text.
+	 * @param done Whether this is the final response. If true, this response may be followed by another response with the following, additional fields: context, prompt_eval_count, prompt_eval_duration, eval_count, eval_duration.
 	 * @param totalDuration Time spent generating the response.
 	 * @param loadDuration Time spent loading the model.
-	 * @param promptEvalCount number of tokens in the prompt.(*)
-	 * @param promptEvalDuration time spent evaluating the prompt.
-	 * @param evalCount number of tokens in the response.
-	 * @param evalDuration time spent generating the response.
+	 * @param promptEvalCount Number of tokens in the prompt.
+	 * @param promptEvalDuration Time spent evaluating the prompt.
+	 * @param evalCount Number of tokens in the response.
+	 * @param evalDuration Time spent generating the response.
+	 *
 	 * @see <a href=
 	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
 	 * Completion API</a>
@@ -515,13 +616,15 @@ public class OllamaApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("created_at") Instant createdAt,
 			@JsonProperty("message") Message message,
+			@JsonProperty("done_reason") String doneReason,
 			@JsonProperty("done") Boolean done,
 			@JsonProperty("total_duration") Duration totalDuration,
 			@JsonProperty("load_duration") Duration loadDuration,
 			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
 			@JsonProperty("prompt_eval_duration") Duration promptEvalDuration,
 			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Duration evalDuration) {
+			@JsonProperty("eval_duration") Duration evalDuration
+	) {
 	}
 
 	/**

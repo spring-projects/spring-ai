@@ -33,6 +33,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * Helper class for creating strongly-typed Ollama options.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -46,7 +47,8 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive");
 
-	// Following fields are ptions which must be set when the model is loaded into memory.
+	// Following fields are options which must be set when the model is loaded into
+	// memory.
 
 	// @formatter:off
 	/**
@@ -63,12 +65,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	 * ???
 	 */
 	@JsonProperty("num_batch") private Integer numBatch;
-
-	/**
-	 * The number of GQA groups in the transformer layer. Required for some models,
-	 * for example it is 8 for llama2:70b.
-	 */
-	@JsonProperty("num_gqa") private Integer numGQA;
 
 	/**
 	 * The number of layers to send to the GPU(s). On macOS it defaults to 1
@@ -289,11 +285,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		return this;
 	}
 
-	public OllamaOptions withNumGQA(Integer numGQA) {
-		this.numGQA = numGQA;
-		return this;
-	}
-
 	public OllamaOptions withNumGPU(Integer numGPU) {
 		this.numGPU = numGPU;
 		return this;
@@ -462,14 +453,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public void setNumBatch(Integer numBatch) {
 		this.numBatch = numBatch;
-	}
-
-	public Integer getNumGQA() {
-		return this.numGQA;
-	}
-
-	public void setNumGQA(Integer numGQA) {
-		this.numGQA = numGQA;
 	}
 
 	public Integer getNumGPU() {
@@ -727,7 +710,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 			.withUseNUMA(fromOptions.getUseNUMA())
 			.withNumCtx(fromOptions.getNumCtx())
 			.withNumBatch(fromOptions.getNumBatch())
-			.withNumGQA(fromOptions.getNumGQA())
 			.withNumGPU(fromOptions.getNumGPU())
 			.withMainGPU(fromOptions.getMainGPU())
 			.withLowVRAM(fromOptions.getLowVRAM())
@@ -755,7 +737,6 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 			.withPenalizeNewline(fromOptions.getPenalizeNewline())
 			.withStop(fromOptions.getStop());
 	}
-
 
 	// @formatter:on
 
