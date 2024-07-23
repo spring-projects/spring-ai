@@ -1,9 +1,6 @@
 package org.springframework.ai.reader.markdown;
 
-import org.commonmark.node.AbstractVisitor;
-import org.commonmark.node.Heading;
-import org.commonmark.node.Node;
-import org.commonmark.node.Text;
+import org.commonmark.node.*;
 import org.commonmark.parser.Parser;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
@@ -66,6 +63,14 @@ public class MarkdownDocumentReader implements DocumentReader {
 			currentDocumentBuilder = Document.builder();
 
 			super.visit(heading);
+		}
+
+		@Override
+		public void visit(SoftLineBreak softLineBreak) {
+			if (!currentParagraphs.isEmpty()) {
+				currentParagraphs.add(" ");
+			}
+			super.visit(softLineBreak);
 		}
 
 		@Override
