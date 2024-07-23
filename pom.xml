@@ -23,6 +23,7 @@
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-cloud-bindings</module>
 
+		<module>document-readers/markdown-reader</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
 
@@ -186,6 +187,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
+		<commonmark.version>0.22.0</commonmark.version>
 
 		<!-- testing dependencies -->
 		<httpclient5.version>5.3.1</httpclient5.version>
