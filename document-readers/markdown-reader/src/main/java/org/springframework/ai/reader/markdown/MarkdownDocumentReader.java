@@ -99,6 +99,14 @@ public class MarkdownDocumentReader implements DocumentReader {
 		}
 
 		@Override
+		public void visit(HardLineBreak hardLineBreak) {
+			if (!currentParagraphs.isEmpty()) {
+				currentParagraphs.add(" ");
+			}
+			super.visit(hardLineBreak);
+		}
+
+		@Override
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
 				currentDocumentBuilder.withMetadata("category", "header_%d".formatted(heading.getLevel()))
