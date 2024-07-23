@@ -106,4 +106,61 @@ class MarkdownDocumentReaderTest {
 				"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec tincidunt velit non bibendum gravida. Cras accumsan tincidunt ornare. Donec hendrerit consequat tellus blandit accumsan. Aenean aliquam metus at arcu elementum dignissim.Nullam nisi dui, egestas nec sem nec, interdum lobortis enim. Pellentesque odio orci, faucibus eu luctus nec, venenatis et magna. Vestibulum nec eros non felis fermentum posuere eget ac risus.Aenean eu leo eu nibh tristique posuere quis quis massa. Nullam lacinia luctus sem ut vehicula.");
 	}
 
+	@Test
+	void testCode() {
+		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+			.withHorizontalRuleCreateDocument(true)
+			.build();
+
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/code.md", config);
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).satisfiesExactly(document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of());
+			assertThat(document.getContent()).isEqualTo("This is a Java sample application:");
+		}, document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "code", "block"));
+			assertThat(document.getContent()).startsWith("package com.example.demo;")
+				.contains("SpringApplication.run(DemoApplication.class, args);");
+		}, document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of("code", "inline"));
+			assertThat(document.getContent()).isEqualTo(
+					"Markdown also provides the possibility to use inline code formatting throughout the entire sentence.");
+		}, document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of());
+			assertThat(document.getContent())
+				.isEqualTo("Another possibility is to set block code without specific highlighting:");
+		}, document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "code", "block"));
+			assertThat(document.getContent()).isEqualTo("./mvnw spring-javaformat:apply\n");
+		});
+	}
+
+	@Test
+	void testCodeWhenCodeBlockShouldNotBeSeparatedDocument() {
+		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+			.withHorizontalRuleCreateDocument(true)
+			.withIncludeCodeBlock(true)
+			.build();
+
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/code.md", config);
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).satisfiesExactly(document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "code", "block"));
+			assertThat(document.getContent()).startsWith("This is a Java sample application: package com.example.demo")
+				.contains("SpringApplication.run(DemoApplication.class, args);");
+		}, document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of("code", "inline"));
+			assertThat(document.getContent()).isEqualTo(
+					"Markdown also provides the possibility to use inline code formatting throughout the entire sentence.");
+		}, document -> {
+			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "code", "block"));
+			assertThat(document.getContent()).isEqualTo(
+					"Another possibility is to set block code without specific highlighting: ./mvnw spring-javaformat:apply\n");
+		});
+	}
+
 }

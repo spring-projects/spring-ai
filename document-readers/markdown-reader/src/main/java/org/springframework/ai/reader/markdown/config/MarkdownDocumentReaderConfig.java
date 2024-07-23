@@ -7,8 +7,11 @@ public class MarkdownDocumentReaderConfig {
 
 	public final boolean horizontalRuleCreateDocument;
 
+	public final boolean includeCodeBlock;
+
 	public MarkdownDocumentReaderConfig(Builder builder) {
 		horizontalRuleCreateDocument = builder.horizontalRuleCreateDocument;
+		includeCodeBlock = builder.includeCodeBlock;
 	}
 
 	public static MarkdownDocumentReaderConfig defaultConfig() {
@@ -23,11 +26,18 @@ public class MarkdownDocumentReaderConfig {
 
 		private boolean horizontalRuleCreateDocument = false;
 
+		private boolean includeCodeBlock = false;
+
 		private Builder() {
 		}
 
 		public Builder withHorizontalRuleCreateDocument(boolean horizontalRuleCreateDocument) {
 			this.horizontalRuleCreateDocument = horizontalRuleCreateDocument;
+			return this;
+		}
+
+		public Builder withIncludeCodeBlock(boolean includeCodeBlock) {
+			this.includeCodeBlock = includeCodeBlock;
 			return this;
 		}
 

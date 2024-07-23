@@ -103,6 +103,29 @@ public class MarkdownDocumentReader implements DocumentReader {
 		}
 
 		@Override
+		public void visit(Code code) {
+			currentParagraphs.add(code.getLiteral());
+			currentDocumentBuilder.withMetadata("code", "inline");
+			super.visit(code);
+		}
+
+		@Override
+		public void visit(FencedCodeBlock fencedCodeBlock) {
+			if (!config.includeCodeBlock) {
+				buildAndFlush();
+			}
+
+			translateLineBreakToSpace();
+			currentParagraphs.add(fencedCodeBlock.getLiteral());
+			currentDocumentBuilder.withMetadata("code", "block");
+			currentDocumentBuilder.withMetadata("lang", fencedCodeBlock.getInfo());
+
+			buildAndFlush();
+
+			super.visit(fencedCodeBlock);
+		}
+
+		@Override
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
 				currentDocumentBuilder.withMetadata("category", "header_%d".formatted(heading.getLevel()))
