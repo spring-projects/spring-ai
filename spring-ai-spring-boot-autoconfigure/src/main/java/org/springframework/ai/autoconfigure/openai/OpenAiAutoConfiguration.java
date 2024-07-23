@@ -49,6 +49,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * @author Christian Tzolov
  * @author Stefan Vassilev
+ * @author Thomas Vitale
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
@@ -174,8 +175,9 @@ public class OpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = OpenAiAudioSpeechProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OpenAiAudioSpeechModel openAiAudioSpeechClient(OpenAiConnectionProperties commonProperties,
-			OpenAiAudioSpeechProperties speechProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			OpenAiAudioSpeechProperties speechProperties, RetryTemplate retryTemplate,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		String apiKey = StringUtils.hasText(speechProperties.getApiKey()) ? speechProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -192,7 +194,7 @@ public class OpenAiAutoConfiguration {
 				responseErrorHandler);
 
 		OpenAiAudioSpeechModel openAiSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi,
-				speechProperties.getOptions());
+				speechProperties.getOptions(), retryTemplate);
 
 		return openAiSpeechModel;
 	}

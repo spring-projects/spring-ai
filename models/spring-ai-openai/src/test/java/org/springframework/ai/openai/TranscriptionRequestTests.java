@@ -44,7 +44,7 @@ public class TranscriptionRequestTests {
 					.withTemperature(66.6f)
 					.build());
 
-		var request = client.createRequestBody(
+		var request = client.createRequest(
 				new AudioTranscriptionPrompt(new DefaultResourceLoader().getResource("classpath:/test.png")));
 
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
@@ -68,16 +68,16 @@ public class TranscriptionRequestTests {
 					.withTemperature(66.6f)
 					.build());
 
-		var request = client.createRequestBody(
-				new AudioTranscriptionPrompt(new DefaultResourceLoader().getResource("classpath:/test.png"),
-						OpenAiAudioTranscriptionOptions.builder()
-							.withModel("RUNTIME_MODEL")
-							.withResponseFormat(TranscriptResponseFormat.JSON)
-							.withLanguage("bg")
-							.withPrompt("Prompt2")
-							.withGranularityType(GranularityType.SEGMENT)
-							.withTemperature(99.9f)
-							.build()));
+		var request = client
+			.createRequest(new AudioTranscriptionPrompt(new DefaultResourceLoader().getResource("classpath:/test.png"),
+					OpenAiAudioTranscriptionOptions.builder()
+						.withModel("RUNTIME_MODEL")
+						.withResponseFormat(TranscriptResponseFormat.JSON)
+						.withLanguage("bg")
+						.withPrompt("Prompt2")
+						.withGranularityType(GranularityType.SEGMENT)
+						.withTemperature(99.9f)
+						.build()));
 
 		assertThat(request.model()).isEqualTo("RUNTIME_MODEL");
 		assertThat(request.responseFormat()).isEqualByComparingTo(TranscriptResponseFormat.JSON);
