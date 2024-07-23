@@ -67,7 +67,7 @@ public interface FunctionCallback {
 	 * @return String containing the function call response.
 	 */
 	default String call(String functionInput, ToolContext tooContext) {
-		if (tooContext != null) {
+		if (tooContext != null && !tooContext.getContext().isEmpty()) {
 			throw new UnsupportedOperationException("Function context is not supported!");
 		}
 		return call(functionInput);
