@@ -2,6 +2,7 @@ package org.springframework.ai.reader.markdown;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,51 @@ class MarkdownDocumentReaderTest {
 					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec tincidunt velit non bibendum gravida. Cras accumsan tincidunt ornare. Donec hendrerit consequat tellus blandit accumsan. Aenean aliquam metus at arcu elementum dignissim."),
 					tuple(Map.of("category", "header_3", "title", "Header 3"),
 							"Aenean eu leo eu nibh tristique posuere quis quis massa."));
+	}
 
+	@Test
+	void testDocumentDividedViaHorizontalRules() {
+		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+			.withHorizontalRuleCreateDocument(true)
+			.build();
+
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/horizontal-rules.md", config);
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(7)
+			.extracting(Document::getMetadata, Document::getContent)
+			.containsOnly(tuple(Map.of(),
+					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec tincidunt velit non bibendum gravida."),
+					tuple(Map.of(),
+							"Cras accumsan tincidunt ornare. Donec hendrerit consequat tellus blandit accumsan. Aenean aliquam metus at arcu elementum dignissim."),
+					tuple(Map.of(),
+							"Nullam nisi dui, egestas nec sem nec, interdum lobortis enim. Pellentesque odio orci, faucibus eu luctus nec, venenatis et magna."),
+					tuple(Map.of(),
+							"Vestibulum nec eros non felis fermentum posuere eget ac risus. Curabitur et fringilla massa. Cras facilisis nec nisl sit amet sagittis."),
+					tuple(Map.of(),
+							"Aenean eu leo eu nibh tristique posuere quis quis massa. Nullam lacinia luctus sem ut vehicula."),
+					tuple(Map.of(),
+							"Aenean quis vulputate mi. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nam tincidunt nunc a tortor tincidunt, nec lobortis diam rhoncus."),
+					tuple(Map.of(), "Nulla facilisi. Phasellus eget tellus sed nibh ornare interdum eu eu mi."));
+	}
+
+	@Test
+	void testDocumentNotDividedViaHorizontalRulesWhenIsDisabled() {
+		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+			.withHorizontalRuleCreateDocument(false)
+			.build();
+
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/horizontal-rules.md", config);
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(1);
+
+		Document documentsFirst = documents.get(0);
+		assertThat(documentsFirst.getMetadata()).isEmpty();
+		assertThat(documentsFirst.getContent()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit")
+			.endsWith("Phasellus eget tellus sed nibh ornare interdum eu eu mi.");
 	}
 
 }

@@ -4,6 +4,7 @@ import org.commonmark.node.*;
 import org.commonmark.parser.Parser;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
+import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
@@ -22,14 +23,21 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 	private final Resource markdownResource;
 
+	private final MarkdownDocumentReaderConfig config;
+
 	private final Parser parser;
 
 	public MarkdownDocumentReader(String markdownResource) {
-		this(new DefaultResourceLoader().getResource(markdownResource));
+		this(new DefaultResourceLoader().getResource(markdownResource), MarkdownDocumentReaderConfig.defaultConfig());
 	}
 
-	public MarkdownDocumentReader(Resource markdownResource) {
+	public MarkdownDocumentReader(String markdownResource, MarkdownDocumentReaderConfig config) {
+		this(new DefaultResourceLoader().getResource(markdownResource), config);
+	}
+
+	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
 		this.markdownResource = markdownResource;
+		this.config = config;
 		this.parser = Parser.builder().build();
 	}
 
@@ -38,7 +46,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 		try (var input = markdownResource.getInputStream()) {
 			Node node = parser.parseReader(new InputStreamReader(input));
 
-			DocumentVisitor documentVisitor = new DocumentVisitor();
+			DocumentVisitor documentVisitor = new DocumentVisitor(config);
 			node.accept(documentVisitor);
 
 			return documentVisitor.getDocuments();
@@ -54,15 +62,32 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		private final List<String> currentParagraphs = new ArrayList<>();
 
+		private final MarkdownDocumentReaderConfig config;
+
 		private Document.Builder currentDocumentBuilder;
+
+		public DocumentVisitor(MarkdownDocumentReaderConfig config) {
+			this.config = config;
+		}
+
+		@Override
+		public void visit(org.commonmark.node.Document document) {
+			currentDocumentBuilder = Document.builder();
+			super.visit(document);
+		}
 
 		@Override
 		public void visit(Heading heading) {
 			buildAndFlush();
-
-			currentDocumentBuilder = Document.builder();
-
 			super.visit(heading);
+		}
+
+		@Override
+		public void visit(ThematicBreak thematicBreak) {
+			if (config.horizontalRuleCreateDocument) {
+				buildAndFlush();
+			}
+			super.visit(thematicBreak);
 		}
 
 		@Override
@@ -101,6 +126,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 				currentParagraphs.clear();
 			}
+			currentDocumentBuilder = Document.builder();
 		}
 
 	}
