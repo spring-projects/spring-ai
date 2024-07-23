@@ -46,7 +46,7 @@ public interface FunctionCallback {
 	 * Called when a model detects and triggers a function call. The model is responsible
 	 * to pass the function arguments in the pre-configured JSON schema format.
 	 * @param functionInput JSON string with the function arguments to be passed to the
-	 * function. The arguments are defined as JSON schema usually registered with the the
+	 * function. The arguments are defined as JSON schema usually registered with the
 	 * model.
 	 * @return String containing the function call response.
 	 */
@@ -55,11 +55,11 @@ public interface FunctionCallback {
 	/**
 	 * Called when a model detects and triggers a function call. The model is responsible
 	 * to pass the function arguments in the pre-configured JSON schema format.
-	 * Additionally the model can pass a context map to the function if available. The
+	 * Additionally, the model can pass a context map to the function if available. The
 	 * context is used to pass additional user provided state in addition to the arguments
 	 * provided by the AI model.
 	 * @param functionInput JSON string with the function arguments to be passed to the
-	 * function. The arguments are defined as JSON schema usually registered with the the
+	 * function. The arguments are defined as JSON schema usually registered with the
 	 * model. Arguments are provided by the AI model.
 	 * @param tooContext Map with the function context. The context is used to pass
 	 * additional user provided state in addition to the arguments provided by the AI
@@ -67,7 +67,7 @@ public interface FunctionCallback {
 	 * @return String containing the function call response.
 	 */
 	default String call(String functionInput, ToolContext tooContext) {
-		if (tooContext != null) {
+		if (tooContext != null && !tooContext.getContext().isEmpty()) {
 			throw new UnsupportedOperationException("Function context is not supported!");
 		}
 		return call(functionInput);

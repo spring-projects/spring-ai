@@ -175,6 +175,8 @@
 		<victools.version>4.31.1</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
 
+		<jackson-module-jsonSchema.version>2.17.2</jackson-module-jsonSchema.version>
+		
 		<!-- NOTE: keep them align -->
 		<bedrockruntime.version>2.26.7</bedrockruntime.version>
 		<awssdk.version>2.26.7</awssdk.version>
