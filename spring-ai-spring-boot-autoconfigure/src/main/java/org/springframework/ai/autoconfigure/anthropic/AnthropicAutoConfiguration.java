@@ -16,6 +16,9 @@
 package org.springframework.ai.autoconfigure.anthropic;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -66,12 +69,15 @@ public class AnthropicAutoConfiguration {
 			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
 			List<FunctionCallback> toolFunctionCallbacks) {
 
+		AnthropicChatModel chatModel = new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate, functionCallbackContext);
+
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+			Map<String, FunctionCallback> toolFunctionCallbackMap = toolFunctionCallbacks.stream()
+					.collect(Collectors.toMap(FunctionCallback::getName, Function.identity(), (a, b) -> b));
+			chatModel.getFunctionCallbackRegister().putAll(toolFunctionCallbackMap);
 		}
 
-		return new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate,
-				functionCallbackContext);
+		return chatModel;
 	}
 
 	@Bean

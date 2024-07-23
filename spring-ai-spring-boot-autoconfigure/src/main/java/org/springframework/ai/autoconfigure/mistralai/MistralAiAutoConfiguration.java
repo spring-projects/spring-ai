@@ -16,6 +16,9 @@
 package org.springframework.ai.autoconfigure.mistralai;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.mistralai.MistralAiChatModel;
@@ -81,12 +84,15 @@ public class MistralAiAutoConfiguration {
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder, responseErrorHandler);
 
+		MistralAiChatModel chatModel = new MistralAiChatModel(mistralAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+			Map<String, FunctionCallback> toolFunctionCallbackMap = toolFunctionCallbacks.stream()
+					.collect(Collectors.toMap(FunctionCallback::getName, Function.identity(), (a, b) -> b));
+			chatModel.getFunctionCallbackRegister().putAll(toolFunctionCallbackMap);
 		}
 
-		return new MistralAiChatModel(mistralAiApi, chatProperties.getOptions(), functionCallbackContext,
-				retryTemplate);
+		return chatModel;
 	}
 
 	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,

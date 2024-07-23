@@ -40,6 +40,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Piotr Olaszewski
@@ -101,11 +104,15 @@ public class AzureOpenAiAutoConfiguration {
 			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackContext functionCallbackContext) {
 
+		AzureOpenAiChatModel chatModel = new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext);
+
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+			Map<String, FunctionCallback> toolFunctionCallbackMap = toolFunctionCallbacks.stream()
+					.collect(Collectors.toMap(FunctionCallback::getName, Function.identity(), (a, b) -> b));
+			chatModel.getFunctionCallbackRegister().putAll(toolFunctionCallbackMap);
 		}
 
-		return new AzureOpenAiChatModel(openAIClient, chatProperties.getOptions(), functionCallbackContext);
+		return chatModel;
 	}
 
 	@Bean
