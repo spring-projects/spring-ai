@@ -239,6 +239,20 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
+	@Override
+	public List<Document> hybridSearch(String query) {
+		SearchRequest searchRequest = SearchRequest.query(query);
+
+		List<Document> similaritySearch = similaritySearch(searchRequest);
+
+		String sql = "SELECT *, ts_rank_cd(to_tsvector(content), plainto_tsquery(?)) AS rank FROM " + getFullyQualifiedTableName() + " ORDER BY rank DESC LIMIT ?";
+
+		List<Document> keyLikeSearch = this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper, true), query, searchRequest.getTopK());
+
+		similaritySearch.addAll(keyLikeSearch);
+		return similaritySearch;
+	}
+
 	public List<Double> embeddingDistance(String query) {
 		return this.jdbcTemplate.query(
 				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + getFullyQualifiedTableName(),
@@ -425,8 +439,15 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		private ObjectMapper objectMapper;
 
+		private boolean isHybrid = false;
+
 		public DocumentRowMapper(ObjectMapper objectMapper) {
 			this.objectMapper = objectMapper;
+		}
+
+		public DocumentRowMapper(ObjectMapper objectMapper, boolean isHybrid) {
+			this.objectMapper = objectMapper;
+			this.isHybrid = isHybrid;
 		}
 
 		@Override
@@ -435,11 +456,11 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			String content = rs.getString(COLUMN_CONTENT);
 			PGobject pgMetadata = rs.getObject(COLUMN_METADATA, PGobject.class);
 			PGobject embedding = rs.getObject(COLUMN_EMBEDDING, PGobject.class);
-			Float distance = rs.getFloat(COLUMN_DISTANCE);
-
 			Map<String, Object> metadata = toMap(pgMetadata);
-			metadata.put(COLUMN_DISTANCE, distance);
-
+			if (!isHybrid) {
+				Float distance = rs.getFloat(COLUMN_DISTANCE);
+				metadata.put(COLUMN_DISTANCE, distance);
+			}
 			Document document = new Document(id, content, metadata);
 			document.setEmbedding(toDoubleList(embedding));
 

@@ -70,4 +70,8 @@ public interface VectorStore extends DocumentWriter {
 		return this.similaritySearch(SearchRequest.query(query));
 	}
 
+	default List<Document> hybridSearch(String query) {
+		return this.similaritySearch(SearchRequest.query(query));
+	}
+
 }
