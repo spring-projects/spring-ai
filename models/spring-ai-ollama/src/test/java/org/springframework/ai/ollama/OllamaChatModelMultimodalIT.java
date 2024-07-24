@@ -53,7 +53,7 @@ class OllamaChatModelMultimodalIT {
 	@Container
 	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
 
-	static String baseUrl;
+	static String baseUrl = "http://localhost:11434";
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {

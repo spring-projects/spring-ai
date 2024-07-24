@@ -23,7 +23,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallingOptions;
@@ -95,6 +97,20 @@ public abstract class AbstractToolCallSupport {
 		return functionToCall;
 	}
 
+	protected List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		ToolResponseMessage toolMessageResponse = this.executeFuncitons(assistantMessage);
+		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
+	}
+
+	protected List<Message> buildToolCallConversation(List<Message> previousMessages, AssistantMessage assistantMessage,
+			ToolResponseMessage toolResponseMessage) {
+		List<Message> messages = new ArrayList<>(previousMessages);
+		messages.add(assistantMessage);
+		messages.add(toolResponseMessage);
+		return messages;
+	}
+
 	/**
 	 * Resolve the function callbacks by name. Retrieve them from the registry or try to
 	 * resolve them from the Application Context.
@@ -152,8 +168,8 @@ public abstract class AbstractToolCallSupport {
 		return new ToolResponseMessage(toolResponses, Map.of());
 	}
 
-	protected boolean isToolCall(ChatResponse chatResponse, String toolCallFinishReason) {
-		Assert.hasText(toolCallFinishReason, "toolCallFinishReason cannot be null or empty");
+	protected boolean isToolCall(ChatResponse chatResponse, Set<String> toolCallFinishReasons) {
+		Assert.isTrue(!CollectionUtils.isEmpty(toolCallFinishReasons), "Tool call finish reasons cannot be empty!");
 
 		if (chatResponse == null) {
 			return false;
@@ -165,8 +181,10 @@ public abstract class AbstractToolCallSupport {
 		}
 
 		var generation = generations.get(0);
-		return !CollectionUtils.isEmpty(generation.getOutput().getToolCalls())
-				&& toolCallFinishReason.equalsIgnoreCase(generation.getMetadata().getFinishReason());
+		return !CollectionUtils.isEmpty(generation.getOutput().getToolCalls()) && toolCallFinishReasons.stream()
+			.map(s -> s.toLowerCase())
+			.toList()
+			.contains(generation.getMetadata().getFinishReason().toLowerCase());
 	}
 
 }

@@ -23,14 +23,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
@@ -39,6 +35,13 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Java Client for the Ollama API. https://ollama.ai/
@@ -356,7 +359,8 @@ public class OllamaApi {
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
-			@JsonProperty("images") List<String> images) {
+			@JsonProperty("images") List<String> images,
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
 		/**
 		 * The role of the message in the conversation.
@@ -374,8 +378,37 @@ public class OllamaApi {
 			/**
 			 * Assistant message type. Usually the response from the model.
 			 */
-			@JsonProperty("assistant") ASSISTANT;
+			@JsonProperty("assistant") ASSISTANT,
+			/**
+			 * Tool message.
+			 */
+			@JsonProperty("tool") TOOL;
 
+		}
+
+		/**
+		 * The relevant tool call.
+		 *
+		 * @param id The ID of the tool call. This ID must be referenced when you submit the tool outputs in using the
+		 * Submit tool outputs to run endpoint.
+		 * @param type The type of tool call the output is required for. For now, this is always function.
+		 * @param function The function definition.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCall(
+			@JsonProperty("function") ToolCallFunction function) {
+		}
+
+		/**
+		 * The function definition.
+		 *
+		 * @param name The name of the function.
+		 * @param arguments The arguments that the model expects you to pass to the function.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCallFunction(
+			@JsonProperty("name") String name,
+			@JsonProperty("arguments") Map<String, Object> arguments) {
 		}
 
 		public static Builder builder(Role role) {
@@ -387,6 +420,7 @@ public class OllamaApi {
 			private final Role role;
 			private String content;
 			private List<String> images;
+			private List<ToolCall> toolCalls;
 
 			public Builder(Role role) {
 				this.role = role;
@@ -402,8 +436,13 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withToolCalls(List<ToolCall> toolCalls) {
+				this.toolCalls = toolCalls;
+				return this;
+			}
+
 			public Message build() {
-				return new Message(role, content, images);
+				return new Message(role, content, images, toolCalls);
 			}
 
 		}
@@ -429,8 +468,68 @@ public class OllamaApi {
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
 			@JsonProperty("keep_alive") String keepAlive,
-			@JsonProperty("options") Map<String, Object> options) {
+			@JsonProperty("options") Map<String, Object> options,
+			@JsonProperty("tools") List<Tool> tools) {
 
+
+		/**
+		 * Represents a tool the model may call. Currently, only functions are supported as a tool.
+		 *
+		 * @param type The type of the tool. Currently, only 'function' is supported.
+		 * @param function The function definition.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Tool(
+				@JsonProperty("type") Type type,
+				@JsonProperty("function") Function function) {
+
+			/**
+			 * Create a tool of type 'function' and the given function definition.
+			 * @param function function definition.
+			 */
+			@ConstructorBinding
+			public Tool(Function function) {
+				this(Type.FUNCTION, function);
+			}
+
+			/**
+			 * Create a tool of type 'function' and the given function definition.
+			 */
+			public enum Type {
+				/**
+				 * Function tool type.
+				 */
+				@JsonProperty("function") FUNCTION
+			}
+
+			/**
+			 * Function definition.
+			 *
+			 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes.
+			 * @param description A description of what the function does, used by the model to choose when and how to call
+			 * the function.
+			 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
+			 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+			 */
+			public record Function(
+				@JsonProperty("name") String name,
+				@JsonProperty("description") String description,
+				@JsonProperty("parameters") Map<String, Object> parameters) {
+
+				/**
+				 * Create tool function definition.
+				 *
+				 * @param description tool function description.
+				 * @param name tool function name.
+				 * @param jsonSchema tool function schema as json.
+				 */
+				@ConstructorBinding
+				public Function(String description, String name, String jsonSchema) {
+					this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+				}
+			}
+		}
+		
 		public static Builder builder(String model) {
 			return new Builder(model);
 		}
@@ -443,6 +542,7 @@ public class OllamaApi {
 			private String format;
 			private String keepAlive;
 			private Map<String, Object> options = Map.of();
+			private List<Tool> tools = List.of();
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -482,8 +582,13 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withTools(List<Tool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
 			public ChatRequest build() {
-				return new ChatRequest(model, messages, stream, format, keepAlive, options);
+				return new ChatRequest(model, messages, stream, format, keepAlive, options, tools);
 			}
 		}
 	}

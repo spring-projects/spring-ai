@@ -102,6 +102,7 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.chat.options.mirostat-eta      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
 | spring.ai.ollama.chat.options.penalize-newline  | ???                                                             | true
 | spring.ai.ollama.chat.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
+| spring.ai.ollama.chat.options.functions         | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
 |====
 
 TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
@@ -128,6 +129,16 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
+
+== Function Calling
+
+You can register custom Java functions with the OllamaChatModel and have the Ollama model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/chat/functions/ollama-chat-functions.adoc[Ollama Function Calling].
+
+TIP: You need Ollama 0.2.8 or newer.
+
+NOTE: Currently, the Ollama API (0.2.8) does not support function calling in streaming mode.
 
 == Multimodal
 
