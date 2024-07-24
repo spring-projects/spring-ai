@@ -23,14 +23,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
@@ -40,8 +36,15 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 /**
- * Java Client for the Ollama API. https://ollama.ai/
+ * Java Client for the Ollama API. <a href="https://ollama.ai/">https://ollama.ai</a>
  *
  * @author Christian Tzolov
  * @since 0.8.0
@@ -124,13 +127,13 @@ public class OllamaApi {
 	 *
 	 * @param model (required) The model to use for completion.
 	 * @param prompt (required) The prompt(s) to generate completions for.
-	 * @param format (optional) The format to return the response in. Currently the only
+	 * @param format (optional) The format to return the response in. Currently, the only
 	 * accepted value is "json".
 	 * @param options (optional) additional model parameters listed in the documentation
-	 * for the Modelfile such as temperature.
-	 * @param system (optional) system prompt to (overrides what is defined in the Modelfile).
+	 * for the Model file such as temperature.
+	 * @param system (optional) system prompt to (overrides what is defined in the Model file).
 	 * @param template (optional) the full prompt or prompt template (overrides what is
-	 *  defined in the Modelfile).
+	 *  defined in the Model file).
 	 * @param context the context parameter returned from a previous request to /generate,
 	 * this can be used to keep a short conversational memory.
 	 * @param stream (optional) if false the response will be returned as a single
@@ -157,7 +160,7 @@ public class OllamaApi {
 			@JsonProperty("keep_alive") String keepAlive) {
 
 		/**
-		 * Short cut constructor to create a CompletionRequest without options.
+		 * Shortcut constructor to create a CompletionRequest without options.
 		 * @param model The model used for completion.
 		 * @param prompt The prompt(s) to generate completions for.
 		 * @param stream Whether to stream the response.
@@ -167,7 +170,7 @@ public class OllamaApi {
 		}
 
 		/**
-		 * Short cut constructor to create a CompletionRequest without options.
+		 * Shortcut constructor to create a CompletionRequest without options.
 		 * @param model The model used for completion.
 		 * @param prompt The prompt(s) to generate completions for.
 		 * @param enableJsonFormat Whether to return the response in json format.
@@ -356,7 +359,8 @@ public class OllamaApi {
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
-			@JsonProperty("images") List<String> images) {
+			@JsonProperty("images") List<String> images,
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
 		/**
 		 * The role of the message in the conversation.
@@ -374,8 +378,34 @@ public class OllamaApi {
 			/**
 			 * Assistant message type. Usually the response from the model.
 			 */
-			@JsonProperty("assistant") ASSISTANT;
+			@JsonProperty("assistant") ASSISTANT,
+			/**
+			 * Tool message.
+			 */
+			@JsonProperty("tool") TOOL
 
+		}
+
+		/**
+		 * The relevant tool call.
+		 *
+		 * @param function The function definition.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCall(
+			@JsonProperty("function") ToolCallFunction function) {
+		}
+
+		/**
+		 * The function definition.
+		 *
+		 * @param name The name of the function.
+		 * @param arguments The arguments that the model expects you to pass to the function.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ToolCallFunction(
+			@JsonProperty("name") String name,
+			@JsonProperty("arguments") Map<String, Object> arguments) {
 		}
 
 		public static Builder builder(Role role) {
@@ -387,6 +417,7 @@ public class OllamaApi {
 			private final Role role;
 			private String content;
 			private List<String> images;
+			private List<ToolCall> toolCalls;
 
 			public Builder(Role role) {
 				this.role = role;
@@ -402,8 +433,13 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withToolCalls(List<ToolCall> toolCalls) {
+				this.toolCalls = toolCalls;
+				return this;
+			}
+
 			public Message build() {
-				return new Message(role, content, images);
+				return new Message(role, content, images, toolCalls);
 			}
 
 		}
@@ -417,7 +453,7 @@ public class OllamaApi {
 	 * @param stream Whether to stream the response.
 	 * @param format The format to return the response in. Currently, the only accepted
 	 * value is "json".
-	 * @param keepAlive The duration to keep the model loaded in ollama while idle. https://pkg.go.dev/time#ParseDuration
+	 * @param keepAlive The duration to keep the model loaded in ollama while idle. {@link <a href="https://pkg.go.dev/time#ParseDuration">https://pkg.go.dev/time#ParseDuration</a>}
 	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
 	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
 	 * map.
@@ -429,8 +465,68 @@ public class OllamaApi {
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
 			@JsonProperty("keep_alive") String keepAlive,
-			@JsonProperty("options") Map<String, Object> options) {
+			@JsonProperty("options") Map<String, Object> options,
+			@JsonProperty("tools") List<Tool> tools) {
 
+
+		/**
+		 * Represents a tool the model may call. Currently, only functions are supported as a tool.
+		 *
+		 * @param type The type of the tool. Currently, only 'function' is supported.
+		 * @param function The function definition.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Tool(
+				@JsonProperty("type") Type type,
+				@JsonProperty("function") Function function) {
+
+			/**
+			 * Create a tool of type 'function' and the given function definition.
+			 * @param function function definition.
+			 */
+			@ConstructorBinding
+			public Tool(Function function) {
+				this(Type.FUNCTION, function);
+			}
+
+			/**
+			 * Create a tool of type 'function' and the given function definition.
+			 */
+			public enum Type {
+				/**
+				 * Function tool type.
+				 */
+				@JsonProperty("function") FUNCTION
+			}
+
+			/**
+			 * Function definition.
+			 *
+			 * @param name The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes.
+			 * @param description A description of what the function does, used by the model to choose when and how to call
+			 * the function.
+			 * @param parameters The parameters the functions accepts, described as a JSON Schema object. To describe a
+			 * function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
+			 */
+			public record Function(
+				@JsonProperty("name") String name,
+				@JsonProperty("description") String description,
+				@JsonProperty("parameters") Map<String, Object> parameters) {
+
+				/**
+				 * Create tool function definition.
+				 *
+				 * @param description tool function description.
+				 * @param name tool function name.
+				 * @param jsonSchema tool function schema as json.
+				 */
+				@ConstructorBinding
+				public Function(String description, String name, String jsonSchema) {
+					this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+				}
+			}
+		}
+		
 		public static Builder builder(String model) {
 			return new Builder(model);
 		}
@@ -443,6 +539,7 @@ public class OllamaApi {
 			private String format;
 			private String keepAlive;
 			private Map<String, Object> options = Map.of();
+			private List<Tool> tools = List.of();
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -482,8 +579,13 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withTools(List<Tool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
 			public ChatRequest build() {
-				return new ChatRequest(model, messages, stream, format, keepAlive, options);
+				return new ChatRequest(model, messages, stream, format, keepAlive, options, tools);
 			}
 		}
 	}
@@ -526,7 +628,6 @@ public class OllamaApi {
 
 	/**
 	 * Generate the next message in a chat with a provided model.
-	 *
 	 * This is a streaming endpoint (controlled by the 'stream' request property), so
 	 * there will be a series of responses. The final response object will include
 	 * statistics and additional data from the request.
@@ -577,7 +678,7 @@ public class OllamaApi {
 	 * @param prompt The text to generate embeddings for.
 	 * @param keepAlive Controls how long the model will stay loaded into memory following the request (default: 5m).
 	 * @param options Additional model parameters listed in the documentation for the
-	 * Modelfile such as temperature.
+	 * Model file such as temperature.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest(
@@ -587,7 +688,7 @@ public class OllamaApi {
 			@JsonProperty("options") Map<String, Object> options) {
 
 		/**
-		 * short cut constructor to create a EmbeddingRequest without options.
+		 * Shortcut constructor to create a EmbeddingRequest without options.
 		 * @param model The name of model to generate embeddings from.
 		 * @param prompt The text to generate embeddings for.
 		 */

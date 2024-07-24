@@ -15,19 +15,26 @@
  */
 package org.springframework.ai.ollama.api;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -40,7 +47,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions implements ChatOptions, EmbeddingOptions {
+public class OllamaOptions implements FunctionCallingOptions, ChatOptions, EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
@@ -71,7 +78,7 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	@JsonProperty("num_gqa") private Integer numGQA;
 
 	/**
-	 * The number of layers to send to the GPU(s). On macOS it defaults to 1
+	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
 		*/
 	@JsonProperty("num_gpu") private Integer numGPU;
@@ -248,6 +255,37 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 	 */
 	@JsonProperty("keep_alive") private String keepAlive;
 
+		/**
+	 * OpenAI Tool Function Callbacks to register with the ChatModel.
+	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * from the registry to be used by the ChatModel chat completion requests.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+
+	/**
+	 * List of functions, identified by their names, to configure for function calling in
+	 * the chat completion requests.
+	 * Functions with those names must exist in the functionCallbacks registry.
+	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
+	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Set<String> functions = new HashSet<>();
+
+
+	public static OllamaOptions builder() {
+		return new OllamaOptions();
+	}
+
+	public OllamaOptions build() {
+		return this;
+	}
+	
 	/**
 	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
 	 */
@@ -421,6 +459,22 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 
 	public OllamaOptions withStop(List<String> stop) {
 		this.stop = stop;
+		return this;
+	}
+
+	public OllamaOptions withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+		return this;
+	}
+
+	public OllamaOptions withFunctions(Set<String> functions) {
+		this.functions = functions;
+		return this;
+	}
+
+	public OllamaOptions withFunction(String functionName) {
+		Assert.hasText(functionName, "Function name must not be empty");
+		this.functions.add(functionName);
 		return this;
 	}
 
@@ -680,19 +734,33 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 		this.stop = stop;
 	}
 
+	@Override
+	public List<FunctionCallback> getFunctionCallbacks() {
+		return this.functionCallbacks;	
+	}
+
+	@Override
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.functionCallbacks = functionCallbacks;
+	
+	}
+
+	@Override
+	public Set<String> getFunctions() {
+		return this.functions;
+	}
+
+	@Override
+	public void setFunctions(Set<String> functions) {
+		this.functions = functions;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		try {
-			var json = new ObjectMapper().writeValueAsString(this);
-			return new ObjectMapper().readValue(json, new TypeReference<Map<String, Object>>() {
-			});
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return ModelOptionsUtils.objectToMap(this);
 	}
 
 	/**
@@ -753,10 +821,48 @@ public class OllamaOptions implements ChatOptions, EmbeddingOptions {
 			.withMirostatTau(fromOptions.getMirostatTau())
 			.withMirostatEta(fromOptions.getMirostatEta())
 			.withPenalizeNewline(fromOptions.getPenalizeNewline())
-			.withStop(fromOptions.getStop());
+			.withStop(fromOptions.getStop())
+			.withFunctions(fromOptions.getFunctions())
+			.withFunctionCallbacks(fromOptions.getFunctionCallbacks());
+	}
+	// @formatter:on
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		OllamaOptions that = (OllamaOptions) o;
+		return Objects.equals(model, that.model) && Objects.equals(format, that.format)
+				&& Objects.equals(keepAlive, that.keepAlive) && Objects.equals(useNUMA, that.useNUMA)
+				&& Objects.equals(numCtx, that.numCtx) && Objects.equals(numBatch, that.numBatch)
+				&& Objects.equals(numGQA, that.numGQA) && Objects.equals(numGPU, that.numGPU)
+				&& Objects.equals(mainGPU, that.mainGPU) && Objects.equals(lowVRAM, that.lowVRAM)
+				&& Objects.equals(f16KV, that.f16KV) && Objects.equals(logitsAll, that.logitsAll)
+				&& Objects.equals(vocabOnly, that.vocabOnly) && Objects.equals(useMMap, that.useMMap)
+				&& Objects.equals(useMLock, that.useMLock) && Objects.equals(numThread, that.numThread)
+				&& Objects.equals(numKeep, that.numKeep) && Objects.equals(seed, that.seed)
+				&& Objects.equals(numPredict, that.numPredict) && Objects.equals(topK, that.topK)
+				&& Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
+				&& Objects.equals(typicalP, that.typicalP) && Objects.equals(repeatLastN, that.repeatLastN)
+				&& Objects.equals(temperature, that.temperature) && Objects.equals(repeatPenalty, that.repeatPenalty)
+				&& Objects.equals(presencePenalty, that.presencePenalty)
+				&& Objects.equals(frequencyPenalty, that.frequencyPenalty) && Objects.equals(mirostat, that.mirostat)
+				&& Objects.equals(mirostatTau, that.mirostatTau) && Objects.equals(mirostatEta, that.mirostatEta)
+				&& Objects.equals(penalizeNewline, that.penalizeNewline) && Objects.equals(stop, that.stop)
+				&& Objects.equals(functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(functions, that.functions);
 	}
 
-
-	// @formatter:on
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.model, this.format, this.keepAlive, this.useNUMA, this.numCtx, this.numBatch,
+				this.numGQA, numGPU, mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly, this.useMMap,
+				this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK, this.topP, tfsZ,
+				this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
+				this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
+				this.stop, this.functionCallbacks, this.functions);
+	}
 
 }

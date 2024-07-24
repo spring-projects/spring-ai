@@ -15,16 +15,24 @@
  */
 package org.springframework.ai.openai;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -32,7 +40,6 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -50,16 +57,9 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -175,7 +175,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
 
-		if (isToolCall(chatResponse, OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name())) {
+		if (isToolCall(chatResponse, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -245,7 +246,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			}));
 
 		return chatResponse.flatMap(response -> {
-			if (isToolCall(response, OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name())) {
+
+			if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(), "stop"))) {
 				var toolCallConversation = handleToolCalls(prompt, response);
 				// Recursively call the stream method with the tool call message
 				// conversation that contains the call responses.
@@ -280,23 +282,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
-		var generation = new Generation(assistantMessage, generationMetadata);
-
-		return generation;
-	}
-
-	private List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
-		AssistantMessage assistantMessage = response.getResult().getOutput();
-		ToolResponseMessage toolMessageResponse = this.executeFuncitons(assistantMessage);
-		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
-	}
-
-	private List<Message> buildToolCallConversation(List<Message> previousMessages, AssistantMessage assistantMessage,
-			ToolResponseMessage toolResponseMessage) {
-		List<Message> messages = new ArrayList<>(previousMessages);
-		messages.add(assistantMessage);
-		messages.add(toolResponseMessage);
-		return messages;
+		return new Generation(assistantMessage, generationMetadata);
 	}
 
 	/**

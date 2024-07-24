@@ -16,21 +16,31 @@
 package org.springframework.ai.ollama;
 
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
+import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.metadata.OllamaUsage;
 import org.springframework.util.Assert;
@@ -40,21 +50,18 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 /**
- * {@link ChatModel} implementation for {@literal Ollama}.
- *
- * Ollama allows developers to run large language models and generate embeddings locally.
- * It supports open-source models available on [Ollama AI
- * Library](https://ollama.ai/library). - Llama 2 (7B parameters, 3.8GB size) - Mistral
- * (7B parameters, 4.1GB size)
- *
- * Please refer to the <a href="https://ollama.ai/">official Ollama website</a> for the
- * most up-to-date information on available models.
+ * {@link ChatModel} implementation for {@literal Ollama}. Ollama allows developers to run
+ * large language models and generate embeddings locally. It supports open-source models
+ * available on [Ollama AI Library](<a href="https://ollama.ai/library">...</a>). - Llama
+ * 2 (7B parameters, 3.8GB size) - Mistral (7B parameters, 4.1GB size) Please refer to the
+ * <a href="https://ollama.ai/">official Ollama website</a> for the most up-to-date
+ * information on available models.
  *
  * @author Christian Tzolov
  * @author luocongqiu
- * @since 0.8.0
+ * @since 1.0.0
  */
-public class OllamaChatModel implements ChatModel {
+public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
 
 	/**
 	 * Low-level Ollama API library.
@@ -71,6 +78,12 @@ public class OllamaChatModel implements ChatModel {
 	}
 
 	public OllamaChatModel(OllamaApi chatApi, OllamaOptions defaultOptions) {
+		this(chatApi, defaultOptions, null);
+	}
+
+	public OllamaChatModel(OllamaApi chatApi, OllamaOptions defaultOptions,
+			FunctionCallbackContext functionCallbackContext) {
+		super(functionCallbackContext);
 		Assert.notNull(chatApi, "OllamaApi must not be null");
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
 		this.chatApi = chatApi;
@@ -100,11 +113,32 @@ public class OllamaChatModel implements ChatModel {
 
 		OllamaApi.ChatResponse response = this.chatApi.chat(ollamaChatRequest(prompt, false));
 
-		var generator = new Generation(response.message().content());
+		List<AssistantMessage.ToolCall> toolCalls = response.message().toolCalls() == null ? List.of()
+				: response.message()
+					.toolCalls()
+					.stream()
+					.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+							ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+					.toList();
+
+		var assistantMessage = new AssistantMessage(response.message().content(), Map.of(), toolCalls);
+
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generator = generator.withGenerationMetadata(ChatGenerationMetadata.from("unknown", null));
+			generationMetadata = ChatGenerationMetadata.from("DONE", null);
 		}
-		return new ChatResponse(List.of(generator), from(response));
+
+		var generator = new Generation(assistantMessage, generationMetadata);
+		var chatResponse = new ChatResponse(List.of(generator), from(response));
+
+		if (isToolCall(chatResponse, Set.of("DONE"))) {
+			var toolCallConversation = handleToolCalls(prompt, chatResponse);
+			// Recursively call the call method with the tool call message
+			// conversation that contains the call responses.
+			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+		}
+
+		return chatResponse;
 	}
 
 	public static ChatResponseMetadata from(OllamaApi.ChatResponse response) {
@@ -126,15 +160,39 @@ public class OllamaChatModel implements ChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
-		Flux<OllamaApi.ChatResponse> response = this.chatApi.streamingChat(ollamaChatRequest(prompt, true));
+		Flux<OllamaApi.ChatResponse> ollamaResponse = this.chatApi.streamingChat(ollamaChatRequest(prompt, true));
 
-		return response.map(chunk -> {
-			Generation generation = (chunk.message() != null) ? new Generation(chunk.message().content())
-					: new Generation("");
-			if (Boolean.TRUE.equals(chunk.done())) {
-				generation = generation.withGenerationMetadata(ChatGenerationMetadata.from("unknown", null));
+		Flux<ChatResponse> chatResponse = ollamaResponse.map(chunk -> {
+			String content = (chunk.message() != null) ? chunk.message().content() : "";
+			List<AssistantMessage.ToolCall> toolCalls = chunk.message().toolCalls() == null ? List.of()
+					: chunk.message()
+						.toolCalls()
+						.stream()
+						.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+						.toList();
+
+			var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
+
+			ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
+			if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
+				generationMetadata = ChatGenerationMetadata.from("DONE", null);
 			}
-			return new ChatResponse(List.of(generation), from(chunk));
+
+			var generator = new Generation(assistantMessage, generationMetadata);
+			return new ChatResponse(List.of(generator), from(chunk));
+		});
+
+		return chatResponse.flatMap(response -> {
+			if (isToolCall(response, Set.of("DONE"))) {
+				var toolCallConversation = handleToolCalls(prompt, response);
+				// Recursively call the stream method with the tool call message
+				// conversation that contains the call responses.
+				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+			}
+			else {
+				return Flux.just(response);
+			}
 		});
 	}
 
@@ -147,28 +205,61 @@ public class OllamaChatModel implements ChatModel {
 			.stream()
 			.filter(message -> message.getMessageType() == MessageType.USER
 					|| message.getMessageType() == MessageType.ASSISTANT
-					|| message.getMessageType() == MessageType.SYSTEM)
-			.map(m -> {
-				var messageBuilder = OllamaApi.Message.builder(toRole(m)).withContent(m.getContent());
-				if (m instanceof UserMessage userMessage) {
+					|| message.getMessageType() == MessageType.SYSTEM || message.getMessageType() == MessageType.TOOL)
+			.map(message -> {
+				if (message instanceof UserMessage userMessage) {
+					var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getContent());
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						messageBuilder.withImages(userMessage.getMedia()
 							.stream()
 							.map(media -> this.fromMediaData(media.getData()))
 							.toList());
 					}
+					return List.of(messageBuilder.build());
 				}
-				return messageBuilder.build();
+				else if (message instanceof SystemMessage systemMessage) {
+					return List
+						.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getContent()).build());
+				}
+				else if (message instanceof AssistantMessage assistantMessage) {
+					List<ToolCall> toolCalls = null;
+					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+						toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+							var function = new ToolCallFunction(toolCall.name(),
+									ModelOptionsUtils.jsonToMap(toolCall.arguments()));
+							return new ToolCall(function);
+						}).toList();
+					}
+					return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
+						.withContent(assistantMessage.getContent())
+						.withToolCalls(toolCalls)
+						.build());
+				}
+				else if (message instanceof ToolResponseMessage toolMessage) {
+
+					List<OllamaApi.Message> responseMessages = toolMessage.getResponses()
+						.stream()
+						.map(tr -> OllamaApi.Message.builder(Role.TOOL).withContent(tr.responseData()).build())
+						.toList();
+
+					return responseMessages;
+				}
+				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			})
+			.flatMap(List::stream)
 			.toList();
+
+		Set<String> functionsForThisRequest = new HashSet<>();
 
 		// runtime options
 		OllamaOptions runtimeOptions = null;
 		if (prompt.getOptions() != null) {
 			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 					OllamaOptions.class);
+			functionsForThisRequest.addAll(this.handleFunctionCallbackConfigurations(runtimeOptions, IS_RUNTIME_CALL));
 		}
 
+		functionsForThisRequest.addAll(this.handleFunctionCallbackConfigurations(this.defaultOptions, IS_RUNTIME_CALL));
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
 		// Override the model.
@@ -190,6 +281,11 @@ public class OllamaChatModel implements ChatModel {
 			requestBuilder.withKeepAlive(mergedOptions.getKeepAlive());
 		}
 
+		// Add the enabled functions definitions to the request's tools parameter.
+		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
+			requestBuilder.withTools(this.getFunctionTools(functionsForThisRequest));
+		}
+
 		return requestBuilder.build();
 	}
 
@@ -206,18 +302,12 @@ public class OllamaChatModel implements ChatModel {
 
 	}
 
-	private OllamaApi.Message.Role toRole(Message message) {
-
-		switch (message.getMessageType()) {
-			case USER:
-				return Role.USER;
-			case ASSISTANT:
-				return Role.ASSISTANT;
-			case SYSTEM:
-				return Role.SYSTEM;
-			default:
-				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-		}
+	private List<ChatRequest.Tool> getFunctionTools(Set<String> functionNames) {
+		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
+			var function = new ChatRequest.Tool.Function(functionCallback.getName(), functionCallback.getDescription(),
+					functionCallback.getInputTypeSchema());
+			return new ChatRequest.Tool(function);
+		}).toList();
 	}
 
 	@Override
