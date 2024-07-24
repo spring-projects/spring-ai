@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import java.util.List;
 
 /**
  * @author Piotr Olaszewski
+ * @author Soby Chacko
  */
 @AutoConfiguration
 @ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
@@ -95,6 +96,7 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient,
@@ -109,6 +111,7 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient,
@@ -126,6 +129,7 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiImageOptionsProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClient openAIClient,
@@ -135,6 +139,7 @@ public class AzureOpenAiAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = AzureOpenAiAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public AzureOpenAiAudioTranscriptionModel azureOpenAiAudioTranscriptionModel(OpenAIClient openAIClient,
