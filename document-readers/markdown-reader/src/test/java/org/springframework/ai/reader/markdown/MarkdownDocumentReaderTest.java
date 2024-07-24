@@ -209,4 +209,22 @@ class MarkdownDocumentReaderTest {
 							"Aenean eu leo eu nibh tristique posuere quis quis massa. Aenean imperdiet libero dui, nec malesuada dui maximus vel. Vestibulum sed dui condimentum, cursus libero in, dapibus tortor. Etiam facilisis enim in egestas dictum."));
 	}
 
+	@Test
+	void testWithAdditionalMetadata() {
+		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+			.withAdditionalMetadata("service", "some-service-name")
+			.withAdditionalMetadata("env", "prod")
+			.build();
+
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/simple.md", config);
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(1);
+
+		Document documentsFirst = documents.get(0);
+		assertThat(documentsFirst.getMetadata()).isEqualTo(Map.of("service", "some-service-name", "env", "prod"));
+		assertThat(documentsFirst.getContent()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+	}
+
 }

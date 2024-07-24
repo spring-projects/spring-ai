@@ -2,6 +2,10 @@ package org.springframework.ai.reader.markdown.config;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
+import org.springframework.util.Assert;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Common configuration for the {@link MarkdownDocumentReader}.
@@ -16,10 +20,13 @@ public class MarkdownDocumentReaderConfig {
 
 	public final boolean includeBlockquote;
 
+	public final Map<String, Object> additionalMetadata;
+
 	public MarkdownDocumentReaderConfig(Builder builder) {
 		horizontalRuleCreateDocument = builder.horizontalRuleCreateDocument;
 		includeCodeBlock = builder.includeCodeBlock;
 		includeBlockquote = builder.includeBlockquote;
+		additionalMetadata = builder.additionalMetadata;
 	}
 
 	/**
@@ -40,6 +47,8 @@ public class MarkdownDocumentReaderConfig {
 		private boolean includeCodeBlock = false;
 
 		private boolean includeBlockquote = false;
+
+		private Map<String, Object> additionalMetadata = new HashMap<>();
 
 		private Builder() {
 		}
@@ -78,6 +87,27 @@ public class MarkdownDocumentReaderConfig {
 		 */
 		public Builder withIncludeBlockquote(boolean includeBlockquote) {
 			this.includeBlockquote = includeBlockquote;
+			return this;
+		}
+
+		/**
+		 * Adds this additional metadata to the all built {@link Document}s.
+		 * @return this builder
+		 */
+		public Builder withAdditionalMetadata(String key, Object value) {
+			Assert.notNull(key, "key must not be null");
+			Assert.notNull(value, "value must not be null");
+			this.additionalMetadata.put(key, value);
+			return this;
+		}
+
+		/**
+		 * Adds this additional metadata to the all built {@link Document}s.
+		 * @return this builder
+		 */
+		public Builder withAdditionalMetadata(Map<String, Object> additionalMetadata) {
+			Assert.notNull(additionalMetadata, "additionalMetadata must not be null");
+			this.additionalMetadata = additionalMetadata;
 			return this;
 		}
 

@@ -183,7 +183,12 @@ public class MarkdownDocumentReader implements DocumentReader {
 			if (!currentParagraphs.isEmpty()) {
 				String content = String.join("", currentParagraphs);
 
-				Document document = currentDocumentBuilder.withContent(content).build();
+				Document.Builder builder = currentDocumentBuilder.withContent(content);
+
+				config.additionalMetadata.forEach(builder::withMetadata);
+
+				Document document = builder.build();
+
 				documents.add(document);
 
 				currentParagraphs.clear();
