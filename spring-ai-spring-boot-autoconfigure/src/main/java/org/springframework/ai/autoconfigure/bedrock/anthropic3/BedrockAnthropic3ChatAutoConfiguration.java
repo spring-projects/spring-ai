@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,14 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Soby Chacko
  * @since 0.8.0
  */
 @AutoConfiguration
 @ConditionalOnClass(Anthropic3ChatBedrockApi.class)
 @EnableConfigurationProperties({ BedrockAnthropic3ChatProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(prefix = BedrockAnthropic3ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BedrockAnthropic3ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockAnthropic3ChatAutoConfiguration {
 
@@ -58,6 +60,7 @@ public class BedrockAnthropic3ChatAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnBean(Anthropic3ChatBedrockApi.class)
 	public BedrockAnthropic3ChatModel anthropic3ChatModel(Anthropic3ChatBedrockApi anthropicApi,
 			BedrockAnthropic3ChatProperties properties) {

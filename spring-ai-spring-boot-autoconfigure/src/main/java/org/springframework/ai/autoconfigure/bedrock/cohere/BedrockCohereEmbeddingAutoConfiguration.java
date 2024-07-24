@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,14 @@ import org.springframework.context.annotation.Import;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Soby Chacko
  * @since 0.8.0
  */
 @AutoConfiguration
 @ConditionalOnClass(CohereEmbeddingBedrockApi.class)
 @EnableConfigurationProperties({ BedrockCohereEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(prefix = BedrockCohereEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BedrockCohereEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockCohereEmbeddingAutoConfiguration {
 

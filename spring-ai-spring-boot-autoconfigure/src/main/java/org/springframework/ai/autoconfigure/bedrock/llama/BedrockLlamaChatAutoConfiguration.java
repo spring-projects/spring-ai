@@ -44,7 +44,8 @@ import org.springframework.context.annotation.Import;
 @AutoConfiguration
 @ConditionalOnClass(LlamaChatBedrockApi.class)
 @EnableConfigurationProperties({ BedrockLlamaChatProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(prefix = BedrockLlamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BedrockLlamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockLlamaChatAutoConfiguration {
 
@@ -58,6 +59,7 @@ public class BedrockLlamaChatAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnBean(LlamaChatBedrockApi.class)
 	public BedrockLlamaChatModel llamaChatModel(LlamaChatBedrockApi llamaApi, BedrockLlamaChatProperties properties) {
 
