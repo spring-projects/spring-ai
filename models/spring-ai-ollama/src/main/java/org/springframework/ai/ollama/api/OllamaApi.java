@@ -453,7 +453,7 @@ public class OllamaApi {
 	 * @param stream Whether to stream the response.
 	 * @param format The format to return the response in. Currently, the only accepted
 	 * value is "json".
-	 * @param keepAlive The duration to keep the model loaded in ollama while idle. {@link <a href="https://pkg.go.dev/time#ParseDuration">https://pkg.go.dev/time#ParseDuration</a>}
+	 * @param keepAlive The duration to keep the model loaded in ollama while idle.
 	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
 	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
 	 * map.
