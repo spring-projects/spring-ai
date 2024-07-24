@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.mongodb.BasicDBObject;
-
 import com.mongodb.MongoCommandException;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -140,16 +138,15 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	}
 
 	/**
-	 * Maps a BasicDBObject to a Spring AI Document
-	 * @param basicDBObject the basicDBObject to map to a spring ai document
-	 * @return the spring ai document
+	 * Maps a Bson Document to a Spring AI Document
+	 * @param mongoDocument the mongoDocument to map to a Spring AI Document
+	 * @return the Spring AI Document
 	 */
-	@SuppressWarnings("unchecked")
-	private Document mapBasicDbObject(BasicDBObject basicDBObject) {
-		String id = basicDBObject.getString(ID_FIELD_NAME);
-		String content = basicDBObject.getString(CONTENT_FIELD_NAME);
-		Map<String, Object> metadata = (Map<String, Object>) basicDBObject.get(METADATA_FIELD_NAME);
-		List<Double> embedding = (List<Double>) basicDBObject.get(this.config.pathName);
+	private Document mapMongoDocument(org.bson.Document mongoDocument) {
+		String id = mongoDocument.getString(ID_FIELD_NAME);
+		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
+		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
+		List<Double> embedding = mongoDocument.getList(this.config.pathName, Double.class);
 
 		Document document = new Document(id, content, metadata);
 		document.setEmbedding(embedding);
@@ -198,10 +195,10 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 					.build(),
 				Aggregation.match(new Criteria(SCORE_FIELD_NAME).gte(request.getSimilarityThreshold())));
 
-		return this.mongoTemplate.aggregate(aggregation, this.config.collectionName, BasicDBObject.class)
+		return this.mongoTemplate.aggregate(aggregation, this.config.collectionName, org.bson.Document.class)
 			.getMappedResults()
 			.stream()
-			.map(this::mapBasicDbObject)
+			.map(this::mapMongoDocument)
 			.toList();
 	}
 
