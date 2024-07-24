@@ -103,6 +103,12 @@ public class MarkdownDocumentReader implements DocumentReader {
 		}
 
 		@Override
+		public void visit(ListItem listItem) {
+			translateLineBreakToSpace();
+			super.visit(listItem);
+		}
+
+		@Override
 		public void visit(BlockQuote blockQuote) {
 			if (!config.includeBlockquote) {
 				buildAndFlush();

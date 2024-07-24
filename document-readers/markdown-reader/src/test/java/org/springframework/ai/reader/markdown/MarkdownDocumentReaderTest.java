@@ -195,4 +195,18 @@ class MarkdownDocumentReaderTest {
 				"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue. Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget sapien odio. Maecenas urna lectus, pellentesque in accumsan aliquam, congue eu libero. Ut rhoncus nec justo a porttitor. Pellentesque auctor pharetra eros, viverra sodales lorem aliquet id. Curabitur semper nisi vel sem interdum suscipit.");
 	}
 
+	@Test
+	void testLists() {
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/lists.md");
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(2)
+			.extracting(Document::getMetadata, Document::getContent)
+			.containsOnly(tuple(Map.of("category", "header_2", "title", "Ordered list"),
+					"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue. Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget sapien odio. Pellentesque auctor pharetra eros, viverra sodales lorem aliquet id. Curabitur semper nisi vel sem interdum suscipit. Maecenas urna lectus, pellentesque in accumsan aliquam, congue eu libero. Ut rhoncus nec justo a porttitor."),
+					tuple(Map.of("category", "header_2", "title", "Unordered list"),
+							"Aenean eu leo eu nibh tristique posuere quis quis massa. Aenean imperdiet libero dui, nec malesuada dui maximus vel. Vestibulum sed dui condimentum, cursus libero in, dapibus tortor. Etiam facilisis enim in egestas dictum."));
+	}
+
 }
