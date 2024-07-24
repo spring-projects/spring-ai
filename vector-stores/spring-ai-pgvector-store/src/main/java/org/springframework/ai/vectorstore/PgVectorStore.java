@@ -245,9 +245,11 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		List<Document> similaritySearch = similaritySearch(searchRequest);
 
-		String sql = "SELECT *, ts_rank_cd(to_tsvector(content), plainto_tsquery(?)) AS rank FROM " + getFullyQualifiedTableName() + " ORDER BY rank DESC LIMIT ?";
+		String sql = "SELECT *, ts_rank_cd(to_tsvector(content), plainto_tsquery(?)) AS rank FROM "
+				+ getFullyQualifiedTableName() + " ORDER BY rank DESC LIMIT ?";
 
-		List<Document> keyLikeSearch = this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper, true), query, searchRequest.getTopK());
+		List<Document> keyLikeSearch = this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper, true),
+				query, searchRequest.getTopK());
 
 		similaritySearch.addAll(keyLikeSearch);
 		return similaritySearch;
