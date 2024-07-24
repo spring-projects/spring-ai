@@ -26,6 +26,7 @@ public class FunctionCallbackMethodProcessorIT {
 
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+			.withBean(FunctionCallbackContext.class)
 			.withBean(FunctionCallbackMethodProcessor.class)
 			// The "1" is added to the package path for compatibility with the !isSpringContainerClass method.
 			.withBean(org.springframework1.ai.model.function.FunctionCallConfig.class);
@@ -33,7 +34,8 @@ public class FunctionCallbackMethodProcessorIT {
 	 @Test
 	 public void testFunctionCallbackMethodProcessor() {
 		 contextRunner.run(context -> {
-			 FunctionCallback functionCallback = context.getBean(FunctionCallback.class);
+			 FunctionCallbackContext callbackContext = context.getBean(FunctionCallbackContext.class);
+			 FunctionCallback functionCallback = callbackContext.getFunctionCallback("dateTime", null);
 			 logger.info("FunctionCallback: name:{}, description:{}",
 					 functionCallback.getName(), functionCallback.getDescription());
 			 String result = functionCallback.call("{\"location\":\"New York\"}");
