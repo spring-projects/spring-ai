@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -79,6 +82,29 @@ class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
+	}
+
+	@Test
+	void streamCompletenessTest() throws InterruptedException {
+		UserMessage userMessage = new UserMessage(
+				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any.");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		StringBuilder answer = new StringBuilder();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		Flux<ChatResponse> chatResponseFlux = streamingChatModel.stream(prompt).doOnNext(chatResponse -> {
+			String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
+			answer.append(responseContent);
+		}).doOnComplete(() -> {
+			logger.info(answer.toString());
+			latch.countDown();
+		});
+		chatResponseFlux.subscribe();
+		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
+		IntStream.rangeClosed(1, 1000).forEach(n -> {
+			assertThat(answer).contains(String.valueOf(n));
+		});
 	}
 
 	@Test
