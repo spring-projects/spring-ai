@@ -71,9 +71,9 @@ public interface VectorStore extends DocumentWriter {
 	}
 
 	/**
-	 * Retrieves documents by query embedding similarity using the default,
-	 * If the subclass implements this method, use hybrid search, similar search + full text search.
-	 * {@link SearchRequest}'s' search criteria.
+	 * Retrieves documents by query embedding similarity using the default, If the
+	 * subclass implements this method, use hybrid search, similar search + full text
+	 * search. {@link SearchRequest}'s' search criteria.
 	 * @param query Text to use for embedding similarity comparison.
 	 * @return Returns a list of documents that have embeddings similar to the query text
 	 */
