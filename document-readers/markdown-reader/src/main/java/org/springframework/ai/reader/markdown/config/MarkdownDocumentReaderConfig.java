@@ -1,6 +1,11 @@
 package org.springframework.ai.reader.markdown.config;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
+
 /**
+ * Common configuration for the {@link MarkdownDocumentReader}.
+ *
  * @author Piotr Olaszewski
  */
 public class MarkdownDocumentReaderConfig {
@@ -17,6 +22,9 @@ public class MarkdownDocumentReaderConfig {
 		includeBlockquote = builder.includeBlockquote;
 	}
 
+	/**
+	 * @return the default configuration
+	 */
 	public static MarkdownDocumentReaderConfig defaultConfig() {
 		return builder().build();
 	}
@@ -36,21 +44,46 @@ public class MarkdownDocumentReaderConfig {
 		private Builder() {
 		}
 
+		/**
+		 * Text divided by horizontal lines will create new {@link Document}s. The default
+		 * is {@code false}, meaning text separated by horizontal lines won't create a new
+		 * document.
+		 * @param horizontalRuleCreateDocument flag to determine whether new documents are
+		 * created from text divided by horizontal line
+		 * @return this builder
+		 */
 		public Builder withHorizontalRuleCreateDocument(boolean horizontalRuleCreateDocument) {
 			this.horizontalRuleCreateDocument = horizontalRuleCreateDocument;
 			return this;
 		}
 
+		/**
+		 * Whatever to include code blocks in {@link Document}s. The default is
+		 * {@code false}, which means all code blocks are in separate documents.
+		 * @param includeCodeBlock flag to include code block into paragraph document or
+		 * create new with code only
+		 * @return this builder
+		 */
 		public Builder withIncludeCodeBlock(boolean includeCodeBlock) {
 			this.includeCodeBlock = includeCodeBlock;
 			return this;
 		}
 
+		/**
+		 * Whatever to include blockquotes in {@link Document}s. The default is
+		 * {@code false}, which means all blockquotes are in separate documents.
+		 * @param includeBlockquote flag to include blockquotes into paragraph document or
+		 * create new with blockquote only
+		 * @return this builder
+		 */
 		public Builder withIncludeBlockquote(boolean includeBlockquote) {
 			this.includeBlockquote = includeBlockquote;
 			return this;
 		}
 
+		/**
+		 * @return the immutable configuration
+		 */
 		public MarkdownDocumentReaderConfig build() {
 			return new MarkdownDocumentReaderConfig(this);
 		}

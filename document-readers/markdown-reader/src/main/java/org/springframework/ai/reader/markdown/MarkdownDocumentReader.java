@@ -14,17 +14,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reads the given Markdown resource and groups headers paragraphs into
- * {@link Document}'s.
+ * Reads the given Markdown resource and groups headers, paragraphs, or text divided by
+ * horizontal lines (depending on the
+ * {@link MarkdownDocumentReaderConfig#horizontalRuleCreateDocument} configuration) into
+ * {@link Document}s.
  *
  * @author Piotr Olaszewski
  */
 public class MarkdownDocumentReader implements DocumentReader {
 
+	/**
+	 * The resource points to the Markdown document.
+	 */
 	private final Resource markdownResource;
 
+	/**
+	 * Configuration to a parsing process.
+	 */
 	private final MarkdownDocumentReaderConfig config;
 
+	/**
+	 * Markdown parser.
+	 */
 	private final Parser parser;
 
 	public MarkdownDocumentReader(String markdownResource) {
@@ -41,6 +52,10 @@ public class MarkdownDocumentReader implements DocumentReader {
 		this.parser = Parser.builder().build();
 	}
 
+	/**
+	 * Extracts and returns a list of documents from the resource.
+	 * @return List of extracted {@link Document}
+	 */
 	@Override
 	public List<Document> get() {
 		try (var input = markdownResource.getInputStream()) {
@@ -56,6 +71,9 @@ public class MarkdownDocumentReader implements DocumentReader {
 		}
 	}
 
+	/**
+	 * A convenient class for visiting handled nodes in the Markdown document.
+	 */
 	static class DocumentVisitor extends AbstractVisitor {
 
 		private final List<Document> documents = new ArrayList<>();
