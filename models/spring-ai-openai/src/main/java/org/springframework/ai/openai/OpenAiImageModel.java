@@ -41,6 +41,7 @@ import java.util.List;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Hyunjoon Choi
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class OpenAiImageModel implements ImageModel {
@@ -90,30 +91,32 @@ public class OpenAiImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		return this.retryTemplate.execute(ctx -> {
 
-			String instructions = imagePrompt.getInstructions().get(0).getText();
+		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(imagePrompt);
 
-			OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
-					OpenAiImageApi.DEFAULT_IMAGE_MODEL);
+		ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.retryTemplate
+			.execute(ctx -> this.openAiImageApi.createImage(imageRequest));
 
-			if (this.defaultOptions != null) {
-				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-						OpenAiImageApi.OpenAiImageRequest.class);
-			}
+		return convertResponse(imageResponseEntity, imageRequest);
+	}
 
-			if (imagePrompt.getOptions() != null) {
-				imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
-						OpenAiImageApi.OpenAiImageRequest.class);
-			}
+	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt) {
+		String instructions = imagePrompt.getInstructions().get(0).getText();
 
-			// Make the request
-			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.openAiImageApi
-				.createImage(imageRequest);
+		OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
+				OpenAiImageApi.DEFAULT_IMAGE_MODEL);
 
-			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, imageRequest);
-		});
+		if (this.defaultOptions != null) {
+			imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
+					OpenAiImageApi.OpenAiImageRequest.class);
+		}
+
+		if (imagePrompt.getOptions() != null) {
+			imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
+					OpenAiImageApi.OpenAiImageRequest.class);
+		}
+
+		return imageRequest;
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,

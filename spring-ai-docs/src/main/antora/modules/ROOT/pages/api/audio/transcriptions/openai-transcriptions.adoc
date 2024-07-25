@@ -1,22 +1,20 @@
-== OpenAI Transcriptions
+= OpenAI Transcriptions
 
 Spring AI supports https://platform.openai.com/docs/api-reference/audio/createTranscription[OpenAI's Transcription model].
 
 == Prerequisites
-
 
 You will need to create an API key with OpenAI to access ChatGPT models.
 Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
 The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
 Exporting an environment variable is one way to set that configuration property:
 
-
 == Auto-configuration
 
 Spring AI provides Spring Boot auto-configuration for the OpenAI Image Generation Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
-[source, xml]
+[source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
@@ -54,7 +52,7 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 == Runtime Options [[image-options]]
 
 The `OpenAiAudioTranscriptionOptions` class provides the options to use when making a transcription.
-On start-up, the options specified by `spring.ai.openai.audio.transcription` are used but you can override these at runtime.
+On start-up, the options specified by `spring.ai.openai.audio.transcription` are used, but you can override these at runtime.
 
 For example:
 
@@ -76,7 +74,7 @@ AudioTranscriptionResponse response = openAiTranscriptionModel.call(transcriptio
 
 Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
 
-[source, xml]
+[source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
@@ -115,4 +113,5 @@ AudioTranscriptionResponse response = openAiTranscriptionModel.call(transcriptio
 ----
 
 == Example Code
+
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/transcription/OpenAiTranscriptionModelIT.java[OpenAiTranscriptionModelIT.java] test provides some general examples how to use the library.

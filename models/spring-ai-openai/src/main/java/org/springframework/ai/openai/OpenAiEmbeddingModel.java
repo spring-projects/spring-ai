@@ -69,8 +69,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public OpenAiEmbeddingModel(OpenAiApi openAiApi, MetadataMode metadataMode) {
 		this(openAiApi, metadataMode,
-				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
+				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build());
 	}
 
 	/**
@@ -110,42 +109,45 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
-		return this.retryTemplate.execute(ctx -> {
+		org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(request);
 
-			org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
-					? new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
-							this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat(),
-							this.defaultOptions.getDimensions(), this.defaultOptions.getUser())
-					: new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
-							OpenAiApi.DEFAULT_EMBEDDING_MODEL);
+		EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = this.retryTemplate
+			.execute(ctx -> this.openAiApi.embeddings(apiRequest).getBody());
 
-			if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
-				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
-						org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
-			}
+		if (apiEmbeddingResponse == null) {
+			logger.warn("No embeddings returned for request: {}", request);
+			return new EmbeddingResponse(List.of());
+		}
 
-			EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = this.openAiApi.embeddings(apiRequest).getBody();
+		var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
+				OpenAiUsage.from(apiEmbeddingResponse.usage()));
 
-			if (apiEmbeddingResponse == null) {
-				logger.warn("No embeddings returned for request: {}", request);
-				return new EmbeddingResponse(List.of());
-			}
+		List<Embedding> embeddings = apiEmbeddingResponse.data()
+			.stream()
+			.map(e -> new Embedding(e.embedding(), e.index()))
+			.toList();
 
-			var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-					OpenAiUsage.from(apiEmbeddingResponse.usage()));
+		return new EmbeddingResponse(embeddings, metadata);
+	}
 
-			List<Embedding> embeddings = apiEmbeddingResponse.data()
-				.stream()
-				.map(e -> new Embedding(e.embedding(), e.index()))
-				.toList();
+	@SuppressWarnings("unchecked")
+	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
+		org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
+				? new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
+						this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat(),
+						this.defaultOptions.getDimensions(), this.defaultOptions.getUser())
+				: new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
+						OpenAiApi.DEFAULT_EMBEDDING_MODEL);
 
-			return new EmbeddingResponse(embeddings, metadata);
+		if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
+			apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
+					org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
+		}
 
-		});
+		return apiRequest;
 	}
 
 }

@@ -29,6 +29,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
@@ -37,7 +38,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -267,13 +268,15 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.map(message -> {
 				if (message.getMessageType() == MessageType.USER) {
 					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getContent())));
-					if (!CollectionUtils.isEmpty(message.getMedia())) {
-						List<ContentBlock> mediaContent = message.getMedia()
-							.stream()
-							.map(media -> new ContentBlock(media.getMimeType().toString(),
-									this.fromMediaData(media.getData())))
-							.toList();
-						contents.addAll(mediaContent);
+					if (message instanceof UserMessage userMessage) {
+						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+							List<ContentBlock> mediaContent = userMessage.getMedia()
+								.stream()
+								.map(media -> new ContentBlock(media.getMimeType().toString(),
+										this.fromMediaData(media.getData())))
+								.toList();
+							contents.addAll(mediaContent);
+						}
 					}
 					return new AnthropicMessage(contents, Role.valueOf(message.getMessageType().name()));
 				}

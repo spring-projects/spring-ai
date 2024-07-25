@@ -297,10 +297,6 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		if (status.getException() != null) {
 			throw new RuntimeException("Failed to insert:", status.getException());
 		}
-		this.milvusClient.flush(FlushParam.newBuilder()
-			.withDatabaseName(this.config.databaseName)
-			.addCollectionName(this.config.collectionName)
-			.build());
 	}
 
 	@Override

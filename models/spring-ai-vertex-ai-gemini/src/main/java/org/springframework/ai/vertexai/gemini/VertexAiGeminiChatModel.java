@@ -33,7 +33,7 @@ import com.google.cloud.vertexai.generativeai.ResponseStream;
 import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -47,7 +47,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
 import org.springframework.beans.factory.DisposableBean;
@@ -381,9 +381,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			if (systemMessage.getContent() != null) {
 				parts.add(Part.newBuilder().setText(systemMessage.getContent()).build());
 			}
-
-			// NOTE: For Gemine the system messages do not support media attachments.
-			parts.addAll(mediaToParts(systemMessage.getMedia()));
 
 			return parts;
 		}

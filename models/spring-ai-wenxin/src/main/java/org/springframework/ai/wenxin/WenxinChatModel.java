@@ -1,8 +1,10 @@
 package org.springframework.ai.wenxin;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -15,7 +17,7 @@ import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.wenxin.api.WenxinApi;
-import org.springframework.ai.wenxin.metadata.WenxinChatResponseMetadata;
+import org.springframework.ai.wenxin.metadata.WenxinUsage;
 import org.springframework.ai.wenxin.metadata.support.WenxinResponseHeaderExtractor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -68,7 +70,6 @@ public class WenxinChatModel extends
 	public ChatResponse call(Prompt prompt) {
 
 		WenxinApi.ChatCompletionRequest request = createRequest(prompt, false);
-
 		return this.retryTemplate.execute(ctx -> {
 
 			ResponseEntity<WenxinApi.ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
@@ -80,7 +81,7 @@ public class WenxinChatModel extends
 				return new ChatResponse(List.of());
 			}
 
-			RateLimit rateLimits = WenxinResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+			RateLimit rateLimit = WenxinResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
 			Generation generation = new Generation(chatCompletion.result(), toMap(chatCompletion.id(),
 					chatCompletion));
@@ -88,8 +89,21 @@ public class WenxinChatModel extends
 			List<Generation> generations = List.of(generation);
 
 			return new ChatResponse(generations,
-					WenxinChatResponseMetadata.from(chatCompletion).withRateLimit(rateLimits));
+					from(chatCompletion,rateLimit,request));
 		});
+	}
+
+	public static ChatResponseMetadata from(WenxinApi.ChatCompletion result, RateLimit rateLimit,WenxinApi.ChatCompletionRequest request) {
+		Assert.notNull(result, "Wenxin ChatCompletionResult must not be null");
+		return ChatResponseMetadata.builder()
+				.withId(result.id())
+				.withUsage(WenxinUsage.from(result.usage()))
+				.withModel(request.model())
+				.withRateLimit(rateLimit)
+				.withKeyValue("created", result.created())
+				.withKeyValue("sentence_id",result.sentenceId())
+				.build();
+
 	}
 
 	@Override

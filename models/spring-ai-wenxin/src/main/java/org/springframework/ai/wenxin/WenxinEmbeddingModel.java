@@ -13,6 +13,7 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.wenxin.api.WenxinApi;
+import org.springframework.ai.wenxin.metadata.WenxinUsage;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -92,8 +93,12 @@ public class WenxinEmbeddingModel extends AbstractEmbeddingModel {
 				return new EmbeddingResponse(List.of());
 			}
 
-			var metadata = generateResponseMetadata(apiEmbeddingResponse.id(), apiEmbeddingResponse.object(),
-					apiEmbeddingResponse.created(), apiEmbeddingResponse.usage());
+			// var metadata = generateResponseMetadata(apiEmbeddingResponse.id(),
+			// apiEmbeddingResponse.object(),
+			// apiEmbeddingResponse.created(), apiEmbeddingResponse.usage());
+
+			var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
+					WenxinUsage.from(apiEmbeddingResponse.usage()));
 
 			List<Embedding> embeddings = apiEmbeddingResponse.data()
 				.stream()
@@ -102,17 +107,6 @@ public class WenxinEmbeddingModel extends AbstractEmbeddingModel {
 
 			return new EmbeddingResponse(embeddings, metadata);
 		});
-	}
-
-	private EmbeddingResponseMetadata generateResponseMetadata(String id, String object, Long created,
-			WenxinApi.EmbeddingList.Usage usage) {
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.put("id", id);
-		metadata.put("object", object);
-		metadata.put("created", created);
-		metadata.put("prompt-tokens", usage.promptTokens());
-		metadata.put("total-tokens", usage.totalTokens());
-		return metadata;
 	}
 
 }

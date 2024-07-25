@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.api.common;
+package org.springframework.ai.audio.transcription;
+
+import org.springframework.ai.model.MutableResponseMetadata;
 
 /**
- * Non HTTP Error related exceptions
+ * @author Piotr Olaszewski
  */
-public class OpenAiApiException extends RuntimeException {
-
-	public OpenAiApiException(String message) {
-		super(message);
-	}
-
-	public OpenAiApiException(String message, Throwable cause) {
-		super(message, cause);
-	}
+public class AudioTranscriptionResponseMetadata extends MutableResponseMetadata {
 
 }

@@ -29,8 +29,6 @@ public class WenxinEmbeddingIT {
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(384);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
 		assertThat(wenxinEmbeddingModel.dimensions()).isEqualTo(384);
 
 	}

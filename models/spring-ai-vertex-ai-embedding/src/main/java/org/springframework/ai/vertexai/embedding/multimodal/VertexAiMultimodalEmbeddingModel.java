@@ -23,7 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;

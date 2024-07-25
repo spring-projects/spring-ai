@@ -150,6 +150,11 @@ public class WenxinChatOptions implements FunctionCallingOptions, ChatOptions {
 		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
 	}
 
+	@Override
+	public ChatOptions copy() {
+		return WenxinChatOptions.fromOptions(this);
+	}
+
 	@JsonIgnore
 	public void setTopK(Integer topK) {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");

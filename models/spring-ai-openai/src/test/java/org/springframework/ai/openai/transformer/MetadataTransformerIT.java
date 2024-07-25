@@ -189,7 +189,7 @@ public class MetadataTransformerIT {
 
 		@Bean
 		public ContentFormatTransformer contentFormatTransformer(DefaultContentFormatter defaultContentFormatter) {
-			return new ContentFormatTransformer(defaultContentFormatter, false);
+			return new ContentFormatTransformer(defaultContentFormatter);
 		}
 
 	}

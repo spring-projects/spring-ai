@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.audio.transcription;
+package org.springframework.ai.audio.transcription;
 
 import org.springframework.ai.model.ModelResult;
-import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionMetadata;
 import org.springframework.lang.Nullable;
 
 import java.util.Objects;
@@ -25,13 +24,14 @@ import java.util.Objects;
  * Represents a response returned by the AI.
  *
  * @author Michael Lavelle
+ * @author Piotr Olaszewski
  * @since 0.8.1
  */
 public class AudioTranscription implements ModelResult<String> {
 
-	private String text;
+	private final String text;
 
-	private OpenAiAudioTranscriptionMetadata transcriptionMetadata;
+	private AudioTranscriptionMetadata transcriptionMetadata;
 
 	public AudioTranscription(String text) {
 		this.text = text;
@@ -43,12 +43,11 @@ public class AudioTranscription implements ModelResult<String> {
 	}
 
 	@Override
-	public OpenAiAudioTranscriptionMetadata getMetadata() {
-		return transcriptionMetadata != null ? transcriptionMetadata : OpenAiAudioTranscriptionMetadata.NULL;
+	public AudioTranscriptionMetadata getMetadata() {
+		return transcriptionMetadata != null ? transcriptionMetadata : AudioTranscriptionMetadata.NULL;
 	}
 
-	public AudioTranscription withTranscriptionMetadata(
-			@Nullable OpenAiAudioTranscriptionMetadata transcriptionMetadata) {
+	public AudioTranscription withTranscriptionMetadata(@Nullable AudioTranscriptionMetadata transcriptionMetadata) {
 		this.transcriptionMetadata = transcriptionMetadata;
 		return this;
 	}

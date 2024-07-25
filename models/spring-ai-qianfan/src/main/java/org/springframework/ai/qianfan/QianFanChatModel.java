@@ -166,6 +166,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 					ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
 			.toList();
 		var systemMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() == Role.SYSTEM).toList();
+		var userMessageList = chatCompletionMessages.stream().filter(msg -> msg.role() != Role.SYSTEM).toList();
 
 		if (systemMessageList.size() > 1) {
 			throw new IllegalArgumentException("Only one system message is allowed in the prompt");
@@ -173,7 +174,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 		var systemMessage = systemMessageList.isEmpty() ? null : systemMessageList.get(0).content();
 
-		var request = new ChatCompletionRequest(chatCompletionMessages, systemMessage, stream);
+		var request = new ChatCompletionRequest(userMessageList, systemMessage, stream);
 
 		if (this.defaultOptions != null) {
 			request = ModelOptionsUtils.merge(this.defaultOptions, request, ChatCompletionRequest.class);

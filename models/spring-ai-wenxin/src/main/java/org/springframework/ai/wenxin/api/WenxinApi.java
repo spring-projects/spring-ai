@@ -449,12 +449,6 @@ public class WenxinApi {
 			@JsonProperty("data") List<T> data,
 			@JsonProperty("usage") Usage usage) {
 
-		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record Usage(
-				@JsonProperty("prompt_tokens") Integer promptTokens,
-				@JsonProperty("total_tokens") Integer totalTokens) {
-
-		}
 	}
 	// @formatter:on
 

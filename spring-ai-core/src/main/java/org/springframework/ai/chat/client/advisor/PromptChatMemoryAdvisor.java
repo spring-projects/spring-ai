@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.model.Content;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
@@ -75,8 +76,8 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			.get(this.doGetConversationId(context), this.doGetChatMemoryRetrieveSize(context));
 
 		String memory = (memoryMessages != null) ? memoryMessages.stream()
-			.filter(m -> m.getMessageType() != MessageType.SYSTEM)
-			.map(m -> m.getMessageType() + ":" + m.getContent())
+			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+			.map(m -> m.getMessageType() + ":" + ((Content) m).getContent())
 			.collect(Collectors.joining(System.lineSeparator())) : "";
 
 		Map<String, Object> advisedSystemParams = new HashMap<>(request.systemParams());

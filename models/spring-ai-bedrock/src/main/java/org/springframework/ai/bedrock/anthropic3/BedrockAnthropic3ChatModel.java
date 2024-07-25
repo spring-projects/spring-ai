@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi;
@@ -156,13 +157,15 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> {
 				List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(message.getContent())));
-				if (!CollectionUtils.isEmpty(message.getMedia())) {
-					List<MediaContent> mediaContent = message.getMedia()
-						.stream()
-						.map(media -> new MediaContent(media.getMimeType().toString(),
-								this.fromMediaData(media.getData())))
-						.toList();
-					contents.addAll(mediaContent);
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						List<MediaContent> mediaContent = userMessage.getMedia()
+							.stream()
+							.map(media -> new MediaContent(media.getMimeType().toString(),
+									this.fromMediaData(media.getData())))
+							.toList();
+						contents.addAll(mediaContent);
+					}
 				}
 				return new ChatCompletionMessage(contents, Role.valueOf(message.getMessageType().name()));
 			})

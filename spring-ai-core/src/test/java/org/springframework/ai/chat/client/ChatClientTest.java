@@ -233,7 +233,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getContent()).isEqualTo("Default system text value1, value2");
 
-		Message userMessage = prompt.getInstructions().get(1);
+		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(1);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).isEqualTo("Default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -255,7 +255,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getContent()).isEqualTo("Default system text value1, value2");
 
-		userMessage = prompt.getInstructions().get(1);
+		userMessage = (UserMessage) prompt.getInstructions().get(1);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).isEqualTo("Default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -285,7 +285,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getContent()).isEqualTo("Mutated default system text value1, value2");
 
-		userMessage = prompt.getInstructions().get(1);
+		userMessage = (UserMessage) prompt.getInstructions().get(1);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).isEqualTo("Mutated default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -307,7 +307,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getContent()).isEqualTo("Mutated default system text value1, value2");
 
-		userMessage = prompt.getInstructions().get(1);
+		userMessage = (UserMessage) prompt.getInstructions().get(1);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).isEqualTo("Mutated default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -367,7 +367,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getContent()).isEqualTo("New default system text value1, value2");
 
-		Message userMessage = prompt.getInstructions().get(1);
+		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(1);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).isEqualTo("Default user text userValue1, userValue2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -398,7 +398,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getContent()).isEqualTo("New default system text value1, value2");
 
-		userMessage = prompt.getInstructions().get(1);
+		userMessage = (UserMessage) prompt.getInstructions().get(1);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getContent()).isEqualTo("Default user text userValue1, userValue2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -512,7 +512,7 @@ public class ChatClientTest {
 		assertThat(systemMessage.getContent()).isEqualTo("System text");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(1);
+		UserMessage userMessage = (UserMessage) promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getContent()).isEqualTo("User text Rock");
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getMedia()).hasSize(1);
