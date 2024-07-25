@@ -2,6 +2,10 @@
 
 TIP: You need Ollama 0.2.8 or newer.
 
+TIP: You need https://ollama.com/library[Models] pre-trained for Tools support. 
+Usually, such models are tagged with a `Tools` tag.
+For example `mistral`, `firefunction-v2` or `llama3.1:70b`.
+
 NOTE: Currently, the Ollama API (0.2.8) does not support function calling in streaming mode.
 
 You can register custom Java functions with the `OllamaChatModel` and have the Ollama deployed model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
@@ -9,7 +13,6 @@ This allows you to connect the LLM capabilities with external tools and APIs.
 The Ollama models tagged with the `Tools` label are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
 
 The Ollama API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
-
 Spring AI provides flexible and user-friendly ways to register and call custom functions.
 In general, the custom functions need to provide a function `name`,  `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.  
 The `description` helps the model to understand when to call the function.
