@@ -47,31 +47,35 @@
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
+		<module>vector-stores/spring-ai-coherence-store</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
-
 		<module>vector-stores/spring-ai-gemfire-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
 		<module>vector-stores/spring-ai-neo4j-store</module>
+		<module>vector-stores/spring-ai-opensearch-store</module>
 		<module>vector-stores/spring-ai-oracle-store</module>
 		<module>vector-stores/spring-ai-pgvector-store</module>
 		<module>vector-stores/spring-ai-pinecone-store</module>
 		<module>vector-stores/spring-ai-qdrant-store</module>
 		<module>vector-stores/spring-ai-redis-store</module>
 		<module>vector-stores/spring-ai-typesense-store</module>
-
 		<module>vector-stores/spring-ai-weaviate-store</module>
+
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-cosmos-db-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-coherence-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-oracle-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
@@ -79,6 +83,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-typesense-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-weaviate-store</module>
+
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
@@ -93,13 +98,13 @@
 		<module>models/spring-ai-qianfan</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
-		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
+		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
+
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-converse</module>
@@ -118,8 +123,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
-		<module>vector-stores/spring-ai-opensearch-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
 	</modules>
 
 	<organization>
@@ -197,6 +200,7 @@
 		<pdfbox.version>3.0.3</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
+		<coherence.version>24.09</coherence.version>
 		<oracle.version>23.4.0.24.05</oracle.version>
 		<postgresql.version>42.7.2</postgresql.version>
 		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
