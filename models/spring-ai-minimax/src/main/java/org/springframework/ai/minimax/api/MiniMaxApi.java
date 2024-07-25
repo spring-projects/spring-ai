@@ -714,7 +714,7 @@ public class MiniMaxApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
- 				.map(chunk -> {
+				.map(chunk -> {
 					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 						isInsideTool.set(true);
 					}
@@ -730,7 +730,7 @@ public class MiniMaxApi {
 				.concatMapIterable(window -> {
 					Mono<ChatCompletionChunk> monoChunk = window.reduce(
 							new ChatCompletionChunk(null, null, null, null, null, null),
-							this.chunkMerger::merge);
+							(previous, current) -> this.chunkMerger.merge(previous, current));
 					return List.of(monoChunk);
 				})
 				.flatMap(mono -> mono);

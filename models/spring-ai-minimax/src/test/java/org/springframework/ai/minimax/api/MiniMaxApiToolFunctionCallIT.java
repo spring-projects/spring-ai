@@ -54,7 +54,8 @@ public class MiniMaxApiToolFunctionCallIT {
 	public void toolFunctionCall() {
 
 		// Step 1: send the conversation and available functions to the model
-		var message = new ChatCompletionMessage("What's the weather like in San Francisco?", Role.USER);
+		var message = new ChatCompletionMessage(
+				"What's the weather like in San Francisco? Return the temperature in Celsius.", Role.USER);
 
 		var functionTool = new MiniMaxApi.FunctionTool(Type.FUNCTION, new MiniMaxApi.FunctionTool.Function(
 				"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather", """
@@ -126,7 +127,8 @@ public class MiniMaxApiToolFunctionCallIT {
 
 		assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
-			.containsAnyOf("30.0°C", "30°C", "30.0°F", "30°F");
+			.containsAnyOf("30.0°C", "30°C", "30.0")
+			.containsAnyOf("°C", "Celsius");
 	}
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
