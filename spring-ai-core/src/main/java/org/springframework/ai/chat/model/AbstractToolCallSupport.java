@@ -99,7 +99,7 @@ public abstract class AbstractToolCallSupport {
 
 	protected List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
 		AssistantMessage assistantMessage = response.getResult().getOutput();
-		ToolResponseMessage toolMessageResponse = this.executeFuncitons(assistantMessage);
+		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage);
 		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 	}
 
@@ -147,7 +147,7 @@ public abstract class AbstractToolCallSupport {
 		return retrievedFunctionCallbacks;
 	}
 
-	protected ToolResponseMessage executeFuncitons(AssistantMessage assistantMessage) {
+	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
