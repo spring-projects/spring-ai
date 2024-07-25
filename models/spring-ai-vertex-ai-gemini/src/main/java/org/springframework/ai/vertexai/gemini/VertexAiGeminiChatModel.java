@@ -195,7 +195,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), assistantToolCalls);
 
-		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
+		ToolResponseMessage toolResponseMessage = this.executeFunctions(assistantMessage);
 
 		// History
 		List<Message> toolCallMessageConversation = new ArrayList<>(previousMessages);

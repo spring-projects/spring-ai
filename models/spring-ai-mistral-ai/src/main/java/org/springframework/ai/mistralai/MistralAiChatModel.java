@@ -221,7 +221,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		AssistantMessage assistantMessage = new AssistantMessage(nativeAssistantMessage.content(), Map.of(),
 				assistantToolCalls);
 
-		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
+		ToolResponseMessage toolResponseMessage = this.executeFunctions(assistantMessage);
 
 		// History
 		List<Message> messages = new ArrayList<>(previousMessages);
@@ -241,7 +241,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 		return msg;
 	}
 
-	protected ToolResponseMessage executeFuncitons(AssistantMessage assistantMessage) {
+	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
