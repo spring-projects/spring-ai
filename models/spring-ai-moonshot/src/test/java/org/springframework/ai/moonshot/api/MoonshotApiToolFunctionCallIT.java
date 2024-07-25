@@ -28,6 +28,7 @@ import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage.Rol
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest.ToolChoiceBuilder;
+import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool;
 import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool.Type;
 import org.springframework.http.ResponseEntity;
 
@@ -45,47 +46,56 @@ public class MoonshotApiToolFunctionCallIT {
 
 	private final Logger logger = LoggerFactory.getLogger(MoonshotApiToolFunctionCallIT.class);
 
-	MockWeatherService weatherService = new MockWeatherService();
+	private final MockWeatherService weatherService = new MockWeatherService();
 
-	MoonshotApi moonshotApi = new MoonshotApi(System.getenv("MOONSHOT_API_KEY"));
+	private final MoonshotApi moonshotApi = new MoonshotApi(System.getenv("MOONSHOT_API_KEY"));
+
+	private static final FunctionTool FUNCTION_TOOL = new FunctionTool(Type.FUNCTION, new FunctionTool.Function(
+			"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather", """
+					{
+						"type": "object",
+						"properties": {
+							"location": {
+								"type": "string",
+								"description": "The city and state e.g. San Francisco, CA"
+							},
+							"lat": {
+								"type": "number",
+								"description": "The city latitude"
+							},
+							"lon": {
+								"type": "number",
+								"description": "The city longitude"
+							},
+							"unit": {
+								"type": "string",
+								"enum": ["C", "F"]
+							}
+						},
+						"required": ["location", "lat", "lon", "unit"]
+					}
+					"""));
 
 	@SuppressWarnings("null")
 	@Test
 	public void toolFunctionCall() {
+		toolFunctionCall("What's the weather like in San Francisco? Return the temperature in Celsius.",
+				"San Francisco");
+	}
 
+	@Test
+	public void toolFunctionCallChinese() {
+		toolFunctionCall("旧金山、东京和巴黎的气温怎么样? 返回摄氏度的温度", "旧金山");
+	}
+
+	private void toolFunctionCall(String userMessage, String cityName) {
 		// Step 1: send the conversation and available functions to the model
-		var message = new ChatCompletionMessage("What's the weather like in San Francisco?", Role.USER);
-
-		var functionTool = new MoonshotApi.FunctionTool(Type.FUNCTION, new MoonshotApi.FunctionTool.Function(
-				"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather", """
-						{
-							"type": "object",
-							"properties": {
-								"location": {
-									"type": "string",
-									"description": "The city and state e.g. San Francisco, CA"
-								},
-								"lat": {
-									"type": "number",
-									"description": "The city latitude"
-								},
-								"lon": {
-									"type": "number",
-									"description": "The city longitude"
-								},
-								"unit": {
-									"type": "string",
-									"enum": ["C", "F"]
-								}
-							},
-							"required": ["location", "lat", "lon", "unit"]
-						}
-						"""));
+		var message = new ChatCompletionMessage(userMessage, Role.USER);
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages,
-				MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), List.of(functionTool), ToolChoiceBuilder.AUTO);
+				MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue(), List.of(FUNCTION_TOOL), ToolChoiceBuilder.AUTO);
 
 		ResponseEntity<ChatCompletion> chatCompletion = moonshotApi.chatCompletionEntity(chatCompletionRequest);
 
@@ -124,8 +134,8 @@ public class MoonshotApiToolFunctionCallIT {
 		assertThat(Objects.requireNonNull(chatCompletion2.getBody()).choices()).isNotEmpty();
 
 		assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
-		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
-			.containsAnyOf("30.0°C", "30°C", "30.0°F", "30°F", "30.0", "30");
+		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains(cityName)
+			.containsAnyOf("30");
 	}
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {

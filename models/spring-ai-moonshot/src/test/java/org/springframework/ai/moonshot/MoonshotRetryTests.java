@@ -89,7 +89,7 @@ public class MoonshotRetryTests {
 					.withTopP(1f)
 					.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_32K.getValue())
 					.build(),
-				retryTemplate);
+				null, retryTemplate);
 	}
 
 	@Test

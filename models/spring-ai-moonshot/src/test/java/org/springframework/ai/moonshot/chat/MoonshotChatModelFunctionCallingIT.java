@@ -15,13 +15,6 @@
  */
 package org.springframework.ai.moonshot.chat;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -40,10 +33,15 @@ import org.springframework.ai.moonshot.api.MockWeatherService;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import reactor.core.publisher.Flux;
 
-@Disabled("Currently, the Moonshot Chat Model doesn't support function calling.")
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest(classes = MoonshotTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
 class MoonshotChatModelFunctionCallingIT {
@@ -80,7 +78,8 @@ class MoonshotChatModelFunctionCallingIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -102,6 +101,7 @@ class MoonshotChatModelFunctionCallingIT {
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getContent)
+			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
