@@ -208,7 +208,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		}
 
 		AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
-		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
+		ToolResponseMessage toolResponseMessage = this.executeFunctions(assistantMessage);
 
 		// History
 		List<Message> toolCallMessageConversation = new ArrayList<>(previousMessages);

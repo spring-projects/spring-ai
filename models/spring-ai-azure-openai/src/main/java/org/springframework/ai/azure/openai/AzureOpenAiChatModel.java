@@ -233,7 +233,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		AssistantMessage assistantMessage = new AssistantMessage(nativeAssistantMessage.getContent(), Map.of(),
 				assistantToolCalls);
 
-		ToolResponseMessage toolResponseMessage = this.executeFuncitons(assistantMessage);
+		ToolResponseMessage toolResponseMessage = this.executeFunctions(assistantMessage);
 
 		// History
 		List<Message> messages = new ArrayList<>(previousMessages);

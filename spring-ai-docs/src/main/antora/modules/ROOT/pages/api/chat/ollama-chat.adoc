@@ -75,7 +75,6 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.chat.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
 | spring.ai.ollama.chat.options.num-batch         | ???                                                             | 512
-| spring.ai.ollama.chat.options.num-gqa           | The number of GQA groups in the transformer layer. Required for some models, for example, it is 8 for llama2:70b. | 1
 | spring.ai.ollama.chat.options.num-gpu           | The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable. 1 here indicates that NumGPU should be set dynamically | -1
 | spring.ai.ollama.chat.options.main-gpu          | ???                                                             | -
 | spring.ai.ollama.chat.options.low-vram          | ???                                                             | false

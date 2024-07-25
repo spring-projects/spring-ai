@@ -145,6 +145,7 @@ public class OllamaApi {
 	 * @param images (optional) a list of base64-encoded images (for multimodal models such as llava).
 	 * @param keepAlive (optional) controls how long the model will stay loaded into memory following the request (default: 5m).
 	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateRequest(
 			@JsonProperty("model") String model,
@@ -289,6 +290,7 @@ public class OllamaApi {
 	 * @param evalCount Number of tokens in the response.
 	 * @param evalDuration Time spent generating the response.
 	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	@JsonInclude(Include.NON_NULL)
 	public record GenerateResponse(
 			@JsonProperty("model") String model,
@@ -304,11 +306,13 @@ public class OllamaApi {
 			@JsonProperty("eval_duration") Duration evalDuration) {
 	}
 
-	/**
+	/** 
 	 * Generate a completion for the given prompt.
 	 * @param completionRequest Completion request.
 	 * @return Completion response.
+	 * @deprecated Use {@link #chat(ChatRequest)} instead.
 	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	public GenerateResponse generate(GenerateRequest completionRequest) {
 		Assert.notNull(completionRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(completionRequest.stream() == false, "Stream mode must be disabled.");
@@ -326,7 +330,9 @@ public class OllamaApi {
 	 * @param completionRequest Completion request. The request must set the stream
 	 * property to true.
 	 * @return Completion response as a {@link Flux} stream.
+	 * @deprecated Use {@link #streamingChat(ChatRequest)} instead.
 	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	public Flux<GenerateResponse> generateStreaming(GenerateRequest completionRequest) {
 		Assert.notNull(completionRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(completionRequest.stream(), "Request must set the steam property to true.");

@@ -72,12 +72,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonProperty("num_batch") private Integer numBatch;
 
 	/**
-	 * The number of GQA groups in the transformer layer. Required for some models,
-	 * for example it is 8 for llama2:70b.
-	 */
-	@JsonProperty("num_gqa") private Integer numGQA;
-
-	/**
 	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
 		*/
@@ -327,11 +321,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return this;
 	}
 
-	public OllamaOptions withNumGQA(Integer numGQA) {
-		this.numGQA = numGQA;
-		return this;
-	}
-
 	public OllamaOptions withNumGPU(Integer numGPU) {
 		this.numGPU = numGPU;
 		return this;
@@ -516,14 +505,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	public void setNumBatch(Integer numBatch) {
 		this.numBatch = numBatch;
-	}
-
-	public Integer getNumGQA() {
-		return this.numGQA;
-	}
-
-	public void setNumGQA(Integer numGQA) {
-		this.numGQA = numGQA;
 	}
 
 	public Integer getNumGPU() {
@@ -795,7 +776,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withUseNUMA(fromOptions.getUseNUMA())
 			.withNumCtx(fromOptions.getNumCtx())
 			.withNumBatch(fromOptions.getNumBatch())
-			.withNumGQA(fromOptions.getNumGQA())
 			.withNumGPU(fromOptions.getNumGPU())
 			.withMainGPU(fromOptions.getMainGPU())
 			.withLowVRAM(fromOptions.getLowVRAM())
@@ -837,14 +817,13 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return Objects.equals(model, that.model) && Objects.equals(format, that.format)
 				&& Objects.equals(keepAlive, that.keepAlive) && Objects.equals(useNUMA, that.useNUMA)
 				&& Objects.equals(numCtx, that.numCtx) && Objects.equals(numBatch, that.numBatch)
-				&& Objects.equals(numGQA, that.numGQA) && Objects.equals(numGPU, that.numGPU)
-				&& Objects.equals(mainGPU, that.mainGPU) && Objects.equals(lowVRAM, that.lowVRAM)
-				&& Objects.equals(f16KV, that.f16KV) && Objects.equals(logitsAll, that.logitsAll)
-				&& Objects.equals(vocabOnly, that.vocabOnly) && Objects.equals(useMMap, that.useMMap)
-				&& Objects.equals(useMLock, that.useMLock) && Objects.equals(numThread, that.numThread)
-				&& Objects.equals(numKeep, that.numKeep) && Objects.equals(seed, that.seed)
-				&& Objects.equals(numPredict, that.numPredict) && Objects.equals(topK, that.topK)
-				&& Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
+				&& Objects.equals(numGPU, that.numGPU) && Objects.equals(mainGPU, that.mainGPU)
+				&& Objects.equals(lowVRAM, that.lowVRAM) && Objects.equals(f16KV, that.f16KV)
+				&& Objects.equals(logitsAll, that.logitsAll) && Objects.equals(vocabOnly, that.vocabOnly)
+				&& Objects.equals(useMMap, that.useMMap) && Objects.equals(useMLock, that.useMLock)
+				&& Objects.equals(numThread, that.numThread) && Objects.equals(numKeep, that.numKeep)
+				&& Objects.equals(seed, that.seed) && Objects.equals(numPredict, that.numPredict)
+				&& Objects.equals(topK, that.topK) && Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
 				&& Objects.equals(typicalP, that.typicalP) && Objects.equals(repeatLastN, that.repeatLastN)
 				&& Objects.equals(temperature, that.temperature) && Objects.equals(repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(presencePenalty, that.presencePenalty)
@@ -858,7 +837,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.format, this.keepAlive, this.useNUMA, this.numCtx, this.numBatch,
-				this.numGQA, numGPU, mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly, this.useMMap,
+				this.numGPU, this.mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly, this.useMMap,
 				this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK, this.topP, tfsZ,
 				this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
 				this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
