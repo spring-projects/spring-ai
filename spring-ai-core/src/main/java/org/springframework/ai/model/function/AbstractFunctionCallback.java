@@ -15,9 +15,11 @@
  */
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.util.Assert;
@@ -43,7 +45,7 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 
 	private final String description;
 
-	private final Class<I> inputType;
+	private final Type inputType;
 
 	private final String inputTypeSchema;
 
@@ -66,7 +68,7 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 	 * @param objectMapper Used to convert the function's input and output types to and
 	 * from JSON.
 	 */
-	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Class<I> inputType,
+	protected AbstractFunctionCallback(String name, String description, String inputTypeSchema, Type inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
@@ -107,9 +109,10 @@ abstract class AbstractFunctionCallback<I, O> implements Function<I, O>, Functio
 		return this.andThen(this.responseConverter).apply(request);
 	}
 
-	private <T> T fromJson(String json, Class<T> targetClass) {
+	private <T> T fromJson(String json, Type targetClass) {
 		try {
-			return this.objectMapper.readValue(json, targetClass);
+			JavaType javaType = objectMapper.getTypeFactory().constructType(targetClass);
+			return this.objectMapper.readValue(json, javaType);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

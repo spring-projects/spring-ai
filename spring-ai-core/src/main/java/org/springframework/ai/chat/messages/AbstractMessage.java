@@ -21,6 +21,7 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,9 @@ import java.util.Objects;
  *
  * @see Message
  */
-public abstract class AbstractMessage implements Message {
+public abstract class AbstractMessage implements Message, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public static final String MESSAGE_TYPE = "messageType";
 

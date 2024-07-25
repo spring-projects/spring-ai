@@ -17,6 +17,7 @@ package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -331,7 +332,7 @@ public abstract class ModelOptionsUtils {
 	 * @param toUpperCaseTypeValues if true, the type values are converted to upper case.
 	 * @return the generated JSON Schema as a String.
 	 */
-	public static String getJsonSchema(Class<?> clazz, boolean toUpperCaseTypeValues) {
+	public static String getJsonSchema(Type type, boolean toUpperCaseTypeValues) {
 
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
 
@@ -350,7 +351,7 @@ public abstract class ModelOptionsUtils {
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
 		}
 
-		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(clazz);
+		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(type);
 		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
 										// version of it).
 			toUpperCaseTypeValues(node);
