@@ -77,4 +77,10 @@ public class AssistantMessage extends AbstractMessage {
 		return Objects.hash(super.hashCode(), toolCalls);
 	}
 
+	@Override
+	public String toString() {
+		return "AssistantMessage [messageType=" + messageType + ", toolCalls=" + toolCalls + ", textContent="
+				+ textContent + ", metadata=" + metadata + "]";
+	}
+
 }
