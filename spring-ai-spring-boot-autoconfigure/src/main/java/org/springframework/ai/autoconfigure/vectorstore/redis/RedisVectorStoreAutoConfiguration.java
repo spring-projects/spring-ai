@@ -23,7 +23,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
@@ -42,7 +41,7 @@ public class RedisVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
-			RedisProperties redisProperties) {
+			JedisConnectionFactory jedisConnectionFactory) {
 
 		var config = RedisVectorStoreConfig.builder()
 			.withIndexName(properties.getIndex())
@@ -50,7 +49,8 @@ public class RedisVectorStoreAutoConfiguration {
 			.build();
 
 		return new RedisVectorStore(config, embeddingModel,
-				new JedisPooled(redisProperties.getHost(), redisProperties.getPort()), properties.isInitializeSchema());
+				new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()),
+				properties.isInitializeSchema());
 	}
 
 }
