@@ -17,24 +17,33 @@ package org.springframework.ai.minimax;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion.Choice;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionFinishReason;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApi.FunctionTool;
+import org.springframework.ai.minimax.metadata.MiniMaxUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractFunctionCallSupport;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -42,12 +51,11 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -61,9 +69,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see MiniMaxApi
  * @since 1.0.0 M1
  */
-public class MiniMaxChatModel extends
-		AbstractFunctionCallSupport<MiniMaxApi.ChatCompletionMessage, MiniMaxApi.ChatCompletionRequest, ResponseEntity<MiniMaxApi.ChatCompletion>>
-		implements ChatModel, StreamingChatModel {
+public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(MiniMaxChatModel.class);
 
@@ -113,10 +119,27 @@ public class MiniMaxChatModel extends
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		super(functionCallbackContext);
+		this(miniMaxApi, options, functionCallbackContext, List.of(), retryTemplate);
+	}
+
+	/**
+	 * Initializes a new instance of the MiniMaxChatModel.
+	 * @param miniMaxApi The MiniMaxApi instance to be used for interacting with the
+	 * MiniMax Chat API.
+	 * @param options The MiniMaxChatOptions to configure the chat model.
+	 * @param functionCallbackContext The function callback context.
+	 * @param toolFunctionCallbacks The tool function callbacks.
+	 * @param retryTemplate The retry template.
+	 */
+	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
+		super(functionCallbackContext, options, toolFunctionCallbacks);
 		Assert.notNull(miniMaxApi, "MiniMaxApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
+				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
 		this.miniMaxApi = miniMaxApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
@@ -124,92 +147,148 @@ public class MiniMaxChatModel extends
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		return this.retryTemplate.execute(ctx -> {
+		ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+			.execute(ctx -> this.miniMaxApi.chatCompletionEntity(request));
 
-			ResponseEntity<ChatCompletion> completionEntity = this.callWithFunctionSupport(request);
+		var chatCompletion = completionEntity.getBody();
 
-			var chatCompletion = completionEntity.getBody();
-			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
+		if (chatCompletion == null) {
+			logger.warn("No chat completion returned for prompt: {}", prompt);
+			return new ChatResponse(List.of());
+		}
 
-			if (chatCompletion.baseResponse() != null && chatCompletion.baseResponse().statusCode() != 0) {
-				throw new RuntimeException(chatCompletion.baseResponse().message());
-			}
+		List<Choice> choices = chatCompletion.choices();
+		if (choices == null) {
+			logger.warn("No choices returned for prompt: {}, because: {}}", prompt,
+					chatCompletion.baseResponse().message());
+			return new ChatResponse(List.of());
+		}
 
-			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
-					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
-			}).toList();
+		List<Generation> generations = choices.stream().map(choice -> {
+			// @formatter:off
+			Map<String, Object> metadata = Map.of(
+					"id", chatCompletion.id(),
+					"role", choice.message().role() != null ? choice.message().role().name() : "",
+					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+			// @formatter:on
+			return buildGeneration(choice, metadata);
+		}).toList();
 
-			return new ChatResponse(generations);
-		});
+		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+
+		if (isToolCall(chatResponse,
+				Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
+			var toolCallConversation = handleToolCalls(prompt, chatResponse);
+			// Recursively call the call method with the tool call message
+			// conversation that contains the call responses.
+			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+		}
+
+		return chatResponse;
 	}
 
-	private Map<String, Object> toMap(String id, ChatCompletion.Choice choice) {
-		Map<String, Object> map = new HashMap<>();
-
-		var message = choice.message();
-		if (message.role() != null) {
-			map.put("role", message.role().name());
-		}
-		if (choice.finishReason() != null) {
-			map.put("finishReason", choice.finishReason().name());
-		}
-		map.put("id", id);
-		return map;
+	@Override
+	public ChatOptions getDefaultOptions() {
+		return MiniMaxChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-
 		ChatCompletionRequest request = createRequest(prompt, true);
 
-		return this.retryTemplate.execute(ctx -> {
+		Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
+			.execute(ctx -> this.miniMaxApi.chatCompletionStream(request));
 
-			Flux<ChatCompletionChunk> completionChunks = this.miniMaxApi.chatCompletionStream(request);
+		// For chunked responses, only the first chunk contains the choice role.
+		// The rest of the chunks with same ID share the same role.
+		ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-			// For chunked responses, only the first chunk contains the choice role.
-			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
-
-			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
-			// the function call handling logic.
-			return completionChunks.map(this::chunkToChatCompletion).map(chatCompletion -> {
+		// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+		// the function call handling logic.
+		Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
+			.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
 				try {
-					chatCompletion = handleFunctionCallOrReturn(request, ResponseEntity.of(Optional.of(chatCompletion)))
-						.getBody();
-
 					@SuppressWarnings("null")
-					String id = chatCompletion.id();
+					String id = chatCompletion2.id();
 
-					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-						if (choice.message().role() != null) {
-							roleMap.putIfAbsent(id, choice.message().role().name());
-						}
-						String finish = (choice.finishReason() != null ? choice.finishReason().name() : "");
-						var generation = new Generation(choice.message().content(),
-								Map.of("id", id, "role", roleMap.get(id), "finishReason", finish));
-						if (choice.finishReason() != null) {
-							generation = generation.withGenerationMetadata(
-									ChatGenerationMetadata.from(choice.finishReason().name(), null));
-						}
-						return generation;
-					}).toList();
+			// @formatter:off
+						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
+							if (choice.message().role() != null) {
+								roleMap.putIfAbsent(id, choice.message().role().name());
+							}
+							Map<String, Object> metadata = Map.of(
+									"id", chatCompletion2.id(),
+									"role", roleMap.getOrDefault(id, ""),
+									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+							return buildGeneration(choice, metadata);
+						}).toList();
+						// @formatter:on
 
-					return new ChatResponse(generations);
+					if (chatCompletion2.usage() != null) {
+						return new ChatResponse(generations, from(chatCompletion2));
+					}
+					else {
+						return new ChatResponse(generations);
+					}
 				}
 				catch (Exception e) {
 					logger.error("Error processing chat completion", e);
 					return new ChatResponse(List.of());
 				}
 
-			});
+			}));
+
+		return chatResponse.flatMap(response -> {
+
+			if (isToolCall(response,
+					Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
+				var toolCallConversation = handleToolCalls(prompt, response);
+				// Recursively call the stream method with the tool call message
+				// conversation that contains the call responses.
+				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+			}
+			else {
+				return Flux.just(response);
+			}
 		});
+	}
+
+	private ChatResponseMetadata from(ChatCompletion result, RateLimit rateLimit) {
+		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
+		return ChatResponseMetadata.builder()
+			.withId(result.id())
+			.withUsage(MiniMaxUsage.from(result.usage()))
+			.withModel(result.model())
+			.withRateLimit(rateLimit)
+			.withKeyValue("created", result.created())
+			.build();
+	}
+
+	private ChatResponseMetadata from(ChatCompletion result) {
+		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
+		return ChatResponseMetadata.builder()
+			.withId(result.id())
+			.withUsage(MiniMaxUsage.from(result.usage()))
+			.withModel(result.model())
+			.withKeyValue("created", result.created())
+			.build();
+	}
+
+	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
+				: choice.message()
+					.toolCalls()
+					.stream()
+					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+							toolCall.function().name(), toolCall.function().arguments()))
+					.toList();
+
+		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
+		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		return new Generation(assistantMessage, generationMetadata);
 	}
 
 	/**
@@ -235,130 +314,78 @@ public class MiniMaxChatModel extends
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		Set<String> functionsForThisRequest = new HashSet<>();
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
+			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+				Object content = message.getContent();
+				return List.of(new ChatCompletionMessage(content,
+						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
+			}
+			else if (message.getMessageType() == MessageType.ASSISTANT) {
+				var assistantMessage = (AssistantMessage) message;
+				List<ToolCall> toolCalls = null;
+				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
+						return new ToolCall(toolCall.id(), toolCall.type(), function);
+					}).toList();
+				}
+				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+			}
+			else if (message.getMessageType() == MessageType.TOOL) {
+				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-		List<MiniMaxApi.ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
-			.stream()
-			.map(m -> new MiniMaxApi.ChatCompletionMessage(m.getContent(),
-					MiniMaxApi.ChatCompletionMessage.Role.valueOf(m.getMessageType().name())))
-			.toList();
+				toolMessage.getResponses().forEach(response -> {
+					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
+					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
+				});
+
+				return toolMessage.getResponses()
+					.stream()
+					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+							tr.id(), null))
+					.toList();
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
+			}
+		}).flatMap(List::stream).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
+
+		Set<String> enabledToolsToUse = new HashSet<>();
 
 		if (prompt.getOptions() != null) {
 			MiniMaxChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, MiniMaxChatOptions.class);
 
-			Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-					IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(promptEnabledFunctions);
+			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 
 			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
 		}
 
-		if (this.defaultOptions != null) {
-
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-
-			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			enabledToolsToUse.addAll(this.defaultOptions.getFunctions());
 		}
 
-		// Add the enabled functions definitions to the request's tools parameter.
-		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
+		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
+
+		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					MiniMaxChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
-					request, ChatCompletionRequest.class);
+					MiniMaxChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					ChatCompletionRequest.class);
 		}
 
 		return request;
 	}
 
-	private List<MiniMaxApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
+	private List<FunctionTool> getFunctionTools(Set<String> functionNames) {
 		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
 			var function = new FunctionTool.Function(functionCallback.getDescription(), functionCallback.getName(),
 					functionCallback.getInputTypeSchema());
 			return new FunctionTool(function);
 		}).toList();
-	}
-
-	@Override
-	protected ChatCompletionRequest doCreateToolResponseRequest(ChatCompletionRequest previousRequest,
-			ChatCompletionMessage responseMessage, List<ChatCompletionMessage> conversationHistory) {
-
-		// Every tool-call item requires a separate function call and a response (TOOL)
-		// message.
-		for (ToolCall toolCall : responseMessage.toolCalls()) {
-
-			var functionName = toolCall.function().name();
-			String functionArguments = toolCall.function().arguments();
-
-			if (!this.functionCallbackRegister.containsKey(functionName)) {
-				throw new IllegalStateException("No function callback found for function name: " + functionName);
-			}
-
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-			// Add the function response to the conversation.
-			conversationHistory
-				.add(new ChatCompletionMessage(functionResponse, Role.TOOL, functionName, toolCall.id(), null));
-		}
-
-		// Recursively call chatCompletionWithTools until the model doesn't call a
-		// functions anymore.
-		ChatCompletionRequest newRequest = new ChatCompletionRequest(conversationHistory, false);
-		newRequest = ModelOptionsUtils.merge(newRequest, previousRequest, ChatCompletionRequest.class);
-
-		return newRequest;
-	}
-
-	@Override
-	protected List<ChatCompletionMessage> doGetUserMessages(ChatCompletionRequest request) {
-		return request.messages();
-	}
-
-	@Override
-	protected ChatCompletionMessage doGetToolResponseMessage(ResponseEntity<ChatCompletion> chatCompletion) {
-		return chatCompletion.getBody().choices().iterator().next().message();
-	}
-
-	@Override
-	protected ResponseEntity<ChatCompletion> doChatCompletion(ChatCompletionRequest request) {
-		return this.miniMaxApi.chatCompletionEntity(request);
-	}
-
-	@Override
-	protected Flux<ResponseEntity<ChatCompletion>> doChatCompletionStream(ChatCompletionRequest request) {
-		return this.miniMaxApi.chatCompletionStream(request)
-			.map(this::chunkToChatCompletion)
-			.map(Optional::ofNullable)
-			.map(ResponseEntity::of);
-	}
-
-	@Override
-	protected boolean isToolFunctionCall(ResponseEntity<ChatCompletion> chatCompletion) {
-		var body = chatCompletion.getBody();
-		if (body == null) {
-			return false;
-		}
-
-		var choices = body.choices();
-		if (CollectionUtils.isEmpty(choices)) {
-			return false;
-		}
-
-		var choice = choices.get(0);
-		var message = choice.message();
-		return message != null && !CollectionUtils.isEmpty(choice.message().toolCalls())
-				&& choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
-	}
-
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return MiniMaxChatOptions.fromOptions(this.defaultOptions);
 	}
 
 }

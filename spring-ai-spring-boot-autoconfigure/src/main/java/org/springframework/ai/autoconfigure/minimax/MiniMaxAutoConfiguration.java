@@ -62,16 +62,8 @@ public class MiniMaxAutoConfiguration {
 		var miniMaxApi = miniMaxApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
-		MiniMaxChatModel chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(),
-				functionCallbackContext, retryTemplate);
-
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			Map<String, FunctionCallback> toolFunctionCallbackMap = toolFunctionCallbacks.stream()
-				.collect(Collectors.toMap(FunctionCallback::getName, Function.identity(), (a, b) -> b));
-			chatModel.getFunctionCallbackRegister().putAll(toolFunctionCallbackMap);
-		}
-
-		return chatModel;
+		return new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks, retryTemplate);
 	}
 
 	@Bean
