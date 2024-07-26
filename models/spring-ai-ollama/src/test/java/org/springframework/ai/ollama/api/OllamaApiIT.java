@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ollama.OllamaImage;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
@@ -42,23 +43,26 @@ import static org.assertj.core.api.Assertions.assertThat;;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @Disabled("For manual smoke testing only.")
 @Testcontainers
 public class OllamaApiIT {
 
+	private static final String MODEL = OllamaModel.ORCA_MINI.getName();
+
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
+	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static OllamaApi ollamaApi;
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the 'orca-mini' generative (3GB) ... would take several minutes ...");
-		ollamaContainer.execInContainer("ollama", "pull", "orca-mini");
-		logger.info("orca-mini pulling competed!");
+		logger.info("Start pulling the '" + MODEL + " ' generative ... would take several minutes ...");
+		ollamaContainer.execInContainer("ollama", "pull", MODEL);
+		logger.info(MODEL + " pulling competed!");
 
 		ollamaApi = new OllamaApi("http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434));
 	}
@@ -68,7 +72,7 @@ public class OllamaApiIT {
 
 		var request = GenerateRequest
 			.builder("What is the capital of Bulgaria and what is the size? What it the national anthem?")
-			.withModel("orca-mini")
+			.withModel(MODEL)
 			.withStream(false)
 			.build();
 
@@ -84,7 +88,7 @@ public class OllamaApiIT {
 	@Test
 	public void chat() {
 
-		var request = ChatRequest.builder("orca-mini")
+		var request = ChatRequest.builder(MODEL)
 			.withStream(false)
 			.withMessages(List.of(
 					Message.builder(Role.SYSTEM)
@@ -111,7 +115,7 @@ public class OllamaApiIT {
 	@Test
 	public void streamingChat() {
 
-		var request = ChatRequest.builder("orca-mini")
+		var request = ChatRequest.builder(MODEL)
 			.withStream(true)
 			.withMessages(List.of(Message.builder(Role.USER)
 				.withContent("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
@@ -138,7 +142,7 @@ public class OllamaApiIT {
 	@Test
 	public void embedText() {
 
-		EmbeddingRequest request = new EmbeddingRequest("orca-mini", "I like to eat apples");
+		EmbeddingRequest request = new EmbeddingRequest(MODEL, "I like to eat apples");
 
 		EmbeddingResponse response = ollamaApi.embeddings(request);
 
