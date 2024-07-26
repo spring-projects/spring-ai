@@ -40,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Helper class for creating strongly-typed Ollama options.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -53,11 +54,14 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive");
 
-	// Following fields are ptions which must be set when the model is loaded into memory.
+	// Following fields are options which must be set when the model is loaded into
+	// memory.
+	// See: https://github.com/ggerganov/llama.cpp/blob/master/examples/main/README.md
 
 	// @formatter:off
+
 	/**
-	 * useNUMA Whether to use NUMA.
+	 * Whether to use NUMA. (Default: false)
 	 */
 	@JsonProperty("numa") private Boolean useNUMA;
 
@@ -67,63 +71,78 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonProperty("num_ctx") private Integer numCtx;
 
 	/**
-	 * ???
+	 * Prompt processing maximum batch size. (Default: 512)
 	 */
 	@JsonProperty("num_batch") private Integer numBatch;
 
 	/**
 	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
-		*/
+	 * (Default: -1, which indicates that numGPU should be set dynamically)
+	*/
 	@JsonProperty("num_gpu") private Integer numGPU;
 
 	/**
-	 * ???
+	 * When using multiple GPUs this option controls which GPU is used
+	 * for small tensors for which the overhead of splitting the computation
+	 * across all GPUs is not worthwhile. The GPU in question will use slightly
+	 * more VRAM to store a scratch buffer for temporary results.
+	 * By default, GPU 0 is used.
 	 */
 	@JsonProperty("main_gpu")private Integer mainGPU;
 
 	/**
-	 * ???
+	 * (Default: false)
 	 */
 	@JsonProperty("low_vram") private Boolean lowVRAM;
 
 	/**
-	 * ???
+	 * (Default: true)
 	 */
 	@JsonProperty("f16_kv") private Boolean f16KV;
 
 	/**
-	 * ???
+	 * Return logits for all the tokens, not just the last one.
+	 * To enable completions to return logprobs, this must be true.
 	 */
 	@JsonProperty("logits_all") private Boolean logitsAll;
 
 	/**
-	 * ???
+	 * Load only the vocabulary, not the weights.
 	 */
 	@JsonProperty("vocab_only") private Boolean vocabOnly;
 
 	/**
-	 * ???
+	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
+	 * of the model as needed. However, if the model is larger than your total amount of RAM or if your system is low
+	 * on available memory, using mmap might increase the risk of pageouts, negatively impacting performance.
+	 * Disabling mmap results in slower load times but may reduce pageouts if you're not using mlock.
+	 * Note that if the model is larger than the total amount of RAM, turning off mmap would prevent
+	 * the model from loading at all.
+	 * (Default: null)
 	 */
 	@JsonProperty("use_mmap") private Boolean useMMap;
 
 	/**
-	 * ???
+	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
+	 * This can improve performance but trades away some of the advantages of memory-mapping
+	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
+	 * (Default: false)
 	 */
 	@JsonProperty("use_mlock") private Boolean useMLock;
 
 	/**
-	 * Sets the number of threads to use during computation. By default,
-	 * Ollama will detect this for optimal performance. It is recommended to set this
-	 * value to the number of physical CPU cores your system has (as opposed to the
-	 * logical number of cores).
+	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
+	 * to the number of physical CPU cores your system has (as opposed to the logical number of cores).
+	 * Using the correct number of threads can greatly improve performance.
+	 * By default, Ollama will detect this value for optimal performance.
 	 */
 	@JsonProperty("num_thread") private Integer numThread;
 
 	// Following fields are predict options used at runtime.
 
 	/**
-	 * ???
+	 * (Default: 4)
 	 */
 	@JsonProperty("num_keep") private Integer numKeep;
 
@@ -162,7 +181,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonProperty("tfs_z") private Float tfsZ;
 
 	/**
-	 * ???
+	 * (Default: 1.0)
 	 */
 	@JsonProperty("typical_p") private Float typicalP;
 
@@ -186,12 +205,12 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonProperty("repeat_penalty") private Float repeatPenalty;
 
 	/**
-	 * ???
+	 * (Default: 0.0)
 	 */
 	@JsonProperty("presence_penalty") private Float presencePenalty;
 
 	/**
-	 * ???
+	 * (Default: 0.0)
 	 */
 	@JsonProperty("frequency_penalty") private Float frequencyPenalty;
 
@@ -215,7 +234,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@JsonProperty("mirostat_eta") private Float mirostatEta;
 
 	/**
-	 * ???
+	 * (Default: true)
 	 */
 	@JsonProperty("penalize_newline") private Boolean penalizeNewline;
 

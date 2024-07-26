@@ -47,12 +47,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled("For manual smoke testing only.")
 class OllamaChatModelMultimodalIT {
 
-	private static final String MODEL = OllamaModel.MISTRAL.getName();
+	private static final String MODEL = OllamaModel.MOONDREAM.getName();
 
 	private static final Log logger = LogFactory.getLog(OllamaChatModelIT.class);
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.2.8");
+	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static String baseUrl = "http://localhost:11434";
 

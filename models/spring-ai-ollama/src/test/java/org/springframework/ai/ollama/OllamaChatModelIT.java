@@ -63,7 +63,7 @@ class OllamaChatModelIT {
 	private static final Log logger = LogFactory.getLog(OllamaChatModelIT.class);
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.2.8");
+	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static String baseUrl = "http://localhost:11434";
 
