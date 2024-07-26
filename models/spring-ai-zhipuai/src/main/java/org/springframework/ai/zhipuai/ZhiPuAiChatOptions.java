@@ -23,7 +23,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.FunctionTool;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -48,39 +47,12 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 */
 	private @JsonProperty("model") String model;
 	/**
-	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
-	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
-	 */
-	private @JsonProperty("frequency_penalty") Float frequencyPenalty;
-	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
-	 * How many chat completion choices to generate for each input message. Note that you will be charged based
-	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
-	 */
-	private @JsonProperty("n") Integer n;
-	/**
-	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
-	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
-	 */
-	private @JsonProperty("presence_penalty") Float presencePenalty;
-	/**
-	 * An object specifying the format that the model must output. Setting to { "type":
-	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
-	 */
-	private @JsonProperty("response_format") ResponseFormat responseFormat;
-	/**
-	 * This feature is in Beta. If specified, our system will make a best effort to sample
-	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
-	 * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor
-	 * changes in the backend.
-	 */
-	private @JsonProperty("seed") Integer seed;
-	/**
-	 * Up to 4 sequences where the API will stop generating further tokens.
+	 * The model will stop generating characters specified by stop, and currently only supports a single stop word in the format of ["stop_word1"].
 	 */
 	@NestedConfigurationProperty
 	private @JsonProperty("stop") List<String> stop;
@@ -115,6 +87,18 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * ID length requirement: minimum of 6 characters, maximum of 128 characters.
 	 */
 	private @JsonProperty("user_id") String user;
+	/**
+	 * The parameter is passed by the client and must ensure uniqueness.
+	 * It is used to distinguish the unique identifier for each request.
+	 * If the client does not provide it, the platform will generate it by default.
+	 */
+	private @JsonProperty("request_id") String requestId;
+	/**
+	 * When do_sample is set to true, the sampling strategy is enabled.
+	 * If do_sample is false, the sampling strategy parameters temperature and top_p will not take effect.
+	 * The default value is true.
+	 */
+	private @JsonProperty("do_sample") Boolean doSample;
 
 	/**
 	 * ZhiPuAI Tool Function Callbacks to register with the ChatModel.
@@ -161,33 +145,8 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Float frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
 		public Builder withMaxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder withN(Integer n) {
-			this.options.n = n;
-			return this;
-		}
-
-		public Builder withPresencePenalty(Float presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		public Builder withResponseFormat(ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder withSeed(Integer seed) {
-			this.options.seed = seed;
 			return this;
 		}
 
@@ -218,6 +177,16 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 		public Builder withUser(String user) {
 			this.options.user = user;
+			return this;
+		}
+
+		public Builder withRequestId(String requestId) {
+			this.options.requestId = requestId;
+			return this;
+		}
+
+		public Builder withDoSample(Boolean doSample) {
+			this.options.doSample = doSample;
 			return this;
 		}
 
@@ -252,52 +221,12 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.model = model;
 	}
 
-	public Float getFrequencyPenalty() {
-		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(Float frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
 		this.maxTokens = maxTokens;
-	}
-
-	public Integer getN() {
-		return this.n;
-	}
-
-	public void setN(Integer n) {
-		this.n = n;
-	}
-
-	public Float getPresencePenalty() {
-		return this.presencePenalty;
-	}
-
-	public void setPresencePenalty(Float presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
-	public ResponseFormat getResponseFormat() {
-		return this.responseFormat;
-	}
-
-	public void setResponseFormat(ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	public Integer getSeed() {
-		return this.seed;
-	}
-
-	public void setSeed(Integer seed) {
-		this.seed = seed;
 	}
 
 	public List<String> getStop() {
@@ -350,6 +279,22 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.user = user;
 	}
 
+	public String getRequestId() {
+		return requestId;
+	}
+
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
+	}
+
+	public Boolean getDoSample() {
+		return doSample;
+	}
+
+	public void setDoSample(Boolean doSample) {
+		this.doSample = doSample;
+	}
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
@@ -374,12 +319,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((model == null) ? 0 : model.hashCode());
-		result = prime * result + ((frequencyPenalty == null) ? 0 : frequencyPenalty.hashCode());
 		result = prime * result + ((maxTokens == null) ? 0 : maxTokens.hashCode());
-		result = prime * result + ((n == null) ? 0 : n.hashCode());
-		result = prime * result + ((presencePenalty == null) ? 0 : presencePenalty.hashCode());
-		result = prime * result + ((responseFormat == null) ? 0 : responseFormat.hashCode());
-		result = prime * result + ((seed == null) ? 0 : seed.hashCode());
 		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
 		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
 		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
@@ -404,41 +344,11 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!model.equals(other.model))
 			return false;
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null)
-				return false;
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty))
-			return false;
 		if (this.maxTokens == null) {
 			if (other.maxTokens != null)
 				return false;
 		}
 		else if (!this.maxTokens.equals(other.maxTokens))
-			return false;
-		if (this.n == null) {
-			if (other.n != null)
-				return false;
-		}
-		else if (!this.n.equals(other.n))
-			return false;
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null)
-				return false;
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty))
-			return false;
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null)
-				return false;
-		}
-		else if (!this.responseFormat.equals(other.responseFormat))
-			return false;
-		if (this.seed == null) {
-			if (other.seed != null)
-				return false;
-		}
-		else if (!this.seed.equals(other.seed))
 			return false;
 		if (this.stop == null) {
 			if (other.stop != null)
@@ -476,6 +386,18 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!this.user.equals(other.user))
 			return false;
+		if (this.requestId == null) {
+			if (other.requestId != null)
+				return false;
+		}
+		else if (!this.requestId.equals(other.requestId))
+			return false;
+		if (this.doSample == null) {
+			if (other.doSample != null)
+				return false;
+		}
+		else if (!this.doSample.equals(other.doSample))
+			return false;
 		return true;
 	}
 
@@ -493,18 +415,15 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
 		return ZhiPuAiChatOptions.builder()
 			.withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
 			.withMaxTokens(fromOptions.getMaxTokens())
-			.withN(fromOptions.getN())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withSeed(fromOptions.getSeed())
 			.withStop(fromOptions.getStop())
 			.withTemperature(fromOptions.getTemperature())
 			.withTopP(fromOptions.getTopP())
 			.withTools(fromOptions.getTools())
 			.withToolChoice(fromOptions.getToolChoice())
 			.withUser(fromOptions.getUser())
+			.withRequestId(fromOptions.getRequestId())
+			.withDoSample(fromOptions.getDoSample())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.build();

@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -126,7 +126,7 @@ public class AnthropicApi {
 	 * "https://docs.anthropic.com/claude/docs/models-overview#model-comparison">model
 	 * comparison</a> for additional details and options.
 	 */
-	public enum ChatModel implements ModelDescription {
+	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-20240620"),
@@ -153,7 +153,7 @@ public class AnthropicApi {
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.value;
 		}
 

@@ -225,8 +225,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 			 */
 			public Builder withEmbeddingDimension(int newEmbeddingDimension) {
 
-				Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 2048,
-						"Dimension has to be withing the boundaries 1 and 2048 (inclusively)");
+				Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 32768,
+						"Dimension has to be withing the boundaries 1 and 32768 (inclusively)");
 
 				this.embeddingDimension = newEmbeddingDimension;
 				return this;
@@ -272,7 +272,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		for (Document document : documents) {
 			List<Double> embedding = this.embeddingModel.embed(document);
-
+			document.setEmbedding(embedding);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings

@@ -1,12 +1,12 @@
 = Anthropic Function Calling
 
+TIP: Starting of Jul 1th, 2024, streaming function calling and Tool use is supporetd. 
+
 You can register custom Java functions with the `AnthropicChatModel` and have the Anthropic models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
-The `claude-3-opus`, `claude-3-sonnet` and `claude-3-haiku` link:https://docs.anthropic.com/claude/docs/tool-use#tool-use-best-practices-and-limitations[models are trained to detect when a function should be called] and to respond with JSON that adheres to the function signature.
+The `claude-3-5-sonnet-20240620`, `claude-3-opus`, `claude-3-sonnet` and `claude-3-haiku` link:https://docs.anthropic.com/claude/docs/tool-use#tool-use-best-practices-and-limitations[models are trained to detect when a function should be called] and to respond with JSON that adheres to the function signature.
 
 The Anthropic API does not call the function directly; instead, the model generates JSON that you can use to call the function in your code and return the result back to the model to complete the conversation.
-
-NOTE: As of April 4th, 2024, streaming is not yet supported for function calling and Tool use is not yet available on third-party platforms like Vertex AI or AWS Bedrock, but is coming soon.
 
 Spring AI provides flexible and user-friendly ways to register and call custom functions.
 In general, the custom functions need to provide a function `name`,  `description`, and the function call `signature` (as JSON schema) to let the model know what arguments the function expects.

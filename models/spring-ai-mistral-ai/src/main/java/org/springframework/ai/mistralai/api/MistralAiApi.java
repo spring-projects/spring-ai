@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -701,7 +701,7 @@ public class MistralAiApi {
 	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
 	 * Medium, Mistral Large, and Mistral Embeddings).
 	 */
-	public enum ChatModel implements ModelDescription {
+	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
 		 @Deprecated(since = "1.0.0-M1", forRemoval = true) // Replaced by OPEN_MISTRAL_7B
@@ -728,7 +728,7 @@ public class MistralAiApi {
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.value;
 		}
 

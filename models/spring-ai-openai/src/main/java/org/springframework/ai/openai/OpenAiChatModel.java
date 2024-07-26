@@ -162,8 +162,13 @@ public class OpenAiChatModel extends
 			}
 
 			List<Generation> generations = choices.stream().map(choice -> {
-				return new Generation(choice.message().content(), toMap(chatCompletion.id(), choice))
-					.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
+				var generation = new Generation(choice.message().content(), toMap(chatCompletion.id(), choice));
+				if (choice.finishReason() != null) {
+					generation = generation
+						.withGenerationMetadata(ChatGenerationMetadata.from(choice.finishReason().name(), null));
+				}
+				return generation;
+
 			}).toList();
 
 			return new ChatResponse(generations,

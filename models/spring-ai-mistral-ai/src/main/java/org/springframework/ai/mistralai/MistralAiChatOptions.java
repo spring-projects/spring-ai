@@ -141,7 +141,7 @@ public class MistralAiChatOptions implements FunctionCallingOptions, ChatOptions
 		}
 
 		public Builder withModel(MistralAiApi.ChatModel chatModel) {
-			this.options.setModel(chatModel.getModelName());
+			this.options.setModel(chatModel.getName());
 			return this;
 		}
 

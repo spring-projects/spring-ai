@@ -29,7 +29,7 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatRequest;
 import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.util.Assert;
 
 /**
@@ -227,7 +227,7 @@ public class AnthropicChatBedrockApi extends
 	/**
 	 * Anthropic models version.
 	 */
-	public enum AnthropicChatModel implements ModelDescription {
+	public enum AnthropicChatModel implements ChatModelDescription {
 		/**
 		 * anthropic.claude-instant-v1
 		 */
@@ -255,7 +255,7 @@ public class AnthropicChatBedrockApi extends
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.id;
 		}
 	}

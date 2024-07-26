@@ -37,8 +37,19 @@ public class Embedding implements ModelResult<List<Double>> {
 	 * @param index the embedding index in a list of embeddings.
 	 */
 	public Embedding(List<Double> embedding, Integer index) {
+		this(embedding, index, EmbeddingResultMetadata.EMPTY);
+	}
+
+	/**
+	 * Creates a new {@link Embedding} instance.
+	 * @param embedding the embedding vector values.
+	 * @param index the embedding index in a list of embeddings.
+	 * @param metadata the metadata associated with the embedding.
+	 */
+	public Embedding(List<Double> embedding, Integer index, EmbeddingResultMetadata metadata) {
 		this.embedding = embedding;
 		this.index = index;
+		this.metadata = metadata;
 	}
 
 	/**

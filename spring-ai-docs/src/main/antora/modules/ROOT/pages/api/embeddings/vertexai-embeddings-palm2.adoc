@@ -1,6 +1,12 @@
-= VertexAI Embeddings
+= Google VertexAI PaLM2 Embeddings
 
-The link:https://developers.generativeai.google/api/rest/generativelanguage[Generative Language] PaLM API allows developers to build generative AI applications using the PaLM model. Large Language Models (LLMs) are a powerful, versatile type of machine learning model that enables computers to comprehend and generate natural language through a series of prompts. The PaLM API is based on Google's next generation LLM, PaLM. It excels at a variety of different tasks like code generation, reasoning, and writing. You can use the PaLM API to build generative AI applications for use cases like content generation, dialogue agents, summarization and classification systems, and more.
+NOTE: For text-only embedding use cases, we recommend using the xref:api/embeddings/vertexai-embeddings-text.adoc[Vertex AI text-embeddings model] instead. 
+
+The link:https://developers.generativeai.google/api/rest/generativelanguage[Generative Language] PaLM API allows developers to build generative AI applications using the PaLM model. 
+Large Language Models (LLMs) are a powerful, versatile type of machine learning model that enables computers to comprehend and generate natural language through a series of prompts. 
+The PaLM API is based on Google's next generation LLM, PaLM. 
+It excels at a variety of different tasks like code generation, reasoning, and writing. 
+You can use the PaLM API to build generative AI applications for use cases like content generation, dialogue agents, summarization and classification systems, and more.
 
 Based on the link:https://developers.generativeai.google/api/rest/generativelanguage/models[Models REST API].
 

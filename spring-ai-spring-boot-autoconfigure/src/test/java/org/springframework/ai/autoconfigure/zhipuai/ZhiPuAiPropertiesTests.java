@@ -215,6 +215,8 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.chat.options.stop=boza,koza",
 				"spring.ai.zhipuai.chat.options.temperature=0.55",
 				"spring.ai.zhipuai.chat.options.topP=0.56",
+				"spring.ai.zhipuai.chat.options.getRequestId=RequestId",
+				"spring.ai.zhipuai.chat.options.doSample=true",
 
 				// "spring.ai.zhipuai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
 				"spring.ai.zhipuai.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(ZhiPuAiApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
@@ -261,16 +263,12 @@ public class ZhiPuAiPropertiesTests {
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("Embedding-2");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5f);
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
-				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
-				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
-				assertThat(chatProperties.getOptions().getResponseFormat())
-					.isEqualTo(new ZhiPuAiApi.ChatCompletionRequest.ResponseFormat("json"));
-				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(66);
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56f);
+				assertThat(chatProperties.getOptions().getRequestId()).isEqualTo("RequestId");
+				assertThat(chatProperties.getOptions().getDoSample()).isEqualTo(Boolean.TRUE);
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
 						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);

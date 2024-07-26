@@ -43,7 +43,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.AbstractFunctionCallSupport;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -98,7 +98,7 @@ public class VertexAiGeminiChatModel
 
 	}
 
-	public enum ChatModel implements ModelDescription {
+	public enum ChatModel implements ChatModelDescription {
 
 		GEMINI_PRO_VISION("gemini-pro-vision"),
 
@@ -119,7 +119,7 @@ public class VertexAiGeminiChatModel
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.value;
 		}
 

@@ -18,24 +18,22 @@ package org.springframework.ai.azure.openai;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.AbstractEmbeddingModel;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.util.Assert;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
 import com.azure.ai.openai.models.EmbeddingsOptions;
 import com.azure.ai.openai.models.EmbeddingsUsage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.AbstractEmbeddingModel;
-import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingResponseMetadata;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.util.Assert;
 
 public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -91,16 +89,12 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	 * Test access
 	 */
 	EmbeddingsOptions toEmbeddingOptions(EmbeddingRequest embeddingRequest) {
-		var azureOptions = new EmbeddingsOptions(embeddingRequest.getInstructions());
-		if (this.defaultOptions != null) {
-			azureOptions.setModel(this.defaultOptions.getDeploymentName());
-			azureOptions.setUser(this.defaultOptions.getUser());
-		}
-		if (embeddingRequest.getOptions() != null && !EmbeddingOptions.EMPTY.equals(embeddingRequest.getOptions())) {
-			azureOptions = ModelOptionsUtils.merge(embeddingRequest.getOptions(), azureOptions,
-					EmbeddingsOptions.class);
-		}
-		return azureOptions;
+
+		return AzureOpenAiEmbeddingOptions.builder()
+			.from(this.defaultOptions)
+			.merge(embeddingRequest.getOptions())
+			.build()
+			.toAzureOptions(embeddingRequest.getInstructions());
 	}
 
 	private EmbeddingResponse generateEmbeddingResponse(Embeddings embeddings) {

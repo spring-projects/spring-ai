@@ -52,6 +52,8 @@ public class TransformersEmbeddingModelAutoConfiguration {
 
 		embeddingModel.setGpuDeviceId(properties.getOnnx().getGpuDeviceId());
 
+		embeddingModel.setModelOutputName(properties.getOnnx().getModelOutputName());
+
 		return embeddingModel;
 	}
 
