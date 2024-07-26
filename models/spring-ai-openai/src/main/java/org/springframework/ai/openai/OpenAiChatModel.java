@@ -186,18 +186,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		return chatResponse;
 	}
 
-	public static ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit) {
-		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
-		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withUsage(OpenAiUsage.from(result.usage()))
-			.withModel(result.model())
-			.withRateLimit(rateLimit)
-			.withKeyValue("created", result.created())
-			.withKeyValue("system-fingerprint", result.systemFingerprint())
-			.build();
-	}
-
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 
@@ -232,7 +220,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					// @formatter:on
 
 					if (chatCompletion2.usage() != null) {
-						return new ChatResponse(generations, from(chatCompletion2));
+						return new ChatResponse(generations, from(chatCompletion2, null));
 					}
 					else {
 						return new ChatResponse(generations);
@@ -259,18 +247,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		});
 	}
 
-	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result) {
-		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
-		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withUsage(OpenAiUsage.from(result.usage()))
-			.withModel(result.model())
-			.withKeyValue("created", result.created())
-			.withKeyValue("system-fingerprint", result.systemFingerprint())
-			.build();
-	}
-
-	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
 				: choice.message()
 					.toolCalls()
@@ -283,6 +260,21 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
 		return new Generation(assistantMessage, generationMetadata);
+	}
+
+	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit) {
+		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
+		var builder = ChatResponseMetadata.builder()
+			.withId(result.id())
+			.withUsage(OpenAiUsage.from(result.usage()))
+			.withModel(result.model())
+			.withRateLimit(rateLimit)
+			.withKeyValue("created", result.created())
+			.withKeyValue("system-fingerprint", result.systemFingerprint());
+		if (rateLimit != null) {
+			builder.withRateLimit(rateLimit);
+		}
+		return builder.build();
 	}
 
 	/**

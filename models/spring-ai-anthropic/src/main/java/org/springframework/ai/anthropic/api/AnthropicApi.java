@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -52,6 +54,8 @@ import reactor.core.publisher.Mono;
  * @since 1.0.0
  */
 public class AnthropicApi {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
 
 	private static final String HEADER_X_API_KEY = "x-api-key";
 
@@ -415,7 +419,7 @@ public class AnthropicApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ContentBlock( // @formatter:off
-		@JsonProperty("type") ContentBlockType type,
+		@JsonProperty("type") Type type,
 		@JsonProperty("source") Source source,
 		@JsonProperty("text") String text,
 
@@ -438,67 +442,77 @@ public class AnthropicApi {
 		}
 
 		public ContentBlock(Source source) {
-			this(ContentBlockType.IMAGE, source, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null);
 		}
 
 		public ContentBlock(String text) {
-			this(ContentBlockType.TEXT, null, text, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null);
 		}
 
 		// Tool result
-		public ContentBlock(ContentBlockType type, String toolUseId, String content) {
+		public ContentBlock(Type type, String toolUseId, String content) {
 			this(type, null, null, null, null, null, null, toolUseId, content);
 		}
 
-		public ContentBlock(ContentBlockType type, Source source, String text, Integer index) {
+		public ContentBlock(Type type, Source source, String text, Integer index) {
 			this(type, source, text, index, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
-		public ContentBlock(ContentBlockType type, String id, String name, Map<String, Object> input) {
+		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
 			this(type, null, null, null, id, name, input, null, null);
 		}
 
 		/**
-		 * The type of this message.
+		 * The ContentBlock type.
 		 */
-		public enum ContentBlockType {
+		public enum Type {
 
 			/**
 			 * Tool request
 			 */
 			@JsonProperty("tool_use")
-			TOOL_USE,
+			TOOL_USE("tool_use"),
 
 			/**
 			 * Send tool result back to LLM.
 			 */
 			@JsonProperty("tool_result")
-			TOOL_RESULT,
+			TOOL_RESULT("tool_result"),
 
 			/**
 			 * Text message.
 			 */
 			@JsonProperty("text")
-			TEXT,
+			TEXT("text"),
 
 			/**
 			 * Text delta message. Returned from the streaming response.
 			 */
 			@JsonProperty("text_delta")
-			TEXT_DELTA,
+			TEXT_DELTA("text_delta"),
 
 			/**
 			 * Tool use input partial JSON delta streaming.
 			 */
 			@JsonProperty("input_json_delta")
-			INPUT_JSON_DELTA,
+			INPUT_JSON_DELTA("input_json_delta"),
 
 			/**
 			 * Image message.
 			 */
 			@JsonProperty("image")
-			IMAGE;
+			IMAGE("image");
+
+			public final String value;
+
+			Type(String value) {
+				this.value = value;
+			}
+
+			public String getValue() {
+				return this.value;
+			}
 
 		}
 
@@ -902,6 +916,7 @@ public class AnthropicApi {
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
 			.map(content -> ModelOptionsUtils.jsonToObject(content, StreamEvent.class))
+			.filter(event -> event.type() != EventType.PING)
 			// Detect if the chunk is part of a streaming function call.
 			.map(event -> {
 				if (this.streamHelper.isToolUseStart(event)) {

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -98,7 +99,14 @@ public abstract class AbstractToolCallSupport {
 	}
 
 	protected List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
-		AssistantMessage assistantMessage = response.getResult().getOutput();
+		Optional<Generation> toolCallGeneration = response.getResults()
+			.stream()
+			.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
+			.findFirst();
+		if (toolCallGeneration.isEmpty()) {
+			throw new IllegalStateException("No tool call generation found in the response!");
+		}
+		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
 		ToolResponseMessage toolMessageResponse = this.executeFunctions(assistantMessage);
 		return this.buildToolCallConversation(prompt.getInstructions(), assistantMessage, toolMessageResponse);
 	}
@@ -180,11 +188,16 @@ public abstract class AbstractToolCallSupport {
 			return false;
 		}
 
-		var generation = generations.get(0);
+		return generations.stream().anyMatch(g -> isToolCall(g, toolCallFinishReasons));
+	}
+
+	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
+		var finishReason = (generation.getMetadata().getFinishReason() != null)
+				? generation.getMetadata().getFinishReason() : "";
 		return !CollectionUtils.isEmpty(generation.getOutput().getToolCalls()) && toolCallFinishReasons.stream()
 			.map(s -> s.toLowerCase())
 			.toList()
-			.contains(generation.getMetadata().getFinishReason().toLowerCase());
+			.contains(finishReason.toLowerCase());
 	}
 
 }
