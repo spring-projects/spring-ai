@@ -108,6 +108,55 @@ class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
+	void streamCompletenessTestWithChatResponse() throws InterruptedException {
+		UserMessage userMessage = new UserMessage("Who is George Washington? - use first as 1st");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		StringBuilder answer = new StringBuilder();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		ChatClient chatClient = ChatClient.builder(openAiChatModel).build();
+
+		Flux<ChatResponse> chatResponseFlux = chatClient.prompt(prompt)
+			.stream()
+			.chatResponse()
+			.doOnNext(chatResponse -> {
+				String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
+				answer.append(responseContent);
+			})
+			.doOnComplete(() -> {
+				logger.info(answer.toString());
+				latch.countDown();
+			});
+		chatResponseFlux.subscribe();
+		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer).contains("the 1st ");
+	}
+
+	@Test
+	void ensureChatResponseAsContentDoesNotSwallowBlankSpace() throws InterruptedException {
+		UserMessage userMessage = new UserMessage("Who is George Washington? - use first as 1st");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		StringBuilder answer = new StringBuilder();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		ChatClient chatClient = ChatClient.builder(openAiChatModel).build();
+
+		Flux<String> chatResponseFlux = chatClient.prompt(prompt)
+			.stream()
+			.content()
+			.doOnNext(answer::append)
+			.doOnComplete(() -> {
+				logger.info(answer.toString());
+				latch.countDown();
+			});
+		chatResponseFlux.subscribe();
+		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer).contains("the 1st ");
+	}
+
+	@Test
 	void streamRoleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
