@@ -29,7 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Christian Tzolov
  * @author Grogdunn
+ * @deprecated since 1.0.0-M1 in favor of
+ * {@link org.springframework.ai.chat.model.AbstractToolCallSupport}
  */
+@Deprecated(since = "1.0.0-M2", forRemoval = true)
 public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 	protected final static boolean IS_RUNTIME_CALL = true;
