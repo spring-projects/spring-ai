@@ -20,6 +20,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
 
+/**
+ * @author Jemin Huh
+ * @since 1.0.0
+ */
 @ConfigurationProperties(prefix = OpenSearchVectorStoreProperties.CONFIG_PREFIX)
 public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties {
 
