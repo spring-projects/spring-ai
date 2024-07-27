@@ -36,6 +36,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.tool.MockWeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,10 +56,10 @@ class OllamaChatModelFunctionCallingIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
 
-	private static String MODEL = "mistral";
+	private static final String MODEL = OllamaModel.MISTRAL.getName();
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.2.8");
+	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
 	static String baseUrl = "http://localhost:11434";
 

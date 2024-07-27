@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
@@ -43,14 +44,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class OllamaEmbeddingModelIT {
 
-	private static String MODEL = "llava";
+	private static final String MODEL = OllamaModel.MISTRAL.getName();
 
 	private static final Log logger = LogFactory.getLog(OllamaApiIT.class);
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.1.32");
+	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE);
 
-	static String baseUrl;
+	static String baseUrl = "http://localhost:11434";
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {

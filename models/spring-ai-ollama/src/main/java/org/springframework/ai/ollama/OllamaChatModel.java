@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -59,6 +58,7 @@ import reactor.core.publisher.Flux;
  *
  * @author Christian Tzolov
  * @author luocongqiu
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -125,13 +125,13 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 		if (response.promptEvalCount() != null && response.evalCount() != null) {
-			generationMetadata = ChatGenerationMetadata.from("DONE", null);
+			generationMetadata = ChatGenerationMetadata.from(response.doneReason(), null);
 		}
 
 		var generator = new Generation(assistantMessage, generationMetadata);
 		var chatResponse = new ChatResponse(List.of(generator), from(response));
 
-		if (isToolCall(chatResponse, Set.of("DONE"))) {
+		if (isToolCall(chatResponse, Set.of("stop"))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
@@ -176,7 +176,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 			ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 			if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-				generationMetadata = ChatGenerationMetadata.from("DONE", null);
+				generationMetadata = ChatGenerationMetadata.from(chunk.doneReason(), null);
 			}
 
 			var generator = new Generation(assistantMessage, generationMetadata);
@@ -184,7 +184,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		});
 
 		return chatResponse.flatMap(response -> {
-			if (isToolCall(response, Set.of("DONE"))) {
+			if (isToolCall(response, Set.of("stop"))) {
 				var toolCallConversation = handleToolCalls(prompt, response);
 				// Recursively call the stream method with the tool call message
 				// conversation that contains the call responses.
@@ -201,53 +201,43 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	OllamaApi.ChatRequest ollamaChatRequest(Prompt prompt, boolean stream) {
 
-		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions()
-			.stream()
-			.filter(message -> message.getMessageType() == MessageType.USER
-					|| message.getMessageType() == MessageType.ASSISTANT
-					|| message.getMessageType() == MessageType.SYSTEM || message.getMessageType() == MessageType.TOOL)
-			.map(message -> {
-				if (message instanceof UserMessage userMessage) {
-					var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getContent());
-					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						messageBuilder.withImages(userMessage.getMedia()
-							.stream()
-							.map(media -> this.fromMediaData(media.getData()))
-							.toList());
-					}
-					return List.of(messageBuilder.build());
+		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
+			if (message instanceof UserMessage userMessage) {
+				var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getContent());
+				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+					messageBuilder.withImages(
+							userMessage.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
 				}
-				else if (message instanceof SystemMessage systemMessage) {
-					return List
-						.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getContent()).build());
+				return List.of(messageBuilder.build());
+			}
+			else if (message instanceof SystemMessage systemMessage) {
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getContent()).build());
+			}
+			else if (message instanceof AssistantMessage assistantMessage) {
+				List<ToolCall> toolCalls = null;
+				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+						var function = new ToolCallFunction(toolCall.name(),
+								ModelOptionsUtils.jsonToMap(toolCall.arguments()));
+						return new ToolCall(function);
+					}).toList();
 				}
-				else if (message instanceof AssistantMessage assistantMessage) {
-					List<ToolCall> toolCalls = null;
-					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-						toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
-							var function = new ToolCallFunction(toolCall.name(),
-									ModelOptionsUtils.jsonToMap(toolCall.arguments()));
-							return new ToolCall(function);
-						}).toList();
-					}
-					return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
-						.withContent(assistantMessage.getContent())
-						.withToolCalls(toolCalls)
-						.build());
-				}
-				else if (message instanceof ToolResponseMessage toolMessage) {
+				return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
+					.withContent(assistantMessage.getContent())
+					.withToolCalls(toolCalls)
+					.build());
+			}
+			else if (message instanceof ToolResponseMessage toolMessage) {
 
-					List<OllamaApi.Message> responseMessages = toolMessage.getResponses()
-						.stream()
-						.map(tr -> OllamaApi.Message.builder(Role.TOOL).withContent(tr.responseData()).build())
-						.toList();
+				List<OllamaApi.Message> responseMessages = toolMessage.getResponses()
+					.stream()
+					.map(tr -> OllamaApi.Message.builder(Role.TOOL).withContent(tr.responseData()).build())
+					.toList();
 
-					return responseMessages;
-				}
-				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-			})
-			.flatMap(List::stream)
-			.toList();
+				return responseMessages;
+			}
+			throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
+		}).flatMap(List::stream).toList();
 
 		Set<String> functionsForThisRequest = new HashSet<>();
 

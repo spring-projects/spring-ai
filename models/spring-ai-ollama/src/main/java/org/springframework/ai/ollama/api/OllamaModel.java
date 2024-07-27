@@ -21,6 +21,7 @@ import org.springframework.ai.model.ChatModelDescription;
  * Helper class for common Ollama models.
  *
  * @author Siarhei Blashuk
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 public enum OllamaModel implements ChatModelDescription {
@@ -36,9 +37,25 @@ public enum OllamaModel implements ChatModelDescription {
 	LLAMA3("llama3"),
 
 	/**
+	 * The 8B language model from Meta.
+	 */
+	LLAMA3_1("llama3.1"),
+
+	/**
 	 * The 7B parameters model
 	 */
 	MISTRAL("mistral"),
+
+	/**
+	 * A 12B model with 128k context length, built by Mistral AI in collaboration with
+	 * NVIDIA.
+	 */
+	MISTRAL_NEMO("mistral-nemo"),
+
+	/**
+	 * A small vision language model designed to run efficiently on edge devices.
+	 */
+	MOONDREAM("moondream"),
 
 	/**
 	 * The 2.7B uncensored Dolphin model
