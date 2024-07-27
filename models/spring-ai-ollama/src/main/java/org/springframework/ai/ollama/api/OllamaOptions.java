@@ -149,7 +149,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
 	 * specific number will make the model generate the same text for the same prompt.
-	 * (Default: 0)
+	 * (Default: -1)
 	 */
 	@JsonProperty("seed") private Integer seed;
 
@@ -268,8 +268,8 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 */
 	@JsonProperty("keep_alive") private String keepAlive;
 
-		/**
-	 * OpenAI Tool Function Callbacks to register with the ChatModel.
+	/**
+	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
@@ -304,6 +304,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 */
 	public OllamaOptions withModel(String model) {
 		this.model = model;
+		return this;
+	}
+
+	public OllamaOptions withModel(OllamaModel model) {
+		this.model = model.getName();
 		return this;
 	}
 
