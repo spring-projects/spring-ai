@@ -195,7 +195,6 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
 			.map(content -> {
-				new AssistantMessage(content.text(), Map.of());
 				return new Generation(new AssistantMessage(content.text(), Map.of()),
 						ChatGenerationMetadata.from(chatCompletion.stopReason(), null));
 			})
