@@ -2,7 +2,7 @@
 
 TIP: You need Ollama 0.2.8 or newer.
 
-TIP: You need https://ollama.com/library[Models] pre-trained for Tools support. 
+TIP: You need https://ollama.com/search?c=tools[Models] pre-trained for Tools support. 
 Usually, such models are tagged with a `Tools` tag.
 For example `mistral`, `firefunction-v2` or `llama3.1:70b`.
 
@@ -121,9 +121,6 @@ public record Request(String location, Unit unit) {}
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] demonstrates this approach.
-
-
 ==== FunctionCallback Wrapper
 
 Another way to register a function is to create a `FunctionCallbackWrapper` wrapper like this:
@@ -179,7 +176,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWrapperIT.java[FunctionCallbackWrapperIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/FunctionCallbackWrapperIT.java[FunctionCallbackWrapperIT.java] test demo this approach.
 
 
 === Register/Call Functions with Prompt Options
@@ -206,7 +203,7 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows to dynamically chose different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OllamaChatModel` and use it in a prompt request.
+The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OllamaChatModel` and use it in a prompt request.
 
 == Appendices:
 
@@ -222,4 +219,4 @@ The following diagram illustrates the flow of the Ollama API:
 
 image:ollama-function-calling-flow.jpg[title="Ollama API Function Calling Flow", width=800]
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/chat/api/tool/OpenAiApiToolFunctionCallIT.java[OllamaApiToolFunctionCallIT.java] provides a complete example on how to use the Ollama API function calling.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/api/tool/OllamaApiToolFunctionCallIT.java[OllamaApiToolFunctionCallIT.java] provides a complete example on how to use the Ollama API function calling.

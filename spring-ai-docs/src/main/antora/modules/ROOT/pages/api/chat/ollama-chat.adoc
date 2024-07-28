@@ -3,6 +3,10 @@
 With https://ollama.ai/[Ollama] you can run various Large Language Models (LLMs) locally and generate text from them.
 Spring AI supports the Ollama text generation with `OllamaChatModel`.
 
+
+TIP: Ollama offers an OpenAI API compatible endpoint as well. 
+Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to learn how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] to talk to an Ollama server.
+
 == Prerequisites
 
 You first need to run Ollama on your local machine.
@@ -12,7 +16,8 @@ NOTE: installing `ollama run llama3` will download a 4.7GB model artifact.
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories. 
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -74,32 +79,32 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | Property | Description | Default
 | spring.ai.ollama.chat.options.numa              | Whether to use NUMA.                                           | false
 | spring.ai.ollama.chat.options.num-ctx           | Sets the size of the context window used to generate the next token. | 2048
-| spring.ai.ollama.chat.options.num-batch         | ???                                                             | 512
+| spring.ai.ollama.chat.options.num-batch         | Prompt processing maximum batch size. | 512
 | spring.ai.ollama.chat.options.num-gpu           | The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable. 1 here indicates that NumGPU should be set dynamically | -1
-| spring.ai.ollama.chat.options.main-gpu          | ???                                                             | -
-| spring.ai.ollama.chat.options.low-vram          | ???                                                             | false
-| spring.ai.ollama.chat.options.f16-kv            | ???                                                             | true
-| spring.ai.ollama.chat.options.logits-all        | ???                                                             | -
-| spring.ai.ollama.chat.options.vocab-only        | ???                                                             | -
-| spring.ai.ollama.chat.options.use-mmap          | ???                                                             | true
-| spring.ai.ollama.chat.options.use-mlock         | ???                                                             | false
+| spring.ai.ollama.chat.options.main-gpu          | When using multiple GPUs this option controls which GPU is used for small tensors for which the overhead of splitting the computation across all GPUs is not worthwhile. The GPU in question will use slightly more VRAM to store a scratch buffer for temporary results. | 0
+| spring.ai.ollama.chat.options.low-vram          | -                                                             | false
+| spring.ai.ollama.chat.options.f16-kv            | -                                                             | true
+| spring.ai.ollama.chat.options.logits-all        | Return logits for all the tokens, not just the last one. To enable completions to return logprobs, this must be true. | -
+| spring.ai.ollama.chat.options.vocab-only        | Load only the vocabulary, not the weights. | -
+| spring.ai.ollama.chat.options.use-mmap          | By default, models are mapped into memory, which allows the system to load only the necessary parts of the model as needed. However, if the model is larger than your total amount of RAM or if your system is low on available memory, using mmap might increase the risk of pageouts, negatively impacting performance. Disabling mmap results in slower load times but may reduce pageouts if you're not using mlock. Note that if the model is larger than the total amount of RAM, turning off mmap would prevent the model from loading at all. | null
+| spring.ai.ollama.chat.options.use-mlock         | Lock the model in memory, preventing it from being swapped out when memory-mapped. This can improve performance but trades away some of the advantages of memory-mapping by requiring more RAM to run and potentially slowing down load times as the model loads into RAM. | false
 | spring.ai.ollama.chat.options.num-thread        | Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores). 0 = let the runtime decide | 0
-| spring.ai.ollama.chat.options.num-keep          | ???                                                             | 0
+| spring.ai.ollama.chat.options.num-keep          | -                                                             | 4
 | spring.ai.ollama.chat.options.seed              | Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt.  | -1
 | spring.ai.ollama.chat.options.num-predict       | Maximum number of tokens to predict when generating text. (-1 = infinite generation, -2 = fill context) | -1
 | spring.ai.ollama.chat.options.top-k             | Reduces the probability of generating nonsense. A higher value (e.g., 100) will give more diverse answers, while a lower value (e.g., 10) will be more conservative.  | 40
 | spring.ai.ollama.chat.options.top-p             | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.  | 0.9
 | spring.ai.ollama.chat.options.tfs-z             | Tail-free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. | 1.0
-| spring.ai.ollama.chat.options.typical-p         | ???                                                             | 1.0
-| spring.ai.ollama.chat.options.repeat-last-n      | Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx) | 64
+| spring.ai.ollama.chat.options.typical-p         | -                                                             | 1.0
+| spring.ai.ollama.chat.options.repeat-last-n     | Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx) | 64
 | spring.ai.ollama.chat.options.temperature       | The temperature of the model. Increasing the temperature will make the model answer more creatively. | 0.8
 | spring.ai.ollama.chat.options.repeat-penalty    | Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. | 1.1
-| spring.ai.ollama.chat.options.presence-penalty  | ???                                                             | 0.0
-| spring.ai.ollama.chat.options.frequency-penalty | ???                                                             | 0.0
+| spring.ai.ollama.chat.options.presence-penalty  | -                                                             | 0.0
+| spring.ai.ollama.chat.options.frequency-penalty | -                                                             | 0.0
 | spring.ai.ollama.chat.options.mirostat          | Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0) | 0
 | spring.ai.ollama.chat.options.mirostat-tau      | Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. | 5.0
 | spring.ai.ollama.chat.options.mirostat-eta      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
-| spring.ai.ollama.chat.options.penalize-newline  | ???                                                             | true
+| spring.ai.ollama.chat.options.penalize-newline  | -                                                             | true
 | spring.ai.ollama.chat.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
 | spring.ai.ollama.chat.options.functions         | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
 |====
@@ -120,9 +125,10 @@ For example to override the default model and temperature for a specific request
 ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        OllamaOptions.create()
-            .withModel("llama2")
+        OllamaOptions.builder()
+            .withModel(OllamaModel.LLAMA3_1)
             .withTemperature(0.4)
+            .build();
     ));
 ----
 
@@ -179,6 +185,14 @@ the background. There's also a gold-colored ring visible behind the basket, whic
 photo was taken in an area with metallic decorations or fixtures. The overall setting suggests a home environment
 where fruits are being displayed, possibly for convenience or aesthetic purposes.
 ----
+
+== OpenAI API Compatibility
+
+Ollama is OpenAI API compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools. 
+For this you need to set the OpenAI base-url: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.options.model=mistral`.
+
+Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
+
 
 == Sample Controller
 
