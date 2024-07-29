@@ -188,7 +188,8 @@ class MistralAiChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco? Response in Celsius");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
