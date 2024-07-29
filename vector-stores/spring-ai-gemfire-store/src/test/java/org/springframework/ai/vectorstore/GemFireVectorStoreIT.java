@@ -216,7 +216,7 @@ public class GemFireVectorStoreIT {
 
 		@Bean
 		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
-			return new GemFireVectorStore(config, embeddingModel);
+			return new GemFireVectorStore(config, embeddingModel, true);
 		}
 
 		@Bean

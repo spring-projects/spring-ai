@@ -20,7 +20,6 @@ import java.io.IOException;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddigConnectionDetails;
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingModel;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,7 +36,7 @@ import com.google.cloud.vertexai.VertexAI;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-@ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
+@ConditionalOnClass({ VertexAI.class, VertexAiTextEmbeddingModel.class })
 @EnableConfigurationProperties({ VertexAiEmbeddingConnectionProperties.class, VertexAiTextEmbeddingProperties.class,
 		VertexAiMultimodalEmbeddingProperties.class, })
 public class VertexAiEmbeddingAutoConfiguration {

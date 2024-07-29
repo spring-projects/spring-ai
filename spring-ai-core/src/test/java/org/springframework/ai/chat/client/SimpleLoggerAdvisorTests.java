@@ -29,7 +29,9 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -57,7 +59,7 @@ public class SimpleLoggerAdvisorTests {
 	public void callLogging(CapturedOutput output) {
 
 		when(chatModel.call(promptCaptor.capture()))
-				.thenReturn(new ChatResponse(List.of(new Generation("Your answer is ZXY"))));
+			.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))));
 
 		var loggerAdvisor = new SimpleLoggerAdvisor();
 
@@ -71,8 +73,9 @@ public class SimpleLoggerAdvisorTests {
 	@Test
 	public void streamLogging(CapturedOutput output) {
 
-		when(chatModel.stream(promptCaptor.capture())).thenReturn(
-				Flux.generate(() -> new ChatResponse(List.of(new Generation("Your answer is ZXY"))), (state, sink) -> {
+		when(chatModel.stream(promptCaptor.capture())).thenReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))),
+				(state, sink) -> {
 					sink.next(state);
 					sink.complete();
 					return state;
@@ -90,7 +93,7 @@ public class SimpleLoggerAdvisorTests {
 	private void validate(String content, CapturedOutput output) {
 		assertThat(content).isEqualTo("Your answer is ZXY");
 
-		Message userMessage = promptCaptor.getValue().getInstructions().get(0);
+		UserMessage userMessage = (UserMessage) promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("Please answer my question XYZ");
 
 		assertThat(output.getOut()).contains("request: AdvisedRequest", "userText=Please answer my question XYZ");

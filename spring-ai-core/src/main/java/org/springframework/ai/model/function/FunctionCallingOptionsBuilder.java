@@ -139,6 +139,16 @@ public class FunctionCallingOptionsBuilder {
 			this.topK = topK;
 		}
 
+		@Override
+		public ChatOptions copy() {
+			return new FunctionCallingOptionsBuilder().withTemperature(this.temperature)
+				.withTopP(this.topP)
+				.withTopK(this.topK)
+				.withFunctions(this.functions)
+				.withFunctionCallbacks(this.functionCallbacks)
+				.build();
+		}
+
 	}
 
 }

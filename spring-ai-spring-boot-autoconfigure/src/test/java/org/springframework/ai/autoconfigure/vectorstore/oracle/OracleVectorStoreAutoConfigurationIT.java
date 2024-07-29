@@ -63,6 +63,7 @@ public class OracleVectorStoreAutoConfigurationIT {
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+				"spring.ai.vectorstore.oracle.initialize-schema=true",
 				"test.spring.ai.vectorstore.oracle.dimensions=384",
 				// JdbcTemplate configuration
 				String.format("spring.datasource.url=%s", oracle23aiContainer.getJdbcUrl()),

@@ -26,7 +26,7 @@ import org.springframework.ai.chat.messages.Message;
  * conversation, and clear the conversation history.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public interface ChatMemory {
 

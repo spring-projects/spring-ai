@@ -20,8 +20,9 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingType;
 
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.Content;
+import org.springframework.ai.model.MediaContent;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -48,7 +49,7 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 	}
 
 	@Override
-	public int estimate(Content content) {
+	public int estimate(MediaContent content) {
 		int tokenCount = 0;
 
 		if (content.getContent() != null) {
@@ -74,10 +75,10 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 	}
 
 	@Override
-	public int estimate(Iterable<Content> contents) {
+	public int estimate(Iterable<MediaContent> contents) {
 		int totalSize = 0;
-		for (Content content : contents) {
-			totalSize += this.estimate(content);
+		for (MediaContent mediaContent : contents) {
+			totalSize += this.estimate(mediaContent);
 		}
 		return totalSize;
 	}

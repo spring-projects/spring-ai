@@ -15,29 +15,29 @@
  */
 package org.springframework.ai.document;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.model.Content;
+import org.springframework.ai.model.Media;
+import org.springframework.ai.model.MediaContent;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A document is a container for the content and metadata of a document. It also contains
  * the document's unique ID and an optional embedding.
  */
 @JsonIgnoreProperties({ "contentFormatter" })
-public class Document implements Content {
+public class Document implements MediaContent {
 
 	public final static ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
 
@@ -57,9 +57,9 @@ public class Document implements Content {
 	/**
 	 * Document content.
 	 */
-	private String content;
+	private final String content;
 
-	private List<Media> media;
+	private final Collection<Media> media;
 
 	/**
 	 * Embedding of the document. Note: ephemeral field.
@@ -82,7 +82,7 @@ public class Document implements Content {
 		this(content, metadata, new RandomIdGenerator());
 	}
 
-	public Document(String content, List<Media> media, Map<String, Object> metadata) {
+	public Document(String content, Collection<Media> media, Map<String, Object> metadata) {
 		this(new RandomIdGenerator().generateId(content, metadata), content, media, metadata);
 	}
 
@@ -94,7 +94,7 @@ public class Document implements Content {
 		this(id, content, List.of(), metadata);
 	}
 
-	public Document(String id, String content, List<Media> media, Map<String, Object> metadata) {
+	public Document(String id, String content, Collection<Media> media, Map<String, Object> metadata) {
 		Assert.hasText(id, "id must not be null or empty");
 		Assert.notNull(content, "content must not be null");
 		Assert.notNull(metadata, "metadata must not be null");
@@ -183,7 +183,7 @@ public class Document implements Content {
 	}
 
 	@Override
-	public List<Media> getMedia(String... dummy) {
+	public Collection<Media> getMedia() {
 		return this.media;
 	}
 

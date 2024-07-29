@@ -24,6 +24,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
@@ -76,7 +77,7 @@ public class TransformersEmbeddingModelTests {
 		embeddingModel.afterPropertiesSet();
 		EmbeddingResponse embed = embeddingModel.embedForResponse(List.of("Hello world", "World is big"));
 		assertThat(embed.getResults()).hasSize(2);
-		assertThat(embed.getMetadata()).isEmpty();
+		assertTrue(embed.getMetadata().isEmpty(), "Expected embed metadata to be empty, but it was not.");
 
 		assertThat(embed.getResults().get(0).getOutput()).hasSize(384);
 		assertThat(DF.format(embed.getResults().get(0).getOutput().get(0))).isEqualTo(DF.format(-0.19744634628295898));

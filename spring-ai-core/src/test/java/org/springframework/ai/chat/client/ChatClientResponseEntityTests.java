@@ -29,7 +29,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata.DefaultChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -58,8 +57,7 @@ public class ChatClientResponseEntityTests {
 	@Test
 	public void responseEntityTest() {
 
-		ChatResponseMetadata metadata = new DefaultChatResponseMetadata();
-		metadata.put("key1", "value1");
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder().withKeyValue("key1", "value1").build();
 
 		var chatResponse = new ChatResponse(List.of(new Generation("""
 				{"name":"John", "age":30}
@@ -75,7 +73,7 @@ public class ChatClientResponseEntityTests {
 			.responseEntity(MyBean.class);
 
 		assertThat(responseEntity.getResponse()).isEqualTo(chatResponse);
-		assertThat(responseEntity.getResponse().getMetadata().get("key1")).isEqualTo("value1");
+		assertThat(responseEntity.getResponse().getMetadata().get("key1").toString()).isEqualTo("value1");
 
 		assertThat(responseEntity.getEntity()).isEqualTo(new MyBean("John", 30));
 

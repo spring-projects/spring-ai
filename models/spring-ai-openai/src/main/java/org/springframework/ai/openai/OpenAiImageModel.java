@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.Image;
@@ -29,11 +27,12 @@ import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
-import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+
+import java.util.List;
 
 /**
  * OpenAiImageModel is a class that implements the ImageModel interface. It provides a
@@ -42,6 +41,7 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Hyunjoon Choi
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class OpenAiImageModel implements ImageModel {
@@ -91,30 +91,32 @@ public class OpenAiImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		return this.retryTemplate.execute(ctx -> {
 
-			String instructions = imagePrompt.getInstructions().get(0).getText();
+		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(imagePrompt);
 
-			OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
-					OpenAiImageApi.DEFAULT_IMAGE_MODEL);
+		ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.retryTemplate
+			.execute(ctx -> this.openAiImageApi.createImage(imageRequest));
 
-			if (this.defaultOptions != null) {
-				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-						OpenAiImageApi.OpenAiImageRequest.class);
-			}
+		return convertResponse(imageResponseEntity, imageRequest);
+	}
 
-			if (imagePrompt.getOptions() != null) {
-				imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
-						OpenAiImageApi.OpenAiImageRequest.class);
-			}
+	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt) {
+		String instructions = imagePrompt.getInstructions().get(0).getText();
 
-			// Make the request
-			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.openAiImageApi
-				.createImage(imageRequest);
+		OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
+				OpenAiImageApi.DEFAULT_IMAGE_MODEL);
 
-			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, imageRequest);
-		});
+		if (this.defaultOptions != null) {
+			imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
+					OpenAiImageApi.OpenAiImageRequest.class);
+		}
+
+		if (imagePrompt.getOptions() != null) {
+			imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
+					OpenAiImageApi.OpenAiImageRequest.class);
+		}
+
+		return imageRequest;
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,
@@ -130,7 +132,7 @@ public class OpenAiImageModel implements ImageModel {
 					new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
 		}).toList();
 
-		ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(imageApiResponse);
+		ImageResponseMetadata openAiImageResponseMetadata = new ImageResponseMetadata(imageApiResponse.created());
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
 	}
 

@@ -176,7 +176,7 @@ public class OllamaChatAutoConfigurationIT {
 
 	}
 
-	static void createImage(GenericContainer<?> container, String localImageName) {
+	public static void createImage(GenericContainer<?> container, String localImageName) {
 		DockerImageName dockerImageName = DockerImageName.parse(container.getDockerImageName());
 		if (!dockerImageName.equals(DockerImageName.parse(localImageName))) {
 			DockerClient dockerClient = DockerClientFactory.instance().client();
@@ -192,7 +192,7 @@ public class OllamaChatAutoConfigurationIT {
 		}
 	}
 
-	static class OllamaDockerImageName {
+	public static class OllamaDockerImageName {
 
 		private final String baseImage;
 
@@ -203,7 +203,7 @@ public class OllamaChatAutoConfigurationIT {
 			this.localImageName = localImageName;
 		}
 
-		static DockerImageName image() {
+		public static DockerImageName image() {
 			return new OllamaDockerImageName(OllamaImage.IMAGE, OLLAMA_WITH_MODEL).resolve();
 		}
 

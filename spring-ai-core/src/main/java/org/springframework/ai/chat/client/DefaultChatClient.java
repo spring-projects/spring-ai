@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -533,7 +533,8 @@ public class DefaultChatClient implements ChatClient {
 				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams) {
 
 			this.chatModel = chatModel;
-			this.chatOptions = chatOptions != null ? chatOptions : chatModel.getDefaultOptions();
+			this.chatOptions = chatOptions != null ? chatOptions.copy()
+					: (chatModel.getDefaultOptions() != null) ? chatModel.getDefaultOptions().copy() : null;
 
 			this.userText = userText;
 			this.userParams.putAll(userParams);
@@ -609,6 +610,11 @@ public class DefaultChatClient implements ChatClient {
 
 		public <I, O> ChatClientRequestSpec function(String name, String description,
 				java.util.function.Function<I, O> function) {
+			return this.function(name, description, null, function);
+		}
+
+		public <I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
+				java.util.function.Function<I, O> function) {
 
 			Assert.hasText(name, "the name must be non-null and non-empty");
 			Assert.hasText(description, "the description must be non-null and non-empty");
@@ -617,6 +623,7 @@ public class DefaultChatClient implements ChatClient {
 			var fcw = FunctionCallbackWrapper.builder(function)
 				.withDescription(description)
 				.withName(name)
+				.withInputType(inputType)
 				.withResponseConverter(Object::toString)
 				.build();
 			this.functionCallbacks.add(fcw);

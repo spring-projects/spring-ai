@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @TestPropertySource(properties = { "spring.ai.vectorstore.typesense.embeddingDimension=384",
+		"spring.ai.vectorstore.typesense.initialize-schema=true",
 		"spring.ai.vectorstore.typesense.collectionName=myTestCollection" })
 @Testcontainers
 class TypesenseContainerConnectionDetailsFactoryTest {

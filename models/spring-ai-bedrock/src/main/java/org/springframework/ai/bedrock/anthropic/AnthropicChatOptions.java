@@ -164,6 +164,11 @@ public class AnthropicChatOptions implements ChatOptions {
 		this.anthropicVersion = anthropicVersion;
 	}
 
+	@Override
+	public AnthropicChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
 		return builder().withTemperature(fromOptions.getTemperature())
 			.withMaxTokensToSample(fromOptions.getMaxTokensToSample())

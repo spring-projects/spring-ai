@@ -18,7 +18,7 @@ package org.springframework.ai.aot;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.FunctionMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -41,7 +41,7 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 
-		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, FunctionMessage.class, Message.class,
+		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
 				MessageType.class, UserMessage.class, SystemMessage.class, FunctionCallbackContext.class,
 				FunctionCallback.class, FunctionCallbackWrapper.class);
 		for (var c : chatTypes) {

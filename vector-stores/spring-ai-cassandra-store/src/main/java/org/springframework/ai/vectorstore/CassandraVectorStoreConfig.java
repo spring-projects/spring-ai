@@ -32,12 +32,14 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.lang.Nullable;
+import org.springframework.ai.cassandra.SchemaUtil;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -113,6 +115,8 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 	}
 
 	/**
+	 * Given a string document id, return the value for each primary key column.
+	 *
 	 * It is a requirement that an empty {@code List<Object>} returns an example formatted
 	 * id
 	 */
@@ -120,6 +124,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 	}
 
+	/** Given a list of primary key column values, return the document id. */
 	public interface PrimaryKeyTranslator extends Function<List<Object>, String> {
 
 	}
@@ -147,7 +152,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 		this.schema = new Schema(builder.keyspace, builder.table, builder.partitionKeys, builder.clusteringKeys,
 				builder.contentColumnName, builder.embeddingColumnName, builder.indexName, builder.metadataColumns);
 
-		this.disallowSchemaChanges = builder.disallowSchemaCreation;
+		this.disallowSchemaChanges = builder.disallowSchemaChanges;
 		this.returnEmbeddings = builder.returnEmbeddings;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
@@ -198,7 +203,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
-		private boolean disallowSchemaCreation = false;
+		private boolean disallowSchemaChanges = false;
 
 		private boolean returnEmbeddings = false;
 
@@ -254,6 +259,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 
 		public Builder withPartitionKeys(List<SchemaColumn> partitionKeys) {
+			Preconditions.checkArgument(!partitionKeys.isEmpty());
 			this.partitionKeys = partitionKeys;
 			return this;
 		}
@@ -307,7 +313,7 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 		}
 
 		public Builder disallowSchemaChanges() {
-			this.disallowSchemaCreation = true;
+			this.disallowSchemaChanges = true;
 			return this;
 		}
 
@@ -379,30 +385,14 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 
 	void ensureSchemaExists(int vectorDimension) {
 		if (!this.disallowSchemaChanges) {
-			ensureKeyspaceExists();
+			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
 			ensureTableExists(vectorDimension);
 			ensureTableColumnsExist(vectorDimension);
 			ensureIndexesExists();
-			checkSchemaAgreement();
+			SchemaUtil.checkSchemaAgreement(session);
 		}
 		else {
 			checkSchemaValid(vectorDimension);
-		}
-	}
-
-	private void checkSchemaAgreement() throws IllegalStateException {
-		if (!this.session.checkSchemaAgreement()) {
-			logger.warn("Waiting for cluster schema agreement, sleeping 10s…");
-			try {
-				Thread.sleep(Duration.ofSeconds(10).toMillis());
-			}
-			catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
-				throw new IllegalStateException(ex);
-			}
-			if (!this.session.checkSchemaAgreement()) {
-				logger.error("no cluster schema agreement still, continuing, let's hope this works…");
-			}
 		}
 	}
 
@@ -569,18 +559,6 @@ public class CassandraVectorStoreConfig implements AutoCloseable {
 				logger.debug("Executing {}", stmt.getQuery());
 				this.session.execute(stmt);
 			}
-		}
-	}
-
-	private void ensureKeyspaceExists() {
-		if (this.session.getMetadata().getKeyspace(this.schema.keyspace).isEmpty()) {
-			SimpleStatement keyspaceStmt = SchemaBuilder.createKeyspace(this.schema.keyspace)
-				.ifNotExists()
-				.withSimpleStrategy(1)
-				.build();
-
-			logger.debug("Executing {}", keyspaceStmt.getQuery());
-			this.session.execute(keyspaceStmt);
 		}
 	}
 

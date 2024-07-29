@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
+/**
+ * @author Jemin Huh
+ * @author Soby Chacko
+ * @since 1.0.0
+ */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenSearchVectorStoreIT {
@@ -346,7 +351,7 @@ class OpenSearchVectorStoreIT {
 			try {
 				return new OpenSearchVectorStore(new OpenSearchClient(ApacheHttpClient5TransportBuilder
 					.builder(HttpHost.create(opensearchContainer.getHttpHostAddress()))
-					.build()), embeddingModel);
+					.build()), embeddingModel, true);
 			}
 			catch (URISyntaxException e) {
 				throw new RuntimeException(e);

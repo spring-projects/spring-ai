@@ -126,65 +126,24 @@ dependencies {
 
 Each of the following sections in the documentation shows which dependencies you need to add to your project build system.
 
-=== Embeddings Models
-
-* xref:api/embeddings.adoc[Embeddings API]
-** xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
-** xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]
-** xref:api/embeddings/ollama-embeddings.adoc[Spring AI Ollama Embeddings]
-** xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
-** xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
-** xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
-** xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
-** xref:api/embeddings/vertexai-embeddings-text.adoc[Spring AI VertexAI Embeddings]
-** xref:api/embeddings/vertexai-embeddings-palm2.adoc[Spring AI VertexAI PaLM2 Embeddings]
-** xref:api/embeddings/mistralai-embeddings.adoc[Spring AI MistralAI Embeddings]
-
-=== Chat Models
-* xref:api/chatmodel.adoc[Chat Completion API]
-** xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming and function-calling support)
-** xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming and function-calling support)
-** xref:api/chat/ollama-chat.adoc[Ollama Chat Completion]
-** xref:api/chat/huggingface.adoc[Hugging Face Chat Completion] (no streaming support)
-** xref:api/chat/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
-** xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
-** xref:api/bedrock.adoc[Amazon Bedrock]
-*** xref:api/chat/bedrock/bedrock-cohere.adoc[Cohere Chat Completion]
-*** xref:api/chat/bedrock/bedrock-llama.adoc[Llama Chat Completion]
-*** xref:api/chat/bedrock/bedrock-titan.adoc[Titan Chat Completion]
-*** xref:api/chat/bedrock/bedrock-anthropic.adoc[Anthropic Chat Completion]
-*** xref:api/chat/bedrock/bedrock-jurassic2.adoc[Jurassic2 Chat Completion]
-** xref:api/chat/mistralai-chat.adoc[MistralAI Chat Completion] (streaming and function-calling support)
-
-=== Image Generation Models
-* xref:api/imageclient.adoc[]
-** xref:api/image/openai-image.adoc[OpenAI Image Generation]
-** xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
-
-=== Audio Models
-
+* xref:api/embeddings.adoc[Embeddings Models]
+* xref:api/chatmodel.adoc[Chat Models]
+* xref:api/imageclient.adoc[Image Generation Models]
 * xref:api/audio/transcriptions.adoc[Transcription Models]
-** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI Transcriptions]
 * xref:api/audio/speech.adoc[Text-To-Speech (TTS) Models]
-** xref:api/audio/speech/openai-speech.adoc[OpenAI Text-To-Speech]
-
-=== Vector Databases
-* xref:api/vectordbs.adoc[Vector Database API]
-** xref:api/vectordbs/azure.adoc[ Azure Vector Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
-** xref:api/vectordbs/chroma.adoc[ChromaVectorStore] - The https://www.trychroma.com/[Chroma] vector store.
-** xref:api/vectordbs/milvus.adoc[MilvusVectorStore] - The https://milvus.io/[Milvus] vector store.
-** xref:api/vectordbs/neo4j.adoc[Neo4jVectorStore] - The https://neo4j.com/[Neo4j] vector store.
-** xref:api/vectordbs/pgvector.adoc[PgVectorStore] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
-** xref:api/vectordbs/pinecone.adoc[PineconeVectorStore] - https://www.pinecone.io/[PineCone] vector store.
-** xref:api/vectordbs/qdrant.adoc[QdrantVectorStore] - https://www.qdrant.tech/[Qdrant] vector store.
-** xref:api/vectordbs/redis.adoc[RedisVectorStore] - The https://redis.io/[Redis] vector store.
-** xref:api/vectordbs/weaviate.adoc[WeaviateVectorStore] - The https://weaviate.io/[Weaviate] vector store.
-** link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple (in-memory) implementation of persistent vector storage, good for educational purposes.
-
+* xref:api/vectordbs.adoc[Vector Databases]
 
 == Sample Projects
 
 You can clone these projects on GitHub to get started.
+
+=== Flight Booking Assistant
+
+https://github.com/tzolov/playground-flight-booking
+
+AI-powered system that has access to terms and conditions (Retrieval Augmented Generation, RAG),
+access tools (Java methods) to perform actions (Function Calling) and uses an LLM to interact with the user
+
 
 === OpenAI
 

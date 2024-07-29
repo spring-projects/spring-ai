@@ -412,6 +412,11 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
+	@Override
+	public ZhiPuAiChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
 		return ZhiPuAiChatOptions.builder()
 			.withModel(fromOptions.getModel())

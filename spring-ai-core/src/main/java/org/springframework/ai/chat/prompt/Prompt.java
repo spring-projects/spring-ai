@@ -17,13 +17,14 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.FunctionMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelRequest;
 
@@ -109,17 +110,20 @@ public class Prompt implements ModelRequest<List<Message>> {
 	private List<Message> instructionsCopy() {
 		List<Message> messagesCopy = new ArrayList<>();
 		this.messages.forEach(message -> {
-			if (message instanceof UserMessage) {
-				messagesCopy.add(new UserMessage(message.getContent(), message.getMedia(), message.getMetadata()));
+			if (message instanceof UserMessage userMessage) {
+				messagesCopy
+					.add(new UserMessage(userMessage.getContent(), userMessage.getMedia(), message.getMetadata()));
 			}
-			else if (message instanceof SystemMessage) {
-				messagesCopy.add(new SystemMessage(message.getContent()));
+			else if (message instanceof SystemMessage systemMessage) {
+				messagesCopy.add(new SystemMessage(systemMessage.getContent()));
 			}
-			else if (message instanceof AssistantMessage) {
-				messagesCopy.add(new AssistantMessage(message.getContent(), message.getMetadata()));
+			else if (message instanceof AssistantMessage assistantMessage) {
+				messagesCopy.add(new AssistantMessage(assistantMessage.getContent(), assistantMessage.getMetadata(),
+						assistantMessage.getToolCalls()));
 			}
-			else if (message instanceof FunctionMessage) {
-				messagesCopy.add(new FunctionMessage(message.getContent(), message.getMetadata()));
+			else if (message instanceof ToolResponseMessage toolResponseMessage) {
+				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
+						new HashMap<>(toolResponseMessage.getMetadata())));
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getClass().getName());

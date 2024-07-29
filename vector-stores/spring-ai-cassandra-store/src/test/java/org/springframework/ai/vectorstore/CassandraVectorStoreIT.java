@@ -396,7 +396,7 @@ class CassandraVectorStoreIT {
 				.build();
 
 			conf.dropKeyspace();
-			return new CassandraVectorStore(conf, embeddingModel);
+			return CassandraVectorStore.create(conf, embeddingModel);
 		}
 
 		@Bean
@@ -432,7 +432,7 @@ class CassandraVectorStoreIT {
 			CassandraVectorStoreConfig.Builder builder) {
 		CassandraVectorStoreConfig conf = builder.build();
 		conf.dropKeyspace();
-		return new CassandraVectorStore(conf, context.getBean(EmbeddingModel.class));
+		return CassandraVectorStore.create(conf, context.getBean(EmbeddingModel.class));
 	}
 
 }

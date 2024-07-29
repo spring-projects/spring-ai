@@ -8,13 +8,19 @@ The RAG use case is text to augment the capabilities of generative models by ret
 
 == API Overview
 
+The ETL pipelines creates, transforms and stores `Document` instances. 
+
+image::spring-ai-document1-api.jpg[Spring AI Message API, width=400, align="center"]
+
+The `Document` class contains text, metadata and optionally additionall media types like images, audio and video.
+
 There are three main components of the ETL pipeline,
 
 * `DocumentReader` that implements `Supplier<List<Document>>`
 * `DocumentTransformer` that implements `Function<List<Document>, List<Document>>`
 * `DocumentWriter` that implements `Consumer<List<Document>>`
 
-The `Document` class contains text and metadata and is created from PDFs, text files and other document types via the `DocumentReader`.
+The `Document` class content is created from PDFs, text files and other document types throught the help of `DocumentReader`.
 
 To construct a simple ETL pipeline, you can chain together an instance of each type.
 

@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.azure.openai;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 import org.springframework.ai.embedding.EmbeddingOptions;

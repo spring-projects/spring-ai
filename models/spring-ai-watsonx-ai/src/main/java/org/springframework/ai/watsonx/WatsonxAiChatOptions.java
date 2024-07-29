@@ -324,6 +324,11 @@ public class WatsonxAiChatOptions implements ChatOptions {
         return input != null ? input.replaceAll("([a-z])([A-Z]+)", "$1_$2").toLowerCase() : null;
     }
 
+    @Override
+    public WatsonxAiChatOptions copy() {
+        return fromOptions(this);
+    }
+
     public static WatsonxAiChatOptions fromOptions(WatsonxAiChatOptions fromOptions) {
         return WatsonxAiChatOptions.builder()
                 .withTemperature(fromOptions.getTemperature())

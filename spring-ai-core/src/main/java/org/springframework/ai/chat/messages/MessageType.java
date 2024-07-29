@@ -46,9 +46,9 @@ public enum MessageType {
 	/**
 	 * A message of the type 'function' passed as input Messages with a function content
 	 * in a chat application.
-	 * @see FunctionMessage
+	 * @see ToolResponseMessage
 	 */
-	FUNCTION("function");
+	TOOL("tool");
 
 	private final String value;
 

@@ -17,6 +17,7 @@ package org.springframework.ai.zhipuai;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -236,13 +237,15 @@ public class ZhiPuAiChatModel extends
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
 			// Add text content.
 			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
-			if (!CollectionUtils.isEmpty(m.getMedia())) {
-				// Add media content.
-				contents.addAll(m.getMedia()
-					.stream()
-					.map(media -> new MediaContent(
-							new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
-					.toList());
+			if (m instanceof UserMessage userMessage) {
+				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+					// Add media content.
+					contents.addAll(userMessage.getMedia()
+						.stream()
+						.map(media -> new MediaContent(
+								new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
+						.toList());
+				}
 			}
 
 			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));

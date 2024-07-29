@@ -92,7 +92,8 @@ class GemFireVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.gemfire.buckets=" + BUCKET_COUNT)
 		.withPropertyValues("spring.ai.vectorstore.gemfire.fields=someField1,someField2")
 		.withPropertyValues("spring.ai.vectorstore.gemfire.host=localhost")
-		.withPropertyValues("spring.ai.vectorstore.gemfire.port=" + HTTP_SERVICE_PORT);
+		.withPropertyValues("spring.ai.vectorstore.gemfire.port=" + HTTP_SERVICE_PORT)
+		.withPropertyValues("spring.ai.vectorstore.gemfire.initialize-schema=true");
 
 	@BeforeAll
 	public static void startGemFireCluster() {

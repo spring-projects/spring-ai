@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_ENDPOINT", matches = ".+")
@@ -68,7 +69,8 @@ public class AzureVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(AzureVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.azure.apiKey=" + System.getenv("AZURE_AI_SEARCH_API_KEY"),
-				"spring.ai.vectorstore.azure.url=" + System.getenv("AZURE_AI_SEARCH_ENDPOINT"));
+				"spring.ai.vectorstore.azure.url=" + System.getenv("AZURE_AI_SEARCH_ENDPOINT"))
+		.withPropertyValues("spring.ai.vectorstore.azure.initialize-schema=true");
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -81,8 +83,8 @@ public class AzureVectorStoreAutoConfigurationIT {
 	public void addAndSearchTest() {
 
 		contextRunner
-			.withPropertyValues("spring.ai.vectorstore.azure.indexName=my_test_index",
-					"spring.ai.vectorstore.azure.defaultTopK=6",
+			.withPropertyValues("spring.ai.vectorstore.azure.initializeSchema=true",
+					"spring.ai.vectorstore.azure.indexName=my_test_index", "spring.ai.vectorstore.azure.defaultTopK=6",
 					"spring.ai.vectorstore.azure.defaultSimilarityThreshold=0.75")
 			.run(context -> {
 

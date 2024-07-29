@@ -26,76 +26,75 @@ OpenAI have introduced even more structure to prompts by categorizing multiple m
 
 It is common to use the `call` method of `ChatModel` that takes a `Prompt` instance and returns an `ChatResponse`.
 
-The Prompt class functions as a container for an organized series of Message objects, with each one forming a segment of the overall prompt.
+The Prompt class functions as a container for an organized series of `Message` objects and a request `ChatOptions`.
 Every Message embodies a unique role within the prompt, differing in its content and intent.
 These roles can encompass a variety of elements, from user inquiries to AI-generated responses or relevant background information.
 This arrangement enables intricate and detailed interactions with AI models, as the prompt is constructed from multiple messages, each assigned a specific role to play in the dialogue.
 
-
 Below is a truncated version of the Prompt class, with constructors and utility methods omitted for brevity:
 
 ```java
-public class Prompt {
+public class Prompt implements ModelRequest<List<Message>> {
 
     private final List<Message> messages;
 
-    // constructors and utility methods omitted
+    private ChatOptions chatOptions;
 }
 ```
 
 === Message
 
-The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, a categorization known as `MessageType`, and a list of media objects for those models that are multimodal.
+The `Message` interface encapsulates a Prompt textual content and a collection of metadata attributes and a categorization known as `MessageType`.
+
 The interface is defined as follows:
 
 ```java
-public interface Message extends Node<String> {
+public interface Content {
 
 	String getContent();
 
-	List<Media> getMedia();
+	Map<String, Object> getMetadata();
+}
+
+public interface Message extends Content {
 
 	MessageType getMessageType();
-
 }
 ```
 
-and the Node interface is
+The multimodal message types implement also the `MediaContent` interface providing a list of `Media` content objects.
 
 ```java
+public interface MediaContent extends Content {
 
-public interface Node<T> {
+	Collection<Media> getMedia();
 
-    T getContent();
-
-    Map<String, Object> getMetadata();
 }
 ```
 
-Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. Some models, like those from OpenAI, distinguish between message categories based on conversational roles. These roles are effectively mapped by the `MessageType`, as discussed below.
+Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. 
+The Models distinguish between message categories based on conversational roles. 
 
+image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
 
-== Roles
+These roles are effectively mapped by the `MessageType`, as discussed below.
 
-The evolution of prompts in AI has transitioned from basic, straightforward text to more organized and complex formats with specific roles and structures.
+==== Roles
 
-Initially, prompts were simple strings – just lines of text.
-Over time, this evolved to include specific placeholders within these strings, like “USER:”, which the AI model could recognize and respond to accordingly.
-This was a step towards more structured prompts.
-
-OpenAI then introduced an even more organized approach.
-In their model, prompts are not merely single strings but a series of messages.
-Each message, while still in text form, is assigned a specific role.
+Each message is assigned a specific role.
 These roles categorize the messages, clarifying the context and purpose of each segment of the prompt for the AI model.
 This structured approach enhances the nuance and effectiveness of communication with the AI, as each part of the prompt plays a distinct and defined role in the interaction.
-
 
 The primary roles are:
 
 * System Role: Guides the AI's behavior and response style, setting parameters or rules for how the AI interprets and replies to the input. It's akin to providing instructions to the AI before initiating a conversation.
 * User Role: Represents the user's input – their questions, commands, or statements to the AI. This role is fundamental as it forms the basis of the AI's response.
-* Assistant Role: The AI's response to the user's input. More than just an answer or reaction, it's crucial for maintaining the flow of the conversation. By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
-* Function Role: This role deals with specific tasks or operations during the conversation. While the System Role sets the AI's overall behavior, the Function Role focuses on carrying out certain actions or commands the user asks for. It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking. This role allows the AI to offer practical help in addition to conversational responses.
+* Assistant Role: The AI's response to the user's input. 
+More than just an answer or reaction, it's crucial for maintaining the flow of the conversation. 
+By tracking the AI's previous responses (its 'Assistant Role' messages), the system ensures coherent and contextually relevant interactions.
+The Assistant message may contain Function Tool Call request information as well.
+It's like a special feature in the AI, used when needed to perform specific functions such as calculations, fetching data, or other tasks beyond just talking.
+* Tool/Function Role: The Too/Function Role focuses on returning additional information in response to Tool Call Aisstnat Messages.
 
 Roles are represented as an enumeration in Spring AI as shown below
 
@@ -108,27 +107,9 @@ public enum MessageType {
 
 	SYSTEM("system"),
 
-	FUNCTION("function");
+	TOOL("tool");
 
-	private final String value;
-
-	MessageType(String value) {
-		this.value = value;
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public static MessageType fromValue(String value) {
-		for (MessageType messageType : MessageType.values()) {
-			if (messageType.getValue().equals(value)) {
-				return messageType;
-			}
-		}
-		throw new IllegalArgumentException("Invalid MessageType value: " + value);
-	}
-
+    ...
 }
 ```
 

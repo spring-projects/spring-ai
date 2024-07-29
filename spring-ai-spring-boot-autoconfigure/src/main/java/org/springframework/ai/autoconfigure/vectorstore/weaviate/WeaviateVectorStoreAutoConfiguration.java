@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Bean;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
@@ -72,8 +73,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.withConsistencyLevel(properties.getConsistencyLevel());
 
-		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient,
-				properties.isInitializeSchema());
+		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient);
 	}
 
 	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {

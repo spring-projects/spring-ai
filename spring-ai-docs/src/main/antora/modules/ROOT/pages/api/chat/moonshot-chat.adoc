@@ -247,4 +247,4 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 ==== MoonshotApi Samples
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/test/java/org/springframework/ai/moonshot/api/MoonshotApiIT.java[MoonshotApiIT.java] test provides some general examples how to use the lightweight library.
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/test/java/org/springframework/ai/moonshot/api/MoonshotApiToolFunctionCallIT.java.java[MoonshotApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-moonshot/src/test/java/org/springframework/ai/moonshot/api/MoonshotApiToolFunctionCallIT.java[MoonshotApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.

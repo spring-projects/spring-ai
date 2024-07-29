@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import io.weaviate.client.WeaviateClient;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @Testcontainers
 public class WeaviateVectorStoreIT {
@@ -256,7 +257,7 @@ public class WeaviateVectorStoreIT {
 				.withConsistencyLevel(WeaviateVectorStoreConfig.ConsistentLevel.ONE)
 				.build();
 
-			return new WeaviateVectorStore(config, embeddingModel, weaviateClient, true);
+			return new WeaviateVectorStore(config, embeddingModel, weaviateClient);
 
 		}
 

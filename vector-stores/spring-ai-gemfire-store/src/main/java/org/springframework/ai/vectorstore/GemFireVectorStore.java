@@ -63,6 +63,34 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 	private static final String DOCUMENT_FIELD = "document";
 
+	private final boolean initializeSchema;
+
+	/**
+	 * Configures and initializes a GemFireVectorStore instance based on the provided
+	 * configuration.
+	 * @param config the configuration for the GemFireVectorStore
+	 * @param embeddingModel the embedding client used for generating embeddings
+	 */
+
+	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel,
+			boolean initializeSchema) {
+		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
+		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+		this.initializeSchema = initializeSchema;
+		this.indexName = config.indexName;
+		this.embeddingModel = embeddingModel;
+		this.beamWidth = config.beamWidth;
+		this.maxConnections = config.maxConnections;
+		this.buckets = config.buckets;
+		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
+		this.fields = config.fields;
+
+		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
+			.build(config.sslEnabled ? "s" : "", config.host, config.port)
+			.toString();
+		this.client = WebClient.create(base);
+	}
+
 	// Create Index Parameters
 
 	private String indexName;
@@ -113,11 +141,12 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		if (indexExists()) {
-			deleteIndex();
+		if (!this.initializeSchema) {
+			return;
 		}
-		createIndex();
-
+		if (!indexExists()) {
+			createIndex();
+		}
 	}
 
 	/**
@@ -131,30 +160,6 @@ public class GemFireVectorStore implements VectorStore, InitializingBean {
 
 	public String getIndex() {
 		return client.get().uri("/" + indexName).retrieve().bodyToMono(String.class).onErrorReturn("").block();
-	}
-
-	/**
-	 * Configures and initializes a GemFireVectorStore instance based on the provided
-	 * configuration.
-	 * @param config the configuration for the GemFireVectorStore
-	 * @param embeddingModel the embedding client used for generating embeddings
-	 */
-
-	public GemFireVectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
-		Assert.notNull(config, "GemFireVectorStoreConfig must not be null");
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
-		this.indexName = config.indexName;
-		this.embeddingModel = embeddingModel;
-		this.beamWidth = config.beamWidth;
-		this.maxConnections = config.maxConnections;
-		this.buckets = config.buckets;
-		this.vectorSimilarityFunction = config.vectorSimilarityFunction;
-		this.fields = config.fields;
-
-		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
-			.build(config.sslEnabled ? "s" : "", config.host, config.port)
-			.toString();
-		this.client = WebClient.create(base);
 	}
 
 	public static class CreateRequest {

@@ -1,0 +1,118 @@
+= Azure OpenAI Transcriptions
+
+Spring AI supports https://learn.microsoft.com/en-us/azure/ai-services/openai/whisper-quickstart?tabs=command-line%2Cpython-new&pivots=rest-api[Azure Whisper model].
+
+== Prerequisites
+
+Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
+Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
+There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
+Exporting an environment variable is one way to set that configuration property:
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Transcription Generation Client.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Transcription Properties
+
+The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI image model.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.openai.audio.transcription.enabled  | Enable Azure OpenAI transcription model. | true
+| spring.ai.azure.openai.audio.transcription.options.model  | ID of the model to use. Only whisper is currently available. | whisper
+| spring.ai.azure.openai.audio.transcription.options.deployment-name  | The deployment name under which the model is deployed. |
+| spring.ai.azure.openai.audio.transcription.options.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. | json
+| spring.ai.azure.openai.audio.transcription.options.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
+| spring.ai.azure.openai.audio.transcription.options.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |
+| spring.ai.azure.openai.audio.transcription.options.temperature | The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. If set to 0, the model will use log probability to automatically increase the temperature until certain thresholds are hit. | 0
+| spring.ai.azure.openai.audio.transcription.options.timestamp-granularities | The timestamp granularities to populate for this transcription. response_format must be set verbose_json to use timestamp granularities. Either or both of these options are supported: word, or segment. Note: There is no additional latency for segment timestamps, but generating word timestamps incurs additional latency. | segment
+|====
+
+== Runtime Options
+
+The `AzureOpenAiAudioTranscriptionOptions` class provides the options to use when making a transcription.
+On start-up, the options specified by `spring.ai.azure.openai.audio.transcription` are used, but you can override these at runtime.
+
+For example:
+
+[source,java]
+----
+AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat responseFormat = AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.VTT;
+
+AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
+    .withLanguage("en")
+    .withPrompt("Ask not this, but ask that")
+    .withTemperature(0f)
+    .withResponseFormat(responseFormat)
+    .build();
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = azureOpenAiTranscriptionModel.call(transcriptionRequest);
+----
+
+== Manual Configuration
+
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-openai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `AzureOpenAiAudioTranscriptionModel`
+
+[source,java]
+----
+var openAIClient = new OpenAIClientBuilder()
+    .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
+    .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+    .buildClient();
+
+var azureOpenAiAudioTranscriptionModel = new AzureOpenAiAudioTranscriptionModel(openAIClient, null);
+
+var transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
+    .withResponseFormat(TranscriptResponseFormat.TEXT)
+    .withTemperature(0f)
+    .build();
+
+var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac");
+
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = azureOpenAiAudioTranscriptionModel.call(transcriptionRequest);
+----

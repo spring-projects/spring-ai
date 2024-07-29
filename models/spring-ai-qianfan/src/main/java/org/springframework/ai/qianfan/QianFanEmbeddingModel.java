@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.ai.qianfan.api.QianFanApi.EmbeddingList;
+import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -38,6 +39,7 @@ import java.util.List;
  * QianFan Embedding Client implementation.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0
  */
 public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
@@ -135,7 +137,8 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 						+ ", message:" + apiEmbeddingResponse.errorNsg());
 			}
 
-			var metadata = generateResponseMetadata(apiEmbeddingResponse.model(), apiEmbeddingResponse.usage());
+			var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
+					QianFanUsage.from(apiEmbeddingResponse.usage()));
 
 			List<Embedding> embeddings = apiEmbeddingResponse.data()
 				.stream()
@@ -144,14 +147,6 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 
 			return new EmbeddingResponse(embeddings, metadata);
 		});
-	}
-
-	private EmbeddingResponseMetadata generateResponseMetadata(String model, QianFanApi.Usage usage) {
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.put("model", model);
-		metadata.put("prompt-tokens", usage.promptTokens());
-		metadata.put("total-tokens", usage.totalTokens());
-		return metadata;
 	}
 
 }

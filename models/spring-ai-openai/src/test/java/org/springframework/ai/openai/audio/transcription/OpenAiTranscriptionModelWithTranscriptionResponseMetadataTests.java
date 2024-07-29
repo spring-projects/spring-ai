@@ -15,15 +15,14 @@
  */
 package org.springframework.ai.openai.audio.transcription;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
+import org.springframework.ai.audio.transcription.AudioTranscriptionMetadata;
+import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
+import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
-import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionMetadata;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.ai.retry.RetryUtils;
@@ -39,10 +38,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
@@ -77,7 +76,8 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 
 		assertThat(response).isNotNull();
 
-		OpenAiAudioTranscriptionResponseMetadata transcriptionResponseMetadata = response.getMetadata();
+		OpenAiAudioTranscriptionResponseMetadata transcriptionResponseMetadata = (OpenAiAudioTranscriptionResponseMetadata) response
+			.getMetadata();
 
 		assertThat(transcriptionResponseMetadata).isNotNull();
 
@@ -101,7 +101,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 		assertThat(rateLimit.getTokensReset()).isEqualTo(expectedTokensReset);
 
 		response.getResults().forEach(transcript -> {
-			OpenAiAudioTranscriptionMetadata transcriptionMetadata = transcript.getMetadata();
+			AudioTranscriptionMetadata transcriptionMetadata = transcript.getMetadata();
 			assertThat(transcriptionMetadata).isNotNull();
 		});
 	}

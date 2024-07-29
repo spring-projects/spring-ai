@@ -43,7 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @Testcontainers
-@TestPropertySource(properties = "spring.ai.vectorstore.qdrant.collectionName=test_collection")
+@TestPropertySource(properties = { "spring.ai.vectorstore.qdrant.collectionName=test_collection",
+		"spring.ai.vectorstore.qdrant.initialize-schema=true" })
 public class QdrantContainerWithApiKeyConnectionDetailsFactoryTest {
 
 	@Container

@@ -213,6 +213,11 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		this.truncate = truncate;
 	}
 
+	@Override
+	public BedrockCohereChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static BedrockCohereChatOptions fromOptions(BedrockCohereChatOptions fromOptions) {
 		return builder().withTemperature(fromOptions.getTemperature())
 			.withTopP(fromOptions.getTopP())

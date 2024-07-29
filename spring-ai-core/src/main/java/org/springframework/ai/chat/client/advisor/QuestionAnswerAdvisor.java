@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
@@ -127,15 +128,17 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	@Override
 	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		response.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-		return response;
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(response);
+		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+		return chatResponseBuilder.build();
 	}
 
 	@Override
 	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
 		return fluxResponse.map(cr -> {
-			cr.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-			return cr;
+			ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(cr);
+			chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+			return chatResponseBuilder.build();
 		});
 	}
 

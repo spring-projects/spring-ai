@@ -15,11 +15,13 @@
  */
 package org.springframework.ai.azure.openai;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.azure.ai.openai.OpenAIClient;
+import com.azure.ai.openai.models.EmbeddingItem;
+import com.azure.ai.openai.models.Embeddings;
+import com.azure.ai.openai.models.EmbeddingsOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.azure.openai.metadata.AzureOpenAiEmbeddingUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -29,11 +31,8 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.util.Assert;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.models.EmbeddingItem;
-import com.azure.ai.openai.models.Embeddings;
-import com.azure.ai.openai.models.EmbeddingsOptions;
-import com.azure.ai.openai.models.EmbeddingsUsage;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -99,7 +98,8 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingResponse generateEmbeddingResponse(Embeddings embeddings) {
 		List<Embedding> data = generateEmbeddingList(embeddings.getData());
-		EmbeddingResponseMetadata metadata = generateMetadata(embeddings.getUsage());
+		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+		metadata.setUsage(AzureOpenAiEmbeddingUsage.from(embeddings.getUsage()));
 		return new EmbeddingResponse(data, metadata);
 	}
 
@@ -113,14 +113,6 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			data.add(embedding);
 		}
 		return data;
-	}
-
-	private EmbeddingResponseMetadata generateMetadata(EmbeddingsUsage embeddingsUsage) {
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		// metadata.put("model", model);
-		metadata.put("prompt-tokens", embeddingsUsage.getPromptTokens());
-		metadata.put("total-tokens", embeddingsUsage.getTotalTokens());
-		return metadata;
 	}
 
 	public AzureOpenAiEmbeddingOptions getDefaultOptions() {

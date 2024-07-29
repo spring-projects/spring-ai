@@ -61,7 +61,8 @@ public class OpenSearchVectorStoreAutoConfiguration {
 		var indexName = Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME);
 		var mappingJson = Optional.ofNullable(properties.getMappingJson())
 			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION_1536);
-		return new OpenSearchVectorStore(indexName, openSearchClient, embeddingModel, mappingJson);
+		return new OpenSearchVectorStore(indexName, openSearchClient, embeddingModel, mappingJson,
+				properties.isInitializeSchema());
 	}
 
 	@Configuration(proxyBeanMethods = false)
