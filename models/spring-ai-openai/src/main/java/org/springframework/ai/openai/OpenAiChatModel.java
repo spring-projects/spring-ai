@@ -166,6 +166,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			Map<String, Object> metadata = Map.of(
 					"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 					"role", choice.message().role() != null ? choice.message().role().name() : "",
+					"index", choice.index(),
 					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 			// @formatter:on
 			return buildGeneration(choice, metadata);
@@ -215,6 +216,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						Map<String, Object> metadata = Map.of(
 								"id", chatCompletion2.id(),
 								"role", roleMap.getOrDefault(id, ""),
+								"index", choice.index(),
 								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 								return buildGeneration(choice, metadata);
 						}).toList();
@@ -236,7 +238,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		return chatResponse.flatMap(response -> {
 
-			if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(), "stop"))) {
+			if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+					OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
 				var toolCallConversation = handleToolCalls(prompt, response);
 				// Recursively call the stream method with the tool call message
 				// conversation that contains the call responses.
