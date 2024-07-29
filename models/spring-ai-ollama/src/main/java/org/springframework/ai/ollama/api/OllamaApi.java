@@ -47,6 +47,7 @@ import reactor.core.publisher.Mono;
  * Java Client for the Ollama API. <a href="https://ollama.ai/">https://ollama.ai</a>
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 // @formatter:off
@@ -454,15 +455,20 @@ public class OllamaApi {
 	/**
 	 * Chat request object.
 	 *
-	 * @param model The model to use for completion.
-	 * @param messages The list of messages to chat with.
-	 * @param stream Whether to stream the response.
-	 * @param format The format to return the response in. Currently, the only accepted
-	 * value is "json".
-	 * @param keepAlive The duration to keep the model loaded in ollama while idle.
-	 * @param options Additional model parameters. You can use the {@link OllamaOptions} builder
-	 * to create the options then {@link OllamaOptions#toMap()} to convert the options into a
-	 * map.
+	 * @param model The model to use for completion. It should be a name familiar to Ollama from the <a href="https://ollama.com/library">Library</a>.
+	 * @param messages The list of messages in the chat. This can be used to keep a chat memory.
+	 * @param stream Whether to stream the response. If false, the response will be returned as a single response object rather than a stream of objects.
+	 * @param format The format to return the response in. Currently, the only accepted value is "json".
+	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
+	 * @param tools List of tools the model has access to.
+	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
+	 * You can use the {@link OllamaOptions} builder to create the options then {@link OllamaOptions#toMap()} to convert the options into a map.
+	 *
+	 * @see <a href=
+	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
+	 * Completion API</a>
+	 * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama
+	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatRequest(
@@ -471,9 +477,9 @@ public class OllamaApi {
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("format") String format,
 			@JsonProperty("keep_alive") String keepAlive,
-			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("tools") List<Tool> tools) {
-
+			@JsonProperty("tools") List<Tool> tools,
+			@JsonProperty("options") Map<String, Object> options
+	) {
 
 		/**
 		 * Represents a tool the model may call. Currently, only functions are supported as a tool.
@@ -544,8 +550,8 @@ public class OllamaApi {
 			private boolean stream = false;
 			private String format;
 			private String keepAlive;
-			private Map<String, Object> options = Map.of();
 			private List<Tool> tools = List.of();
+			private Map<String, Object> options = Map.of();
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -572,6 +578,11 @@ public class OllamaApi {
 				return this;
 			}
 
+			public Builder withTools(List<Tool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
 			public Builder withOptions(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 
@@ -585,13 +596,8 @@ public class OllamaApi {
 				return this;
 			}
 
-			public Builder withTools(List<Tool> tools) {
-				this.tools = tools;
-				return this;
-			}
-
 			public ChatRequest build() {
-				return new ChatRequest(model, messages, stream, format, keepAlive, options, tools);
+				return new ChatRequest(model, messages, stream, format, keepAlive, tools, options);
 			}
 		}
 	}
@@ -599,19 +605,21 @@ public class OllamaApi {
 	/**
 	 * Ollama chat response object.
 	 *
-	 * @param model The model name used for completion.
-	 * @param createdAt When the request was made.
+	 * @param model The model used for generating the response.
+	 * @param createdAt The timestamp of the response generation.
 	 * @param message The response {@link Message} with {@link Message.Role#ASSISTANT}.
+	 * @param doneReason The reason the model stopped generating text.
 	 * @param done Whether this is the final response. For streaming response only the
 	 * last message is marked as done. If true, this response may be followed by another
 	 * response with the following, additional fields: context, prompt_eval_count,
 	 * prompt_eval_duration, eval_count, eval_duration.
 	 * @param totalDuration Time spent generating the response.
 	 * @param loadDuration Time spent loading the model.
-	 * @param promptEvalCount number of tokens in the prompt.(*)
-	 * @param promptEvalDuration time spent evaluating the prompt.
-	 * @param evalCount number of tokens in the response.
-	 * @param evalDuration time spent generating the response.
+	 * @param promptEvalCount Number of tokens in the prompt.
+	 * @param promptEvalDuration Time spent evaluating the prompt.
+	 * @param evalCount Number of tokens in the response.
+	 * @param evalDuration Time spent generating the response.
+	 *
 	 * @see <a href=
 	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
 	 * Completion API</a>
@@ -623,13 +631,15 @@ public class OllamaApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("created_at") Instant createdAt,
 			@JsonProperty("message") Message message,
+			@JsonProperty("done_reason") String doneReason,
 			@JsonProperty("done") Boolean done,
 			@JsonProperty("total_duration") Duration totalDuration,
 			@JsonProperty("load_duration") Duration loadDuration,
 			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
 			@JsonProperty("prompt_eval_duration") Duration promptEvalDuration,
 			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Duration evalDuration) {
+			@JsonProperty("eval_duration") Duration evalDuration
+	) {
 	}
 
 	/**

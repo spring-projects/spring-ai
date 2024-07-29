@@ -31,6 +31,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -163,7 +164,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
 			Map<String, Object> metadata = Map.of(
-					"id", chatCompletion.id(),
+					"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 					"role", choice.message().role() != null ? choice.message().role().name() : "",
 					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 			// @formatter:on
@@ -265,12 +266,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit) {
 		Assert.notNull(result, "OpenAI ChatCompletionResult must not be null");
 		var builder = ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withUsage(OpenAiUsage.from(result.usage()))
-			.withModel(result.model())
+			.withId(result.id() != null ? result.id() : "")
+			.withUsage(result.usage() != null ? OpenAiUsage.from(result.usage()) : new EmptyUsage())
+			.withModel(result.model() != null ? result.model() : "")
 			.withRateLimit(rateLimit)
-			.withKeyValue("created", result.created())
-			.withKeyValue("system-fingerprint", result.systemFingerprint());
+			.withKeyValue("created", result.created() != null ? result.created() : 0L)
+			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
 		if (rateLimit != null) {
 			builder.withRateLimit(rateLimit);
 		}
