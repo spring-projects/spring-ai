@@ -36,14 +36,12 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
- * @author Soby Chacko
  * @since 0.8.0
  */
 @AutoConfiguration
 @ConditionalOnClass(CohereChatBedrockApi.class)
 @EnableConfigurationProperties({ BedrockCohereChatProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(prefix = BedrockCohereChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = BedrockCohereChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockCohereChatAutoConfiguration {
 

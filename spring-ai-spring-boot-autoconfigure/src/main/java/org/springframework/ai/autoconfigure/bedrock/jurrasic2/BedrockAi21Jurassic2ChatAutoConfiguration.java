@@ -37,14 +37,13 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
  *
  * @author Ahmed Yousri
  * @author Wei Jiang
- * @author Soby Chacko
  * @since 1.0.0
  */
 @AutoConfiguration
 @ConditionalOnClass(Ai21Jurassic2ChatBedrockApi.class)
 @EnableConfigurationProperties({ BedrockAi21Jurassic2ChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(prefix = BedrockAi21Jurassic2ChatProperties.CONFIG_PREFIX, name = "enabled",
-		havingValue = "true", matchIfMissing = true)
+		havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockAi21Jurassic2ChatAutoConfiguration {
 

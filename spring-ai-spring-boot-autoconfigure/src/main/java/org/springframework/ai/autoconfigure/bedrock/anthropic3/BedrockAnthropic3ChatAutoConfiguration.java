@@ -38,14 +38,12 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
- * @author Soby Chacko
  * @since 0.8.0
  */
 @AutoConfiguration
 @ConditionalOnClass(Anthropic3ChatBedrockApi.class)
 @EnableConfigurationProperties({ BedrockAnthropic3ChatProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(prefix = BedrockAnthropic3ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = BedrockAnthropic3ChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockAnthropic3ChatAutoConfiguration {
 
