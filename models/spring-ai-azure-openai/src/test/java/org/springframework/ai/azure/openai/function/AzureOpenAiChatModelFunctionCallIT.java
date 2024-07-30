@@ -206,7 +206,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 				return deploymentName;
 			}
 			else {
-				return "gpt-4-0125-preview";
+				return "gpt-4o";
 			}
 		}
 
