@@ -1,11 +1,19 @@
 = Groq Chat
 
-Spring AI supports https://groq.com/[Groq] - fast AI inference engine by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 
+https://groq.com/[Groq] is an extreally fast,  LPU™ based, AI Inference Engine that support various OSS https://console.groq.com/docs/models[AI Models] 
+such as `Llama`, `Mixtral`, `Gemma` and `Whisper` with provided function calling support.
+
+Also Groq exposes an OpenAI API compatible endpoint.
+
+Spring AI supports https://groq.com/[Groq] by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 
+
 For this you need to use the OpenAI client but set the base-url to: https://api.groq.com/openai and select one of the 
-provided https://console.groq.com/docs/models[Groq models]: `llama3-8b-8192`, `llama3-70b-8192`, `mixtral-8x7b-32768`, `gemma-7b-it`.
+provided https://console.groq.com/docs/models[Groq models]: ` llama-3.1-70b-versatile`, `mixtral-8x7b-32768`, `gemma-7b-it`...
 
 Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT.java] tests 
 for examples of using Groq with Spring AI.
+
+image::spring-ai-groq-integration.jpg[w=800,align="center"]
 
 NOTE: The Groq API is not fully compatible with the OpenAI API. 
 Be aware for the following https://console.groq.com/docs/openai[compatability constrains].
@@ -155,7 +163,7 @@ You can register custom Java functions with the OpenAiChatModel and have the Ope
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Function Calling].
 
-TIP: Currently only the `llama3-70b` model is recommend for tool use.
+TIP: Check the Tool https://console.groq.com/docs/tool-use[Supported Models].
 
 == Multimodal
 
