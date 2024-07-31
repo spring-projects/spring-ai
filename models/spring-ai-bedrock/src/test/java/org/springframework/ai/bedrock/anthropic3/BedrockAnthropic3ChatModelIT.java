@@ -217,6 +217,17 @@ class BedrockAnthropic3ChatModelIT {
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple", "basket");
 	}
 
+	@Test
+	void stopSequencesWithEmptyContents() {
+		Anthropic3ChatOptions chatOptions = new Anthropic3ChatOptions();
+		chatOptions.setStopSequences(List.of("Hello"));
+
+		var response = chatModel.call(new Prompt("hi", chatOptions));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isEmpty();
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
