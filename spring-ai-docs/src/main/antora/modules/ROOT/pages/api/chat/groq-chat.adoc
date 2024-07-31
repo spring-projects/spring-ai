@@ -154,12 +154,69 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 == Function Calling
 
-Groq API endpoints support https://console.groq.com/docs/tool-use[function calling].
-You can register custom Java functions with the OpenAiChatModel and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Function Calling].
+Groq API endpoints support https://console.groq.com/docs/tool-use[tool/function calling] when selecting one of the Tool/Function supporting models.
 
 TIP: Check the Tool https://console.groq.com/docs/tool-use[Supported Models].
+
+image::spring-ai-groq-functions-2.jpg[w=800,align="center"]
+
+You can register custom Java functions with your ChatModel and have the provided Groq model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions. 
+This is a powerful technique to connect the LLM capabilities with external tools and APIs. 
+
+=== Tool Example
+
+Here's a simple example of how to use Groq function calling with Spring AI:
+
+[source,java]
+----    
+@SpringBootApplication
+public class GroqApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(GroqApplication.class, args);
+    }
+
+    @Bean
+    CommandLineRunner runner(ChatClient.Builder chatClientBuilder) {
+        return args -> {
+            var chatClient = chatClientBuilder.build();
+
+            var response = chatClient.prompt()
+                .user("What is the weather in Amsterdam and Paris?")
+                .functions("weatherFunction") // reference by bean name.
+                .call()
+                .content();
+
+            System.out.println(response);
+        };
+    }
+
+    @Bean
+    @Description("Get the weather in location")
+    public Function<WeatherRequest, WeatherResponse> weatherFunction() {
+        return new MockWeatherService();
+    }
+
+    public static class MockWeatherService implements Function<WeatherRequest, WeatherResponse> {
+
+        public record WeatherRequest(String location, String unit) {}
+        public record WeatherResponse(double temp, String unit) {}
+
+        @Override
+        public WeatherResponse apply(WeatherRequest request) {
+            double temperature = request.location().contains("Amsterdam") ? 20 : 25;
+            return new WeatherResponse(temperature, request.unit);
+        }
+    }
+}
+----
+    
+In this example, when the model needs weather information, it will automatically call the `weatherFunction` bean, which can then fetch real-time weather data.
+The expected response looks like this: "The weather in Amsterdam is currently 20 degrees Celsius, and the weather in Paris is currently 25 degrees Celsius."
+    
+Read more about OpenAI link:https://docs.spring.io/spring-ai/reference/api/chat/functions/openai-chat-functions.html[Function Calling].
+
+
 
 == Multimodal
 
