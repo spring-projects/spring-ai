@@ -56,11 +56,11 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 	public static final String METADATA_FILE_NAME = "file_name";
 
-	private final PDDocument document;
+	protected final PDDocument document;
 
 	private PdfDocumentReaderConfig config;
 
-	private String resourceFileName;
+	protected String resourceFileName;
 
 	public PagePdfDocumentReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
@@ -75,9 +75,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 	}
 
 	public PagePdfDocumentReader(Resource pdfResource, PdfDocumentReaderConfig config) {
-
 		try {
-
 			PDFParser pdfParser = new PDFParser(
 					new org.apache.pdfbox.io.RandomAccessReadBuffer(pdfResource.getInputStream()));
 			this.document = pdfParser.parse();
@@ -109,7 +107,9 @@ public class PagePdfDocumentReader implements DocumentReader {
 																		// each iteration
 			int counter = 0;
 
+			PDPage lastPage = this.document.getDocumentCatalog().getPages().iterator().next();
 			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
+				lastPage = page;
 				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
 					logger.info("Processing PDF page: {}", (counter + 1));
 				}
@@ -123,7 +123,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 					var aggregatedPageTextGroup = pageTextGroupList.stream().collect(Collectors.joining());
 					if (StringUtils.hasText(aggregatedPageTextGroup)) {
-						readDocuments.add(toDocument(aggregatedPageTextGroup, startPageNumber, pageNumber));
+						readDocuments.add(toDocument(page, aggregatedPageTextGroup, startPageNumber, pageNumber));
 					}
 					pageTextGroupList.clear();
 
@@ -150,8 +150,8 @@ public class PagePdfDocumentReader implements DocumentReader {
 				pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 			}
 			if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
-						pageNumber));
+				readDocuments.add(toDocument(lastPage, pageTextGroupList.stream().collect(Collectors.joining()),
+						startPageNumber, pageNumber));
 			}
 			logger.info("Processing {} pages", totalPages);
 			return readDocuments;
@@ -162,15 +162,13 @@ public class PagePdfDocumentReader implements DocumentReader {
 		}
 	}
 
-	private Document toDocument(String docText, int startPageNumber, int endPageNumber) {
-
+	protected Document toDocument(PDPage page, String docText, int startPageNumber, int endPageNumber) {
 		Document doc = new Document(docText);
 		doc.getMetadata().put(METADATA_START_PAGE_NUMBER, startPageNumber);
 		if (startPageNumber != endPageNumber) {
 			doc.getMetadata().put(METADATA_END_PAGE_NUMBER, endPageNumber);
 		}
 		doc.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
-
 		return doc;
 	}
 
