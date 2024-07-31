@@ -341,7 +341,7 @@ ChatResponse response = ChatClient.builder(chatModel)
         .chatResponse();
 ----
 
-Is this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
+In this example, the `SearchRequest.defaults()` will perform a similarity search over all documents in the Vector Database.
 To restrict the types of documents that are searched, the `SearchRequest` takes a SQL like filter expression that is portable across all `VectorStores`.
 
 ==== Dynamic Filter Expressions
@@ -366,24 +366,21 @@ The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search re
 
 === Chat Memory
 
-The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a
-* conversation, retrieve messages from a conversation, and clear the conversation history.
+The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
-There are two implementations `InMemoryChatMemory` and `CassandraChatMemory` that provides storage for chat conversation history, in-memory and persisted with time-to-live correspondingly.
+There are two implementations `InMemoryChatMemory` and `CassandraChatMemory` that provides storage for chat conversation history, in-memory and persisted with `time-to-live` correspondingly.
 
-To create a CassandraChatMemory with time-to-live
+To create a `CassandraChatMemory` with `time-to-live`
 [source,java]
 ----
 CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
 ----
 
-Two advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
+The following advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
 
-* `MessageChatMemoryAdvisor` :  Memory is retrieved added as a collection of messages to the prompt
-* `PromptChatMemoryAdvisor` :  Memory is retrieved added into the prompt's system text.
-
-
-* `VectorStoreChatMemoryAdvisor`  : The construtor ` VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize)` lets you specify the VectorStore to retrieve the chat history from, the unqiue conversation ID, the size of the chat history to be retreived in token size.
+* `MessageChatMemoryAdvisor` :  Memory is retrieved and added as a collection of messages to the prompt
+* `PromptChatMemoryAdvisor` :  Memory is retrieved and added into the prompt's system text.
+* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize)` lets you specify the VectorStore to retrieve the chat history from, the unique conversation ID, the size of the chat history to be retrieved in token size.
 
 A sample `@Service` implementation that uses several advisors is shown below
 
