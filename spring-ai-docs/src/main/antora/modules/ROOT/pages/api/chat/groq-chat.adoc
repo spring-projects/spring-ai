@@ -1,23 +1,20 @@
 = Groq Chat
 
-https://groq.com/[Groq] is an extreally fast,  LPU™ based, AI Inference Engine that support various OSS https://console.groq.com/docs/models[AI Models] 
-such as `Llama`, `Mixtral`, `Gemma` and `Whisper` with provided function calling support.
+https://groq.com/[Groq] is an extreally fast,  LPU™ based, AI Inference Engine that support various https://console.groq.com/docs/models[AI Models], 
+supports `Tool/Function Calling` and exposes a `OpenAI API` compatible endpoint.
 
-Also Groq exposes an OpenAI API compatible endpoint.
-
-Spring AI supports https://groq.com/[Groq] by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 
-
-For this you need to use the OpenAI client but set the base-url to: https://api.groq.com/openai and select one of the 
-provided https://console.groq.com/docs/models[Groq models]: ` llama-3.1-70b-versatile`, `mixtral-8x7b-32768`, `gemma-7b-it`...
-
-Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT.java] tests 
-for examples of using Groq with Spring AI.
+Spring AI integrates with the https://groq.com/[Groq] by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. 
+For this you need to obtain a https://console.groq.com/keys[Groq Api Key], set the base-url to https://api.groq.com/openai and select one of the 
+provided https://console.groq.com/docs/models[Groq models].
 
 image::spring-ai-groq-integration.jpg[w=800,align="center"]
 
 NOTE: The Groq API is not fully compatible with the OpenAI API. 
 Be aware for the following https://console.groq.com/docs/openai[compatability constrains].
 Additionally, currently Groq doesn't support multimodal messages.
+
+Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT.java] tests 
+for examples of using Groq with Spring AI.
 
 == Prerequisites
 
@@ -27,7 +24,6 @@ The Spring AI project defines a configuration property named `spring.ai.openai.a
 * Set the Groq URL. 
 You have to set the `spring.ai.openai.base-url` property to `https://api.groq.com/openai`.
 * Select a https://console.groq.com/docs/models[Groq Model].
-The avalable https://console.groq.com/docs/models[model] names are `llama3-8b-8192`, `llama3-70b-8192`, `mixtral-8x7b-32768`, `gemma-7b-it`.
 Use the `spring.ai.openai.chat.model=<model name>` property to set the Model.
 
 Exporting an environment variable is one way to set that configuration property:
