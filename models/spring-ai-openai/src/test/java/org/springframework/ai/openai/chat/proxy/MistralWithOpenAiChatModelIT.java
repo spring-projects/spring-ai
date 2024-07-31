@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023 - 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.openai.chat;
+package org.springframework.ai.openai.chat.proxy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,13 +46,16 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.openai.chat.ActorsFilms;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -62,14 +63,21 @@ import org.springframework.util.MimeTypeUtils;
 
 import reactor.core.publisher.Flux;
 
-@SpringBootTest(classes = OpenAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class OpenAiChatModelIT extends AbstractIT {
+@SpringBootTest(classes = MistralWithOpenAiChatModelIT.Config.class)
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
+class MistralWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(MistralWithOpenAiChatModelIT.class);
+
+	private static final String MISTRAL_BASE_URL = "https://api.mistral.ai";
+
+	private static final String MISTRAL_DEFAULT_MODEL = "mistral-small-latest";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
+
+	@Autowired
+	private OpenAiChatModel chatModel;
 
 	@Test
 	void roleTest() {
@@ -81,79 +89,6 @@ class OpenAiChatModelIT extends AbstractIT {
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
-		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
-	}
-
-	@Test
-	void streamCompletenessTest() throws InterruptedException {
-		UserMessage userMessage = new UserMessage(
-				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any.");
-		Prompt prompt = new Prompt(List.of(userMessage));
-
-		StringBuilder answer = new StringBuilder();
-		CountDownLatch latch = new CountDownLatch(1);
-
-		Flux<ChatResponse> chatResponseFlux = streamingChatModel.stream(prompt).doOnNext(chatResponse -> {
-			String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
-			answer.append(responseContent);
-		}).doOnComplete(() -> {
-			logger.info(answer.toString());
-			latch.countDown();
-		});
-		chatResponseFlux.subscribe();
-		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		IntStream.rangeClosed(1, 1000).forEach(n -> {
-			assertThat(answer).contains(String.valueOf(n));
-		});
-	}
-
-	@Test
-	void streamCompletenessTestWithChatResponse() throws InterruptedException {
-		UserMessage userMessage = new UserMessage("Who is George Washington? - use first as 1st");
-		Prompt prompt = new Prompt(List.of(userMessage));
-
-		StringBuilder answer = new StringBuilder();
-		CountDownLatch latch = new CountDownLatch(1);
-
-		ChatClient chatClient = ChatClient.builder(openAiChatModel).build();
-
-		Flux<ChatResponse> chatResponseFlux = chatClient.prompt(prompt)
-			.stream()
-			.chatResponse()
-			.doOnNext(chatResponse -> {
-				String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
-				answer.append(responseContent);
-			})
-			.doOnComplete(() -> {
-				logger.info(answer.toString());
-				latch.countDown();
-			});
-		chatResponseFlux.subscribe();
-		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		assertThat(answer).contains("the 1st ");
-	}
-
-	@Test
-	void ensureChatResponseAsContentDoesNotSwallowBlankSpace() throws InterruptedException {
-		UserMessage userMessage = new UserMessage("Who is George Washington? - use first as 1st");
-		Prompt prompt = new Prompt(List.of(userMessage));
-
-		StringBuilder answer = new StringBuilder();
-		CountDownLatch latch = new CountDownLatch(1);
-
-		ChatClient chatClient = ChatClient.builder(openAiChatModel).build();
-
-		Flux<String> chatResponseFlux = chatClient.prompt(prompt)
-			.stream()
-			.content()
-			.doOnNext(answer::append)
-			.doOnComplete(() -> {
-				logger.info(answer.toString());
-				latch.countDown();
-			});
-		chatResponseFlux.subscribe();
-		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		assertThat(answer).contains("the 1st ");
 	}
 
 	@Test
@@ -163,7 +98,7 @@ class OpenAiChatModelIT extends AbstractIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		Flux<ChatResponse> flux = streamingChatModel.stream(prompt);
+		Flux<ChatResponse> flux = chatModel.stream(prompt);
 
 		List<ChatResponse> responses = flux.collectList().block();
 		assertThat(responses.size()).isGreaterThan(1);
@@ -176,14 +111,15 @@ class OpenAiChatModelIT extends AbstractIT {
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
-
 	}
 
 	@Test
+	@Disabled("Not supported by the current Mistral AI API")
 	void streamingWithTokenUsage() {
 		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
+
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
@@ -251,6 +187,7 @@ class OpenAiChatModelIT extends AbstractIT {
 		Generation generation = chatModel.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		assertThat(actorsFilms.getActor()).isNotEmpty();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
@@ -289,7 +226,7 @@ class OpenAiChatModelIT extends AbstractIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = streamingChatModel.stream(prompt)
+		String generationTextFromStream = chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -305,15 +242,17 @@ class OpenAiChatModelIT extends AbstractIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
-	@Test
-	void functionCallTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "mistral-small-latest", "mistral-large-latest" })
+	void functionCallTest(String modelName) {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius\"");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.withModel(modelName)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
@@ -325,20 +264,20 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15.0", "15");
+		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 	}
 
-	@Test
-	void streamFunctionCallTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "mistral-small-latest", "mistral-large-latest" })
+	void streamFunctionCallTest(String modelName) {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
+			.withModel(modelName)
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
@@ -346,7 +285,7 @@ class OpenAiChatModelIT extends AbstractIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = chatModel.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
 			.block()
@@ -358,13 +297,12 @@ class OpenAiChatModelIT extends AbstractIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).containsAnyOf("30.0", "30");
-		assertThat(content).containsAnyOf("10.0", "10");
-		assertThat(content).containsAnyOf("15.0", "15");
+		assertThat(content).contains("30", "10", "15");
 	}
 
+	@Disabled("Mistral AI does not support multi modality API")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o" })
+	@ValueSource(strings = { "mistral-small-latest" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		var imageData = new ClassPathResource("/test.png");
@@ -377,11 +315,12 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
 	}
 
+	@Disabled("Mistral AI does not support multi modality API")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o" })
+	@ValueSource(strings = { "mistral-small-latest" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?", List
@@ -393,9 +332,10 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
 	}
 
+	@Disabled("Mistral AI does not support multi modality API")
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
@@ -403,8 +343,7 @@ class OpenAiChatModelIT extends AbstractIT {
 			.of(new Media(MimeTypeUtils.IMAGE_PNG,
 					new URL("https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/_images/multimodal.test.png"))));
 
-		Flux<ChatResponse> response = streamingChatModel.stream(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+		Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage)));
 
 		String content = response.collectList()
 			.block()
@@ -416,12 +355,13 @@ class OpenAiChatModelIT extends AbstractIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
+		assertThat(content).containsAnyOf("bowl", "basket");
 	}
 
-	@Test
-	void validateCallResponseMetadata() {
-		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getName();
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "mistral-small-latest", "mistral-large-latest", "open-mistral-7b", "open-mixtral-8x7b",
+			"open-mixtral-8x22b" })
+	void validateCallResponseMetadata(String model) {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(OpenAiChatOptions.builder().withModel(model).build())
@@ -436,6 +376,21 @@ class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	@SpringBootConfiguration
+	static class Config {
+
+		@Bean
+		public OpenAiApi chatCompletionApi() {
+			return new OpenAiApi(MISTRAL_BASE_URL, System.getenv("MISTRAL_AI_API_KEY"));
+		}
+
+		@Bean
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().withModel(MISTRAL_DEFAULT_MODEL).build());
+		}
+
 	}
 
 }

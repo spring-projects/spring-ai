@@ -2,6 +2,9 @@
 
 Spring AI supports the various AI language models from Mistral AI. You can interact with Mistral AI language models and create a multilingual conversational assistant based on Mistral models.
 
+TIP: Mistral AI offers an OpenAI API compatible endpoint as well. 
+Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to learn how to use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] to talk to a Mistral endponit.
+
 == Prerequisites
 
 You will need to create an API with MistralAI to access Mistral AI language models.
@@ -137,6 +140,15 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 You can register custom Java functions with the MistralAiChatModel and have the Mistral AI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI Function Calling].
+
+
+== OpenAI API Compatibility
+
+Mistral is OpenAI API compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Mistrial. 
+For this you need to set the OpenAI base-url: `spring.ai.openai.chat.base-url=https://api.mistral.ai`, select a Mistral models: `spring.ai.openai.chat.options.model=mistral-small-latest` and set the Api key: `spring.ai.openai.chat.api-key=<YOUR MISTRAL API KEY` .
+
+Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/MistralWithOpenAiChatModelIT.java[MistralWithOpenAiChatModelIT.java] tests for examples of using Mistral over Spring AI OpenAI.
+
 
 == Sample Controller (Auto-configuration)
 

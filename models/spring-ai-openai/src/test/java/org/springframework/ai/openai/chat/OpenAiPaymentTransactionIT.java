@@ -198,7 +198,7 @@ public class OpenAiPaymentTransactionIT {
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackContext functionCallbackContext) {
 			return new OpenAiChatModel(openAiApi,
 					OpenAiChatOptions.builder()
-						.withModel(ChatModel.GPT_4_TURBO.getName())
+						.withModel(ChatModel.GPT_4_O_MINI.getName())
 						.withTemperature(0.1f)
 						.build(),
 					functionCallbackContext, RetryUtils.DEFAULT_RETRY_TEMPLATE);

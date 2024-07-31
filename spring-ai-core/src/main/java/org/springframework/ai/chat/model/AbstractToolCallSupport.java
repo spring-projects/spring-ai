@@ -59,43 +59,72 @@ public abstract class AbstractToolCallSupport {
 	protected final FunctionCallbackContext functionCallbackContext;
 
 	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext) {
+		this(functionCallbackContext, FunctionCallingOptions.builder().build(), List.of());
+	}
+
+	protected AbstractToolCallSupport(FunctionCallbackContext functionCallbackContext,
+			FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
+
 		this.functionCallbackContext = functionCallbackContext;
+
+		List<FunctionCallback> defaultFunctionCallbacks = merge(functionCallingOptions, toolFunctionCallbacks);
+
+		if (!CollectionUtils.isEmpty(defaultFunctionCallbacks)) {
+			this.functionCallbackRegister.putAll(defaultFunctionCallbacks.stream()
+				.collect(ConcurrentHashMap::new, (m, v) -> m.put(v.getName(), v), ConcurrentHashMap::putAll));
+		}
+	}
+
+	private static List<FunctionCallback> merge(FunctionCallingOptions funcitonOptions,
+			List<FunctionCallback> toolFunctionCallbacks) {
+		List<FunctionCallback> toolFunctionCallbacksCopy = new ArrayList<>();
+		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
+			toolFunctionCallbacksCopy.addAll(toolFunctionCallbacks);
+		}
+
+		if (!CollectionUtils.isEmpty(funcitonOptions.getFunctionCallbacks())) {
+			toolFunctionCallbacksCopy.addAll(funcitonOptions.getFunctionCallbacks());
+			// Make sure that that function callbacks are are registered directly to the
+			// functionCallbackRegister and not passed in the default options.
+			funcitonOptions.setFunctionCallbacks(List.of());
+		}
+		return toolFunctionCallbacksCopy;
 	}
 
 	public Map<String, FunctionCallback> getFunctionCallbackRegister() {
 		return this.functionCallbackRegister;
 	}
 
-	protected Set<String> handleFunctionCallbackConfigurations(FunctionCallingOptions options, boolean isRuntimeCall) {
+	/**
+	 * Handle the runtime function callback configurations. Register the function
+	 * callbacks
+	 * @param runtimeFunctionOptions FunctionCallingOptions to handle.
+	 * @return Set of function names to call.
+	 */
+	protected Set<String> runtimeFunctionCallbackConfigurations(FunctionCallingOptions runtimeFunctionOptions) {
 
-		Set<String> functionToCall = new HashSet<>();
+		Set<String> enabledFunctionsToCall = new HashSet<>();
 
-		if (options != null) {
-			if (!CollectionUtils.isEmpty(options.getFunctionCallbacks())) {
-				options.getFunctionCallbacks().stream().forEach(functionCallback -> {
-
-					// Register the tool callback.
-					if (isRuntimeCall) {
-						this.functionCallbackRegister.put(functionCallback.getName(), functionCallback);
-					}
-					else {
-						this.functionCallbackRegister.putIfAbsent(functionCallback.getName(), functionCallback);
-					}
-
-					// Automatically enable the function, usually from prompt callback.
-					if (isRuntimeCall) {
-						functionToCall.add(functionCallback.getName());
-					}
-				});
+		if (runtimeFunctionOptions != null) {
+			// Add the explicitly enabled functions.
+			if (!CollectionUtils.isEmpty(runtimeFunctionOptions.getFunctions())) {
+				enabledFunctionsToCall.addAll(runtimeFunctionOptions.getFunctions());
 			}
 
-			// Add the explicitly enabled functions.
-			if (!CollectionUtils.isEmpty(options.getFunctions())) {
-				functionToCall.addAll(options.getFunctions());
+			// Add the function callbacks to the register and automatically enable them.
+			if (!CollectionUtils.isEmpty(runtimeFunctionOptions.getFunctionCallbacks())) {
+				runtimeFunctionOptions.getFunctionCallbacks().stream().forEach(functionCallback -> {
+
+					// Register the tool callback.
+					this.functionCallbackRegister.put(functionCallback.getName(), functionCallback);
+
+					// Automatically enable the function, usually from prompt callback.
+					enabledFunctionsToCall.add(functionCallback.getName());
+				});
 			}
 		}
 
-		return functionToCall;
+		return enabledFunctionsToCall;
 	}
 
 	protected List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {

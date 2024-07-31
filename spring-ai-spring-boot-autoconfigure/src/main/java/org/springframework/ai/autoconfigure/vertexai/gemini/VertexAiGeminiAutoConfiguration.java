@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,13 @@ package org.springframework.ai.autoconfigure.vertexai.gemini;
 import java.io.IOException;
 import java.util.List;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.vertexai.VertexAI;
-
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.FunctionCallbackWrapper.Builder.SchemaType;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -34,10 +32,14 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.vertexai.VertexAI;
+
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 0.8.0
  */
 @ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
@@ -74,16 +76,15 @@ public class VertexAiGeminiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = VertexAiGeminiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public VertexAiGeminiChatModel vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
 			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context) {
 
 		FunctionCallbackContext functionCallbackContext = springAiFunctionManager(context);
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
-		return new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(), functionCallbackContext);
+		return new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks);
 	}
 
 	/**
