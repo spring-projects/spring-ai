@@ -191,6 +191,8 @@ where fruits are being displayed, possibly for convenience or aesthetic purposes
 Ollama is OpenAI API compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools. 
 For this you need to set the OpenAI base-url: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.options.model=mistral`.
 
+image::spring-ai-ollama-over-openai.jpg[Ollama OpenAI API compatibility, 800, 600, align="center"]
+
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
 
 
