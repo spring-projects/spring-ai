@@ -26,10 +26,9 @@ public class FunctionCallbackMethodProcessorIT {
 
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+			.withUserConfiguration(FunctionCallConfig.class)
 			.withBean(FunctionCallbackContext.class)
-			.withBean(FunctionCallbackMethodProcessor.class)
-			// The "1" is added to the package path for compatibility with the !isSpringContainerClass method.
-			.withBean(org.springframework1.ai.model.function.FunctionCallConfig.class);
+			.withBean(FunctionCallbackMethodProcessor.class);
 
 	 @Test
 	 public void testFunctionCallbackMethodProcessor() {

@@ -1,10 +1,12 @@
-package org.springframework1.ai.model.function;
+package org.springframework.ai.model.function;
 
-import org.springframework.ai.model.function.FunctionCalling;
+import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDateTime;
 
+@Configuration
 public  class FunctionCallConfig {
+
 		@FunctionCalling(name = "dateTime", description = "get the current date and time")
 		public String dateTime(String location) {
 			return location + " dateTime:" + LocalDateTime.now();
