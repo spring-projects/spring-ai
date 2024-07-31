@@ -34,6 +34,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
@@ -83,29 +84,16 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 	public OllamaChatModel(OllamaApi chatApi, OllamaOptions defaultOptions,
 			FunctionCallbackContext functionCallbackContext) {
-		super(functionCallbackContext);
+		this(chatApi, defaultOptions, functionCallbackContext, List.of());
+	}
+
+	public OllamaChatModel(OllamaApi chatApi, OllamaOptions defaultOptions,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
+		super(functionCallbackContext, defaultOptions, toolFunctionCallbacks);
 		Assert.notNull(chatApi, "OllamaApi must not be null");
 		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
 		this.chatApi = chatApi;
 		this.defaultOptions = defaultOptions;
-	}
-
-	/**
-	 * @deprecated Use {@link OllamaOptions#setModel} instead.
-	 */
-	@Deprecated
-	public OllamaChatModel withModel(String model) {
-		this.defaultOptions.setModel(model);
-		return this;
-	}
-
-	/**
-	 * @deprecated Use {@link OllamaOptions} constructor instead.
-	 */
-	@Deprecated
-	public OllamaChatModel withDefaultOptions(OllamaOptions options) {
-		this.defaultOptions = options;
-		return this;
 	}
 
 	@Override
@@ -246,10 +234,12 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		if (prompt.getOptions() != null) {
 			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
 					OllamaOptions.class);
-			functionsForThisRequest.addAll(this.handleFunctionCallbackConfigurations(runtimeOptions, IS_RUNTIME_CALL));
+			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(runtimeOptions));
 		}
 
-		functionsForThisRequest.addAll(this.handleFunctionCallbackConfigurations(this.defaultOptions, IS_RUNTIME_CALL));
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
+		}
 		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
 
 		// Override the model.

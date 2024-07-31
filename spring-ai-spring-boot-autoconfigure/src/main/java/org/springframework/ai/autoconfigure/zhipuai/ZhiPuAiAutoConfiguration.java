@@ -39,6 +39,9 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Geng Rong
@@ -61,11 +64,16 @@ public class ZhiPuAiAutoConfiguration {
 		var zhiPuAiApi = zhiPuAiApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
+		ZhiPuAiChatModel chatModel = new ZhiPuAiChatModel(zhiPuAiApi, chatProperties.getOptions(),
+				functionCallbackContext, retryTemplate);
+
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
+			Map<String, FunctionCallback> toolFunctionCallbackMap = toolFunctionCallbacks.stream()
+				.collect(Collectors.toMap(FunctionCallback::getName, Function.identity(), (a, b) -> b));
+			chatModel.getFunctionCallbackRegister().putAll(toolFunctionCallbackMap);
 		}
 
-		return new ZhiPuAiChatModel(zhiPuAiApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate);
+		return chatModel;
 	}
 
 	@Bean

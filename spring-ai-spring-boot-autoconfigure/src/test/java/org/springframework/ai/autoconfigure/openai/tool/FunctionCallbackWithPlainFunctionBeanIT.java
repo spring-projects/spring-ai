@@ -34,6 +34,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -54,36 +55,37 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o").run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+			.run(context -> {
 
-			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			// Test weatherFunction
-			UserMessage userMessage = new UserMessage(
-					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
+				// Test weatherFunction
+				UserMessage userMessage = new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'weatherFunction'");
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder().withFunction("weatherFunction").build()));
 
-			logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-			// Test weatherFunctionTwo
-			response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
+				// Test weatherFunctionTwo
+				response = chatModel.call(new Prompt(List.of(userMessage),
+						OpenAiChatOptions.builder().withFunction("weatherFunctionTwo").build()));
 
-			logger.info("Response: {}", response);
+				logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
 
-		});
+			});
 	}
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
 		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o",
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
 					"spring.ai.openai.chat.options.temperature=0.1")
 			.run(context -> {
 
@@ -104,7 +106,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	@Test
 	void streamFunctionCallTest() {
 		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o",
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
 					"spring.ai.openai.chat.options.temperature=0.1")
 			.run(context -> {
 
@@ -127,9 +129,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 					.collect(Collectors.joining());
 				logger.info("Response: {}", content);
 
-				assertThat(content).containsAnyOf("30.0", "30");
-				assertThat(content).containsAnyOf("10.0", "10");
-				assertThat(content).containsAnyOf("15.0", "15");
+				assertThat(content).contains("30", "10", "15");
 
 				// Test weatherFunctionTwo
 				response = chatModel.stream(new Prompt(List.of(userMessage),
@@ -146,9 +146,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				logger.info("Response: {}", content);
 
 				assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
-				assertThat(content).containsAnyOf("30.0", "30");
-				assertThat(content).containsAnyOf("10.0", "10");
-				assertThat(content).containsAnyOf("15.0", "15");
+				assertThat(content).contains("30", "10", "15");
+
 			});
 	}
 

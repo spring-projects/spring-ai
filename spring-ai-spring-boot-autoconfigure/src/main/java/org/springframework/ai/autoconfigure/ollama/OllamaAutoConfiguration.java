@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.web.reactive.function.client.WebCl
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -68,11 +67,7 @@ public class OllamaAutoConfiguration {
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
 			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			properties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
-		return new OllamaChatModel(ollamaApi, properties.getOptions(), functionCallbackContext);
+		return new OllamaChatModel(ollamaApi, properties.getOptions(), functionCallbackContext, toolFunctionCallbacks);
 	}
 
 	@Bean

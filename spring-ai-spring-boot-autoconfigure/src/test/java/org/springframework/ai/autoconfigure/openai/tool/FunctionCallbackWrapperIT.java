@@ -34,6 +34,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -47,7 +48,8 @@ public class FunctionCallbackWrapperIT {
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
+				"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
