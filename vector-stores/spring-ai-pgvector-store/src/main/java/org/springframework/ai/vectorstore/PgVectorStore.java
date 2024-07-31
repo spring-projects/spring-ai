@@ -240,8 +240,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> hybridSearch(String query) {
-		SearchRequest searchRequest = SearchRequest.query(query);
+	public List<Document> hybridSearch(SearchRequest searchRequest) {
 
 		List<Document> similaritySearch = similaritySearch(searchRequest);
 
@@ -249,7 +248,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 				+ getFullyQualifiedTableName() + " ORDER BY rank DESC LIMIT ?";
 
 		List<Document> keyLikeSearch = this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper, true),
-				query, searchRequest.getTopK());
+				searchRequest.getQuery(), searchRequest.getTopK());
 
 		similaritySearch.addAll(keyLikeSearch);
 		return similaritySearch;

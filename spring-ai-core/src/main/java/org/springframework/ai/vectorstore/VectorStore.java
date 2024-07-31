@@ -74,11 +74,12 @@ public interface VectorStore extends DocumentWriter {
 	 * Retrieves documents by query embedding similarity using the default, If the
 	 * subclass implements this method, use hybrid search, similar search + full text
 	 * search. {@link SearchRequest}'s' search criteria.
-	 * @param query Text to use for embedding similarity comparison.
+	 * @param request request for set search parameters, such as the query text, topK,
+	 * similarity threshold and metadata filter expressions.
 	 * @return Returns a list of documents that have embeddings similar to the query text
 	 */
-	default List<Document> hybridSearch(String query) {
-		return this.similaritySearch(SearchRequest.query(query));
+	default List<Document> hybridSearch(SearchRequest request) {
+		return this.similaritySearch(request);
 	}
 
 }
