@@ -15,6 +15,10 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.opensearch;
 
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Optional;
+
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
@@ -39,14 +43,11 @@ import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Optional;
-
 @AutoConfiguration
 @ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingModel.class, OpenSearchClient.class })
 @EnableConfigurationProperties(OpenSearchVectorStoreProperties.class)
-public class OpenSearchVectorStoreAutoConfiguration {
+public class
+OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(OpenSearchConnectionDetails.class)

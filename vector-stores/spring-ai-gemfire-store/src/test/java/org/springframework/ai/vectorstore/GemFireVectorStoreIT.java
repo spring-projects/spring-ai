@@ -208,14 +208,16 @@ public class GemFireVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public GemFireVectorStoreConfig gemfireVectorStoreConfig() {
-			return new GemFireVectorStoreConfig().setHost("localhost")
+		public GemFireVectorStore.GemFireVectorStoreConfig gemfireVectorStoreConfig() {
+			return new GemFireVectorStore.Builder().setHost("localhost")
 				.setPort(HTTP_SERVICE_PORT)
-				.setIndexName(INDEX_NAME);
+				.setIndexName(INDEX_NAME)
+				.build();
 		}
 
 		@Bean
-		public GemFireVectorStore vectorStore(GemFireVectorStoreConfig config, EmbeddingModel embeddingModel) {
+		public GemFireVectorStore vectorStore(GemFireVectorStore.GemFireVectorStoreConfig config,
+				EmbeddingModel embeddingModel) {
 			return new GemFireVectorStore(config, embeddingModel, true);
 		}
 
