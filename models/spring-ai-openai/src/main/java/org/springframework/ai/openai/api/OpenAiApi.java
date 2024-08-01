@@ -358,6 +358,8 @@ public class OpenAiApi {
 	 * function. Specifying a particular function via {"type: "function", "function": {"name": "my_function"}} forces
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link ToolChoiceBuilder} to create the tool choice value.
+	 * @param parallelToolCalls If set to true, the model will call all functions in the tools list in parallel. If set
+	 * to false, the model will call the functions in the tools list in the order they are provided.
 	 * @param user A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 *
 	 */
@@ -381,6 +383,7 @@ public class OpenAiApi {
 			@JsonProperty("top_p") Float topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
 			@JsonProperty("user") String user) {
 
 		/**
@@ -393,7 +396,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(messages, model, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null);
+					null, null, null, null);
 		}
 
 		/**
@@ -408,7 +411,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null,
 					null, null, null, stream, null, temperature, null,
-					null, null, null);
+					null, null, null,  null);
 		}
 
 		/**
@@ -424,7 +427,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null,
 					null, null, null, false, null, 0.8f, null,
-					tools, toolChoice, null);
+					tools, toolChoice, null, null);
 		}
 
 		/**
@@ -437,7 +440,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null);
+					null, null, null, null);
 		}
 
 		/**
@@ -449,7 +452,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest withStreamOptions(StreamOptions streamOptions) {
 			return new ChatCompletionRequest(messages, model, frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, presencePenalty,
 					responseFormat, seed, stop, stream, streamOptions, temperature, topP,
-					tools, toolChoice, user);
+					tools, toolChoice, parallelToolCalls, user);
 		}
 
 		/**
