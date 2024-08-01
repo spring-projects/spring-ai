@@ -16,6 +16,7 @@
 package org.springframework.ai.openai;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -169,6 +170,13 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	@NestedConfigurationProperty
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
+
+	/**
+	 * Optional HTTP headers to be added to the chat completion request.
+	 */
+	@NestedConfigurationProperty
+	@JsonIgnore
+	private Map<String, String> httpHeaders = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -296,6 +304,12 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		public Builder withFunction(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
+			return this;
+		}
+
+		public Builder withHttpHeaders(Map<String, String> httpHeaders) {
+			Assert.notNull(httpHeaders, "HTTP headers must not be null");
+			this.options.httpHeaders = httpHeaders;
 			return this;
 		}
 
@@ -476,6 +490,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setFunctions(Set<String> functionNames) {
 		this.functions = functionNames;
+	}
+
+	public Map<String, String> getHttpHeaders() {
+		return this.httpHeaders;
+	}
+
+	public void setHttpHeaders(Map<String, String> httpHeaders) {
+		this.httpHeaders = httpHeaders;
 	}
 
 	@Override
@@ -662,6 +684,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withParallelToolCalls(fromOptions.getParallelToolCalls())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
+			.withHttpHeaders(fromOptions.getHttpHeaders())
 			.build();
 	}
 

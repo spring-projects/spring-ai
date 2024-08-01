@@ -15,7 +15,16 @@
  */
 package org.springframework.ai.openai;
 
-import io.micrometer.observation.ObservationRegistry;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -26,8 +35,16 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.chat.model.*;
-import org.springframework.ai.chat.observation.*;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.ChatModelRequestOptions;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -52,12 +69,12 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -204,7 +221,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			.observe(() -> {
 
 				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.openAiApi.chatCompletionEntity(request));
+					.execute(ctx -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -258,7 +275,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		ChatCompletionRequest request = createRequest(prompt, true);
 
 		Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.retryTemplate
-			.execute(ctx -> this.openAiApi.chatCompletionStream(request));
+			.execute(ctx -> this.openAiApi.chatCompletionStream(request, getAdditionalHttpHeaders(prompt)));
 
 		// For chunked responses, only the first chunk contains the choice role.
 		// The rest of the chunks with same ID share the same role.
@@ -313,6 +330,16 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				return Flux.just(response);
 			}
 		});
+	}
+
+	private MultiValueMap<String, String> getAdditionalHttpHeaders(Prompt prompt) {
+
+		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
+		if (prompt.getOptions() != null && prompt.getOptions() instanceof OpenAiChatOptions chatOptions) {
+			headers.putAll(chatOptions.getHttpHeaders());
+		}
+		return CollectionUtils.toMultiValueMap(
+				headers.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> List.of(e.getValue()))));
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {

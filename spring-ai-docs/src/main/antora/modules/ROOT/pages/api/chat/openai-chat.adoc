@@ -74,10 +74,14 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
-| spring.ai.openai.api-key    | The API Key           |  -
+| spring.ai.openai.base-url        | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.api-key         | The API Key           |  -
+| spring.ai.openai.organization-id | Optionally you can specify which organization  used for an API request. |  -
+| spring.ai.openai.project-id      | Optionally, you can specify which project is used for an API request. |  -
 |====
 
+TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request. 
+Usage from these API requests will count as usage for the specified organization and project.
 
 ==== Configuration Properties
 
@@ -91,6 +95,8 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
 | spring.ai.openai.chat.completions-path   | The path to append to the base-url  |  `/v1/chat/completions`
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
+| spring.ai.openai.chat.organization-id | Optionally you can specify which organization  used for an API request. |  -
+| spring.ai.openai.chat.project-id      | Optionally, you can specify which project is used for an API request. |  -
 | spring.ai.openai.chat.options.model | This is the OpenAI Chat model to use. `gpt-4o`, `gpt-4-turbo`, `gpt-4-turbo-2024-04-09`, `gpt-4-0125-preview`, `gpt-4-turbo-preview`, `gpt-3.5-turbo`, `gpt-3.5-turbo-0125`, `gpt-3.5-turbo-1106`.  See the https://platform.openai.com/docs/models[models] page for more information.  | `gpt-3.5-turbo`
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
@@ -108,6 +114,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
 | spring.ai.openai.chat.options.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 | spring.ai.openai.chat.options.parallel-tool-calls | Whether to enable link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[parallel function calling] during tool use. | true
+| spring.ai.openai.chat.options.http-headers | Optional HTTP headers to be added to the chat completion request. To override the api-key you need to use a `Authorization` header key and you have to prefix the key value with the `Bearer ` prefix. | - 
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
