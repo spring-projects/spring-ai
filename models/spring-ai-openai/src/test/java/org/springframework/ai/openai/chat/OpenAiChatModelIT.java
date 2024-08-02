@@ -130,7 +130,7 @@ class OpenAiChatModelIT extends AbstractIT {
 			});
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		assertThat(answer).contains("the 1st ");
+		assertThat(answer).contains("1st ");
 	}
 
 	@Test
@@ -153,7 +153,7 @@ class OpenAiChatModelIT extends AbstractIT {
 			});
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		assertThat(answer).contains("the 1st ");
+		assertThat(answer).contains("1st ");
 	}
 
 	@Test

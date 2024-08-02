@@ -33,13 +33,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ChatObservationAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(ChatObservationAutoConfiguration.class))
-		.withBean(CompositeMeterRegistry.class);
+		.withConfiguration(AutoConfigurations.of(ChatObservationAutoConfiguration.class));
 
 	@Test
-	void meterObservationHandler() {
-		contextRunner.run(context -> {
+	void meterObservationHandlerEnabled() {
+		contextRunner.withBean(CompositeMeterRegistry.class).run(context -> {
 			assertThat(context).hasSingleBean(ChatModelMeterObservationHandler.class);
+		});
+	}
+
+	@Test
+	void meterObservationHandlerDisabled() {
+		contextRunner.run(context -> {
+			assertThat(context).doesNotHaveBean(ChatModelMeterObservationHandler.class);
 		});
 	}
 

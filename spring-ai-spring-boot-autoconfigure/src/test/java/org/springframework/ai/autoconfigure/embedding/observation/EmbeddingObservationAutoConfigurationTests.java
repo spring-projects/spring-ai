@@ -31,13 +31,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EmbeddingObservationAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(EmbeddingObservationAutoConfiguration.class))
-		.withBean(CompositeMeterRegistry.class);
+		.withConfiguration(AutoConfigurations.of(EmbeddingObservationAutoConfiguration.class));
 
 	@Test
-	void meterObservationHandler() {
-		contextRunner.run(context -> {
+	void meterObservationHandlerEnabled() {
+		contextRunner.withBean(CompositeMeterRegistry.class).run(context -> {
 			assertThat(context).hasSingleBean(EmbeddingModelMeterObservationHandler.class);
+		});
+	}
+
+	@Test
+	void meterObservationHandlerDisabled() {
+		contextRunner.run(context -> {
+			assertThat(context).doesNotHaveBean(EmbeddingModelMeterObservationHandler.class);
 		});
 	}
 
