@@ -19,6 +19,7 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.image.ImageMessage;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
@@ -51,7 +52,7 @@ class ImageModelPromptContentObservationFilterTests {
 		var expectedContext = ImageModelObservationContext.builder()
 			.imagePrompt(new ImagePrompt(""))
 			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var actualContext = observationFilter.map(expectedContext);
 
@@ -63,7 +64,7 @@ class ImageModelPromptContentObservationFilterTests {
 		var originalContext = ImageModelObservationContext.builder()
 			.imagePrompt(new ImagePrompt("supercalifragilisticexpialidocious"))
 			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var augmentedContext = observationFilter.map(originalContext);
 
@@ -77,7 +78,7 @@ class ImageModelPromptContentObservationFilterTests {
 			.imagePrompt(new ImagePrompt(List.of(new ImageMessage("you're a chimney sweep"),
 					new ImageMessage("supercalifragilisticexpialidocious"))))
 			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var augmentedContext = observationFilter.map(originalContext);
 

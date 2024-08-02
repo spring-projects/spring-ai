@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * The configuration information for a image generation request.
  *
  * @author Benoit Moussaud
+ * @author Thomas Vitale
  * @since 1.0.0 M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -88,8 +89,13 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	@JsonProperty("user")
 	private String user;
 
+	@Override
 	public Integer getN() {
 		return n;
+	}
+
+	public void setN(Integer n) {
+		this.n = n;
 	}
 
 	@Override
@@ -101,10 +107,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 		this.model = model;
 	}
 
-	public void setN(Integer n) {
-		this.n = n;
-	}
-
+	@Override
 	public Integer getWidth() {
 		return width;
 	}
@@ -114,6 +117,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 		this.size = this.width + "x" + this.height;
 	}
 
+	@Override
 	public Integer getHeight() {
 		return height;
 	}
@@ -123,6 +127,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 		this.size = this.width + "x" + this.height;
 	}
 
+	@Override
 	public String getResponseFormat() {
 		return responseFormat;
 	}
@@ -158,6 +163,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 		this.quality = quality;
 	}
 
+	@Override
 	public String getStyle() {
 		return style;
 	}

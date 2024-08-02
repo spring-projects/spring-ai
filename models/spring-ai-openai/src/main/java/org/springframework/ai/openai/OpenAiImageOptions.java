@@ -208,6 +208,7 @@ public class OpenAiImageOptions implements ImageOptions {
 		this.size = this.width + "x" + this.height;
 	}
 
+	@Override
 	public String getStyle() {
 		return this.style;
 	}
