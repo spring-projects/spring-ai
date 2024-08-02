@@ -16,6 +16,7 @@
 package org.springframework.ai.image.observation;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
@@ -36,7 +37,7 @@ class ImageModelObservationContextTests {
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
 			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("supersun").build())
+			.requestOptions(ImageOptionsBuilder.builder().withModel("supersun").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();

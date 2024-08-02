@@ -97,6 +97,10 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 		return this.model;
 	}
 
+	public void setModel(String model) {
+		this.model = model;
+	}
+
 	@Override
 	public Integer getWidth() {
 		return null;
@@ -112,8 +116,9 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 		return null;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	@Override
+	public String getStyle() {
+		return null;
 	}
 
 	public String getUser() {

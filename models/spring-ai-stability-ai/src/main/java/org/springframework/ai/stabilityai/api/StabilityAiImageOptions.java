@@ -451,6 +451,11 @@ public class StabilityAiImageOptions implements ImageOptions {
 		this.steps = steps;
 	}
 
+	@Override
+	public String getStyle() {
+		return getStylePreset();
+	}
+
 	public String getStylePreset() {
 		return stylePreset;
 	}
