@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.openai;
 
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -78,7 +77,7 @@ public class OpenAiTestConfiguration {
 	}
 
 	@Bean
-	public EmbeddingModel openAiEmbeddingModel(OpenAiApi api) {
+	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiApi api) {
 		return new OpenAiEmbeddingModel(api);
 	}
 

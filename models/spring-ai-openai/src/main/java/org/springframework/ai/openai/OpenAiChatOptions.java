@@ -141,6 +141,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
 	private @JsonProperty("user") String user;
+	/**
+	 * Whether to enable <a href="https://platform.openai.com/docs/guides/function-calling/parallel-function-calling">parallel function calling</a> during tool use.
+	 * Defaults to true.
+	 */
+	private @JsonProperty("parallel_tool_calls") Boolean parallelToolCalls;
 
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatModel.
@@ -269,6 +274,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 		public Builder withUser(String user) {
 			this.options.user = user;
+			return this;
+		}
+
+		public Builder withParallelToolCalls(Boolean parallelToolCalls) {
+			this.options.parallelToolCalls = parallelToolCalls;
 			return this;
 		}
 
@@ -441,6 +451,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.user = user;
 	}
 
+	public Boolean getParallelToolCalls() {
+		return this.parallelToolCalls;
+	}
+
+	public void setParallelToolCalls(Boolean parallelToolCalls) {
+		this.parallelToolCalls = parallelToolCalls;
+	}
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
@@ -481,6 +499,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
 		result = prime * result + ((user == null) ? 0 : user.hashCode());
+		result = prime * result + ((parallelToolCalls == null) ? 0 : parallelToolCalls.hashCode());
 		return result;
 	}
 
@@ -595,6 +614,13 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!this.user.equals(other.user))
 			return false;
+		else if (this.parallelToolCalls == null) {
+			if (other.parallelToolCalls != null)
+				return false;
+		}
+		else if (!this.parallelToolCalls.equals(other.parallelToolCalls))
+			return false;
+
 		return true;
 	}
 
@@ -633,6 +659,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withTools(fromOptions.getTools())
 			.withToolChoice(fromOptions.getToolChoice())
 			.withUser(fromOptions.getUser())
+			.withParallelToolCalls(fromOptions.getParallelToolCalls())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
 			.withFunctions(fromOptions.getFunctions())
 			.build();

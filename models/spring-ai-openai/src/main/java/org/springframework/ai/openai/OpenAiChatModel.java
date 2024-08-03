@@ -15,14 +15,7 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -33,16 +26,16 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.observation.*;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.observation.AiOperationMetadata;
+import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
@@ -59,9 +52,12 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -86,6 +82,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
+	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
 	/**
 	 * The default options used for the chat completion requests.
 	 */
@@ -100,6 +98,16 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * Low-level access to the OpenAI API.
 	 */
 	private final OpenAiApi openAiApi;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Creates an instance of the OpenAiChatModel.
@@ -147,6 +155,23 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate) {
+		this(openAiApi, options, functionCallbackContext, toolFunctionCallbacks, retryTemplate,
+				ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Initializes a new instance of the OpenAiChatModel.
+	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
+	 * Chat API.
+	 * @param options The OpenAiChatOptions to configure the chat model.
+	 * @param functionCallbackContext The function callback context.
+	 * @param toolFunctionCallbacks The tool function callbacks.
+	 * @param retryTemplate The retry template.
+	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 */
+	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		super(functionCallbackContext, options, toolFunctionCallbacks);
 
 		Assert.notNull(openAiApi, "OpenAiApi must not be null");
@@ -154,10 +179,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
 				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
+		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
 
 		this.openAiApi = openAiApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -165,47 +192,64 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
-		ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-			.execute(ctx -> this.openAiApi.chatCompletionEntity(request));
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(prompt)
+			.operationMetadata(buildOperationMetadata())
+			.requestOptions(buildRequestOptions(request))
+			.build();
 
-		var chatCompletion = completionEntity.getBody();
+		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
 
-		if (chatCompletion == null) {
-			logger.warn("No chat completion returned for prompt: {}", prompt);
-			return new ChatResponse(List.of());
-		}
+				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.openAiApi.chatCompletionEntity(request));
 
-		List<Choice> choices = chatCompletion.choices();
-		if (choices == null) {
-			logger.warn("No choices returned for prompt: {}", prompt);
-			return new ChatResponse(List.of());
-		}
+				var chatCompletion = completionEntity.getBody();
 
-		List<Generation> generations = choices.stream().map(choice -> {
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
+
+				List<Choice> choices = chatCompletion.choices();
+				if (choices == null) {
+					logger.warn("No choices returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
+
+				List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
-			Map<String, Object> metadata = Map.of(
-					"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-					"role", choice.message().role() != null ? choice.message().role().name() : "",
-					"index", choice.index(),
-					"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
-			// @formatter:on
-			return buildGeneration(choice, metadata);
-		}).toList();
+						Map<String, Object> metadata = Map.of(
+								"id", chatCompletion.id() != null ? chatCompletion.id() : "",
+								"role", choice.message().role() != null ? choice.message().role().name() : "",
+								"index", choice.index(),
+								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+						// @formatter:on
+					return buildGeneration(choice, metadata);
+				}).toList();
 
-		// Non function calling.
-		RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+				// Non function calling.
+				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
-		ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
+				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody(), rateLimit));
 
-		if (isToolCall(chatResponse, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+				observationContext.setResponse(chatResponse);
+
+				return chatResponse;
+
+			});
+
+		if (response != null && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 				OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
-			var toolCallConversation = handleToolCalls(prompt, chatResponse);
+			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
 			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
 		}
 
-		return chatResponse;
+		return response;
 	}
 
 	@Override
@@ -434,6 +478,25 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		}).toList();
 	}
 
+	private AiOperationMetadata buildOperationMetadata() {
+		return AiOperationMetadata.builder()
+			.operationType(AiOperationType.CHAT.value())
+			.provider(AiProvider.OPENAI.value())
+			.build();
+	}
+
+	private ChatModelRequestOptions buildRequestOptions(OpenAiApi.ChatCompletionRequest request) {
+		return ChatModelRequestOptions.builder()
+			.model(StringUtils.hasText(request.model()) ? request.model() : "unknown")
+			.frequencyPenalty(request.frequencyPenalty())
+			.maxTokens(request.maxTokens())
+			.presencePenalty(request.presencePenalty())
+			.stopSequences(request.stop())
+			.temperature(request.temperature())
+			.topP(request.topP())
+			.build();
+	}
+
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return OpenAiChatOptions.fromOptions(this.defaultOptions);
@@ -442,6 +505,15 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	@Override
 	public String toString() {
 		return "OpenAiChatModel [defaultOptions=" + defaultOptions + "]";
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }
