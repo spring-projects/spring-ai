@@ -52,7 +52,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	public static final String DEFAULT_MODEL = OllamaModel.MISTRAL.id();
 
-	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive");
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
 	// Following fields are options which must be set when the model is loaded into
 	// memory.
@@ -267,6 +267,13 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
 	@JsonProperty("keep_alive") private String keepAlive;
+	
+	
+	/**
+	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded. 
+	 * Defaults to true.
+	 */
+	@JsonProperty("truncate") private Boolean truncate;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -312,14 +319,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		return this;
 	}
 
-	public String getModel() {
-		return model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	public OllamaOptions withFormat(String format) {
 		this.format = format;
 		return this;
@@ -327,6 +326,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	public OllamaOptions withKeepAlive(String keepAlive) {
 		this.keepAlive = keepAlive;
+		return this;
+	}
+
+	public OllamaOptions withTruncate(Boolean truncate) {
+		this.truncate = truncate;
 		return this;
 	}
 
@@ -489,6 +493,17 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		Assert.hasText(functionName, "Function name must not be empty");
 		this.functions.add(functionName);
 		return this;
+	}
+
+	// -------------------
+	// Getters and Setters
+	// -------------------
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
 	}
 
 	public String getFormat() {
@@ -739,6 +754,14 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.stop = stop;
 	}
 
+	public Boolean getTruncate() {
+		return this.truncate;
+	}
+
+	public void setTruncate(Boolean truncate) {
+		this.truncate = truncate;
+	}
+
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;	
@@ -797,6 +820,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			.withModel(fromOptions.getModel())
 			.withFormat(fromOptions.getFormat())
 			.withKeepAlive(fromOptions.getKeepAlive())
+			.withTruncate(fromOptions.getTruncate())
 			.withUseNUMA(fromOptions.getUseNUMA())
 			.withNumCtx(fromOptions.getNumCtx())
 			.withNumBatch(fromOptions.getNumBatch())
@@ -839,15 +863,16 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 			return false;
 		OllamaOptions that = (OllamaOptions) o;
 		return Objects.equals(model, that.model) && Objects.equals(format, that.format)
-				&& Objects.equals(keepAlive, that.keepAlive) && Objects.equals(useNUMA, that.useNUMA)
-				&& Objects.equals(numCtx, that.numCtx) && Objects.equals(numBatch, that.numBatch)
-				&& Objects.equals(numGPU, that.numGPU) && Objects.equals(mainGPU, that.mainGPU)
-				&& Objects.equals(lowVRAM, that.lowVRAM) && Objects.equals(f16KV, that.f16KV)
-				&& Objects.equals(logitsAll, that.logitsAll) && Objects.equals(vocabOnly, that.vocabOnly)
-				&& Objects.equals(useMMap, that.useMMap) && Objects.equals(useMLock, that.useMLock)
-				&& Objects.equals(numThread, that.numThread) && Objects.equals(numKeep, that.numKeep)
-				&& Objects.equals(seed, that.seed) && Objects.equals(numPredict, that.numPredict)
-				&& Objects.equals(topK, that.topK) && Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
+				&& Objects.equals(keepAlive, that.keepAlive) && Objects.equals(truncate, that.truncate)
+				&& Objects.equals(useNUMA, that.useNUMA) && Objects.equals(numCtx, that.numCtx)
+				&& Objects.equals(numBatch, that.numBatch) && Objects.equals(numGPU, that.numGPU)
+				&& Objects.equals(mainGPU, that.mainGPU) && Objects.equals(lowVRAM, that.lowVRAM)
+				&& Objects.equals(f16KV, that.f16KV) && Objects.equals(logitsAll, that.logitsAll)
+				&& Objects.equals(vocabOnly, that.vocabOnly) && Objects.equals(useMMap, that.useMMap)
+				&& Objects.equals(useMLock, that.useMLock) && Objects.equals(numThread, that.numThread)
+				&& Objects.equals(numKeep, that.numKeep) && Objects.equals(seed, that.seed)
+				&& Objects.equals(numPredict, that.numPredict) && Objects.equals(topK, that.topK)
+				&& Objects.equals(topP, that.topP) && Objects.equals(tfsZ, that.tfsZ)
 				&& Objects.equals(typicalP, that.typicalP) && Objects.equals(repeatLastN, that.repeatLastN)
 				&& Objects.equals(temperature, that.temperature) && Objects.equals(repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(presencePenalty, that.presencePenalty)
@@ -860,12 +885,12 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.format, this.keepAlive, this.useNUMA, this.numCtx, this.numBatch,
-				this.numGPU, this.mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly, this.useMMap,
-				this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK, this.topP, tfsZ,
-				this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
-				this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
-				this.stop, this.functionCallbacks, this.functions);
+		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
+				this.numBatch, this.numGPU, this.mainGPU, lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
+				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
+				this.topP, tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
+				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
+				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions);
 	}
 
 }

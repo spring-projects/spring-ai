@@ -307,7 +307,7 @@ public class OllamaApi {
 			@JsonProperty("eval_duration") Duration evalDuration) {
 	}
 
-	/** 
+	/**
 	 * Generate a completion for the given prompt.
 	 * @param completionRequest Completion request.
 	 * @return Completion response.
@@ -691,11 +691,40 @@ public class OllamaApi {
 	 * Generate embeddings from a model.
 	 *
 	 * @param model The name of model to generate embeddings from.
-	 * @param prompt The text to generate embeddings for.
+	 * @param input The text or list of text to generate embeddings for.
 	 * @param keepAlive Controls how long the model will stay loaded into memory following the request (default: 5m).
 	 * @param options Additional model parameters listed in the documentation for the
-	 * Model file such as temperature.
+	 * @param truncate Truncates the end of each input to fit within context length.
+	 *  Returns error if false and context length is exceeded. Defaults to true.
 	 */
+	@JsonInclude(Include.NON_NULL)
+	public record EmbeddingsRequest(
+			@JsonProperty("model") String model,
+			@JsonProperty("input") List<String> input,
+			@JsonProperty("keep_alive") Duration keepAlive,
+			@JsonProperty("options") Map<String, Object> options,
+			@JsonProperty("truncate") Boolean truncate) {
+
+		/**
+		 * Shortcut constructor to create a EmbeddingRequest without options.
+		 * @param model The name of model to generate embeddings from.
+		 * @param input The text or list of text to generate embeddings for.
+		 */
+		public EmbeddingsRequest(String model, String input) {
+			this(model, List.of(input), null, null, null);
+		}
+	}	
+
+	/**
+	 * Generate embeddings from a model.
+	 *
+	 * @param model The name of model to generate embeddings from.
+	 * @param prompt The text generate embeddings for
+	 * @param keepAlive Controls how long the model will stay loaded into memory following the request (default: 5m).
+	 * @param options Additional model parameters listed in the documentation for the
+	 * @deprecated Use {@link EmbeddingsRequest} instead.
+	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingRequest(
 			@JsonProperty("model") String model,
@@ -717,17 +746,49 @@ public class OllamaApi {
 	 * The response object returned from the /embedding endpoint.
 	 *
 	 * @param embedding The embedding generated from the model.
+	 * @deprecated Use {@link EmbeddingsResponse} instead.
 	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingResponse(
 			@JsonProperty("embedding") List<Double> embedding) {
 	}
 
+
+	/**
+	 * The response object returned from the /embedding endpoint.
+	 * @param model The model used for generating the embeddings.
+	 * @param embeddings The list of embeddings generated from the model. 
+	 * Each embedding (list of doubles) corresponds to a single input text.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record EmbeddingsResponse(
+			@JsonProperty("model") String model,
+			@JsonProperty("embeddings") List<List<Double>> embeddings) {
+	}
+
+	/**
+	 * Generate embeddings from a model.
+	 * @param embeddingsRequest Embedding request.
+	 * @return Embeddings response.
+	 */
+	public EmbeddingsResponse embed(EmbeddingsRequest embeddingsRequest) {
+		Assert.notNull(embeddingsRequest, REQUEST_BODY_NULL_ERROR);
+
+		return this.restClient.post()
+			.uri("/api/embed")
+			.body(embeddingsRequest)
+			.retrieve()
+			.onStatus(this.responseErrorHandler)
+			.body(EmbeddingsResponse.class);
+	}
 	/**
 	 * Generate embeddings from a model.
 	 * @param embeddingRequest Embedding request.
 	 * @return Embedding response.
+	 * @deprecated Use {@link #embed(EmbeddingsRequest)} instead.
 	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	public EmbeddingResponse embeddings(EmbeddingRequest embeddingRequest) {
 		Assert.notNull(embeddingRequest, REQUEST_BODY_NULL_ERROR);
 

@@ -27,7 +27,7 @@ import org.springframework.ai.ollama.api.OllamaModel;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
-
+import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApiIT;
@@ -66,11 +66,17 @@ class OllamaEmbeddingModelIT {
 	private OllamaEmbeddingModel embeddingModel;
 
 	@Test
-	void singleEmbedding() {
+	void embeddings() {
 		assertThat(embeddingModel).isNotNull();
-		EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
-		assertThat(embeddingResponse.getResults()).hasSize(1);
+		EmbeddingResponse embeddingResponse = embeddingModel.call(new EmbeddingRequest(
+				List.of("Hello World", "Something else"), OllamaOptions.builder().withTruncate(false).build()));
+		assertThat(embeddingResponse.getResults()).hasSize(2);
+		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo(MODEL);
+
 		assertThat(embeddingModel.dimensions()).isEqualTo(4096);
 	}
 

@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.ollama.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,21 +27,19 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ollama.OllamaImage;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.ollama.OllamaContainer;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
-import org.springframework.ai.ollama.api.OllamaApi.EmbeddingRequest;
-import org.springframework.ai.ollama.api.OllamaApi.EmbeddingResponse;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaApi.GenerateRequest;
 import org.springframework.ai.ollama.api.OllamaApi.GenerateResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.ollama.OllamaContainer;
 
-import static org.assertj.core.api.Assertions.assertThat;;
+import reactor.core.publisher.Flux;;
 
 /**
  * @author Christian Tzolov
@@ -145,12 +145,13 @@ public class OllamaApiIT {
 	@Test
 	public void embedText() {
 
-		EmbeddingRequest request = new EmbeddingRequest(MODEL, "I like to eat apples");
+		EmbeddingsRequest request = new EmbeddingsRequest(MODEL, "I like to eat apples");
 
-		EmbeddingResponse response = ollamaApi.embeddings(request);
+		EmbeddingsResponse response = ollamaApi.embed(request);
 
 		assertThat(response).isNotNull();
-		assertThat(response.embedding()).hasSize(3200);
+		assertThat(response.embeddings()).hasSize(1);
+		assertThat(response.embeddings().get(0)).hasSize(3200);
 	}
 
 }

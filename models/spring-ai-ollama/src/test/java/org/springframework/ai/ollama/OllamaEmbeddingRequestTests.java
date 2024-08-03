@@ -21,6 +21,8 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 /**
  * @author Christian Tzolov
  */
@@ -32,13 +34,13 @@ public class OllamaEmbeddingRequestTests {
 	@Test
 	public void ollamaEmbeddingRequestDefaultOptions() {
 
-		var request = chatModel.ollamaEmbeddingRequest("Hello", null);
+		var request = chatModel.ollamaEmbeddingRequest(List.of("Hello"), null);
 
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.options().get("num_gpu")).isEqualTo(1);
 		assertThat(request.options().get("main_gpu")).isEqualTo(11);
 		assertThat(request.options().get("use_mmap")).isEqualTo(true);
-		assertThat(request.prompt()).isEqualTo("Hello");
+		assertThat(request.input()).isEqualTo(List.of("Hello"));
 	}
 
 	@Test
@@ -50,13 +52,13 @@ public class OllamaEmbeddingRequestTests {
 			.withUseMMap(true)//
 			.withNumGPU(2);
 
-		var request = chatModel.ollamaEmbeddingRequest("Hello", promptOptions);
+		var request = chatModel.ollamaEmbeddingRequest(List.of("Hello"), promptOptions);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.options().get("num_gpu")).isEqualTo(2);
 		assertThat(request.options().get("main_gpu")).isEqualTo(22);
 		assertThat(request.options().get("use_mmap")).isEqualTo(true);
-		assertThat(request.prompt()).isEqualTo("Hello");
+		assertThat(request.input()).isEqualTo(List.of("Hello"));
 	}
 
 }
