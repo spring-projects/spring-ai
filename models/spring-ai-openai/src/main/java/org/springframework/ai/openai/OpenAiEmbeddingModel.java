@@ -37,7 +37,7 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
-import org.springframework.ai.openai.metadata.OpenAiUsage;
+import org.springframework.ai.openai.metadata.OpenAiEmbeddingUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -168,7 +168,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-						OpenAiUsage.from(apiEmbeddingResponse.usage()));
+						OpenAiEmbeddingUsage.from(apiEmbeddingResponse.usage()));
 
 				List<Embedding> embeddings = apiEmbeddingResponse.data()
 					.stream()
