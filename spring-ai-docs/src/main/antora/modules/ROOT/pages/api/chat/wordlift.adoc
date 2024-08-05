@@ -1,0 +1,131 @@
+= WordLift Chat
+
+Spring AI supports WordLift, a Knowledge Graph SEO oriented SaaS.
+
+== Prerequisites
+
+Create an account at https://wordlift.io[WordLift].
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the WordLift Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-wordlift-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-wordlift-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the WordLift chat model.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-wordlift/src/main/java/org/springframework/ai/wordlift/WordLiftChatOptions.java[WordLiftChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `WordLiftChatModel(api, options)` constructor.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        WordLiftChatOptions.builder()
+            .withModel("gpt-4-o")
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-wordlift/src/main/java/org/springframework/ai/wordlift/WordLiftChatOptions.java[WordLiftChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-wordlift/src/main/java/org/springframework/ai/wordlift/WordLiftChatModel.java[WordLiftChatModel] implements the `ChatModel` and `StreamingChatModel`.
+
+Add the `spring-ai-wordlift` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-wordlift</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-wordlift'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `WordLiftChatModel` and use it for text generations:
+
+[source,java]
+----
+var wordliftApi = new WordLiftApi(System.getenv("WORDLIFT_API_KEY"));
+var wordliftChatOptions = WordLiftChatOptions.builder()
+            .withModel("wl-mistral-large")
+            .withTemperature(0.4)
+            .withMaxTokens(200)
+        .build();
+var chatModel = new WordLiftChatModel(wordliftApi, wordliftChatOptions);
+
+
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> response = chatModel.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `WordLiftChatOptions` provides the configuration information for the chat requests.
+The `WordLiftChatOptions.Builder` is fluent options builder.
+
