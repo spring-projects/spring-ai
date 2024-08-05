@@ -33,8 +33,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -684,7 +686,7 @@ public class ZhiPuAiApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
- 				.map(chunk -> {
+				.map(chunk -> {
 					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 						isInsideTool.set(true);
 					}
@@ -749,6 +751,25 @@ public class ZhiPuAiApi {
 		 */
 		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
+		}
+		@Override public boolean equals(Object o) {
+    		if (this == o) return true;
+    		if (!(o instanceof Embedding embedding1)) return false;
+    		return Objects.equals(index, embedding1.index) && Arrays.equals(embedding, embedding1.embedding) && Objects.equals(object, embedding1.object);
+		}
+		@Override
+		public int hashCode() {
+			int result = Objects.hash(index, object);
+			result = 31 * result + Arrays.hashCode(embedding);
+			return result;
+		}
+
+		@Override public String toString() {
+			return "Embedding{" +
+					"index=" + index +
+					", embedding=" + Arrays.toString(embedding) +
+					", object='" + object + '\'' +
+					'}';
 		}
 	}
 
