@@ -15,12 +15,12 @@
  */
 package org.springframework.ai.vectorstore;
 
+import java.util.List;
+
 import org.bson.Document;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperationContext;
 import org.springframework.lang.NonNull;
-
-import java.util.List;
 
 record VectorSearchAggregation(List<Float> embeddings, String path, int numCandidates, String index, int count,
 		String filter) implements AggregationOperation {

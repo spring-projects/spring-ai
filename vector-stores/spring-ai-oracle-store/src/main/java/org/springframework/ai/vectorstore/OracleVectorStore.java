@@ -326,8 +326,8 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 	 * @return
 	 * @throws SQLException
 	 */
-	private VECTOR toVECTOR(final List<Float> floatList) throws SQLException {
-		final double[] doubles = new double[floatList.size()];
+	private VECTOR toVECTOR(final float[] floatList) throws SQLException {
+		final double[] doubles = new double[floatList.length];
 		int i = 0;
 		for (double d : floatList) {
 			doubles[i++] = d;
@@ -401,7 +401,7 @@ public class OracleVectorStore implements VectorStore, InitializingBean {
 
 			final Document document = new Document(rs.getString(1), rs.getString(2), metadata);
 			final float[] embedding = rs.getObject(4, float[].class);
-			document.setEmbedding(toFloatList(embedding));
+			document.setEmbedding(embedding);
 			return document;
 		}
 

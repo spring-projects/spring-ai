@@ -38,6 +38,7 @@ import io.pinecone.proto.Vector;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.util.Assert;
@@ -275,7 +276,7 @@ public class PineconeVectorStore implements VectorStore {
 
 			return Vector.newBuilder()
 				.setId(document.getId())
-				.addAllValues(document.getEmbedding())
+				.addAllValues(EmbeddingUtils.toList(document.getEmbedding()))
 				.setMetadata(metadataToStruct(document))
 				.build();
 		}).toList();
@@ -360,10 +361,10 @@ public class PineconeVectorStore implements VectorStore {
 		String nativeExpressionFilters = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		List<Float> queryEmbedding = this.embeddingModel.embed(request.getQuery());
+		float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 		var queryRequestBuilder = QueryRequest.newBuilder()
-			.addAllVector(queryEmbedding)
+			.addAllVector(EmbeddingUtils.toList(queryEmbedding))
 			.setTopK(request.getTopK())
 			.setIncludeMetadata(true)
 			.setNamespace(namespace);

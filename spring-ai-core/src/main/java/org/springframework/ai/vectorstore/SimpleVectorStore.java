@@ -72,7 +72,7 @@ public class SimpleVectorStore implements VectorStore {
 	public void add(List<Document> documents) {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
-			List<Float> embedding = this.embeddingModel.embed(document);
+			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			this.store.put(document.getId(), document);
 		}
@@ -93,7 +93,7 @@ public class SimpleVectorStore implements VectorStore {
 					"The [" + this.getClass() + "] doesn't support metadata filtering!");
 		}
 
-		List<Float> userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
+		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
 			.map(entry -> new Similarity(entry.getId(),
@@ -186,7 +186,7 @@ public class SimpleVectorStore implements VectorStore {
 		return json;
 	}
 
-	private List<Float> getUserQueryEmbedding(String query) {
+	private float[] getUserQueryEmbedding(String query) {
 		return this.embeddingModel.embed(query);
 	}
 
@@ -209,17 +209,17 @@ public class SimpleVectorStore implements VectorStore {
 			throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
 		}
 
-		public static double cosineSimilarity(List<Float> vectorX, List<Float> vectorY) {
+		public static double cosineSimilarity(float[] vectorX, float[] vectorY) {
 			if (vectorX == null || vectorY == null) {
 				throw new RuntimeException("Vectors must not be null");
 			}
-			if (vectorX.size() != vectorY.size()) {
+			if (vectorX.length != vectorY.length) {
 				throw new IllegalArgumentException("Vectors lengths must be equal");
 			}
 
-			double dotProduct = dotProduct(vectorX, vectorY);
-			double normX = norm(vectorX);
-			double normY = norm(vectorY);
+			float dotProduct = dotProduct(vectorX, vectorY);
+			float normX = norm(vectorX);
+			float normY = norm(vectorY);
 
 			if (normX == 0 || normY == 0) {
 				throw new IllegalArgumentException("Vectors cannot have zero norm");
@@ -228,20 +228,20 @@ public class SimpleVectorStore implements VectorStore {
 			return dotProduct / (Math.sqrt(normX) * Math.sqrt(normY));
 		}
 
-		public static float dotProduct(List<Float> vectorX, List<Float> vectorY) {
-			if (vectorX.size() != vectorY.size()) {
+		public static float dotProduct(float[] vectorX, float[] vectorY) {
+			if (vectorX.length != vectorY.length) {
 				throw new IllegalArgumentException("Vectors lengths must be equal");
 			}
 
 			float result = 0;
-			for (int i = 0; i < vectorX.size(); ++i) {
-				result += vectorX.get(i) * vectorY.get(i);
+			for (int i = 0; i < vectorX.length; ++i) {
+				result += vectorX[i] * vectorY[i];
 			}
 
 			return result;
 		}
 
-		public static float norm(List<Float> vector) {
+		public static float norm(float[] vector) {
 			return dotProduct(vector, vector);
 		}
 

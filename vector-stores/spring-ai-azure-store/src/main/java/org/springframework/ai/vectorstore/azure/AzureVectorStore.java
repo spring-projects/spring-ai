@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -283,7 +284,8 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 
 		var searchEmbedding = embeddingModel.embed(request.getQuery());
 
-		final var vectorQuery = new VectorizedQuery(searchEmbedding).setKNearestNeighborsCount(request.getTopK())
+		final var vectorQuery = new VectorizedQuery(EmbeddingUtils.toList(searchEmbedding))
+			.setKNearestNeighborsCount(request.getTopK())
 			// Set the fields to compare the vector against. This is a comma-delimited
 			// list of field names.
 			.setFields(EMBEDDING_FIELD_NAME);
@@ -311,7 +313,7 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 				metadata.put(DISTANCE_METADATA_FIELD_NAME, 1 - (float) result.getScore());
 
 				final Document doc = new Document(entry.id(), entry.content(), metadata);
-				doc.setEmbedding(entry.embedding());
+				doc.setEmbedding(EmbeddingUtils.toPrimitive(entry.embedding()));
 
 				return doc;
 

@@ -33,7 +33,7 @@ class VectorSearchAggregationTest {
 		var document = aggregation.toDocument("vector_store", Aggregation.DEFAULT_CONTEXT);
 
 		var vectorSearchDocument = new Document("$vectorSearch",
-				new Document("queryVector", List.of(1.0, 2.0, 3.0)).append("path", "embedding")
+				new Document("queryVector", List.of(1.0f, 2.0f, 3.0f)).append("path", "embedding")
 					.append("numCandidates", 10)
 					.append("index", "vector_store")
 					.append("limit", 10));
@@ -50,7 +50,7 @@ class VectorSearchAggregationTest {
 		var document = aggregation.toDocument("vector_store", Aggregation.DEFAULT_CONTEXT);
 
 		var vectorSearchDocument = new Document("$vectorSearch",
-				new Document("queryVector", List.of(1.0, 2.0, 3.0)).append("path", "embedding")
+				new Document("queryVector", List.of(1.0f, 2.0f, 3.0f)).append("path", "embedding")
 					.append("numCandidates", 10)
 					.append("index", "vector_store")
 					.append("filter", new Document("metadata.country", new Document().append("$eq", "BG")))

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,7 +170,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getContent());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			List<Float> embedding = this.embeddingModel.embed(document.getContent());
+			float[] embedding = this.embeddingModel.embed(document.getContent());
 			typesenseDoc.put(EMBEDDING_FIELD_NAME, embedding);
 
 			return typesenseDoc;
@@ -222,7 +223,7 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 		logger.info("Filter expression: {}", nativeFilterExpressions);
 
-		List<Float> embedding = this.embeddingModel.embed(request.getQuery());
+		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
 		multiSearchCollectionParameters.collection(this.config.collectionName);
@@ -230,8 +231,8 @@ public class TypesenseVectorStore implements VectorStore, InitializingBean {
 
 		// typesnese uses only cosine similarity
 		String vectorQuery = EMBEDDING_FIELD_NAME + ":(" + "["
-				+ String.join(",", embedding.stream().map(String::valueOf).toList()) + "], " + "k: " + request.getTopK()
-				+ ", " + "distance_threshold: " + (1 - request.getSimilarityThreshold()) + ")";
+				+ String.join(",", Stream.of(embedding).map(String::valueOf).toList()) + "], " + "k: "
+				+ request.getTopK() + ", " + "distance_threshold: " + (1 - request.getSimilarityThreshold()) + ")";
 
 		multiSearchCollectionParameters.vectorQuery(vectorQuery);
 		multiSearchCollectionParameters.filterBy(nativeFilterExpressions);

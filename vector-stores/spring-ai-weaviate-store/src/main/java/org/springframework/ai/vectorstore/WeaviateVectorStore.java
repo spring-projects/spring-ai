@@ -44,6 +44,7 @@ import io.weaviate.client.v1.graphql.query.fields.Fields;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.ConsistentLevel;
 import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
 import org.springframework.beans.factory.InitializingBean;
@@ -361,8 +362,8 @@ public class WeaviateVectorStore implements VectorStore {
 
 	private WeaviateObject toWeaviateObject(Document document) {
 
-		if (CollectionUtils.isEmpty(document.getEmbedding())) {
-			List<Float> embedding = this.embeddingModel.embed(document);
+		if (document.getEmbedding() == null || document.getEmbedding().length == 0) {
+			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 		}
 
@@ -388,7 +389,7 @@ public class WeaviateVectorStore implements VectorStore {
 		return WeaviateObject.builder()
 			.className(this.weaviateObjectClass)
 			.id(document.getId())
-			.vector(toFloatArray(document.getEmbedding()))
+			.vector(EmbeddingUtils.toFloatArray(document.getEmbedding()))
 			.properties(fields)
 			.build();
 	}
@@ -422,13 +423,13 @@ public class WeaviateVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 
-		Float[] embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
+		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		GetBuilder.GetBuilderBuilder builder = GetBuilder.builder();
 
 		GetBuilderBuilder queryBuilder = builder.className(this.weaviateObjectClass)
 			.withNearVectorFilter(NearVectorArgument.builder()
-				.vector(embedding)
+				.vector(EmbeddingUtils.toFloatArray(embedding))
 				.certainty((float) request.getSimilarityThreshold())
 				.build())
 			.limit(request.getTopK())
@@ -492,7 +493,7 @@ public class WeaviateVectorStore implements VectorStore {
 		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
 		double certainty = (Double) additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME);
 		String id = (String) additional.get(ADDITIONAL_ID_FIELD_NAME);
-		List<Float> embedding = ((List<Float>) additional.get(ADDITIONAL_VECTOR_FIELD_NAME)).stream().toList();
+		List<Double> embedding = ((List<Double>) additional.get(ADDITIONAL_VECTOR_FIELD_NAME)).stream().toList();
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
@@ -512,18 +513,9 @@ public class WeaviateVectorStore implements VectorStore {
 		String content = (String) item.get(CONTENT_FIELD_NAME);
 
 		var document = new Document(id, content, metadata);
-		document.setEmbedding(embedding);
+		document.setEmbedding(EmbeddingUtils.toPrimitive(EmbeddingUtils.doubleToFloat(embedding)));
 
 		return document;
-	}
-
-	/**
-	 * Converts a list of floats to an array of floats.
-	 * @param floatList The list of floats.
-	 * @return The converted array of floats.
-	 */
-	private Float[] toFloatArray(List<Float> floatList) {
-		return floatList.toArray(new Float[0]);
 	}
 
 }

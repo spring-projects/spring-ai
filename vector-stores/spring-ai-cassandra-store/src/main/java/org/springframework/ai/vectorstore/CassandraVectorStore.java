@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.CassandraVectorStoreConfig.SchemaColumn;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 
@@ -163,7 +164,7 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 			futures[i++] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.conf.documentIdTranslator.apply(d.getId());
 
-				if (null == d.getEmbedding() || d.getEmbedding().isEmpty()) {
+				if (null == d.getEmbedding() || d.getEmbedding().length == 0) {
 					d.setEmbedding(this.embeddingModel.embed(d));
 				}
 
@@ -174,7 +175,8 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 				}
 
 				builder = builder.setString(this.conf.schema.content(), d.getContent())
-					.setVector(this.conf.schema.embedding(), CqlVector.newInstance(d.getEmbedding()), Float.class);
+					.setVector(this.conf.schema.embedding(),
+							CqlVector.newInstance(EmbeddingUtils.toList(d.getEmbedding())), Float.class);
 
 				for (var metadataColumn : this.conf.schema.metadataColumns()
 					.stream()
@@ -239,7 +241,8 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 			Document doc = new Document(getDocumentId(row), row.getString(this.conf.schema.content()), docFields);
 
 			if (this.conf.returnEmbeddings) {
-				doc.setEmbedding(row.getVector(this.conf.schema.embedding(), Float.class).stream().toList());
+				doc.setEmbedding(EmbeddingUtils
+					.toPrimitive(row.getVector(this.conf.schema.embedding(), Float.class).stream().toList()));
 			}
 			documents.add(doc);
 		}
@@ -354,8 +357,8 @@ public class CassandraVectorStore implements VectorStore, AutoCloseable {
 		return this.conf.primaryKeyTranslator.apply(primaryKeyValues);
 	}
 
-	private static Float[] toFloatArray(List<Float> embedding) {
-		Float[] embeddingFloat = new Float[embedding.size()];
+	private static Float[] toFloatArray(float[] embedding) {
+		Float[] embeddingFloat = new Float[embedding.length];
 		int i = 0;
 		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();

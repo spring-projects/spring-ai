@@ -60,10 +60,10 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 			VertexAiTextEmbeddingModel embeddingModel = context.getBean(VertexAiTextEmbeddingModel.class);
 			assertThat(embeddingModel).isInstanceOf(VertexAiTextEmbeddingModel.class);
 
-			List<List<Double>> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
+			List<float[]> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
 
 			assertThat(embeddings.size()).isEqualTo(2); // batch size
-			assertThat(embeddings.get(0).size()).isEqualTo(embeddingModel.dimensions());
+			assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions());
 		});
 	}
 
@@ -113,7 +113,7 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1408);
 
 			assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
-			assertThat(embeddingResponse.getMetadata().getUsage()).isEqualTo(0);
+			assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(0);
 
 			assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 

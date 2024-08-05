@@ -97,7 +97,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 			metadatas.add(document.getMetadata());
 			contents.add(document.getContent());
 			document.setEmbedding(this.embeddingModel.embed(document));
-			embeddings.add(JsonUtils.toFloatArray(document.getEmbedding()));
+			embeddings.add(document.getEmbedding());
 		}
 
 		this.chromaApi.upsertEmbeddings(this.collectionId,
@@ -121,7 +121,7 @@ public class ChromaVectorStore implements VectorStore, InitializingBean {
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
 
-		List<Float> embedding = this.embeddingModel.embed(query);
+		float[] embedding = this.embeddingModel.embed(query);
 		Map<String, Object> where = (StringUtils.hasText(nativeFilterExpression))
 				? JsonUtils.jsonToMap(nativeFilterExpression) : Map.of();
 		var queryRequest = new ChromaApi.QueryRequest(embedding, request.getTopK(), where);

@@ -15,7 +15,6 @@
  */
 package org.springframework.ai.embedding;
 
-import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResult;
@@ -23,9 +22,9 @@ import org.springframework.ai.model.ModelResult;
 /**
  * Represents a single embedding vector.
  */
-public class Embedding implements ModelResult<List<Float>> {
+public class Embedding implements ModelResult<float[]> {
 
-	private List<Float> embedding;
+	private float[] embedding;
 
 	private Integer index;
 
@@ -36,7 +35,7 @@ public class Embedding implements ModelResult<List<Float>> {
 	 * @param embedding the embedding vector values.
 	 * @param index the embedding index in a list of embeddings.
 	 */
-	public Embedding(List<Float> embedding, Integer index) {
+	public Embedding(float[] embedding, Integer index) {
 		this(embedding, index, EmbeddingResultMetadata.EMPTY);
 	}
 
@@ -46,7 +45,7 @@ public class Embedding implements ModelResult<List<Float>> {
 	 * @param index the embedding index in a list of embeddings.
 	 * @param metadata the metadata associated with the embedding.
 	 */
-	public Embedding(List<Float> embedding, Integer index, EmbeddingResultMetadata metadata) {
+	public Embedding(float[] embedding, Integer index, EmbeddingResultMetadata metadata) {
 		this.embedding = embedding;
 		this.index = index;
 		this.metadata = metadata;
@@ -56,7 +55,7 @@ public class Embedding implements ModelResult<List<Float>> {
 	 * @return Get the embedding vector values.
 	 */
 	@Override
-	public List<Float> getOutput() {
+	public float[] getOutput() {
 		return embedding;
 	}
 
@@ -91,7 +90,7 @@ public class Embedding implements ModelResult<List<Float>> {
 
 	@Override
 	public String toString() {
-		String message = this.embedding.isEmpty() ? "<empty>" : "<has data>";
+		String message = this.embedding.length == 0 ? "<empty>" : "<has data>";
 		return "Embedding{" + "embedding=" + message + ", index=" + this.index + '}';
 	}
 

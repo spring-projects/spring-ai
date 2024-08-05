@@ -76,7 +76,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Float> embed(Document document) {
+	public float[] embed(Document document) {
 		return embed(document.getContent());
 	}
 

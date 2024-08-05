@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -270,14 +271,14 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		for (Document document : documents) {
-			List<Float> embedding = this.embeddingModel.embed(document);
+			float[] embedding = this.embeddingModel.embed(document);
 			document.setEmbedding(embedding);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getContent());
 			metadataArray.add(new JSONObject(document.getMetadata()));
-			embeddingArray.add(embedding);
+			embeddingArray.add(EmbeddingUtils.toList(embedding));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();
@@ -326,7 +327,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 
-		List<Float> embedding = this.embeddingModel.embed(request.getQuery());
+		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		var searchParamBuilder = SearchParam.newBuilder()
 			.withCollectionName(this.config.collectionName)
@@ -334,7 +335,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 			.withMetricType(this.config.metricType)
 			.withOutFields(SEARCH_OUTPUT_FIELDS)
 			.withTopK(request.getTopK())
-			.withVectors(List.of(embedding))
+			.withVectors(List.of(EmbeddingUtils.toList(embedding)))
 			.withVectorFieldName(EMBEDDING_FIELD_NAME);
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
