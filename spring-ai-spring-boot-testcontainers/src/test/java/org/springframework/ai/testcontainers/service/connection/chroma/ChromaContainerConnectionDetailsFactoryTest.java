@@ -40,12 +40,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @Testcontainers
-@TestPropertySource(properties = "spring.ai.vectorstore.chroma.store.collectionName=TestCollection")
+@TestPropertySource(properties = { "spring.ai.vectorstore.chroma.store.collectionName=TestCollection",
+		"spring.ai.vectorstore.chroma.initialize-schema=true" })
 class ChromaContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.4.15");
+	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.0");
 
 	@Autowired
 	private VectorStore vectorStore;

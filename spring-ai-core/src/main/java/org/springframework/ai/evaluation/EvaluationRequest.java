@@ -1,6 +1,5 @@
 package org.springframework.ai.evaluation;
 
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.Content;
 
 import java.util.List;
@@ -20,12 +19,12 @@ public class EvaluationRequest {
 
 	private final List<Content> dataList;
 
-	private final ChatResponse chatResponse;
+	private final String responseContent;
 
-	public EvaluationRequest(String userText, List<Content> dataList, ChatResponse chatResponse) {
+	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
 		this.userText = userText;
 		this.dataList = dataList;
-		this.chatResponse = chatResponse;
+		this.responseContent = responseContent;
 	}
 
 	public String getUserText() {
@@ -36,14 +35,14 @@ public class EvaluationRequest {
 		return dataList;
 	}
 
-	public ChatResponse getChatResponse() {
-		return chatResponse;
+	public String getResponseContent() {
+		return responseContent;
 	}
 
 	@Override
 	public String toString() {
 		return "EvaluationRequest{" + "userText='" + userText + '\'' + ", dataList=" + dataList + ", chatResponse="
-				+ chatResponse + '}';
+				+ responseContent + '}';
 	}
 
 	@Override
@@ -53,12 +52,12 @@ public class EvaluationRequest {
 		if (!(o instanceof EvaluationRequest that))
 			return false;
 		return Objects.equals(userText, that.userText) && Objects.equals(dataList, that.dataList)
-				&& Objects.equals(chatResponse, that.chatResponse);
+				&& Objects.equals(responseContent, that.responseContent);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(userText, dataList, chatResponse);
+		return Objects.hash(userText, dataList, responseContent);
 	}
 
 }

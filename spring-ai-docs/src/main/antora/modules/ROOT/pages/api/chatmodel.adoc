@@ -74,35 +74,39 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 ==== Message
 
-The `Message` interface encapsulates a textual message, a collection of attributes as a `Map`, and a categorization known as `MessageType`. The interface is defined as follows:
+The `Message` interface encapsulates a Prompt textual content and a collection of metadata attributes and a categorization known as `MessageType`.
 
-[source,java]
-----
-public interface Message extends Node<String> {
-
-   String getContent();
-
-   List<Media> getMedia();
-
-   MessageType getMessageType();
-}
-----
-
-
-and the Node interface is
+The interface is defined as follows:
 
 ```java
+public interface Content {
 
-public interface Node<T> {
+	String getContent();
 
-    T getContent();
+	Map<String, Object> getMetadata();
+}
 
-    Map<String, Object> getMetadata();
+public interface Message extends Content {
+
+	MessageType getMessageType();
 }
 ```
 
-The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process.
-Some models, like OpenAI's chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.
+The multimodal message types implement also the `MediaContent` interface providing a list of `Media` content objects.
+
+```java
+public interface MediaContent extends Content {
+
+	Collection<Media> getMedia();
+
+}
+```
+
+The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process:
+
+image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
+
+The chat completion endpoint, distinguish between message categories based on conversational roles, effectively mapped by the `MessageType`.
 
 For instance, OpenAI recognizes message categories for distinct conversational roles such as `system`,`user`, `function` or `assistant`.
 
@@ -193,7 +197,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 * xref:api/chat/openai-chat.adoc[OpenAI Chat Completion] (streaming & function-calling support)
 * xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming & function-calling support)
 * xref:api/chat/ollama-chat.adoc[Ollama Chat Completion]
-* xref:api/chat/huggingface.adoc[HuggingFace Chat Completion] (no streaming support)
+* xref:api/chat/huggingface.adoc[Hugging Face Chat Completion] (no streaming support)
 * xref:api/chat/vertexai-palm2-chat.adoc[Google Vertex AI PaLM2 Chat Completion] (no streaming support)
 * xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/bedrock.adoc[Amazon Bedrock]

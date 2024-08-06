@@ -15,15 +15,22 @@
  */
 package org.springframework.ai.autoconfigure.ollama;
 
+import java.util.List;
+
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestClient;
 
@@ -38,6 +45,7 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
 		OllamaConnectionProperties.class })
+@ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
 public class OllamaAutoConfiguration {
 
 	@Bean
@@ -56,8 +64,10 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties) {
-		return new OllamaChatModel(ollamaApi, properties.getOptions());
+	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+
+		return new OllamaChatModel(ollamaApi, properties.getOptions(), functionCallbackContext, toolFunctionCallbacks);
 	}
 
 	@Bean
@@ -69,7 +79,7 @@ public class OllamaAutoConfiguration {
 		return new OllamaEmbeddingModel(ollamaApi, properties.getOptions());
 	}
 
-	private static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
+	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
 
 		private final OllamaConnectionProperties properties;
 
@@ -82,6 +92,14 @@ public class OllamaAutoConfiguration {
 			return this.properties.getBaseUrl();
 		}
 
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

@@ -30,7 +30,7 @@ public class RelevancyEvaluator implements Evaluator {
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
 
-		var response = doGetResponse(evaluationRequest);
+		var response = evaluationRequest.getResponseContent();
 		var context = doGetSupportingData(evaluationRequest);
 
 		String evaluationResponse = this.chatClientBuilder.build()
@@ -50,10 +50,6 @@ public class RelevancyEvaluator implements Evaluator {
 		}
 
 		return new EvaluationResponse(passing, score, "", Collections.emptyMap());
-	}
-
-	protected String doGetResponse(EvaluationRequest evaluationRequest) {
-		return evaluationRequest.getChatResponse().getResult().getOutput().getContent();
 	}
 
 	protected String doGetSupportingData(EvaluationRequest evaluationRequest) {

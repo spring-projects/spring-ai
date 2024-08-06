@@ -23,7 +23,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.messages.FunctionMessage;
 
 import java.util.List;
 
@@ -52,14 +51,6 @@ public class MessageToPromptConverterTest {
 		Message assistantMessage = new AssistantMessage("Assistant message");
 		String expected = "Assistant message";
 		Assert.assertEquals(expected, converter.messageToString(assistantMessage));
-	}
-
-	@Disabled
-	public void testFunctionMessageType() {
-		Message functionMessage = new FunctionMessage("Function message");
-		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-			converter.messageToString(functionMessage);
-		});
 	}
 
 	@Test
@@ -103,14 +94,6 @@ public class MessageToPromptConverterTest {
 		List<Message> messages = List.of(new UserMessage("User message"));
 		String expected = "User message";
 		Assert.assertEquals(expected, converter.toPrompt(messages));
-	}
-
-	@Disabled
-	public void testUnsupportedMessageType() {
-		List<Message> messages = List.of(new FunctionMessage("Unsupported message"));
-		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-			converter.toPrompt(messages);
-		});
 	}
 
 }

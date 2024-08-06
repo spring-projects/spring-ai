@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.autoconfigure.anthropic;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,19 +25,17 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.anthropic.AnthropicChatModel;
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
 public class AnthropicAutoConfigurationIT {
@@ -44,11 +44,10 @@ public class AnthropicAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(AnthropicAutoConfiguration.class));
 
 	@Test
-	void generate() {
+	void call() {
 		contextRunner.run(context -> {
 			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 			String response = chatModel.call("Hello");
@@ -58,7 +57,21 @@ public class AnthropicAutoConfigurationIT {
 	}
 
 	@Test
-	void generateStreaming() {
+	void callWith8KResponseContext() {
+		contextRunner
+			.withPropertyValues("spring.ai.anthropic.beta-version=" + AnthropicApi.BETA_MAX_TOKENS,
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+			.run(context -> {
+				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+				var optoins = AnthropicChatOptions.builder().withMaxTokens(8192).build();
+				var response = chatModel.call(new Prompt("Tell me a joke", optoins));
+				assertThat(response.getResult().getOutput().getContent()).isNotEmpty();
+				logger.info("Response: " + response);
+			});
+	}
+
+	@Test
+	void stream() {
 		contextRunner.run(context -> {
 			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));

@@ -58,6 +58,7 @@ public class BedrockLlamaChatAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnBean(LlamaChatBedrockApi.class)
 	public BedrockLlamaChatModel llamaChatModel(LlamaChatBedrockApi llamaApi, BedrockLlamaChatProperties properties) {
 

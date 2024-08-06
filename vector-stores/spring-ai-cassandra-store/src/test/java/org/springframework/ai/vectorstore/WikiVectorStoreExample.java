@@ -119,7 +119,7 @@ class WikiVectorStoreExample {
 				})
 				.build();
 
-			return new CassandraVectorStore(conf, embeddingModel());
+			return CassandraVectorStore.create(conf, embeddingModel());
 		}
 
 		@Bean

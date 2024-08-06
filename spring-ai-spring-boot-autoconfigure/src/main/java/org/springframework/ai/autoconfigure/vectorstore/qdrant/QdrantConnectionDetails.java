@@ -26,4 +26,6 @@ public interface QdrantConnectionDetails extends ConnectionDetails {
 
 	int getPort();
 
+	String getApiKey();
+
 }

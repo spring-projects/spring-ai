@@ -14,40 +14,7 @@ Before ChatGPT, many people were fascinated by text-to-image generation models s
 
 The following table categorizes several models based on their input and output types:
 
-[cols=3*, options=header]
-|===
-|Input
-|Output
-|Examples
-
-|Language/Code/Images (Multi-Modal)
-|Language/Code
-|GPT4 - OpenAI, Google Gemini
-
-|Language/Code
-|Language/Code
-|GPT 3.5 - OpenAI-Azure OpenAI, Google Bard, Meta Llama
-
-|Language
-|Image
-|Dall-E - OpenAI + Azure, Deep AI
-
-|Language/Image
-|Image
-|Midjourney, Stable Diffusion, RunwayML
-
-|Language
-|Audio
-|OpenAI, Azure OpenAI
-
-|Audio
-|Language
-|OpenAI, Azure OpenAI
-
-|Text
-|Numbers
-|Many (AKA embeddings)
-|===
+image::spring-ai-concepts-model-types.jpg[Model types, width=600, align="center"]
 
 Spring AI currently supports models that process input and output as language, image, and audio.
 The last row in the previous table, which accepts text as input and outputs numbers, is more commonly known as embedding text and represents the internal data structures used in an AI model.
@@ -103,8 +70,16 @@ Initially starting as simple strings, prompts have evolved to include multiple m
 
 == Embeddings
 
-Embeddings transform text into numerical arrays or vectors, enabling AI models to process and interpret language data.
-This transformation from text to numbers and back is a key element in how AI interacts with and understands human language.
+Embeddings are numerical representations of text, images, or videos that capture relationships between inputs.
+
+Embeddings work by converting text, image, and video into arrays of floating point numbers, called vectors.
+These vectors are designed to capture the meaning of the text, images, and videos.
+The length of the embedding array is called the vector's dimensionality.
+
+By calculating the numerical distance between the vector representations of two pieces of text, an application can determine the similarity between the objects used to generate the embedding vectors.
+
+image::spring-ai-embeddings.jpg[Embeddings, width=900, align="center"]
+
 As a Java developer exploring AI, it's not necessary to comprehend the intricate mathematical theories or the specific implementations behind these vector representations.
 A basic understanding of their role and function within AI systems suffices, particularly when you're integrating AI functionalities into your applications.
 
@@ -121,10 +96,11 @@ You can think of this semantic space as a vector.
 Tokens serve as the building blocks of how an AI model works.
 On input, models convert words to tokens. On output, they convert tokens back to words.
 
-In English, one token roughly corresponds to 75% of a word. For reference, Shakespeare's complete works, totaling around 900,000 words, translates to approximately 1.2 million tokens.
+In English, one token roughly corresponds to 75% of a word. For reference, Shakespeare's complete works, totaling around 900,000 words, translate to approximately 1.2 million tokens.
+
+image::spring-ai-concepts-tokens.png[Tokens, width=600, align="center"]
 
 Perhaps more important is that Tokens = Money.
-
 In the context of hosted AI models, your charges are determined by the number of tokens used. Both input and output contribute to the overall token count.
 
 Also, models are subject to token limits, which restrict the amount of text processed in a single API call.
@@ -139,7 +115,7 @@ The Spring AI project helps you with this task.
 == Structured Output
 
 The output of AI models traditionally arrives as a `java.lang.String`, even if you ask for the reply to be in JSON.
-It may be the correct JSON, but it is not a JSON data structure. It is just a string.
+It may be a correct JSON, but it is not a JSON data structure. It is just a string.
 Also, asking "`for JSON`" as part of the prompt is not 100% accurate.
 
 This intricacy has led to the emergence of a specialized field involving the creation of prompts to yield the intended output, followed by converting the resulting simple string into a usable data structure for application integration.
@@ -193,13 +169,13 @@ This is the reason to use a vector database. It is very good at finding similar 
 
 image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 
-* The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from the data sources and stor it in a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
-* The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability to your application.
+* The xref::api/etl-pipeline.adoc[ETL pipeline] provides further information about orchestrating the flow of extracting data from data sources and storing it in a structured vector store, ensuring data is in the optimal format for retrieval when passing it to the AI model.
+* The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` advisor to enable the RAG capability in your application.
 
 [[concept-fc]]
 === Function Calling
 
-Large Language Models (LLMs) are frozen after training, leading to stale knowledge and they are unable to access or modify external data.
+Large Language Models (LLMs) are frozen after training, leading to stale knowledge, and they are unable to access or modify external data.
 
 The xref::api/functions.adoc[Function Calling] mechanism addresses these shortcomings.
 It allows you to register your own functions to connect the large language models to the APIs of external systems.
@@ -212,12 +188,12 @@ Additionally, you can define and reference multiple functions in a single prompt
 
 image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
 
-* (1) perform a chat request along with a function definition information.
-Later provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
+* (1) perform a chat request sending along function definition information.
+The later provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
 * (2) when the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
 * (3) Spring AI handles this conversation for you.
-It dispatches the function call to the appropriate function and returns the result to the model (4).
-Model can perform multiple function calls to retrieve all the information it needs.
+It dispatches the function call to the appropriate function and returns the result to the model.
+* (4) Model can perform multiple function calls to retrieve all the information it needs.
 * (5) once all information needed is acquired, the Model will generate a response.
 
 Follow the xref::api/functions.adoc[Function Calling] documentation for further information on how to use this feature with different AI models.

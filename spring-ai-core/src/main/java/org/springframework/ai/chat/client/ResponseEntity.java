@@ -22,6 +22,8 @@ package org.springframework.ai.chat.client;
  *
  * @param <R> the entire response type.
  * @param <E> the converted entity type.
+ * @param response the entire response object.
+ * @param entity the converted entity object.
  * @author Christian Tzolov
  * @since 1.0.0
  */

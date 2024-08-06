@@ -44,7 +44,7 @@ public class ChatClientAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.chat.options.model=gpt-4-turbo")
+				"spring.ai.openai.chat.options.model=gpt-4o")
 		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class, ChatClientAutoConfiguration.class));
 

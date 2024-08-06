@@ -14,7 +14,7 @@ Dropping down to access model specific features is also supported.
 
 image::model-hierarchy.jpg[Model hierarchy, width=900, align="center"]
 
-With support for AI Models from OpenAI, Microsoft, Amazon, Google, Amazon Bedrock, Huggingface and more.
+With support for AI Models from OpenAI, Microsoft, Amazon, Google, Amazon Bedrock, Hugging Face and more.
 
 image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 

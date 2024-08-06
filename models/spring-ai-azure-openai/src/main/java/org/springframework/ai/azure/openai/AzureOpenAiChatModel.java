@@ -15,14 +15,53 @@
  */
 package org.springframework.ai.azure.openai;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.springframework.ai.azure.openai.metadata.AzureOpenAiUsage;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
 import com.azure.ai.openai.models.ChatCompletions;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolCall;
 import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinition;
+import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
+import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsToolCall;
 import com.azure.ai.openai.models.ChatCompletionsToolDefinition;
+import com.azure.ai.openai.models.ChatMessageContentItem;
+import com.azure.ai.openai.models.ChatMessageImageContentItem;
+import com.azure.ai.openai.models.ChatMessageImageUrl;
+import com.azure.ai.openai.models.ChatMessageTextContentItem;
 import com.azure.ai.openai.models.ChatRequestAssistantMessage;
 import com.azure.ai.openai.models.ChatRequestMessage;
 import com.azure.ai.openai.models.ChatRequestSystemMessage;
@@ -32,38 +71,11 @@ import com.azure.ai.openai.models.CompletionsFinishReason;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.FunctionCall;
 import com.azure.ai.openai.models.FunctionDefinition;
-import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
-import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
 import com.azure.core.util.BinaryData;
 import com.azure.core.util.IterableStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiChatResponseMetadata;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.PromptMetadata;
-import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.AbstractFunctionCallSupport;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import reactor.core.publisher.Mono;
 
 /**
  * {@link ChatModel} implementation for {@literal Microsoft Azure AI} backed by
@@ -74,28 +86,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author John Blum
  * @author Christian Tzolov
  * @author Grogdunn
+ * @author Benoit Moussaud
+ * @author luocongqiu
+ * @author timostark
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  */
-public class AzureOpenAiChatModel
-		extends AbstractFunctionCallSupport<ChatRequestMessage, ChatCompletionsOptions, ChatCompletions>
-		implements ChatModel, StreamingChatModel {
+public class AzureOpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-35-turbo";
+	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
 	private static final Float DEFAULT_TEMPERATURE = 0.7f;
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
-	/**
-	 * The configuration information for a chat completions request.
-	 */
-	private AzureOpenAiChatOptions defaultOptions;
 
 	/**
 	 * The {@link OpenAIClient} used to interact with the Azure OpenAI service.
 	 */
 	private final OpenAIClient openAIClient;
+
+	/**
+	 * The configuration information for a chat completions request.
+	 */
+	private AzureOpenAiChatOptions defaultOptions;
 
 	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient) {
 		this(microsoftOpenAiClient,
@@ -111,22 +122,16 @@ public class AzureOpenAiChatModel
 
 	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
 			FunctionCallbackContext functionCallbackContext) {
-		super(functionCallbackContext);
+		this(microsoftOpenAiClient, options, functionCallbackContext, List.of());
+	}
+
+	public AzureOpenAiChatModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiChatOptions options,
+			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks) {
+		super(functionCallbackContext, options, toolFunctionCallbacks);
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
 		this.defaultOptions = options;
-	}
-
-	/**
-	 * @deprecated since 0.8.0, use
-	 * {@link #AzureOpenAiChatModel(OpenAIClient, AzureOpenAiChatOptions)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "0.8.0")
-	public AzureOpenAiChatModel withDefaultOptions(AzureOpenAiChatOptions defaultOptions) {
-		Assert.notNull(defaultOptions, "DefaultOptions must not be null");
-		this.defaultOptions = defaultOptions;
-		return this;
 	}
 
 	public AzureOpenAiChatOptions getDefaultOptions() {
@@ -139,20 +144,18 @@ public class AzureOpenAiChatModel
 		ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 		options.setStream(false);
 
-		logger.trace("Azure ChatCompletionsOptions: {}", options);
-		ChatCompletions chatCompletions = this.callWithFunctionSupport(options);
-		logger.trace("Azure ChatCompletions: {}", chatCompletions);
+		ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
 
-		List<Generation> generations = chatCompletions.getChoices()
-			.stream()
-			.map(choice -> new Generation(choice.getMessage().getContent())
-				.withGenerationMetadata(generateChoiceMetadata(choice)))
-			.toList();
+		ChatResponse chatResponse = toChatResponse(chatCompletions);
 
-		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
+		if (isToolCall(chatResponse, Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
+			var toolCallConversation = handleToolCalls(prompt, chatResponse);
+			// Recursively call the call method with the tool call message
+			// conversation that contains the call responses.
+			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+		}
 
-		return new ChatResponse(generations,
-				AzureOpenAiChatResponseMetadata.from(chatCompletions, promptFilterMetadata));
+		return chatResponse;
 	}
 
 	@Override
@@ -164,13 +167,11 @@ public class AzureOpenAiChatModel
 		IterableStream<ChatCompletions> chatCompletionsStream = this.openAIClient
 			.getChatCompletionsStream(options.getModel(), options);
 
-		Flux<ChatCompletions> chatCompletionsFlux = Flux.fromIterable(chatCompletionsStream);
-
 		final var isFunctionCall = new AtomicBoolean(false);
-		final var accessibleChatCompletionsFlux = chatCompletionsFlux
+		final Flux<ChatCompletions> accessibleChatCompletionsFlux = Flux.fromIterable(chatCompletionsStream)
 			// Note: the first chat completions can be ignored when using Azure OpenAI
 			// service which is a known service bug.
-			.skip(1)
+			.filter(chatCompletions -> !CollectionUtils.isEmpty(chatCompletions.getChoices()))
 			.map(chatCompletions -> {
 				final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
 				isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
@@ -190,16 +191,71 @@ public class AzureOpenAiChatModel
 				return List.of(reduce);
 			})
 			.flatMap(mono -> mono);
-		return accessibleChatCompletionsFlux
-			.switchMap(accessibleChatCompletions -> handleFunctionCallOrReturnStream(options,
-					Flux.just(accessibleChatCompletions)))
-			.flatMapIterable(ChatCompletions::getChoices)
-			.map(choice -> {
-				var content = Optional.ofNullable(choice.getMessage()).orElse(choice.getDelta()).getContent();
-				var generation = new Generation(content).withGenerationMetadata(generateChoiceMetadata(choice));
-				return new ChatResponse(List.of(generation));
-			});
 
+		return accessibleChatCompletionsFlux.switchMap(chatCompletions -> {
+
+			ChatResponse chatResponse = toChatResponse(chatCompletions);
+
+			if (isToolCall(chatResponse, Set.of(String.valueOf(CompletionsFinishReason.TOOL_CALLS).toLowerCase()))) {
+				var toolCallConversation = handleToolCalls(prompt, chatResponse);
+				// Recursively call the call method with the tool call message
+				// conversation that contains the call responses.
+				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+			}
+
+			return Mono.just(chatResponse);
+		});
+	}
+
+	private ChatResponse toChatResponse(ChatCompletions chatCompletions) {
+
+		List<Generation> generations = nullSafeList(chatCompletions.getChoices()).stream().map(choice -> {
+			// @formatter:off
+			Map<String, Object> metadata = Map.of(
+				"id", chatCompletions.getId() != null ? chatCompletions.getId() : "",
+				"choiceIndex", choice.getIndex(),
+				"finishReason", choice.getFinishReason() != null ? String.valueOf(choice.getFinishReason()) : "");
+			// @formatter:on
+			return buildGeneration(choice, metadata);
+		}).toList();
+
+		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
+
+		return new ChatResponse(generations, from(chatCompletions, promptFilterMetadata));
+	}
+
+	private Generation buildGeneration(ChatChoice choice, Map<String, Object> metadata) {
+
+		var responseMessage = Optional.ofNullable(choice.getMessage()).orElse(choice.getDelta());
+
+		List<AssistantMessage.ToolCall> toolCalls = responseMessage.getToolCalls() == null ? List.of()
+				: responseMessage.getToolCalls().stream().map(toolCall -> {
+					final var tc1 = (ChatCompletionsFunctionToolCall) toolCall;
+					String id = tc1.getId();
+					String name = tc1.getFunction().getName();
+					String arguments = tc1.getFunction().getArguments();
+					return new AssistantMessage.ToolCall(id, "function", name, arguments);
+				}).toList();
+
+		var assistantMessage = new AssistantMessage(responseMessage.getContent(), metadata, toolCalls);
+		var generationMetadata = generateChoiceMetadata(choice);
+
+		return new Generation(assistantMessage, generationMetadata);
+	}
+
+	public static ChatResponseMetadata from(ChatCompletions chatCompletions, PromptMetadata promptFilterMetadata) {
+		Assert.notNull(chatCompletions, "Azure OpenAI ChatCompletions must not be null");
+		String id = chatCompletions.getId();
+		Usage usage = (chatCompletions.getUsage() != null) ? AzureOpenAiUsage.from(chatCompletions) : new EmptyUsage();
+		ChatResponseMetadata chatResponseMetadata = ChatResponseMetadata.builder()
+			.withId(id)
+			.withUsage(usage)
+			.withModel(chatCompletions.getModel())
+			.withPromptMetadata(promptFilterMetadata)
+			.withKeyValue("system-fingerprint", chatCompletions.getSystemFingerprint())
+			.build();
+
+		return chatResponseMetadata;
 	}
 
 	/**
@@ -212,41 +268,22 @@ public class AzureOpenAiChatModel
 		List<ChatRequestMessage> azureMessages = prompt.getInstructions()
 			.stream()
 			.map(this::fromSpringAiMessage)
+			.flatMap(List::stream)
 			.toList();
 
 		ChatCompletionsOptions options = new ChatCompletionsOptions(azureMessages);
 
-		if (this.defaultOptions != null) {
-			// JSON merge doesn't due to Azure OpenAI service bug:
-			// https://github.com/Azure/azure-sdk-for-java/issues/38183
-			// options = ModelOptionsUtils.merge(options, this.defaultOptions,
-			// ChatCompletionsOptions.class);
-			options = merge(options, this.defaultOptions);
+		options = this.merge(options, this.defaultOptions);
 
-			Set<String> defaultEnabledFunctions = this.handleFunctionCallbackConfigurations(this.defaultOptions,
-					!IS_RUNTIME_CALL);
-			functionsForThisRequest.addAll(defaultEnabledFunctions);
-		}
+		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions()))
+			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				AzureOpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, AzureOpenAiChatOptions.class);
-				// JSON merge doesn't due to Azure OpenAI service bug:
-				// https://github.com/Azure/azure-sdk-for-java/issues/38183
-				// options = ModelOptionsUtils.merge(runtimeOptions, options,
-				// ChatCompletionsOptions.class);
-				options = merge(updatedRuntimeOptions, options);
+			AzureOpenAiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, AzureOpenAiChatOptions.class);
+			options = this.merge(updatedRuntimeOptions, options);
 
-				Set<String> promptEnabledFunctions = this.handleFunctionCallbackConfigurations(updatedRuntimeOptions,
-						IS_RUNTIME_CALL);
-				functionsForThisRequest.addAll(promptEnabledFunctions);
-
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatCompletionsOptions:"
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
@@ -274,19 +311,57 @@ public class AzureOpenAiChatModel
 		}).toList();
 	}
 
-	private ChatRequestMessage fromSpringAiMessage(Message message) {
+	private List<ChatRequestMessage> fromSpringAiMessage(Message message) {
 
 		switch (message.getMessageType()) {
 			case USER:
-				return new ChatRequestUserMessage(message.getContent());
+				// https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/README.md#text-completions-with-images
+				List<ChatMessageContentItem> items = new ArrayList<>();
+				items.add(new ChatMessageTextContentItem(message.getContent()));
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						items.addAll(userMessage.getMedia()
+							.stream()
+							.map(media -> new ChatMessageImageContentItem(
+									new ChatMessageImageUrl(media.getData().toString())))
+							.toList());
+					}
+				}
+				return List.of(new ChatRequestUserMessage(items));
 			case SYSTEM:
-				return new ChatRequestSystemMessage(message.getContent());
-			case ASSISTANT:
-				return new ChatRequestAssistantMessage(message.getContent());
+				return List.of(new ChatRequestSystemMessage(message.getContent()));
+			case ASSISTANT: {
+				AssistantMessage assistantMessage = (AssistantMessage) message;
+				List<ChatCompletionsToolCall> toolCalls = null;
+				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+						var function = new FunctionCall(toolCall.name(), toolCall.arguments());
+						return new ChatCompletionsFunctionToolCall(toolCall.id(), function);
+					})
+						.map(tc -> ((ChatCompletionsToolCall) tc)) // !!!
+						.toList();
+				}
+				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getContent());
+				azureAssistantMessage.setToolCalls(toolCalls);
+				return List.of(azureAssistantMessage);
+			}
+			case TOOL: {
+				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
+
+				toolMessage.getResponses().forEach(response -> {
+					Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id");
+					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
+				});
+
+				return toolMessage.getResponses()
+					.stream()
+					.map(tr -> new ChatRequestToolMessage(tr.responseData(), tr.id()))
+					.map(crtm -> ((ChatRequestMessage) crtm))
+					.toList();
+			}
 			default:
 				throw new IllegalArgumentException("Unknown message type " + message.getMessageType());
 		}
-
 	}
 
 	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {
@@ -433,58 +508,6 @@ public class AzureOpenAiChatModel
 	}
 
 	/**
-	 * Merges the fromOptions into the toOptions and returns a new ChatCompletionsOptions
-	 * instance.
-	 * @param fromOptions the ChatCompletionsOptions to merge from.
-	 * @param toOptions the ChatCompletionsOptions to merge to.
-	 * @return a new ChatCompletionsOptions instance.
-	 */
-	private ChatCompletionsOptions merge(ChatCompletionsOptions fromOptions, ChatCompletionsOptions toOptions) {
-
-		if (fromOptions == null) {
-			return toOptions;
-		}
-
-		ChatCompletionsOptions mergedOptions = this.copy(toOptions);
-
-		if (fromOptions.getMaxTokens() != null) {
-			mergedOptions.setMaxTokens(fromOptions.getMaxTokens());
-		}
-		if (fromOptions.getLogitBias() != null) {
-			mergedOptions.setLogitBias(fromOptions.getLogitBias());
-		}
-		if (fromOptions.getStop() != null) {
-			mergedOptions.setStop(fromOptions.getStop());
-		}
-		if (fromOptions.getTemperature() != null) {
-			mergedOptions.setTemperature(fromOptions.getTemperature());
-		}
-		if (fromOptions.getTopP() != null) {
-			mergedOptions.setTopP(fromOptions.getTopP());
-		}
-		if (fromOptions.getFrequencyPenalty() != null) {
-			mergedOptions.setFrequencyPenalty(fromOptions.getFrequencyPenalty());
-		}
-		if (fromOptions.getPresencePenalty() != null) {
-			mergedOptions.setPresencePenalty(fromOptions.getPresencePenalty());
-		}
-		if (fromOptions.getN() != null) {
-			mergedOptions.setN(fromOptions.getN());
-		}
-		if (fromOptions.getUser() != null) {
-			mergedOptions.setUser(fromOptions.getUser());
-		}
-		if (fromOptions.getModel() != null) {
-			mergedOptions.setModel(fromOptions.getModel());
-		}
-		if (fromOptions.getResponseFormat() != null) {
-			mergedOptions.setResponseFormat(fromOptions.getResponseFormat());
-		}
-
-		return mergedOptions;
-	}
-
-	/**
 	 * Copy the fromOptions into a new ChatCompletionsOptions instance.
 	 * @param fromOptions the ChatCompletionsOptions to copy from.
 	 * @return a new ChatCompletionsOptions instance.
@@ -529,83 +552,6 @@ public class AzureOpenAiChatModel
 		}
 
 		return copyOptions;
-	}
-
-	@Override
-	protected ChatCompletionsOptions doCreateToolResponseRequest(ChatCompletionsOptions previousRequest,
-			ChatRequestMessage responseMessage, List<ChatRequestMessage> conversationHistory) {
-
-		// Every tool-call item requires a separate function call and a response (TOOL)
-		// message.
-		for (ChatCompletionsToolCall toolCall : ((ChatRequestAssistantMessage) responseMessage).getToolCalls()) {
-
-			var functionName = ((ChatCompletionsFunctionToolCall) toolCall).getFunction().getName();
-			String functionArguments = ((ChatCompletionsFunctionToolCall) toolCall).getFunction().getArguments();
-
-			if (!this.functionCallbackRegister.containsKey(functionName)) {
-				throw new IllegalStateException("No function callback found for function name: " + functionName);
-			}
-
-			String functionResponse = this.functionCallbackRegister.get(functionName).call(functionArguments);
-
-			// Add the function response to the conversation.
-			conversationHistory.add(new ChatRequestToolMessage(functionResponse, toolCall.getId()));
-		}
-
-		// Recursively call chatCompletionWithTools until the model doesn't call a
-		// functions anymore.
-		ChatCompletionsOptions newRequest = new ChatCompletionsOptions(conversationHistory);
-
-		newRequest = merge(previousRequest, newRequest);
-
-		return newRequest;
-	}
-
-	@Override
-	protected List<ChatRequestMessage> doGetUserMessages(ChatCompletionsOptions request) {
-		return request.getMessages();
-	}
-
-	@Override
-	protected ChatRequestMessage doGetToolResponseMessage(ChatCompletions response) {
-		final var accessibleChatChoice = response.getChoices().get(0);
-		var responseMessage = Optional.ofNullable(accessibleChatChoice.getMessage())
-			.orElse(accessibleChatChoice.getDelta());
-		ChatRequestAssistantMessage assistantMessage = new ChatRequestAssistantMessage("");
-		final var toolCalls = responseMessage.getToolCalls();
-		assistantMessage.setToolCalls(toolCalls.stream().map(tc -> {
-			final var tc1 = (ChatCompletionsFunctionToolCall) tc;
-			var toDowncast = new ChatCompletionsFunctionToolCall(tc.getId(),
-					new FunctionCall(tc1.getFunction().getName(), tc1.getFunction().getArguments()));
-			return ((ChatCompletionsToolCall) toDowncast);
-		}).toList());
-		return assistantMessage;
-	}
-
-	@Override
-	protected ChatCompletions doChatCompletion(ChatCompletionsOptions request) {
-		return this.openAIClient.getChatCompletions(request.getModel(), request);
-	}
-
-	@Override
-	protected Flux<ChatCompletions> doChatCompletionStream(ChatCompletionsOptions request) {
-		return Flux.fromIterable(this.openAIClient.getChatCompletionsStream(request.getModel(), request));
-	}
-
-	@Override
-	protected boolean isToolFunctionCall(ChatCompletions chatCompletions) {
-
-		if (chatCompletions == null || CollectionUtils.isEmpty(chatCompletions.getChoices())) {
-			return false;
-		}
-
-		var choice = chatCompletions.getChoices().get(0);
-
-		if (choice == null || choice.getFinishReason() == null) {
-			return false;
-		}
-
-		return choice.getFinishReason() == CompletionsFinishReason.TOOL_CALLS;
 	}
 
 	/**

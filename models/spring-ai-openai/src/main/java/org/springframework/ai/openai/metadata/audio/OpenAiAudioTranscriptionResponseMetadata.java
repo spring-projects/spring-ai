@@ -15,24 +15,24 @@
  */
 package org.springframework.ai.openai.metadata.audio;
 
+import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
-import java.util.HashMap;
-
 /**
  * Audio transcription metadata implementation for {@literal OpenAI}.
  *
  * @author Michael Lavelle
- * @since 0.8.1
+ * @author Piotr Olaszewski
  * @see RateLimit
+ * @since 0.8.1
  */
-public class OpenAiAudioTranscriptionResponseMetadata extends HashMap<String, Object> implements ResponseMetadata {
+public class OpenAiAudioTranscriptionResponseMetadata extends AudioTranscriptionResponseMetadata {
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %4$s }";
 
@@ -41,14 +41,12 @@ public class OpenAiAudioTranscriptionResponseMetadata extends HashMap<String, Ob
 
 	public static OpenAiAudioTranscriptionResponseMetadata from(OpenAiAudioApi.StructuredResponse result) {
 		Assert.notNull(result, "OpenAI Transcription must not be null");
-		OpenAiAudioTranscriptionResponseMetadata transcriptionResponseMetadata = new OpenAiAudioTranscriptionResponseMetadata();
-		return transcriptionResponseMetadata;
+		return new OpenAiAudioTranscriptionResponseMetadata();
 	}
 
 	public static OpenAiAudioTranscriptionResponseMetadata from(String result) {
 		Assert.notNull(result, "OpenAI Transcription must not be null");
-		OpenAiAudioTranscriptionResponseMetadata transcriptionResponseMetadata = new OpenAiAudioTranscriptionResponseMetadata();
-		return transcriptionResponseMetadata;
+		return new OpenAiAudioTranscriptionResponseMetadata();
 	}
 
 	@Nullable

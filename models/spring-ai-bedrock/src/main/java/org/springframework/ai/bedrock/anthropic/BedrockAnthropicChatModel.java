@@ -103,15 +103,9 @@ public class BedrockAnthropicChatModel implements ChatModel, StreamingChatModel 
 		}
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, AnthropicChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, AnthropicChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			AnthropicChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, AnthropicChatOptions.class);
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, AnthropicChatRequest.class);
 		}
 
 		return request;

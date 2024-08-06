@@ -15,23 +15,21 @@
  */
 package org.springframework.ai.azure.openai;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
+import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -43,7 +41,17 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.util.MimeTypeUtils;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
@@ -51,11 +59,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 class AzureOpenAiChatModelIT {
 
+	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelIT.class);
+
 	@Autowired
 	private AzureOpenAiChatModel chatModel;
-
-	record ActorsFilms(String actor, List<String> movies) {
-	}
 
 	@Test
 	void roleTest() {
@@ -130,9 +137,6 @@ class AzureOpenAiChatModelIT {
 		assertThat(actorsFilms.actor()).isNotNull();
 	}
 
-	record ActorsFilmsRecord(String actor, List<String> movies) {
-	}
-
 	@Test
 	void beanOutputConverterRecords() {
 
@@ -148,7 +152,7 @@ class AzureOpenAiChatModelIT {
 		Generation generation = chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -178,9 +182,34 @@ class AzureOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputParser.convert(generationTextFromStream);
-		System.out.println(actorsFilms);
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void multiModalityImageUrl() throws IOException {
+
+		// TODO: add url method that wrapps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
+
+		// @formatter:off
+		String response = ChatClient.create(chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info(response);
+		assertThat(response).contains("bananas", "apple");
+		assertThat(response).containsAnyOf("bowl", "basket");
+	}
+
+	record ActorsFilms(String actor, List<String> movies) {
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@SpringBootConfiguration
@@ -190,13 +219,15 @@ class AzureOpenAiChatModelIT {
 		public OpenAIClient openAIClient() {
 			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
 				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
+				.httpLogOptions(new HttpLogOptions().setLogLevel(BODY_AND_HEADERS))
 				.buildClient();
 		}
 
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiChatModel(openAIClient,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-35-turbo").withMaxTokens(200).build());
+					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
 
 		}
 

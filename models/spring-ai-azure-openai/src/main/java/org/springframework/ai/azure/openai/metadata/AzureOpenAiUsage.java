@@ -22,7 +22,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;
 
 /**
- * {@link Usage} implementation for {@literal Microsoft Azure OpenAI Service}.
+ * {@link Usage} implementation for {@literal Microsoft Azure OpenAI Service} chat.
  *
  * @author John Blum
  * @see com.azure.ai.openai.models.CompletionsUsage

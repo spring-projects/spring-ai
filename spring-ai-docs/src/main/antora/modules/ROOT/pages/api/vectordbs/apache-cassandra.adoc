@@ -20,13 +20,10 @@ This Spring AI Vector Store is designed to work for both brand-new RAG applicati
 The store can also be used for non-RAG use-cases in an existing database, e.g. semantic searches, geo-proximity searches, etc.
 
 
-The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
-
-NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
-
-
-
 The store will automatically create, or enhance, the schema as needed according to its configuration.  If you don't want the schema modifications, configure the store with `disallowSchemaChanges`.
+
+When using spring-boot-autoconfigure `disallowSchemaChanges` defaults to true, per Spring Boot standards, and you must opt-in to schema creation/modifications by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
 
 == What is JVector ?
 
@@ -68,7 +65,7 @@ Add these dependencies to your project:
 </dependency>
 ----
 
-* Or, for everything you need in a RAG application (using the default ONNX Embedding Client)
+* Or, for everything you need in a RAG application (using the default ONNX Embedding Model)
 
 [source,xml]
 ----
@@ -80,6 +77,24 @@ Add these dependencies to your project:
 
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Configuration Properties
+
+You can use the following properties in your Spring Boot configuration to customize the Apache Cassandra vector store.
+
+|===
+|Property|Default value
+
+|`spring.ai.vectorstore.cassandra.keyspace`|springframework
+|`spring.ai.vectorstore.cassandra.table`|ai_vector_store
+|`spring.ai.vectorstore.cassandra.initialze-schema`|false
+|`spring.ai.vectorstore.cassandra.index-name`|
+|`spring.ai.vectorstore.cassandra.content-column-name`|content
+|`spring.ai.vectorstore.cassandra.embedding-column-name`|embedding
+|`spring.ai.vectorstore.cassandra.return-embeddings`|false
+|`spring.ai.vectorstore.cassandra.fixed-thread-pool-executor-size`|16
+|===
+
 
 
 == Usage

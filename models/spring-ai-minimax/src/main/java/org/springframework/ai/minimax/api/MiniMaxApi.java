@@ -19,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -41,15 +41,15 @@ import java.util.function.Predicate;
 
 // @formatter:off
 /**
- * Single class implementation of the MiniMax Chat Completion API: https://www.minimaxi.com/document/guides/chat-model/V2 and
- * MiniMax Embedding API: https://www.minimaxi.com/document/guides/Embeddings.
+ * Single class implementation of the <a href="https://www.minimaxi.com/document/guides/chat-model/V2">MiniMax Chat Completion API</a> and
+ * <a href="https://www.minimaxi.com/document/guides/Embeddings">MiniMax Embedding API</a>.
  *
  * @author Geng Rong
  * @since 1.0.0 M1
  */
 public class MiniMaxApi {
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.ABAB_5_5_Chat.getValue();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.ABAB_6_5_G_Chat.getValue();
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.Embo_01.getValue();
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -63,7 +63,7 @@ public class MiniMaxApi {
 	 * @param miniMaxToken MiniMax apiKey.
 	 */
 	public MiniMaxApi(String miniMaxToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, miniMaxToken);
+		this(MiniMaxApiConstants.DEFAULT_BASE_URL, miniMaxToken);
 	}
 
 	/**
@@ -113,10 +113,16 @@ public class MiniMaxApi {
 	 * MiniMax Chat Completion Models:
 	 * <a href="https://www.minimaxi.com/document/algorithm-concept">MiniMax Model</a>.
 	 */
-	public enum ChatModel implements ModelDescription {
-		ABAB_6_Chat("abab6-chat"),
+	public enum ChatModel implements ChatModelDescription {
+		ABAB_6_5_Chat("abab6.5-chat"),
+		ABAB_6_5_S_Chat("abab6.5s-chat"),
+		ABAB_6_5_T_Chat("abab6.5t-chat"),
+		ABAB_6_5_G_Chat("abab6.5g-chat"),
 		ABAB_5_5_Chat("abab5.5-chat"),
-		ABAB_5_5_S_Chat("abab5.5s-chat");
+		ABAB_5_5_S_Chat("abab5.5s-chat"),
+
+		@Deprecated(since = "1.0.0-M2", forRemoval = true) // Replaced by ABAB_6_5_S_Chat
+		ABAB_6_Chat("abab6-chat");
 
 		public final String  value;
 
@@ -129,7 +135,7 @@ public class MiniMaxApi {
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.value;
 		}
 	}
@@ -408,8 +414,7 @@ public class MiniMaxApi {
 		 * @param type Content  type, each can be of type text or image_url.
 		 * @param text The text content of the message.
 		 * @param imageUrl The image content of the message. You can pass multiple
-		 * images by adding multiple image_url content parts. Image input is only
-		 * supported when using the glm-4v model.
+		 * images by adding multiple image_url content parts.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record MediaContent(

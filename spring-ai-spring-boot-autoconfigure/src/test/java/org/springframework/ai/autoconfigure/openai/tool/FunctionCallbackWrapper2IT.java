@@ -15,26 +15,24 @@
  */
 package org.springframework.ai.autoconfigure.openai.tool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackWrapper2IT {
@@ -42,19 +40,16 @@ public class FunctionCallbackWrapper2IT {
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWrapperIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, OpenAiAutoConfiguration.class))
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
+				"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
+		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
-		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
-					"spring.ai.openai.chat.options.temperature=0.1")
-			.run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			ChatClient chatClient = ChatClient.builder(chatModel)
@@ -67,22 +62,17 @@ public class FunctionCallbackWrapper2IT {
 				.call().content();
 			// @formatter:on
 
-				logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
-				assertThat(content).containsAnyOf("30.0", "30");
-				assertThat(content).containsAnyOf("15.0", "15");
-				assertThat(content).containsAnyOf("10", "10");
-			});
+			assertThat(content).contains("30", "10", "15");
+		});
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4-turbo",
-					"spring.ai.openai.chat.options.temperature=0.1")
-			.run(context -> {
+		contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
@@ -92,12 +82,10 @@ public class FunctionCallbackWrapper2IT {
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-				logger.info("Response: {}", content);
+			logger.info("Response: {}", content);
 
-				assertThat(content).containsAnyOf("30.0", "30");
-				assertThat(content).containsAnyOf("10.0", "10");
-				assertThat(content).containsAnyOf("15.0", "15");
-			});
+			assertThat(content).contains("30", "10", "15");
+		});
 	}
 
 	@Configuration

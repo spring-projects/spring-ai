@@ -26,7 +26,7 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Client.
+Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -52,7 +52,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 ==== Retry Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Embedding client.
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Embedding model.
 
 [cols="3,5,1"]
 |====
@@ -75,9 +75,14 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.base-url   | The URL to connect to |  +https://api.openai.com+
 | spring.ai.openai.api-key    | The API Key           |  -
+| spring.ai.openai.organization-id | Optionally you can specify which organization  used for an API request. |  -
+| spring.ai.openai.project-id      | Optionally, you can specify which project is used for an API request. |  -
 |====
+
+TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request. 
+Usage from these API requests will count as usage for the specified organization and project.
 
 ==== Configuration Properties
 
@@ -89,7 +94,10 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 
 | spring.ai.openai.embedding.enabled | Enable OpenAI embedding model.  | true
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
+| spring.ai.openai.chat.embeddings-path   | The path to append to the base-url  |  `/v1/embeddings`
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
+| spring.ai.openai.embedding.organization-id | Optionally you can specify which organization  used for an API request. |  -
+| spring.ai.openai.embedding.project-id      | Optionally, you can specify which project is used for an API request. |  -
 | spring.ai.openai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
 | spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-ada-002 (other options: text-embedding-3-large, text-embedding-3-small)
 | spring.ai.openai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
@@ -157,7 +165,7 @@ public class EmbeddingController {
 
 == Manual Configuration
 
-If you are not using Spring Boot, you can manually configure the OpenAI Embedding Client.
+If you are not using Spring Boot, you can manually configure the OpenAI Embedding Model.
 For this add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
 [source, xml]
 ----

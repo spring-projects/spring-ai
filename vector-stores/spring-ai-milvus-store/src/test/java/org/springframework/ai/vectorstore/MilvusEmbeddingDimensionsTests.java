@@ -16,8 +16,11 @@
 package org.springframework.ai.vectorstore;
 
 import io.milvus.client.MilvusServiceClient;
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
@@ -32,6 +36,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
+ * @author Jiwoo Kim
  */
 @ExtendWith(MockitoExtension.class)
 public class MilvusEmbeddingDimensionsTests {
@@ -82,6 +87,18 @@ public class MilvusEmbeddingDimensionsTests {
 
 		assertThat(dim).isEqualTo(MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
 		verify(embeddingModel, only()).dimensions();
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = { 0, 32769 })
+	public void invalidDimensionsThrowException(final int explicitDimensions) {
+		// when
+		ThrowableAssert.ThrowingCallable actual = () -> MilvusVectorStoreConfig.builder()
+			.withEmbeddingDimension(explicitDimensions)
+			.build();
+
+		// then
+		assertThatThrownBy(actual).isInstanceOf(IllegalArgumentException.class);
 	}
 
 }

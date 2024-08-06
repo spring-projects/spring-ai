@@ -15,21 +15,19 @@
  */
 package org.springframework.ai.huggingface.client;
 
-import org.junit.jupiter.api.Disabled;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.huggingface.HuggingfaceChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.huggingface.HuggingfaceChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Disabled("Until a valid inference endpoint is available for the provided HUGGINGFACE_API_KEY ")
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "HUGGINGFACE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUGGINGFACE_CHAT_URL", matches = ".+")
 public class ClientIT {
 
 	@Autowired
@@ -49,16 +47,14 @@ public class ClientIT {
 		ChatResponse chatResponse = huggingfaceChatModel.call(prompt);
 		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
 		String expectedResponse = """
-				```json
 				{
-				    "name": "John",
-				    "lastname": "Smith",
-				    "address": "#1 Samuel St."
-				}
-				```""";
+				  "name": "John",
+				  "lastname": "Smith",
+				  "address": "#1 Samuel St."
+				}""";
 		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo(expectedResponse);
 		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsKey("generated_tokens");
-		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsEntry("generated_tokens", 39);
+		assertThat(chatResponse.getResult().getOutput().getMetadata()).containsEntry("generated_tokens", 32);
 
 	}
 

@@ -23,7 +23,7 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatResponse;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.AnthropicChatStreamingResponse;
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.ai.model.ModelDescription;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -437,7 +437,7 @@ public class Anthropic3ChatBedrockApi extends
 	/**
 	 * Anthropic models version.
 	 */
-	public enum AnthropicChatModel implements ModelDescription {
+	public enum AnthropicChatModel implements ChatModelDescription {
 
 		/**
 		 * anthropic.claude-instant-v1
@@ -462,7 +462,11 @@ public class Anthropic3ChatBedrockApi extends
 		/**
 		 * anthropic.claude-3-opus-20240229-v1:0
 		 */
-		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0");
+		CLAUDE_V3_OPUS("anthropic.claude-3-opus-20240229-v1:0"),
+		/**
+		 * anthropic.claude-3-5-sonnet-20240620-v1:0
+		 */
+		CLAUDE_V3_5_SONNET("anthropic.claude-3-5-sonnet-20240620-v1:0");
 
 		private final String id;
 
@@ -478,7 +482,7 @@ public class Anthropic3ChatBedrockApi extends
 		}
 
 		@Override
-		public String getModelName() {
+		public String getName() {
 			return this.id;
 		}
 

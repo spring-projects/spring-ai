@@ -100,15 +100,9 @@ public class BedrockCohereChatModel implements ChatModel, StreamingChatModel {
 			.build();
 
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ChatOptions runtimeOptions) {
-				BedrockCohereChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-						ChatOptions.class, BedrockCohereChatOptions.class);
-				request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, CohereChatRequest.class);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type ChatOptions: "
-						+ prompt.getOptions().getClass().getSimpleName());
-			}
+			BedrockCohereChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+					ChatOptions.class, BedrockCohereChatOptions.class);
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, CohereChatRequest.class);
 		}
 
 		return request;

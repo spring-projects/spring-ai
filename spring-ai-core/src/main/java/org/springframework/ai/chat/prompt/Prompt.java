@@ -17,22 +17,29 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.FunctionMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelRequest;
 
+/**
+ * The Prompt class represents a prompt used in AI model requests. A prompt consists of
+ * one or more messages and additional chat options.
+ *
+ * @author Mark Pollack
+ * @author luocongqiu
+ */
 public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	private ChatOptions modelOptions;
+	private ChatOptions chatOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -46,17 +53,17 @@ public class Prompt implements ModelRequest<List<Message>> {
 		this.messages = messages;
 	}
 
-	public Prompt(String contents, ChatOptions modelOptions) {
-		this(new UserMessage(contents), modelOptions);
+	public Prompt(String contents, ChatOptions chatOptions) {
+		this(new UserMessage(contents), chatOptions);
 	}
 
-	public Prompt(Message message, ChatOptions modelOptions) {
-		this(Collections.singletonList(message), modelOptions);
+	public Prompt(Message message, ChatOptions chatOptions) {
+		this(Collections.singletonList(message), chatOptions);
 	}
 
-	public Prompt(List<Message> messages, ChatOptions modelOptions) {
+	public Prompt(List<Message> messages, ChatOptions chatOptions) {
 		this.messages = messages;
-		this.modelOptions = modelOptions;
+		this.chatOptions = chatOptions;
 	}
 
 	public String getContents() {
@@ -68,8 +75,8 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
-	public ModelOptions getOptions() {
-		return this.modelOptions;
+	public ChatOptions getOptions() {
+		return this.chatOptions;
 	}
 
 	@Override
@@ -79,7 +86,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	@Override
 	public String toString() {
-		return "Prompt{" + "messages=" + this.messages + ", modelOptions=" + this.modelOptions + '}';
+		return "Prompt{" + "messages=" + this.messages + ", modelOptions=" + this.chatOptions + '}';
 	}
 
 	@Override
@@ -88,32 +95,35 @@ public class Prompt implements ModelRequest<List<Message>> {
 			return true;
 		if (!(o instanceof Prompt prompt))
 			return false;
-		return Objects.equals(this.messages, prompt.messages) && Objects.equals(this.modelOptions, prompt.modelOptions);
+		return Objects.equals(this.messages, prompt.messages) && Objects.equals(this.chatOptions, prompt.chatOptions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.messages, this.modelOptions);
+		return Objects.hash(this.messages, this.chatOptions);
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), this.modelOptions);
+		return new Prompt(instructionsCopy(), this.chatOptions);
 	}
 
 	private List<Message> instructionsCopy() {
 		List<Message> messagesCopy = new ArrayList<>();
 		this.messages.forEach(message -> {
-			if (message instanceof UserMessage) {
-				messagesCopy.add(new UserMessage(message.getContent(), message.getMedia(), message.getMetadata()));
+			if (message instanceof UserMessage userMessage) {
+				messagesCopy
+					.add(new UserMessage(userMessage.getContent(), userMessage.getMedia(), message.getMetadata()));
 			}
-			else if (message instanceof SystemMessage) {
-				messagesCopy.add(new SystemMessage(message.getContent()));
+			else if (message instanceof SystemMessage systemMessage) {
+				messagesCopy.add(new SystemMessage(systemMessage.getContent()));
 			}
-			else if (message instanceof AssistantMessage) {
-				messagesCopy.add(new AssistantMessage(message.getContent(), message.getMetadata()));
+			else if (message instanceof AssistantMessage assistantMessage) {
+				messagesCopy.add(new AssistantMessage(assistantMessage.getContent(), assistantMessage.getMetadata(),
+						assistantMessage.getToolCalls()));
 			}
-			else if (message instanceof FunctionMessage) {
-				messagesCopy.add(new FunctionMessage(message.getContent(), message.getMetadata()));
+			else if (message instanceof ToolResponseMessage toolResponseMessage) {
+				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
+						new HashMap<>(toolResponseMessage.getMetadata())));
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getClass().getName());

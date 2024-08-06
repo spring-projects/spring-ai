@@ -467,6 +467,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		return true;
 	}
 
+	@Override
+	public MiniMaxChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static MiniMaxChatOptions fromOptions(MiniMaxChatOptions fromOptions) {
 		return builder().withModel(fromOptions.getModel())
 			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())

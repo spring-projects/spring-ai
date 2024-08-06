@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -87,6 +88,11 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 
 		public Builder withModel(String model) {
 			this.options.model = model;
+			return this;
+		}
+
+		public Builder withModel(AnthropicApi.ChatModel model) {
+			this.options.model = model.getValue();
 			return this;
 		}
 
@@ -221,6 +227,11 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	public void setFunctions(Set<String> functions) {
 		Assert.notNull(functions, "Function must not be null");
 		this.functions = functions;
+	}
+
+	@Override
+	public AnthropicChatOptions copy() {
+		return fromOptions(this);
 	}
 
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {

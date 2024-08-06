@@ -15,21 +15,19 @@
  */
 package org.springframework.ai.autoconfigure.vertexai.palm2;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vertexai.palm2.VertexAiPaLm2ChatModel;
 import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 // NOTE: works only with US location. Use VPN if you are outside US.
 @EnabledIfEnvironmentVariable(named = "PALM_API_KEY", matches = ".*")
@@ -42,8 +40,7 @@ public class VertexAiPaLm2AutoConfigurationIT {
 				"spring.ai.vertex.ai.apiKey=" + System.getenv("PALM_API_KEY"),
 				"spring.ai.vertex.ai.chat.model=chat-bison-001", "spring.ai.vertex.ai.chat.options.temperature=0.8",
 				"spring.ai.vertex.ai.embedding.model=embedding-gecko-001")
-		.withConfiguration(
-				AutoConfigurations.of(RestClientAutoConfiguration.class, VertexAiPalm2AutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(VertexAiPalm2AutoConfiguration.class));
 
 	@Test
 	void generate() {

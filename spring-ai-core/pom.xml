@@ -46,8 +46,8 @@
 		<!-- production dependencies -->
 		<dependency>
 			<groupId>org.antlr</groupId>
-			<artifactId>stringtemplate</artifactId>
-			<version>${stringtemplate.version}</version>
+			<artifactId>ST4</artifactId>
+			<version>${ST4.version}</version>
 		</dependency>
 
 		<dependency>
@@ -72,6 +72,16 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-messaging</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
 		</dependency>
 
 		<dependency>

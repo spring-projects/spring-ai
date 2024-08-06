@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,18 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.chroma;
 
-import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @ConfigurationProperties(ChromaVectorStoreProperties.CONFIG_PREFIX)
 public class ChromaVectorStoreProperties extends CommonVectorStoreProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.chroma.store";
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.chroma";
 
 	private String collectionName = ChromaVectorStore.DEFAULT_COLLECTION_NAME;
 

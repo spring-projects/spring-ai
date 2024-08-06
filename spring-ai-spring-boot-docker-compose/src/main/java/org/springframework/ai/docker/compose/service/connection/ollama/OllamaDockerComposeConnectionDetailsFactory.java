@@ -23,7 +23,7 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-public class OllamaDockerComposeConnectionDetailsFactory
+class OllamaDockerComposeConnectionDetailsFactory
 		extends DockerComposeConnectionDetailsFactory<OllamaConnectionDetails> {
 
 	private static final int OLLAMA_PORT = 11434;

@@ -23,12 +23,17 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
 import reactor.core.publisher.Flux;
 
 /**
@@ -36,7 +41,7 @@ import reactor.core.publisher.Flux;
  * user text.
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
@@ -56,7 +61,9 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	private final SearchRequest searchRequest;
 
-	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+
+	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
 		this(vectorStore, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE);
@@ -93,8 +100,12 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 		// 1. Advise the system text.
 		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
 
+		var searchRequestToUse = SearchRequest.from(this.searchRequest)
+			.withQuery(request.userText())
+			.withFilterExpression(doGetFilterExpression(context));
+
 		// 2. Search for similar documents in the vector store.
-		List<Document> documents = vectorStore.similaritySearch(searchRequest.withQuery(request.userText()));
+		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
@@ -117,16 +128,28 @@ public class QuestionAnswerAdvisor implements RequestResponseAdvisor {
 
 	@Override
 	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		response.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-		return response;
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(response);
+		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+		return chatResponseBuilder.build();
 	}
 
 	@Override
 	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
 		return fluxResponse.map(cr -> {
-			cr.getMetadata().put(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-			return cr;
+			ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(cr);
+			chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
+			return chatResponseBuilder.build();
 		});
+	}
+
+	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
+
+		if (!context.containsKey(FILTER_EXPRESSION)
+				|| !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
+			return this.searchRequest.getFilterExpression();
+		}
+		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
+
 	}
 
 }

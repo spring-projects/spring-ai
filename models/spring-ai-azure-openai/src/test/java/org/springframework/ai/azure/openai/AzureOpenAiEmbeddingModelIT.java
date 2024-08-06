@@ -22,7 +22,7 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -75,7 +75,8 @@ class AzureOpenAiEmbeddingModelIT {
 
 		@Bean
 		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiEmbeddingModel(openAIClient);
+			return new AzureOpenAiEmbeddingModel(openAIClient, MetadataMode.EMBED,
+					AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build());
 		}
 
 	}

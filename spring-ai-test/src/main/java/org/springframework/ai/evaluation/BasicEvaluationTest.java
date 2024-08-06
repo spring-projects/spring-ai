@@ -52,9 +52,9 @@ public class BasicEvaluationTest {
 	@Value("classpath:/prompts/spring/test/evaluation/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
 
-	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
-		assertThat(response).isNotNull();
-		String answer = response.getResult().getOutput().getContent();
+	protected void evaluateQuestionAndAnswer(String question, String answer, boolean factBased) {
+		assertThat(question).isNotNull();
+		assertThat(answer).isNotNull();
 		logger.info("Question: " + question);
 		logger.info("Answer:" + answer);
 		PromptTemplate userPromptTemplate = new PromptTemplate(userEvaluatorResource,

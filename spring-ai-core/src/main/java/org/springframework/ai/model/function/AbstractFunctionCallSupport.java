@@ -29,7 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Christian Tzolov
  * @author Grogdunn
+ * @deprecated since 1.0.0-M1 in favor of
+ * {@link org.springframework.ai.chat.model.AbstractToolCallSupport}
  */
+@Deprecated(since = "1.0.0-M2", forRemoval = true)
 public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 	protected final static boolean IS_RUNTIME_CALL = true;
@@ -136,9 +139,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 		// The chat completion tool call requires the complete conversation
 		// history. Including the initial user message.
-		List<Msg> conversationHistory = new ArrayList<>();
-
-		conversationHistory.addAll(this.doGetUserMessages(request));
+		List<Msg> conversationHistory = new ArrayList<>(this.doGetUserMessages(request));
 
 		Msg responseMessage = this.doGetToolResponseMessage(response);
 
@@ -164,9 +165,7 @@ public abstract class AbstractFunctionCallSupport<Msg, Req, Resp> {
 
 			// The chat completion tool call requires the complete conversation
 			// history. Including the initial user message.
-			List<Msg> conversationHistory = new ArrayList<>();
-
-			conversationHistory.addAll(this.doGetUserMessages(request));
+			List<Msg> conversationHistory = new ArrayList<>(this.doGetUserMessages(request));
 
 			Msg responseMessage = this.doGetToolResponseMessage(resp);
 

@@ -23,7 +23,7 @@ import org.springframework.boot.docker.compose.service.connection.DockerComposeC
 /**
  * @author Eddú Meléndez
  */
-public class ChromaDockerComposeConnectionDetailsFactory
+class ChromaDockerComposeConnectionDetailsFactory
 		extends DockerComposeConnectionDetailsFactory<ChromaConnectionDetails> {
 
 	private static final String[] CHROMA_IMAGE_NAMES = { "chromadb/chroma", "ghcr.io/chroma-core/chroma" };
@@ -45,12 +45,15 @@ public class ChromaDockerComposeConnectionDetailsFactory
 	static class ChromaDockerComposeConnectionDetails extends DockerComposeConnectionDetails
 			implements ChromaConnectionDetails {
 
+		private final ChromaEnvironment environment;
+
 		private final String host;
 
 		private final int port;
 
 		ChromaDockerComposeConnectionDetails(RunningService service) {
 			super(service);
+			this.environment = new ChromaEnvironment(service.env());
 			this.host = service.host();
 			this.port = service.ports().get(CHROMA_PORT);
 		}
@@ -63,6 +66,11 @@ public class ChromaDockerComposeConnectionDetailsFactory
 		@Override
 		public int getPort() {
 			return this.port;
+		}
+
+		@Override
+		public String getKeyToken() {
+			return this.environment.getKeyToken();
 		}
 
 	}

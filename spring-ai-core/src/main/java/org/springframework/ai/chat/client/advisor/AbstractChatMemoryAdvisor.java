@@ -24,6 +24,7 @@ import org.springframework.util.Assert;
 /**
  * Abstract class that serves as a base for chat memory advisors.
  *
+ * @param <T> the type of the chat memory.
  * @author Christian Tzolov
  * @since 1.0.0 M1
  */

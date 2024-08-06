@@ -19,7 +19,7 @@ package org.springframework.ai.chat.client;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -30,8 +30,19 @@ import org.springframework.ai.model.function.FunctionCallback;
  * ChatClient's call method
  *
  * @author Christian Tzolov
- * @since 1.0.0 M1
- *
+ * @since 1.0.0
+ * @param chatModel the chat model used
+ * @param userText the text provided by the user
+ * @param systemText the text provided by the system
+ * @param chatOptions the options for the chat
+ * @param media the list of media items
+ * @param functionNames the list of function names
+ * @param functionCallbacks the list of function callbacks
+ * @param messages the list of messages
+ * @param userParams the map of user parameters
+ * @param systemParams the map of system parameters
+ * @param advisors the list of request response advisors
+ * @param advisorParams the map of advisor parameters
  */
 public record AdvisedRequest(ChatModel chatModel, String userText, String systemText, ChatOptions chatOptions,
 		List<Media> media, List<String> functionNames, List<FunctionCallback> functionCallbacks, List<Message> messages,

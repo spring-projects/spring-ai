@@ -16,17 +16,21 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.api.ApiUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -49,11 +53,11 @@ public class OpenAiAudioApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create an new audio api.
+	 * Create a new audio api.
 	 * @param openAiToken OpenAI apiKey.
 	 */
 	public OpenAiAudioApi(String openAiToken) {
-		this(ApiUtils.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
+		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
@@ -79,21 +83,48 @@ public class OpenAiAudioApi {
 	/**
 	 * Create an new chat completion api.
 	 * @param baseUrl api base URL.
-	 * @param openAiToken OpenAI apiKey.
+	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
+	public OpenAiAudioApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(headers -> {
-			headers.setBearerAuth(openAiToken);
-		}).defaultStatusHandler(responseErrorHandler).build();
+		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, webClientBuilder,
+				responseErrorHandler);
+	}
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(headers -> {
-			headers.setBearerAuth(openAiToken);
-		}).defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken)).build();
+	/**
+	 * Create an new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiAudioApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+
+		// @formatter:off
+		this.restClient = restClientBuilder
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setBearerAuth(apiKey);
+				h.addAll(headers);
+			})
+			.defaultStatusHandler(responseErrorHandler).build();
+
+		this.webClient = webClientBuilder
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setBearerAuth(apiKey);
+				h.addAll(headers);
+			})
+			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey)).build();
+		// @formatter:on
 	}
 
 	/**

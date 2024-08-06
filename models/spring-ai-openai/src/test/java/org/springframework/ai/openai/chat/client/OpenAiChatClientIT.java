@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
@@ -45,12 +46,14 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@ActiveProfiles("logging-test")
 class OpenAiChatClientIT extends AbstractIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
@@ -66,6 +69,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
+				.advisors(new SimpleLoggerAdvisor())
 				.system(s -> s.text(systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
@@ -177,6 +181,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> chatResponse = ChatClient.create(chatModel)
 				.prompt()
+				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
@@ -210,9 +215,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response).containsAnyOf("30.0", "30");
-		assertThat(response).containsAnyOf("10.0", "10");
-		assertThat(response).containsAnyOf("15.0", "15");
+		assertThat(response).contains("30", "10", "15");
 	}
 
 	@Test
@@ -228,9 +231,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response).containsAnyOf("30.0", "30");
-		assertThat(response).containsAnyOf("10.0", "10");
-		assertThat(response).containsAnyOf("15.0", "15");
+		assertThat(response).contains("30", "10", "15");
 	}
 
 	@Test
@@ -247,13 +248,11 @@ class OpenAiChatClientIT extends AbstractIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).containsAnyOf("30.0", "30");
-		assertThat(content).containsAnyOf("10.0", "10");
-		assertThat(content).containsAnyOf("15.0", "15");
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -271,7 +270,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4-vision-preview", "gpt-4o" })
+	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
@@ -299,7 +298,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_VISION_PREVIEW.getValue())
+				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, url))

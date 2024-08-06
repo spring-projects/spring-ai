@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.weaviate.WeaviateContainer;
@@ -45,12 +46,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = { "spring.ai.vectorstore.weaviate.filter-field.country=TEXT",
 		"spring.ai.vectorstore.weaviate.filter-field.year=NUMBER",
 		"spring.ai.vectorstore.weaviate.filter-field.active=BOOLEAN",
-		"spring.ai.vectorstore.weaviate.filter-field.price=NUMBER" })
+		"spring.ai.vectorstore.weaviate.filter-field.price=NUMBER",
+		"spring.ai.vectorstore.weaviate.initialize-schema=true" })
 class WeaviateContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.22.4");
+	static WeaviateContainer weaviateContainer = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
+		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
 	@Autowired
 	private WeaviateVectorStoreProperties properties;

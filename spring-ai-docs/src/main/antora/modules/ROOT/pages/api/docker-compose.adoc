@@ -37,11 +37,14 @@ The following service connection factories are provided in the `spring-ai-spring
 | `OllamaConnectionDetails`
 | Containers named `ollama/ollama`
 
+| `OpenSearchConnectionDetails`
+| Containers named `opensearchproject/opensearch`
+
 | `QdrantConnectionDetails`
 | Containers named `qdrant/qdrant`
 
-| `RedisConnectionDetails`
-| Containers named `redis/redis-stack-server`
+| `TypesenseConnectionDetails`
+| Containers named `typesense/typesense`
 
 | `WeaviateConnectionDetails`
 | Containers named `semitechnologies/weaviate`, `cr.weaviate.io/semitechnologies/weaviate`

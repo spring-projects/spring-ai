@@ -1,6 +1,14 @@
 [[EmbeddingModel]]
 = Embeddings Model API
 
+Embeddings are numerical representations of text, images, or videos that capture relationships between inputs. 
+
+Embeddings work by converting text, image, and video into arrays of floating point numbers, called vectors. 
+These vectors are designed to capture the meaning of the text, images, and videos. 
+The length of the embedding array is called the vector's dimensionality. 
+
+By calculating the numerical distance between the vector representations of two pieces of text, an application can determine the similarity between the objects used to generate the embedding vectors.
+
 The `EmbeddingModel` interface is designed for straightforward integration with embedding models in AI and machine learning.
 Its primary function is to convert text into numerical vectors, commonly referred to as embeddings.
 These embeddings are crucial for various tasks such as semantic analysis and text classification.
@@ -19,9 +27,9 @@ By providing straightforward methods like `embed(String text)` and `embed(Docume
 The Embedding Model API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
 As such, the EmbeddingModel interface extends the `Model` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
 
-The Embedding API in turn is used by higher-level components to implement Embedding Clients for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
+The Embedding API in turn is used by higher-level components to implement Embedding Models for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
 
-Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Clients:
+Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Models:
 
 image:embeddings-api.jpg[title=Embeddings API,align=center,width=900]
 
@@ -157,5 +165,6 @@ Internally the various `EmbeddingModel` implementations use different low-level 
 * xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
-* xref:api/embeddings/vertexai-embeddings.adoc[Spring AI VertexAI PaLM2 Embeddings]
+* xref:api/embeddings/vertexai-embeddings-text.adoc[Spring AI VertexAI Embeddings]
+* xref:api/embeddings/vertexai-embeddings-palm2.adoc[Spring AI VertexAI PaLM2 Embeddings]
 * xref:api/embeddings/mistralai-embeddings.adoc[Spring AI Mistral AI Embeddings]

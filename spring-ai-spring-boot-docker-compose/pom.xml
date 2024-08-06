@@ -59,7 +59,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Transformers Embedding Client -->
+        <!-- Transformers Embedding Model -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-transformers</artifactId>
@@ -114,6 +114,14 @@
             <version>${project.parent.version}</version>
             <optional>true</optional>
         </dependency>
+
+		<!-- OpenSearch Vector Store-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-opensearch-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
 
         <!-- test dependencies -->
 

@@ -16,6 +16,7 @@
 package org.springframework.ai.chat.messages;
 
 import org.springframework.ai.model.Content;
+import org.springframework.ai.model.Media;
 
 /**
  * The Message interface represents a message that can be sent or received in a chat

@@ -45,7 +45,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @TestPropertySource(properties = { "spring.ai.vectorstore.milvus.metricType=COSINE",
 		"spring.ai.vectorstore.milvus.indexType=IVF_FLAT", "spring.ai.vectorstore.milvus.embeddingDimension=384",
-		"spring.ai.vectorstore.milvus.collectionName=myTestCollection" })
+		"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
+		"spring.ai.vectorstore.milvus.initialize-schema=true" })
 class MilvusContainerConnectionDetailsFactoryTest {
 
 	@Container
@@ -56,10 +57,6 @@ class MilvusContainerConnectionDetailsFactoryTest {
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
 			new Document(ResourceUtils.getText("classpath:/test/data/time.shelter.txt")), new Document(
 					ResourceUtils.getText("classpath:/test/data/great.depression.txt"), Map.of("depression", "bad")));
-
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MilvusVectorStoreAutoConfiguration.class))
-		.withUserConfiguration(Config.class);
 
 	@Autowired
 	private VectorStore vectorStore;

@@ -6,16 +6,20 @@ The `Spring AI` project aims to streamline the development of applications that 
 The project draws inspiration from notable Python projects, such as LangChain and LlamaIndex, but Spring AI is not a direct port of those projects.
 The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
 
-At its core, Spring AI provides abstractions that serve as the foundation for developing AI applications.
+At its core, Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
+
+image::spring-ai-integrationproblem.png[Integration Problem, width=300, align="center"]
+
+Spring AI provides abstractions that serve as the foundation for developing AI applications.
 These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.
 
 Spring AI provides the following features:
 
-* Support for all major Model providers such as OpenAI, Microsoft, Amazon, Google, and Huggingface.
+* Support for all major Model providers such as OpenAI, Microsoft, Amazon, Google, and Hugging Face.
 * Supported Model types are Chat, Text to Image, Audio Transcription, Text to Speech, and more on the way.
 * Portable API across AI providers for all models. Both synchronous and stream API options are supported. Dropping down to access model specific features is also supported.
 * Mapping of AI Model output to POJOs.
-* Support for all major Vector Database providers such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, Neo4j, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate.
+* Support for all major Vector Database providers such as Apache Cassandra, Azure Vector Search, Chroma, Milvus, MongoDB Atlas, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate.
 * Portable API across Vector Store providers, including a novel SQL-like metadata filter API that is also portable.
 * Function calling.
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
