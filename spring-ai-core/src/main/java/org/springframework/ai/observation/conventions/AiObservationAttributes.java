@@ -100,9 +100,9 @@ public enum AiObservationAttributes {
 	// GenAI Response
 
 	/**
-	 * Final reason the model stopped generating tokens.
+	 * Reasons the model stopped generating tokens, corresponding to each generation received.
 	 */
-	RESPONSE_FINISH_REASON("gen_ai.response.finish_reason"),
+	RESPONSE_FINISH_REASONS("gen_ai.response.finish_reasons"),
 	/**
 	 * The unique identifier for the AI response.
 	 */
