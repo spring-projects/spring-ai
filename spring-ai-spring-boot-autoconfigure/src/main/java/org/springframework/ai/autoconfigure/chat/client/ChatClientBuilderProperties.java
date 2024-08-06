@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Mark Pollack
  * @author Josh Long
  * @author Arjen Poutsma
- * @since 1.0.0 M1
+ * @since 1.0.0
  */
 @ConfigurationProperties(ChatClientBuilderProperties.CONFIG_PREFIX)
 public class ChatClientBuilderProperties {
@@ -36,12 +36,35 @@ public class ChatClientBuilderProperties {
 	 */
 	private boolean enabled = true;
 
+	private Observations observations = new Observations();
+
+	public Observations getObservations() {
+		return this.observations;
+	}
+
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public static class Observations {
+
+		/**
+		 * Whether to include the input content in the observations.
+		 */
+		private boolean includeInput = false;
+
+		public boolean isIncludeInput() {
+			return includeInput;
+		}
+
+		public void setIncludeInput(boolean includeCompletion) {
+			this.includeInput = includeCompletion;
+		}
+
 	}
 
 }

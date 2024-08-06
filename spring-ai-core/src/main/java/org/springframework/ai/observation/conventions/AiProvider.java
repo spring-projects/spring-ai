@@ -33,6 +33,7 @@ public enum AiProvider {
 	MISTRAL_AI("mistral_ai"),
 	OLLAMA("ollama"),
 	OPENAI("openai"),
+	SPRING_AI("spring_ai"),
 	VERTEX_AI("vertex_ai");
 
 	private final String value;
