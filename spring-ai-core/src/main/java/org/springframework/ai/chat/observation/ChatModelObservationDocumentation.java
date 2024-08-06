@@ -177,12 +177,13 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 		// Response
 
 		/**
-		 * Final reason the model stopped generating tokens.
+		 * Reasons the model stopped generating tokens, corresponding to each generation
+		 * received.
 		 */
-		RESPONSE_FINISH_REASON {
+		RESPONSE_FINISH_REASONS {
 			@Override
 			public String asString() {
-				return AiObservationAttributes.RESPONSE_FINISH_REASON.value();
+				return AiObservationAttributes.RESPONSE_FINISH_REASONS.value();
 			}
 		},
 
