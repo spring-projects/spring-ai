@@ -168,6 +168,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -176,6 +177,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Integer getDimensions() {
 		return this.dimensions;
 	}

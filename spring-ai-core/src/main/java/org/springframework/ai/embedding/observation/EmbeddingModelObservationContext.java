@@ -15,10 +15,12 @@
  */
 package org.springframework.ai.embedding.observation;
 
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
+import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.util.Assert;
 
 /**
@@ -29,17 +31,21 @@ import org.springframework.util.Assert;
  */
 public class EmbeddingModelObservationContext extends ModelObservationContext<EmbeddingRequest, EmbeddingResponse> {
 
-	private final EmbeddingModelRequestOptions requestOptions;
+	private final EmbeddingOptions requestOptions;
 
 	EmbeddingModelObservationContext(EmbeddingRequest embeddingRequest, AiOperationMetadata operationMetadata,
-			EmbeddingModelRequestOptions requestOptions) {
+			EmbeddingOptions requestOptions) {
 		super(embeddingRequest, operationMetadata);
 		Assert.notNull(requestOptions, "requestOptions cannot be null");
 		this.requestOptions = requestOptions;
 	}
 
-	public EmbeddingModelRequestOptions getRequestOptions() {
+	public EmbeddingOptions getRequestOptions() {
 		return requestOptions;
+	}
+
+	public String getOperationType() {
+		return AiOperationType.EMBEDDING.value();
 	}
 
 	public static Builder builder() {
@@ -52,7 +58,7 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 
 		private AiOperationMetadata operationMetadata;
 
-		private EmbeddingModelRequestOptions requestOptions;
+		private EmbeddingOptions requestOptions;
 
 		private Builder() {
 		}
@@ -67,7 +73,7 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 			return this;
 		}
 
-		public Builder requestOptions(EmbeddingModelRequestOptions requestOptions) {
+		public Builder requestOptions(EmbeddingOptions requestOptions) {
 			this.requestOptions = requestOptions;
 			return this;
 		}

@@ -79,10 +79,6 @@ public enum AiObservationAttributes {
 	 * The number of dimensions the resulting output embeddings have.
 	 */
 	REQUEST_EMBEDDING_DIMENSIONS("gen_ai.request.embedding.dimensions"),
-	/**
-	 * The format the embeddings are returned in.
-	 */
-	REQUEST_EMBEDDING_ENCODING_FORMAT("gen_ai.request.embedding.encoding_format"),
 
 	/**
 	 * The format in which the generated image is returned.

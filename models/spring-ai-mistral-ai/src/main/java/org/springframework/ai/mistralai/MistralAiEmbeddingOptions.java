@@ -22,6 +22,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * @author Ricken Bazolo
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
@@ -41,6 +42,7 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 		return new Builder();
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -55,6 +57,11 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 
 	public void setEncodingFormat(String encodingFormat) {
 		this.encodingFormat = encodingFormat;
+	}
+
+	@Override
+	public Integer getDimensions() {
+		return null;
 	}
 
 	public static class Builder {

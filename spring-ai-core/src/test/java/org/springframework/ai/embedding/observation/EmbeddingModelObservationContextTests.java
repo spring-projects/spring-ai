@@ -16,7 +16,7 @@
 package org.springframework.ai.embedding.observation;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
@@ -39,7 +39,7 @@ class EmbeddingModelObservationContextTests {
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
 			.operationMetadata(generateOperationMetadata())
-			.requestOptions(EmbeddingModelRequestOptions.builder().model("supermodel").build())
+			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("supermodel").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();
@@ -56,7 +56,7 @@ class EmbeddingModelObservationContextTests {
 	}
 
 	private EmbeddingRequest generateEmbeddingRequest() {
-		return new EmbeddingRequest(List.of(), EmbeddingOptions.EMPTY);
+		return new EmbeddingRequest(List.of(), EmbeddingOptionsBuilder.builder().build());
 	}
 
 	private AiOperationMetadata generateOperationMetadata() {

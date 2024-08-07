@@ -28,6 +28,7 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
@@ -128,6 +129,16 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
+	}
+
+	@Override
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	public Integer getDimensions() {
+		return null;
 	}
 
 }
