@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -120,17 +121,28 @@ public class OpenAiChatModelObservationIT {
 			.withStop(List.of("this-is-the-end"))
 			.withTemperature(0.7f)
 			.withTopP(1f)
+			.withStreamUsage(true)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
-		List<ChatResponse> response = chatResponseFlux.collectList().block();
-		assertThat(response).isNotEmpty();
-		// assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		List<ChatResponse> responses = chatResponseFlux.collectList().block();
+		assertThat(responses).isNotEmpty();
 
-		// ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
-		// assertThat(responseMetadata).isNotNull();
+
+		aggregatedResponse = responses.stream().map(r - r.getResult().getOutput().getContent()).collect(Collectors.joining());
+		for (int i = 0; i < responses.size() - 1; i++ ) {
+			ChatResponse chatResponse = responses.get(i);
+			System.out.println("I = " + i + " -> " + chatResponse.getResult().getOutput());
+			// String content = chatResponse.getResult().getOutput().getContent();
+			// assertThat(content).isNotEmpty().as("Response " + i + " has content: " + content);
+		}
+
+		ChatResponse lastChatResponse = responses.get(responses.size() - 1);
+
+		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
 
 		TestObservationRegistryAssert.assertThat(observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
@@ -142,8 +154,7 @@ public class OpenAiChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			// .hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
-			// responseMetadata.getModel())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
@@ -152,8 +163,7 @@ public class OpenAiChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
-			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(),
-			// responseMetadata.getId())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
 			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 			// String.valueOf(responseMetadata.getUsage().getPromptTokens()))

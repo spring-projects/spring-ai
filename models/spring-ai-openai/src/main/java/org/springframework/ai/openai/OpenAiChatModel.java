@@ -318,12 +318,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						}).toList();
 					// @formatter:on
 
-						if (chatCompletion2.usage() != null) {
-							return new ChatResponse(generations, from(chatCompletion2, null));
-						}
-						else {
-							return new ChatResponse(generations);
-						}
+						return new ChatResponse(generations, from(chatCompletion2, null));
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
