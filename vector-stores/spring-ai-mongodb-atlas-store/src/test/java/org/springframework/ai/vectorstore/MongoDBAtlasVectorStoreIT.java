@@ -200,7 +200,7 @@ class MongoDBAtlasVectorStoreIT {
 		String databaseName;
 
 		@Bean
-		public MongoCustomConversions customConversions() {
+		public MongoCustomConversions mongoCustomConversions() {
 			return new MongoCustomConversions(MimeTypeConverters.getConvertersToRegister());
 		}
 
