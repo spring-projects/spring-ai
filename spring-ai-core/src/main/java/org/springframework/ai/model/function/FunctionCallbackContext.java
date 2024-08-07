@@ -35,9 +35,9 @@ import org.springframework.util.StringUtils;
 /**
  * A Spring {@link ApplicationContextAware} implementation that provides a way to retrieve
  * a {@link Function} from the Spring context and wrap it into a {@link FunctionCallback}.
- *
+ * <p>
  * The name of the function is determined by the bean name.
- *
+ * <p>
  * The description of the function is determined by the following rules:
  * <ul>
  * <li>Provided as a default description</li>
@@ -73,7 +73,13 @@ public class FunctionCallbackContext implements ApplicationContextAware {
 					"Functional bean with name: " + beanName + " does not exist in the context.");
 		}
 
-		if (!Function.class.isAssignableFrom(FunctionTypeUtils.getRawType(beanType))) {
+		Class<?> beanClass = FunctionTypeUtils.getRawType(beanType);
+
+		if (FunctionCallback.class.isAssignableFrom(beanClass)){
+			return (FunctionCallback) applicationContext.getBean(beanName);
+		}
+
+		if (!Function.class.isAssignableFrom(beanClass)) {
 			throw new IllegalArgumentException(
 					"Function call Bean must be of type Function. Found: " + beanType.getTypeName());
 		}
