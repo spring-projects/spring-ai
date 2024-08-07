@@ -560,7 +560,8 @@ public class OpenAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {// @formatter:on
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("refusal") String refusal) {// @formatter:on
 
 		/**
 		 * Get message content as String.
@@ -582,7 +583,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
+			this(content, role, null, null, null, null);
 		}
 
 		/**
