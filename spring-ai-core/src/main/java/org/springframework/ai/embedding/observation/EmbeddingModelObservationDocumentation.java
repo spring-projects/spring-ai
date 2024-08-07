@@ -112,16 +112,6 @@ public enum EmbeddingModelObservationDocumentation implements ObservationDocumen
 			}
 		},
 
-		/**
-		 * The format the embeddings are returned in.
-		 */
-		REQUEST_EMBEDDING_ENCODING_FORMAT {
-			@Override
-			public String asString() {
-				return AiObservationAttributes.REQUEST_EMBEDDING_ENCODING_FORMAT.value();
-			}
-		},
-
 		// Usage
 
 		/**

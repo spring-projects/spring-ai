@@ -24,6 +24,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * This class represents the options for QianFan embedding.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -70,6 +71,7 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -84,6 +86,11 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	@Override
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

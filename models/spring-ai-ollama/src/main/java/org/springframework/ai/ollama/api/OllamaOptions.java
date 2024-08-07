@@ -498,6 +498,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	// -------------------
 	// Getters and Setters
 	// -------------------
+	@Override
 	public String getModel() {
 		return model;
 	}
@@ -760,6 +761,11 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 
 	public void setTruncate(Boolean truncate) {
 		this.truncate = truncate;
+	}
+
+	@Override
+	public Integer getDimensions() {
+		return null;
 	}
 
 	@Override

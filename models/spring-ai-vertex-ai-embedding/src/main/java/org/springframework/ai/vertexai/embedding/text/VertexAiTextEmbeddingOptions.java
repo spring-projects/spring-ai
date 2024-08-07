@@ -183,6 +183,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 		return this;
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -199,6 +200,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 		this.taskType = taskType;
 	}
 
+	@Override
 	public Integer getDimensions() {
 		return this.dimensions;
 	}

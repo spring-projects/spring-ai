@@ -24,6 +24,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * This class represents the options for MiniMax embedding.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -59,12 +60,18 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	@Override
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

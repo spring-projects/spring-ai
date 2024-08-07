@@ -24,6 +24,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Wei Jiang
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
@@ -60,6 +61,16 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 
 	public void setInputType(InputType inputType) {
 		this.inputType = inputType;
+	}
+
+	@Override
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

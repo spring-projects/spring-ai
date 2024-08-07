@@ -22,7 +22,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -89,12 +89,12 @@ class EmbeddingModelMeterObservationHandlerTests {
 		return EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
 			.operationMetadata(generateOperationMetadata())
-			.requestOptions(EmbeddingModelRequestOptions.builder().model("mistral").build())
+			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 	}
 
 	private EmbeddingRequest generateEmbeddingRequest() {
-		return new EmbeddingRequest(List.of(), EmbeddingOptions.EMPTY);
+		return new EmbeddingRequest(List.of(), EmbeddingOptionsBuilder.builder().build());
 	}
 
 	private AiOperationMetadata generateOperationMetadata() {
