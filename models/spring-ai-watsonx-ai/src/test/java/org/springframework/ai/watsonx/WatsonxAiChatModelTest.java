@@ -32,9 +32,9 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
-import org.springframework.ai.watsonx.api.WatsonxAiRequest;
-import org.springframework.ai.watsonx.api.WatsonxAiResponse;
-import org.springframework.ai.watsonx.api.WatsonxAiResults;
+import org.springframework.ai.watsonx.api.WatsonxAiChatRequest;
+import org.springframework.ai.watsonx.api.WatsonxAiChatResponse;
+import org.springframework.ai.watsonx.api.WatsonxAiChatResults;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ public class WatsonxAiChatModelTest {
 		Prompt prompt = new Prompt("Test message", options);
 
 		Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-			WatsonxAiRequest request = chatModel.request(prompt);
+			WatsonxAiChatRequest request = chatModel.request(prompt);
 		});
 	}
 
@@ -71,7 +71,7 @@ public class WatsonxAiChatModelTest {
 			.build();
 		Prompt prompt = new Prompt(msg, modelOptions);
 
-		WatsonxAiRequest request = chatModel.request(prompt);
+		WatsonxAiChatRequest request = chatModel.request(prompt);
 
 		Assert.assertEquals(request.getModelId(), "meta-llama/llama-2-70b-chat");
 		assertThat(request.getParameters().get("decoding_method")).isEqualTo("greedy");
@@ -105,7 +105,7 @@ public class WatsonxAiChatModelTest {
 
 		Prompt prompt = new Prompt(msg, modelOptions);
 
-		WatsonxAiRequest request = chatModel.request(prompt);
+		WatsonxAiChatRequest request = chatModel.request(prompt);
 
 		Assert.assertEquals(request.getModelId(), "meta-llama/llama-2-70b-chat");
 		assertThat(request.getParameters().get("decoding_method")).isEqualTo("sample");
@@ -139,7 +139,7 @@ public class WatsonxAiChatModelTest {
 
 		Prompt prompt = new Prompt(msg, modelOptions);
 
-		WatsonxAiRequest request = chatModel.request(prompt);
+		WatsonxAiChatRequest request = chatModel.request(prompt);
 
 		Assert.assertEquals(request.getModelId(), "meta-llama/llama-2-70b-chat");
 		assertThat(request.getInput()).isEqualTo(msg);
@@ -164,12 +164,13 @@ public class WatsonxAiChatModelTest {
 
 		WatsonxAiChatOptions parameters = WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build();
 
-		WatsonxAiResults fakeResults = new WatsonxAiResults("LLM response", 4, 3, "max_tokens");
+		WatsonxAiChatResults fakeResults = new WatsonxAiChatResults("LLM response", 4, 3, "max_tokens");
 
-		WatsonxAiResponse fakeResponse = new WatsonxAiResponse("google/flan-ul2", new Date(), List.of(fakeResults),
+		WatsonxAiChatResponse fakeResponse = new WatsonxAiChatResponse("google/flan-ul2", new Date(),
+				List.of(fakeResults),
 				Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))));
 
-		when(mockChatApi.generate(any(WatsonxAiRequest.class)))
+		when(mockChatApi.generate(any(WatsonxAiChatRequest.class)))
 			.thenReturn(ResponseEntity.of(Optional.of(fakeResponse)));
 
 		Generation expectedGenerator = new Generation("LLM response")
@@ -193,17 +194,17 @@ public class WatsonxAiChatModelTest {
 
 		WatsonxAiChatOptions parameters = WatsonxAiChatOptions.builder().withModel("google/flan-ul2").build();
 
-		WatsonxAiResults fakeResultsFirst = new WatsonxAiResults("LLM resp", 0, 0, "max_tokens");
-		WatsonxAiResults fakeResultsSecond = new WatsonxAiResults("onse", 4, 3, "not_finished");
+		WatsonxAiChatResults fakeResultsFirst = new WatsonxAiChatResults("LLM resp", 0, 0, "max_tokens");
+		WatsonxAiChatResults fakeResultsSecond = new WatsonxAiChatResults("onse", 4, 3, "not_finished");
 
-		WatsonxAiResponse fakeResponseFirst = new WatsonxAiResponse("google/flan-ul2", new Date(),
+		WatsonxAiChatResponse fakeResponseFirst = new WatsonxAiChatResponse("google/flan-ul2", new Date(),
 				List.of(fakeResultsFirst),
 				Map.of("warnings", List.of(Map.of("message", "the message", "id", "disclaimer_warning"))));
-		WatsonxAiResponse fakeResponseSecond = new WatsonxAiResponse("google/flan-ul2", new Date(),
+		WatsonxAiChatResponse fakeResponseSecond = new WatsonxAiChatResponse("google/flan-ul2", new Date(),
 				List.of(fakeResultsSecond), null);
 
-		Flux<WatsonxAiResponse> fakeResponse = Flux.just(fakeResponseFirst, fakeResponseSecond);
-		when(mockChatApi.generateStreaming(any(WatsonxAiRequest.class))).thenReturn(fakeResponse);
+		Flux<WatsonxAiChatResponse> fakeResponse = Flux.just(fakeResponseFirst, fakeResponseSecond);
+		when(mockChatApi.generateStreaming(any(WatsonxAiChatRequest.class))).thenReturn(fakeResponse);
 
 		Generation firstGen = new Generation("LLM resp")
 			.withGenerationMetadata(ChatGenerationMetadata.from("max_tokens",
