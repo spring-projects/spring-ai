@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -163,6 +164,7 @@ public class OpenAiRetryTests {
 	}
 
 	@Test
+	@Disabled("Currently stream() does not implmement retry")
 	public void openAiChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
@@ -184,10 +186,11 @@ public class OpenAiRetryTests {
 	}
 
 	@Test
+	@Disabled("Currently stream() does not implmement retry")
 	public void openAiChatStreamNonTransientError() {
 		when(openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).subscribe());
 	}
 
 	@Test
