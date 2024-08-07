@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.testutils;
 
 import java.util.List;
@@ -28,9 +29,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -49,6 +52,9 @@ public abstract class AbstractIT {
 	protected StreamingChatModel streamingChatModel;
 
 	@Autowired
+	protected OpenAiChatModel openAiChatModel;
+
+	@Autowired
 	protected OpenAiAudioTranscriptionModel transcriptionModel;
 
 	@Autowired
@@ -56,6 +62,9 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected ImageModel imageModel;
+
+	@Autowired
+	protected EmbeddingModel embeddingModel;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-accurate-answer.st")
 	protected Resource qaEvaluatorAccurateAnswerResource;

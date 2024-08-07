@@ -29,7 +29,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.ContentBlockType;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.Tool;
@@ -117,7 +117,7 @@ public class AnthropicApiToolIT {
 		List<ContentBlock> toolToUseList = response.getBody()
 			.content()
 			.stream()
-			.filter(c -> c.type() == ContentBlock.ContentBlockType.TOOL_USE)
+			.filter(c -> c.type() == ContentBlock.Type.TOOL_USE)
 			.toList();
 
 		if (CollectionUtils.isEmpty(toolToUseList)) {
@@ -146,7 +146,7 @@ public class AnthropicApiToolIT {
 
 			logger.info("Function response : " + content);
 
-			toolResults.add(new ContentBlock(ContentBlockType.TOOL_RESULT, id, content));
+			toolResults.add(new ContentBlock(Type.TOOL_RESULT, id, content));
 		}
 
 		// Add function response message to the conversation history

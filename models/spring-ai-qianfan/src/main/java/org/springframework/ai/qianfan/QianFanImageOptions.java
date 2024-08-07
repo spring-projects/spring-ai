@@ -164,16 +164,17 @@ public class QianFanImageOptions implements ImageOptions {
 		return this.height;
 	}
 
-	@Override
-	public String getResponseFormat() {
-		return null;
-	}
-
 	public void setHeight(Integer height) {
 		this.height = height;
 		this.size = this.width + "x" + this.height;
 	}
 
+	@Override
+	public String getResponseFormat() {
+		return null;
+	}
+
+	@Override
 	public String getStyle() {
 		return this.style;
 	}
@@ -190,16 +191,15 @@ public class QianFanImageOptions implements ImageOptions {
 		this.user = user;
 	}
 
-	public void setSize(String size) {
-		this.size = size;
-	}
-
 	public String getSize() {
-
 		if (this.size != null) {
 			return this.size;
 		}
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
+	}
+
+	public void setSize(String size) {
+		this.size = size;
 	}
 
 	@Override

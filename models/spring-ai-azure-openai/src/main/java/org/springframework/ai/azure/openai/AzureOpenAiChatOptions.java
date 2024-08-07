@@ -378,6 +378,11 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		this.responseFormat = responseFormat;
 	}
 
+	@Override
+	public AzureOpenAiChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
 		return builder().withDeploymentName(fromOptions.getDeploymentName())
 			.withFrequencyPenalty(

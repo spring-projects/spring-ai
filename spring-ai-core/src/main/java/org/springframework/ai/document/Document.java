@@ -15,30 +15,33 @@
  */
 package org.springframework.ai.document;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.springframework.ai.chat.messages.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.model.Content;
+import org.springframework.ai.model.Media;
+import org.springframework.ai.model.MediaContent;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A document is a container for the content and metadata of a document. It also contains
  * the document's unique ID and an optional embedding.
  */
 @JsonIgnoreProperties({ "contentFormatter" })
-public class Document implements Content {
+public class Document implements MediaContent {
 
 	public final static ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
+
+	public final static String EMPTY_TEXT = "";
 
 	/**
 	 * Unique ID
@@ -54,9 +57,9 @@ public class Document implements Content {
 	/**
 	 * Document content.
 	 */
-	private String content;
+	private final String content;
 
-	private List<Media> media;
+	private final Collection<Media> media;
 
 	/**
 	 * Embedding of the document. Note: ephemeral field.
@@ -79,7 +82,7 @@ public class Document implements Content {
 		this(content, metadata, new RandomIdGenerator());
 	}
 
-	public Document(String content, List<Media> media, Map<String, Object> metadata) {
+	public Document(String content, Collection<Media> media, Map<String, Object> metadata) {
 		this(new RandomIdGenerator().generateId(content, metadata), content, media, metadata);
 	}
 
@@ -91,15 +94,83 @@ public class Document implements Content {
 		this(id, content, List.of(), metadata);
 	}
 
-	public Document(String id, String content, List<Media> media, Map<String, Object> metadata) {
+	public Document(String id, String content, Collection<Media> media, Map<String, Object> metadata) {
 		Assert.hasText(id, "id must not be null or empty");
-		Assert.hasText(content, "content must not be null or empty");
+		Assert.notNull(content, "content must not be null");
 		Assert.notNull(metadata, "metadata must not be null");
 
 		this.id = id;
 		this.content = content;
 		this.media = media;
 		this.metadata = metadata;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String id;
+
+		private String content = Document.EMPTY_TEXT;
+
+		private List<Media> media = new ArrayList<>();
+
+		private Map<String, Object> metadata = new HashMap<>();
+
+		private IdGenerator idGenerator = new RandomIdGenerator();
+
+		public Builder withIdGenerator(IdGenerator idGenerator) {
+			Assert.notNull(idGenerator, "idGenerator must not be null");
+			this.idGenerator = idGenerator;
+			return this;
+		}
+
+		public Builder withId(String id) {
+			Assert.hasText(id, "id must not be null or empty");
+			this.id = id;
+			return this;
+		}
+
+		public Builder withContent(String content) {
+			Assert.notNull(content, "content must not be null");
+			this.content = content;
+			return this;
+		}
+
+		public Builder withMedia(List<Media> media) {
+			Assert.notNull(media, "media must not be null");
+			this.media = media;
+			return this;
+		}
+
+		public Builder withMedia(Media media) {
+			Assert.notNull(media, "media must not be null");
+			this.media.add(media);
+			return this;
+		}
+
+		public Builder withMetadata(Map<String, Object> metadata) {
+			Assert.notNull(metadata, "metadata must not be null");
+			this.metadata = metadata;
+			return this;
+		}
+
+		public Builder withMetadata(String key, Object value) {
+			Assert.notNull(key, "key must not be null");
+			Assert.notNull(value, "value must not be null");
+			this.metadata.put(key, value);
+			return this;
+		}
+
+		public Document build() {
+			if (!StringUtils.hasText(this.id)) {
+				this.id = this.idGenerator.generateId(content, metadata);
+			}
+			return new Document(id, content, media, metadata);
+		}
+
 	}
 
 	public String getId() {
@@ -112,7 +183,7 @@ public class Document implements Content {
 	}
 
 	@Override
-	public List<Media> getMedia(String... dummy) {
+	public Collection<Media> getMedia() {
 		return this.media;
 	}
 

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisedRequest;
@@ -140,8 +141,13 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 				var metadata = new HashMap<>(message.getMetadata() != null ? message.getMetadata() : new HashMap<>());
 				metadata.put(DOCUMENT_METADATA_CONVERSATION_ID, conversationId);
 				metadata.put(DOCUMENT_METADATA_MESSAGE_TYPE, message.getMessageType().name());
-				var doc = new Document(message.getContent(), metadata);
-				return doc;
+				if (message instanceof UserMessage userMessage) {
+					return new Document(userMessage.getContent(), userMessage.getMedia(), metadata);
+				}
+				else if (message instanceof AssistantMessage assistantMessage) {
+					return new Document(assistantMessage.getContent(), metadata);
+				}
+				throw new RuntimeException("Unknown message type: " + message.getMessageType());
 			})
 			.toList();
 

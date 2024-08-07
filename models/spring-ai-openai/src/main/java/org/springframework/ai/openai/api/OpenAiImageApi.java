@@ -16,17 +16,20 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.util.api.ApiUtils;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * OpenAI Image API.
@@ -60,17 +63,36 @@ public class OpenAiImageApi {
 	/**
 	 * Create a new OpenAI Image API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
-	 * @param openAiToken OpenAI apiKey.
+	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param responseErrorHandler the response error handler to use.
 	 */
-	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
+	public OpenAiImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, responseErrorHandler);
+	}
 
+	/**
+	 * Create a new OpenAI Image API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder the rest client builder to use.
+	 * @param responseErrorHandler the response error handler to use.
+	 */
+	public OpenAiImageApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		// @formatter:off
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(openAiToken))
+			.defaultHeaders(h -> {
+				h.setBearerAuth(apiKey);
+				h.setContentType(MediaType.APPLICATION_JSON);
+				h.addAll(headers);
+			})
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
+		// @formatter:on
 	}
 
 	/**

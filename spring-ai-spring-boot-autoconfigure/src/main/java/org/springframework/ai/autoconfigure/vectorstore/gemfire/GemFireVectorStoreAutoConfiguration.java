@@ -57,7 +57,7 @@ public class GemFireVectorStoreAutoConfiguration {
 			.setVectorSimilarityFunction(properties.getVectorSimilarityFunction())
 			.setFields(properties.getFields())
 			.setSslEnabled(properties.isSslEnabled());
-		return new GemFireVectorStore(config, embeddingModel);
+		return new GemFireVectorStore(config, embeddingModel, properties.isInitializeSchema());
 	}
 
 	private static class PropertiesGemFireConnectionDetails implements GemFireConnectionDetails {

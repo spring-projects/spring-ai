@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.neo4j;
 
-import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.Neo4jVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -290,6 +290,11 @@ public class QianFanChatOptions implements ChatOptions {
 		return true;
 	}
 
+	@Override
+	public QianFanChatOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static QianFanChatOptions fromOptions(QianFanChatOptions fromOptions) {
 		return QianFanChatOptions.builder()
 			.withModel(fromOptions.getModel())

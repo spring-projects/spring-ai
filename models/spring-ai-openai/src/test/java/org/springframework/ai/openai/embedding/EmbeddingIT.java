@@ -17,10 +17,13 @@ package org.springframework.ai.openai.embedding;
 
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -28,8 +31,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-class EmbeddingIT {
+@SpringBootTest(classes = OpenAiTestConfiguration.class)
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+class EmbeddingIT extends AbstractIT {
 
 	@Autowired
 	private OpenAiEmbeddingModel embeddingModel;
@@ -42,9 +46,9 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-ada-002");
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-ada-002");
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
 		assertThat(embeddingModel.dimensions()).isEqualTo(1536);
 	}
@@ -57,9 +61,9 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(3072);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-3-large");
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-3-large");
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
 		// assertThat(embeddingModel.dimensions()).isEqualTo(3072);
 	}
@@ -73,9 +77,9 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
 
-		assertThat(embeddingResponse.getMetadata()).containsEntry("model", "text-embedding-3-small");
-		assertThat(embeddingResponse.getMetadata()).containsEntry("total-tokens", 2);
-		assertThat(embeddingResponse.getMetadata()).containsEntry("prompt-tokens", 2);
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-3-small");
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
 		// assertThat(embeddingModel.dimensions()).isEqualTo(3072);
 	}

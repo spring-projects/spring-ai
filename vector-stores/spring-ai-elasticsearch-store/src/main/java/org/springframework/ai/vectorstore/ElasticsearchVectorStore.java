@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -57,6 +56,7 @@ import static org.springframework.ai.vectorstore.SimilarityFunction.l2_norm;
  * @author Jemin Huh
  * @author Wei Jiang
  * @author Laura Trotta
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
@@ -98,12 +98,15 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 				logger.debug("Calling EmbeddingModel for document id = " + document.getId());
 				document.setEmbedding(this.embeddingModel.embed(document));
 			}
-			bulkRequestBuilder.operations(op -> op
-				.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+			// We call operations on BulkRequest.Builder only if the index exists.
+			// For the index to be present, either it must be pre-created or set the
+			// initializeSchema to true.
+			if (indexExists()) {
+				bulkRequestBuilder.operations(op -> op
+					.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(document)));
+			}
 		}
-
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
-
 		if (bulkRequest.errors()) {
 			List<BulkResponseItem> bulkResponseItems = bulkRequest.items();
 			for (BulkResponseItem bulkResponseItem : bulkResponseItems) {
@@ -117,8 +120,14 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public Optional<Boolean> delete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (String id : idList)
-			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
+		// We call operations on BulkRequest.Builder only if the index exists.
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (indexExists()) {
+			for (String id : idList) {
+				bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
+			}
+		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 
@@ -201,9 +210,9 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 		}
 	}
 
-	private CreateIndexResponse createIndexMapping() {
+	private void createIndexMapping() {
 		try {
-			return this.elasticsearchClient.indices()
+			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(options.getIndexName())
 					.mappings(map -> map.properties("embedding", p -> p.denseVector(
 							dv -> dv.similarity(options.getSimilarity().toString()).dims(options.getDimensions())))));
@@ -215,11 +224,9 @@ public class ElasticsearchVectorStore implements VectorStore, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
-
 		if (!this.initializeSchema) {
 			return;
 		}
-
 		if (!indexExists()) {
 			createIndexMapping();
 		}

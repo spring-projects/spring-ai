@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
-import org.springframework.ai.openai.api.common.OpenAiApiException;
 import org.springframework.ai.openai.audio.speech.Speech;
 import org.springframework.ai.openai.audio.speech.SpeechModel;
 import org.springframework.ai.openai.audio.speech.SpeechPrompt;
@@ -30,18 +29,18 @@ import org.springframework.ai.openai.audio.speech.SpeechResponse;
 import org.springframework.ai.openai.audio.speech.StreamingSpeechModel;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
-
-import java.time.Duration;
 
 /**
  * OpenAI audio speech client implementation for backed by {@link OpenAiAudioApi}.
  *
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
+ * @author Thomas Vitale
  * @see OpenAiAudioApi
  * @since 1.0.0-M1
  */
@@ -63,11 +62,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	/**
 	 * The retry template used to retry the OpenAI Audio API calls.
 	 */
-	public final RetryTemplate retryTemplate = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(OpenAiApiException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
-		.build();
+	private final RetryTemplate retryTemplate;
 
 	/**
 	 * Low-level access to the OpenAI Audio API.
@@ -98,10 +93,25 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	 * options.
 	 */
 	public OpenAiAudioSpeechModel(OpenAiAudioApi audioApi, OpenAiAudioSpeechOptions options) {
+		this(audioApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	/**
+	 * Initializes a new instance of the OpenAiAudioSpeechModel class with the provided
+	 * OpenAiAudioApi and options.
+	 * @param audioApi The OpenAiAudioApi to use for speech synthesis.
+	 * @param options The OpenAiAudioSpeechOptions containing the speech synthesis
+	 * options.
+	 * @param retryTemplate The retry template.
+	 */
+	public OpenAiAudioSpeechModel(OpenAiAudioApi audioApi, OpenAiAudioSpeechOptions options,
+			RetryTemplate retryTemplate) {
 		Assert.notNull(audioApi, "OpenAiAudioApi must not be null");
 		Assert.notNull(options, "OpenAiSpeechOptions must not be null");
+		Assert.notNull(options, "RetryTemplate must not be null");
 		this.audioApi = audioApi;
 		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
@@ -113,40 +123,43 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	@Override
 	public SpeechResponse call(SpeechPrompt speechPrompt) {
 
-		return this.retryTemplate.execute(ctx -> {
+		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
 
-			OpenAiAudioApi.SpeechRequest speechRequest = createRequestBody(speechPrompt);
+		ResponseEntity<byte[]> speechEntity = this.retryTemplate
+			.execute(ctx -> this.audioApi.createSpeech(speechRequest));
 
-			ResponseEntity<byte[]> speechEntity = this.audioApi.createSpeech(speechRequest);
-			var speech = speechEntity.getBody();
+		var speech = speechEntity.getBody();
 
-			if (speech == null) {
-				logger.warn("No speech response returned for speechRequest: {}", speechRequest);
-				return new SpeechResponse(new Speech(new byte[0]));
-			}
+		if (speech == null) {
+			logger.warn("No speech response returned for speechRequest: {}", speechRequest);
+			return new SpeechResponse(new Speech(new byte[0]));
+		}
 
-			RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(speechEntity);
+		RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(speechEntity);
 
-			return new SpeechResponse(new Speech(speech), new OpenAiAudioSpeechResponseMetadata(rateLimits));
-
-		});
+		return new SpeechResponse(new Speech(speech), new OpenAiAudioSpeechResponseMetadata(rateLimits));
 	}
 
 	/**
 	 * Streams the audio response for the given speech prompt.
-	 * @param prompt The speech prompt containing the text and options for speech
+	 * @param speechPrompt The speech prompt containing the text and options for speech
 	 * synthesis.
 	 * @return A Flux of SpeechResponse objects containing the streamed audio and
 	 * metadata.
 	 */
 	@Override
-	public Flux<SpeechResponse> stream(SpeechPrompt prompt) {
-		return this.audioApi.stream(this.createRequestBody(prompt))
-			.map(entity -> new SpeechResponse(new Speech(entity.getBody()), new OpenAiAudioSpeechResponseMetadata(
-					OpenAiResponseHeaderExtractor.extractAiResponseHeaders(entity))));
+	public Flux<SpeechResponse> stream(SpeechPrompt speechPrompt) {
+
+		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
+
+		Flux<ResponseEntity<byte[]>> speechEntity = this.retryTemplate
+			.execute(ctx -> this.audioApi.stream(speechRequest));
+
+		return speechEntity.map(entity -> new SpeechResponse(new Speech(entity.getBody()),
+				new OpenAiAudioSpeechResponseMetadata(OpenAiResponseHeaderExtractor.extractAiResponseHeaders(entity))));
 	}
 
-	private OpenAiAudioApi.SpeechRequest createRequestBody(SpeechPrompt request) {
+	private OpenAiAudioApi.SpeechRequest createRequest(SpeechPrompt request) {
 		OpenAiAudioSpeechOptions options = this.defaultOptions;
 
 		if (request.getOptions() != null) {

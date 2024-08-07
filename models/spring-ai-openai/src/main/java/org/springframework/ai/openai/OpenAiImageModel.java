@@ -15,8 +15,7 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.List;
-
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.Image;
@@ -26,14 +25,22 @@ import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationContext;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.AiOperationMetadata;
+import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
-import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+
+import java.util.List;
 
 /**
  * OpenAiImageModel is a class that implements the ImageModel interface. It provides a
@@ -42,16 +49,19 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Hyunjoon Choi
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class OpenAiImageModel implements ImageModel {
 
 	private final static Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
 
+	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
+
 	/**
 	 * The default options used for the image completion requests.
 	 */
-	private OpenAiImageOptions defaultOptions;
+	private final OpenAiImageOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the OpenAI Image API calls.
@@ -62,6 +72,16 @@ public class OpenAiImageModel implements ImageModel {
 	 * Low-level access to the OpenAI Image API.
 	 */
 	private final OpenAiImageApi openAiImageApi;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Creates an instance of the OpenAiImageModel.
@@ -81,40 +101,63 @@ public class OpenAiImageModel implements ImageModel {
 	 * @param retryTemplate The retry template.
 	 */
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate) {
+		this(openAiImageApi, options, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Initializes a new instance of the OpenAiImageModel.
+	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
+	 * the OpenAI Image API.
+	 * @param options The OpenAiImageOptions to configure the image model.
+	 * @param retryTemplate The retry template.
+	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 */
+	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		this.openAiImageApi = openAiImageApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		return this.retryTemplate.execute(ctx -> {
+		OpenAiImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.defaultOptions);
+		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(imagePrompt, requestImageOptions);
 
-			String instructions = imagePrompt.getInstructions().get(0).getText();
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.operationMetadata(buildOperationMetadata())
+			.requestOptions(requestImageOptions)
+			.build();
 
-			OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
-					OpenAiImageApi.DEFAULT_IMAGE_MODEL);
+		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.retryTemplate
+					.execute(ctx -> this.openAiImageApi.createImage(imageRequest));
 
-			if (this.defaultOptions != null) {
-				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-						OpenAiImageApi.OpenAiImageRequest.class);
-			}
+				ImageResponse imageResponse = convertResponse(imageResponseEntity, imageRequest);
 
-			if (imagePrompt.getOptions() != null) {
-				imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
-						OpenAiImageApi.OpenAiImageRequest.class);
-			}
+				observationContext.setResponse(imageResponse);
 
-			// Make the request
-			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = this.openAiImageApi
-				.createImage(imageRequest);
+				return imageResponse;
+			});
+	}
 
-			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, imageRequest);
-		});
+	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt,
+			OpenAiImageOptions requestImageOptions) {
+		String instructions = imagePrompt.getInstructions().get(0).getText();
+
+		OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
+				OpenAiImageApi.DEFAULT_IMAGE_MODEL);
+
+		return ModelOptionsUtils.merge(requestImageOptions, imageRequest, OpenAiImageApi.OpenAiImageRequest.class);
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,
@@ -130,49 +173,48 @@ public class OpenAiImageModel implements ImageModel {
 					new OpenAiImageGenerationMetadata(entry.revisedPrompt()));
 		}).toList();
 
-		ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(imageApiResponse);
+		ImageResponseMetadata openAiImageResponseMetadata = new ImageResponseMetadata(imageApiResponse.created());
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
 	}
 
 	/**
-	 * Convert the {@link ImageOptions} into {@link OpenAiImageOptions}.
-	 * @param runtimeImageOptions the image options to use.
-	 * @return the converted {@link OpenAiImageOptions}.
+	 * Merge runtime and default {@link ImageOptions} to compute the final options to use
+	 * in the request.
 	 */
-	private OpenAiImageOptions toOpenAiImageOptions(ImageOptions runtimeImageOptions) {
-		OpenAiImageOptions.Builder openAiImageOptionsBuilder = OpenAiImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			// Handle portable image options
-			if (runtimeImageOptions.getN() != null) {
-				openAiImageOptionsBuilder.withN(runtimeImageOptions.getN());
-			}
-			if (runtimeImageOptions.getModel() != null) {
-				openAiImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions.getResponseFormat() != null) {
-				openAiImageOptionsBuilder.withResponseFormat(runtimeImageOptions.getResponseFormat());
-			}
-			if (runtimeImageOptions.getWidth() != null) {
-				openAiImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
-			}
-			if (runtimeImageOptions.getHeight() != null) {
-				openAiImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
-			}
-			// Handle OpenAI specific image options
-			if (runtimeImageOptions instanceof OpenAiImageOptions) {
-				OpenAiImageOptions runtimeOpenAiImageOptions = (OpenAiImageOptions) runtimeImageOptions;
-				if (runtimeOpenAiImageOptions.getQuality() != null) {
-					openAiImageOptionsBuilder.withQuality(runtimeOpenAiImageOptions.getQuality());
-				}
-				if (runtimeOpenAiImageOptions.getStyle() != null) {
-					openAiImageOptionsBuilder.withStyle(runtimeOpenAiImageOptions.getStyle());
-				}
-				if (runtimeOpenAiImageOptions.getUser() != null) {
-					openAiImageOptionsBuilder.withUser(runtimeOpenAiImageOptions.getUser());
-				}
-			}
+	private OpenAiImageOptions mergeOptions(ImageOptions runtimeOptions, OpenAiImageOptions defaultOptions) {
+		if (runtimeOptions == null) {
+			return defaultOptions;
 		}
-		return openAiImageOptionsBuilder.build();
+
+		return OpenAiImageOptions.builder()
+			// Handle portable image options
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
+			.withN(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
+			.withResponseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
+					defaultOptions.getResponseFormat()))
+			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
+			.withHeight(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
+			.withStyle(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
+			// Handle OpenAI specific image options
+			.withQuality(defaultOptions.getQuality())
+			.withUser(defaultOptions.getUser())
+			.build();
+	}
+
+	private AiOperationMetadata buildOperationMetadata() {
+		return AiOperationMetadata.builder()
+			.operationType(AiOperationType.IMAGE.value())
+			.provider(AiProvider.OPENAI.value())
+			.build();
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }

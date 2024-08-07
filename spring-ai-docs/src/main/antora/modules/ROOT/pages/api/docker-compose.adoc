@@ -43,9 +43,6 @@ The following service connection factories are provided in the `spring-ai-spring
 | `QdrantConnectionDetails`
 | Containers named `qdrant/qdrant`
 
-| `RedisConnectionDetails`
-| Containers named `redis/redis-stack-server`, `redis/redis-stack`
-
 | `TypesenseConnectionDetails`
 | Containers named `typesense/typesense`
 

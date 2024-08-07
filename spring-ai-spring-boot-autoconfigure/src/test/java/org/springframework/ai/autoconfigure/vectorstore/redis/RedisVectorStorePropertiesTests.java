@@ -21,13 +21,13 @@ import org.junit.jupiter.api.Test;
 
 /**
  * @author Julien Ruaux
+ * @author Eddú Meléndez
  */
 class RedisVectorStorePropertiesTests {
 
 	@Test
 	void defaultValues() {
 		var props = new RedisVectorStoreProperties();
-		assertThat(props.getUri()).isEqualTo("redis://localhost:6379");
 		assertThat(props.getIndex()).isEqualTo("default-index");
 		assertThat(props.getPrefix()).isEqualTo("default:");
 	}
@@ -35,11 +35,9 @@ class RedisVectorStorePropertiesTests {
 	@Test
 	void customValues() {
 		var props = new RedisVectorStoreProperties();
-		props.setUri("redis://redis.com:12345");
 		props.setIndex("myIdx");
 		props.setPrefix("doc:");
 
-		assertThat(props.getUri()).isEqualTo("redis://redis.com:12345");
 		assertThat(props.getIndex()).isEqualTo("myIdx");
 		assertThat(props.getPrefix()).isEqualTo("doc:");
 	}

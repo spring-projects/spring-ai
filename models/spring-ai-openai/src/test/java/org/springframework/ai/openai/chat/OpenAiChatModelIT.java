@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -33,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -79,6 +82,78 @@ class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
+	}
+
+	@Test
+	void streamCompletenessTest() throws InterruptedException {
+		UserMessage userMessage = new UserMessage(
+				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any.");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		StringBuilder answer = new StringBuilder();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		Flux<ChatResponse> chatResponseFlux = streamingChatModel.stream(prompt).doOnNext(chatResponse -> {
+			String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
+			answer.append(responseContent);
+		}).doOnComplete(() -> {
+			logger.info(answer.toString());
+			latch.countDown();
+		});
+		chatResponseFlux.subscribe();
+		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
+		IntStream.rangeClosed(1, 1000).forEach(n -> {
+			assertThat(answer).contains(String.valueOf(n));
+		});
+	}
+
+	@Test
+	void streamCompletenessTestWithChatResponse() throws InterruptedException {
+		UserMessage userMessage = new UserMessage("Who is George Washington? - use first as 1st");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		StringBuilder answer = new StringBuilder();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		ChatClient chatClient = ChatClient.builder(openAiChatModel).build();
+
+		Flux<ChatResponse> chatResponseFlux = chatClient.prompt(prompt)
+			.stream()
+			.chatResponse()
+			.doOnNext(chatResponse -> {
+				String responseContent = chatResponse.getResults().get(0).getOutput().getContent();
+				answer.append(responseContent);
+			})
+			.doOnComplete(() -> {
+				logger.info(answer.toString());
+				latch.countDown();
+			});
+		chatResponseFlux.subscribe();
+		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer).contains("1st ");
+	}
+
+	@Test
+	void ensureChatResponseAsContentDoesNotSwallowBlankSpace() throws InterruptedException {
+		UserMessage userMessage = new UserMessage("Who is George Washington? - use first as 1st");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		StringBuilder answer = new StringBuilder();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		ChatClient chatClient = ChatClient.builder(openAiChatModel).build();
+
+		Flux<String> chatResponseFlux = chatClient.prompt(prompt)
+			.stream()
+			.content()
+			.doOnNext(answer::append)
+			.doOnComplete(() -> {
+				logger.info(answer.toString());
+				latch.countDown();
+			});
+		chatResponseFlux.subscribe();
+		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
+		assertThat(answer).contains("1st ");
 	}
 
 	@Test
@@ -302,7 +377,7 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -318,7 +393,7 @@ class OpenAiChatModelIT extends AbstractIT {
 
 		logger.info(response.getResult().getOutput().getContent());
 		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -341,12 +416,12 @@ class OpenAiChatModelIT extends AbstractIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
 	}
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getModelName();
+		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(OpenAiChatOptions.builder().withModel(model).build())

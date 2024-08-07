@@ -25,7 +25,7 @@ import org.springframework.ai.chat.messages.MessageType;
  * Converts a list of messages to a prompt for bedrock models.
  *
  * @author Christian Tzolov
- * @since 0.8.0
+ * @since 1.0.0
  */
 public class MessageToPromptConverter {
 
@@ -75,10 +75,8 @@ public class MessageToPromptConverter {
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// Related to: https://github.com/spring-projects/spring-ai/issues/404
-		final String prompt = systemMessages + this.lineSeparator + this.lineSeparator + userMessages
-				+ this.lineSeparator + ASSISTANT_PROMPT;
-
-		return prompt;
+		return systemMessages + this.lineSeparator + this.lineSeparator + userMessages + this.lineSeparator
+				+ ASSISTANT_PROMPT;
 	}
 
 	protected String messageToString(Message message) {
@@ -89,7 +87,7 @@ public class MessageToPromptConverter {
 				return humanPrompt + " " + message.getContent();
 			case ASSISTANT:
 				return assistantPrompt + " " + message.getContent();
-			case FUNCTION:
+			case TOOL:
 				throw new IllegalArgumentException("Tool execution results are not supported for Bedrock models");
 		}
 

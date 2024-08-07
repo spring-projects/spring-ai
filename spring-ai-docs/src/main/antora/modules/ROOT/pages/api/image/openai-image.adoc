@@ -41,26 +41,6 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Image Generation Properties
 
-
-The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageModel` implementation for OpenAI.
-
-[cols="3,5,1"]
-|====
-| Property | Description | Default
-| spring.ai.openai.image.enabled | Enable OpenAI image model.  | true
-| spring.ai.openai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
-| spring.ai.openai.image.api-key               | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
-| spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
-| spring.ai.openai.image.options.model        | The model to use for image generation.  | OpenAiImageApi.DEFAULT_IMAGE_MODEL
-| spring.ai.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -
-| spring.ai.openai.image.options.response_format | The format in which the generated images are returned. Must be one of URL or b64_json. | -
-| `spring.ai.openai.image.options.size`       | The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models. | -
-| `spring.ai.openai.image.options.size_width` | The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.  | -
-| `spring.ai.openai.image.options.size_height`| The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2. | -
-| `spring.ai.openai.image.options.style`      | The style of the generated images. Must be one of vivid or natural. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for dall-e-3. | -
-| `spring.ai.openai.image.options.user`       | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
-|====
-
 ==== Connection Properties
 
 The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
@@ -70,9 +50,12 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | Property | Description | Default
 | spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
 | spring.ai.openai.api-key    | The API Key           |  -
+| spring.ai.openai.organization-id | Optionally you can specify which organization  used for an API request. |  -
+| spring.ai.openai.project-id      | Optionally, you can specify which project is used for an API request. |  -
 |====
 
-==== Configuration Properties
+TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request. 
+Usage from these API requests will count as usage for the specified organization and project.
 
 
 ==== Retry Properties
@@ -92,6 +75,34 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 | spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
 |====
 
+==== Configuration Properties
+
+The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageModel` implementation for OpenAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.openai.image.enabled | Enable OpenAI image model.  | true
+| spring.ai.openai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide chat specific url |  -
+| spring.ai.openai.image.api-key               | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
+| spring.ai.openai.image.organization-id | Optionally you can specify which organization  used for an API request. |  -
+| spring.ai.openai.image.project-id      | Optionally, you can specify which project is used for an API request. |  -
+| spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
+| spring.ai.openai.image.options.model        | The model to use for image generation.  | OpenAiImageApi.DEFAULT_IMAGE_MODEL
+| spring.ai.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -
+| spring.ai.openai.image.options.response_format | The format in which the generated images are returned. Must be one of URL or b64_json. | -
+| `spring.ai.openai.image.options.size`       | The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models. | -
+| `spring.ai.openai.image.options.size_width` | The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.  | -
+| `spring.ai.openai.image.options.size_height`| The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2. | -
+| `spring.ai.openai.image.options.style`      | The style of the generated images. Must be one of vivid or natural. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for dall-e-3. | -
+| `spring.ai.openai.image.options.user`       | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
+|====
+
+NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
+The `spring.ai.openai.image.base-url`, `spring.ai.openai.image.api-key`, `spring.ai.openai.image.organization-id` and `spring.ai.openai.image.project-id` properties if set take precedence over the common properties.
+This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.openai.image.options` can be overridden at runtime.
 
 == Runtime Options [[image-options]]
 

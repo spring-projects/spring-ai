@@ -33,7 +33,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -56,7 +55,8 @@ public class AnthropicAutoConfiguration {
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		return new AnthropicApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
-				connectionProperties.getVersion(), restClientBuilder, responseErrorHandler);
+				connectionProperties.getVersion(), restClientBuilder, responseErrorHandler,
+				connectionProperties.getBetaVersion());
 	}
 
 	@Bean
@@ -65,12 +65,8 @@ public class AnthropicAutoConfiguration {
 			RetryTemplate retryTemplate, FunctionCallbackContext functionCallbackContext,
 			List<FunctionCallback> toolFunctionCallbacks) {
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
-		return new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate,
-				functionCallbackContext);
+		return new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate, functionCallbackContext,
+				toolFunctionCallbacks);
 	}
 
 	@Bean

@@ -42,6 +42,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreAutoConfigurationIT {

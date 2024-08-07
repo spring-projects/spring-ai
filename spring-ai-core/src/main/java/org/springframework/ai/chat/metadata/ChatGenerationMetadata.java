@@ -51,6 +51,12 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 			public String getFinishReason() {
 				return finishReason;
 			}
+
+			@Override
+			public String toString() {
+				return "ChatGenerationMetadata{finishReason=" + finishReason + "," + "contentFilterMetadata="
+						+ contentFilterMetadata + "}";
+			}
 		};
 	}
 

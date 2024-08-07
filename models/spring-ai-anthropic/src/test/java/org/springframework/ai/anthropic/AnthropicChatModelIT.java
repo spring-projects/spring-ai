@@ -34,7 +34,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -230,7 +230,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getModelName())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription(
@@ -257,7 +257,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getModelName())
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription(
@@ -280,7 +280,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getModelName();
+		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(AnthropicChatOptions.builder().withModel(model).build())
@@ -295,7 +295,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getModelName();
+		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(chatModel).prompt()
 				.options(AnthropicChatOptions.builder().withModel(model).build())

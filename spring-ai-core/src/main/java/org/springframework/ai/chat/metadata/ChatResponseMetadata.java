@@ -15,40 +15,51 @@
  */
 package org.springframework.ai.chat.metadata;
 
+import java.util.Map;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
 
-import java.util.HashMap;
-
 /**
- * Abstract Data Type (ADT) modeling common AI provider metadata returned in an AI
- * response.
+ * Models common AI provider metadata returned in an AI response.
  *
  * @author John Blum
  * @author Thomas Vitale
- * @since 0.7.0
+ * @author Mark Pollack
+ * @since 1.0.0
  */
-public interface ChatResponseMetadata extends ResponseMetadata {
+public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	class DefaultChatResponseMetadata extends HashMap<String, Object> implements ChatResponseMetadata {
+	private final static Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
 
-	}
+	private String id = ""; // Set to blank to preserve backward compat with previous
+							// interface default methods
 
-	ChatResponseMetadata NULL = new DefaultChatResponseMetadata();
+	private String model = "";
+
+	private RateLimit rateLimit = new EmptyRateLimit();
+
+	private Usage usage = new EmptyUsage();
+
+	private PromptMetadata promptMetadata = PromptMetadata.empty();
 
 	/**
 	 * A unique identifier for the chat completion operation.
 	 * @return unique operation identifier.
 	 */
-	default String getId() {
-		return "";
+	public String getId() {
+		return this.id;
 	}
 
 	/**
 	 * The model that handled the request.
 	 * @return the model that handled the request.
 	 */
-	default String getModel() {
-		return "";
+	public String getModel() {
+		return this.model;
 	}
 
 	/**
@@ -56,8 +67,8 @@ public interface ChatResponseMetadata extends ResponseMetadata {
 	 * @return AI provider specific metadata on rate limits.
 	 * @see RateLimit
 	 */
-	default RateLimit getRateLimit() {
-		return new EmptyRateLimit();
+	public RateLimit getRateLimit() {
+		return this.rateLimit;
 	}
 
 	/**
@@ -65,12 +76,98 @@ public interface ChatResponseMetadata extends ResponseMetadata {
 	 * @return AI provider specific metadata on API usage.
 	 * @see Usage
 	 */
-	default Usage getUsage() {
-		return new EmptyUsage();
+	public Usage getUsage() {
+		return this.usage;
 	}
 
-	default PromptMetadata getPromptMetadata() {
-		return PromptMetadata.empty();
+	/**
+	 * Returns the prompt metadata gathered by the AI during request processing.
+	 * @return the prompt metadata.
+	 */
+	public PromptMetadata getPromptMetadata() {
+		return this.promptMetadata;
+	}
+
+	public static class Builder {
+
+		private final ChatResponseMetadata chatResponseMetadata;
+
+		public Builder() {
+			this.chatResponseMetadata = new ChatResponseMetadata();
+		}
+
+		public Builder withMetadata(Map<String, Object> mapToCopy) {
+			this.chatResponseMetadata.map.putAll(mapToCopy);
+			return this;
+		}
+
+		public Builder withKeyValue(String key, Object value) {
+			if (key == null) {
+				throw new IllegalArgumentException("Key must not be null");
+			}
+			if (value != null) {
+				this.chatResponseMetadata.map.put(key, value);
+			}
+			else {
+				logger.debug("Ignore null value for key [{}]", key);
+			}
+			return this;
+		}
+
+		public Builder withId(String id) {
+			this.chatResponseMetadata.id = id;
+			return this;
+		}
+
+		public Builder withModel(String model) {
+			this.chatResponseMetadata.model = model;
+			return this;
+		}
+
+		public Builder withRateLimit(RateLimit rateLimit) {
+			this.chatResponseMetadata.rateLimit = rateLimit;
+			return this;
+		}
+
+		public Builder withUsage(Usage usage) {
+			this.chatResponseMetadata.usage = usage;
+			return this;
+		}
+
+		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
+			this.chatResponseMetadata.promptMetadata = promptMetadata;
+			return this;
+		}
+
+		public ChatResponseMetadata build() {
+			return this.chatResponseMetadata;
+		}
+
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof ChatResponseMetadata that))
+			return false;
+		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
+				&& Objects.equals(this.rateLimit, that.rateLimit) && Objects.equals(this.usage, that.usage)
+				&& Objects.equals(this.promptMetadata, that.promptMetadata);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.id, this.model, this.rateLimit, this.usage, this.promptMetadata);
+	}
+
+	@Override
+	public String toString() {
+		return AI_METADATA_STRING.formatted(getId(), getUsage(), getRateLimit());
 	}
 
 }

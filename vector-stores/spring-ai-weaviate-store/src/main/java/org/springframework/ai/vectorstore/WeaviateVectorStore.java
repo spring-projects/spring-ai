@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,8 +62,9 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Josh Long
+ * @author Soby Chacko
  */
-public class WeaviateVectorStore implements VectorStore, InitializingBean {
+public class WeaviateVectorStore implements VectorStore {
 
 	public static final String DOCUMENT_METADATA_DISTANCE_KEY_NAME = "distance";
 
@@ -281,11 +282,10 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	 * @param embeddingModel The client for embedding operations.
 	 */
 	public WeaviateVectorStore(WeaviateVectorStoreConfig vectorStoreConfig, EmbeddingModel embeddingModel,
-			WeaviateClient weaviateClient, boolean initializeSchema) {
+			WeaviateClient weaviateClient) {
 		Assert.notNull(vectorStoreConfig, "WeaviateVectorStoreConfig must not be null");
 		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
 
-		this.initializeSchema = initializeSchema;
 		this.embeddingModel = embeddingModel;
 		this.consistencyLevel = vectorStoreConfig.consistencyLevel;
 		this.weaviateObjectClass = vectorStoreConfig.weaviateObjectClass;
@@ -524,39 +524,6 @@ public class WeaviateVectorStore implements VectorStore, InitializingBean {
 	 */
 	private Float[] toFloatArray(List<Double> doubleList) {
 		return doubleList.stream().map(Number::floatValue).toList().toArray(new Float[0]);
-	}
-
-	private final boolean initializeSchema;
-
-	@Override
-	public void afterPropertiesSet() throws Exception {
-
-		if (!this.initializeSchema) {
-			return;
-		}
-
-		Map<String, Object> metadata = new HashMap<>();
-		if (!CollectionUtils.isEmpty(this.filterMetadataFields)) {
-			for (MetadataField mf : this.filterMetadataFields) {
-				switch (mf.type()) {
-					case TEXT:
-						metadata.put(mf.name(), "Hello");
-						break;
-					case NUMBER:
-						metadata.put(mf.name(), 3.14);
-						break;
-					case BOOLEAN:
-						metadata.put(mf.name(), true);
-						break;
-					default:
-						break;
-				}
-			}
-		}
-
-		var document = new Document("Hello world", metadata);
-		this.add(List.of(document));
-		this.delete(List.of(document.getId()));
 	}
 
 }

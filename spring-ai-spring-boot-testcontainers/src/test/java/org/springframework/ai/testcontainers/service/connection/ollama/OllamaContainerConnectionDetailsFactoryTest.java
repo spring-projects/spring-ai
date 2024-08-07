@@ -53,7 +53,7 @@ class OllamaContainerConnectionDetailsFactoryTest {
 
 	@Container
 	@ServiceConnection
-	static OllamaContainer ollama = new OllamaContainer("ollama/ollama:0.1.29");
+	static OllamaContainer ollama = new OllamaContainer("ollama/ollama:0.3.2");
 
 	@Autowired
 	private OllamaEmbeddingModel embeddingModel;

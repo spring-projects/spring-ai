@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -200,11 +201,11 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 			}
 		}
 
-		var metadata = new EmbeddingResponseMetadata(
-				Map.of("transformer", optionsToUse.getTransformer(), "vector-type", optionsToUse.getVectorType().name(),
-						"kwargs", ModelOptionsUtils.toJsonString(optionsToUse.getKwargs())));
-
-		return new EmbeddingResponse(data, metadata);
+		Map<String, Object> embeddingMetadata = Map.of("transformer", optionsToUse.getTransformer(), "vector-type",
+				optionsToUse.getVectorType().name(), "kwargs",
+				ModelOptionsUtils.toJsonString(optionsToUse.getKwargs()));
+		var embeddingResponseMetadata = new EmbeddingResponseMetadata("unknown", new EmptyUsage(), embeddingMetadata);
+		return new EmbeddingResponse(data, embeddingResponseMetadata);
 	}
 
 	/**

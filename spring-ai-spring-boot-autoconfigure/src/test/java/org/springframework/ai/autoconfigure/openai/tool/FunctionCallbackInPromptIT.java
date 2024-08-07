@@ -33,6 +33,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -50,7 +51,7 @@ public class FunctionCallbackInPromptIT {
 	@Test
 	void functionCallTest() {
 		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o",
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
 					"spring.ai.openai.chat.options.temperature=0.1")
 			.run(context -> {
 
@@ -79,7 +80,7 @@ public class FunctionCallbackInPromptIT {
 	void streamingFunctionCallTest() {
 
 		contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=gpt-4o",
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
 					"spring.ai.openai.chat.options.temperature=0.5")
 			.run(context -> {
 
@@ -108,9 +109,7 @@ public class FunctionCallbackInPromptIT {
 					.collect(Collectors.joining());
 				logger.info("Response: {}", content);
 
-				assertThat(content).containsAnyOf("30.0", "30");
-				assertThat(content).containsAnyOf("10.0", "10");
-				assertThat(content).containsAnyOf("15.0", "15");
+				assertThat(content).contains("30", "10", "15");
 			});
 	}
 

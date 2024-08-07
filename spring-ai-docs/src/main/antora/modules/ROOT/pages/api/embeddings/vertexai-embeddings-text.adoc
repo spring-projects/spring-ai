@@ -1,0 +1,162 @@
+= Google VertexAI Text Embeddings
+
+Vertex AI supports two types of embeddings models, text and multimodal.
+This document describes how to create a text embedding using the Vertex AI link:https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api[Text embeddings API].
+
+Vertex AI text embeddings API uses dense vector representations. 
+Unlike sparse vectors, which tend to directly map words to numbers, dense vectors are designed to better represent the meaning of a piece of text. 
+The benefit of using dense vector embeddings in generative AI is that instead of searching for direct word or syntax matches, you can better search for passages that align to the meaning of the query, even if the passages don't use the same language.
+
+== Prerequisites
+
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for you OS.
+- Authenticate by running the following command. 
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-embedding-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-embedding-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Embedding Properties
+
+The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that lets you connect to VertexAI Embedding API.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.embedding.project-id   |  Google Cloud Platform project ID |  -
+| spring.ai.vertex.ai.embedding.location   | Region |  -
+| spring.ai.vertex.ai.embedding.apiEndpoint   | Vertex AI Embedding API endpoint. |  -
+
+|====
+
+The prefix `spring.ai.vertex.ai.embedding.text` is the property prefix that lets you configure the embedding model implementation for VertexAI Text Embedding.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.embedding.text.enabled | Enable Vertex AI Embedding API model. | true
+| spring.ai.vertex.ai.embedding.text.options.model | This is the link:https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#supported-models[Vertex Text Embedding model] to use | text-embedding-004
+| spring.ai.vertex.ai.embedding.text.options.task-type | The intended downstream application to help the model produce better quality embeddings. Available link:https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#request_body[task-types]  | `RETRIEVAL_DOCUMENT`
+| spring.ai.vertex.ai.embedding.text.options.title | Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.  | -
+| spring.ai.vertex.ai.embedding.text.options.dimensions | The number of dimensions the resulting output embeddings should have. Supported for model version 004 and later. You can use this parameter to reduce the embedding size, for example, for storage optimization.  | -
+| spring.ai.vertex.ai.embedding.text.options.auto-truncate | When set to true, input text will be truncated. When set to false, an error is returned if the input text is longer than the maximum length supported by the model.  | true
+|====
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-embedding-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
+
+[source,application.properties]
+----
+spring.ai.vertex.ai.embedding.project-id=<YOUR_PROJECT_ID>
+spring.ai.vertex.ai.embedding.location=<YOUR_PROJECT_LOCATION>
+spring.ai.vertex.ai.embedding.text.options.model=text-embedding-004
+----
+
+
+This will create a `VertexAiTextEmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the embedding model for embeddings generations.
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingModel embeddingModel;
+
+    @Autowired
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-embedding/src/main/java/org/springframework/ai/vertexai/embedding/VertexAiTextEmbeddingModel.java[VertexAiTextEmbeddingModel] implements the `EmbeddingModel`.
+
+Add the `spring-ai-vertex-ai-embedding` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-embedding</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-embedding'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `VertexAiTextEmbeddingModel` and use it for text generations:
+
+[source,java]
+----
+VertexAiEmbeddigConnectionDetails connectionDetails = 
+    VertexAiEmbeddigConnectionDetails.builder()
+        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .build();
+
+VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
+    .withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+    .build();
+
+var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, options);
+
+EmbeddingResponse embeddingResponse = embeddingModel
+	.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -71,7 +71,7 @@ class VertexAiGeminiChatModelIT {
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, "voice", voice));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
@@ -100,7 +100,6 @@ class VertexAiGeminiChatModelIT {
 		String format = outputConverter.getFormat();
 		String template = """
 				Provide me a List of {subject}
-				Remove the ```json outer brackets.
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template,
@@ -234,7 +233,7 @@ class VertexAiGeminiChatModelIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_VISION)
+						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
 						.build());
 		}
 

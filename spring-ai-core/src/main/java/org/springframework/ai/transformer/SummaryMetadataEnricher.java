@@ -34,6 +34,7 @@ import org.springframework.util.CollectionUtils;
  * 'section_summary', 'prev_section_summary', 'next_section_summary' metadata fields.
  *
  * @author Christian Tzolov
+ * @since 1.0.0
  */
 public class SummaryMetadataEnricher implements DocumentTransformer {
 
@@ -51,11 +52,11 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 
 			Summarize the key topics and entities of the section.
 
-			Summary: """;
+			Summary:""";
 
 	public enum SummaryType {
 
-		PREVIOUS, CURRENT, NEXT;
+		PREVIOUS, CURRENT, NEXT
 
 	}
 
@@ -105,21 +106,25 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 		}
 
 		for (int i = 0; i < documentSummaries.size(); i++) {
-			Map<String, Object> summaryMetadata = new HashMap<>();
-			if (i > 0 && this.summaryTypes.contains(SummaryType.PREVIOUS)) {
-				summaryMetadata.put(PREV_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i - 1));
-			}
-			if (i < (documentSummaries.size() - 1) && this.summaryTypes.contains(SummaryType.NEXT)) {
-				summaryMetadata.put(NEXT_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i + 1));
-			}
-			if (this.summaryTypes.contains(SummaryType.CURRENT)) {
-				summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i));
-			}
-
+			Map<String, Object> summaryMetadata = getSummaryMetadata(i, documentSummaries);
 			documents.get(i).getMetadata().putAll(summaryMetadata);
 		}
 
 		return documents;
+	}
+
+	private Map<String, Object> getSummaryMetadata(int i, List<String> documentSummaries) {
+		Map<String, Object> summaryMetadata = new HashMap<>();
+		if (i > 0 && this.summaryTypes.contains(SummaryType.PREVIOUS)) {
+			summaryMetadata.put(PREV_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i - 1));
+		}
+		if (i < (documentSummaries.size() - 1) && this.summaryTypes.contains(SummaryType.NEXT)) {
+			summaryMetadata.put(NEXT_SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i + 1));
+		}
+		if (this.summaryTypes.contains(SummaryType.CURRENT)) {
+			summaryMetadata.put(SECTION_SUMMARY_METADATA_KEY, documentSummaries.get(i));
+		}
+		return summaryMetadata;
 	}
 
 }

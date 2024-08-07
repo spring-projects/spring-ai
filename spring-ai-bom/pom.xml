@@ -105,6 +105,12 @@
                 <artifactId>spring-ai-vertex-ai-palm2</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-vertex-ai-embedding</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -405,6 +411,12 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-vertex-ai-embedding-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -450,6 +462,12 @@
                 <artifactId>spring-ai-spring-boot-testcontainers</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-spring-cloud-bindings</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>

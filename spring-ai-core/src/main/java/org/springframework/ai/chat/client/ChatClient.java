@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,12 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -35,6 +31,8 @@ import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Client to perform stateless requests to an AI Model, using a fluent API.
@@ -164,7 +162,7 @@ public interface ChatClient {
 
 		Flux<ChatResponse> chatResponse();
 
-		public Flux<String> content();
+		Flux<String> content();
 
 	}
 
@@ -189,6 +187,9 @@ public interface ChatClient {
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
 		<I, O> ChatClientRequestSpec function(String name, String description,
+				java.util.function.Function<I, O> function);
+
+		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
 				java.util.function.Function<I, O> function);
 
 		ChatClientRequestSpec functions(String... functionBeanNames);

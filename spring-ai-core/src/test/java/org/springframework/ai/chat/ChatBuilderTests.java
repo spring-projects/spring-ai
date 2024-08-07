@@ -97,12 +97,12 @@ public class ChatBuilderTests {
 		// Callback Functions
 		assertThat(options.getFunctionCallbacks()).isNotNull();
 		assertThat(options.getFunctionCallbacks().size()).isEqualTo(1);
-		assertThat(options.getFunctionCallbacks().contains(cb));
+		assertThat(options.getFunctionCallbacks()).contains(cb);
 
 		// Functions
 		assertThat(options.getFunctions()).isNotNull();
 		assertThat(options.getFunctions().size()).isEqualTo(1);
-		assertThat(options.getFunctions().contains(func));
+		assertThat(options.getFunctions()).contains(func);
 
 	}
 
