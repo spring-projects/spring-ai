@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -75,6 +77,7 @@ import org.springframework.util.StringUtils;
 import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -271,25 +274,48 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return Flux.deferContextual(contextView -> {
+			ChatCompletionRequest request = createRequest(prompt, true);
 
-		ChatCompletionRequest request = createRequest(prompt, true);
+			Flux<OpenAiApi.ChatCompletionChunk> completionChunks =
+					this.retryTemplate.execute(ctx -> this.openAiApi.chatCompletionStream(
+							request,
+							getAdditionalHttpHeaders(prompt)));
 
-		Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.retryTemplate
-			.execute(ctx -> this.openAiApi.chatCompletionStream(request, getAdditionalHttpHeaders(prompt)));
+			// For chunked responses, only the first chunk contains the choice role.
+			// The rest of the chunks with same ID share the same role.
+			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
-		// For chunked responses, only the first chunk contains the choice role.
-		// The rest of the chunks with same ID share the same role.
-		ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			final ChatModelObservationContext observationContext =
+					ChatModelObservationContext.builder()
+					                           .prompt(prompt)
+					                           .operationMetadata(buildOperationMetadata())
+					                           .requestOptions(buildRequestOptions(request))
+					                           .build();
 
-		// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
-		// the function call handling logic.
-		Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-			.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
-				try {
-					@SuppressWarnings("null")
-					String id = chatCompletion2.id();
+			Observation observation =
+					ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+							this.observationConvention,
+							DEFAULT_OBSERVATION_CONVENTION,
+							() -> observationContext,
+							this.observationRegistry);
 
-			// @formatter:off
+			observation
+					.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null))
+					.start();
+
+			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+			// the function call handling logic.
+			Flux<ChatResponse> chatResponse =
+					completionChunks.map(this::chunkToChatCompletion)
+					                .switchMap(chatCompletion -> Mono.just(chatCompletion)
+					                                                 .map(chatCompletion2 -> {
+						                                                 try {
+							                                                 @SuppressWarnings("null") String
+									                                                 id =
+									                                                 chatCompletion2.id();
+
+							                                                 // @formatter:off
 					List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
 						if (choice.message().role() != null) {
 							roleMap.putIfAbsent(id, choice.message().role().name());
@@ -303,32 +329,53 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						}).toList();
 					// @formatter:on
 
-					if (chatCompletion2.usage() != null) {
-						return new ChatResponse(generations, from(chatCompletion2, null));
-					}
-					else {
-						return new ChatResponse(generations);
-					}
-				}
-				catch (Exception e) {
-					logger.error("Error processing chat completion", e);
-					return new ChatResponse(List.of());
-				}
+							                                                 if (chatCompletion2.usage() != null) {
+								                                                 return new ChatResponse(
+										                                                 generations,
+										                                                 from(chatCompletion2,
+												                                                 null));
+							                                                 }
+							                                                 else {
+								                                                 return new ChatResponse(
+										                                                 generations);
+							                                                 }
+						                                                 }
+						                                                 catch (Exception e) {
+							                                                 logger.error(
+									                                                 "Error processing chat completion",
+									                                                 e);
+							                                                 return new ChatResponse(
+									                                                 List.of());
+						                                                 }
 
-			}));
+					                                                 }));
 
-		return chatResponse.flatMap(response -> {
+			return chatResponse.flatMap(response -> {
 
-			if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-					OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
-				var toolCallConversation = handleToolCalls(prompt, response);
-				// Recursively call the stream method with the tool call message
-				// conversation that contains the call responses.
-				return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
-			}
-			else {
-				return Flux.just(response);
-			}
+				                   if (isToolCall(response,
+						                   Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
+								                   OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
+					                   var toolCallConversation = handleToolCalls(prompt, response);
+					                   // Recursively call the stream method with the tool call message
+					                   // conversation that contains the call responses.
+					                   return this.stream(new Prompt(toolCallConversation,
+							                   prompt.getOptions()));
+				                   }
+				                   else {
+					                   return Flux.just(response);
+				                   }
+			                   })
+			                   .doOnError(observation::error)
+			                   .doFinally(s -> {
+								   // TODO: Consider a custom ObservationContext and
+				                   //  include additional metadata
+//								   if (s == SignalType.CANCEL) {
+//									   observationContext.setAborted(true);
+//								   }
+								   observation.stop();
+			                   })
+			                   .contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY,
+					                   observation));
 		});
 	}
 
