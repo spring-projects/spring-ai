@@ -17,8 +17,7 @@ package org.springframework.ai.reader.tika;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -84,6 +83,8 @@ public class TikaDocumentReader implements DocumentReader {
 	 */
 	private final ExtractedTextFormatter textFormatter;
 
+	private final Map<String, Object> customMetadata = new HashMap<>();
+
 	/**
 	 * Constructor initializing the reader with a given resource URL.
 	 * @param resourceUrl URL to the resource
@@ -137,6 +138,14 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	/**
+	 * Metadata associated with all documents created by the loader.
+	 * @return Metadata to be assigned to the output Documents.
+	 */
+	public Map<String, Object> getCustomMetadata() {
+		return this.customMetadata;
+	}
+
+	/**
 	 * Extracts and returns the list of documents from the resource.
 	 * @return List of extracted {@link Document}
 	 */
@@ -161,6 +170,7 @@ public class TikaDocumentReader implements DocumentReader {
 		docText = this.textFormatter.format(docText);
 		Document doc = new Document(docText);
 		doc.getMetadata().put(METADATA_SOURCE, resourceName());
+		doc.getMetadata().putAll(customMetadata);
 		return doc;
 	}
 

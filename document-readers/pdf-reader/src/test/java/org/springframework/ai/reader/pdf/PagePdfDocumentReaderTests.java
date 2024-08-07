@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.reader.pdf;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -25,6 +25,8 @@ import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
@@ -46,14 +48,22 @@ public class PagePdfDocumentReaderTests {
 					.withPagesPerDocument(1)
 					.build());
 
+		pdfReader.getCustomMetadata().put("CUSTOM_METADATA_KEY", "CUSTOM_METADATA_VALUE");
+
 		List<Document> docs = pdfReader.get();
 
 		assertThat(docs).hasSize(4);
 
 		String allText = docs.stream().map(d -> d.getContent()).collect(Collectors.joining(System.lineSeparator()));
+		List<Map<String, Object>> metadataList = docs.stream().map(Document::getMetadata).toList();
 
 		assertThat(allText).doesNotContain(
 				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));
+
+		for (Map<String, Object> metadata : metadataList) {
+			assertTrue(metadata.containsKey("CUSTOM_METADATA_KEY"));
+			assertEquals("CUSTOM_METADATA_VALUE", metadata.get("CUSTOM_METADATA_KEY"));
+		}
 	}
 
 }
