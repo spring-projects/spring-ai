@@ -31,6 +31,10 @@ import java.util.function.Consumer;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.model.Media;
+import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
+import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -45,12 +49,15 @@ import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * The default implementation of {@link ChatClient} as created by the
@@ -281,7 +288,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> boc) {
-			var chatResponse = doGetChatResponse(this.request, boc.getFormat());
+			var chatResponse = doGetObservableChatResponse(this.request, boc.getFormat());
 			var responseContent = chatResponse.getResult().getOutput().getContent();
 			T entity = boc.convert(responseContent);
 
@@ -297,7 +304,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> boc) {
-			var chatResponse = doGetChatResponse(this.request, boc.getFormat());
+			var chatResponse = doGetObservableChatResponse(this.request, boc.getFormat());
 			var stringResponse = chatResponse.getResult().getOutput().getContent();
 			return boc.convert(stringResponse);
 		}
@@ -309,7 +316,25 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		private ChatResponse doGetChatResponse() {
-			return this.doGetChatResponse(this.request, "");
+			return this.doGetObservableChatResponse(this.request, "");
+		}
+
+		private ChatResponse doGetObservableChatResponse(DefaultChatClientRequestSpec inputRequest,
+				String formatParam) {
+
+			ChatClientObservationContext observationContext = new ChatClientObservationContext(inputRequest,
+					new AiOperationMetadata("chat.client", "spring.ai"), formatParam, false);
+			observationContext.setModelClassName("ChatClient");
+
+			return ChatClientObservationDocumentation.AI_CHAT_CLIENT
+				.observation(null, DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION, () -> observationContext,
+						inputRequest.observationRegistry)
+				.observe(() -> {
+					ChatResponse chatResponse = doGetChatResponse(inputRequest, formatParam);
+					observationContext.setChatResponse(chatResponse);
+					return chatResponse;
+				});
+
 		}
 
 		private ChatResponse doGetChatResponse(DefaultChatClientRequestSpec inputRequest, String formatParam) {
@@ -426,9 +451,7 @@ public class DefaultChatClient implements ChatClient {
 				messages.add(userMessage);
 			}
 
-			if (advisedRequest.getChatOptions() instanceof
-
-			FunctionCallingOptions functionCallingOptions) {
+			if (advisedRequest.getChatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
 				if (!advisedRequest.getFunctionNames().isEmpty()) {
 					functionCallingOptions.setFunctions(new HashSet<>(advisedRequest.getFunctionNames()));
 				}
@@ -468,7 +491,11 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
+	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
+
 	public static class DefaultChatClientRequestSpec implements ChatClientRequestSpec {
+
+		private final ObservationRegistry observationRegistry;
 
 		private final ChatModel chatModel;
 
@@ -493,6 +520,10 @@ public class DefaultChatClient implements ChatClient {
 		private final List<RequestResponseAdvisor> advisors = new ArrayList<>();
 
 		private final Map<String, Object> advisorParams = new HashMap<>();
+
+		private ObservationRegistry getObservationRegistry() {
+			return observationRegistry;
+		}
 
 		public String getUserText() {
 			return userText;
@@ -541,13 +572,15 @@ public class DefaultChatClient implements ChatClient {
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
-					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams);
+					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
+					ccr.observationRegistry);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, String userText, Map<String, Object> userParams,
 				String systemText, Map<String, Object> systemParams, List<FunctionCallback> functionCallbacks,
 				List<Message> messages, List<String> functionNames, List<Media> media, ChatOptions chatOptions,
-				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams) {
+				List<RequestResponseAdvisor> advisors, Map<String, Object> advisorParams,
+				ObservationRegistry observationRegistry) {
 
 			this.chatModel = chatModel;
 			this.chatOptions = chatOptions != null ? chatOptions.copy()
@@ -564,6 +597,7 @@ public class DefaultChatClient implements ChatClient {
 			this.media.addAll(media);
 			this.advisors.addAll(advisors);
 			this.advisorParams.putAll(advisorParams);
+			this.observationRegistry = observationRegistry;
 		}
 
 		/**
@@ -571,7 +605,8 @@ public class DefaultChatClient implements ChatClient {
 		 * settings are replicated from this {@code ChatClientRequest}.
 		 */
 		public Builder mutate() {
-			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient.builder(chatModel)
+			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
+				.builder(chatModel, this.observationRegistry)
 				.defaultSystem(s -> s.text(this.systemText).params(this.systemParams))
 				.defaultUser(u -> u.text(this.userText)
 					.params(this.userParams)
@@ -756,7 +791,7 @@ public class DefaultChatClient implements ChatClient {
 						adviseRequest.userParams(), adviseRequest.systemText(), adviseRequest.systemParams(),
 						adviseRequest.functionCallbacks(), adviseRequest.messages(), adviseRequest.functionNames(),
 						adviseRequest.media(), adviseRequest.chatOptions(), adviseRequest.advisors(),
-						adviseRequest.advisorParams());
+						adviseRequest.advisorParams(), inputRequest.getObservationRegistry());
 			}
 
 			return advisedRequest;

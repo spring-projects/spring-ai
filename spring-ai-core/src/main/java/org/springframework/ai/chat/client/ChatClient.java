@@ -32,6 +32,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
 
+import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
 
 /**
@@ -48,11 +49,19 @@ import reactor.core.publisher.Flux;
 public interface ChatClient {
 
 	static ChatClient create(ChatModel chatModel) {
-		return builder(chatModel).build();
+		return create(chatModel, ObservationRegistry.NOOP);
+	}
+
+	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry) {
+		return builder(chatModel, observationRegistry).build();
 	}
 
 	static Builder builder(ChatModel chatModel) {
-		return new DefaultChatClientBuilder(chatModel);
+		return builder(chatModel, ObservationRegistry.NOOP);
+	}
+
+	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry) {
+		return new DefaultChatClientBuilder(chatModel, observationRegistry);
 	}
 
 	ChatClientRequestSpec prompt();

@@ -31,6 +31,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * DefaultChatClientBuilder is a builder class for creating a ChatClient.
  *
@@ -48,11 +50,16 @@ public class DefaultChatClientBuilder implements Builder {
 
 	private final ChatModel chatModel;
 
-	public DefaultChatClientBuilder(ChatModel chatModel) {
+	DefaultChatClientBuilder(ChatModel chatModel) {
+		this(chatModel, ObservationRegistry.NOOP);
+	}
+
+	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
+		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.chatModel = chatModel;
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(),
-				List.of(), List.of(), List.of(), null, List.of(), Map.of());
+				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry);
 	}
 
 	public ChatClient build() {

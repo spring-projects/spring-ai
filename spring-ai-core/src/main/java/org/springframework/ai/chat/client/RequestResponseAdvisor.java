@@ -35,6 +35,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 public interface RequestResponseAdvisor {
 
 	/**
+	 * @return the advisor name.
+	 */
+	default String getName() {
+		return this.getClass().getSimpleName();
+	}
+
+	/**
 	 * @param request the {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 * @param context the shared data between the advisors in the chain. It is shared
