@@ -42,6 +42,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.MultiValueMap;
 
 import reactor.core.publisher.Flux;
 
@@ -58,7 +59,10 @@ public class MessageTypeContentTests {
 	OpenAiChatModel chatModel;
 
 	@Captor
-	ArgumentCaptor<ChatCompletionRequest> promptCaptor;
+	ArgumentCaptor<ChatCompletionRequest> pomptCaptor;
+
+	@Captor
+	ArgumentCaptor<MultiValueMap<String, String>> headersCaptor;
 
 	Flux<ChatCompletionChunk> fluxResponse = Flux
 		.generate(() -> new ChatCompletionChunk("id", List.of(), 0l, "model", "fp", "object", null), (state, sink) -> {
@@ -75,31 +79,35 @@ public class MessageTypeContentTests {
 	@Test
 	public void systemMessageSimpleContentType() {
 
-		when(openAiApi.chatCompletionEntity(promptCaptor.capture())).thenReturn(Mockito.mock(ResponseEntity.class));
+		when(openAiApi.chatCompletionEntity(pomptCaptor.capture(), headersCaptor.capture()))
+			.thenReturn(Mockito.mock(ResponseEntity.class));
 
 		chatModel.call(new Prompt(List.of(new SystemMessage("test message"))));
 
-		validateStringContent(promptCaptor.getValue());
+		validateStringContent(pomptCaptor.getValue());
+		assertThat(headersCaptor.getValue()).isEmpty();
 	}
 
 	@Test
 	public void userMessageSimpleContentType() {
 
-		when(openAiApi.chatCompletionEntity(promptCaptor.capture())).thenReturn(Mockito.mock(ResponseEntity.class));
+		when(openAiApi.chatCompletionEntity(pomptCaptor.capture(), headersCaptor.capture()))
+			.thenReturn(Mockito.mock(ResponseEntity.class));
 
 		chatModel.call(new Prompt(List.of(new UserMessage("test message"))));
 
-		validateStringContent(promptCaptor.getValue());
+		validateStringContent(pomptCaptor.getValue());
 	}
 
 	@Test
 	public void streamUserMessageSimpleContentType() {
 
-		when(openAiApi.chatCompletionStream(promptCaptor.capture())).thenReturn(fluxResponse);
+		when(openAiApi.chatCompletionStream(pomptCaptor.capture(), headersCaptor.capture())).thenReturn(fluxResponse);
 
 		chatModel.stream(new Prompt(List.of(new UserMessage("test message"))));
 
-		validateStringContent(promptCaptor.getValue());
+		validateStringContent(pomptCaptor.getValue());
+		assertThat(headersCaptor.getValue()).isEmpty();
 	}
 
 	private void validateStringContent(ChatCompletionRequest chatCompletionRequest) {
@@ -113,25 +121,26 @@ public class MessageTypeContentTests {
 	@Test
 	public void userMessageWithMediaType() throws MalformedURLException {
 
-		when(openAiApi.chatCompletionEntity(promptCaptor.capture())).thenReturn(Mockito.mock(ResponseEntity.class));
+		when(openAiApi.chatCompletionEntity(pomptCaptor.capture(), headersCaptor.capture()))
+			.thenReturn(Mockito.mock(ResponseEntity.class));
 
 		URL mediaUrl = new URL("http://test");
 		chatModel.call(new Prompt(
 				List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))));
 
-		validateComplexContent(promptCaptor.getValue());
+		validateComplexContent(pomptCaptor.getValue());
 	}
 
 	@Test
 	public void streamUserMessageWithMediaType() throws MalformedURLException {
 
-		when(openAiApi.chatCompletionStream(promptCaptor.capture())).thenReturn(fluxResponse);
+		when(openAiApi.chatCompletionStream(pomptCaptor.capture(), headersCaptor.capture())).thenReturn(fluxResponse);
 
 		URL mediaUrl = new URL("http://test");
 		chatModel.stream(new Prompt(
 				List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))));
 
-		validateComplexContent(promptCaptor.getValue());
+		validateComplexContent(pomptCaptor.getValue());
 	}
 
 	private void validateComplexContent(ChatCompletionRequest chatCompletionRequest) {

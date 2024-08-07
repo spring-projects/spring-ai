@@ -15,14 +15,22 @@
  */
 package org.springframework.ai.autoconfigure.openai;
 
-import io.micrometer.observation.ObservationRegistry;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.openai.*;
+import org.springframework.ai.openai.OpenAiAudioSpeechModel;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
@@ -37,15 +45,16 @@ import org.springframework.boot.autoconfigure.web.reactive.function.client.WebCl
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.lang.NonNull;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.List;
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -109,43 +118,25 @@ public class OpenAiAutoConfiguration {
 	private OpenAiApi openAiApi(OpenAiChatProperties chatProperties, OpenAiConnectionProperties commonProperties,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String modelType) {
-		ResolvedBaseUrlAndApiKey result = getResolvedBaseUrlAndApiKey(chatProperties.getBaseUrl(),
-				chatProperties.getApiKey(), commonProperties, modelType);
 
-		return new OpenAiApi(result.resolvedBaseUrl(), result.resolvedApiKey(), chatProperties.getCompletionsPath(),
-				OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties,
+				modelType);
+
+		return new OpenAiApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
+				chatProperties.getCompletionsPath(), OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH,
+				restClientBuilder, webClientBuilder, responseErrorHandler);
 	}
 
 	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
 			OpenAiConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler, String modelType) {
-		ResolvedBaseUrlAndApiKey result = getResolvedBaseUrlAndApiKey(embeddingProperties.getBaseUrl(),
-				embeddingProperties.getApiKey(), commonProperties, modelType);
 
-		return new OpenAiApi(result.resolvedBaseUrl(), result.resolvedApiKey(),
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
+				modelType);
+
+		return new OpenAiApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
 				OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH, embeddingProperties.getEmbeddingsPath(),
 				restClientBuilder, webClientBuilder, responseErrorHandler);
-	}
-
-	private static @NonNull ResolvedBaseUrlAndApiKey getResolvedBaseUrlAndApiKey(String baseUrl, String apiKey,
-			OpenAiConnectionProperties commonProperties, String modelType) {
-		var commonBaseUrl = commonProperties.getBaseUrl();
-		var commonApiKey = commonProperties.getApiKey();
-
-		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-		Assert.hasText(resolvedBaseUrl,
-				"OpenAI base URL must be set.  Use the connection property: spring.ai.openai.base-url or spring.ai.openai."
-						+ modelType + ".base-url property.");
-
-		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		Assert.hasText(resolvedApiKey,
-				"OpenAI API key must be set. Use the connection property: spring.ai.openai.api-key or spring.ai.openai."
-						+ modelType + ".api-key property.");
-		return new ResolvedBaseUrlAndApiKey(resolvedBaseUrl, resolvedApiKey);
-	}
-
-	private record ResolvedBaseUrlAndApiKey(String resolvedBaseUrl, String resolvedApiKey) {
 	}
 
 	@Bean
@@ -157,18 +148,10 @@ public class OpenAiAutoConfiguration {
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
-		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
-				: commonProperties.getApiKey();
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
-		String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ? imageProperties.getBaseUrl()
-				: commonProperties.getBaseUrl();
-
-		Assert.hasText(apiKey,
-				"OpenAI API key must be set.  Use the property: spring.ai.openai.api-key or spring.ai.openai.image.api-key property.");
-		Assert.hasText(baseUrl,
-				"OpenAI base URL must be set.  Use the property: spring.ai.openai.base-url or spring.ai.openai.image.base-url property.");
-
-		var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
+		var openAiImageApi = new OpenAiImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
+				restClientBuilder, responseErrorHandler);
 
 		var imageModel = new OpenAiImageModel(openAiImageApi, imageProperties.getOptions(), retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
@@ -187,19 +170,11 @@ public class OpenAiAutoConfiguration {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		String apiKey = StringUtils.hasText(transcriptionProperties.getApiKey()) ? transcriptionProperties.getApiKey()
-				: commonProperties.getApiKey();
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, transcriptionProperties,
+				"transcription");
 
-		String baseUrl = StringUtils.hasText(transcriptionProperties.getBaseUrl())
-				? transcriptionProperties.getBaseUrl() : commonProperties.getBaseUrl();
-
-		Assert.hasText(apiKey,
-				"OpenAI API key must be set.  Use the property: spring.ai.openai.api-key or spring.ai.openai.audio.transcription.api-key property.");
-		Assert.hasText(baseUrl,
-				"OpenAI base URL must be set.  Use the property: spring.ai.openai.base-url or spring.ai.openai.audio.transcription.base-url property.");
-
-		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
 
 		return new OpenAiAudioTranscriptionModel(openAiAudioApi, transcriptionProperties.getOptions(), retryTemplate);
 
@@ -214,19 +189,11 @@ public class OpenAiAutoConfiguration {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		String apiKey = StringUtils.hasText(speechProperties.getApiKey()) ? speechProperties.getApiKey()
-				: commonProperties.getApiKey();
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, speechProperties,
+				"speach");
 
-		String baseUrl = StringUtils.hasText(speechProperties.getBaseUrl()) ? speechProperties.getBaseUrl()
-				: commonProperties.getBaseUrl();
-
-		Assert.hasText(apiKey,
-				"OpenAI API key must be set.  Use the property: spring.ai.openai.api-key or spring.ai.openai.audio.speech.api-key property.");
-		Assert.hasText(baseUrl,
-				"OpenAI base URL must be set.  Use the property: spring.ai.openai.base-url or spring.ai.openai.audio.speech.base-url property.");
-
-		var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
 
 		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
 	}
@@ -237,6 +204,39 @@ public class OpenAiAutoConfiguration {
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setApplicationContext(context);
 		return manager;
+	}
+
+	private static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
+			OpenAiParentProperties commonProperties, OpenAiParentProperties modelProperties, String modelType) {
+
+		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+		String apiKey = StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
+				: commonProperties.getApiKey();
+		String projectId = StringUtils.hasText(modelProperties.getProjectId()) ? modelProperties.getProjectId()
+				: commonProperties.getProjectId();
+		String organizationId = StringUtils.hasText(modelProperties.getOrganizationId())
+				? modelProperties.getOrganizationId() : commonProperties.getOrganizationId();
+
+		Map<String, List<String>> connectionHeaders = new HashMap<>();
+		if (StringUtils.hasText(projectId)) {
+			connectionHeaders.put("OpenAI-Project", List.of(projectId));
+		}
+		if (StringUtils.hasText(organizationId)) {
+			connectionHeaders.put("OpenAI-Organization", List.of(organizationId));
+		}
+
+		Assert.hasText(baseUrl,
+				"OpenAI base URL must be set.  Use the connection property: spring.ai.openai.base-url or spring.ai.openai."
+						+ modelType + ".base-url property.");
+		Assert.hasText(apiKey,
+				"OpenAI API key must be set. Use the connection property: spring.ai.openai.api-key or spring.ai.openai."
+						+ modelType + ".api-key property.");
+
+		return new ResolvedConnectionProperties(baseUrl, apiKey, CollectionUtils.toMultiValueMap(connectionHeaders));
+	}
+
+	private record ResolvedConnectionProperties(String baseUrl, String apiKey, MultiValueMap<String, String> headers) {
 	}
 
 }

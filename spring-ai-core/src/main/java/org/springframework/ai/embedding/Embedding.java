@@ -57,21 +57,21 @@ public class Embedding implements ModelResult<List<Double>> {
 	 */
 	@Override
 	public List<Double> getOutput() {
-		return embedding;
+		return this.embedding;
 	}
 
 	/**
 	 * @return Get the embedding index in a list of embeddings.
 	 */
 	public Integer getIndex() {
-		return index;
+		return this.index;
 	}
 
 	/**
 	 * @return Get the metadata associated with the embedding.
 	 */
 	public EmbeddingResultMetadata getMetadata() {
-		return metadata;
+		return this.metadata;
 	}
 
 	@Override
@@ -80,8 +80,8 @@ public class Embedding implements ModelResult<List<Double>> {
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		Embedding embedding1 = (Embedding) o;
-		return Objects.equals(embedding, embedding1.embedding) && Objects.equals(index, embedding1.index);
+		Embedding other = (Embedding) o;
+		return Objects.equals(this.embedding, other.embedding) && Objects.equals(this.index, other.index);
 	}
 
 	@Override
@@ -92,7 +92,7 @@ public class Embedding implements ModelResult<List<Double>> {
 	@Override
 	public String toString() {
 		String message = this.embedding.isEmpty() ? "<empty>" : "<has data>";
-		return "Embedding{" + "embedding=" + message + ", index=" + index + '}';
+		return "Embedding{" + "embedding=" + message + ", index=" + this.index + '}';
 	}
 
 }
