@@ -18,6 +18,8 @@ package org.springframework.ai.openai.chat;
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import reactor.core.publisher.Flux;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -58,7 +60,7 @@ public class OpenAiChatModelObservationIT {
 	OpenAiChatModel chatModel;
 
 	@Test
-	void observationForEmbeddingOperation() {
+	void observationForChatOperation() {
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
 			.withFrequencyPenalty(0f)
@@ -104,6 +106,61 @@ public class OpenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
+			.hasBeenStarted()
+			.hasBeenStopped();
+	}
+
+	@Test
+	void observationForStreamingChatOperation() {
+		var options = OpenAiChatOptions.builder()
+			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
+			.withFrequencyPenalty(0f)
+			.withMaxTokens(2048)
+			.withPresencePenalty(0f)
+			.withStop(List.of("this-is-the-end"))
+			.withTemperature(0.7f)
+			.withTopP(1f)
+			.build();
+
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+
+		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
+		List<ChatResponse> response = chatResponseFlux.collectList().block();
+		assertThat(response).isNotEmpty();
+		// assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+
+		// ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
+		// assertThat(responseMetadata).isNotNull();
+
+		TestObservationRegistryAssert.assertThat(observationRegistry)
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasContextualNameEqualTo("chat " + OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					AiOperationType.CHAT.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
+			// .hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
+			// responseMetadata.getModel())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
+					"[\"this-is-the-end\"]")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
+			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(),
+			// responseMetadata.getId())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
+			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
+			// String.valueOf(responseMetadata.getUsage().getPromptTokens()))
+			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
+			// String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
+			// String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}
