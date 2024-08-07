@@ -191,4 +191,35 @@ public class CreateGeminiRequestTests {
 			.isEqualTo("Overridden function description");
 	}
 
+	@Test
+	public void createRequestWithGenerationConfigOptions() {
+
+		var client = new VertexAiGeminiChatModel(vertexAI,
+				VertexAiGeminiChatOptions.builder()
+					.withModel("DEFAULT_MODEL")
+					.withTemperature(66.6f)
+					.withMaxOutputTokens(100)
+					.withTopK(10.0f)
+					.withTopP(5.0f)
+					.withStopSequences(List.of("stop1", "stop2"))
+					.withCandidateCount(1)
+					.withResponseMimeType("application/json")
+					.build());
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content"));
+
+		assertThat(request.contents()).hasSize(1);
+
+		assertThat(request.model().getSystemInstruction()).isNotPresent();
+		assertThat(request.model().getModelName()).isEqualTo("DEFAULT_MODEL");
+		assertThat(request.model().getGenerationConfig().getTemperature()).isEqualTo(66.6f);
+		assertThat(request.model().getGenerationConfig().getMaxOutputTokens()).isEqualTo(100);
+		assertThat(request.model().getGenerationConfig().getTopK()).isEqualTo(10.0f);
+		assertThat(request.model().getGenerationConfig().getTopP()).isEqualTo(5.0f);
+		assertThat(request.model().getGenerationConfig().getCandidateCount()).isEqualTo(1);
+		assertThat(request.model().getGenerationConfig().getStopSequences(0)).isEqualTo("stop1");
+		assertThat(request.model().getGenerationConfig().getStopSequences(1)).isEqualTo("stop2");
+		assertThat(request.model().getGenerationConfig().getResponseMimeType()).isEqualTo("application/json");
+	}
+
 }
