@@ -183,7 +183,7 @@ public class CohereEmbeddingBedrockApi extends
 	@JsonInclude(Include.NON_NULL)
 	public record CohereEmbeddingResponse(
 			@JsonProperty("id") String id,
-			@JsonProperty("embeddings") List<List<Double>> embeddings,
+			@JsonProperty("embeddings") List<float[]> embeddings,
 			@JsonProperty("texts") List<String> texts,
 			@JsonProperty("response_type") String responseType,
 			// For future use: Currently bedrock doesn't return invocationMetrics for the cohere embedding model.

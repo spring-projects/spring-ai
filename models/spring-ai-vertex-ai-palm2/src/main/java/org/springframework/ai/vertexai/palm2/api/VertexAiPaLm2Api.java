@@ -16,6 +16,7 @@
 package org.springframework.ai.vertexai.palm2.api;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -364,8 +365,17 @@ public class VertexAiPaLm2Api {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Embedding(
-			@JsonProperty("value") List<Double> value) {
+			@JsonProperty("value") float[] value) {
 
+		@Override
+		public final int hashCode() {
+			return Arrays.hashCode(value);
+		}
+
+		@Override
+		public final boolean equals(Object arg0) {
+			return Arrays.equals(value,((Embedding) arg0).value);
+		}
 	}
 
 	/**

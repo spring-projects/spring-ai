@@ -196,7 +196,7 @@ public class MistralAiApi {
 	public record Embedding(
 	// @formatter:off
 		 @JsonProperty("index") Integer index,
-		 @JsonProperty("embedding") List<Double> embedding,
+		 @JsonProperty("embedding") float[] embedding,
 		 @JsonProperty("object") String object) {
 		 // @formatter:on
 
@@ -207,7 +207,7 @@ public class MistralAiApi {
 		 * @param embedding The embedding vector, which is a list of floats. The length of
 		 * vector depends on the model.
 		 */
-		public Embedding(Integer index, List<Double> embedding) {
+		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
 		}
 	}

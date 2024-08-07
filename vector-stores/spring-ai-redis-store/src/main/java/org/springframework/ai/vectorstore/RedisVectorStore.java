@@ -352,7 +352,7 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		returnFields.add(this.config.embeddingFieldName);
 		returnFields.add(this.config.contentFieldName);
 		returnFields.add(DISTANCE_FIELD_NAME);
-		var embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
+		var embedding = this.embeddingModel.embed(request.getQuery());
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
 			.returnFields(returnFields.toArray(new String[0]))
 			.setSortBy(DISTANCE_FIELD_NAME, true)
@@ -457,10 +457,10 @@ public class RedisVectorStore implements VectorStore, InitializingBean {
 		return JSON_PATH_PREFIX + field;
 	}
 
-	private static float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
+	private static float[] toFloatArray(List<Float> embedding) {
+		float[] embeddingFloat = new float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;

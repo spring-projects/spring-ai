@@ -95,7 +95,7 @@ public class VertexAiPaLm2ApiTests {
 
 		String text = "Hello, how are you?";
 
-		Embedding expectedEmbedding = new Embedding(List.of(0.1, 0.2, 0.3));
+		Embedding expectedEmbedding = new Embedding(new float[] { 0.1f, 0.2f, 0.3f });
 
 		server
 			.expect(requestToUriTemplate("/models/{generative}:embedText?key={apiKey}",
@@ -117,8 +117,8 @@ public class VertexAiPaLm2ApiTests {
 
 		List<String> texts = List.of("Hello, how are you?", "I'm fine, thank you.");
 
-		List<Embedding> expectedEmbeddings = List.of(new Embedding(List.of(0.1, 0.2, 0.3)),
-				new Embedding(List.of(0.4, 0.5, 0.6)));
+		List<Embedding> expectedEmbeddings = List.of(new Embedding(new float[] { 0.1f, 0.2f, 0.3f }),
+				new Embedding(new float[] { 0.4f, 0.5f, 0.6f }));
 
 		server
 			.expect(requestToUriTemplate("/models/{generative}:batchEmbedText?key={apiKey}",

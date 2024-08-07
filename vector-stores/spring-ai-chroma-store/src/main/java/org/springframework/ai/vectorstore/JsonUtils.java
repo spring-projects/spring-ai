@@ -44,24 +44,24 @@ public class JsonUtils {
 		}
 	}
 
-	/**
-	 * Converts a list of doubles to a list of floats.
-	 * @param embeddingDouble the list of doubles to convert
-	 * @return the list of floats
-	 */
-	public static List<Float> toFloatList(List<Double> embeddingDouble) {
-		return embeddingDouble.stream().map(Number::floatValue).toList();
-	}
+	// /**
+	// * Converts a list of doubles to a list of floats.
+	// * @param embeddingDouble the list of doubles to convert
+	// * @return the list of floats
+	// */
+	// public static List<Float> toFloatList(List<Double> embeddingDouble) {
+	// return embeddingDouble.stream().map(Number::floatValue).toList();
+	// }
 
 	/**
 	 * Converts a list of doubles to a float array.
-	 * @param embeddingDouble the list of doubles to convert
+	 * @param embedding the list of doubles to convert
 	 * @return the float array
 	 */
-	public static float[] toFloatArray(List<Double> embeddingDouble) {
-		float[] embeddingFloat = new float[embeddingDouble.size()];
+	public static float[] toFloatArray(List<Float> embedding) {
+		float[] embeddingFloat = new float[embedding.size()];
 		int i = 0;
-		for (Double d : embeddingDouble) {
+		for (Float d : embedding) {
 			embeddingFloat[i++] = d.floatValue();
 		}
 		return embeddingFloat;

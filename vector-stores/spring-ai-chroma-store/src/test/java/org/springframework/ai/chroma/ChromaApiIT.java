@@ -92,7 +92,7 @@ public class ChromaApiIT {
 		assertThat(chroma.countEmbeddings(newCollection.id())).isEqualTo(3);
 
 		var queryResult = chroma.queryCollection(newCollection.id(),
-				new QueryRequest(List.of(1f, 1f, 1f), 3, chroma.where("""
+				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, chroma.where("""
 						{
 							"key2" : { "$eq": true }
 						}
@@ -108,7 +108,7 @@ public class ChromaApiIT {
 		assertThat(result.ids().get(0)).isEqualTo("id2");
 
 		queryResult = chroma.queryCollection(newCollection.id(),
-				new QueryRequest(List.of(1f, 1f, 1f), 3, chroma.where("""
+				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, chroma.where("""
 						{
 							"key2" : { "$eq": true }
 						}
@@ -139,7 +139,7 @@ public class ChromaApiIT {
 
 		assertThat(chroma.countEmbeddings(collection.id())).isEqualTo(3);
 
-		var queryResult = chroma.queryCollection(collection.id(), new QueryRequest(List.of(1f, 1f, 1f), 3));
+		var queryResult = chroma.queryCollection(collection.id(), new QueryRequest(new float[] { 1f, 1f, 1f }, 3));
 
 		assertThat(queryResult.ids().get(0)).hasSize(3);
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id1", "id2", "id3");
@@ -149,26 +149,28 @@ public class ChromaApiIT {
 		assertThat(chromaEmbeddings).hasSize(3);
 		assertThat(chromaEmbeddings).hasSize(3);
 
-		queryResult = chroma.queryCollection(collection.id(), new QueryRequest(List.of(1f, 1f, 1f), 3, chroma.where("""
-				{
-					"$and" : [
-						{"country" : { "$eq": "BG"}},
-						{"year" : { "$gte": 2020}}
-					]
-				}
-				""")));
+		queryResult = chroma.queryCollection(collection.id(),
+				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, chroma.where("""
+						{
+							"$and" : [
+								{"country" : { "$eq": "BG"}},
+								{"year" : { "$gte": 2020}}
+							]
+						}
+						""")));
 		assertThat(queryResult.ids().get(0)).hasSize(2);
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id1", "id3");
 
-		queryResult = chroma.queryCollection(collection.id(), new QueryRequest(List.of(1f, 1f, 1f), 3, chroma.where("""
-				{
-					"$and" : [
-						{"country" : { "$eq": "BG"}},
-						{"year" : { "$gte": 2020}},
-						{"active" : { "$eq": true}}
-					]
-				}
-				""")));
+		queryResult = chroma.queryCollection(collection.id(),
+				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, chroma.where("""
+						{
+							"$and" : [
+								{"country" : { "$eq": "BG"}},
+								{"year" : { "$gte": 2020}},
+								{"active" : { "$eq": true}}
+							]
+						}
+						""")));
 		assertThat(queryResult.ids().get(0)).hasSize(1);
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id1");
 	}

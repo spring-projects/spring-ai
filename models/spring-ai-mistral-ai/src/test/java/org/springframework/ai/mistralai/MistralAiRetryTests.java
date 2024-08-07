@@ -15,6 +15,11 @@
  */
 package org.springframework.ai.mistralai;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -23,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -45,10 +48,7 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.when;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Christian Tzolov
@@ -166,7 +166,7 @@ public class MistralAiRetryTests {
 	public void mistralAiEmbeddingTransientError() {
 
 		EmbeddingList<Embedding> expectedEmbeddings = new EmbeddingList<>("list",
-				List.of(new Embedding(0, List.of(9.9, 8.8))), "model", new MistralAiApi.Usage(10, 10, 10));
+				List.of(new Embedding(0, new float[] { 9.9f, 8.8f })), "model", new MistralAiApi.Usage(10, 10, 10));
 
 		when(mistralAiApi.embeddings(isA(EmbeddingRequest.class)))
 			.thenThrow(new TransientAiException("Transient Error 1"))
@@ -177,7 +177,7 @@ public class MistralAiRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput()).isEqualTo(List.of(9.9, 8.8));
+		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
 		assertThat(retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(retryListener.onErrorRetryCount).isEqualTo(2);
 	}

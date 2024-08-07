@@ -865,7 +865,7 @@ public class MiniMaxApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record EmbeddingList(
-			@JsonProperty("vectors") List<List<Double>> vectors,
+			@JsonProperty("vectors") List<float[]> vectors,
 			@JsonProperty("model") String model,
 			@JsonProperty("total_tokens") Integer totalTokens) {
 	}

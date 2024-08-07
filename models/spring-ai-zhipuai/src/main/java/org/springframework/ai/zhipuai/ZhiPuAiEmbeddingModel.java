@@ -103,7 +103,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
-	public List<Double> embed(Document document) {
+	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
@@ -119,14 +119,14 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 						"ZhiPu Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 			}
 
-			List<List<Double>> embeddingList = new ArrayList<>();
+			List<float[]> embeddingList = new ArrayList<>();
 			for (String inputContent : request.getInstructions()) {
 				var apiRequest = createZhiPuEmbeddingRequest(inputContent, request.getOptions());
 				ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> response = this.zhiPuAiApi.embeddings(apiRequest)
 					.getBody();
 				if (response == null || response.data() == null || response.data().isEmpty()) {
 					logger.warn("No embeddings returned for input: {}", inputContent);
-					embeddingList.add(List.of());
+					embeddingList.add(new float[0]);
 				}
 				else {
 					embeddingList.add(response.data().get(0).embedding());

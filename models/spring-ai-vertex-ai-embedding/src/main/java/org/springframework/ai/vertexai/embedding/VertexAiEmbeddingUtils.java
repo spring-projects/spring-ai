@@ -427,13 +427,14 @@ public abstract class VertexAiEmbeddingUtils {
 		return builder.build();
 	}
 
-	public static List<Double> toVector(Value value) {
-		return value.getListValue()
-			.getValuesList()
-			.stream()
-			.map(Value::getNumberValue)
-			// .map(Double::floatValue)
-			.toList();
+	public static float[] toVector(Value value) {
+		float[] floats = new float[value.getListValue().getValuesList().size()];
+		int index = 0;
+		for (Value v : value.getListValue().getValuesList()) {
+			double d = v.getNumberValue();
+			floats[index++] = Double.valueOf(d).floatValue();
+		}
+		return floats;
 	}
 
 }
