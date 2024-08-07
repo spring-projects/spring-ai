@@ -16,6 +16,7 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -322,8 +324,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						items.addAll(userMessage.getMedia()
 							.stream()
-							.map(media -> new ChatMessageImageContentItem(
-									new ChatMessageImageUrl(media.getData().toString())))
+							.map(media -> new ChatMessageImageContentItem(new ChatMessageImageUrl(getMediaUrl(media))))
 							.toList());
 					}
 				}
@@ -362,6 +363,18 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			default:
 				throw new IllegalArgumentException("Unknown message type " + message.getMessageType());
 		}
+	}
+
+	private String getMediaUrl(Media media) {
+		Object data = media.getData();
+		if (data instanceof String dataUrl)
+			return dataUrl;
+		else if (data instanceof byte[] dataBytes) {
+			String base64EncodedData = Base64.getEncoder().encodeToString(dataBytes);
+			return "data:" + media.getMimeType() + ";base64," + base64EncodedData;
+		}
+		else
+			throw new IllegalArgumentException("Unknown media data type " + data.getClass().getName());
 	}
 
 	private ChatGenerationMetadata generateChoiceMetadata(ChatChoice choice) {

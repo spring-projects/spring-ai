@@ -41,6 +41,8 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
 import java.io.IOException;
@@ -197,6 +199,24 @@ class AzureOpenAiChatModelIT {
 		String response = ChatClient.create(chatModel).prompt()
 				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info(response);
+		assertThat(response).contains("bananas", "apple");
+		assertThat(response).containsAnyOf("bowl", "basket");
+	}
+
+	@Test
+	void multiModalityImageResource() {
+
+		Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
+
+		// @formatter:off
+		String response = ChatClient.create(chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
 				.call()
 				.content();
 		// @formatter:on
