@@ -241,12 +241,13 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 				List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
-						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-								"role", choice.message().role() != null ? choice.message().role().name() : "",
-								"index", choice.index(),
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
-						// @formatter:on
+					Map<String, Object> metadata = Map.of(
+							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
+							"role", choice.message().role() != null ? choice.message().role().name() : "",
+							"index", choice.index(),
+							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+					// @formatter:on
 					return buildGeneration(choice, metadata);
 				}).toList();
 
@@ -313,7 +314,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 									"id", chatCompletion2.id(),
 									"role", roleMap.getOrDefault(id, ""),
 									"index", choice.index(),
-									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
 
 							return buildGeneration(choice, metadata);
 						}).toList();
@@ -453,7 +455,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -466,7 +468,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null))
+							tr.id(), null, null))
 					.toList();
 			}
 			else {
