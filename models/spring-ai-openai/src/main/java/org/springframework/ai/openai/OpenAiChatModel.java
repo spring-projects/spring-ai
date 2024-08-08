@@ -25,8 +25,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -75,10 +73,11 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -278,8 +277,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
-			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.openAiApi.chatCompletionStream(request, getAdditionalHttpHeaders(prompt)));
+			Flux<OpenAiApi.ChatCompletionChunk> completionChunks = this.openAiApi.chatCompletionStream(request,
+					getAdditionalHttpHeaders(prompt));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
@@ -354,8 +353,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			})
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
-			return new MessageAggregator().aggregate(flux, cr -> {
-				observationContext.setResponse(cr);
+
+			return new MessageAggregator().aggregate(flux, mergedChatResponse -> {
+				observationContext.setResponse(mergedChatResponse);
 			});
 
 		});

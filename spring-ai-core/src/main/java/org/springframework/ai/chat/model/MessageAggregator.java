@@ -49,12 +49,15 @@ public class MessageAggregator {
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
 
-		AtomicReference<StringBuilder> stringBufferRef = new AtomicReference<>(new StringBuilder());
-		AtomicReference<Map<String, Object>> mapRef = new AtomicReference<>();
+		// Assistant Message
+		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
+		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
 
+		// ChatGeneration Metadata
 		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
 				ChatGenerationMetadata.NULL);
 
+		// Usage
 		AtomicReference<Long> metadataUsagePromptTokensRef = new AtomicReference<>(0L);
 		AtomicReference<Long> metadataUsageGenerationTokensRef = new AtomicReference<>(0L);
 		AtomicReference<Long> metadataUsageTotalTokensRef = new AtomicReference<>(0L);
@@ -66,8 +69,8 @@ public class MessageAggregator {
 		AtomicReference<String> metadataModelRef = new AtomicReference<>("");
 
 		return fluxChatResponse.doOnSubscribe(subscription -> {
-			stringBufferRef.set(new StringBuilder());
-			mapRef.set(new HashMap<>());
+			messageTextContentRef.set(new StringBuilder());
+			messageMetadataMapRef.set(new HashMap<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0L);
@@ -84,10 +87,10 @@ public class MessageAggregator {
 					generationMetadataRef.set(chatResponse.getResult().getMetadata());
 				}
 				if (chatResponse.getResult().getOutput().getContent() != null) {
-					stringBufferRef.get().append(chatResponse.getResult().getOutput().getContent());
+					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getContent());
 				}
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
-					mapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
+					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
 				}
 			}
 			if (chatResponse.getMetadata() != null) {
@@ -128,13 +131,12 @@ public class MessageAggregator {
 				.withPromptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
-			onAggregationComplete.accept(new ChatResponse(
-					List.of(new Generation(new AssistantMessage(stringBufferRef.get().toString(), mapRef.get()),
-							generationMetadataRef.get())),
-					chatResponseMetadata));
+			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(
+					new AssistantMessage(messageTextContentRef.get().toString(), messageMetadataMapRef.get()),
+					generationMetadataRef.get())), chatResponseMetadata));
 
-			stringBufferRef.set(new StringBuilder());
-			mapRef.set(new HashMap<>());
+			messageTextContentRef.set(new StringBuilder());
+			messageMetadataMapRef.set(new HashMap<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0L);
