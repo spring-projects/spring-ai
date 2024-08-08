@@ -53,8 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiPaymentTransactionIT {
 
 	private final static Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);

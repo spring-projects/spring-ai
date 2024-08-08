@@ -41,6 +41,7 @@ import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -304,19 +305,20 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						@SuppressWarnings("null")
 						String id = chatCompletion2.id();
 
-				// @formatter:off
-					List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-						if (choice.message().role() != null) {
-							roleMap.putIfAbsent(id, choice.message().role().name());
-						}
-						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion2.id(),
-								"role", roleMap.getOrDefault(id, ""),
-								"index", choice.index(),
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
-								return buildGeneration(choice, metadata);
+						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {// @formatter:off
+							
+							if (choice.message().role() != null) {
+								roleMap.putIfAbsent(id, choice.message().role().name());
+							}
+							Map<String, Object> metadata = Map.of(
+									"id", chatCompletion2.id(),
+									"role", roleMap.getOrDefault(id, ""),
+									"index", choice.index(),
+									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+
+							return buildGeneration(choice, metadata);
 						}).toList();
-					// @formatter:on
+						// @formatter:on
 
 						return new ChatResponse(generations, from(chatCompletion2, null));
 					}
@@ -328,7 +330,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				}));
 
 			// @formatter:off
-			return chatResponse.flatMap(response -> {
+			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 
 				if (isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
 						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
@@ -341,7 +343,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					return Flux.just(response);
 				}
 			})
-			.doOnNext(cr -> observationContext.setResponse(cr))
 			.doOnError(observation::error)
 			.doFinally(s -> {
 				// TODO: Consider a custom ObservationContext and
@@ -353,6 +354,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			})
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
+			return new MessageAggregator().aggregate(flux, cr -> {
+				observationContext.setResponse(cr);
+			});
+
 		});
 	}
 

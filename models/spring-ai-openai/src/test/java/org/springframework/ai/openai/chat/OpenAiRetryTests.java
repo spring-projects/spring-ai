@@ -187,7 +187,7 @@ public class OpenAiRetryTests {
 	public void openAiChatStreamNonTransientError() {
 		when(openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).subscribe());
 	}
 
 	@Test

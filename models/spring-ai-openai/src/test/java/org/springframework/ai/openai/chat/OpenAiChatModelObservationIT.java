@@ -20,6 +20,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import reactor.core.publisher.Flux;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -60,8 +61,14 @@ public class OpenAiChatModelObservationIT {
 	@Autowired
 	OpenAiChatModel chatModel;
 
+	@BeforeEach
+	void beforeEach() {
+		observationRegistry.clear();
+	}
+
 	@Test
 	void observationForChatOperation() {
+
 		var options = OpenAiChatOptions.builder()
 			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
 			.withFrequencyPenalty(0f)
@@ -80,6 +87,45 @@ public class OpenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
+		validate(responseMetadata);
+	}
+
+	@Test
+	void observationForStreamingChatOperation() {
+		var options = OpenAiChatOptions.builder()
+			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
+			.withFrequencyPenalty(0f)
+			.withMaxTokens(2048)
+			.withPresencePenalty(0f)
+			.withStop(List.of("this-is-the-end"))
+			.withTemperature(0.7f)
+			.withTopP(1f)
+			.withStreamUsage(true)
+			.build();
+
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+
+		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
+
+		List<ChatResponse> responses = chatResponseFlux.collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses).hasSizeGreaterThan(10);
+
+		String aggregatedResponse = responses.subList(0, responses.size() - 1)
+			.stream()
+			.map(r -> r.getResult().getOutput().getContent())
+			.collect(Collectors.joining());
+		assertThat(aggregatedResponse).isNotEmpty();
+
+		ChatResponse lastChatResponse = responses.get(responses.size() - 1);
+
+		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		validate(responseMetadata);
+	}
+
+	private void validate(ChatResponseMetadata responseMetadata) {
 		TestObservationRegistryAssert.assertThat(observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
@@ -107,70 +153,6 @@ public class OpenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
-			.hasBeenStarted()
-			.hasBeenStopped();
-	}
-
-	@Test
-	void observationForStreamingChatOperation() {
-		var options = OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.withFrequencyPenalty(0f)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0f)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7f)
-			.withTopP(1f)
-			.withStreamUsage(true)
-			.build();
-
-		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
-
-		Flux<ChatResponse> chatResponseFlux = chatModel.stream(prompt);
-		List<ChatResponse> responses = chatResponseFlux.collectList().block();
-		assertThat(responses).isNotEmpty();
-
-
-		aggregatedResponse = responses.stream().map(r - r.getResult().getOutput().getContent()).collect(Collectors.joining());
-		for (int i = 0; i < responses.size() - 1; i++ ) {
-			ChatResponse chatResponse = responses.get(i);
-			System.out.println("I = " + i + " -> " + chatResponse.getResult().getOutput());
-			// String content = chatResponse.getResult().getOutput().getContent();
-			// assertThat(content).isNotEmpty().as("Response " + i + " has content: " + content);
-		}
-
-		ChatResponse lastChatResponse = responses.get(responses.size() - 1);
-
-		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
-		assertThat(responseMetadata).isNotNull();
-
-		TestObservationRegistryAssert.assertThat(observationRegistry)
-			.doesNotHaveAnyRemainingCurrentObservation()
-			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
-			.that()
-			.hasContextualNameEqualTo("chat " + OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-					AiOperationType.CHAT.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
-					"[\"this-is-the-end\"]")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE)
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
-			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
-			// String.valueOf(responseMetadata.getUsage().getPromptTokens()))
-			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-			// String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
-			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
-			// String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}
