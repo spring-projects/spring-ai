@@ -147,6 +147,11 @@
                 <artifactId>spring-ai-qianfan</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-wenxin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Vector Databases -->
             <dependency>
@@ -505,6 +510,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-wenxin-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
         </dependencies>
     </dependencyManagement>
 

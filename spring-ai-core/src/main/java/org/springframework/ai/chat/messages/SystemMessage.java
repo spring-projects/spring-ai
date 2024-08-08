@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,7 +28,9 @@ import org.springframework.core.io.Resource;
  * generative to behave like a certain character or to provide answers in a specific
  * format.
  */
-public class SystemMessage extends AbstractMessage {
+public class SystemMessage extends AbstractMessage implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public SystemMessage(String textContent) {
 		super(MessageType.SYSTEM, textContent, Map.of());

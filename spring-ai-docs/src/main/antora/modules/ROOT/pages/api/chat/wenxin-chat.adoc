@@ -1,0 +1,192 @@
+= Wenxin Chat
+
+Spring AI supports Wenxin Chat the AI language model by Baidu.
+
+== Pre-requisites ==
+
+You will need to create an API with Baidu to access Wenxin Models.
+Create an account at https://login.bce.baidu.com[Baidu signup page] and generate the access_key & secretKey on the https://console.bce.baidu.com/iam/#/iam/accesslist[AK/SK Page]
+The Spring AI Project defines a configuration property named "spring.ai.wenxin.access-key" and "spring.ai.wenxin.secret-key" to store the access_key & secretKey respectively.
+Exporting an enviroment variable named "SPRING_AI_WENXIN_ACCESS_KEY" and "SPRING_AI_WENXIN_SECRET_KEY" with the access_key & secretKey respectively will also work.
+
+[source.shell]
+----
+export SPRING_AI_WENXIN_ACCESS_KEY=<access_key>
+export SPRING_AI_WENXIN_SECRET_KEY=<secret_key>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Wenxin Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-wenxin-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-wenxin-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Wenxin chat model.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.wenxin` is used as the property prefix that lets you connect to wenxin.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.wenxin.base-url   | The URL to connect to |  https://aip.baidubce.com
+| spring.ai.wenxin.access-key    | The access Key           |  -
+| spring.ai.wenxin.secret-key    | The secret Key           |  -
+|====
+
+==== Configuration Properties
+
+The prefix `spring.ai.wenxin.chat` is the property prefix that lets you configure the chat model implementation for wenxin.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.wenxin.chat.enabled | Enable wenxin chat model.  | true
+| spring.ai.wenxin.chat.base-url   | Optional overrides the spring.ai.wenxin.base-url to provide chat specific url |  -
+| spring.ai.wenxin.chat.access-key   | Optional overrides the spring.ai.wenxin.access-key to provide chat specific access-key |  -
+| spring.ai.wenxin.chat.secret-key   | Optional overrides the spring.ai.wenxin.secret-key to provide chat specific secret-key |  -
+| spring.ai.wenxin.chat.options.model | This is the Wenxin Chat model to use. 'ERNIE-3.5-8K','ERNIE-3.5-8K-0205','ERNIE-3.5-8K-Preview','ERNIE-3.5-8K-0329','ERNIE-3.5-128K','ERNIE-3.5-8K-0613'.  See the https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11[models] page for more information.  | `ERNIE-3.5-8K`
+| spring.ai.wenxin.chat.options.penalty_score | By penalizing the tokens already generated, we decrease the occurrence of repeated generations. Here's what you need to know: (1) A higher value means a stronger penalty. (2) Default is 1.0, can be set between [1.0, 2.0].. | 0.8
+| spring.ai.wenxin.chat.options.max_output_tokens | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
+| spring.ai.wenxin.chat.options.response_format | Specify the format of the response content as follows:(1) Optional values:- json_object: returns in JSON format, may not always give desired results- text: returns in text format(2) If the response_format parameter is not specified, the default value is text. | -
+| spring.ai.wenxin.chat.options.stop | Generate a stop sign. When the model generates a result ending with any element in stop, stop text generation. Note: (1) Each element is no more than 20 characters long. (2) Up to 4 elements. | -
+| spring.ai.wenxin.chat.options.temperature | Explanation: (1) Higher values will make the output more random, while lower values will make it more concentrated and definite. (2) Default is 0.8, range (0, 1.0], cannot be 0. | 1
+| spring.ai.wenxin.chat.options.top_p | Explanation:(1) The larger the value, the more diverse the output text will be.(2) Default is 0.8, with a range of [0, 1.0]. | -
+| spring.ai.wenxin.chat.options.functions | A description list of triggerable functions, stating: (1) Unlimited number of supported functions (2) Length limit, total content in message's content, functions, and system fields combined cannot exceed 20000 characters, and must not exceed 5120 tokens. | -
+| spring.ai.wenxin.chat.options.tool_choice | In the context of function calls, prompt the large model to select the specified function (not mandatory), specifying that the specified function name must exist in functions. | -
+| spring.ai.wenxin.chat.options.user_id | User's unique identifier. | -
+| spring.ai.wenxin.chat.options.system | Model personas are primarily used for persona settings, for example, if you are an AI assistant produced by XXX company, explain: (1) Length limit, the total length of content in the message, functions, and system fields cannot exceed 20,000 characters, and must not exceed 5120 tokens (2) If using system and functions at the same time, the effectiveness of use may not be guaranteed temporarily, continuous optimization is ongoing. | -
+| spring.ai.wenxin.chat.options.disable_search | Whether to force close the real-time search feature, default is false, which means not to close. | -
+| spring.ai.wenxin.chat.options.enable_citation | Do you want to turn on the return of superscripts at the top right corner, which means: (1) If turned on, there's a chance of triggering search origin information search_info, the content of search_info can be found in the response parameter introduction (2) Default is false, not turned on. | -
+| spring.ai.wenxin.chat.options.enable_trace | Do you want to return search trace information? (1) If enabled, in scenarios where search enhancement is triggered, it will return search trace information (search_info). Please refer to the response parameters description for the content of search_info. (2) Default is set to false, indicating no return. | -
+|====
+
+TIP: All properties prefixed with `spring.ai.wenxin.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-wenxin/src/main/java/org/springframework/ai/wenxin/WenxinChatOptions.java[WenxinChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `WenxinChatOptions(api, options)` constructor or the `spring.ai.wenxin.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        OpenAiChatOptions.builder()
+            .withModel("completions")
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-wenxin/src/main/java/org/springframework/ai/wenxin/WenxinChatOptions.java[WenxinChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+== Function Calling
+
+You can register custom Java functions with the OpenAiChatModel and have the Wenxin model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-wenxin-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Wenxin chat model:
+
+[source,application.properties]
+----
+spring.ai.wenxin.accesss-key=YOUR_ACCESS_KEY
+spring.ai.wenxin.secret-key=YOUR_SECRET_KEY
+spring.ai.wenxin.chat.options.model=gpt-3.5-turbo
+spring.ai.wenxin.chat.options.temperature=0.7
+----
+
+TIP: replace the `api-key` with your Wenxin credentials.
+
+This will create a `WenxinChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
+
+[source.java]
+----
+@RestController
+@RequestMapping("/wenxin")
+public class WenxinSimpleAiController {
+
+
+	private final ChatModel chatModel;
+
+	private final StreamingChatModel streamingChatModel;
+
+	public WenxinSimpleAiController(@Qualifier("wenxinChatModel") ChatModel chatModel,
+			@Qualifier("wenxinChatModel") StreamingChatModel streamingChatModel) {
+		this.chatModel = chatModel;
+		this.streamingChatModel = streamingChatModel;
+	}
+
+	@GetMapping("/simple")
+	public Map<String, String> completion(
+			@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+		return Map.of("generation", chatModel.call(message));
+
+	}
+
+	@GetMapping("/stream")
+	public Flux<ServerSentEvent<String>> stream(
+			@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+		return streamingChatModel.stream(message).map(data -> ServerSentEvent.builder(data).build());
+	}
+}
+----
+
+

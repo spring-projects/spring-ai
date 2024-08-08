@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +32,9 @@ import org.springframework.util.Assert;
  * end-user or developer. They represent questions, prompts, or any input that you want
  * the generative to respond to.
  */
-public class UserMessage extends AbstractMessage implements MediaContent {
+public class UserMessage extends AbstractMessage implements MediaContent, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	protected final List<Media> media;
 

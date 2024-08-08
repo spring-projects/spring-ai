@@ -70,6 +70,7 @@
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-qianfan</module>
+		<module>models/spring-ai-wenxin</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
@@ -96,6 +97,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-palm2</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-wenxin</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
 		<module>vector-stores/spring-ai-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
@@ -186,6 +188,7 @@
 		<qdrant.version>1.9.1</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
+
 
 		<!-- testing dependencies -->
 		<httpclient5.version>5.3.1</httpclient5.version>

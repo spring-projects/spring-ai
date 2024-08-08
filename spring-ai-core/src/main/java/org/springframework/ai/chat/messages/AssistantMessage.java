@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,7 +32,9 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class AssistantMessage extends AbstractMessage {
+public class AssistantMessage extends AbstractMessage implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public record ToolCall(String id, String type, String name, String arguments) {
 	}

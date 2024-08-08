@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
@@ -36,20 +37,20 @@ public class TypeResolverHelperTests {
 
 	@Test
 	public void testGetFunctionInputType() {
-		Class<?> inputType = TypeResolverHelper.getFunctionInputClass(MockWeatherService.class);
+		Type inputType = TypeResolverHelper.getFunctionInputClass(MockWeatherService.class);
 		assertThat(inputType).isEqualTo(Request.class);
 	}
 
 	@Test
 	public void testGetFunctionOutputType() {
-		Class<?> outputType = TypeResolverHelper.getFunctionOutputClass(MockWeatherService.class);
+		Type outputType = TypeResolverHelper.getFunctionOutputClass(MockWeatherService.class);
 		assertThat(outputType).isEqualTo(Response.class);
 	}
 
 	@Test
 	public void testGetFunctionInputTypeForInstance() {
 		MockWeatherService service = new MockWeatherService();
-		Class<?> inputType = TypeResolverHelper.getFunctionInputClass(service.getClass());
+		Type inputType = TypeResolverHelper.getFunctionInputClass(service.getClass());
 		assertThat(inputType).isEqualTo(Request.class);
 	}
 

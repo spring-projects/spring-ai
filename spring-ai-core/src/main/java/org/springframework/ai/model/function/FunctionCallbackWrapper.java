@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.model.function;
 
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -36,7 +37,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 	private final Function<I, O> function;
 
-	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
+	private FunctionCallbackWrapper(String name, String description, String inputTypeSchema, Type inputType,
 			Function<O, String> responseConverter, ObjectMapper objectMapper, Function<I, O> function) {
 		super(name, description, inputTypeSchema, inputType, responseConverter, objectMapper);
 		Assert.notNull(function, "Function must not be null");
@@ -44,8 +45,8 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <I, O> Class<I> resolveInputType(Function<I, O> function) {
-		return (Class<I>) TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
+	private static <I, O> Type resolveInputType(Function<I, O> function) {
+		return TypeResolverHelper.getFunctionInputClass((Class<Function<I, O>>) function.getClass());
 	}
 
 	@Override
@@ -69,7 +70,9 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 
 		private String description;
 
-		private Class<I> inputType;
+		// private Class<I> inputType;
+
+		private Type inputType;
 
 		private final Function<I, O> function;
 
@@ -141,6 +144,7 @@ public class FunctionCallbackWrapper<I, O> extends AbstractFunctionCallback<I, O
 			Assert.notNull(this.objectMapper, "ObjectMapper must not be null");
 
 			if (this.inputType == null) {
+				// this.inputType = resolveInputType(this.function);
 				this.inputType = resolveInputType(this.function);
 			}
 

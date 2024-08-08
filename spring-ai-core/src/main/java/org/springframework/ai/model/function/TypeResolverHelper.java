@@ -37,7 +37,7 @@ public abstract class TypeResolverHelper {
 	 * @param functionClass The function class.
 	 * @return The input class of the function.
 	 */
-	public static Class<?> getFunctionInputClass(Class<? extends Function<?, ?>> functionClass) {
+	public static Type getFunctionInputClass(Class<? extends Function<?, ?>> functionClass) {
 		return getFunctionArgumentClass(functionClass, 0);
 	}
 
@@ -46,7 +46,7 @@ public abstract class TypeResolverHelper {
 	 * @param functionClass The function class.
 	 * @return The output class of the function.
 	 */
-	public static Class<?> getFunctionOutputClass(Class<? extends Function<?, ?>> functionClass) {
+	public static Type getFunctionOutputClass(Class<? extends Function<?, ?>> functionClass) {
 		return getFunctionArgumentClass(functionClass, 1);
 	}
 
@@ -56,13 +56,14 @@ public abstract class TypeResolverHelper {
 	 * @param argumentIndex The index of the argument whose class should be retrieved.
 	 * @return The class of the specified function argument.
 	 */
-	public static Class<?> getFunctionArgumentClass(Class<? extends Function<?, ?>> functionClass, int argumentIndex) {
+	public static Type getFunctionArgumentClass(Class<? extends Function<?, ?>> functionClass, int argumentIndex) {
 		Type type = TypeResolver.reify(Function.class, functionClass);
 
 		var argumentType = type instanceof ParameterizedType
 				? ((ParameterizedType) type).getActualTypeArguments()[argumentIndex] : Object.class;
 
-		return toRawClass(argumentType);
+		// return toRawClass(argumentType);
+		return argumentType;
 	}
 
 	/**

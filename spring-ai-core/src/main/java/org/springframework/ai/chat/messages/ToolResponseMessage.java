@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.chat.messages;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +27,9 @@ import java.util.Objects;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class ToolResponseMessage extends AbstractMessage {
+public class ToolResponseMessage extends AbstractMessage implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public record ToolResponse(String id, String name, String responseData) {
 	};
