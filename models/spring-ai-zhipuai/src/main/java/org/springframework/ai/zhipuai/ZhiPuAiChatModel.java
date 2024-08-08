@@ -235,20 +235,23 @@ public class ZhiPuAiChatModel extends
 		Set<String> functionsForThisRequest = new HashSet<>();
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(m -> {
-			// Add text content.
-			List<MediaContent> contents = new ArrayList<>(List.of(new MediaContent(m.getContent())));
 			if (m instanceof UserMessage userMessage) {
 				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 					// Add media content.
-					contents.addAll(userMessage.getMedia()
+					List<MediaContent> mediaContents = new ArrayList<>();
+					mediaContents.add(new MediaContent(userMessage.getContent()));
+					mediaContents.addAll(userMessage.getMedia()
 						.stream()
 						.map(media -> new MediaContent(
 								new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
 						.toList());
+					return new ChatCompletionMessage(mediaContents,
+							ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
 				}
 			}
 
-			return new ChatCompletionMessage(contents, ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
+			return new ChatCompletionMessage(m.getContent(),
+					ChatCompletionMessage.Role.valueOf(m.getMessageType().name()));
 		}).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
