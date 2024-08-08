@@ -15,24 +15,64 @@
  */
 package org.springframework.ai.vectorstore;
 
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import java.util.List;
 
 /**
  * Converts {@link Expression} into PgVector metadata filter expression format.
  * (https://www.postgresql.org/docs/current/functions-json.html)
  *
+ * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  */
 public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
-		this.convertOperand(expression.left(), context);
-		context.append(getOperationSymbol(expression));
-		this.convertOperand(expression.right(), context);
+		if (expression.type() == Filter.ExpressionType.IN) {
+			handleIn(expression, context);
+		}
+		else if (expression.type() == Filter.ExpressionType.NIN) {
+			handleNotIn(expression, context);
+		}
+		else {
+			this.convertOperand(expression.left(), context);
+			context.append(getOperationSymbol(expression));
+			this.convertOperand(expression.right(), context);
+		}
+	}
+
+	private void handleIn(Expression expression, StringBuilder context) {
+		context.append("(");
+		convertToConditions(expression, context);
+		context.append(")");
+	}
+
+	private void convertToConditions(Expression expression, StringBuilder context) {
+		Filter.Value right = (Filter.Value) expression.right();
+		Object value = right.value();
+		if (!(value instanceof List)) {
+			throw new IllegalArgumentException("Expected a List, but got: " + value.getClass().getSimpleName());
+		}
+		List<Object> values = (List) value;
+		for (int i = 0; i < values.size(); i++) {
+			this.convertOperand(expression.left(), context);
+			context.append(" == ");
+			this.doSingleValue(values.get(i), context);
+			if (i < values.size() - 1) {
+				context.append(" || ");
+			}
+		}
+	}
+
+	private void handleNotIn(Expression expression, StringBuilder context) {
+		context.append("!(");
+		convertToConditions(expression, context);
+		context.append(")");
 	}
 
 	private String getOperationSymbol(Expression exp) {
@@ -53,10 +93,6 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 				return " > ";
 			case GTE:
 				return " >= ";
-			case IN:
-				return " in ";
-			case NIN:
-				return " nin ";
 			default:
 				throw new RuntimeException("Not supported expression type: " + exp.type());
 		}
