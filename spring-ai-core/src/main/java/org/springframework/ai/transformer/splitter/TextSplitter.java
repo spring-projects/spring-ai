@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.ContentFormatter;
@@ -61,18 +62,20 @@ public abstract class TextSplitter implements DocumentTransformer {
 		List<String> texts = new ArrayList<>();
 		List<Map<String, Object>> metadataList = new ArrayList<>();
 		List<ContentFormatter> formatters = new ArrayList<>();
+		List<String> ids = new ArrayList<>();
 
 		for (Document doc : documents) {
 			texts.add(doc.getContent());
 			metadataList.add(doc.getMetadata());
 			formatters.add(doc.getContentFormatter());
+			ids.add(doc.getId());
 		}
 
-		return createDocuments(texts, formatters, metadataList);
+		return createDocuments(texts, formatters, metadataList, ids);
 	}
 
 	private List<Document> createDocuments(List<String> texts, List<ContentFormatter> formatters,
-			List<Map<String, Object>> metadataList) {
+										   List<Map<String, Object>> metadataList, List<String> ids) {
 
 		// Process the data in a column oriented way and recreate the Document
 		List<Document> documents = new ArrayList<>();
@@ -84,12 +87,13 @@ public abstract class TextSplitter implements DocumentTransformer {
 			if (chunks.size() > 1) {
 				logger.info("Splitting up document into " + chunks.size() + " chunks.");
 			}
+			String id = ids.get(i);
 			for (String chunk : chunks) {
 				// only primitive values are in here -
 				Map<String, Object> metadataCopy = metadata.entrySet()
 					.stream()
 					.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-				Document newDoc = new Document(chunk, metadataCopy);
+				Document newDoc = (StringUtils.isEmpty(id)) ?  new Document(chunk, metadataCopy) : new Document(id, chunk, metadataCopy);
 
 				if (this.copyContentFormatter) {
 					// Transfer the content-formatter of the parent to the chunked
