@@ -1,0 +1,2 @@
+[Wordlift Chat Documentation](https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/chat/wordlift.html)
+
