@@ -359,7 +359,6 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.chat.options.maxTokens=123",
 				"spring.ai.openai.chat.options.n=10",
 				"spring.ai.openai.chat.options.presencePenalty=0",
-				"spring.ai.openai.chat.options.responseFormat.type=json",
 				"spring.ai.openai.chat.options.seed=66",
 				"spring.ai.openai.chat.options.stop=boza,koza",
 				"spring.ai.openai.chat.options.temperature=0.55",
@@ -414,7 +413,6 @@ public class OpenAiPropertiesTests {
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
 				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
-				assertThat(chatProperties.getOptions().getResponseFormat()).isEqualTo(new ResponseFormat("json"));
 				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(66);
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55f);

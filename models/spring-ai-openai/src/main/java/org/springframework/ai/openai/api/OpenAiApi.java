@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -521,7 +522,53 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
-				@JsonProperty("type") String type) {
+				@JsonProperty("type") Type type,
+				@JsonProperty("json_schema") JsonSchema jsonSchema ) {
+			
+			public enum Type {
+				/**
+				 * Enables JSON mode, which guarantees the message
+				 * the model generates is valid JSON.
+				 */
+				@JsonProperty("json_object")
+				JSON_OBJECT,
+
+				/**
+				 * Enables Structured Outputs which guarantees the model
+				 * will match your supplied JSON schema.
+				 */
+				@JsonProperty("json_schema")
+				JSON_SCHEMA
+			}
+
+			@JsonInclude(Include.NON_NULL)
+			public record JsonSchema(
+				@JsonProperty("name") String name,
+				@JsonProperty("schema") Map<String, Object> schema,
+				@JsonProperty("strict") Boolean strict) {
+
+				public JsonSchema(String name, String schema) {
+					this(name, ModelOptionsUtils.jsonToMap(schema), true);
+				}
+
+				public JsonSchema(String name, String schema, Boolean strict) {
+					this(StringUtils.hasText(name)? name : "custom_response_format_schema", ModelOptionsUtils.jsonToMap(schema), strict);
+				}
+			}
+
+			public ResponseFormat(Type type) {
+				this(type, (JsonSchema) null);
+			}
+
+			public ResponseFormat(Type type, String jsonSchena) {
+				this(type, "custom_response_format_schema", jsonSchena, true);
+			}
+
+			@ConstructorBinding
+			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
+				this(type, StringUtils.hasText(schema)? new JsonSchema(name, schema, strict): null);
+			}
+
 		}
 
 		/**

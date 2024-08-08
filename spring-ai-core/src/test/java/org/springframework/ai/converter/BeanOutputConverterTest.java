@@ -133,7 +133,8 @@ class BeanOutputConverterTest {
 							    "someString" : {
 							      "type" : "string"
 							    }
-							  }
+							  },
+							  "additionalProperties" : false
 							}```
 							""");
 		}
@@ -156,7 +157,8 @@ class BeanOutputConverterTest {
 							    "someString" : {
 							      "type" : "string"
 							    }
-							  }
+							  },
+							  "additionalProperties" : false
 							}```
 							""");
 		}
@@ -181,7 +183,8 @@ class BeanOutputConverterTest {
 							      "someString" : {
 							        "type" : "string"
 							      }
-							    }
+							    },
+							    "additionalProperties" : false
 							  }
 							}```
 							""");
@@ -199,7 +202,8 @@ class BeanOutputConverterTest {
 					      "type" : "string",
 					      "description" : "string_property_description"
 					    }
-					  }
+					  },
+					  "additionalProperties" : false
 					}```
 					""");
 		}
@@ -217,7 +221,8 @@ class BeanOutputConverterTest {
 					      "type" : "string",
 					      "description" : "string_property_description"
 					    }
-					  }
+					  },
+					  "additionalProperties" : false
 					}```
 					""");
 		}
