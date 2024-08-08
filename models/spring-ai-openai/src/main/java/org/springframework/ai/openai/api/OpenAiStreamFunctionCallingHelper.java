@@ -91,7 +91,6 @@ public class OpenAiStreamFunctionCallingHelper {
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
-		String refusal = (current.refusal() != null ? current.refusal() : previous.refusal());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -121,7 +120,7 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
