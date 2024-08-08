@@ -24,7 +24,7 @@ source ./venv/bin/activate
 (venv) optimum-cli export onnx --model sentence-transformers/all-MiniLM-L6-v2 onnx-output-folder
 ----
 
-The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. Later includes the `tokenizer.json` and `model.onnx` files used by the embedding model.
+The snippet exports the https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2[sentence-transformers/all-MiniLM-L6-v2] transformer into the `onnx-output-folder` folder. The latter includes the `tokenizer.json` and `model.onnx` files used by the embedding model.
 
 In place of the all-MiniLM-L6-v2 you can pick any huggingface transformer identifier or provide direct file path.
 
