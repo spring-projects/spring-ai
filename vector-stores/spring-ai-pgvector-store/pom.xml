@@ -49,6 +49,12 @@
 			<version>${pgvector.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.5.0-M2</version>
+		</dependency>
+
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
