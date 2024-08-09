@@ -95,18 +95,23 @@ public class PgVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(documents);
 
-			List<Document> results = vectorStore
+			List<Document> similarityResults = vectorStore
 				.similaritySearch(SearchRequest.query("What is Great Depression?").withTopK(1));
+			assertThat(similarityResults).hasSize(1);
+			Document similarityResultDoc = similarityResults.get(0);
+			assertThat(similarityResultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(similarityResultDoc.getMetadata()).containsKeys("depression", "distance");
 
-			assertThat(results).hasSize(1);
-			Document resultDoc = results.get(0);
-			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-			assertThat(resultDoc.getMetadata()).containsKeys("depression", "distance");
+			List<Document> hybridResults = vectorStore
+				.hybridSearch(SearchRequest.query("What is Great Depression?").withTopK(1));
+			assertThat(hybridResults).hasSize(2);
+			Document hybridResultDoc = hybridResults.get(1);
+			assertThat(hybridResultDoc.getMetadata()).containsKeys("depression");
 
 			// Remove all documents from the store
 			vectorStore.delete(documents.stream().map(doc -> doc.getId()).toList());
-			results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
-			assertThat(results).hasSize(0);
+			similarityResults = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+			assertThat(similarityResults).hasSize(0);
 		});
 	}
 
