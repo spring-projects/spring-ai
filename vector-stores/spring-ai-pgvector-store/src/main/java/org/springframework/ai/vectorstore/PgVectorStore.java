@@ -154,7 +154,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void add(List<Document> documents) {
 
-		int segmentNum = 10;
+		int segmentNum = 100;
 
 		List<List<Document>> segments = ListUtils.partition(documents, segmentNum);
 
