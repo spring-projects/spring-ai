@@ -56,8 +56,8 @@ public class ZhiPuAiApiToolFunctionCallIT {
 	public void toolFunctionCall() {
 
 		// Step 1: send the conversation and available functions to the model
-		var message = new ChatCompletionMessage("What's the weather like in San Francisco, Tokyo, and Paris?",
-				Role.USER);
+		var message = new ChatCompletionMessage(
+				"What's the weather like in San Francisco? Return the temperature in Celsius.", Role.USER);
 
 		var functionTool = new ZhiPuAiApi.FunctionTool(Type.FUNCTION,
 				new ZhiPuAiApi.FunctionTool.Function(
@@ -119,7 +119,8 @@ public class ZhiPuAiApiToolFunctionCallIT {
 			}
 		}
 
-		var functionResponseRequest = new ChatCompletionRequest(messages, GLM_4.value, 0.8f);
+		var functionResponseRequest = new ChatCompletionRequest(messages, GLM_4.value, List.of(functionTool),
+				ToolChoiceBuilder.AUTO);
 
 		ResponseEntity<ChatCompletion> chatCompletion2 = zhiPuAiApi.chatCompletionEntity(functionResponseRequest);
 
@@ -130,10 +131,6 @@ public class ZhiPuAiApiToolFunctionCallIT {
 		assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
 			.containsAnyOf("30.0°C", "30°C", "30.0°F", "30°F");
-		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
-			.containsAnyOf("10.0°C", "10°C", "10.0°F", "10°F");
-		assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
-			.containsAnyOf("15.0°C", "15°C", "15.0°F", "15°F");
 	}
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {

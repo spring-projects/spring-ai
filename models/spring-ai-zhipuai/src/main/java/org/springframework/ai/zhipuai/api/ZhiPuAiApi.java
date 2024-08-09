@@ -684,7 +684,7 @@ public class ZhiPuAiApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
- 				.map(chunk -> {
+				.map(chunk -> {
 					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 						isInsideTool.set(true);
 					}

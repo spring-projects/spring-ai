@@ -21,10 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.autoconfigure.zhipuai.ZhiPuAiAutoConfiguration;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
@@ -58,7 +58,8 @@ public class FunctionCallbackInPromptIT {
 
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = ZhiPuAiChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
@@ -83,7 +84,8 @@ public class FunctionCallbackInPromptIT {
 
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = ZhiPuAiChatOptions.builder()
 				.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
