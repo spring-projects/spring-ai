@@ -61,7 +61,8 @@ public class PgVectorFilterExpressionConverterTests {
 		// genre in ["comedy", "documentary", "drama"]
 		String vectorExpr = converter.convertExpression(
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("$.genre in [\"comedy\",\"documentary\",\"drama\"]");
+		assertThat(vectorExpr)
+			.isEqualTo("($.genre == \"comedy\" || $.genre == \"documentary\" || $.genre == \"drama\")");
 	}
 
 	@Test
@@ -82,7 +83,7 @@ public class PgVectorFilterExpressionConverterTests {
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
 		assertThat(vectorExpr)
-			.isEqualTo("($.year >= 2020 || $.country == \"BG\") && $.city nin [\"Sofia\",\"Plovdiv\"]");
+			.isEqualTo("($.year >= 2020 || $.country == \"BG\") && !($.city == \"Sofia\" || $.city == \"Plovdiv\")");
 	}
 
 	@Test
@@ -93,7 +94,8 @@ public class PgVectorFilterExpressionConverterTests {
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
 
-		assertThat(vectorExpr).isEqualTo("$.isOpen == true && $.year >= 2020 && $.country in [\"BG\",\"NL\",\"US\"]");
+		assertThat(vectorExpr).isEqualTo(
+				"$.isOpen == true && $.year >= 2020 && ($.country == \"BG\" || $.country == \"NL\" || $.country == \"US\")");
 	}
 
 	@Test
