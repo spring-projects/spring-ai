@@ -106,9 +106,9 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
 | spring.ai.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
 The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
-| spring.ai.openai.chat.options.responseFormat.name | Reponse format schema name. Applicable only for `responseFormat.type=JSON_SCHEMA` | custom_response_format_schema
-| spring.ai.openai.chat.options.responseFormat.schema | Reponse format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
-| spring.ai.openai.chat.options.responseFormat.strict | Reponse format JSON schema adheranse strictens. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
+| spring.ai.openai.chat.options.responseFormat.name | Response format schema name. Applicable only for `responseFormat.type=JSON_SCHEMA` | custom_schema
+| spring.ai.openai.chat.options.responseFormat.schema | Response format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
+| spring.ai.openai.chat.options.responseFormat.strict | Response format JSON schema adherence strictness. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
 | spring.ai.openai.chat.options.seed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
 | spring.ai.openai.chat.options.stop | Up to 4 sequences where the API will stop generating further tokens. | -
 | spring.ai.openai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | -
@@ -210,22 +210,24 @@ for carrying. The bowl is placed on a flat surface with a neutral-colored backgr
 view of the fruit inside.
 ----
 
-== Structured Output
+== Structured Outputs
 
-In addition to existing, model agnostic, xref::api/structured-output-converter.adoc[Structured Output Converter] utilities, 
-OpenAi provides custom https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] API that guarantees 
-the model will always generate responses that adhere to your supplied https://json-schema.org/overview/what-is-jsonschema[JSON Schema].
+OpenAI provides custom https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`. 
+In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
 
-Spring AI offers flexible options to configure your response-format either manually using the OpenAiChatOptions builder or using application properties.
+NOTE: Currently, OpenAI supports a link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
 
-=== with chat options builder
+=== Configuration
 
-The OpenAiChatOptions builder allow you to set the response format programmatically like this:
+Spring AI allows you to configure your response format either programmatically using the `OpenAiChatOptions` builder or through application properties.
+
+==== Using the Chat Options Builder
+
+You can set the response format programmatically with the `OpenAiChatOptions` builder as shown below:
 
 [source,java]
 ----
-
-var jsonSchema = """
+String jsonSchema = """
         {
             "type": "object",
             "properties": {
@@ -255,11 +257,13 @@ Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
             .build());
 
 ChatResponse response = this.openAiChatModel.call(prompt);
-
 ----
 
-You can combine this with the existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to 
-generate the JSON schema from your domain objects and convert the response into domain instances: 
+NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
+
+==== Integrating with BeanOutputConverter Utilities
+
+You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
 
 [source,java]
 ----
@@ -293,12 +297,13 @@ String content = response.getResult().getOutput().getContent();
 MathReasoning mathReasoning = outputConverter.convert(content);
 ----
 
-NOTE: You must use the `@JsonProperty(required = true,..)` annotation to ensure the generated schema produces the `required[...]` field. 
-Although optional for JSON Schema, OpenAI requires this filed for the structured response to work. 
+NOTE: Ensure you use the `@JsonProperty(required = true,...)` annotation. 
+This is crucial for generating a schema that accurately marks fields as `required`. 
+Although this is optional for JSON Schema, OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/all-fields-must-be-required[mandates] it for the structured response to function correctly.
 
-=== with application properties
+==== Configuring via Application Properties
 
-You can use the `spring.ai.openai.chat.options.response-format.*` application properties to configure your desired response format.
+Alternatively, when using the OpenAI auto-configuration, you can configure the desired response format through the following application properties:
 
 [source,application.properties]
 ----
@@ -307,7 +312,7 @@ spring.ai.openai.chat.options.model=gpt-4o-mini
 
 spring.ai.openai.chat.options.response-format.type=JSON_SCHEMA
 spring.ai.openai.chat.options.response-format.name=MySchemaName
-spring.ai.openai.chat.options.response-format.schema=`{"type":"object","properties":{"steps":{"type":"array","items":{"type":"object","properties":{"explanation":{"type":"string"},"output":{"type":"string"}},"required":["explanation","output"],"additionalProperties":false}},"final_answer":{"type":"string"}},"required":["steps","final_answer"],"additionalProperties":false}`
+spring.ai.openai.chat.options.response-format.schema={"type":"object","properties":{"steps":{"type":"array","items":{"type":"object","properties":{"explanation":{"type":"string"},"output":{"type":"string"}},"required":["explanation","output"],"additionalProperties":false}},"final_answer":{"type":"string"}},"required":["steps","final_answer"],"additionalProperties":false}
 spring.ai.openai.chat.options.response-format.strict=true
 
 ----

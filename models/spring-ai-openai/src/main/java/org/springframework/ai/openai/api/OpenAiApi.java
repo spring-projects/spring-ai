@@ -519,6 +519,8 @@ public class OpenAiApi {
 		/**
 		 * An object specifying the format that the model must output.
 		 * @param type Must be one of 'text' or 'json_object'.
+		 * @param jsonSchema JSON schema object that describes the format of the JSON object.
+		 * Only applicable when type is 'json_schema'.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
@@ -526,6 +528,12 @@ public class OpenAiApi {
 				@JsonProperty("json_schema") JsonSchema jsonSchema ) {
 			
 			public enum Type {
+				/**
+				 * Generates a text response. (default)
+				 */
+				@JsonProperty("text")
+				TEXT,
+
 				/**
 				 * Enables JSON mode, which guarantees the message
 				 * the model generates is valid JSON.
@@ -541,6 +549,13 @@ public class OpenAiApi {
 				JSON_SCHEMA
 			}
 
+			/**
+			 * JSON schema object that describes the format of the JSON object.
+			 * Applicable for the 'json_schema' type only.
+			 * @param name The name of the schema.
+			 * @param schema The JSON schema object that describes the format of the JSON object.
+			 * @param strict If true, the model will only generate outputs that match the schema.
+			 */
 			@JsonInclude(Include.NON_NULL)
 			public record JsonSchema(
 				@JsonProperty("name") String name,
@@ -552,7 +567,7 @@ public class OpenAiApi {
 				}
 
 				public JsonSchema(String name, String schema, Boolean strict) {
-					this(StringUtils.hasText(name)? name : "custom_response_format_schema", ModelOptionsUtils.jsonToMap(schema), strict);
+					this(StringUtils.hasText(name)? name : "custom_schema", ModelOptionsUtils.jsonToMap(schema), strict);
 				}
 			}
 
@@ -560,8 +575,8 @@ public class OpenAiApi {
 				this(type, (JsonSchema) null);
 			}
 
-			public ResponseFormat(Type type, String jsonSchena) {
-				this(type, "custom_response_format_schema", jsonSchena, true);
+			public ResponseFormat(Type type, String schema) {
+				this(type, "custom_schema", schema, true);
 			}
 
 			@ConstructorBinding
