@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import org.apache.commons.collections4.ListUtils;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,38 +154,45 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	@Override
 	public void add(List<Document> documents) {
 
-		int size = documents.size();
+		int segmentNum = 10;
 
-		this.jdbcTemplate.batchUpdate(
-				"INSERT INTO " + getFullyQualifiedTableName()
-						+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
-						+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
-				new BatchPreparedStatementSetter() {
-					@Override
-					public void setValues(PreparedStatement ps, int i) throws SQLException {
+		List<List<Document>> segments = ListUtils.partition(documents, segmentNum);
 
-						var document = documents.get(i);
-						var content = document.getContent();
-						var json = toJson(document.getMetadata());
-						var embedding = embeddingModel.embed(document);
-						document.setEmbedding(embedding);
-						var pGvector = new PGvector(toFloatArray(embedding));
+		for (List<Document> segment : segments) {
+			int size = segment.size();
+			this.jdbcTemplate.batchUpdate(
+					"INSERT INTO " + getFullyQualifiedTableName()
+							+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
+							+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ",
+					new BatchPreparedStatementSetter() {
+						@Override
+						public void setValues(PreparedStatement ps, int i) throws SQLException {
 
-						StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
-								UUID.fromString(document.getId()));
-						StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
-						StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
-						StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
-						StatementCreatorUtils.setParameterValue(ps, 5, SqlTypeValue.TYPE_UNKNOWN, content);
-						StatementCreatorUtils.setParameterValue(ps, 6, SqlTypeValue.TYPE_UNKNOWN, json);
-						StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pGvector);
-					}
+							var document = segment.get(i);
+							var content = document.getContent();
+							var json = toJson(document.getMetadata());
+							var embedding = embeddingModel.embed(document);
+							document.setEmbedding(embedding);
+							var pGvector = new PGvector(toFloatArray(embedding));
 
-					@Override
-					public int getBatchSize() {
-						return size;
-					}
-				});
+							StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
+									UUID.fromString(document.getId()));
+							StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
+							StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
+							StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+							StatementCreatorUtils.setParameterValue(ps, 5, SqlTypeValue.TYPE_UNKNOWN, content);
+							StatementCreatorUtils.setParameterValue(ps, 6, SqlTypeValue.TYPE_UNKNOWN, json);
+							StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+						}
+
+						@Override
+						public int getBatchSize() {
+							return size;
+						}
+					});
+
+		}
+
 	}
 
 	private String toJson(Map<String, Object> map) {
