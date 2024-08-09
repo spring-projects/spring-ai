@@ -45,7 +45,6 @@ import io.milvus.param.RpcStatus;
 import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.DropCollectionParam;
 import io.milvus.param.collection.FieldType;
-import io.milvus.param.collection.FlushParam;
 import io.milvus.param.collection.HasCollectionParam;
 import io.milvus.param.collection.LoadCollectionParam;
 import io.milvus.param.collection.ReleaseCollectionParam;
@@ -59,7 +58,7 @@ import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
 
 /**
- * @author Christian Tzolov
+ * @author Christian Tzolov, Iryna Kopchak
  */
 public class MilvusVectorStore implements VectorStore, InitializingBean {
 
@@ -68,6 +67,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 	public static final int OPENAI_EMBEDDING_DIMENSION_SIZE = 1536;
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
+
+	private static final int MAX_OPENAI_EMBEDDING_ARRAY_DIMENSIONS = 2048;
 
 	public static final String DEFAULT_DATABASE_NAME = "default";
 
@@ -271,15 +272,14 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		for (Document document : documents) {
-			List<Double> embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getContent());
 			metadataArray.add(new JSONObject(document.getMetadata()));
-			embeddingArray.add(toFloatList(embedding));
 		}
+
+		embeddingArray = embedDocuments(contentArray);
 
 		List<InsertParam.Field> fields = new ArrayList<>();
 		fields.add(new InsertParam.Field(DOC_ID_FIELD_NAME, docIdArray));
@@ -368,6 +368,20 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		Float distance = (Float) rowRecord.get(DISTANCE_FIELD_NAME);
 		return (this.config.metricType == MetricType.IP || this.config.metricType == MetricType.COSINE) ? distance
 				: (1 - distance);
+	}
+
+	private List<List<Float>> embedDocuments(List<String> documentsContent) {
+		List<List<Float>> embeddings = new ArrayList<>();
+		int totalSize = documentsContent.size();
+
+		for (int start = 0; start < totalSize; start += MAX_OPENAI_EMBEDDING_ARRAY_DIMENSIONS) {
+			int end = Math.min(start + MAX_OPENAI_EMBEDDING_ARRAY_DIMENSIONS, totalSize);
+			List<String> sublist = documentsContent.subList(start, end);
+			var sublistEmbeddings = embeddingModel.embed(sublist).stream().map(this::toFloatList).toList();
+			embeddings.addAll(sublistEmbeddings);
+		}
+
+		return embeddings;
 	}
 
 	private List<Float> toFloatList(List<Double> embeddingDouble) {
