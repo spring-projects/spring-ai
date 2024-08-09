@@ -359,6 +359,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		if (options.getStopSequences() != null) {
 			generationConfigBuilder.addAllStopSequences(options.getStopSequences());
 		}
+		if (options.getResponseMimeType() != null) {
+			generationConfigBuilder.setResponseMimeType(options.getResponseMimeType());
+		}
 
 		return generationConfigBuilder.build();
 	}

@@ -76,6 +76,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	 * Gemini model name.
 	 */
 	private @JsonProperty("modelName") String model;
+	/**
+	 * Optional. Output response mimetype of the generated candidate text.
+	 * - text/plain: (default) Text output.
+	 * - application/json: JSON response in the candidates.
+	 */
+	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -147,6 +153,12 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 		public Builder withModel(ChatModel model) {
 			this.options.setModel(model.getValue());
+			return this;
+		}
+
+		public Builder withResponseMimeType(String mimeType){
+			Assert.notNull(mimeType, "mimeType must not be null");
+			this.options.setResponseMimeType(mimeType);
 			return this;
 		}
 
@@ -238,6 +250,14 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.model = modelName;
 	}
 
+	public String getResponseMimeType() {
+		return this.responseMimeType;
+	}
+
+	public String setResponseMimeType(String mimeType) {
+		return this.responseMimeType = mimeType;
+	}
+
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
 	}
@@ -265,6 +285,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		result = prime * result + ((candidateCount == null) ? 0 : candidateCount.hashCode());
 		result = prime * result + ((maxOutputTokens == null) ? 0 : maxOutputTokens.hashCode());
 		result = prime * result + ((model == null) ? 0 : model.hashCode());
+		result = prime * result + ((responseMimeType == null) ? 0 : responseMimeType.hashCode());
 		result = prime * result + ((functionCallbacks == null) ? 0 : functionCallbacks.hashCode());
 		result = prime * result + ((functions == null) ? 0 : functions.hashCode());
 		return result;
@@ -321,6 +342,13 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		}
 		else if (!model.equals(other.model))
 			return false;
+		if (responseMimeType == null) {
+			if (other.responseMimeType != null)
+				return false;
+		}
+		else if (!responseMimeType.equals(other.responseMimeType)) {
+			return false;
+		}
 		if (functionCallbacks == null) {
 			if (other.functionCallbacks != null)
 				return false;
@@ -340,8 +368,9 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	public String toString() {
 		return "VertexAiGeminiChatOptions [stopSequences=" + stopSequences + ", temperature=" + temperature + ", topP="
 				+ topP + ", topK=" + topK + ", candidateCount=" + candidateCount + ", maxOutputTokens="
-				+ maxOutputTokens + ", model=" + model + ", functionCallbacks=" + functionCallbacks + ", functions="
-				+ functions + ", getClass()=" + getClass() + ", getStopSequences()=" + getStopSequences()
+				+ maxOutputTokens + ", model=" + model + ", responseMimeType=" + responseMimeType
+				+ ", functionCallbacks=" + functionCallbacks + ", functions=" + functions
+				+ ", getClass()=" + getClass() + ", getStopSequences()=" + getStopSequences()
 				+ ", getTemperature()=" + getTemperature() + ", getTopP()=" + getTopP() + ", getTopK()=" + getTopK()
 				+ ", getCandidateCount()=" + getCandidateCount() + ", getMaxOutputTokens()=" + getMaxOutputTokens()
 				+ ", getModel()=" + getModel() + ", getFunctionCallbacks()=" + getFunctionCallbacks()
@@ -364,6 +393,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		options.setMaxOutputTokens(fromOptions.getMaxOutputTokens());
 		options.setModel(fromOptions.getModel());
 		options.setFunctionCallbacks(fromOptions.getFunctionCallbacks());
+		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setFunctions(fromOptions.getFunctions());
 		return options;
 	}
