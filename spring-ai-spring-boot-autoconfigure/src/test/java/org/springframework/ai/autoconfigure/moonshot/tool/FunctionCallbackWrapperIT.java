@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,11 +59,12 @@ public class FunctionCallbackWrapperIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					MoonshotChatOptions.builder().withFunction("WeatherInfo").build()));
@@ -76,11 +78,12 @@ public class FunctionCallbackWrapperIT {
 
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
 					MoonshotChatOptions.builder().withFunction("WeatherInfo").build()));
@@ -92,6 +95,7 @@ public class FunctionCallbackWrapperIT {
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getContent)
+				.filter(Objects::nonNull)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

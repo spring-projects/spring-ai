@@ -60,12 +60,13 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Test
 	void functionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					MoonshotChatOptions.builder().withFunction("weatherFunction").build()));
@@ -87,12 +88,13 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
 				.withFunction("weatherFunction")
@@ -106,12 +108,13 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	@Test
 	void streamFunctionCallTest() {
-		contextRunner.withPropertyValues("spring.ai.moonshot.chat.options.model=abab6-chat").run(context -> {
+		contextRunner.run(context -> {
 
 			MoonshotChatModel chatModel = context.getBean(MoonshotChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
 					MoonshotChatOptions.builder().withFunction("weatherFunction").build()));

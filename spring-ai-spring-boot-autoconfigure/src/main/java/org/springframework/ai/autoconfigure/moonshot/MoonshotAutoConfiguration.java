@@ -16,6 +16,8 @@
 package org.springframework.ai.autoconfigure.moonshot;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.moonshot.MoonshotChatModel;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -24,12 +26,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+
+import java.util.List;
 
 /**
  * @author Geng Rong
@@ -44,13 +49,23 @@ public class MoonshotAutoConfiguration {
 	@ConditionalOnProperty(prefix = MoonshotChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public MoonshotChatModel moonshotChatModel(MoonshotCommonProperties commonProperties,
-			MoonshotChatProperties chatProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			MoonshotChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		var moonshotApi = moonshotApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(), restClientBuilder, responseErrorHandler);
 
-		return new MoonshotChatModel(moonshotApi, chatProperties.getOptions(), retryTemplate);
+		return new MoonshotChatModel(moonshotApi, chatProperties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks, retryTemplate);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+		FunctionCallbackContext manager = new FunctionCallbackContext();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 	private MoonshotApi moonshotApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
