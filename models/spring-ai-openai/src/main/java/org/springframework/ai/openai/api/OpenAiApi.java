@@ -922,6 +922,8 @@ public class OpenAiApi {
 	 * the model runs with. Can be used in conjunction with the seed request parameter to
 	 * understand when backend changes have been made that might impact determinism.
 	 * @param object The object type, which is always 'chat.completion.chunk'.
+	 * @param usage Usage statistics for the completion request. Present in the last chunk
+	 * only if the StreamOptions.includeUsage is set to true.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(// @formatter:off
