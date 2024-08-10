@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.qianfan;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -89,6 +90,7 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
 	}

@@ -17,6 +17,7 @@ package org.springframework.ai.azure.openai;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
@@ -125,8 +126,14 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public String getModel() {
 		return getDeploymentName();
+	}
+
+	@JsonIgnore
+	public void setModel(String model) {
+		setDeploymentName(model);
 	}
 
 	public String getUser() {

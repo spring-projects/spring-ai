@@ -33,19 +33,19 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 
 	private final EmbeddingOptions requestOptions;
 
-	EmbeddingModelObservationContext(EmbeddingRequest embeddingRequest, AiOperationMetadata operationMetadata,
+	EmbeddingModelObservationContext(EmbeddingRequest embeddingRequest, String provider,
 			EmbeddingOptions requestOptions) {
-		super(embeddingRequest, operationMetadata);
+		super(embeddingRequest,
+				AiOperationMetadata.builder()
+					.operationType(AiOperationType.EMBEDDING.value())
+					.provider(provider)
+					.build());
 		Assert.notNull(requestOptions, "requestOptions cannot be null");
 		this.requestOptions = requestOptions;
 	}
 
 	public EmbeddingOptions getRequestOptions() {
 		return requestOptions;
-	}
-
-	public String getOperationType() {
-		return AiOperationType.EMBEDDING.value();
 	}
 
 	public static Builder builder() {
@@ -56,7 +56,7 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 
 		private EmbeddingRequest embeddingRequest;
 
-		private AiOperationMetadata operationMetadata;
+		private String provider;
 
 		private EmbeddingOptions requestOptions;
 
@@ -68,8 +68,8 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 			return this;
 		}
 
-		public Builder operationMetadata(AiOperationMetadata operationMetadata) {
-			this.operationMetadata = operationMetadata;
+		public Builder provider(String provider) {
+			this.provider = provider;
 			return this;
 		}
 
@@ -79,7 +79,7 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 		}
 
 		public EmbeddingModelObservationContext build() {
-			return new EmbeddingModelObservationContext(embeddingRequest, operationMetadata, requestOptions);
+			return new EmbeddingModelObservationContext(embeddingRequest, provider, requestOptions);
 		}
 
 	}

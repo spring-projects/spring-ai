@@ -31,11 +31,9 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.lang.Nullable;
@@ -151,7 +149,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
-			.operationMetadata(buildOperationMetadata())
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
 			.requestOptions(requestOptions)
 			.build();
 
@@ -195,25 +193,22 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	private OpenAiEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions runtimeOptions,
 			OpenAiEmbeddingOptions defaultOptions) {
-		if (runtimeOptions == null) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, EmbeddingOptions.class,
+				OpenAiEmbeddingOptions.class);
+
+		if (runtimeOptionsForProvider == null) {
 			return defaultOptions;
 		}
 
 		return OpenAiEmbeddingOptions.builder()
 			// Handle portable embedding options
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-			.withDimensions(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+					defaultOptions.getDimensions()))
 			// Handle OpenAI specific embedding options
-			.withEncodingFormat(defaultOptions.getEncodingFormat())
-			.withUser(defaultOptions.getUser())
-			.build();
-	}
-
-	private AiOperationMetadata buildOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.EMBEDDING.value())
-			.provider(AiProvider.OPENAI.value())
+			.withEncodingFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getEncodingFormat(),
+					defaultOptions.getEncodingFormat()))
+			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
 			.build();
 	}
 

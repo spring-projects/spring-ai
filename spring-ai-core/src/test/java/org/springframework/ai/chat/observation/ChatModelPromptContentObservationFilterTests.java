@@ -20,10 +20,8 @@ import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import java.util.List;
 
@@ -51,8 +49,8 @@ class ChatModelPromptContentObservationFilterTests {
 	void whenEmptyPromptThenReturnOriginalContext() {
 		var expectedContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt(List.of()))
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var actualContext = observationFilter.map(expectedContext);
 
@@ -63,8 +61,8 @@ class ChatModelPromptContentObservationFilterTests {
 	void whenPromptWithTextThenAugmentContext() {
 		var originalContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt("supercalifragilisticexpialidocious"))
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var augmentedContext = observationFilter.map(originalContext);
 
@@ -77,21 +75,14 @@ class ChatModelPromptContentObservationFilterTests {
 		var originalContext = ChatModelObservationContext.builder()
 			.prompt(new Prompt(List.of(new SystemMessage("you're a chimney sweep"),
 					new UserMessage("supercalifragilisticexpialidocious"))))
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var augmentedContext = observationFilter.map(originalContext);
 
 		assertThat(augmentedContext.getHighCardinalityKeyValues())
 			.contains(KeyValue.of(HighCardinalityKeyNames.PROMPT.asString(),
 					"[\"you're a chimney sweep\", \"supercalifragilisticexpialidocious\"]"));
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.CHAT.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 }

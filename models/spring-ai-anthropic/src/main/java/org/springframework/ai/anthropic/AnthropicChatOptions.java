@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  * The options to be used when sending a chat request to the Anthropic API.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -149,6 +150,7 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 
 	}
 
+	@Override
 	public String getModel() {
 		return model;
 	}
@@ -157,6 +159,7 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		this.model = model;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -173,6 +176,7 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		this.metadata = metadata;
 	}
 
+	@Override
 	public List<String> getStopSequences() {
 		return this.stopSequences;
 	}
@@ -199,6 +203,7 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 		this.topP = topP;
 	}
 
+	@Override
 	public Integer getTopK() {
 		return this.topK;
 	}
@@ -227,6 +232,18 @@ public class AnthropicChatOptions implements ChatOptions, FunctionCallingOptions
 	public void setFunctions(Set<String> functions) {
 		Assert.notNull(functions, "Function must not be null");
 		this.functions = functions;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
 	}
 
 	@Override

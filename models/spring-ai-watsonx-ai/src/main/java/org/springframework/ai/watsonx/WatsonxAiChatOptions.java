@@ -34,6 +34,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Pablo Sanchidrian Herrera
  * @author John Jairo Moreno Rojas
+ * @author Thomas Vitale
  * @since 1.0.0
  * @see <a href=
  * "https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-model-parameters.html?context=wx&audience=wdp">watsonx.ai
@@ -124,6 +125,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
     @JsonIgnore
     private ObjectMapper mapper = new ObjectMapper();
 
+	@Override
     public Float getTemperature() {
         return temperature;
     }
@@ -132,6 +134,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.temperature = temperature;
     }
 
+	@Override
     public Float getTopP() {
         return topP;
     }
@@ -140,6 +143,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.topP = topP;
     }
 
+	@Override
     public Integer getTopK() {
         return topK;
     }
@@ -155,6 +159,17 @@ public class WatsonxAiChatOptions implements ChatOptions {
     public void setDecodingMethod(String decodingMethod) {
         this.decodingMethod = decodingMethod;
     }
+
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return getMaxNewTokens();
+	}
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setMaxNewTokens(maxTokens);
+	}
 
     public Integer getMaxNewTokens() {
         return maxNewTokens;
@@ -172,7 +187,8 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.minNewTokens = minNewTokens;
     }
 
-    public List<String> getStopSequences() {
+	@Override
+	public List<String> getStopSequences() {
         return stopSequences;
     }
 
@@ -180,7 +196,18 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.stopSequences = stopSequences;
     }
 
-    public Float getRepetitionPenalty() {
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+    	return getRepetitionPenalty();
+    }
+
+	@JsonIgnore
+	public void setPresencePenalty(Float presencePenalty) {
+		setRepetitionPenalty(presencePenalty);
+	}
+
+	public Float getRepetitionPenalty() {
         return repetitionPenalty;
     }
 
@@ -196,6 +223,7 @@ public class WatsonxAiChatOptions implements ChatOptions {
         this.randomSeed = randomSeed;
     }
 
+	@Override
     public String getModel() {
         return model;
     }
@@ -216,6 +244,12 @@ public class WatsonxAiChatOptions implements ChatOptions {
     @JsonAnySetter
     public void addAdditionalProperty(String key, Object value) {
         additional.put(key, value);
+    }
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+    	return null;
     }
 
 	public static Builder builder() {

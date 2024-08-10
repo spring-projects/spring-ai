@@ -31,6 +31,7 @@ import java.util.Set;
 
 /**
  * @author Geng Rong
+ * @author Thomas Vitale
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MoonshotChatOptions implements ChatOptions {
@@ -229,6 +230,7 @@ public class MoonshotChatOptions implements ChatOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -237,6 +239,7 @@ public class MoonshotChatOptions implements ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -245,6 +248,7 @@ public class MoonshotChatOptions implements ChatOptions {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -261,12 +265,24 @@ public class MoonshotChatOptions implements ChatOptions {
 		this.n = n;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
 	public void setPresencePenalty(Float presencePenalty) {
 		this.presencePenalty = presencePenalty;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -301,6 +317,12 @@ public class MoonshotChatOptions implements ChatOptions {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
 	}
 
 	@Override
@@ -400,17 +422,6 @@ public class MoonshotChatOptions implements ChatOptions {
 		else if (!this.user.equals(other.user))
 			return false;
 		return true;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
 }

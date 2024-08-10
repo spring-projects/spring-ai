@@ -61,18 +61,43 @@ public class FunctionCallingOptionsBuilder {
 		return this;
 	}
 
+	public FunctionCallingOptionsBuilder withModel(String model) {
+		this.options.setModel(model);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withFrequencyPenalty(Float frequencyPenalty) {
+		this.options.setFrequencyPenalty(frequencyPenalty);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withMaxTokens(Integer maxTokens) {
+		this.options.setMaxTokens(maxTokens);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withPresencePenalty(Float presencePenalty) {
+		this.options.setPresencePenalty(presencePenalty);
+		return this;
+	}
+
+	public FunctionCallingOptionsBuilder withStopSequences(List<String> stopSequences) {
+		this.options.setStopSequences(stopSequences);
+		return this;
+	}
+
 	public FunctionCallingOptionsBuilder withTemperature(Float temperature) {
 		this.options.setTemperature(temperature);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTopP(Float topP) {
-		this.options.setTopP(topP);
+	public FunctionCallingOptionsBuilder withTopK(Integer topK) {
+		this.options.setTopK(topK);
 		return this;
 	}
 
-	public FunctionCallingOptionsBuilder withTopK(Integer topK) {
-		this.options.setTopK(topK);
+	public FunctionCallingOptionsBuilder withTopP(Float topP) {
+		this.options.setTopP(topP);
 		return this;
 	}
 
@@ -86,11 +111,21 @@ public class FunctionCallingOptionsBuilder {
 
 		private Set<String> functions = new HashSet<>();
 
+		private String model;
+
+		private Float frequencyPenalty;
+
+		private Integer maxTokens;
+
+		private Float presencePenalty;
+
+		private List<String> stopSequences;
+
 		private Float temperature;
 
-		private Float topP;
-
 		private Integer topK;
+
+		private Float topP;
 
 		@Override
 		public List<FunctionCallback> getFunctionCallbacks() {
@@ -113,8 +148,53 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
+		public String getModel() {
+			return model;
+		}
+
+		public void setModel(String model) {
+			this.model = model;
+		}
+
+		@Override
+		public Float getFrequencyPenalty() {
+			return frequencyPenalty;
+		}
+
+		public void setFrequencyPenalty(Float frequencyPenalty) {
+			this.frequencyPenalty = frequencyPenalty;
+		}
+
+		@Override
+		public Integer getMaxTokens() {
+			return maxTokens;
+		}
+
+		public void setMaxTokens(Integer maxTokens) {
+			this.maxTokens = maxTokens;
+		}
+
+		@Override
+		public Float getPresencePenalty() {
+			return presencePenalty;
+		}
+
+		public void setPresencePenalty(Float presencePenalty) {
+			this.presencePenalty = presencePenalty;
+		}
+
+		@Override
+		public List<String> getStopSequences() {
+			return stopSequences;
+		}
+
+		public void setStopSequences(List<String> stopSequences) {
+			this.stopSequences = stopSequences;
+		}
+
+		@Override
 		public Float getTemperature() {
-			return this.temperature;
+			return temperature;
 		}
 
 		public void setTemperature(Float temperature) {
@@ -122,17 +202,8 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
-		public Float getTopP() {
-			return this.topP;
-		}
-
-		public void setTopP(Float topP) {
-			this.topP = topP;
-		}
-
-		@Override
 		public Integer getTopK() {
-			return this.topK;
+			return topK;
 		}
 
 		public void setTopK(Integer topK) {
@@ -140,10 +211,24 @@ public class FunctionCallingOptionsBuilder {
 		}
 
 		@Override
+		public Float getTopP() {
+			return topP;
+		}
+
+		public void setTopP(Float topP) {
+			this.topP = topP;
+		}
+
+		@Override
 		public ChatOptions copy() {
-			return new FunctionCallingOptionsBuilder().withTemperature(this.temperature)
-				.withTopP(this.topP)
+			return new FunctionCallingOptionsBuilder().withModel(this.model)
+				.withFrequencyPenalty(this.frequencyPenalty)
+				.withMaxTokens(this.maxTokens)
+				.withPresencePenalty(this.presencePenalty)
+				.withStopSequences(this.stopSequences)
+				.withTemperature(this.temperature)
 				.withTopK(this.topK)
+				.withTopP(this.topP)
 				.withFunctions(this.functions)
 				.withFunctionCallbacks(this.functionCallbacks)
 				.build();

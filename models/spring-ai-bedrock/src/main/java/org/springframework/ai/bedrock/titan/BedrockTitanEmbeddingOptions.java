@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.titan;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -64,11 +65,13 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public String getModel() {
 		return null;
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
 	}

@@ -67,7 +67,7 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	protected KeyValue aiOperationType(EmbeddingModelObservationContext context) {
 		return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE,
-				context.getOperationType());
+				context.getOperationMetadata().operationType());
 	}
 
 	protected KeyValue aiProvider(EmbeddingModelObservationContext context) {

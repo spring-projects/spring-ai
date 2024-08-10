@@ -18,9 +18,6 @@ package org.springframework.ai.embedding.observation;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import java.util.List;
 
@@ -38,7 +35,7 @@ class EmbeddingModelObservationContextTests {
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("supermodel").build())
 			.build();
 
@@ -49,7 +46,7 @@ class EmbeddingModelObservationContextTests {
 	void whenRequestOptionsIsNullThenThrow() {
 		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(null)
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("requestOptions cannot be null");
@@ -57,13 +54,6 @@ class EmbeddingModelObservationContextTests {
 
 	private EmbeddingRequest generateEmbeddingRequest() {
 		return new EmbeddingRequest(List.of(), EmbeddingOptionsBuilder.builder().build());
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.EMBEDDING.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 }

@@ -18,6 +18,7 @@ package org.springframework.ai.chat.observation;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.StringJoiner;
 
@@ -28,6 +29,9 @@ import java.util.StringJoiner;
  * @since 1.0.0
  */
 public class DefaultChatModelObservationConvention implements ChatModelObservationConvention {
+
+	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
+		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
 
 	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
 		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
@@ -77,8 +81,11 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	@Override
 	public String getContextualName(ChatModelObservationContext context) {
-		return "%s %s".formatted(context.getOperationMetadata().operationType(),
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return "%s %s".formatted(context.getOperationMetadata().operationType(),
+					context.getRequestOptions().getModel());
+		}
+		return context.getOperationMetadata().operationType();
 	}
 
 	@Override
@@ -98,8 +105,11 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValue requestModel(ChatModelObservationContext context) {
-		return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
+					context.getRequestOptions().getModel());
+		}
+		return REQUEST_MODEL_NONE;
 	}
 
 	protected KeyValue responseModel(ChatModelObservationContext context) {

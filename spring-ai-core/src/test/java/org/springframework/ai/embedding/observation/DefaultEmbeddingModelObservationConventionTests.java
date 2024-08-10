@@ -23,9 +23,6 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import java.util.List;
 import java.util.Map;
@@ -53,7 +50,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void contextualNameWhenModelIsDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding mistral");
@@ -63,7 +60,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void contextualNameWhenModelIsNotDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().build())
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding");
@@ -73,7 +70,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void supportsOnlyEmbeddingModelObservationContext() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("supermodel").build())
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
@@ -84,12 +81,12 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), "embedding"),
-				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), "ollama"),
+				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider"),
 				KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "mistral"));
 	}
 
@@ -97,7 +94,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValuesWhenDefinedAndResponse() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("mistral").withDimensions(1492).build())
 			.build();
 		observationContext.setResponse(new EmbeddingResponse(List.of(),
@@ -114,7 +111,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void shouldHaveNoneKeyValuesWhenMissing() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(EmbeddingOptionsBuilder.builder().build())
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
@@ -128,13 +125,6 @@ class DefaultEmbeddingModelObservationConventionTests {
 
 	private EmbeddingRequest generateEmbeddingRequest() {
 		return new EmbeddingRequest(List.of(), EmbeddingOptionsBuilder.builder().build());
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.EMBEDDING.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 	static class TestUsage implements Usage {

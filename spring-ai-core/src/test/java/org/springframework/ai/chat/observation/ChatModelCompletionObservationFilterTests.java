@@ -21,10 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import java.util.List;
 
@@ -52,8 +50,8 @@ class ChatModelCompletionObservationFilterTests {
 	void whenEmptyResponseThenReturnOriginalContext() {
 		var expectedContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		var actualContext = observationFilter.map(expectedContext);
 
@@ -64,8 +62,8 @@ class ChatModelCompletionObservationFilterTests {
 	void whenEmptyCompletionThenReturnOriginalContext() {
 		var expectedContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		expectedContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
 		var actualContext = observationFilter.map(expectedContext);
@@ -77,8 +75,8 @@ class ChatModelCompletionObservationFilterTests {
 	void whenCompletionWithTextThenAugmentContext() {
 		var originalContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		originalContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));
@@ -90,13 +88,6 @@ class ChatModelCompletionObservationFilterTests {
 
 	private Prompt generatePrompt() {
 		return new Prompt("supercalifragilisticexpialidocious");
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.CHAT.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 }

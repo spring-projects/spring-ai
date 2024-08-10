@@ -44,16 +44,13 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.chat.observation.ChatModelRequestOptions;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
@@ -62,6 +59,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ChatCom
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.MediaContent;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
@@ -214,7 +212,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.operationMetadata(buildOperationMetadata())
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
 			.requestOptions(buildRequestOptions(request))
 			.build();
 
@@ -287,7 +285,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.operationMetadata(buildOperationMetadata())
+				.provider(OpenAiApiConstants.PROVIDER_NAME)
 				.requestOptions(buildRequestOptions(request))
 				.build();
 
@@ -356,9 +354,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(flux, mergedChatResponse -> {
-				observationContext.setResponse(mergedChatResponse);
-			});
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 
 		});
 	}
@@ -370,7 +366,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			headers.putAll(chatOptions.getHttpHeaders());
 		}
 		return CollectionUtils.toMultiValueMap(
-				headers.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> List.of(e.getValue()))));
+				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
@@ -536,22 +532,15 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		}).toList();
 	}
 
-	private AiOperationMetadata buildOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.CHAT.value())
-			.provider(AiProvider.OPENAI.value())
-			.build();
-	}
-
-	private ChatModelRequestOptions buildRequestOptions(OpenAiApi.ChatCompletionRequest request) {
-		return ChatModelRequestOptions.builder()
-			.model(StringUtils.hasText(request.model()) ? request.model() : "unknown")
-			.frequencyPenalty(request.frequencyPenalty())
-			.maxTokens(request.maxTokens())
-			.presencePenalty(request.presencePenalty())
-			.stopSequences(request.stop())
-			.temperature(request.temperature())
-			.topP(request.topP())
+	private ChatOptions buildRequestOptions(OpenAiApi.ChatCompletionRequest request) {
+		return ChatOptionsBuilder.builder()
+			.withModel(request.model())
+			.withFrequencyPenalty(request.frequencyPenalty())
+			.withMaxTokens(request.maxTokens())
+			.withPresencePenalty(request.presencePenalty())
+			.withStopSequences(request.stop())
+			.withTemperature(request.temperature())
+			.withTopP(request.topP())
 			.build();
 	}
 

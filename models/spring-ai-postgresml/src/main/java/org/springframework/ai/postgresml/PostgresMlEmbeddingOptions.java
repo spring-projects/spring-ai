@@ -17,6 +17,7 @@ package org.springframework.ai.postgresml;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -132,11 +133,13 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
+	@JsonIgnore
 	public String getModel() {
 		return null;
 	}
 
 	@Override
+	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
 	}

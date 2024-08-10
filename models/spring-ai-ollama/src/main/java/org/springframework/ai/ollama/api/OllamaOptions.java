@@ -635,6 +635,17 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.seed = seed;
 	}
 
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+    	return getNumPredict();
+    }
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setNumPredict(maxTokens);
+	}
+
 	public Integer getNumPredict() {
 		return this.numPredict;
 	}
@@ -643,6 +654,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.numPredict = numPredict;
 	}
 
+	@Override
 	public Integer getTopK() {
 		return this.topK;
 	}
@@ -651,6 +663,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.topK = topK;
 	}
 
+	@Override
 	public Float getTopP() {
 		return this.topP;
 	}
@@ -683,6 +696,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.repeatLastN = repeatLastN;
 	}
 
+	@Override
 	public Float getTemperature() {
 		return this.temperature;
 	}
@@ -699,6 +713,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.repeatPenalty = repeatPenalty;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
@@ -707,6 +722,7 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.presencePenalty = presencePenalty;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -747,6 +763,17 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 		this.penalizeNewline = penalizeNewline;
 	}
 
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
+	}
+
 	public List<String> getStop() {
 		return this.stop;
 	}
@@ -764,11 +791,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	}
 
 	@Override
-	public Integer getDimensions() {
-		return null;
-	}
-
-	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;	
 	}
@@ -776,7 +798,6 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@Override
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
 		this.functionCallbacks = functionCallbacks;
-	
 	}
 
 	@Override
@@ -787,6 +808,12 @@ public class OllamaOptions implements FunctionCallingOptions, ChatOptions, Embed
 	@Override
 	public void setFunctions(Set<String> functions) {
 		this.functions = functions;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 	/**

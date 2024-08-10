@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
@@ -173,6 +174,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 	}
 
+	@Override
 	public List<String> getStopSequences() {
 		return this.stopSequences;
 	}
@@ -200,7 +202,6 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getTopK() {
 		return (this.topK != null) ? this.topK.intValue() : null;
 	}
@@ -222,6 +223,17 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.candidateCount = candidateCount;
 	}
 
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return getMaxOutputTokens();
+	}
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setMaxOutputTokens(maxTokens);
+	}
+
 	public Integer getMaxOutputTokens() {
 		return this.maxOutputTokens;
 	}
@@ -230,6 +242,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 		this.maxOutputTokens = maxOutputTokens;
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -252,6 +265,18 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions, ChatOp
 
 	public void setFunctions(Set<String> functions) {
 		this.functions = functions;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
 	}
 
 	@Override

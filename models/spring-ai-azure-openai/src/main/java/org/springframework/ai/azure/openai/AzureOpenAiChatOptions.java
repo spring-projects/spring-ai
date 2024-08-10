@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * prompt data.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptions {
@@ -108,7 +109,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * output new topics.
 	 */
 	@JsonProperty(value = "presence_penalty")
-	private Double presencePenalty;
+	private Float presencePenalty;
 
 	/**
 	 * A value that influences the probability of generated tokens appearing based on
@@ -117,7 +118,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	 * model repeating the same statements verbatim.
 	 */
 	@JsonProperty(value = "frequency_penalty")
-	private Double frequencyPenalty;
+	private Float frequencyPenalty;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
@@ -182,9 +183,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withFrequencyPenalty(Float frequencyPenalty) {
-			if (frequencyPenalty != null) {
-				this.options.frequencyPenalty = frequencyPenalty.doubleValue();
-			}
+			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
@@ -204,9 +203,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		}
 
 		public Builder withPresencePenalty(Float presencePenalty) {
-			if (presencePenalty != null) {
-				this.options.presencePenalty = presencePenalty.doubleValue();
-			}
+			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
@@ -259,6 +256,7 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -291,6 +289,17 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		this.n = n;
 	}
 
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
+	}
+
 	public List<String> getStop() {
 		return this.stop;
 	}
@@ -299,20 +308,33 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 		this.stop = stop;
 	}
 
-	public Double getPresencePenalty() {
+	@Override
+	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
+	public void setPresencePenalty(Float presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
-	public Double getFrequencyPenalty() {
+	@Override
+	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
+	public void setFrequencyPenalty(Float frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return getDeploymentName();
+	}
+
+	@JsonIgnore
+	public void setModel(String model) {
+		setDeploymentName(model);
 	}
 
 	public String getDeploymentName() {
@@ -342,17 +364,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	}
 
 	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
-	}
-
-	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
 		return this.functionCallbacks;
 	}
@@ -379,19 +390,23 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions, ChatOptio
 	}
 
 	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
+	}
+
+	@Override
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
 		return builder().withDeploymentName(fromOptions.getDeploymentName())
-			.withFrequencyPenalty(
-					fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty().floatValue() : null)
+			.withFrequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
 			.withLogitBias(fromOptions.getLogitBias())
 			.withMaxTokens(fromOptions.getMaxTokens())
 			.withN(fromOptions.getN())
-			.withPresencePenalty(
-					fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty().floatValue() : null)
+			.withPresencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
 			.withStop(fromOptions.getStop())
 			.withTemperature(fromOptions.getTemperature())
 			.withTopP(fromOptions.getTopP())

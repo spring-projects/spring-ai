@@ -17,6 +17,7 @@ package org.springframework.ai.bedrock.titan;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -87,6 +89,7 @@ public class BedrockTitanChatOptions implements ChatOptions {
 
 	}
 
+	@Override
 	public Float getTemperature() {
 		return temperature;
 	}
@@ -95,12 +98,24 @@ public class BedrockTitanChatOptions implements ChatOptions {
 		this.temperature = temperature;
 	}
 
+	@Override
 	public Float getTopP() {
 		return topP;
 	}
 
 	public void setTopP(Float topP) {
 		this.topP = topP;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return getMaxTokenCount();
+	}
+
+	@JsonIgnore
+	public void setMaxTokens(Integer maxTokens) {
+		setMaxTokenCount(maxTokens);
 	}
 
 	public Integer getMaxTokenCount() {
@@ -111,6 +126,7 @@ public class BedrockTitanChatOptions implements ChatOptions {
 		this.maxTokenCount = maxTokenCount;
 	}
 
+	@Override
 	public List<String> getStopSequences() {
 		return stopSequences;
 	}
@@ -120,12 +136,27 @@ public class BedrockTitanChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Bedrock Titan Chat does not support the 'TopK' option.");
+	@JsonIgnore
+	public String getModel() {
+		return null;
 	}
 
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Bedrock Titan Chat does not support the 'TopK' option.'");
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
 	}
 
 	@Override
