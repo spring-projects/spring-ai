@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -42,6 +45,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pgvector.PGvector;
 
+import io.micrometer.observation.ObservationRegistry;
+
 /**
  * Uses the "vector_store" table to store the Spring AI vector data. The table and the
  * vector index will be auto-created if not available.
@@ -50,7 +55,7 @@ import com.pgvector.PGvector;
  * @author Josh Long
  * @author Muthukumaran Navaneethakrishnan
  */
-public class PgVectorStore implements VectorStore, InitializingBean {
+public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
 
@@ -124,6 +129,19 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
 			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema) {
 
+		this(schemaName, vectorTableName, vectorTableValidationsEnabled, jdbcTemplate, embeddingModel, dimensions,
+				distanceType, removeExistingVectorStoreTable, createIndexMethod, initializeSchema,
+				ObservationRegistry.NOOP, null);
+	}
+
+	private PgVectorStore(String schemaName, String vectorTableName, boolean vectorTableValidationsEnabled,
+			JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions, PgDistanceType distanceType,
+			boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod, boolean initializeSchema,
+			ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customSearchObservationConvention) {
+
+		super(observationRegistry, customSearchObservationConvention);
+
 		this.vectorTableName = (null == vectorTableName || vectorTableName.isEmpty()) ? DEFAULT_TABLE_NAME
 				: vectorTableName.trim();
 		logger.info("Using the vector table name: {}",
@@ -150,7 +168,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 
 		int size = documents.size();
 
@@ -205,7 +223,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
 			int count = jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
@@ -217,7 +235,7 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -484,6 +502,11 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 
 		private boolean initializeSchema;
 
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		@Nullable
+		private VectorStoreObservationConvention searchObservationConvention;
+
 		// Builder constructor with mandatory parameters
 		public Builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			if (jdbcTemplate == null || embeddingModel == null) {
@@ -533,12 +556,35 @@ public class PgVectorStore implements VectorStore, InitializingBean {
 			return this;
 		}
 
+		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public Builder withSearchObservationConvention(
+				VectorStoreObservationConvention customSearchObservationConvention) {
+			this.searchObservationConvention = customSearchObservationConvention;
+			return this;
+		}
+
 		public PgVectorStore build() {
 			return new PgVectorStore(schemaName, vectorTableName, vectorTableValidationsEnabled, jdbcTemplate,
 					embeddingModel, dimensions, distanceType, removeExistingVectorStoreTable, indexType,
-					initializeSchema);
+					initializeSchema, observationRegistry, searchObservationConvention);
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder() {
+
+		return VectorStoreObservationContext.builder("pg_vector")
+			.withDimensions(this.embeddingDimensions())
+			.withCollectionName(this.vectorTableName)
+			.withNamespace(this.schemaName)
+			.withSimilarityMetric(this.getDistanceType().name())
+			.withIndexName(this.createIndexMethod.name())
+			.withModel(this.embeddingModel.getClass().getSimpleName());
 	}
 
 }
