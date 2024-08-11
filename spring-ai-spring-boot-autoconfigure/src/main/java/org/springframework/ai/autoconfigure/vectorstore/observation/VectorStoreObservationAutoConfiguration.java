@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreAddRequestContentObservationFilter;
 import org.springframework.ai.vectorstore.observation.VectorStoreDeleteRequestContentObservationFilter;
-import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseContentObservationFilter;
+import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationFilter;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -46,10 +46,10 @@ public class VectorStoreObservationAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "include-query-response",
 			havingValue = "true")
-	VectorStoreQueryResponseContentObservationFilter vectorStoreQueryResponseContentObservationFilter() {
+	VectorStoreQueryResponseObservationFilter vectorStoreQueryResponseContentObservationFilter() {
 		logger.warn(
 				"You have enabled the inclusion of the query response content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-		return new VectorStoreQueryResponseContentObservationFilter();
+		return new VectorStoreQueryResponseObservationFilter();
 	}
 
 	@Bean

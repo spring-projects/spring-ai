@@ -29,7 +29,7 @@ import io.micrometer.observation.ObservationFilter;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class VectorStoreQueryResponseContentObservationFilter implements ObservationFilter {
+public class VectorStoreQueryResponseObservationFilter implements ObservationFilter {
 
 	@Override
 	public Observation.Context map(Observation.Context context) {

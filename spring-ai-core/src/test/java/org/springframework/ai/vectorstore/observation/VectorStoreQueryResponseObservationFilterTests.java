@@ -27,13 +27,13 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 
 /**
- * Unit tests for {@link VectorStoreQueryResponseContentObservationFilter}.
+ * Unit tests for {@link VectorStoreQueryResponseObservationFilter}.
  *
  * @author Christian Tzolov
  */
 class VectorStoreQueryResponseObservationFilterTests {
 
-	private final VectorStoreQueryResponseContentObservationFilter observationFilter = new VectorStoreQueryResponseContentObservationFilter();
+	private final VectorStoreQueryResponseObservationFilter observationFilter = new VectorStoreQueryResponseObservationFilter();
 
 	@Test
 	void whenNotSupportedObservationContextThenReturnOriginalContext() {
