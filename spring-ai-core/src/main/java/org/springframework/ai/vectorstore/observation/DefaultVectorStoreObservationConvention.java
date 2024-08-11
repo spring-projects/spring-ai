@@ -30,14 +30,14 @@ import io.micrometer.common.KeyValues;
 
 public class DefaultVectorStoreObservationConvention implements VectorStoreObservationConvention {
 
-	private static final String DEFAULT_NAME = "spring.ai.vector.store";
+	public static final String DEFAULT_NAME = "spring.ai.vector.store";
 
 	private static final KeyValue DIMENSIONS_NONE = KeyValue.of(HighCardinalityKeyNames.DIMENSIONS,
 			KeyValue.NONE_VALUE);
 
 	private static final KeyValue QUERY_NONE = KeyValue.of(HighCardinalityKeyNames.QUERY, KeyValue.NONE_VALUE);
 
-	private static final KeyValue METADATA_FILTER_NONE = KeyValue.of(HighCardinalityKeyNames.METADATA_FILTER,
+	private static final KeyValue METADATA_FILTER_NONE = KeyValue.of(HighCardinalityKeyNames.QUERY_METADATA_FILTER,
 			KeyValue.NONE_VALUE);
 
 	private static final KeyValue TOP_K_NONE = KeyValue.of(HighCardinalityKeyNames.TOP_K, KeyValue.NONE_VALUE);
@@ -105,23 +105,23 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 	}
 
 	protected KeyValue query(VectorStoreObservationContext context) {
-		if (context.getSearchRequest() != null && StringUtils.hasText(context.getSearchRequest().getQuery())) {
-			return KeyValue.of(HighCardinalityKeyNames.QUERY, "" + context.getSearchRequest().getQuery());
+		if (context.getQueryRequest() != null && StringUtils.hasText(context.getQueryRequest().getQuery())) {
+			return KeyValue.of(HighCardinalityKeyNames.QUERY, "" + context.getQueryRequest().getQuery());
 		}
 		return QUERY_NONE;
 	}
 
 	protected KeyValue metadataFilter(VectorStoreObservationContext context) {
-		if (context.getSearchRequest() != null && context.getSearchRequest().getFilterExpression() != null) {
-			return KeyValue.of(HighCardinalityKeyNames.METADATA_FILTER,
-					"" + context.getSearchRequest().getFilterExpression().toString());
+		if (context.getQueryRequest() != null && context.getQueryRequest().getFilterExpression() != null) {
+			return KeyValue.of(HighCardinalityKeyNames.QUERY_METADATA_FILTER,
+					"" + context.getQueryRequest().getFilterExpression().toString());
 		}
 		return METADATA_FILTER_NONE;
 	}
 
 	protected KeyValue topK(VectorStoreObservationContext context) {
-		if (context.getSearchRequest() != null && context.getSearchRequest().getTopK() > 0) {
-			return KeyValue.of(HighCardinalityKeyNames.TOP_K, "" + context.getSearchRequest().getTopK());
+		if (context.getQueryRequest() != null && context.getQueryRequest().getTopK() > 0) {
+			return KeyValue.of(HighCardinalityKeyNames.TOP_K, "" + context.getQueryRequest().getTopK());
 		}
 		return TOP_K_NONE;
 	}

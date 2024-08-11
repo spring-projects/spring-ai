@@ -111,7 +111,7 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		/**
 		 * The metadata filters used in the query.
 		 */
-		METADATA_FILTER {
+		QUERY_METADATA_FILTER {
 			@Override
 			public String asString() {
 				return "db.query.metadata.filter";

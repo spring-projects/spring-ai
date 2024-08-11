@@ -576,9 +576,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
-	public VectorStoreObservationContext.Builder createObservationContextBuilder() {
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder("pg_vector")
+		return VectorStoreObservationContext.builder("pg_vector", operationName)
 			.withDimensions(this.embeddingDimensions())
 			.withCollectionName(this.vectorTableName)
 			.withNamespace(this.schemaName)

@@ -55,9 +55,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 
-		VectorStoreObservationContext observationContext = this.createObservationContextBuilder()
+		VectorStoreObservationContext observationContext = this.createObservationContextBuilder("add")
 			.withAddRequest(documents)
-			.withOperationName("add")
 			.build();
 
 		VectorStoreObservationDocumentation.AI_VECTOR_STORE
@@ -69,9 +68,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public Optional<Boolean> delete(List<String> deleteDocIds) {
 
-		VectorStoreObservationContext observationContext = this.createObservationContextBuilder()
+		VectorStoreObservationContext observationContext = this.createObservationContextBuilder("delete")
 			.withDeleteRequest(deleteDocIds)
-			.withOperationName("delete")
 			.build();
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
@@ -83,9 +81,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 
-		VectorStoreObservationContext searchObservationContext = this.createObservationContextBuilder()
-			.withSearchRequest(request)
-			.withOperationName("search")
+		VectorStoreObservationContext searchObservationContext = this.createObservationContextBuilder("search")
+			.withQueryRequest(request)
 			.build();
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
@@ -93,7 +90,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 					() -> searchObservationContext, this.observationRegistry)
 			.observe(() -> {
 				var documents = this.doSimilaritySearch(request);
-				searchObservationContext.setSearchResponse(documents);
+				searchObservationContext.setQueryResponse(documents);
 				return documents;
 			});
 	}
@@ -104,6 +101,6 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 
 	abstract public List<Document> doSimilaritySearch(SearchRequest request);
 
-	abstract public VectorStoreObservationContext.Builder createObservationContextBuilder();
+	abstract public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName);
 
 }

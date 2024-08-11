@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.util.Assert;
 
 import io.micrometer.observation.Observation;
 
@@ -29,6 +30,29 @@ import io.micrometer.observation.Observation;
 
 public class VectorStoreObservationContext extends Observation.Context {
 
+	public enum Operation {
+
+		/**
+		 * VectorStore delete operation.
+		 */
+		ADD("add"),
+		/**
+		 * VectorStore add operation.
+		 */
+		DELETE("delete"),
+		/**
+		 * VectorStore similarity search operation.
+		 */
+		QUERY("query");
+
+		public final String value;
+
+		Operation(String value) {
+			this.value = value;
+		}
+
+	}
+
 	// DELETE
 	private List<String> deleteRequest;
 
@@ -36,9 +60,9 @@ public class VectorStoreObservationContext extends Observation.Context {
 	private List<Document> addRequest;
 
 	// SEARCH
-	private SearchRequest searchRequest;
+	private SearchRequest queryRequest;
 
-	private List<Document> searchResponse;
+	private List<Document> queryResponse;
 
 	// COMMON
 	private final String databaseSystem;
@@ -57,10 +81,13 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 	private String indexName = "";
 
-	private String operationName;
+	private final String operationName;
 
-	public VectorStoreObservationContext(String databaseSystem) {
+	public VectorStoreObservationContext(String databaseSystem, String operationName) {
+		Assert.hasText(databaseSystem, "databaseSystem cannot be null or empty");
+		Assert.hasText(operationName, "operationName cannot be null or empty");
 		this.databaseSystem = databaseSystem;
+		this.operationName = operationName;
 	}
 
 	public List<String> getDeleteRequest() {
@@ -79,20 +106,20 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.addRequest = documents;
 	}
 
-	public SearchRequest getSearchRequest() {
-		return this.searchRequest;
+	public SearchRequest getQueryRequest() {
+		return this.queryRequest;
 	}
 
-	public void setSearchRequest(SearchRequest request) {
-		this.searchRequest = request;
+	public void setQueryRequest(SearchRequest request) {
+		this.queryRequest = request;
 	}
 
-	public List<Document> getSearchResponse() {
-		return this.searchResponse;
+	public List<Document> getQueryResponse() {
+		return this.queryResponse;
 	}
 
-	public void setSearchResponse(List<Document> documents) {
-		this.searchResponse = documents;
+	public void setQueryResponse(List<Document> documents) {
+		this.queryResponse = documents;
 	}
 
 	public String getDatabaseSystem() {
@@ -159,20 +186,20 @@ public class VectorStoreObservationContext extends Observation.Context {
 		return this.operationName;
 	}
 
-	public void setOperationName(String operationName) {
-		this.operationName = operationName;
+	public static Builder builder(String databaseSystem, String operationName) {
+		return new Builder(databaseSystem, operationName);
 	}
 
-	public static Builder builder(String databaseSystem) {
-		return new Builder(databaseSystem);
+	public static Builder builder(String databaseSystem, Operation operation) {
+		return builder(databaseSystem, operation.value);
 	}
 
 	public static class Builder {
 
 		private VectorStoreObservationContext context;
 
-		public Builder(String databaseSystem) {
-			this.context = new VectorStoreObservationContext(databaseSystem);
+		public Builder(String databaseSystem, String operationName) {
+			this.context = new VectorStoreObservationContext(databaseSystem, operationName);
 		}
 
 		public Builder withDeleteRequest(List<String> deleteRequest) {
@@ -185,13 +212,13 @@ public class VectorStoreObservationContext extends Observation.Context {
 			return this;
 		}
 
-		public Builder withSearchRequest(SearchRequest request) {
-			this.context.setSearchRequest(request);
+		public Builder withQueryRequest(SearchRequest request) {
+			this.context.setQueryRequest(request);
 			return this;
 		}
 
-		public Builder withSearchResponse(List<Document> documents) {
-			this.context.setSearchResponse(documents);
+		public Builder withQueryResponse(List<Document> documents) {
+			this.context.setQueryResponse(documents);
 			return this;
 		}
 
@@ -227,11 +254,6 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 		public Builder withIndexName(String indexName) {
 			this.context.setIndexName(indexName);
-			return this;
-		}
-
-		public Builder withOperationName(String operationName) {
-			this.context.setOperationName(operationName);
 			return this;
 		}
 

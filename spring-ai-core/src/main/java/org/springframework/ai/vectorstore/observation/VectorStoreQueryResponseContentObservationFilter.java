@@ -38,12 +38,12 @@ public class VectorStoreQueryResponseContentObservationFilter implements Observa
 			return context;
 		}
 
-		if (CollectionUtils.isEmpty(observationContext.getSearchResponse())) {
+		if (CollectionUtils.isEmpty(observationContext.getQueryResponse())) {
 			return observationContext;
 		}
 
 		StringJoiner joiner = new StringJoiner(", ", "[", "]");
-		observationContext.getSearchResponse().forEach(document -> joiner.add("\"" + document.getContent() + "\""));
+		observationContext.getQueryResponse().forEach(document -> joiner.add("\"" + document.getContent() + "\""));
 
 		observationContext
 			.addHighCardinalityKeyValue(VectorStoreObservationDocumentation.HighCardinalityKeyNames.QUERY_RESPONSE
