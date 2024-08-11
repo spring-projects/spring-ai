@@ -27,7 +27,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
 public enum VectorStoreObservationDocumentation implements ObservationDocumentation {
 
 	/**
-	 * AI Chat Model observations for clients.
+	 * Vector Store observations for clients.
 	 */
 	AI_VECTOR_STORE {
 		@Override
@@ -189,16 +189,6 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 				return "db.index.name";
 			}
 		}
-		// ,
-		// /**
-		// * The number of queries included in a batch operation.
-		// */
-		// BATCH_SIZE {
-		// @Override
-		// public String asString() {
-		// return "db.operation.batch.size";
-		// }
-		// }
 
 	}
 
