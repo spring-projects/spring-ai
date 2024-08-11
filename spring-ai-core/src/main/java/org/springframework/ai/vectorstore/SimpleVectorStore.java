@@ -15,16 +15,6 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.core.io.Resource;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -39,6 +29,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.core.io.Resource;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -55,7 +58,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public class SimpleVectorStore implements VectorStore {
+public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
@@ -69,7 +72,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
@@ -79,7 +82,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		for (String id : idList) {
 			this.store.remove(id);
 		}
@@ -87,7 +90,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.getFilterExpression() != null) {
 			throw new UnsupportedOperationException(
 					"The [" + this.getClass() + "] doesn't support metadata filtering!");
@@ -245,6 +248,16 @@ public class SimpleVectorStore implements VectorStore {
 			return dotProduct(vector, vector);
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder("simple_memory_store", operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName("in-memory-map")
+			.withSimilarityMetric("cosine")
+			.withModel(this.embeddingModel.getClass().getSimpleName());
 	}
 
 }
