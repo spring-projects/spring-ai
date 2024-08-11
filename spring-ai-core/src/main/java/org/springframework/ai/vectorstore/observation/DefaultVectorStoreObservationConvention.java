@@ -32,6 +32,8 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 
 	public static final String DEFAULT_NAME = "spring.ai.vector.store";
 
+	private static final String VECTOR_STORE_SPRING_AI_KIND = "vector_store";
+
 	private static final KeyValue DIMENSIONS_NONE = KeyValue.of(HighCardinalityKeyNames.DIMENSIONS,
 			KeyValue.NONE_VALUE);
 
@@ -74,12 +76,13 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 	@Override
 	@Nullable
 	public String getContextualName(VectorStoreObservationContext context) {
-		return "vector_db " + context.getDatabaseSystem() + " " + context.getOperationName();
+		return "%s %s %s".formatted(VECTOR_STORE_SPRING_AI_KIND, context.getDatabaseSystem(),
+				context.getOperationName());
 	}
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(VectorStoreObservationContext context) {
-		return KeyValues.of(dbSystem(context), dbOperationName(context));
+		return KeyValues.of(springAiKind(context), dbSystem(context), dbOperationName(context));
 	}
 
 	@Override
@@ -87,6 +90,10 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 		return KeyValues.of(query(context), metadataFilter(context), topK(context), dimensions(context),
 				similarityMetric(context), collectionName(context), namespace(context), fieldName(context),
 				indexName(context));
+	}
+
+	protected KeyValue springAiKind(VectorStoreObservationContext context) {
+		return KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND, VECTOR_STORE_SPRING_AI_KIND);
 	}
 
 	protected KeyValue dbSystem(VectorStoreObservationContext context) {

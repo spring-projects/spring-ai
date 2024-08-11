@@ -49,6 +49,15 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 	public enum LowCardinalityKeyNames implements KeyName {
 
 		/**
+		 * Spring AI kind.
+		 */
+		SPRING_AI_KIND {
+			@Override
+			public String asString() {
+				return "spring.ai.kind";
+			}
+		},
+		/**
 		 * The name of the operation or command being executed.
 		 */
 		DB_OPERATION_NAME {

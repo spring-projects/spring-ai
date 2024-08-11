@@ -49,7 +49,7 @@ class DefaultVectorStoreObservationConventionTests {
 			.builder("my-database", VectorStoreObservationContext.Operation.QUERY)
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext))
-			.isEqualTo("vector_db my-database query");
+			.isEqualTo("vector_store my-database query");
 	}
 
 	@Test
