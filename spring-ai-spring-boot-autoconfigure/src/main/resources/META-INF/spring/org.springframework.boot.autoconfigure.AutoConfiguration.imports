@@ -46,3 +46,4 @@ org.springframework.ai.autoconfigure.qianfan.QianFanAutoConfiguration
 org.springframework.ai.autoconfigure.minimax.MiniMaxAutoConfiguration
 org.springframework.ai.autoconfigure.vertexai.embedding.VertexAiEmbeddingAutoConfiguration
 org.springframework.ai.autoconfigure.chat.memory.cassandra.CassandraChatMemoryAutoConfiguration
+org.springframework.ai.autoconfigure.vectorstore.observation.VectorStoreObservationAutoConfiguration

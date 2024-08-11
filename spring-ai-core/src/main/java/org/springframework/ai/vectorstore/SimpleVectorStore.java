@@ -15,16 +15,6 @@
  */
 package org.springframework.ai.vectorstore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.core.io.Resource;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -32,6 +22,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +31,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.core.io.Resource;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -55,7 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Mark Pollack
  * @author Christian Tzolov
  */
-public class SimpleVectorStore implements VectorStore {
+public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
@@ -69,7 +76,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
@@ -79,7 +86,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public Optional<Boolean> doDelete(List<String> idList) {
 		for (String id : idList) {
 			this.store.remove(id);
 		}
@@ -87,7 +94,7 @@ public class SimpleVectorStore implements VectorStore {
 	}
 
 	@Override
-	public List<Document> similaritySearch(SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.getFilterExpression() != null) {
 			throw new UnsupportedOperationException(
 					"The [" + this.getClass() + "] doesn't support metadata filtering!");
@@ -114,7 +121,15 @@ public class SimpleVectorStore implements VectorStore {
 		try {
 			if (!file.exists()) {
 				logger.info("Creating new vector store file: {}", file);
-				file.createNewFile();
+				try {
+					Files.createFile(file.toPath());
+				}
+				catch (FileAlreadyExistsException e) {
+					throw new RuntimeException("File already exists: " + file, e);
+				}
+				catch (IOException e) {
+					throw new RuntimeException("Failed to create new file: " + file + ". Reason: " + e.getMessage(), e);
+				}
 			}
 			else {
 				logger.info("Overwriting existing vector store file: {}", file);
@@ -245,6 +260,15 @@ public class SimpleVectorStore implements VectorStore {
 			return dotProduct(vector, vector);
 		}
 
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE_VECTOR_STORE.value(), operationName)
+			.withDimensions(this.embeddingModel.dimensions())
+			.withCollectionName("in-memory-map")
+			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 }
