@@ -15,16 +15,9 @@
  */
 package org.springframework.ai.openai;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -70,12 +63,18 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -390,7 +389,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			.withId(result.id() != null ? result.id() : "")
 			.withUsage(result.usage() != null ? OpenAiUsage.from(result.usage()) : new EmptyUsage())
 			.withModel(result.model() != null ? result.model() : "")
-			.withRateLimit(rateLimit)
 			.withKeyValue("created", result.created() != null ? result.created() : 0L)
 			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "");
 		if (rateLimit != null) {
