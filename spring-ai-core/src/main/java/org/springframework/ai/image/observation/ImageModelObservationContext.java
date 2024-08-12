@@ -15,10 +15,12 @@
  */
 package org.springframework.ai.image.observation;
 
+import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
+import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.util.Assert;
 
 /**
@@ -29,17 +31,21 @@ import org.springframework.util.Assert;
  */
 public class ImageModelObservationContext extends ModelObservationContext<ImagePrompt, ImageResponse> {
 
-	private final ImageModelRequestOptions requestOptions;
+	private final ImageOptions requestOptions;
 
-	ImageModelObservationContext(ImagePrompt imagePrompt, AiOperationMetadata operationMetadata,
-			ImageModelRequestOptions requestOptions) {
-		super(imagePrompt, operationMetadata);
+	ImageModelObservationContext(ImagePrompt imagePrompt, String provider, ImageOptions requestOptions) {
+		super(imagePrompt,
+				AiOperationMetadata.builder().operationType(AiOperationType.IMAGE.value()).provider(provider).build());
 		Assert.notNull(requestOptions, "requestOptions cannot be null");
 		this.requestOptions = requestOptions;
 	}
 
-	public ImageModelRequestOptions getRequestOptions() {
+	public ImageOptions getRequestOptions() {
 		return requestOptions;
+	}
+
+	public String getOperationType() {
+		return AiOperationType.IMAGE.value();
 	}
 
 	public static Builder builder() {
@@ -50,9 +56,9 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 
 		private ImagePrompt imagePrompt;
 
-		private AiOperationMetadata operationMetadata;
+		private String provider;
 
-		private ImageModelRequestOptions requestOptions;
+		private ImageOptions requestOptions;
 
 		private Builder() {
 		}
@@ -62,18 +68,18 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 			return this;
 		}
 
-		public Builder operationMetadata(AiOperationMetadata operationMetadata) {
-			this.operationMetadata = operationMetadata;
+		public Builder provider(String provider) {
+			this.provider = provider;
 			return this;
 		}
 
-		public Builder requestOptions(ImageModelRequestOptions requestOptions) {
+		public Builder requestOptions(ImageOptions requestOptions) {
 			this.requestOptions = requestOptions;
 			return this;
 		}
 
 		public ImageModelObservationContext build() {
-			return new ImageModelObservationContext(imagePrompt, operationMetadata, requestOptions);
+			return new ImageModelObservationContext(imagePrompt, provider, requestOptions);
 		}
 
 	}

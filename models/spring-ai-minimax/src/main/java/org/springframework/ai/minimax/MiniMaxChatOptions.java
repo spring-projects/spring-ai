@@ -39,6 +39,7 @@ import org.springframework.util.Assert;
  * @see FunctionCallingOptions
  * @see ChatOptions
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -236,6 +237,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -244,6 +246,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Float getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -252,6 +255,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -268,6 +272,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.n = n;
 	}
 
+	@Override
 	public Float getPresencePenalty() {
 		return this.presencePenalty;
 	}
@@ -290,6 +295,17 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	public void setSeed(Integer seed) {
 		this.seed = seed;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -356,12 +372,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	@Override
 	@JsonIgnore
 	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
+		return null;
 	}
 
 	@Override

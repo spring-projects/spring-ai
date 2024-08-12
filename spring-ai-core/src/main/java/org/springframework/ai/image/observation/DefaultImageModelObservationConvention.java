@@ -27,6 +27,9 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultImageModelObservationConvention implements ImageModelObservationConvention {
 
+	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
+		.of(ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
+
 	private static final KeyValue REQUEST_IMAGE_RESPONSE_FORMAT_NONE = KeyValue.of(
 			ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT,
 			KeyValue.NONE_VALUE);
@@ -46,8 +49,11 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 
 	@Override
 	public String getContextualName(ImageModelObservationContext context) {
-		return "%s %s".formatted(context.getOperationMetadata().operationType(),
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return "%s %s".formatted(context.getOperationMetadata().operationType(),
+					context.getRequestOptions().getModel());
+		}
+		return context.getOperationMetadata().operationType();
 	}
 
 	@Override
@@ -66,8 +72,11 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 	}
 
 	protected KeyValue requestModel(ImageModelObservationContext context) {
-		return KeyValue.of(ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return KeyValue.of(ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
+					context.getRequestOptions().getModel());
+		}
+		return REQUEST_MODEL_NONE;
 	}
 
 	@Override

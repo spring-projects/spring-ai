@@ -17,6 +17,8 @@ package org.springframework.ai.chat.observation;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.StringJoiner;
 
@@ -27,6 +29,9 @@ import java.util.StringJoiner;
  * @since 1.0.0
  */
 public class DefaultChatModelObservationConvention implements ChatModelObservationConvention {
+
+	private static final KeyValue REQUEST_MODEL_NONE = KeyValue
+		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL, KeyValue.NONE_VALUE);
 
 	private static final KeyValue RESPONSE_MODEL_NONE = KeyValue
 		.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL, KeyValue.NONE_VALUE);
@@ -52,8 +57,8 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	private static final KeyValue REQUEST_TOP_P_NONE = KeyValue
 		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P, KeyValue.NONE_VALUE);
 
-	private static final KeyValue RESPONSE_FINISH_REASON_NONE = KeyValue
-		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASON, KeyValue.NONE_VALUE);
+	private static final KeyValue RESPONSE_FINISH_REASONS_NONE = KeyValue
+		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS, KeyValue.NONE_VALUE);
 
 	private static final KeyValue RESPONSE_ID_NONE = KeyValue
 		.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID, KeyValue.NONE_VALUE);
@@ -76,8 +81,11 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	@Override
 	public String getContextualName(ChatModelObservationContext context) {
-		return "%s %s".formatted(context.getOperationMetadata().operationType(),
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return "%s %s".formatted(context.getOperationMetadata().operationType(),
+					context.getRequestOptions().getModel());
+		}
+		return context.getOperationMetadata().operationType();
 	}
 
 	@Override
@@ -97,8 +105,11 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValue requestModel(ChatModelObservationContext context) {
-		return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-				context.getRequestOptions().getModel());
+		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+			return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
+					context.getRequestOptions().getModel());
+		}
+		return REQUEST_MODEL_NONE;
 	}
 
 	protected KeyValue responseModel(ChatModelObservationContext context) {
@@ -114,7 +125,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	public KeyValues getHighCardinalityKeyValues(ChatModelObservationContext context) {
 		return KeyValues.of(requestFrequencyPenalty(context), requestMaxTokens(context),
 				requestPresencePenalty(context), requestStopSequences(context), requestTemperature(context),
-				requestTopK(context), requestTopP(context), responseFinishReason(context), responseId(context),
+				requestTopK(context), requestTopP(context), responseFinishReasons(context), responseId(context),
 				usageInputTokens(context), usageOutputTokens(context), usageTotalTokens(context));
 	}
 
@@ -182,14 +193,17 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	// Response
 
-	protected KeyValue responseFinishReason(ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getResult() != null
-				&& context.getResponse().getResult().getMetadata() != null
-				&& context.getResponse().getResult().getMetadata().getFinishReason() != null) {
-			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASON,
-					context.getResponse().getResult().getMetadata().getFinishReason());
+	protected KeyValue responseFinishReasons(ChatModelObservationContext context) {
+		if (context.getResponse() != null && !CollectionUtils.isEmpty(context.getResponse().getResults())) {
+			StringJoiner finishReasonsJoiner = new StringJoiner(", ", "[", "]");
+			context.getResponse()
+				.getResults()
+				.forEach(generation -> finishReasonsJoiner
+					.add("\"" + generation.getMetadata().getFinishReason() + "\""));
+			return KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS,
+					finishReasonsJoiner.toString());
 		}
-		return RESPONSE_FINISH_REASON_NONE;
+		return RESPONSE_FINISH_REASONS_NONE;
 	}
 
 	protected KeyValue responseId(ChatModelObservationContext context) {

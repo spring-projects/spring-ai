@@ -36,6 +36,7 @@ import java.util.Set;
  * ZhiPuAiChatOptions represents the options for the ZhiPuAiChat model.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -213,6 +214,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -221,12 +223,24 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
 		this.maxTokens = maxTokens;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
 	}
 
 	public List<String> getStop() {
@@ -315,6 +329,24 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 	}
 
 	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return null;
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
@@ -399,17 +431,6 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions, ChatOptions {
 		else if (!this.doSample.equals(other.doSample))
 			return false;
 		return true;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
-		throw new UnsupportedOperationException("Unimplemented method 'getTopK'");
-	}
-
-	@JsonIgnore
-	public void setTopK(Integer topK) {
-		throw new UnsupportedOperationException("Unimplemented method 'setTopK'");
 	}
 
 	@Override

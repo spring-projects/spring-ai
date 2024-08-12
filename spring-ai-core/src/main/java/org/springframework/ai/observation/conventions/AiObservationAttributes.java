@@ -79,10 +79,6 @@ public enum AiObservationAttributes {
 	 * The number of dimensions the resulting output embeddings have.
 	 */
 	REQUEST_EMBEDDING_DIMENSIONS("gen_ai.request.embedding.dimensions"),
-	/**
-	 * The format the embeddings are returned in.
-	 */
-	REQUEST_EMBEDDING_ENCODING_FORMAT("gen_ai.request.embedding.encoding_format"),
 
 	/**
 	 * The format in which the generated image is returned.
@@ -100,9 +96,9 @@ public enum AiObservationAttributes {
 	// GenAI Response
 
 	/**
-	 * Final reason the model stopped generating tokens.
+	 * Reasons the model stopped generating tokens, corresponding to each generation received.
 	 */
-	RESPONSE_FINISH_REASON("gen_ai.response.finish_reason"),
+	RESPONSE_FINISH_REASONS("gen_ai.response.finish_reasons"),
 	/**
 	 * The unique identifier for the AI response.
 	 */

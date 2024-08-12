@@ -31,6 +31,7 @@ public enum AiOperationType {
 
 	CHAT("chat"),
 	EMBEDDING("embedding"),
+	FRAMEWORK("framework"),
 	IMAGE("image"),
 	TEXT_COMPLETION("text_completion");
 

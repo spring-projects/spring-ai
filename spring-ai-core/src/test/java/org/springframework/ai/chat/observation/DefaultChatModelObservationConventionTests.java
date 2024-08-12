@@ -24,10 +24,8 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import java.util.List;
 
@@ -50,53 +48,63 @@ class DefaultChatModelObservationConventionTests {
 	}
 
 	@Test
-	void shouldHaveContextualName() {
+	void contextualNameWhenModelIsDefined() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("chat mistral");
+	}
+
+	@Test
+	void contextualNameWhenModelIsNotDefined() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().build())
+			.build();
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("chat");
 	}
 
 	@Test
 	void supportsOnlyChatModelObservationContext() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
 	}
 
 	@Test
-	void shouldHaveRequiredKeyValues() {
+	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), "chat"),
-				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), "ollama"),
+				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider"),
 				KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "mistral"));
 	}
 
 	@Test
-	void shouldHaveOptionalKeyValues() {
+	void shouldHaveKeyValuesWhenDefinedAndResponse() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder()
-				.model("mistral")
-				.frequencyPenalty(0.8f)
-				.maxTokens(200)
-				.presencePenalty(1.0f)
-				.stopSequences(List.of("addio", "bye"))
-				.temperature(0.5f)
-				.topK(1)
-				.topP(0.9f)
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder()
+				.withModel("mistral")
+				.withFrequencyPenalty(0.8f)
+				.withMaxTokens(200)
+				.withPresencePenalty(1.0f)
+				.withStopSequences(List.of("addio", "bye"))
+				.withTemperature(0.5f)
+				.withTopK(1)
+				.withTopP(0.9f)
 				.build())
 			.build();
 		observationContext.setResponse(new ChatResponse(
@@ -117,7 +125,7 @@ class DefaultChatModelObservationConventionTests {
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.5"),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), "1"),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "0.9"),
-				KeyValue.of(HighCardinalityKeyNames.RESPONSE_FINISH_REASON.asString(), "this-is-the-end"),
+				KeyValue.of(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"this-is-the-end\"]"),
 				KeyValue.of(HighCardinalityKeyNames.RESPONSE_ID.asString(), "say33"),
 				KeyValue.of(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(), "1000"),
 				KeyValue.of(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(), "500"),
@@ -125,14 +133,15 @@ class DefaultChatModelObservationConventionTests {
 	}
 
 	@Test
-	void shouldHaveMissingKeyValues() {
+	void shouldHaveNoneKeyValuesWhenMissing() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().build())
 			.build();
-		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
-			.contains(KeyValue.of(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), KeyValue.NONE_VALUE));
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
+				KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), KeyValue.NONE_VALUE));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), KeyValue.NONE_VALUE),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), KeyValue.NONE_VALUE),
@@ -141,7 +150,7 @@ class DefaultChatModelObservationConventionTests {
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), KeyValue.NONE_VALUE),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), KeyValue.NONE_VALUE),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), KeyValue.NONE_VALUE),
-				KeyValue.of(HighCardinalityKeyNames.RESPONSE_FINISH_REASON.asString(), KeyValue.NONE_VALUE),
+				KeyValue.of(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), KeyValue.NONE_VALUE),
 				KeyValue.of(HighCardinalityKeyNames.RESPONSE_ID.asString(), KeyValue.NONE_VALUE),
 				KeyValue.of(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(), KeyValue.NONE_VALUE),
 				KeyValue.of(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(), KeyValue.NONE_VALUE),
@@ -150,13 +159,6 @@ class DefaultChatModelObservationConventionTests {
 
 	private Prompt generatePrompt() {
 		return new Prompt("Who let the dogs out?");
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.CHAT.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 	static class TestUsage implements Usage {

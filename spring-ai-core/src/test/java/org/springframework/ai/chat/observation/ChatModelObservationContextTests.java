@@ -16,10 +16,8 @@
 package org.springframework.ai.chat.observation;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,8 +33,8 @@ class ChatModelObservationContextTests {
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ChatModelRequestOptions.builder().model("supermodel").build())
+			.provider("superprovider")
+			.requestOptions(ChatOptionsBuilder.builder().withModel("supermodel").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();
@@ -46,7 +44,7 @@ class ChatModelObservationContextTests {
 	void whenRequestOptionsIsNullThenThrow() {
 		assertThatThrownBy(() -> ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(null)
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("requestOptions cannot be null");
@@ -54,13 +52,6 @@ class ChatModelObservationContextTests {
 
 	private Prompt generatePrompt() {
 		return new Prompt("hello");
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.CHAT.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 }

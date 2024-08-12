@@ -17,6 +17,7 @@ package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,6 +29,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -165,6 +167,7 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		this.topK = topK;
 	}
 
+	@Override
 	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
@@ -173,6 +176,7 @@ public class BedrockCohereChatOptions implements ChatOptions {
 		this.maxTokens = maxTokens;
 	}
 
+	@Override
 	public List<String> getStopSequences() {
 		return this.stopSequences;
 	}
@@ -211,6 +215,24 @@ public class BedrockCohereChatOptions implements ChatOptions {
 
 	public void setTruncate(Truncate truncate) {
 		this.truncate = truncate;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
 	}
 
 	@Override

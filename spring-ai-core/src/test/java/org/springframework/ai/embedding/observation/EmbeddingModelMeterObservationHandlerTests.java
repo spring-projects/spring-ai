@@ -22,11 +22,10 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
-import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.*;
 
 import java.util.List;
@@ -70,7 +69,7 @@ class EmbeddingModelMeterObservationHandlerTests {
 		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
 		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
 			.tag(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.EMBEDDING.value())
-			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OLLAMA.value())
+			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider")
 			.tag(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "mistral")
 			.tag(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), "mistral-42")
 			.meters()).hasSize(3);
@@ -88,20 +87,13 @@ class EmbeddingModelMeterObservationHandlerTests {
 	private EmbeddingModelObservationContext generateObservationContext() {
 		return EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(EmbeddingModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 	}
 
 	private EmbeddingRequest generateEmbeddingRequest() {
-		return new EmbeddingRequest(List.of(), EmbeddingOptions.EMPTY);
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.EMBEDDING.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
+		return new EmbeddingRequest(List.of(), EmbeddingOptionsBuilder.builder().build());
 	}
 
 	static class TestUsage implements Usage {

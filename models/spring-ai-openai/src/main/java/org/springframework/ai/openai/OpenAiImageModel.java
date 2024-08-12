@@ -29,18 +29,15 @@ import org.springframework.ai.image.observation.DefaultImageModelObservationConv
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
-import org.springframework.ai.image.observation.ImageModelRequestOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -128,12 +125,13 @@ public class OpenAiImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(imagePrompt);
+		OpenAiImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.defaultOptions);
+		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(imagePrompt, requestImageOptions);
 
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
-			.operationMetadata(buildOperationMetadata())
-			.requestOptions(buildRequestOptions(imageRequest))
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
+			.requestOptions(requestImageOptions)
 			.build();
 
 		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
@@ -151,23 +149,14 @@ public class OpenAiImageModel implements ImageModel {
 			});
 	}
 
-	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt) {
+	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt,
+			OpenAiImageOptions requestImageOptions) {
 		String instructions = imagePrompt.getInstructions().get(0).getText();
 
 		OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
 				OpenAiImageApi.DEFAULT_IMAGE_MODEL);
 
-		if (this.defaultOptions != null) {
-			imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-					OpenAiImageApi.OpenAiImageRequest.class);
-		}
-
-		if (imagePrompt.getOptions() != null) {
-			imageRequest = ModelOptionsUtils.merge(toOpenAiImageOptions(imagePrompt.getOptions()), imageRequest,
-					OpenAiImageApi.OpenAiImageRequest.class);
-		}
-
-		return imageRequest;
+		return ModelOptionsUtils.merge(requestImageOptions, imageRequest, OpenAiImageApi.OpenAiImageRequest.class);
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,
@@ -188,61 +177,31 @@ public class OpenAiImageModel implements ImageModel {
 	}
 
 	/**
-	 * Convert the {@link ImageOptions} into {@link OpenAiImageOptions}.
-	 * @param runtimeImageOptions the image options to use.
-	 * @return the converted {@link OpenAiImageOptions}.
+	 * Merge runtime and default {@link ImageOptions} to compute the final options to use
+	 * in the request.
 	 */
-	private OpenAiImageOptions toOpenAiImageOptions(ImageOptions runtimeImageOptions) {
-		OpenAiImageOptions.Builder openAiImageOptionsBuilder = OpenAiImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			// Handle portable image options
-			if (runtimeImageOptions.getN() != null) {
-				openAiImageOptionsBuilder.withN(runtimeImageOptions.getN());
-			}
-			if (runtimeImageOptions.getModel() != null) {
-				openAiImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions.getResponseFormat() != null) {
-				openAiImageOptionsBuilder.withResponseFormat(runtimeImageOptions.getResponseFormat());
-			}
-			if (runtimeImageOptions.getWidth() != null) {
-				openAiImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
-			}
-			if (runtimeImageOptions.getHeight() != null) {
-				openAiImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
-			}
-			// Handle OpenAI specific image options
-			if (runtimeImageOptions instanceof OpenAiImageOptions) {
-				OpenAiImageOptions runtimeOpenAiImageOptions = (OpenAiImageOptions) runtimeImageOptions;
-				if (runtimeOpenAiImageOptions.getQuality() != null) {
-					openAiImageOptionsBuilder.withQuality(runtimeOpenAiImageOptions.getQuality());
-				}
-				if (runtimeOpenAiImageOptions.getStyle() != null) {
-					openAiImageOptionsBuilder.withStyle(runtimeOpenAiImageOptions.getStyle());
-				}
-				if (runtimeOpenAiImageOptions.getUser() != null) {
-					openAiImageOptionsBuilder.withUser(runtimeOpenAiImageOptions.getUser());
-				}
-			}
+	private OpenAiImageOptions mergeOptions(@Nullable ImageOptions runtimeOptions, OpenAiImageOptions defaultOptions) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class,
+				OpenAiImageOptions.class);
+
+		if (runtimeOptionsForProvider == null) {
+			return defaultOptions;
 		}
-		return openAiImageOptionsBuilder.build();
-	}
 
-	private AiOperationMetadata buildOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.IMAGE.value())
-			.provider(AiProvider.OPENAI.value())
-			.build();
-	}
-
-	private ImageModelRequestOptions buildRequestOptions(OpenAiImageApi.OpenAiImageRequest request) {
-		return ImageModelRequestOptions.builder()
-			.model(StringUtils.hasText(request.model()) ? request.model() : "unknown")
-			.n(request.n())
-			.width(request.size() != null ? Integer.parseInt(request.size().split("x")[0]) : null)
-			.height(request.size() != null ? Integer.parseInt(request.size().split("x")[1]) : null)
-			.responseFormat(request.responseFormat())
-			.style(request.style())
+		return OpenAiImageOptions.builder()
+			// Handle portable image options
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withN(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getN(), defaultOptions.getN()))
+			.withResponseFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getResponseFormat(),
+					defaultOptions.getResponseFormat()))
+			.withWidth(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getWidth(), defaultOptions.getWidth()))
+			.withHeight(
+					ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getHeight(), defaultOptions.getHeight()))
+			.withStyle(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getStyle(), defaultOptions.getStyle()))
+			// Handle OpenAI specific image options
+			.withQuality(
+					ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getQuality(), defaultOptions.getQuality()))
+			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
 			.build();
 	}
 

@@ -190,7 +190,18 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public Integer getWidth() {
-		return this.width;
+		if (this.width != null) {
+			return this.width;
+		}
+		else if (this.size != null) {
+			try {
+				return Integer.parseInt(this.size.split("x")[0]);
+			}
+			catch (NumberFormatException ex) {
+				return null;
+			}
+		}
+		return null;
 	}
 
 	public void setWidth(Integer width) {
@@ -200,7 +211,18 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public Integer getHeight() {
-		return this.height;
+		if (this.height != null) {
+			return this.height;
+		}
+		else if (this.size != null) {
+			try {
+				return Integer.parseInt(this.size.split("x")[1]);
+			}
+			catch (NumberFormatException ex) {
+				return null;
+			}
+		}
+		return null;
 	}
 
 	public void setHeight(Integer height) {
@@ -208,6 +230,7 @@ public class OpenAiImageOptions implements ImageOptions {
 		this.size = this.width + "x" + this.height;
 	}
 
+	@Override
 	public String getStyle() {
 		return this.style;
 	}
@@ -229,7 +252,6 @@ public class OpenAiImageOptions implements ImageOptions {
 	}
 
 	public String getSize() {
-
 		if (this.size != null) {
 			return this.size;
 		}

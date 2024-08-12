@@ -16,10 +16,8 @@
 package org.springframework.ai.image.observation;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,8 +33,8 @@ class ImageModelObservationContextTests {
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("supersun").build())
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder().withModel("supersun").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();
@@ -46,7 +44,7 @@ class ImageModelObservationContextTests {
 	void whenRequestOptionsIsNullThenThrow() {
 		assertThatThrownBy(() -> ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
+			.provider("superprovider")
 			.requestOptions(null)
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("requestOptions cannot be null");
@@ -54,13 +52,6 @@ class ImageModelObservationContextTests {
 
 	private ImagePrompt generateImagePrompt() {
 		return new ImagePrompt("here comes the sun");
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.IMAGE.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 }

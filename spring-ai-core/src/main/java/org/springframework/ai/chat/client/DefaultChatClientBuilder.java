@@ -26,10 +26,13 @@ import org.springframework.ai.chat.client.ChatClient.Builder;
 import org.springframework.ai.chat.client.ChatClient.PromptSystemSpec;
 import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
+
+import io.micrometer.observation.ObservationRegistry;
 
 /**
  * DefaultChatClientBuilder is a builder class for creating a ChatClient.
@@ -48,11 +51,18 @@ public class DefaultChatClientBuilder implements Builder {
 
 	private final ChatModel chatModel;
 
-	public DefaultChatClientBuilder(ChatModel chatModel) {
+	DefaultChatClientBuilder(ChatModel chatModel) {
+		this(chatModel, ObservationRegistry.NOOP, null);
+	}
+
+	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			ChatClientObservationConvention customObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
+		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.chatModel = chatModel;
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, "", Map.of(), "", Map.of(), List.of(),
-				List.of(), List.of(), List.of(), null, List.of(), Map.of());
+				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
+				customObservationConvention);
 	}
 
 	public ChatClient build() {

@@ -3,7 +3,7 @@
 = Structured Output Converter
 
 NOTE: As of 02.05.2024 the old `OutputParser`, `BeanOutputParser`, `ListOutputParser` and `MapOutputParser` classes are deprecated in favor of the new `StructuredOutputConverter`, `BeanOutputConverter`, `ListOutputConverter` and `MapOutputConverter` implementations.
-Later are drop-in replacements for the former ones and provide the same functionality.   The reason for the change was primarily naming, as there isn't any parsing being done, but also have aligned with the Spring `org.springframework.core.convert.converter` package brining in some improved functionality.
+the latter are drop-in replacements for the former ones and provide the same functionality.   The reason for the change was primarily naming, as there isn't any parsing being done, but also have aligned with the Spring `org.springframework.core.convert.converter` package brining in some improved functionality.
 
 The ability of LLMs to produce structured outputs is important for downstream applications that rely on reliably parsing output values.
 Developers want to quickly turn results from an AI model into data types, such as JSON, XML or Java Classes, that can be passed to other application functions and methods.
@@ -262,7 +262,7 @@ The following AI Models have been tested to support List, Map and Bean structure
 
 Some AI Models provide dedicated configuration options to generate structured (usually JSON) output.
 
-* xref:api/chat/openai-chat.adoc[OpenAI] - provides a `spring.ai.openai.chat.options.responseFormat` options specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
+* xref:api/chat/openai-chat.adoc#_structured_outputs[OpenAI Structured Outputs] can ensure your model generates responses conforming strictly to your provided JSON Schema. You can choose between the `JSON_OBJECT` that guarantees the message the model generates is valid JSON or `JSON_SCHEMA` with a supplied schema that guarantees the model will generate a response that matches your supplied schema.
 * xref:api/chat/azure-openai-chat.adoc[Azure OpenAI] - provides a `spring.ai.azure.openai.chat.options.responseFormat` options specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
 * xref:api/chat/ollama-chat.adoc[Ollama] - provides a `spring.ai.ollama.chat.options.format` option to specify the format to return a response in. Currently the only accepted value is `json`.
 * xref:api/chat/mistralai-chat.adoc[Mistral AI] - provides a `spring.ai.mistralai.chat.options.responseFormat` option to specify the format to return a response in. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.

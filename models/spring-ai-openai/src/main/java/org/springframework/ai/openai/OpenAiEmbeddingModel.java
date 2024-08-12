@@ -30,18 +30,15 @@ import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObserva
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
-import org.springframework.ai.embedding.observation.EmbeddingModelRequestOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -126,7 +123,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public OpenAiEmbeddingModel(OpenAiApi openAiApi, MetadataMode metadataMode, OpenAiEmbeddingOptions options,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-		Assert.notNull(openAiApi, "OpenAiService must not be null");
+		Assert.notNull(openAiApi, "openAiApi must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
@@ -147,12 +144,13 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(request);
+		OpenAiEmbeddingOptions requestOptions = mergeOptions(request.getOptions(), this.defaultOptions);
+		OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(request, requestOptions);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
-			.operationMetadata(buildOperationMetadata())
-			.requestOptions(buildRequestOptions(apiRequest))
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
+			.requestOptions(requestOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -183,35 +181,34 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
-	@SuppressWarnings("unchecked")
-	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
-		org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<List<String>> apiRequest = (this.defaultOptions != null)
-				? new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
-						this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat(),
-						this.defaultOptions.getDimensions(), this.defaultOptions.getUser())
-				: new org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest<>(request.getInstructions(),
-						OpenAiApi.DEFAULT_EMBEDDING_MODEL);
+	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request,
+			OpenAiEmbeddingOptions requestOptions) {
+		return new OpenAiApi.EmbeddingRequest<>(request.getInstructions(), requestOptions.getModel(),
+				requestOptions.getEncodingFormat(), requestOptions.getDimensions(), requestOptions.getUser());
+	}
 
-		if (request.getOptions() != null && !EmbeddingOptions.EMPTY.equals(request.getOptions())) {
-			apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
-					org.springframework.ai.openai.api.OpenAiApi.EmbeddingRequest.class);
+	/**
+	 * Merge runtime and default {@link EmbeddingOptions} to compute the final options to
+	 * use in the request.
+	 */
+	private OpenAiEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions runtimeOptions,
+			OpenAiEmbeddingOptions defaultOptions) {
+		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, EmbeddingOptions.class,
+				OpenAiEmbeddingOptions.class);
+
+		if (runtimeOptionsForProvider == null) {
+			return defaultOptions;
 		}
 
-		return apiRequest;
-	}
-
-	private AiOperationMetadata buildOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.EMBEDDING.value())
-			.provider(AiProvider.OPENAI.value())
-			.build();
-	}
-
-	private EmbeddingModelRequestOptions buildRequestOptions(OpenAiApi.EmbeddingRequest<List<String>> request) {
-		return EmbeddingModelRequestOptions.builder()
-			.model(StringUtils.hasText(request.model()) ? request.model() : "unknown")
-			.dimensions(request.dimensions())
-			.encodingFormat(request.encodingFormat())
+		return OpenAiEmbeddingOptions.builder()
+			// Handle portable embedding options
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.withDimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+					defaultOptions.getDimensions()))
+			// Handle OpenAI specific embedding options
+			.withEncodingFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getEncodingFormat(),
+					defaultOptions.getEncodingFormat()))
+			.withUser(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
 			.build();
 	}
 

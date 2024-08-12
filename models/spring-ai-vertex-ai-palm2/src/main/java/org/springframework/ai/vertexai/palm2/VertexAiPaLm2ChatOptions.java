@@ -15,14 +15,18 @@
  */
 package org.springframework.ai.vertexai.palm2;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 
+import java.util.List;
+
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class VertexAiPaLm2ChatOptions implements ChatOptions {
@@ -125,6 +129,36 @@ public class VertexAiPaLm2ChatOptions implements ChatOptions {
 
 	public void setTopK(Integer topK) {
 		this.topK = topK;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getMaxTokens() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getFrequencyPenalty() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Float getPresencePenalty() {
+		return null;
 	}
 
 	@Override

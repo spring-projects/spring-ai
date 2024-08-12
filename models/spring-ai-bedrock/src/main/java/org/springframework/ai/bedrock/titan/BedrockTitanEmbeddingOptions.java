@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.bedrock.titan;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -24,6 +25,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Wei Jiang
+ * @author Thomas Vitale
  */
 @JsonInclude(Include.NON_NULL)
 public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
@@ -60,6 +62,18 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 
 	public void setInputType(InputType inputType) {
 		this.inputType = inputType;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getModel() {
+		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getDimensions() {
+		return null;
 	}
 
 }

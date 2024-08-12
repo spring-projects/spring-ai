@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -518,10 +519,71 @@ public class OpenAiApi {
 		/**
 		 * An object specifying the format that the model must output.
 		 * @param type Must be one of 'text' or 'json_object'.
+		 * @param jsonSchema JSON schema object that describes the format of the JSON object.
+		 * Only applicable when type is 'json_schema'.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
-				@JsonProperty("type") String type) {
+				@JsonProperty("type") Type type,
+				@JsonProperty("json_schema") JsonSchema jsonSchema ) {
+			
+			public enum Type {
+				/**
+				 * Generates a text response. (default)
+				 */
+				@JsonProperty("text")
+				TEXT,
+
+				/**
+				 * Enables JSON mode, which guarantees the message
+				 * the model generates is valid JSON.
+				 */
+				@JsonProperty("json_object")
+				JSON_OBJECT,
+
+				/**
+				 * Enables Structured Outputs which guarantees the model
+				 * will match your supplied JSON schema.
+				 */
+				@JsonProperty("json_schema")
+				JSON_SCHEMA
+			}
+
+			/**
+			 * JSON schema object that describes the format of the JSON object.
+			 * Applicable for the 'json_schema' type only.
+			 * @param name The name of the schema.
+			 * @param schema The JSON schema object that describes the format of the JSON object.
+			 * @param strict If true, the model will only generate outputs that match the schema.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record JsonSchema(
+				@JsonProperty("name") String name,
+				@JsonProperty("schema") Map<String, Object> schema,
+				@JsonProperty("strict") Boolean strict) {
+
+				public JsonSchema(String name, String schema) {
+					this(name, ModelOptionsUtils.jsonToMap(schema), true);
+				}
+
+				public JsonSchema(String name, String schema, Boolean strict) {
+					this(StringUtils.hasText(name)? name : "custom_schema", ModelOptionsUtils.jsonToMap(schema), strict);
+				}
+			}
+
+			public ResponseFormat(Type type) {
+				this(type, (JsonSchema) null);
+			}
+
+			public ResponseFormat(Type type, String schema) {
+				this(type, "custom_schema", schema, true);
+			}
+
+			@ConstructorBinding
+			public ResponseFormat(Type type, String name, String schema, Boolean strict) {
+				this(type, StringUtils.hasText(schema)? new JsonSchema(name, schema, strict): null);
+			}
+
 		}
 
 		/**
@@ -560,7 +622,8 @@ public class OpenAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {// @formatter:on
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("refusal") String refusal) {// @formatter:on
 
 		/**
 		 * Get message content as String.
@@ -582,7 +645,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
+			this(content, role, null, null, null, null);
 		}
 
 		/**
@@ -859,6 +922,8 @@ public class OpenAiApi {
 	 * the model runs with. Can be used in conjunction with the seed request parameter to
 	 * understand when backend changes have been made that might impact determinism.
 	 * @param object The object type, which is always 'chat.completion.chunk'.
+	 * @param usage Usage statistics for the completion request. Present in the last chunk
+	 * only if the StreamOptions.includeUsage is set to true.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(// @formatter:off

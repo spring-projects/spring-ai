@@ -15,6 +15,13 @@ The following are the vector stores that currently don't support the `initialize
 2. Pinecone
 3. Weaviate
 
+* In Bedrock Jurassic 2, the chat options `countPenalty`, `frequencyPenalty`, and `presencePenalty`
+have been renamed to `countPenaltyOptions`, `frequencyPenaltyOptions`, and `presencePenaltyOptions`.
+Furthermore, the type of the chat option `stopSequences` have been changed from `String[]` to `List<String>`.
+
+* In Azure OpenAI, the type of the chat options `frequencyPenalty` and `presencePenalty`
+has been changed from `Double` to `Float`, consistently with all the other implementations.
+
 == Upgrading to 1.0.0.M1
 
 On our march to release 1.0.0 M1 we have made several breaking changes.  Apologies, it is for the best!

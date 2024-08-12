@@ -18,11 +18,9 @@ package org.springframework.ai.image.observation;
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
-import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.ai.observation.conventions.AiProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,51 +39,61 @@ class DefaultImageModelObservationConventionTests {
 	}
 
 	@Test
-	void shouldHaveContextualName() {
+	void contextualNameWhenModelIsDefined() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image mistral");
+	}
+
+	@Test
+	void contextualNameWhenModelIsNotDefined() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt())
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder().build())
+			.build();
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image");
 	}
 
 	@Test
 	void supportsOnlyImageModelObservationContext() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
 	}
 
 	@Test
-	void shouldHaveRequiredLowCardinalityKeyValues() {
+	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(AiObservationAttributes.AI_OPERATION_TYPE.value(), "image"),
-				KeyValue.of(AiObservationAttributes.AI_PROVIDER.value(), "ollama"),
+				KeyValue.of(AiObservationAttributes.AI_PROVIDER.value(), "superprovider"),
 				KeyValue.of(AiObservationAttributes.REQUEST_MODEL.value(), "mistral"));
 	}
 
 	@Test
-	void shouldHaveOptionalHighCardinalityKeyValues() {
+	void shouldHaveHighCardinalityKeyValuesWhenDefined() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder()
-				.model("mistral")
-				.n(1)
-				.height(1080)
-				.width(1920)
-				.style("sketch")
-				.responseFormat("base64")
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder()
+				.withModel("mistral")
+				.withN(1)
+				.withHeight(1080)
+				.withWidth(1920)
+				.withStyle("sketch")
+				.withResponseFormat("base64")
 				.build())
 			.build();
 
@@ -96,13 +104,15 @@ class DefaultImageModelObservationConventionTests {
 	}
 
 	@Test
-	void shouldHaveMissingHighCardinalityKeyValues() {
+	void shouldHaveNoneKeyValuesWhenMissing() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt())
-			.operationMetadata(generateOperationMetadata())
-			.requestOptions(ImageModelRequestOptions.builder().model("mistral").build())
+			.provider("superprovider")
+			.requestOptions(ImageOptionsBuilder.builder().build())
 			.build();
 
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(AiObservationAttributes.REQUEST_MODEL.value(), KeyValue.NONE_VALUE));
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_RESPONSE_FORMAT.value(), KeyValue.NONE_VALUE),
 				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_SIZE.value(), KeyValue.NONE_VALUE),
@@ -111,13 +121,6 @@ class DefaultImageModelObservationConventionTests {
 
 	private ImagePrompt generateImagePrompt() {
 		return new ImagePrompt("here comes the sun");
-	}
-
-	private AiOperationMetadata generateOperationMetadata() {
-		return AiOperationMetadata.builder()
-			.operationType(AiOperationType.IMAGE.value())
-			.provider(AiProvider.OLLAMA.value())
-			.build();
 	}
 
 }
