@@ -119,15 +119,14 @@ public class OpenAiApiToolFunctionCallIT {
 				MockWeatherService.Response weatherResponse = weatherService.apply(weatherRequest);
 
 				// extend conversation with function response.
-				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(),
-						Role.TOOL, functionName, toolCall.id(), null, null));
+				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
+						functionName, toolCall.id(), null, null));
 			}
 		}
 
 		var functionResponseRequest = new ChatCompletionRequest(messages, "gpt-4o", 0.5f);
 
-		ResponseEntity<ChatCompletion> chatCompletion2 = completionApi
-			.chatCompletionEntity(functionResponseRequest);
+		ResponseEntity<ChatCompletion> chatCompletion2 = completionApi.chatCompletionEntity(functionResponseRequest);
 
 		logger.info("Final response: " + chatCompletion2.getBody());
 
