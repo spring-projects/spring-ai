@@ -1,21 +1,33 @@
 = MongoDB Atlas
 
-This section walks you through setting up MongoDB Atlas as a vector store with Spring AI.
+
+This section walks you through setting up MongoDB Atlas as a vector store to use with Spring AI.
+
 
 == What is MongoDB Atlas?
 
-https://www.mongodb.com/products/platform/atlas-database[MongoDB Atlas] is a fully-managed cloud database available in AWS, Azure, and GCP.
-It supports native Vector Search and full text search (`BM25`) on your MongoDB document data.
 
-https://www.mongodb.com/products/platform/atlas-vector-search[MongoDB Atlas Vector Search] allows to store your embeddings in MongoDB documents, create a vector search index, and perform KNN search with an approximate nearest neighbor algorithm (Hierarchical Navigable Small Worlds).
-It uses the `$vectorSearch` aggregation stage.
+https://www.mongodb.com/products/platform/atlas-database[MongoDB Atlas] is the fully-managed cloud database from MongoDB available in AWS, Azure, and GCP.
+Atlas supports native Vector Search and full text search on your MongoDB document data.
+
+
+https://www.mongodb.com/products/platform/atlas-vector-search[MongoDB Atlas Vector Search] allows you to store your embeddings in MongoDB documents, create vector search indexes, and perform KNN searches with an approximate nearest neighbor algorithm (Hierarchical Navigable Small Worlds).
+You can use the `$vectorSearch` aggregation operator in a MongoDB aggregation stage to perform a search on your vector embeddings.
+
 
 == Prerequisites
 
-TODO: Add prerequisites instructions
+
+- An Atlas cluster running MongoDB version 6.0.11, 7.0.2, or later. To get started with MongoDB Atlas, you can follow the instructions https://www.mongodb.com/docs/atlas/getting-started/[here]. Ensure that your IP address is included in your Atlas project’s https://www.mongodb.com/docs/atlas/security/ip-access-list/#std-label-access-list[access list].
+
+
+- An `EmbeddingModel` instance to compute the document embeddings. Several options are available. Refer to the https://docs.spring.io/spring-ai/reference/api/embeddings.html#available-implementations[EmbeddingModel] section for more information.
+
+
+- An environment to set up and run a Java application.
+
 
 == Auto-configuration
-
 Spring AI provides Spring Boot auto-configuration for the MongoDB Atlas Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -36,18 +48,50 @@ dependencies {
 }
 ----
 
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 
-The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+=== Schema Initialization
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `spring.ai.vectorstore.mongodb.initialize-schema=true` in the `application.properties` file.
+
 
 NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
 
 
+When `initializeSchema` is set to `true`, the following actions are performed automatically:
 
 
+- **Collection Creation**: The specified collection for storing vectors will be created if it does not already exist.
+- **Search Index Creation**: A search index will be created based on the configuration properties.
+
+
+If you're running a free or shared tier cluster, you must separately create the index through the Atlas UI, Atlas Administration API, or Atlas CLI.
+
+
+NOTE: If you have an existing Atlas Vector Search index called `vector_index` on the `springai_test.vector_store collection`, Spring AI won't create an additional index. Because of this, you might experience errors later if the existing index was configured with incompatible settings, such as a different number of dimensions.
+
+
+Ensure that your index has the following configuration:
+
+
+[source,json]
+----
+{
+  "fields": [
+    {
+      "numDimensions": 1536,
+      "path": "embedding",
+      "similarity": "cosine",
+      "type": "vector"
+    }
+  ]
+}
+----
 
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
@@ -63,48 +107,152 @@ public EmbeddingModel embeddingModel() {
 }
 ----
 
-== Metadata filtering
 
-You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with MongoDB Atlas store as well.
-
-For example, you can use either the text expression language:
-
-[source,java]
-----
-vectorStore.similaritySearch(
-                    SearchRequest.defaults()
-                            .withQuery("The World")
-                            .withTopK(TOP_K)
-                            .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-                            .withFilterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'"));
-----
-
-or programmatically using the `Filter.Expression` DSL:
-
-[source,java]
-----
-FilterExpressionBuilder b = new FilterExpressionBuilder();
-
-vectorStore.similaritySearch(SearchRequest.defaults()
-                    .withQuery("The World")
-                    .withTopK(TOP_K)
-                    .withSimilarityThreshold(SIMILARITY_THRESHOLD)
-                    .withFilterExpression(b.and(
-                            b.in("author", "john", "jill"),
-                            b.eq("article_type", "blog")).build()));
-----
-
-NOTE: Those (portable) filter expressions get automatically converted into the proprietary MongoDB Atlas filter expressions.
-
-== MongoDB Atlas properties
-
+=== Configuration properties
 You can use the following properties in your Spring Boot configuration to customize the MongoDB Atlas vector store.
+[source,xml]
+----
+...
+spring.data.mongodb.uri=<connection string>
+spring.data.mongodb.database=<database name>
+
+spring.ai.vectorstore.mongodb.collection-name=vector_store
+spring.ai.vectorstore.mongodb.initialize-schema=true
+spring.ai.vectorstore.mongodb.path-name=embedding
+spring.ai.vectorstore.mongodb.indexName=vector_index
+----
+
 
 |===
 |Property| Description | Default value
+
 
 |`spring.ai.vectorstore.mongodb.collection-name`| The name of the collection to store the vectors. | `vector_store`
 |`spring.ai.vectorstore.mongodb.initialize-schema`| whether to initialize the backend schema for you | `false`
 |`spring.ai.vectorstore.mongodb.path-name`| The name of the path to store the vectors. | `embedding`
 |`spring.ai.vectorstore.mongodb.indexName`| The name of the index to store the vectors. | `vector_index`
 |===
+
+
+== Manual Configuration Properties
+If you prefer to manually configure the MongoDB Atlas vector store without auto-configuration, you can do so by directly setting up the `MongoDBAtlasVectorStore` and its dependencies.
+
+
+=== Example Configuration
+[source,java]
+----
+@Configuration
+public class VectorStoreConfig {
+
+    @Bean
+    public MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+        MongoDBVectorStoreConfig config = MongoDBVectorStoreConfig.builder()
+            .withCollectionName("custom_vector_store")
+            .withVectorIndexName("custom_vector_index")
+            .withPathName("custom_embedding_path")
+            .withMetadataFieldsToFilter(List.of("author", "year"))
+            .build();
+
+        return new MongoDBAtlasVectorStore(mongoTemplate, embeddingModel, config, true);
+    }
+}
+----
+=== Properties
+- `collectionName`: The name of the collection to store the vectors.
+- `vectorIndexName`: The name of the vector index.
+- `pathName`: The path where vectors are stored.
+- `metadataFieldsToFilter`: A list of metadata fields to filter.
+
+
+You can enable schema initialization by passing `true` as the last parameter in the `MongoDBAtlasVectorStore` constructor
+
+
+== Adding Documents
+To add documents to the vector store, you need to convert your input documents into the `Document` type and call the `addDocuments()` method. This method will use the `EmbeddingModel` to compute the embeddings and save them to the MongoDB collection.
+
+
+[source,java]
+----
+List<Document> docs = List.of( 
+	new Document("Proper tuber planting involves site selection, timing, and care. Choose well-drained soil and adequate sun exposure. Plant in spring, with eyes facing upward at a depth two to three times the tuber's height. Ensure 4-12 inch spacing based on tuber size. Adequate moisture is needed, but avoid overwatering. Mulching helps preserve moisture and prevent weeds.", Map.of("author", "A", "type", "post")), 
+	new Document("Successful oil painting requires patience, proper equipment, and technique. Prepare a primed canvas, sketch lightly, and use high-quality brushes and oils. Paint 'fat over lean' to prevent cracking. Allow each layer to dry before applying the next. Clean brushes often and work in a well-ventilated space.", Map.of("author", "A")), 
+	new Document("For a natural lawn, select the right grass type for your climate. Water 1 to 1.5 inches per week, avoid overwatering, and use organic fertilizers. Regular aeration helps root growth and prevents compaction. Practice natural pest control and overseeding to maintain a dense lawn.", Map.of("author", "B", "type", "post")) ); 
+
+vectorStore.add(docs);
+
+
+
+
+
+
+----
+
+
+== Deleting Documents
+To delete documents from the vector store, use the `delete()` method. This method takes a list of document IDs and removes the corresponding documents from the MongoDB collection.
+
+
+[source,java]
+----
+List<String> ids = List.of("id1", "id2", "id3"); // Replace with actual document IDs
+
+vectorStore.delete(ids);
+----
+
+
+== Performing Similarity Search
+To perform a similarity search, construct a `SearchRequest` object with the desired query parameters and call the `similaritySearch()` method. This method will return a list of documents that match the query based on vector similarity.
+
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+            SearchRequest
+                    .query("learn how to grow things")
+                    .withTopK(2)
+    );
+----
+
+
+== Metadata Filtering
+Metadata filtering allows for more refined queries by filtering results based on specified metadata fields. This feature uses the MongoDB Query API to perform filtering operations in conjunction with vector searches.
+
+
+=== Filter Expressions
+The `MongoDBAtlasFilterExpressionConverter` class converts filter expressions into MongoDB Atlas metadata filter expressions. The supported operations include:
+
+
+- `$and`
+- `$or`
+- `$eq`
+- `$ne`
+- `$lt`
+- `$lte`
+- `$gt`
+- `$gte`
+- `$in`
+- `$nin`
+
+
+These operations enable filtering logic to be applied to metadata fields associated with documents in the vector store.
+
+
+=== Example of a Filter Expression
+Here’s an example of how to use a filter expression in a similarity search:
+
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+List<Document> results = vectorStore.similaritySearch(
+        SearchRequest.defaults()
+                .withQuery("learn how to grow things")
+                .withTopK(2)
+                .withSimilarityThreshold(0.5)
+                .withFilterExpression(b.eq("author", "A").build())
+);
+----
+
+
+If you would like to try out Spring AI with MongoDB, see https://www.mongodb.com/docs/atlas/atlas-vector-search/ai-integrations/spring-ai/#std-label-spring-ai[Get Started with the Spring AI Integration].
