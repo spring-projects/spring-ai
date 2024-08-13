@@ -71,6 +71,7 @@ Latest version of Spring AI provides multimodal support for the following Chat C
 
 * xref:api/chat/openai-chat.adoc#_multimodal[Open AI - (GPT-4-Vision and GPT-4o models)]
 * xref:api/chat/ollama-chat.adoc#_multimodal[Ollama - (LlaVa and Baklava models)]
+* xref:api/chat/vertexai-anthropic-chat.adoc#_multimodal[Vertex AI Anthropic - (claude-3-5-sonnet)]
 * xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini - (gemini-1.5-pro-001, gemini-1.5-flash-001 models)]
 * xref:api/chat/anthropic-chat.adoc#_multimodal[Anthropic Claude 3]
 * xref:api/chat/bedrock/bedrock-anthropic3.adoc#_multimodal[AWS Bedrock Anthropic Claude 3]

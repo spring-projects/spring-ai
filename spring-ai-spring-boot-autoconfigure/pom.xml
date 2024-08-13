@@ -216,6 +216,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Vertex AI Anthropic -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai-anthropic</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Vertex AI PaLM2 -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

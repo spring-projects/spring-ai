@@ -1,0 +1,208 @@
+= VertexAI Anthropic Chat
+
+The https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude[Vertex AI Anthropic API] allows developers to build generative AI applications using the Anthropic Claude models.
+The Vertex AI Anthropic API when using Claude 3.5 Sonnet supports multimodal prompts as input and output text or code.
+A multimodal model is a model that is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
+
+Anthropic Claude models is available through the VertexAI Model Garden feature that makes available the following link:https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude#available-claude-models[models]:
+
+- Claude 3.5 Sonnet
+- Claude 3 Opus
+- Claude 3 Haiku
+- Claude 3 Sonnet
+
+== Prerequisites
+
+- `PROJECT_ID` your Google Cloud projectID
+- `LOCATION` the region where the model is deployed (e.g. `europe-west1` - Please check the available regions in the Google Cloud documentation)
+- `CREDENTIALS` the Google Cloud credentials granted to access VertexAI resources (e.g. a service account json file)
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the VertexAI Anthropic Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-anthropic-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-anthropic-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+The prefix `spring.ai.vertex.ai.anthropic` is used as the property prefix that lets you connect to VertexAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.anthropic.projectId   | Google Cloud Platform project ID |  -
+| spring.ai.vertex.ai.anthropic.location    | Region           |  -
+| spring.ai.vertex.ai.anthropic.credentialsUri    | URI to Vertex AI Anthropic credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -
+|====
+
+The prefix `spring.ai.vertex.ai.anthropic.chat` is the property prefix that lets you configure the chat model implementation for VertexAI Anthropic Chat.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.vertex.ai.anthropic.chat.options.model | Supported models are `claude-3-5-sonnet@20240620`, `claude-3-opus@20240229`, `claude-3-sonnet@20240229` and `claude-3-haiku@20240307`. | claude-3-5-sonnet@20240620
+| spring.ai.vertex.ai.anthropic.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.8
+| spring.ai.vertex.ai.anthropic.chat.options.topK | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
+| spring.ai.vertex.ai.anthropic.chat.options.topP | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
+| spring.ai.vertex.ai.anthropic.chat.options.maxTokens | The maximum number of tokens to generate. | 500
+| spring.ai.vertex.ai.anthropic.chat.options.anthropicVersion | The version of VertexAI Anthropic API | vertex-2023-10-16
+
+|====
+
+TIP: All properties prefixed with `spring.ai.vertex.ai.anthropic.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-anthropic/src/main/java/org/springframework/ai/vertexai/anthropic/VertexAiAnthropicChatOptions.java[VertexAiAnthropicChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
+
+On start-up, the default options can be configured with the `VertexAiAnthropicChatModel(api)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
+
+At runtime you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        VertexAiAnthropicChatOptions.builder()
+            .withTemperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific `VertexAiChatAnthropicOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
+https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+== Function Calling
+
+You can register custom Java functions with the VertexAiAnthropicChatModel and have the Claude 3.5 Sonnet model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats. This paradigm represents a significant advancement in AI models.
+
+VertexAI Anthropic models support this capability by comprehending and integrating text, code, audio, images, and video. For more details, refer to the Anthropic website's https://docs.anthropic.com/en/api/messages-examples#vision[Vision] paragraph.
+
+Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
+This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a simple code example, demonstrating the combination of user text with an image.
+
+[source,java]
+----
+byte[] data = new ClassPathResource("/vertex-test.png").getContentAsByteArray();
+
+var userMessage = new UserMessage("Explain what do you see o this picture?",
+        List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-anthropic-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
+
+[source,application.properties]
+----
+spring.ai.vertex.ai.anthropic.project-id=PROJECT_ID
+spring.ai.vertex.ai.anthropic.location=LOCATION
+spring.ai.vertex.ai.anthropic.credentials-uri=CREDENTIALS
+----
+
+This will create a `VertexAiAnthropicChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final VertexAiAnthropicChatModel chatModel;
+
+    @Autowired
+    public ChatController(VertexAiAnthropicChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatModel.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-anthropic/src/main/java/org/springframework/ai/vertexai/anthropic/VertexAiAnthropicChatModel.java[VertexAiAnthropicChatModel] implements the `ChatModel` and uses the `VertexAI` to connect to the Vertex AI Anthropic service.
+
+Add the `spring-ai-vertex-ai-anthropic` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-anthropic</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-anthropic'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `VertexAiAnthropicChatModel` and use it for text generations:
+
+[source,java]
+----
+VertexAiAnthropicApi vertexAiAnthropicApi =  new VertexAiAnthropicApi(projectId, location, credentials);
+
+VertexAiAnthropicChatModel chatModel = new VertexAiAnthropicChatModel(vertexAiAnthropicApi,
+    VertexAiAnthropicChatOptions.builder()
+        .withMaxTokens(100)
+        .withAnthropicVersion(VertexAiAnthropicChatModel.DEFAULT_ANTHROPIC_VERSION)
+        .withModel(VertexAiAnthropicChatModel.ChatModel.CLAUDE_3_5_SONNET.getValue())
+        .withTemperature(0.4)
+    .build());
+
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `VertexAiAnthropicChatOptions` provides the configuration information for the chat requests.
+The `VertexAiAnthropicChatOptions.Builder` is fluent options builder.
