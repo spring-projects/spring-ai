@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -60,6 +62,7 @@ import io.milvus.response.SearchResultsWrapper;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class MilvusVectorStore implements VectorStore, InitializingBean {
 
@@ -97,6 +100,8 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	/**
 	 * Configuration for the Milvus vector store.
 	 */
@@ -127,7 +132,6 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		 * {@return the default config}
 		 */
 		public static MilvusVectorStoreConfig defaultConfig() {
-
 			return builder().build();
 		}
 
@@ -243,13 +247,13 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 
 	}
 
-	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema);
+	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel, boolean initializeSchema,
+			BatchingStrategy batchingStrategy) {
+		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema, batchingStrategy);
 	}
 
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			MilvusVectorStoreConfig config, boolean initializeSchema) {
+			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy) {
 		this.initializeSchema = initializeSchema;
 
 		Assert.notNull(milvusClient, "MilvusServiceClient must not be null");
@@ -258,6 +262,7 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		this.milvusClient = milvusClient;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
@@ -270,15 +275,16 @@ public class MilvusVectorStore implements VectorStore, InitializingBean {
 		List<JSONObject> metadataArray = new ArrayList<>();
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
+		// TODO: Need to customize how we pass the embedding options
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		for (Document document : documents) {
-			float[] embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getContent());
 			metadataArray.add(new JSONObject(document.getMetadata()));
-			embeddingArray.add(EmbeddingUtils.toList(embedding));
+			embeddingArray.add(EmbeddingUtils.toList(document.getEmbedding()));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();

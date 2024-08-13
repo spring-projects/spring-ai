@@ -21,23 +21,23 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingType;
 
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.Content;
 import org.springframework.ai.model.MediaContent;
 import org.springframework.util.CollectionUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 
 	private final Encoding estimator;
 
 	public JTokkitTokenCountEstimator() {
-		this.estimator = Encodings.newLazyEncodingRegistry().getEncoding(EncodingType.CL100K_BASE);
+		this(EncodingType.CL100K_BASE);
 	}
 
-	public JTokkitTokenCountEstimator(Encoding tokenEncoding) {
-		this.estimator = tokenEncoding;
+	public JTokkitTokenCountEstimator(EncodingType tokenEncodingType) {
+		this.estimator = Encodings.newLazyEncodingRegistry().getEncoding(tokenEncodingType);
 	}
 
 	@Override

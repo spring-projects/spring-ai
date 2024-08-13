@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.MilvusVectorStore;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -35,6 +37,7 @@ import org.springframework.util.StringUtils;
 /**
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Soby Chacko
  */
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingModel.class })
@@ -49,9 +52,15 @@ public class MilvusVectorStoreAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	BatchingStrategy milvusBatchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			MilvusVectorStoreProperties properties) {
+			MilvusVectorStoreProperties properties, BatchingStrategy batchingStrategy) {
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
 			.withCollectionName(properties.getCollectionName())
@@ -62,7 +71,8 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withEmbeddingDimension(properties.getEmbeddingDimension())
 			.build();
 
-		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema());
+		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema(),
+				batchingStrategy);
 	}
 
 	@Bean
