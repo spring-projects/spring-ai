@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,7 @@
  */
 package org.springframework.ai.vectorstore;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.EmbeddingUtils;
-import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
-
 import com.alibaba.fastjson.JSONObject;
-
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.common.clientenum.ConsistencyLevelEnum;
@@ -64,9 +42,33 @@ import io.milvus.param.index.DescribeIndexParam;
 import io.milvus.param.index.DropIndexParam;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.model.EmbeddingUtils;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class MilvusVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -104,6 +106,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	/**
 	 * Configuration for the Milvus vector store.
 	 */
@@ -134,7 +138,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 * {@return the default config}
 		 */
 		public static MilvusVectorStoreConfig defaultConfig() {
-
 			return builder().build();
 		}
 
@@ -252,20 +255,25 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			boolean initializeSchema) {
-		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema);
+		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema,
+				new TokenCountBatchingStrategy());
+	}
+
+	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel, boolean initializeSchema,
+			BatchingStrategy batchingStrategy) {
+		this(milvusClient, embeddingModel, MilvusVectorStoreConfig.defaultConfig(), initializeSchema, batchingStrategy);
 	}
 
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			MilvusVectorStoreConfig config, boolean initializeSchema) {
-		this(milvusClient, embeddingModel, config, initializeSchema, ObservationRegistry.NOOP, null);
+			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy) {
+		this(milvusClient, embeddingModel, config, initializeSchema, batchingStrategy, ObservationRegistry.NOOP, null);
 	}
 
 	public MilvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
-			MilvusVectorStoreConfig config, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
+			MilvusVectorStoreConfig config, boolean initializeSchema, BatchingStrategy batchingStrategy,
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention) {
 
 		super(observationRegistry, customObservationConvention);
-
 		this.initializeSchema = initializeSchema;
 
 		Assert.notNull(milvusClient, "MilvusServiceClient must not be null");
@@ -274,6 +282,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		this.milvusClient = milvusClient;
 		this.embeddingModel = embeddingModel;
 		this.config = config;
+		this.batchingStrategy = batchingStrategy;
 	}
 
 	@Override
@@ -286,15 +295,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<JSONObject> metadataArray = new ArrayList<>();
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
+		// TODO: Need to customize how we pass the embedding options
+		this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+
 		for (Document document : documents) {
-			float[] embedding = this.embeddingModel.embed(document);
-			document.setEmbedding(embedding);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getContent());
 			metadataArray.add(new JSONObject(document.getMetadata()));
-			embeddingArray.add(EmbeddingUtils.toList(embedding));
+			embeddingArray.add(EmbeddingUtils.toList(document.getEmbedding()));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();

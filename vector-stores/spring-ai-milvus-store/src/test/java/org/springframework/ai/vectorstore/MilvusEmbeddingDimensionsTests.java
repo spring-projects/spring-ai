@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +57,8 @@ public class MilvusEmbeddingDimensionsTests {
 			.withEmbeddingDimension(explicitDimensions)
 			.build();
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config, true).embeddingDimensions();
+		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config, true, new TokenCountBatchingStrategy())
+			.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(explicitDimensions);
 		verify(embeddingModel, never()).dimensions();
@@ -68,7 +70,7 @@ public class MilvusEmbeddingDimensionsTests {
 
 		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder().build();
 
-		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config ,true)
+		var dim = new MilvusVectorStore(milvusClient, embeddingModel, config ,true, new TokenCountBatchingStrategy())
 				.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(969);
@@ -82,7 +84,7 @@ public class MilvusEmbeddingDimensionsTests {
 		when(embeddingModel.dimensions()).thenThrow(new RuntimeException());
 
 		var dim = new MilvusVectorStore(milvusClient, embeddingModel,
-				MilvusVectorStoreConfig.builder().build() ,true)
+				MilvusVectorStoreConfig.builder().build() ,true, new TokenCountBatchingStrategy())
 						.embeddingDimensions();
 
 		assertThat(dim).isEqualTo(MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
