@@ -190,8 +190,14 @@ public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddi
 
 == Run Oracle Database 23ai locally
 
+If you are going to run the database on a Mac ARM platform you need to use colima as the container runtime (link:https://github.com/abiosoft/colima).
+
 ----
-docker run --rm --name oracle23ai -p 1521:1521 -e APP_USER=mlops -e APP_USER_PASSWORD=mlops -e ORACLE_PASSWORD=mlops gvenzl/oracle-free:23-slim
+docker run --rm --name oracle23ai -d -p 1521:1521 \
+   -e ORACLE_PASSWORD=mlops \
+   -e APP_USER=mlops \
+   -e APP_USER_PASSWORD=mlops \
+   gvenzl/oracle-free:23.5-slim-faststart
 ----
 
 You can then connect to the database using:
