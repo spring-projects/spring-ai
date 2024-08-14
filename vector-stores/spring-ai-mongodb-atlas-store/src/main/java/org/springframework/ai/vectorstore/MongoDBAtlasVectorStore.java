@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 /**
  * @author Chris Smith
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
@@ -143,14 +144,13 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 	 * @param mongoDocument the mongoDocument to map to a Spring AI Document
 	 * @return the Spring AI Document
 	 */
-	private Document mapMongoDocument(org.bson.Document mongoDocument) {
+	private Document mapMongoDocument(org.bson.Document mongoDocument, float[] queryEmbedding) {
 		String id = mongoDocument.getString(ID_FIELD_NAME);
 		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
 		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
-		List<Float> embedding = mongoDocument.getList(this.config.pathName, Float.class);
 
 		Document document = new Document(id, content, metadata);
-		document.setEmbedding(EmbeddingUtils.toPrimitive(embedding));
+		document.setEmbedding(queryEmbedding);
 
 		return document;
 	}
@@ -199,7 +199,7 @@ public class MongoDBAtlasVectorStore implements VectorStore, InitializingBean {
 		return this.mongoTemplate.aggregate(aggregation, this.config.collectionName, org.bson.Document.class)
 			.getMappedResults()
 			.stream()
-			.map(this::mapMongoDocument)
+			.map(d -> mapMongoDocument(d, queryEmbedding))
 			.toList();
 	}
 
