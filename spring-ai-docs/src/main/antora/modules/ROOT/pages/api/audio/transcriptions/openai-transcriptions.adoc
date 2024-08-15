@@ -13,7 +13,7 @@ Exporting an environment variable is one way to set that configuration property:
 
 == Auto-configuration
 
-Spring AI provides Spring Boot auto-configuration for the OpenAI Image Generation Client.
+Spring AI provides Spring Boot auto-configuration for the OpenAI Transcription Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
@@ -55,7 +55,7 @@ Usage from these API requests will count as usage for the specified organization
 
 ==== Configuraiton Properties
 
-The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI image model.
+The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI transcription model.
 
 [cols="3,5,2"]
 |====
@@ -77,9 +77,9 @@ NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai
 The `spring.ai.openai.audio.transcription.base-url`, `spring.ai.openai.audio.transcription.api-key`, `spring.ai.openai.audio.transcription.organization-id` and `spring.ai.openai.audio.transcription.project-id` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.image.options` can be overridden at runtime.
+TIP: All properties prefixed with `spring.ai.openai.transcription.options` can be overridden at runtime.
 
-== Runtime Options [[image-options]]
+== Runtime Options [[transcription-options]]
 
 The `OpenAiAudioTranscriptionOptions` class provides the options to use when making a transcription.
 On start-up, the options specified by `spring.ai.openai.audio.transcription` are used but you can override these at runtime.
