@@ -34,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.core.io.Resource;
@@ -253,11 +255,10 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder("simple_memory_store", operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.SIMPLE_VECTOR_STORE.value(), operationName)
 			.withDimensions(this.embeddingModel.dimensions())
 			.withCollectionName("in-memory-map")
-			.withSimilarityMetric("cosine")
-			.withModel(this.embeddingModel.getClass().getSimpleName());
+			.withSimilarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
 }

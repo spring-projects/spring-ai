@@ -15,6 +15,8 @@
 */
 package org.springframework.ai.vectorstore.observation;
 
+import org.springframework.ai.observation.conventions.AiObservationAttributes;
+
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
@@ -63,7 +65,7 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		DB_OPERATION_NAME {
 			@Override
 			public String asString() {
-				return "db.operation.name";
+				return AiObservationAttributes.DB_OPERATION_NAME.value();
 			}
 		},
 		/**
@@ -105,7 +107,7 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		QUERY_RESPONSE {
 			@Override
 			public String asString() {
-				return "db.vector.query.response";
+				return "db.vector.query.response.documents";
 			}
 		},
 		/**
@@ -114,7 +116,7 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		QUERY {
 			@Override
 			public String asString() {
-				return "db.query.text";
+				return "db.vector.query.content";
 			}
 		},
 		/**
@@ -123,7 +125,7 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		QUERY_METADATA_FILTER {
 			@Override
 			public String asString() {
-				return "db.query.metadata.filter";
+				return "db.vector.query.filter";
 			}
 		},
 		/**
@@ -160,15 +162,6 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 			@Override
 			public String asString() {
 				return "db.vector.name";
-			}
-		},
-		/**
-		 * The model used for the embedding.
-		 */
-		MODEL {
-			@Override
-			public String asString() {
-				return "db.vector.model";
 			}
 		},
 		/**

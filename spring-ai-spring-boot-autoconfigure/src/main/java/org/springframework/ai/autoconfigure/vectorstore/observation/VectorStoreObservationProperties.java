@@ -26,7 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(VectorStoreObservationProperties.CONFIG_PREFIX)
 public class VectorStoreObservationProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.vector.store.observations";
+	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.observations";
 
 	/**
 	 * Whether to include the search response content in the observations.

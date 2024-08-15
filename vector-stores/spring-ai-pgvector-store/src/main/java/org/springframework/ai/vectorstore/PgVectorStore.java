@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -578,13 +580,24 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder("pg_vector", operationName)
+		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
 			.withDimensions(this.embeddingDimensions())
 			.withCollectionName(this.vectorTableName)
 			.withNamespace(this.schemaName)
-			.withSimilarityMetric(this.getDistanceType().name())
-			.withIndexName(this.createIndexMethod.name())
-			.withModel(this.embeddingModel.getClass().getSimpleName());
+			.withSimilarityMetric(getSimilarityMetric())
+			.withIndexName(this.createIndexMethod.name());
+	}
+
+	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
+			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
+			VectorStoreSimilarityMetric.DOT);
+
+	private String getSimilarityMetric() {
+		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
+			return this.getDistanceType().name();
+		}
+		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 }

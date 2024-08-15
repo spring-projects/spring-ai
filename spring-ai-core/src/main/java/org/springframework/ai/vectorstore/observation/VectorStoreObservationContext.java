@@ -75,8 +75,6 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 	private String namespace = "";
 
-	private String model = "";
-
 	private String fieldName = "";
 
 	private String indexName = "";
@@ -158,14 +156,6 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.namespace = namespace;
 	}
 
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	public String getFieldName() {
 		return this.fieldName;
 	}
@@ -239,11 +229,6 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 		public Builder withNamespace(String namespace) {
 			this.context.setNamespace(namespace);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			this.context.setModel(model);
 			return this;
 		}
 

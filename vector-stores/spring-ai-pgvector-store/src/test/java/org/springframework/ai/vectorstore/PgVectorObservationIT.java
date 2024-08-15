@@ -96,7 +96,7 @@ public class PgVectorObservationIT {
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	@Test
-	void observationForChatOperation() {
+	void observationVectorStoreAddAndQueryOperations() {
 
 		contextRunner.run(context -> {
 
@@ -114,12 +114,13 @@ public class PgVectorObservationIT {
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "add")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.DB_SYSTEM.asString(), "pg_vector")
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), "vector_store")
-
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.QUERY.asString(), "none")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DIMENSIONS.asString(), "1536")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "vector_store")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.NAMESPACE.asString(), "public")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "cosine")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "none")
 
 				.hasBeenStarted()
 				.hasBeenStopped();
@@ -145,6 +146,8 @@ public class PgVectorObservationIT {
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "vector_store")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.NAMESPACE.asString(), "public")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.FIELD_NAME.asString(), "none")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.SIMILARITY_METRIC.asString(), "cosine")
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOP_K.asString(), "1")
 
 				.hasBeenStarted()
 				.hasBeenStopped();

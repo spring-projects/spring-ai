@@ -43,7 +43,7 @@ class VectorStoreObservationAutoConfigurationTests {
 
 	@Test
 	void queryResponseFilterFilterEnabled() {
-		contextRunner.withPropertyValues("spring.ai.vector.store.observations.include-query-response=true")
+		contextRunner.withPropertyValues("spring.ai.vectorstore.observations.include-query-response=true")
 			.run(context -> {
 				assertThat(context).hasSingleBean(VectorStoreQueryResponseObservationFilter.class);
 			});
@@ -58,7 +58,7 @@ class VectorStoreObservationAutoConfigurationTests {
 
 	@Test
 	void deleteRequestFilterEnabled() {
-		contextRunner.withPropertyValues("spring.ai.vector.store.observations.include-delete-request=true")
+		contextRunner.withPropertyValues("spring.ai.vectorstore.observations.include-delete-request=true")
 			.run(context -> {
 				assertThat(context).hasSingleBean(VectorStoreDeleteRequestContentObservationFilter.class);
 			});
@@ -73,10 +73,9 @@ class VectorStoreObservationAutoConfigurationTests {
 
 	@Test
 	void addRequestFilterEnabled() {
-		contextRunner.withPropertyValues("spring.ai.vector.store.observations.include-add-request=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(VectorStoreAddRequestContentObservationFilter.class);
-			});
+		contextRunner.withPropertyValues("spring.ai.vectorstore.observations.include-add-request=true").run(context -> {
+			assertThat(context).hasSingleBean(VectorStoreAddRequestContentObservationFilter.class);
+		});
 	}
 
 }

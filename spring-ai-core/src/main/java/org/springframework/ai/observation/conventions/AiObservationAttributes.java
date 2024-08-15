@@ -132,7 +132,11 @@ public enum AiObservationAttributes {
 	/**
 	 * The full response received from the model.
 	 */
-	COMPLETION("gen_ai.completion");
+	COMPLETION("gen_ai.completion"),
+	/**
+	 * The name of the operation or command being executed.
+	 */
+	DB_OPERATION_NAME("db.operation.name"),;
 
 	private final String value;
 
