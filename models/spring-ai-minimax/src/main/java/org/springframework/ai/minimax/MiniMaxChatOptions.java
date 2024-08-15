@@ -100,6 +100,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 	 */
 	private @JsonProperty("top_p") Float topP;
 	/**
+	 * Mask the text information in the output that is easy to involve privacy issues,
+	 * including but not limited to email, domain name, link, ID number, home address, etc.
+	 * The default is true, which means enabling masking.
+	 */
+	private @JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo;
+	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
@@ -201,6 +207,11 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 
 		public Builder withTopP(Float topP) {
 			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder withMaskSensitiveInfo(Boolean maskSensitiveInfo) {
+			this.options.maskSensitiveInfo = maskSensitiveInfo;
 			return this;
 		}
 
@@ -334,6 +345,14 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		this.topP = topP;
 	}
 
+	public Boolean getMaskSensitiveInfo() {
+		return maskSensitiveInfo;
+	}
+
+	public void setMaskSensitiveInfo(Boolean maskSensitiveInfo) {
+		this.maskSensitiveInfo = maskSensitiveInfo;
+	}
+
 	public List<MiniMaxApi.FunctionTool> getTools() {
 		return this.tools;
 	}
@@ -389,6 +408,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		result = prime * result + ((stop == null) ? 0 : stop.hashCode());
 		result = prime * result + ((temperature == null) ? 0 : temperature.hashCode());
 		result = prime * result + ((topP == null) ? 0 : topP.hashCode());
+		result = prime * result + ((maskSensitiveInfo == null) ? 0 : maskSensitiveInfo.hashCode());
 		result = prime * result + ((tools == null) ? 0 : tools.hashCode());
 		result = prime * result + ((toolChoice == null) ? 0 : toolChoice.hashCode());
 		return result;
@@ -463,6 +483,12 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 		}
 		else if (!topP.equals(other.topP))
 			return false;
+		if (this.maskSensitiveInfo == null) {
+			if (other.maskSensitiveInfo != null)
+				return false;
+		}
+		else if (!maskSensitiveInfo.equals(other.maskSensitiveInfo))
+			return false;
 		if (this.tools == null) {
 			if (other.tools != null)
 				return false;
@@ -494,6 +520,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions, ChatOptions {
 			.withStop(fromOptions.getStop())
 			.withTemperature(fromOptions.getTemperature())
 			.withTopP(fromOptions.getTopP())
+			.withMaskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
 			.withTools(fromOptions.getTools())
 			.withToolChoice(fromOptions.getToolChoice())
 			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
