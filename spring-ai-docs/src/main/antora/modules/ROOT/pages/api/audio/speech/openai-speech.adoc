@@ -70,7 +70,7 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.options.model  | ID of the model to use. Only tts-1 is currently available. |  tts-1
 | spring.ai.openai.audio.speech.options.voice | The voice to use for the TTS output. Available options are: alloy, echo, fable, onyx, nova, and shimmer. | alloy
 | spring.ai.openai.audio.speech.options.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
-| spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.0 (slowest) to 1.0 (fastest). | 1.0
+| spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
