@@ -227,6 +227,9 @@ public class MiniMaxApi {
 	 * @param topP An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
+     * @param maskSensitiveInfo Mask the text information in the output that is easy to involve privacy issues,
+	 * including but not limited to email, domain name, link, ID number, home address, etc. The default is true,
+     * which means enabling masking.
 	 * @param tools A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 * @param toolChoice Controls which (if any) function is called by the model. none means the model will not call a
@@ -249,6 +252,7 @@ public class MiniMaxApi {
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("temperature") Float temperature,
 			@JsonProperty("top_p") Float topP,
+			@JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice) {
 
@@ -261,7 +265,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, false, temperature, null,
+					null, null, null, false, temperature, null,null,
 					null, null);
 		}
 
@@ -276,7 +280,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature, boolean stream) {
 			this(messages, model, null,  null, null, null,
-					null, null, null, stream, temperature, null,
+					null, null, null, stream, temperature, null,null,
 					null, null);
 		}
 
@@ -292,7 +296,7 @@ public class MiniMaxApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null,
-					null, null, null, false, 0.8f, null,
+					null, null, null, false, 0.8f, null,null,
 					tools, toolChoice);
 		}
 
@@ -306,7 +310,7 @@ public class MiniMaxApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null,  null, null, null,
-					null, null, null, stream, null, null,
+					null, null, null, stream, null, null,null,
 					null, null);
 		}
 
