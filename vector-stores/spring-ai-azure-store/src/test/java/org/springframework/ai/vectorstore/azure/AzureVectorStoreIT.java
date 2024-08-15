@@ -72,7 +72,7 @@ public class AzureVectorStoreIT {
 	}
 
 	@Test
-	public void addAndSearchTest() {
+	public void addAndVectorSearchTest() {
 
 		contextRunner.run(context -> {
 
@@ -100,6 +100,82 @@ public class AzureVectorStoreIT {
 			Awaitility.await().until(() -> {
 				return vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1));
 			}, hasSize(0));
+		});
+	}
+
+	@Test
+	public void addAndFullTextSearchTest() {
+
+		contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore.add(documents);
+
+			Awaitility.await()
+				.until(() -> vectorStore.fullTextSearch(SearchRequest.query("Great Depression")
+					.withTopK(1)
+					.withVectorSearch(false)
+					.withFullTextSearch(true)), hasSize(1));
+
+			List<Document> results = vectorStore.fullTextSearch(SearchRequest.query("Great Depression")
+				.withTopK(1)
+				.withVectorSearch(false)
+				.withFullTextSearch(true));
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
+
+			// Remove all documents from the store
+			vectorStore.delete(documents.stream().map(Document::getId).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore.fullTextSearch(
+						SearchRequest.query("Hello").withTopK(1).withVectorSearch(false).withFullTextSearch(true)),
+						hasSize(0));
+		});
+	}
+
+	@Test
+	public void addAndHybridSearchTest() {
+
+		contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore.add(documents);
+
+			Awaitility.await()
+				.until(() -> vectorStore.hybridSearch(SearchRequest.query("Great Depression")
+					.withTopK(1)
+					.withVectorSearch(true)
+					.withFullTextSearch(true)), hasSize(1));
+
+			List<Document> results = vectorStore.hybridSearch(SearchRequest.query("Great Depression")
+				.withTopK(1)
+				.withVectorSearch(true)
+				.withFullTextSearch(true));
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
+			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey("distance");
+
+			// Remove all documents from the store
+			vectorStore.delete(documents.stream().map(Document::getId).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore.hybridSearch(
+						SearchRequest.query("Hello").withTopK(1).withVectorSearch(true).withFullTextSearch(true)),
+						hasSize(0));
 		});
 	}
 

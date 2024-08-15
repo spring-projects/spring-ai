@@ -29,11 +29,7 @@ import com.azure.search.documents.indexes.models.SearchIndex;
 import com.azure.search.documents.indexes.models.VectorSearch;
 import com.azure.search.documents.indexes.models.VectorSearchAlgorithmMetric;
 import com.azure.search.documents.indexes.models.VectorSearchProfile;
-import com.azure.search.documents.models.IndexDocumentsResult;
-import com.azure.search.documents.models.IndexingResult;
-import com.azure.search.documents.models.SearchOptions;
-import com.azure.search.documents.models.VectorSearchOptions;
-import com.azure.search.documents.models.VectorizedQuery;
+import com.azure.search.documents.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -64,6 +60,7 @@ import java.util.stream.Collectors;
  * @author Xiangyang Yu
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Alessio Bertazzo
  */
 public class AzureVectorStore implements VectorStore, InitializingBean {
 
@@ -90,6 +87,8 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	private static final Double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
+
+	private static final String SEMANTIC_SEARCH_CONFIG_NAME = "default";
 
 	private final SearchIndexClient searchIndexClient;
 
@@ -281,24 +280,84 @@ public class AzureVectorStore implements VectorStore, InitializingBean {
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		Assert.notNull(request, "The search request must not be null.");
+		Assert.isTrue(request.isVectorSearch() && !request.isFullTextSearch(),
+				"The search request must be a vector search.");
 
-		var searchEmbedding = embeddingModel.embed(request.getQuery());
+		return this.search(request);
+	}
 
-		final var vectorQuery = new VectorizedQuery(EmbeddingUtils.toList(searchEmbedding))
-			.setKNearestNeighborsCount(request.getTopK())
-			// Set the fields to compare the vector against. This is a comma-delimited
-			// list of field names.
-			.setFields(EMBEDDING_FIELD_NAME);
+	@Override
+	public List<Document> fullTextSearch(String query) {
+		return this.search(SearchRequest.query(query)
+			.withVectorSearch(false)
+			.withFullTextSearch(true)
+			.withTopK(this.defaultTopK)
+			.withSimilarityThreshold(this.defaultSimilarityThreshold));
+	}
 
-		var searchOptions = new SearchOptions()
-			.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
+	@Override
+	public List<Document> fullTextSearch(SearchRequest request) {
+
+		Assert.notNull(request, "The search request must not be null.");
+		Assert.isTrue(!request.isVectorSearch() && request.isFullTextSearch(),
+				"The search request must be a full text search.");
+
+		return this.search(request);
+	}
+
+	@Override
+	public List<Document> hybridSearch(String query) {
+		return this.hybridSearch(SearchRequest.query(query)
+			.withVectorSearch(true)
+			.withFullTextSearch(true)
+			.withTopK(this.defaultTopK)
+			.withSimilarityThreshold(this.defaultSimilarityThreshold));
+	}
+
+	@Override
+	public List<Document> hybridSearch(SearchRequest request) {
+
+		Assert.notNull(request, "The search request must not be null.");
+		Assert.isTrue(request.isVectorSearch() && request.isFullTextSearch(),
+				"The search request must be a hybrid (vector + full text) search.");
+
+		return this.search(request);
+	}
+
+	private List<Document> search(SearchRequest request) {
+
+		var searchOptions = new SearchOptions().setTop(request.getTopK());
+
+		if (request.isVectorSearch()) {
+			var searchEmbedding = embeddingModel.embed(request.getQuery());
+
+			final var vectorQuery = new VectorizedQuery(EmbeddingUtils.toList(searchEmbedding))
+				.setKNearestNeighborsCount(request.getTopK())
+				// Set the fields to compare the vector against. This is a comma-delimited
+				// list of field names.
+				.setFields(EMBEDDING_FIELD_NAME);
+
+			searchOptions.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
+		}
+
+		String searchText = null;
+		if (request.isFullTextSearch()) {
+			searchText = request.getQuery();
+
+			if (request.isReRank()) {
+				searchOptions
+					.setSemanticSearchOptions(
+							new SemanticSearchOptions().setSemanticConfigurationName(SEMANTIC_SEARCH_CONFIG_NAME))
+					.setQueryType(QueryType.SEMANTIC);
+			}
+		}
 
 		if (request.hasFilterExpression()) {
 			String oDataFilter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			searchOptions.setFilter(oDataFilter);
 		}
 
-		final var searchResults = searchClient.search(null, searchOptions, Context.NONE);
+		final var searchResults = searchClient.search(searchText, searchOptions, Context.NONE);
 
 		return searchResults.stream()
 			.filter(result -> result.getScore() >= request.getSimilarityThreshold())

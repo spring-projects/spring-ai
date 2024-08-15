@@ -70,4 +70,71 @@ public interface VectorStore extends DocumentWriter {
 		return this.similaritySearch(SearchRequest.query(query));
 	}
 
+	/**
+	 * Retrieves documents by query full text content and metadata filters to retrieve
+	 * exactly the number of nearest-neighbor results that match the request criteria.
+	 * @param request Search request for set search parameters, such as the query text,
+	 * topK, similarity threshold and metadata filter expressions.
+	 * @return a list of {@link Document} objects representing the retrieved documents
+	 * that match the search criteria.
+	 * @throws UnsupportedOperationException if the method is not supported by the current
+	 * implementation. Subclasses should override this method to provide a specific
+	 * implementation.
+	 */
+	default List<Document> fullTextSearch(SearchRequest request) {
+		throw new UnsupportedOperationException("The [" + this.getClass() + "] doesn't support full text search!");
+	}
+
+	/**
+	 * Retrieves documents by query full text content using the default
+	 * {@link SearchRequest}'s' search criteria.
+	 * @param query Text to use for full text search.
+	 * @return a list of {@link Document} objects representing the retrieved documents
+	 * that match the search criteria.
+	 */
+	default List<Document> fullTextSearch(String query) {
+		return this.fullTextSearch(SearchRequest.query(query));
+	}
+
+	/**
+	 * Performs a hybrid search by combining semantic and keyword-based search techniques
+	 * to retrieve a list of relevant documents based on the provided
+	 * {@link SearchRequest}.
+	 * <p>
+	 * This method is intended to retrieve documents that match the query both
+	 * semantically (using vector embeddings) and via keyword matching. The hybrid
+	 * approach aims to enhance retrieval accuracy by leveraging the strengths of both
+	 * search methods.
+	 * </p>
+	 * @param request the {@link SearchRequest} object containing the query and search
+	 * parameters.
+	 * @return a list of {@link Document} objects representing the retrieved documents
+	 * that match the search criteria.
+	 * @throws UnsupportedOperationException if the method is not supported by the current
+	 * implementation. Subclasses should override this method to provide a specific
+	 * implementation.
+	 */
+	default List<Document> hybridSearch(SearchRequest request) {
+		throw new UnsupportedOperationException(
+				"The [" + this.getClass() + "] doesn't support hybrid (vector + text) search!");
+	}
+
+	/**
+	 * Performs a hybrid search by combining semantic and keyword-based search techniques
+	 * to retrieve a list of relevant documents based on the provided
+	 * {@link SearchRequest}.
+	 * <p>
+	 * This method is intended to retrieve documents that match the query both
+	 * semantically (using vector embeddings) and via keyword matching. The hybrid
+	 * approach aims to enhance retrieval accuracy by leveraging the strengths of both
+	 * search methods.
+	 * </p>
+	 * @param query Text to use for embedding similarity comparison.
+	 * @return a list of {@link Document} objects representing the retrieved documents
+	 * that match the search criteria.
+	 */
+	default List<Document> hybridSearch(String query) {
+		return this.hybridSearch(SearchRequest.query(query));
+	}
+
 }
