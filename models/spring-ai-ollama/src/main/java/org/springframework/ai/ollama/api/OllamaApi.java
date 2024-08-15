@@ -336,7 +336,7 @@ public class OllamaApi {
 	@Deprecated(since = "1.0.0-M2", forRemoval = true)
 	public Flux<GenerateResponse> generateStreaming(GenerateRequest completionRequest) {
 		Assert.notNull(completionRequest, REQUEST_BODY_NULL_ERROR);
-		Assert.isTrue(completionRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(completionRequest.stream(), "Request must set the stream property to true.");
 
 		return webClient.post()
 			.uri("/api/generate")
@@ -669,7 +669,7 @@ public class OllamaApi {
 	 */
 	public Flux<ChatResponse> streamingChat(ChatRequest chatRequest) {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
-		Assert.isTrue(chatRequest.stream(), "Request must set the steam property to true.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		return webClient.post()
 			.uri("/api/chat")
