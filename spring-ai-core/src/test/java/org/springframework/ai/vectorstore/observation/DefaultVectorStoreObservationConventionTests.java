@@ -74,9 +74,6 @@ class DefaultVectorStoreObservationConventionTests {
 	@Test
 	void shouldHaveOptionalKeyValues() {
 
-		List<Document> addDocs = List.of(new Document("addDoc1"), new Document("addDoc2"));
-		List<String> deleteIds = List.of("id1", "id2");
-
 		VectorStoreObservationContext observationContext = VectorStoreObservationContext
 			.builder("my-database", VectorStoreObservationContext.Operation.QUERY)
 			.withCollectionName("COLLECTION_NAME")
@@ -85,8 +82,6 @@ class DefaultVectorStoreObservationConventionTests {
 			.withIndexName("INDEX_NAME")
 			.withNamespace("NAMESPACE")
 			.withSimilarityMetric("SIMILARITY_METRIC")
-			.withAddRequest(addDocs)
-			.withDeleteRequest(deleteIds)
 			.withQueryRequest(SearchRequest.query("VDB QUERY").withFilterExpression("country == 'UK' && year >= 2020"))
 			.build();
 
@@ -99,10 +94,8 @@ class DefaultVectorStoreObservationConventionTests {
 					VectorStoreObservationContext.Operation.QUERY.value));
 
 		// Optional, filter only added content
-		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).doesNotContain(
-				KeyValue.of(HighCardinalityKeyNames.ADD_REQUEST, "[addDoc1,addDoc2]"),
-				KeyValue.of(HighCardinalityKeyNames.DELETE_REQUEST, "[id1,id2]"),
-				KeyValue.of(HighCardinalityKeyNames.QUERY_RESPONSE, "[doc1,doc2]"));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.doesNotContain(KeyValue.of(HighCardinalityKeyNames.QUERY_RESPONSE, "[doc1,doc2]"));
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(HighCardinalityKeyNames.COLLECTION_NAME.asString(), "COLLECTION_NAME"),

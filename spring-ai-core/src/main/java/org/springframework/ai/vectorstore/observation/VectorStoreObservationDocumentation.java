@@ -84,24 +84,6 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
-		 * Add documents request content.
-		 */
-		DELETE_REQUEST {
-			@Override
-			public String asString() {
-				return "db.vector.delete.request";
-			}
-		},
-		/**
-		 * Add documents request content.
-		 */
-		ADD_REQUEST {
-			@Override
-			public String asString() {
-				return "db.vector.add.request";
-			}
-		},
-		/**
 		 * Similarity search response content.
 		 */
 		QUERY_RESPONSE {

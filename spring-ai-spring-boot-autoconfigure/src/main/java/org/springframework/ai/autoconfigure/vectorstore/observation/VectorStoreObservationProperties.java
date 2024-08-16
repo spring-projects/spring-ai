@@ -33,38 +33,12 @@ public class VectorStoreObservationProperties {
 	 */
 	private boolean includeQueryResponse = false;
 
-	/**
-	 * Whether to include the add request content in the observations.
-	 */
-	private boolean includeAddRequest = false;
-
-	/**
-	 * Whether to include the delete request content in the observations.
-	 */
-	private boolean includeDeleteRequest = false;
-
 	public boolean isIncludeQueryResponse() {
 		return this.includeQueryResponse;
 	}
 
 	public void setIncludeQueryResponse(boolean includeQueryResponse) {
 		this.includeQueryResponse = includeQueryResponse;
-	}
-
-	public boolean isIncludeAddRequest() {
-		return this.includeAddRequest;
-	}
-
-	public void setIncludeAddRequest(boolean includeAddRequest) {
-		this.includeAddRequest = includeAddRequest;
-	}
-
-	public boolean isIncludeDeleteRequest() {
-		return this.includeDeleteRequest;
-	}
-
-	public void setIncludeDeleteRequest(boolean includeDeleteRequest) {
-		this.includeDeleteRequest = includeDeleteRequest;
 	}
 
 }

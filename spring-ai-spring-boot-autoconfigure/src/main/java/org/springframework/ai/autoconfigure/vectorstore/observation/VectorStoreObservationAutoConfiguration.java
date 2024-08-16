@@ -18,8 +18,6 @@ package org.springframework.ai.autoconfigure.vectorstore.observation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreAddRequestContentObservationFilter;
-import org.springframework.ai.vectorstore.observation.VectorStoreDeleteRequestContentObservationFilter;
 import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationFilter;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -50,24 +48,6 @@ public class VectorStoreObservationAutoConfiguration {
 		logger.warn(
 				"You have enabled the inclusion of the query response content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
 		return new VectorStoreQueryResponseObservationFilter();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "include-add-request",
-			havingValue = "true")
-	VectorStoreAddRequestContentObservationFilter vectorStoreAddRequestContentObservationFilter() {
-		logger.warn(
-				"You have enabled the inclusion of the add request content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-		return new VectorStoreAddRequestContentObservationFilter();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "include-delete-request",
-			havingValue = "true")
-	VectorStoreDeleteRequestContentObservationFilter vectorStoreDeleteRequestContentObservationFilter() {
-		return new VectorStoreDeleteRequestContentObservationFilter();
 	}
 
 }

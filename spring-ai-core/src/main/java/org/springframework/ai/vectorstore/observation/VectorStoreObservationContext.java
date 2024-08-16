@@ -51,13 +51,11 @@ public class VectorStoreObservationContext extends Observation.Context {
 			this.value = value;
 		}
 
+		public String value() {
+			return this.value;
+		}
+
 	}
-
-	// DELETE
-	private List<String> deleteRequest;
-
-	// ADD
-	private List<Document> addRequest;
 
 	// SEARCH
 	private SearchRequest queryRequest;
@@ -86,22 +84,6 @@ public class VectorStoreObservationContext extends Observation.Context {
 		Assert.hasText(operationName, "operationName cannot be null or empty");
 		this.databaseSystem = databaseSystem;
 		this.operationName = operationName;
-	}
-
-	public List<String> getDeleteRequest() {
-		return this.deleteRequest;
-	}
-
-	public void setDeleteRequest(List<String> deleteRequest) {
-		this.deleteRequest = deleteRequest;
-	}
-
-	public List<Document> getAddRequest() {
-		return this.addRequest;
-	}
-
-	public void setAddRequest(List<Document> documents) {
-		this.addRequest = documents;
 	}
 
 	public SearchRequest getQueryRequest() {
@@ -190,16 +172,6 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 		public Builder(String databaseSystem, String operationName) {
 			this.context = new VectorStoreObservationContext(databaseSystem, operationName);
-		}
-
-		public Builder withDeleteRequest(List<String> deleteRequest) {
-			this.context.setDeleteRequest(deleteRequest);
-			return this;
-		}
-
-		public Builder withAddRequest(List<Document> documents) {
-			this.context.setAddRequest(documents);
-			return this;
 		}
 
 		public Builder withQueryRequest(SearchRequest request) {

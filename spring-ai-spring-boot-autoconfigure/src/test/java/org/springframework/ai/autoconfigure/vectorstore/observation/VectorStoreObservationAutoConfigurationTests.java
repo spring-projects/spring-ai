@@ -18,8 +18,6 @@ package org.springframework.ai.autoconfigure.vectorstore.observation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.vectorstore.observation.VectorStoreAddRequestContentObservationFilter;
-import org.springframework.ai.vectorstore.observation.VectorStoreDeleteRequestContentObservationFilter;
 import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationFilter;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -47,35 +45,6 @@ class VectorStoreObservationAutoConfigurationTests {
 			.run(context -> {
 				assertThat(context).hasSingleBean(VectorStoreQueryResponseObservationFilter.class);
 			});
-	}
-
-	@Test
-	void deleteRequestFilterDefault() {
-		contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(VectorStoreDeleteRequestContentObservationFilter.class);
-		});
-	}
-
-	@Test
-	void deleteRequestFilterEnabled() {
-		contextRunner.withPropertyValues("spring.ai.vectorstore.observations.include-delete-request=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(VectorStoreDeleteRequestContentObservationFilter.class);
-			});
-	}
-
-	@Test
-	void addRequestFilterDefault() {
-		contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(VectorStoreAddRequestContentObservationFilter.class);
-		});
-	}
-
-	@Test
-	void addRequestFilterEnabled() {
-		contextRunner.withPropertyValues("spring.ai.vectorstore.observations.include-add-request=true").run(context -> {
-			assertThat(context).hasSingleBean(VectorStoreAddRequestContentObservationFilter.class);
-		});
 	}
 
 }

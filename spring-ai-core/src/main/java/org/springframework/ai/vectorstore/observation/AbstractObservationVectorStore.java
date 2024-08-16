@@ -55,8 +55,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 
-		VectorStoreObservationContext observationContext = this.createObservationContextBuilder("add")
-			.withAddRequest(documents)
+		VectorStoreObservationContext observationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.ADD.value())
 			.build();
 
 		VectorStoreObservationDocumentation.AI_VECTOR_STORE
@@ -68,8 +68,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public Optional<Boolean> delete(List<String> deleteDocIds) {
 
-		VectorStoreObservationContext observationContext = this.createObservationContextBuilder("delete")
-			.withDeleteRequest(deleteDocIds)
+		VectorStoreObservationContext observationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.DELETE.value())
 			.build();
 
 		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
@@ -81,7 +81,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
 
-		VectorStoreObservationContext searchObservationContext = this.createObservationContextBuilder("search")
+		VectorStoreObservationContext searchObservationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
 			.withQueryRequest(request)
 			.build();
 
