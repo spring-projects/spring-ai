@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.observation.conventions.AiProvider;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -60,6 +61,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class MistralAiApi {
 
 	private static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
+
+	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -355,6 +358,7 @@ public class MistralAiApi {
 			 @JsonProperty("max_tokens") Integer maxTokens,
 			 @JsonProperty("stream") Boolean stream,
 			 @JsonProperty("safe_prompt") Boolean safePrompt,
+	         @JsonProperty("stop") List<String> stop,
 			 @JsonProperty("random_seed") Integer randomSeed,
 			 @JsonProperty("response_format") ResponseFormat responseFormat) {
 		 // @formatter:on
@@ -367,7 +371,7 @@ public class MistralAiApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, null, null, 0.7f, 1f, null, false, false, null, null);
+			this(model, messages, null, null, 0.7f, 1f, null, false, false, null, null, null);
 		}
 
 		/**
@@ -382,7 +386,7 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature,
 				boolean stream) {
-			this(model, messages, null, null, temperature, 1f, null, stream, false, null, null);
+			this(model, messages, null, null, temperature, 1f, null, stream, false, null, null, null);
 		}
 
 		/**
@@ -395,7 +399,7 @@ public class MistralAiApi {
 		 *
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Float temperature) {
-			this(model, messages, null, null, temperature, 1f, null, false, false, null, null);
+			this(model, messages, null, null, temperature, 1f, null, false, false, null, null, null);
 		}
 
 		/**
@@ -410,7 +414,7 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				ToolChoice toolChoice) {
-			this(model, messages, tools, toolChoice, null, 1f, null, false, false, null, null);
+			this(model, messages, tools, toolChoice, null, 1f, null, false, false, null, null, null);
 		}
 
 		/**
@@ -418,7 +422,7 @@ public class MistralAiApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, null, null, 0.7f, 1f, null, stream, false, null, null);
+			this(null, messages, null, null, 0.7f, 1f, null, stream, false, null, null, null);
 		}
 
 		/**
