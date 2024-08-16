@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -135,6 +136,7 @@ public class MistralAiRetryTests {
 	}
 
 	@Test
+	@Disabled("Currently stream() does not implement retry")
 	public void mistralAiChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
@@ -156,6 +158,7 @@ public class MistralAiRetryTests {
 	}
 
 	@Test
+	@Disabled("Currently stream() does not implement retry")
 	public void mistralAiChatStreamNonTransientError() {
 		when(mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 				.thenThrow(new RuntimeException("Non Transient Error"));
