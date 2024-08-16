@@ -26,6 +26,7 @@ import java.util.List;
  * Converts {@link Expression} into PgVector metadata filter expression format.
  * (https://www.postgresql.org/docs/current/functions-json.html)
  *
+ * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  */
 public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {

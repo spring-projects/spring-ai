@@ -60,6 +60,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
+ * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  */
 @Testcontainers

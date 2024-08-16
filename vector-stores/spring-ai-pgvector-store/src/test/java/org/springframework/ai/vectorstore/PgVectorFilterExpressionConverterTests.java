@@ -34,6 +34,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 
 /**
+ * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  */
 public class PgVectorFilterExpressionConverterTests {
