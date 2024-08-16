@@ -17,11 +17,15 @@ package org.springframework.ai.autoconfigure.ollama;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -39,6 +43,7 @@ import org.springframework.web.client.RestClient;
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 @AutoConfiguration(after = RestClientAutoConfiguration.class)
@@ -65,18 +70,30 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext) {
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+		var chatModel = new OllamaChatModel(ollamaApi, properties.getOptions(), functionCallbackContext,
+				toolFunctionCallbacks, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
-		return new OllamaChatModel(ollamaApi, properties.getOptions(), functionCallbackContext, toolFunctionCallbacks);
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = OllamaEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingProperties properties) {
+	public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
+		var embeddingModel = new OllamaEmbeddingModel(ollamaApi, properties.getOptions(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
-		return new OllamaEmbeddingModel(ollamaApi, properties.getOptions());
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
+
+		return embeddingModel;
 	}
 
 	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {

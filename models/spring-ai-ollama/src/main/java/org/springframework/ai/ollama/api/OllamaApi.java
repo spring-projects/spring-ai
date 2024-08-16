@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -55,7 +56,9 @@ public class OllamaApi {
 
 	private static final Log logger = LogFactory.getLog(OllamaApi.class);
 
-	private final static String DEFAULT_BASE_URL = "http://localhost:11434";
+	private static final String DEFAULT_BASE_URL = "http://localhost:11434";
+
+	public static final String PROVIDER_NAME = AiProvider.OLLAMA.value();
 
 	public static final String REQUEST_BODY_NULL_ERROR = "The request body can not be null.";
 

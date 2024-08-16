@@ -19,22 +19,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 public class OllamaEmbeddingRequestTests {
 
-	OllamaEmbeddingModel chatModel = new OllamaEmbeddingModel(new OllamaApi(),
+	OllamaEmbeddingModel embeddingModel = new OllamaEmbeddingModel(new OllamaApi(),
 			new OllamaOptions().withModel("DEFAULT_MODEL").withMainGPU(11).withUseMMap(true).withNumGPU(1));
 
 	@Test
 	public void ollamaEmbeddingRequestDefaultOptions() {
 
-		var request = chatModel.ollamaEmbeddingRequest(List.of("Hello"), null);
+		var request = embeddingModel.ollamaEmbeddingRequest(List.of("Hello"), null);
 
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.options().get("num_gpu")).isEqualTo(1);
@@ -52,7 +53,7 @@ public class OllamaEmbeddingRequestTests {
 			.withUseMMap(true)//
 			.withNumGPU(2);
 
-		var request = chatModel.ollamaEmbeddingRequest(List.of("Hello"), promptOptions);
+		var request = embeddingModel.ollamaEmbeddingRequest(List.of("Hello"), promptOptions);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.options().get("num_gpu")).isEqualTo(2);

@@ -18,11 +18,11 @@ package org.springframework.ai.autoconfigure.ollama;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -37,20 +37,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 @Disabled("For manual smoke testing only.")
 @Testcontainers
 public class OllamaEmbeddingAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OllamaEmbeddingAutoConfigurationIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaEmbeddingAutoConfigurationIT.class);
 
-	private static String MODEL_NAME = "orca-mini";
+	private static final String MODEL_NAME = "orca-mini";
 
 	@Container
 	static OllamaContainer ollamaContainer = new OllamaContainer(OllamaImage.IMAGE);
 
-	static String baseUrl;
+	static String baseUrl = "http://localhost:11434";
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {

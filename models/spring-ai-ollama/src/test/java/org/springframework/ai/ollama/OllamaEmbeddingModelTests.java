@@ -15,20 +15,13 @@
 */
 package org.springframework.ai.ollama;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -36,6 +29,13 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaOptions;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -65,7 +65,7 @@ public class OllamaEmbeddingModelTests {
 		var embeddingModel = new OllamaEmbeddingModel(ollamaApi, defaultOptions);
 
 		EmbeddingResponse response = embeddingModel
-			.call(new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptions.EMPTY));
+			.call(new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptionsBuilder.builder().build()));
 
 		assertThat(response.getResults()).hasSize(2);
 		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);

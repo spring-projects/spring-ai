@@ -21,17 +21,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.AbstractEmbeddingModel;
-import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
@@ -53,26 +50,47 @@ import org.springframework.util.StringUtils;
  * most up-to-date information on available models.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
 	private final OllamaApi ollamaApi;
 
 	/**
 	 * Default options to be used for all chat requests.
 	 */
-	private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL);
+	private final OllamaOptions defaultOptions;
+
+	/**
+	 * Observation registry used for instrumentation.
+	 */
+	private final ObservationRegistry observationRegistry;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OllamaEmbeddingModel(OllamaApi ollamaApi) {
-		this.ollamaApi = ollamaApi;
+		this(ollamaApi, OllamaOptions.create().withModel(OllamaOptions.DEFAULT_MODEL));
 	}
 
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions) {
+		this(ollamaApi, defaultOptions, ObservationRegistry.NOOP);
+	}
+
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
+			ObservationRegistry observationRegistry) {
+		Assert.notNull(ollamaApi, "openAiApi must not be null");
+		Assert.notNull(defaultOptions, "options must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+
 		this.ollamaApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -82,25 +100,39 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
 		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(request.getInstructions(),
 				request.getOptions());
 
-		EmbeddingsResponse response = this.ollamaApi.embed(ollamaEmbeddingRequest);
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(request)
+			.provider(OllamaApi.PROVIDER_NAME)
+			.requestOptions(buildRequestOptions(ollamaEmbeddingRequest))
+			.build();
 
-		AtomicInteger indexCounter = new AtomicInteger(0);
+		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				EmbeddingsResponse response = this.ollamaApi.embed(ollamaEmbeddingRequest);
 
-		List<Embedding> embeddings = response.embeddings()
-			.stream()
-			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
-			.toList();
+				AtomicInteger indexCounter = new AtomicInteger(0);
 
-		EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-				new EmptyUsage());
+				List<Embedding> embeddings = response.embeddings()
+					.stream()
+					.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
+					.toList();
 
-		return new EmbeddingResponse(embeddings, embeddingResponseMetadata);
+				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
+						new EmptyUsage());
+
+				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
+
+				observationContext.setResponse(embeddingResponse);
+
+				return embeddingResponse;
+			});
 	}
 
 	/**
@@ -126,9 +158,22 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
 	}
 
+	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
+		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
+	}
+
 	public static class DurationParser {
 
-		private static Pattern PATTERN = Pattern.compile("(\\d+)(ms|s|m|h)");
+		private static final Pattern PATTERN = Pattern.compile("(\\d+)(ms|s|m|h)");
 
 		public static Duration parse(String input) {
 

@@ -16,7 +16,6 @@
 package org.springframework.ai.ollama;
 
 import org.junit.jupiter.api.Test;
-
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
